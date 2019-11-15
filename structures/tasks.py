@@ -2,6 +2,7 @@ import logging
 import os
 import hashlib
 import json
+import re
 
 from celery import shared_task
 
@@ -25,22 +26,25 @@ from .models import *
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
-"""
-Swagger Operations:
-get_corporations_corporation_id_structures
-"""
-
-
 @shared_task
-def run_structures_sync(force_sync = False, user_pk = None):
-        
-    for owner in Owner.objects.all():        
-        
+def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = None):
+    """fetches structures from one owner"""
+    
+    try:
+        owner = Owner.objects.get(pk=owner_pk)
+    except Owner.DoesNotExist:
+        raise Owner.DoesNotExist(
+            "Requested owner with pk {} does not exist".format(
+                owner
+            )
+        )
+
+    add_prefix = make_logger_prefix(owner)
+
+    try:        
         owner.last_sync = now()
         owner.save()
-
-        add_prefix = make_logger_prefix(owner)
-                
+        
         # abort if character is not configured
         if owner.character is None:
             logger.error(add_prefix(
@@ -123,9 +127,10 @@ def run_structures_sync(force_sync = False, user_pk = None):
             
             # fetch additional information for structures
             for structure in structures:
-                structure_info = client.Universe.get_universe_structures_structure_id(
-                    structure_id=structure['structure_id']
-                ).result()
+                structure_info = \
+                    client.Universe.get_universe_structures_structure_id(
+                        structure_id=structure['structure_id']
+                    ).result()
                 structure['name'] = structure_info['name']
                 structure['position'] = structure_info['position']                
 
@@ -155,6 +160,10 @@ def run_structures_sync(force_sync = False, user_pk = None):
                 with transaction.atomic():                
                     Structure.objects.filter(owner=owner).delete()
                     for structure in structures:                    
+                        name = re.search(
+                            '^\S+ - (.+)', 
+                            structure['name']
+                        ).group(1)                        
                         eve_type, _ = EveType.objects.get_or_create_esi(
                             client,
                             structure['type_id']
@@ -204,7 +213,7 @@ def run_structures_sync(force_sync = False, user_pk = None):
                             defaults={
                                 'owner': owner,
                                 'eve_type': eve_type,
-                                'name': structure['name'],
+                                'name': name,
                                 'eve_solar_system': eve_solar_system,
                                 'position_x': structure['position']['x'],
                                 'position_y': structure['position']['y'],
@@ -244,12 +253,16 @@ def run_structures_sync(force_sync = False, user_pk = None):
                 owner.save()
                 raise ex
 
-    
+    except Exception as ex:
+        success = False        
+    else:
+        success = True
+        
     if user_pk:
         error_code = None
         try:
             message = 'Syncing of structures for "{}" {}.\n'.format(
-                owner.organization.name,                
+                owner.corporation.corporation_name,
                 'completed successfully' if success else 'has failed'
             )
             if success:
@@ -261,8 +274,8 @@ def run_structures_sync(force_sync = False, user_pk = None):
             
             notify(
                 user=User.objects.get(pk=user_pk),
-                title='Freight: Structures sync for {}: {}'.format(
-                    owner.organization.name,
+                title='Alliance Structures: Structures updated for {}: {}'.format(
+                   owner.corporation.corporation_name,
                     'OK' if success else 'FAILED'
                 ),
                 message=message,
@@ -275,3 +288,10 @@ def run_structures_sync(force_sync = False, user_pk = None):
             ))
     
     return success
+
+
+@shared_task
+def update_all_structures(force_sync = False):
+    """fetches structures from all known owners"""
+    for owner in Owner.objects.all():
+        update_structures_for_owner(owner.pk, force_sync=force_sync)

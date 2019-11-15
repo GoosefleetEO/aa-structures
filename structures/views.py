@@ -13,79 +13,14 @@ from . import tasks
 from .models import *
 from .utils import messages_plus, DATETIME_FORMAT
 
+
 @login_required
 @permission_required('structures.basic_access')
-def index(request):
-        
+def index(request):       
     context = {
-        'text': 'Hello, World!'
+        'page_title': 'Alliance Structures'
     }    
     return render(request, 'structures/index.html', context)
-
-
-@login_required
-@permission_required('structures.basic_access')
-@token_required(scopes=Owner.get_esi_scopes())
-def add_owner(request, token):    
-    token_char = EveCharacter.objects.get(character_id=token.character_id)
-    
-    success = True
-    try:
-        owned_char = CharacterOwnership.objects.get(
-            user=request.user,
-            character=token_char
-        )        
-    except CharacterOwnership.DoesNotExist:
-        messages_plus.error(
-            request,
-            'You can only use your main or alt characters to add '
-            + ' corporations. '
-            + 'However, character <strong>{}</strong> is neither. '.format(
-                token_char.character_name
-            )
-        )
-        success = False
-    
-    if success:
-        try:
-            corporation = EveCorporationInfo.objects.get(
-                corporation_id=token_char.corporation_id
-            )
-        except EveCorporationInfo.DoesNotExist:
-            corporation = EveCorporationInfo.objects.create_corporation(
-                token_char.corporation_id
-            )
-            corporation.save()
-
-        owner, created = Owner.objects.update_or_create(
-            corporation=corporation,
-            defaults={
-                'character': owned_char
-            }
-        )          
-        tasks.run_structures_sync.delay(            
-            force_sync=True,
-            # user_pk=request.user.pk
-        )        
-        messages_plus.success(
-            request, 
-            'Started adding row for '
-            + '<strong>{}</strong> '.format(owner)
-            + 'with <strong>{}</strong> as sync character. '.format(
-                    owner.character.character.character_name, 
-                )                        
-            + 'You will receive a report once it is completed.'
-        )
-    return redirect('structures:index')
-
-
-@login_required
-@permission_required('structures.basic_access')
-def structure_list(request):       
-    context = {
-        'text': 'Hello, World!'
-    }    
-    return render(request, 'structures/structures.html', context)
 
 
 @login_required
@@ -96,13 +31,13 @@ def structure_list_data(request):
     for structure in structures:        
         
         row = dict()
-        row['is_poco'] = False # Hack !!
+        row['is_poco'] = structure.eve_type.is_poco
         
         # owner
-        if not structure.owner.corporation.alliance_id:
-            alliance_name = ""
+        if structure.owner.corporation.alliance:
+            alliance_name = structure.owner.corporation.alliance.alliance_name            
         else: 
-            alliance_name = "(tbd)" #structure.owner.corporation.alliance_name
+            alliance_name = ""            
                 
         corporation_url = evelinks.get_entity_profile_url_by_name(
             evelinks.ESI_CATEGORY_CORPORATION,
@@ -123,18 +58,18 @@ def structure_list_data(request):
         )
         
         # location        
+        row['solar_system_name'] = structure.eve_solar_system.name
         solar_system_url = evelinks.get_entity_profile_url_by_name(
             evelinks.ESI_CATEGORY_SOLARSYSTEM,
-            structure.eve_solar_system.name
+            row['solar_system_name']
         )
+        row['region_name'] = structure.eve_solar_system.eve_constellation.eve_region.name
         row['location'] = '<a href="{}">{}</a><br>{}'.format(
             solar_system_url,
             structure.eve_solar_system.name,
-            structure.eve_solar_system.eve_constellation.eve_region.name
-        )
-        row['region_name'] = structure.eve_solar_system.eve_constellation.eve_region.name
-        row['solar_system_name'] = structure.eve_solar_system.name
-
+            row['region_name']
+        )        
+        
         # type icon
         row['type_icon'] = '<img src="{}"/>'.format(
             evelinks.get_type_image_url(
@@ -147,15 +82,12 @@ def structure_list_data(request):
             evelinks.ESI_CATEGORY_INVENTORYTYPE,
             structure.eve_type_id
         )        
-        row['type'] = '<a href="{}">{}</a>'.format(
-            type_url,
-            structure.eve_type_id
-        )
         row['type_name'] = structure.eve_type.name
+        row['type'] = row['type_name']
 
         # row name
-        row['is_low_power'] = False #structure['is_low_power']
-        row['is_low_power_str'] = 'yes' if row['is_low_power'] else 'no'
+        row['is_low_power'] = structure.is_low_power
+        row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
         row['structure_name_short'] = structure.name #structure['structure_name_short']
         if row['is_low_power']:
             row['structure_name_short'] += '<br>[LOW POWER]'
@@ -173,8 +105,8 @@ def structure_list_data(request):
         row['services'] = services
             
         # add reinforcement infos
-        row['is_reinforced'] = False #structure['is_reinforced']
-        row['is_reinforced_str'] = 'yes' if row['is_reinforced'] else 'no'
+        row['is_reinforced'] = structure.is_reinforced
+        row['is_reinforced_str'] = 'yes' if structure.is_reinforced else 'no'
         reinforce_hour_str = str(structure.reinforce_hour) + ":00"
         if structure.reinforce_weekday:            
             reinforce_day_str = calendar.day_name[structure.reinforce_weekday]
@@ -214,7 +146,65 @@ def structure_list_data(request):
 
 
 @login_required
+@permission_required('structures.add_owner')
+@token_required(scopes=Owner.get_esi_scopes())
+def add_owner(request, token):    
+    token_char = EveCharacter.objects.get(character_id=token.character_id)
+    
+    success = True
+    try:
+        owned_char = CharacterOwnership.objects.get(
+            user=request.user,
+            character=token_char
+        )        
+    except CharacterOwnership.DoesNotExist:
+        messages_plus.error(
+            request,
+            'You can only use your main or alt characters to add '
+            + ' corporations. '
+            + 'However, character <strong>{}</strong> is neither. '.format(
+                token_char.character_name
+            )
+        )
+        success = False
+    
+    if success:
+        try:
+            corporation = EveCorporationInfo.objects.get(
+                corporation_id=token_char.corporation_id
+            )
+        except EveCorporationInfo.DoesNotExist:
+            corporation = EveCorporationInfo.objects.create_corporation(
+                token_char.corporation_id
+            )
+            corporation.save()
+
+        owner, created = Owner.objects.update_or_create(
+            corporation=corporation,
+            defaults={
+                'character': owned_char
+            }
+        )          
+        tasks.update_structures_for_owner.delay(            
+            owner_pk=owner.pk,
+            force_sync=True,
+            user_pk=request.user.pk
+        )        
+        messages_plus.success(
+            request,             
+            '<strong>{}</strong> has been added '.format(owner)
+            + 'with <strong>{}</strong> as sync character. '.format(
+                    owner.character.character.character_name, 
+                )                        
+            + 'We have started fetching structures for this corporation. You will receive a report once it is completed.'
+        )
+    return redirect('structures:index')
+
+
+@login_required
 @permission_required('structures.basic_access')
 def test(request):
-    tasks.run_structures_sync()
+    tasks.update_structures_for_owner()
     return redirect('structures:index')
+
+

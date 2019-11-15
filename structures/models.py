@@ -20,7 +20,10 @@ class General(models.Model):
         managed = False                         
         default_permissions = ()
         permissions = ( 
-            ('basic_access', 'Can access this app'), 
+            ('basic_access', 'Can access this app and view'),
+            ('view_alliance_structures', 'Can view alliance structures'),
+            ('view_all_structures', 'Can view all structures'),
+            ('add_owner', 'Can add new structure owner'), 
         )
 
 
@@ -159,6 +162,8 @@ class EveGroup(models.Model):
 
 class EveType(models.Model):
     """type in Eve Online"""
+    EVE_TYPE_ID_POCO = 2233
+
     id = models.IntegerField(
         primary_key=True,
         validators=[MinValueValidator(0)],
@@ -171,6 +176,10 @@ class EveType(models.Model):
     
     def __str__(self):
         return self.name
+
+    @property
+    def is_poco(self):
+        return id == self.EVE_TYPE_ID_POCO
 
 
 class Structure(models.Model):
@@ -240,7 +249,7 @@ class Structure(models.Model):
         null=True, 
         default=None, 
         blank=True,
-        help_text='Date on which the structure will run out of fuell'
+        help_text='Date on which the structure will run out of fuel'
     )
     next_reinforce_hour = models.IntegerField(
         null=True, 
@@ -304,12 +313,23 @@ class Structure(models.Model):
     )
 
     @property
-    def state_str(self):    
+    def state_str(self):
         msg = [(x, y) for x, y in self.STATE_CHOICES if x == self.state]
         return msg[0][1] if len(msg) > 0 else 'Undefined'
 
+    @property
+    def is_low_power(self):
+        return not self.fuel_expires
+
+    @property
+    def is_reinforced(self):
+        return self.state in [
+            self.STATE_ARMOR_REINFORCE, 
+            self.STATE_HULL_REINFORCE
+        ]
+
     def __str__(self):
-        return self.name
+        return '{} - {}'.format(self.eve_solar_system, self.name)
 
     @classmethod
     def get_matching_state(cls, state_name) -> int:
