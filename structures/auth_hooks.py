@@ -12,7 +12,7 @@ class StructuresMenuItem(MenuItemHook):
         # setup menu entry for sidebar
         MenuItemHook.__init__(
             self,
-            _('structures'),
+            _('Alliance Structures 2.0'),
             'fa fa-cube fa-fw',
             'structures:index',
             navactive=['structures:index']

@@ -1,12 +1,13 @@
 {% extends 'allianceauth/base.html' %}
 {% load i18n %}
 
-{% block page_title %}{% trans "structures" %}{% endblock %}
+{% block page_title %}{% trans "Alliance Structures" %}{% endblock %}
 
 {% block content %}
     <div class="col-lg-12">
-        <h1 class="page-header text-center">{% trans "structures" %}</h1>
-        <div class="col-lg-12 container">           
+        {% include 'structures/menu.html' %}
+        <h2 class="text-center">{{ page_title }}</h2>
+        <div class="col-lg-12 container">            
             {% block details %}{% endblock %}
         </div>
     </div>

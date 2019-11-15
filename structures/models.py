@@ -1,11 +1,12 @@
 import logging
 
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 
+from .managers import EveGroupManager, EveTypeManager, EveRegionManager, EveConstellationManager, EveSolarSystemManager
 from .utils import LoggerAddTag, DATETIME_FORMAT
 
 
@@ -23,8 +24,8 @@ class General(models.Model):
         )
 
 
-class Corporation(models.Model):
-    """corporations which have structures"""
+class Owner(models.Model):
+    """corporation that owns structures"""
 
     # errors
     ERROR_NONE = 0
@@ -82,37 +83,94 @@ class Corporation(models.Model):
     def __str__(self):
         return str(self.corporation.corporation_name)
 
+    @classmethod
+    def get_esi_scopes(cls) -> list:
+        return [
+            'esi-corporations.read_structures.v1',
+            'esi-universe.read_structures.v1'
+        ]
 
-class Region(models.Model):
+
+class EveRegion(models.Model):
     """region in Eve Online"""
-    region_id = models.IntegerField(
+    id = models.IntegerField(
         primary_key=True,
         validators=[MinValueValidator(0)],
         help_text='Eve Online region ID'
     )
-    region_name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+
+    objects = EveRegionManager()
+
+    def __str__(self):
+        return self.name
 
 
-class SolarSystem(models.Model):
+class EveConstellation(models.Model):
+    """constellation in Eve Online"""
+    id = models.IntegerField(
+        primary_key=True,
+        validators=[MinValueValidator(0)],
+        help_text='Eve Online region ID'
+    )
+    name = models.CharField(max_length=100)
+    eve_region = models.ForeignKey(EveRegion, on_delete=models.CASCADE)
+
+    objects = EveConstellationManager()
+
+    def __str__(self):
+        return self.name
+
+
+class EveSolarSystem(models.Model):
     """solar system in Eve Online"""
-    solar_system_id = models.IntegerField(
+    id = models.IntegerField(
         primary_key=True, 
         validators=[MinValueValidator(0)],
         help_text='Eve Online solar system ID'
     )
-    solar_system_name = models.CharField(max_length=100)
-    region = models.ForeignKey(Region, on_delete=models.CASCADE)
-    security = models.FloatField()
+    name = models.CharField(max_length=100)
+    eve_constellation = models.ForeignKey(
+        EveConstellation, 
+        on_delete=models.CASCADE
+    )
+    security_status = models.FloatField()
+
+    objects = EveSolarSystemManager()
+
+    def __str__(self):
+        return self.name
 
 
-class Type(models.Model):
+class EveGroup(models.Model):
     """type in Eve Online"""
-    type_id = models.IntegerField(
+    id = models.IntegerField(
+        primary_key=True,
+        validators=[MinValueValidator(0)],
+        help_text='Eve Online group ID'
+    )
+    name = models.CharField(max_length=100)
+
+    objects = EveGroupManager()
+    
+    def __str__(self):
+        return self.name
+
+
+class EveType(models.Model):
+    """type in Eve Online"""
+    id = models.IntegerField(
         primary_key=True,
         validators=[MinValueValidator(0)],
         help_text='Eve Online type ID'
     )
-    type_name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    eve_group = models.ForeignKey(EveGroup, on_delete=models.CASCADE)
+
+    objects = EveTypeManager()
+    
+    def __str__(self):
+        return self.name
 
 
 class Structure(models.Model):
@@ -150,17 +208,17 @@ class Structure(models.Model):
         (STATE_UNKNOWN, 'unknown'),
     ]
 
-    structure_id = models.BigIntegerField(
+    id = models.BigIntegerField(
         primary_key=True,
         help_text='The Item ID of the structure'
     )
     owner = models.ForeignKey(
-        Corporation, 
+        Owner, 
         on_delete=models.CASCADE,
         help_text='Corporation that owns the structure'
     )
-    type = models.ForeignKey(
-        Type, 
+    eve_type = models.ForeignKey(
+        EveType, 
         on_delete=models.CASCADE,
         help_text='type of the structure'
     )
@@ -168,7 +226,7 @@ class Structure(models.Model):
         max_length=255,
         help_text='The full name of the structure'
     )
-    solar_system = models.ForeignKey(SolarSystem, on_delete=models.CASCADE)
+    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
     position_x = models.FloatField(        
         help_text='x position of the structure in the solar system'
     )
@@ -188,12 +246,14 @@ class Structure(models.Model):
         null=True, 
         default=None, 
         blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(23)],
         help_text='The requested change to reinforce_hour that will take effect at the time shown by next_reinforce_apply'
     )
     next_reinforce_weekday = models.IntegerField(
         null=True, 
         default=None, 
         blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(6)],
         help_text='The date and time when the structure’s newly requested reinforcement times (e.g. next_reinforce_hour and next_reinforce_day) will take effect'
     )    
     next_reinforce_apply = models.DateTimeField(
@@ -207,21 +267,27 @@ class Structure(models.Model):
         help_text='The id of the ACL profile for this citadel'
     )
     reinforce_hour = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(23)],
         help_text='The hour of day that determines the four hour window when the structure will randomly exit its reinforcement periods and become vulnerable to attack against its armor and/or hull. The structure will become vulnerable at a random time that is +/- 2 hours centered on the value of this property'
     )
     reinforce_weekday = models.IntegerField(
         null=True, 
         default=None, 
         blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(6)],
         help_text='The day of the week when the structure exits its final reinforcement period and becomes vulnerable to attack against its hull. Monday is 0 and Sunday is 6'
+    )
+    state = models.IntegerField(
+        choices=STATE_CHOICES,
+        help_text='Current state of the structure'
     )    
-    state_time_start = models.DateTimeField(
+    state_timer_start = models.DateTimeField(
         null=True, 
         default=None, 
         blank=True,
         help_text='Date at which the structure will move to it’s next state'
     )
-    state_time_end = models.DateTimeField(
+    state_timer_end = models.DateTimeField(
         null=True, 
         default=None, 
         blank=True,
@@ -232,14 +298,30 @@ class Structure(models.Model):
         default=None, 
         blank=True,
         help_text='Date at which the structure will unanchor'
-    )
-    state = models.IntegerField(
-        choices=STATE_CHOICES,
-        help_text='Current state of the structure'
     )    
     last_updated = models.DateTimeField(
         help_text='The id of the ACL profile for this citadel'
     )
+
+    @property
+    def state_str(self):    
+        msg = [(x, y) for x, y in self.STATE_CHOICES if x == self.state]
+        return msg[0][1] if len(msg) > 0 else 'Undefined'
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def get_matching_state(cls, state_name) -> int:
+        """returns matching state for given state name"""
+        match = cls.STATE_UNKNOWN
+        for x in cls.STATE_CHOICES:
+            if state_name == x[1]:
+                match = x
+                break
+        
+        return match[0]
+
 
 
 class StructureService(models.Model):
@@ -269,4 +351,7 @@ class StructureService(models.Model):
 
     class Meta:
         unique_together = (('structure', 'name'),)
+
+    def __str__(self):
+        return '{}-{}'.format(str(self.structure), self.name)
 
