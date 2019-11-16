@@ -27,7 +27,11 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
 @shared_task
-def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = None):
+def update_structures_for_owner(
+    owner_pk, 
+    force_sync: bool = False, 
+    user_pk = None
+):
     """fetches structures from one owner"""
     
     try:
@@ -56,7 +60,7 @@ def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = No
 
         # abort if character does not have sufficient permissions
         if not owner.character.user.has_perm(
-                'structures.basic_access'
+                'structures.add_structure_owner'
             ):
             logger.error(add_prefix(
                 'Character does not have sufficient permission '
@@ -108,9 +112,10 @@ def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = No
             )
 
             # get structures from first page
-            operation = client.Corporation.get_corporations_corporation_id_structures(
-                corporation_id=owner.corporation.corporation_id
-            )
+            operation = \
+                client.Corporation.get_corporations_corporation_id_structures(
+                    corporation_id=owner.corporation.corporation_id
+                )
             operation.also_return_response = True
             structures, response = operation.result()
             pages = int(response.headers['x-pages'])
@@ -260,7 +265,7 @@ def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = No
                 raise ex
 
     except Exception as ex:
-        success = False        
+        success = False              
     else:
         success = True
         

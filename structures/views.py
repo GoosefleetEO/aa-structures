@@ -159,9 +159,9 @@ def structure_list_data(request):
 
 
 @login_required
-@permission_required('structures.add_owner')
+@permission_required('structures.add_structure_owner')
 @token_required(scopes=Owner.get_esi_scopes())
-def add_owner(request, token):    
+def add_structure_owner(request, token):    
     token_char = EveCharacter.objects.get(character_id=token.character_id)
     
     success = True

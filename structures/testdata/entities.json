@@ -1,0 +1,84 @@
+{    
+    "EveRegion":
+    [
+        {
+            "id": 10000005,
+            "name": "Detorid"
+        },
+        {
+            "id": 10000030,
+            "name": "Heimatar"
+        }
+    ],
+    "EveConstellation":
+    [
+        {
+            "id": 20000069,
+            "name": "1RG-GU",
+            "eve_region_id": 10000005
+        },
+        {
+            "id": 20000372,
+            "name": "Hed",
+            "eve_region_id": 10000030
+        }
+    ],
+    "EveSolarSystem":
+    [
+        {
+            "id": 30002537,
+            "name": "Amamake",
+            "security_status": 0.438761234283447,
+            "eve_constellation_id": 20000372
+        },
+        {
+            "id": 30000474,
+            "name": "1-PGSG",
+            "security_status": -0.496552765369415,
+            "eve_constellation_id": 20000069
+        }
+    ],
+    "EveGroup":
+    [
+        {
+            "id": 1657,
+            "name": "Citadel"
+        },
+        {
+            "id": 1406,
+            "name": "Refinery"
+        }
+    ],
+    "EveType":
+    [
+        {
+            "id": 35832,
+            "name": "Astrahus",
+            "eve_group_id": 1657
+        },
+        {
+            "id": 35835,
+            "name": "Athanor",
+            "eve_group_id": 1406
+        }
+    ],
+    "EveCorporationInfo":
+    [
+        {
+            "corporation_id": 2001,
+            "corporation_name": "Wayne Enterprises",
+            "corporation_ticker": "WYE",
+            "member_count": 4200
+        }
+    ],
+    "EveCharacter":
+    [
+        {
+            "character_id": 1001,
+            "character_name": "Bruce Wayne",
+            "corporation_id": 2001,
+            "corporation_name": "Wayne Enterprises",
+            "corporation_ticker": "WYE"
+        }
+    ]
+}

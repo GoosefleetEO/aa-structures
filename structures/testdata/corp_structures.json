@@ -1,0 +1,53 @@
+[
+    {
+        "corporation_id": 98394960,
+        "fuel_expires": "2020-03-05T05:00:00Z",        
+        "next_reinforce_apply": null,
+        "next_reinforce_hour": null,
+        "next_reinforce_weekday": null,        
+        "profile_id": 52436,
+        "reinforce_hour": 19,
+        "reinforce_weekday": 2,
+        "services": [
+            {
+                "name": "Reprocessing",
+                "state": "online"
+            },
+            {
+                "name": "Moon Drilling",
+                "state": "online"
+            }
+        ],
+        "state": "shield_vulnerable",
+        "state_timer_end": null,
+        "state_timer_start": null,
+        "structure_id": 1031369432897,
+        "system_id": 30002537,
+        "type_id": 35835,
+        "unanchors_at": null
+    },
+    {
+        "corporation_id": 98394960,
+        "fuel_expires": null,        
+        "next_reinforce_apply": null,
+        "next_reinforce_hour": null,
+        "next_reinforce_weekday": null,
+       
+        "profile_id": 101853,
+        "reinforce_hour": 18,
+        "reinforce_weekday": 5,
+        "services": [
+            {
+                "name": "Clone Bay",
+                "state": "offline"
+            }
+        ],
+        "state": "shield_vulnerable",
+        "state_timer_end": null,
+        "state_timer_start": null,
+        "structure_id": 1028151259819,
+        "system_id": 30000474,
+        "type_id": 35832,
+        "unanchors_at": null
+    }
+]

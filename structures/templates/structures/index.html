@@ -30,8 +30,8 @@
             </div>
         </div>
     </div>
-    {% if perms.structures.add_owner %}
-        <a class="btn btn-default navbar-btn pull-right" href="{% url 'structures:add_owner' %}">
+    {% if perms.structures.add_structure_owner %}
+        <a class="btn btn-default navbar-btn pull-right" href="{% url 'structures:add_structure_owner' %}">
             Add Structure Owner
         </a>
     {% endif %} 

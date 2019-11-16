@@ -23,7 +23,7 @@ class General(models.Model):
             ('basic_access', 'Can access this app and view'),
             ('view_alliance_structures', 'Can view alliance structures'),
             ('view_all_structures', 'Can view all structures'),
-            ('add_owner', 'Can add new structure owner'), 
+            ('add_structure_owner', 'Can add new structure owner'), 
         )
 
 
