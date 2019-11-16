@@ -6,7 +6,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from .managers import EveGroupManager, EveTypeManager, EveRegionManager, EveConstellationManager, EveSolarSystemManager
+from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
+    EveConstellationManager, EveSolarSystemManager
 from .utils import LoggerAddTag, DATETIME_FORMAT
 
 
@@ -235,7 +236,10 @@ class Structure(models.Model):
         max_length=255,
         help_text='The full name of the structure'
     )
-    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem, 
+        on_delete=models.CASCADE
+    )
     position_x = models.FloatField(        
         help_text='x position of the structure in the solar system'
     )
@@ -309,7 +313,7 @@ class Structure(models.Model):
         help_text='Date at which the structure will unanchor'
     )    
     last_updated = models.DateTimeField(
-        help_text='The id of the ACL profile for this citadel'
+        help_text='date this structure was last updated from the EVE server'
     )
 
     @property

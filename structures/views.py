@@ -53,27 +53,28 @@ def structure_list_data(request):
         row['is_poco'] = structure.eve_type.is_poco
         
         # owner
-        if structure.owner.corporation.alliance:
-            alliance_name = structure.owner.corporation.alliance.alliance_name            
+        corporation = structure.owner.corporation
+        if corporation.alliance:
+            alliance_name = corporation.alliance.alliance_name            
         else: 
             alliance_name = ""            
                 
         corporation_url = evelinks.get_entity_profile_url_by_name(
             evelinks.ESI_CATEGORY_CORPORATION,
-            structure.owner.corporation.corporation_name
+            corporation.corporation_name
         )
 
         row['owner'] = '<a href="{}">{}</a><br>{}'.format(
             corporation_url,
-            structure.owner.corporation.corporation_name,
+            corporation.corporation_name,
             alliance_name
         )
         row['alliance_name'] = alliance_name
-        row['corporation_name'] = structure.owner.corporation.corporation_name
+        row['corporation_name'] = corporation.corporation_name
 
         # corporation icon
         row['corporation_icon'] = '<img src="{}">'.format(
-            structure.owner.corporation.logo_url()
+            corporation.logo_url()
         )
         
         # location        
@@ -103,9 +104,9 @@ def structure_list_data(request):
         # row name
         row['is_low_power'] = structure.is_low_power
         row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
-        row['structure_name_short'] = structure.name #structure['structure_name_short']
-        if row['is_low_power']:
-            row['structure_name_short'] += '<br>[LOW POWER]'
+        row['structure_name'] = structure.name
+        if structure.is_low_power:
+            row['structure_name'] += '<br>[LOW POWER]'
 
         # services
         services = ''        
@@ -189,8 +190,7 @@ def add_structure_owner(request, token):
         except EveCorporationInfo.DoesNotExist:
             corporation = EveCorporationInfo.objects.create_corporation(
                 token_char.corporation_id
-            )
-            corporation.save()
+            )            
 
         owner, created = Owner.objects.update_or_create(
             corporation=corporation,
@@ -209,7 +209,8 @@ def add_structure_owner(request, token):
             + 'with <strong>{}</strong> as sync character. '.format(
                     owner.character.character.character_name, 
                 )                        
-            + 'We have started fetching structures for this corporation. You will receive a report once it is completed.'
+            + 'We have started fetching structures for this corporation. '
+            + 'You will receive a report once it is completed.'
         )
     return redirect('structures:index')
 
