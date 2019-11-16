@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
 
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, EveAllianceInfo
 from esi.decorators import token_required
 
 from . import evelinks
@@ -26,7 +26,26 @@ def index(request):
 @login_required
 @permission_required('structures.basic_access')
 def structure_list_data(request):
-    structures = Structure.objects.all().select_related()    
+    
+    if request.user.has_perm('structures.view_all_structures'):
+        structures = Structure.objects.all().select_related()
+    else:
+        if request.user.has_perm('structures.view_alliance_structures'):
+            alliance = EveAllianceInfo.objects.get(
+                alliance_id=request.user.main.character.alliance_id
+            )
+            corporations = alliance.evecorporationinfo_set.all()          
+        else:
+            corporations = [
+                EveCorporationInfo.objects.get(
+                    corporation_id=x.character.corporation_id
+                )
+                for x in request.user.character_ownerships.all()
+            ]
+        structures = Structure.objects\
+            .filter(owner__corporation__in=corporations) \
+            .select_related()
+
     structures_data = list()
     for structure in structures:        
         
@@ -77,11 +96,7 @@ def structure_list_data(request):
                 32
         ))        
         
-        # type name
-        type_url = evelinks.get_entity_profile_url_by_id(
-            evelinks.ESI_CATEGORY_INVENTORYTYPE,
-            structure.eve_type_id
-        )        
+        # type name              
         row['type_name'] = structure.eve_type.name
         row['type'] = row['type_name']
 
@@ -93,15 +108,13 @@ def structure_list_data(request):
             row['structure_name_short'] += '<br>[LOW POWER]'
 
         # services
-        services = ''
-        """
-        for service in structure['services']:
-            if service['state'] == 'offline':
-                service_name = '<del>{}</del>'. format(service['name'])
+        services = ''        
+        for service in structure.structureservice_set.all():
+            if service.state == StructureService.STATE_OFFLINE:
+                service_name = '<del>{}</del>'. format(service.name)
             else:
-                service_name = service['name']            
-            services += '<p>{}</p>'.format(service_name) 
-        """
+                service_name = service.name
+            services += '<p>{}</p>'.format(service_name)
         row['services'] = services
             
         # add reinforcement infos

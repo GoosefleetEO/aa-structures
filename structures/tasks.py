@@ -207,32 +207,38 @@ def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = No
                         unanchors_at =  structure['unanchors_at']\
                             if 'unanchors_at' in structure else None
 
-
-                        obj, created = Structure.objects.update_or_create(
+                        obj = Structure.objects.create(
                             id=structure['structure_id'],
-                            defaults={
-                                'owner': owner,
-                                'eve_type': eve_type,
-                                'name': name,
-                                'eve_solar_system': eve_solar_system,
-                                'position_x': structure['position']['x'],
-                                'position_y': structure['position']['y'],
-                                'position_z': structure['position']['z'],
-                                'fuel_expires': fuel_expires,
-                                'next_reinforce_hour': next_reinforce_hour,
-                                'next_reinforce_weekday': next_reinforce_weekday,
-                                'next_reinforce_apply': next_reinforce_apply,
-                                'profile_id': structure['profile_id'],
-                                'reinforce_hour': structure['reinforce_hour'],
-                                'reinforce_weekday': reinforce_weekday,
-                                'state': state,
-                                'state_timer_start': state_timer_start,
-                                'state_timer_end': state_timer_end,
-                                'unanchors_at': unanchors_at,
-                                'last_updated': owner.last_sync,
-                               
-                            }                        
-                        )                        
+                            owner=owner,
+                            eve_type=eve_type,
+                            name=name,
+                            eve_solar_system=eve_solar_system,
+                            position_x=structure['position']['x'],
+                            position_y=structure['position']['y'],
+                            position_z=structure['position']['z'],
+                            fuel_expires=fuel_expires,
+                            next_reinforce_hour=next_reinforce_hour,
+                            next_reinforce_weekday=next_reinforce_weekday,
+                            next_reinforce_apply=next_reinforce_apply,
+                            profile_id=structure['profile_id'],
+                            reinforce_hour=structure['reinforce_hour'],
+                            reinforce_weekday=reinforce_weekday,
+                            state=state,
+                            state_timer_start=state_timer_start,
+                            state_timer_end=state_timer_end,
+                            unanchors_at=unanchors_at,
+                            last_updated=owner.last_sync
+                        )
+                        if structure['services']:
+                            for service in structure['services']:
+                                state = StructureService.get_matching_state(
+                                    service['state']
+                                )
+                                StructureService.objects.create(
+                                    structure=obj,
+                                    name=service['name'],
+                                    state=state
+                                )
                     owner.version_hash = new_version_hash                
                     owner.save()
                     success = True
@@ -294,4 +300,4 @@ def update_structures_for_owner(owner_pk, force_sync: bool = False, user_pk = No
 def update_all_structures(force_sync = False):
     """fetches structures from all known owners"""
     for owner in Owner.objects.all():
-        update_structures_for_owner(owner.pk, force_sync=force_sync)
+        update_structures_for_owner.delay(owner.pk, force_sync=force_sync)

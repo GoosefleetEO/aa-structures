@@ -179,7 +179,7 @@ class EveType(models.Model):
 
     @property
     def is_poco(self):
-        return id == self.EVE_TYPE_ID_POCO
+        return id == self.EVE_TYPE_ID_POCO    
 
 
 class Structure(models.Model):
@@ -374,4 +374,15 @@ class StructureService(models.Model):
 
     def __str__(self):
         return '{}-{}'.format(str(self.structure), self.name)
+
+    @classmethod
+    def get_matching_state(cls, state_name) -> int:
+        """returns matching state for given state name"""
+        match = cls.STATE_OFFLINE
+        for x in cls.STATE_CHOICES:
+            if state_name == x[1]:
+                match = x
+                break
+        
+        return match[0]
 

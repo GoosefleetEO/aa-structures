@@ -1,10 +1,30 @@
 from django.contrib import admin
 
 from .models import *
+from . import tasks
 
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('corporation', 'character', 'last_sync')
+    actions = ['update_structures']
+
+    def update_structures(self, request, queryset):
+                        
+        for obj in queryset:            
+            tasks.update_structures_for_owner.delay(                
+                obj.pk,
+                force_sync=True,
+                user_pk=request.user.pk
+            )            
+            text = 'Started updating structures for: {}. '.format(obj)
+            text += 'You will receive a notification once it is completed.'
+
+            self.message_user(
+                request, 
+                text
+            )
+    
+    update_structures.short_description = "Update structures from EVE server"
 
 @admin.register(EveRegion)
 class EveRegionAdmin(admin.ModelAdmin):
@@ -26,10 +46,12 @@ class EveTypeAdmin(admin.ModelAdmin):
 class EveGroupAdmin(admin.ModelAdmin):
     pass
 
+class StructureAdminInline(admin.TabularInline):
+    model = StructureService
+
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name', 'eve_solar_system', 'eve_type', 'owner')
+    list_filter = ('eve_solar_system', 'eve_type', 'owner')
 
-@admin.register(StructureService)
-class StructureServiceAdmin(admin.ModelAdmin):
-    pass
+    inlines = (StructureAdminInline, )
