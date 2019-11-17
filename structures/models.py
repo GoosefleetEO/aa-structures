@@ -1,6 +1,9 @@
 import logging
+from time import sleep
 
-from django.db import models
+import dhooks_lite
+
+from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -8,7 +11,7 @@ from allianceauth.eveonline.models import EveCorporationInfo
 
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager
-from .utils import LoggerAddTag, DATETIME_FORMAT
+from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
@@ -26,6 +29,39 @@ class General(models.Model):
             ('view_all_structures', 'Can view all structures'),
             ('add_structure_owner', 'Can add new structure owner'), 
         )
+
+
+class Webhook(models.Model):
+    """A destination for forwarding notification alerts"""
+    
+    TYPE_DISCORD = 1
+
+    TYPE_CHOICES = [
+        (TYPE_DISCORD, 'Discord Webhook'),        
+    ]
+    
+    name = models.CharField(
+        max_length=64, 
+        unique=True,
+        help_text='short name to identify this webhook'
+    )
+    webhook_type = models.IntegerField(
+        choices=TYPE_CHOICES,
+        default=TYPE_DISCORD,        
+        help_text='type of this webhook'
+    )
+    url = models.TextField(        
+        help_text='URL of this webhook, e.g. https://discordapp.com/api/webhooks/123456/abcdef'
+    )
+    notes = models.TextField(
+        null=True, 
+        default=None, 
+        blank=True,        
+        help_text='you can add notes about this webhook here if you want'
+    )
+
+    def __str__(self):
+        return self.name
 
 
 class Owner(models.Model):
@@ -83,9 +119,44 @@ class Owner(models.Model):
         default=ERROR_NONE,
         help_text='error that occurred at the last sync atttempt (if any)'
     )
+    webhook = models.ForeignKey(
+        Webhook, 
+        on_delete=models.SET_DEFAULT,
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='Webhook used for sending structure notifications'
+    )
 
     def __str__(self):
         return str(self.corporation.corporation_name)
+    
+    def send_notifications_to_webhook(self, force_sent = False):
+        """Send notifications to configured webhook"""
+        
+        add_prefix = make_logger_prefix(str(self))   
+        if self.webhook:
+            q = self.notification_set
+
+            if not force_sent:
+                q = q.filter(is_sent__exact=False)
+            
+            q = q.select_related()
+
+            if q.count() > 0:
+                logger.info(add_prefix('Trying to send {} notifications'.format(
+                    q.count()
+                )))
+                
+                for notification in q:
+                    notification.send_to_webhook()
+                    sleep(1)
+            else:
+                logger.info(add_prefix('No new notifications to send'))
+        
+        else:
+            logger.info(add_prefix('Discord webhook not configured - '
+                + 'skipping sending notifications'))
 
     @classmethod
     def get_esi_scopes(cls) -> list:
@@ -505,6 +576,38 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.notification_id)
 
+    def send_to_webhook(self):
+        """sends this notification to the configured webhook"""
+        if self.owner.webhook:
+            add_prefix = make_logger_prefix(
+                'notification:{}'.format(self.notification_id)
+            )            
+            username = '{} Notification'.format(
+                self.owner.corporation.corporation_ticker
+            )
+            avatar_url = self.owner.corporation.logo_url()
+
+            hook = dhooks_lite.Webhook(
+                self.owner.webhook.url, 
+                username=username,
+                avatar_url=avatar_url
+            )                        
+            with transaction.atomic():
+                logger.info(add_prefix(
+                    'Trying to sent notification to webhook: {}'.format(
+                        self.owner.webhook
+                )))                
+                
+                desc = self.text
+                embed = dhooks_lite.Embed(
+                    description=desc,
+                    timestamp=self.timestamp
+                )                
+                                                
+                hook.execute(embeds=[embed]) 
+                self.is_sent = True
+                self.save()
+
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:
         """returns matching notification type for given name or None"""
@@ -517,9 +620,4 @@ class Notification(models.Model):
             return match[0]
         else:
             return None
-
-
-class Destination(models.Model):
-    """A destination for forwarding notification alerts"""
-    pass
 

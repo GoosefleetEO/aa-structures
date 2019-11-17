@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import *
 from . import tasks
 
+
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
     list_display = ('corporation', 'character', 'last_sync')
@@ -44,28 +45,35 @@ class OwnerAdmin(admin.ModelAdmin):
     
     fetch_notifications.short_description = "Fetch notifications from EVE server"
 
+
 @admin.register(EveRegion)
 class EveRegionAdmin(admin.ModelAdmin):
     pass
+
 
 @admin.register(EveConstellation)
 class EveConstellationSystemAdmin(admin.ModelAdmin):
     pass
 
+
 @admin.register(EveSolarSystem)
 class EveSolarSystemAdmin(admin.ModelAdmin):
     pass
+
 
 @admin.register(EveType)
 class EveTypeAdmin(admin.ModelAdmin):
     pass
 
+
 @admin.register(EveGroup)
 class EveGroupAdmin(admin.ModelAdmin):
     pass
 
+
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
+
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
@@ -74,6 +82,38 @@ class StructureAdmin(admin.ModelAdmin):
 
     inlines = (StructureAdminInline, )
 
+
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-    pass
+    list_display = (
+        'notification_id', 
+        'owner', 
+        'notification_type', 
+        'timestamp',
+        'webhook',
+        'is_sent'
+    )
+    actions = ['send_to_webhook']
+
+    def webhook(self, obj):
+        return obj.owner.webhook
+
+    def send_to_webhook(self, request, queryset):
+                        
+        for obj in queryset:            
+            obj.send_to_webhook()
+            text = 'Notification {} was send to webhook'.format(
+                obj.notification_id
+            )
+            
+            self.message_user(
+                request, 
+                text
+            )
+    
+    send_to_webhook.short_description = "Send to configured webhook"
+
+
+@admin.register(Webhook)
+class WebhookAdmin(admin.ModelAdmin):
+    list_display = ('name', 'webhook_type')
