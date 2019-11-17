@@ -91,7 +91,8 @@ class Owner(models.Model):
     def get_esi_scopes(cls) -> list:
         return [
             'esi-corporations.read_structures.v1',
-            'esi-universe.read_structures.v1'
+            'esi-universe.read_structures.v1',
+            'esi-characters.read_notifications.v1'
         ]
 
 
@@ -347,7 +348,6 @@ class Structure(models.Model):
         return match[0]
 
 
-
 class StructureService(models.Model):
     """service of a structure"""
 
@@ -389,4 +389,137 @@ class StructureService(models.Model):
                 break
         
         return match[0]
+
+
+class NotificationEntity(models.Model):
+    """An EVE entity used in notifications"""
+    
+    TYPE_CHARACTER = 1
+    TYPE_CORPORATION = 2
+    TYPE_ALLIANCE = 3
+    TYPE_FACTION = 4
+    TYPE_OTHER = 5
+
+    TYPE_CHOICES = [
+        (TYPE_CHARACTER, 'character'),
+        (TYPE_CORPORATION, 'corporation'),
+        (TYPE_ALLIANCE, 'alliance'),
+        (TYPE_FACTION, 'faction'),
+        (TYPE_OTHER, 'other'),
+    ]
+    
+    id = models.IntegerField(
+        primary_key=True, 
+        validators=[MinValueValidator(0)]
+    )
+    entity_type = models.IntegerField(
+        choices=TYPE_CHOICES
+    )
+    name = models.CharField(
+        max_length=255,
+        null=True, 
+        default=None, 
+        blank=True
+    )
+
+    def __str__(self):
+        return str(self.id)
+
+    @classmethod
+    def get_matching_entity_type(cls, type_name) -> int:
+        """returns matching entity type for given state name"""
+        match = None
+        for x in cls.TYPE_CHOICES:
+            if type_name == x[1]:
+                match = x
+                break
+        if not match:
+            raise ValueError('Invalid entity type')
+        else:
+            return match[0]
+
+
+class Notification(models.Model):
+    """An EVE Online notification about structures"""
+
+    TYPE_STRUCTURE_ANCHORING = 1
+    TYPE_STRUCTURE_DESTROYED = 2
+    TYPE_STRUCTURE_FUEL_ALERT = 3
+    TYPE_STRUCTURE_LOST_ARMOR = 4
+    TYPE_STRUCTURE_LOST_SHIELD = 5
+    TYPE_STRUCTURE_ONLINE = 6
+    TYPE_STRUCTURE_SERVICES_OFFLINE = 7
+    TYPE_STRUCTURE_UNANCHORING = 8
+    TYPE_STRUCTURE_UNDER_ATTACK = 9
+    TYPE_STRUCTURE_WENT_HIGH_POWER = 10
+    TYPE_STRUCTURE_WENT_LOW_POWER = 11  
+    TYPE_STRUCTURE_REINFORCEMENT_CHANGED = 11
+
+    TYPE_CHOICES = [
+        (TYPE_STRUCTURE_ANCHORING, 'StructureAnchoring'),
+        (TYPE_STRUCTURE_DESTROYED, 'StructureDestroyed'),
+        (TYPE_STRUCTURE_FUEL_ALERT, 'StructureFuelAlert'),
+        (TYPE_STRUCTURE_LOST_ARMOR, 'StructureLostArmor'),
+        (TYPE_STRUCTURE_LOST_SHIELD, 'StructureLostShields'),
+        (TYPE_STRUCTURE_ONLINE, 'StructureOnline'),
+        (TYPE_STRUCTURE_SERVICES_OFFLINE, 'StructureServicesOffline'),
+        (TYPE_STRUCTURE_UNANCHORING, 'StructureUnanchoring'),
+        (TYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
+        (TYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
+        (TYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),        
+        (TYPE_STRUCTURE_REINFORCEMENT_CHANGED, 'StructuresReinforcementChanged'),        
+    ]
+
+    notification_id = models.BigIntegerField(        
+        validators=[MinValueValidator(0)]
+    )
+    owner = models.ForeignKey(
+        Owner, 
+        on_delete=models.CASCADE,
+        help_text='Corporation that received this notification'
+    )
+    sender = models.ForeignKey(NotificationEntity, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField()
+    notification_type = models.IntegerField(
+        choices=TYPE_CHOICES
+    )
+    text = models.TextField(        
+        null=True, 
+        default=None, 
+        blank=True
+    )
+    is_read = models.BooleanField(
+        null=True, 
+        default=None, 
+        blank=True
+    )    
+    is_sent = models.BooleanField(
+        default=False,
+        blank=True
+    )
+    last_updated = models.DateTimeField()
+
+    class Meta:
+        unique_together = (('notification_id', 'owner'),)
+
+    def __str__(self):
+        return str(self.notification_id)
+
+    @classmethod
+    def get_matching_notification_type(cls, type_name) -> int:
+        """returns matching notification type for given name or None"""
+        match = None
+        for x in cls.TYPE_CHOICES:
+            if type_name == x[1]:
+                match = x
+                break
+        if match:
+            return match[0]
+        else:
+            return None
+
+
+class Destination(models.Model):
+    """A destination for forwarding notification alerts"""
+    pass
 

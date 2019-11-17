@@ -306,3 +306,207 @@ def update_all_structures(force_sync = False):
     """fetches structures from all known owners"""
     for owner in Owner.objects.all():
         update_structures_for_owner.delay(owner.pk, force_sync=force_sync)
+
+
+@shared_task
+def update_notifications_for_owner(
+    owner_pk, 
+    force_sync: bool = False,    
+    user_pk = None
+):
+    """fetches notification for owner and stored them in local storage"""
+    
+    try:
+        owner = Owner.objects.get(pk=owner_pk)
+    except Owner.DoesNotExist:
+        raise Owner.DoesNotExist(
+            "Requested owner with pk {} does not exist".format(
+                owner
+            )
+        )
+
+    add_prefix = make_logger_prefix(owner)
+
+    try:        
+        owner.last_sync = now()
+        owner.save()
+        
+        # abort if character is not configured
+        if owner.character is None:
+            logger.error(add_prefix(
+                'No character configured to sync'
+            ))           
+            owner.last_error = Owner.ERROR_NO_CHARACTER
+            owner.save()
+            raise ValueError()
+
+        # abort if character does not have sufficient permissions
+        if not owner.character.user.has_perm(
+                'structures.add_structure_owner'
+            ):
+            logger.error(add_prefix(
+                'Character does not have sufficient permission '
+                + 'to fetch notifications'
+            ))            
+            owner.last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
+            owner.save()
+            raise ValueError()
+
+        try:            
+            # get token    
+            token = Token.objects.filter(
+                user=owner.character.user, 
+                character_id=owner.character.character.character_id
+            ).require_scopes(
+                Owner.get_esi_scopes()
+            ).require_valid().first()
+        except TokenInvalidError:        
+            logger.error(add_prefix(
+                'Invalid token for fetching notifications'
+            ))            
+            owner.last_error = Owner.ERROR_TOKEN_INVALID
+            owner.save()
+            raise TokenInvalidError()                    
+        except TokenExpiredError:            
+            logger.error(add_prefix(
+                'Token expired for fetching notifications'
+            ))
+            owner.last_error = Owner.ERROR_TOKEN_EXPIRED
+            owner.save()
+            raise TokenExpiredError()
+        else:
+            if not token:
+                logger.error(add_prefix(
+                    'Missing token for fetching notifications'
+                ))            
+                owner.last_error = Owner.ERROR_TOKEN_INVALID
+                owner.save()
+                raise TokenInvalidError()                    
+            
+        logger.info('Using token: {}'.format(token))
+        
+        try:
+            # fetching data from ESI
+            logger.info(add_prefix('Fetching notifications from ESI'))
+            client = esi_client_factory(
+                token=token, 
+                spec_file=get_swagger_spec_path()
+            )
+
+            # get notifications from first page
+            notifications = \
+                client.Character.get_characters_character_id_notifications(
+                    character_id=token.character_id
+                ).result()
+            
+            if settings.DEBUG:
+                # store to disk (for debugging)
+                with open('notifications_raw.json', 'w', encoding='utf-8') as f:
+                    json.dump(
+                        notifications, 
+                        f, 
+                        cls=DjangoJSONEncoder, 
+                        sort_keys=True, 
+                        indent=4
+                    )
+            
+            # determine if notifications have changed by comparing their hashes
+            new_version_hash = hashlib.md5(
+                json.dumps(notifications, cls=DjangoJSONEncoder).encode('utf-8')
+            ).hexdigest()
+            if force_sync or new_version_hash != owner.version_hash:
+                logger.info(add_prefix(
+                    'Storing update with {:,} notifications'.format(
+                        len(notifications)
+                    ))
+                )
+                
+                # update notifications in local DB                
+                with transaction.atomic():                                    
+                    for notification in notifications:                        
+                        notification_type = \
+                            Notification.get_matching_notification_type(
+                                notification['type']
+                            )
+                        if notification_type:
+                            sender_type = \
+                                NotificationEntity.get_matching_entity_type(
+                                    notification['sender_type']
+                                )
+                            sender, _ = NotificationEntity.objects.get_or_create(
+                                id=notification['sender_id'],
+                                defaults={
+                                    'entity_type': sender_type
+                                }
+                            )                        
+                            text = notification['text'] \
+                                if 'text' in notification else None
+                            is_read = notification['is_read'] \
+                                if 'is_read' in notification else None
+                            obj = Notification.objects.update_or_create(
+                                notification_id=notification['notification_id'],
+                                owner=owner,
+                                defaults={
+                                    'sender': sender,
+                                    'timestamp': notification['timestamp'],
+                                    'notification_type': notification_type,
+                                    'text': text,
+                                    'is_read': is_read,
+                                    'last_updated': owner.last_sync,
+                                }
+                            )                        
+                    owner.version_hash = new_version_hash                
+                    owner.save()
+                    success = True
+
+                owner.last_error = Owner.ERROR_NONE
+                owner.save()
+
+            else:
+                logger.info(add_prefix('No new notifications'))
+                success = True
+
+            
+        except Exception as ex:
+                logger.error(add_prefix(
+                    'An unexpected error ocurred {}'. format(ex)
+                ))                                
+                owner.last_error = Owner.ERROR_UNKNOWN
+                owner.save()
+                raise ex
+
+    except Exception as ex:
+        success = False              
+    else:
+        success = True
+
+    if user_pk:
+        error_code = None
+        try:
+            message = 'Fetching notifications for "{}" {}.\n'.format(
+                owner.corporation.corporation_name,
+                'completed successfully' if success else 'has failed'
+            )
+            if success:
+                message += '{:,} notifications fetched.'.format(
+                    owner.structure_set.count()
+                )
+            else:
+                message += 'Error code: {}'.format(error_code)
+            
+            notify(
+                user=User.objects.get(pk=user_pk),
+                title='Alliance Structures: Notification sync for {}: {}'.format(
+                   owner.corporation.corporation_name,
+                    'OK' if success else 'FAILED'
+                ),
+                message=message,
+                level='success' if success else 'danger'
+            )
+        except Exception as ex:
+            logger.error(add_prefix(
+                'An unexpected error ocurred while trying to '
+                + 'report to user: {}'. format(ex)
+            ))
+    
+    return success

@@ -202,15 +202,20 @@ def add_structure_owner(request, token):
             owner_pk=owner.pk,
             force_sync=True,
             user_pk=request.user.pk
-        )        
+        )
+        tasks.update_notifications_for_owner.delay(            
+            owner_pk=owner.pk,
+            force_sync=True,
+            user_pk=request.user.pk
+        )
         messages_plus.success(
             request,             
             '<strong>{}</strong> has been added '.format(owner)
             + 'with <strong>{}</strong> as sync character. '.format(
                     owner.character.character.character_name, 
                 )                        
-            + 'We have started fetching structures for this corporation. '
-            + 'You will receive a report once it is completed.'
+            + 'We have started fetching structures and notifications for this corporation. '
+            + 'You will receive a reports for both once completed.'
         )
     return redirect('structures:index')
 
