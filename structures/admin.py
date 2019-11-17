@@ -93,6 +93,7 @@ class NotificationAdmin(admin.ModelAdmin):
         'webhook',
         'is_sent'
     )
+    list_filter = ( 'owner', 'notification_type', 'is_sent')
     actions = ['send_to_webhook']
 
     def webhook(self, obj):
@@ -101,9 +102,10 @@ class NotificationAdmin(admin.ModelAdmin):
     def send_to_webhook(self, request, queryset):
                         
         for obj in queryset:            
-            obj.send_to_webhook()
-            text = 'Notification {} was send to webhook'.format(
-                obj.notification_id
+            tasks.send_notification.delay(obj.pk)
+            text = 'Initiated sending of notification {} to webhook {}'.format(
+                obj.notification_id,
+                obj.owner.webhook
             )
             
             self.message_user(

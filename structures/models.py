@@ -1,6 +1,9 @@
 import logging
 from time import sleep
+import yaml
+import datetime
 
+import pytz
 import dhooks_lite
 
 from django.db import models, transaction
@@ -8,9 +11,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
+from esi.clients import esi_client_factory
 
+from . import evelinks
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
-    EveConstellationManager, EveSolarSystemManager
+    EveConstellationManager, EveSolarSystemManager, NotificationEntityManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 
@@ -50,7 +55,9 @@ class Webhook(models.Model):
         default=TYPE_DISCORD,        
         help_text='type of this webhook'
     )
-    url = models.TextField(        
+    url = models.CharField(
+        max_length=255,      
+        unique=True,
         help_text='URL of this webhook, e.g. https://discordapp.com/api/webhooks/123456/abcdef'
     )
     notes = models.TextField(
@@ -249,6 +256,12 @@ class EveType(models.Model):
     
     def __str__(self):
         return self.name
+
+    def icon_url(self, size=64):
+        return evelinks.get_type_image_url(
+            self.id,
+            size
+        )
 
     @property
     def is_poco(self):
@@ -493,6 +506,8 @@ class NotificationEntity(models.Model):
         blank=True
     )
 
+    objects = NotificationEntityManager()
+
     def __str__(self):
         return str(self.id)
 
@@ -512,19 +527,25 @@ class NotificationEntity(models.Model):
 
 class Notification(models.Model):
     """An EVE Online notification about structures"""
-
-    TYPE_STRUCTURE_ANCHORING = 1
-    TYPE_STRUCTURE_DESTROYED = 2
-    TYPE_STRUCTURE_FUEL_ALERT = 3
-    TYPE_STRUCTURE_LOST_ARMOR = 4
-    TYPE_STRUCTURE_LOST_SHIELD = 5
-    TYPE_STRUCTURE_ONLINE = 6
-    TYPE_STRUCTURE_SERVICES_OFFLINE = 7
-    TYPE_STRUCTURE_UNANCHORING = 8
-    TYPE_STRUCTURE_UNDER_ATTACK = 9
-    TYPE_STRUCTURE_WENT_HIGH_POWER = 10
-    TYPE_STRUCTURE_WENT_LOW_POWER = 11  
-    TYPE_STRUCTURE_REINFORCEMENT_CHANGED = 11
+    
+    EMBED_COLOR_INFO = 0x5bc0de
+    EMBED_COLOR_SUCCESS = 0x5cb85c
+    EMBED_COLOR_WARNING = 0xf0ad4e
+    EMBED_COLOR_DANGER = 0xd9534f
+    
+    TYPE_STRUCTURE_ANCHORING = 501
+    TYPE_STRUCTURE_DESTROYED = 502
+    TYPE_STRUCTURE_FUEL_ALERT = 503
+    TYPE_STRUCTURE_LOST_ARMOR = 504
+    TYPE_STRUCTURE_LOST_SHIELD = 505
+    TYPE_STRUCTURE_ONLINE = 506
+    TYPE_STRUCTURE_SERVICES_OFFLINE = 507
+    TYPE_STRUCTURE_UNANCHORING = 508
+    TYPE_STRUCTURE_UNDER_ATTACK = 509
+    TYPE_STRUCTURE_WENT_HIGH_POWER = 510
+    TYPE_STRUCTURE_WENT_LOW_POWER = 511  
+    TYPE_STRUCTURE_REINFORCEMENT_CHANGED = 512
+    TYPE_OWNERSHIP_TRANSFERRED = 513
 
     TYPE_CHOICES = [
         (TYPE_STRUCTURE_ANCHORING, 'StructureAnchoring'),
@@ -538,7 +559,8 @@ class Notification(models.Model):
         (TYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
         (TYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
         (TYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),        
-        (TYPE_STRUCTURE_REINFORCEMENT_CHANGED, 'StructuresReinforcementChanged'),        
+        (TYPE_STRUCTURE_REINFORCEMENT_CHANGED, 'StructuresReinforcementChanged'),
+        (TYPE_OWNERSHIP_TRANSFERRED, 'OwnershipTransferred'),        
     ]
 
     notification_id = models.BigIntegerField(        
@@ -576,6 +598,197 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.notification_id)
 
+    def _generate_embed(self) -> dhooks_lite.Embed:
+        """generates a Discord embed for this notification"""
+        def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
+            text = '[{}]({}) ({})'.format(
+                solar_system.name,
+                evelinks.get_entity_profile_url_by_name(
+                    evelinks.ESI_CATEGORY_SOLARSYSTEM,
+                    solar_system.name
+                ),
+                solar_system.eve_constellation.eve_region.name
+            )
+            return text
+
+        def ldap_datetime_2_dt(ldap_dt: int) -> datetime:
+            """converts ldap time to datatime"""    
+            return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
+                (ldap_dt / 10000000) - 11644473600
+            ))
+
+        def ldap_timedelta_2_timedelta(ldap_td: int) -> datetime.timedelta:
+            """converts a ldap timedelta into a dt timedelta"""
+            return datetime.timedelta(microsecond=ldap_td / 10)
+
+        def gen_alliance_link(alliance_name):
+            return '[{}]({})'.format(
+                alliance_name,
+                evelinks.get_entity_profile_url_by_name(
+                    evelinks.ESI_CATEGORY_ALLIANCE,
+                    alliance_name
+            ))
+        
+        def gen_corporation_link(corporation_name):
+            return '[{}]({})'.format(
+                corporation_name,
+                evelinks.get_entity_profile_url_by_name(
+                    evelinks.ESI_CATEGORY_CORPORATION,
+                    corporation_name
+            ))
+
+        def get_attacker_name(self, parsed_text):
+            """returns the attacker name from a parsed_text"""
+            if "allianceName" in parsed_text:               
+                name = gen_alliance_link(parsed_text['allianceName'])
+            elif "corpName" in parsed_text:
+                name = gen_corporation_link(parsed_text['corpName'])
+            else:
+                name = "(unknown)"
+
+            return name
+
+        parsed_text = yaml.safe_load(self.text)        
+        
+        if self.notification_type in [
+            self.TYPE_STRUCTURE_FUEL_ALERT,
+            self.TYPE_STRUCTURE_SERVICES_OFFLINE,
+            self.TYPE_STRUCTURE_WENT_LOW_POWER,
+            self.TYPE_STRUCTURE_WENT_HIGH_POWER,
+            self.TYPE_STRUCTURE_UNANCHORING,
+            self.TYPE_STRUCTURE_UNDER_ATTACK,
+            self.TYPE_STRUCTURE_LOST_SHIELD,
+            self.TYPE_STRUCTURE_LOST_ARMOR,
+            self.TYPE_STRUCTURE_DESTROYED
+        ]:
+            structure = Structure.objects\
+                .get(id=parsed_text['structureID'])
+
+            thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
+
+            description = 'The {} **{}** in {} '.format(
+                structure.eve_type.name, 
+                structure.name,
+                gen_solar_system_text(structure.eve_solar_system)
+            )
+
+            if self.notification_type == self.TYPE_STRUCTURE_FUEL_ALERT:
+                title = 'Structure fuel alert'
+                description += 'has less then 24hrs fuel left.'
+                color = self.EMBED_COLOR_DANGER
+
+            elif self.notification_type == self.TYPE_STRUCTURE_SERVICES_OFFLINE:
+                services_list = '\n'.join([
+                    x.name 
+                    for x in structure.structureservice_set.all().order_by('name')
+                ])
+                title = 'Structure services off-line'
+                description += 'has all services off-lined:\n*{}*'.format(
+                        services_list
+                    )
+                color = self.EMBED_COLOR_DANGER
+
+            elif self.notification_type == self.TYPE_STRUCTURE_WENT_LOW_POWER:
+                title = 'Structure low power'
+                description += 'went to **low power** mode.'
+                color = self.EMBED_COLOR_WARNING
+
+            elif self.notification_type == self.TYPE_STRUCTURE_WENT_HIGH_POWER:
+                title = 'Structure full power'
+                description += 'went to **full power** mode.'
+                color = self.EMBED_COLOR_SUCCESS
+
+            elif self.notification_type == self.TYPE_STRUCTURE_UNANCHORING:
+                title = 'Structure un-anchoring'            
+                unanchored_at = self.timestamp \
+                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                description += 'has started un-anchoring. '\
+                    + 'It will be fully un-anchored at {}'.format(unanchored_at)
+                color = self.EMBED_COLOR_SUCCESS
+
+            elif self.notification_type == self.TYPE_STRUCTURE_UNDER_ATTACK:
+                title = 'Structure under attack'
+                description = 'is under attack by {}.'.format(
+                    get_attacker_name(parsed_text)
+                )
+                color = self.EMBED_COLOR_DANGER
+
+            elif self.notification_type == self.TYPE_STRUCTURE_LOST_SHIELD:
+                title = 'Structure lost shield'
+                timer_ends_at = self.timestamp \
+                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                description = 'has lost its shields. Armor timer end at {}.'.format(
+                    timer_ends_at
+                )
+                color = self.EMBED_COLOR_DANGER
+
+            elif self.notification_type == self.TYPE_STRUCTURE_LOST_ARMOR:
+                title = 'Structure lost armor'
+                timer_ends_at = self.timestamp \
+                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                description = 'has lost its shields. Hull timer end at {}.'.format(
+                    timer_ends_at
+                )
+                color = self.EMBED_COLOR_DANGER
+
+            elif self.notification_type == self.TYPE_STRUCTURE_DESTROYED:
+                title = 'Structure destroyed'
+                description = 'has been destroyed.'
+                color = self.EMBED_COLOR_DANGER
+
+        else:
+            if self.notification_type == self.TYPE_OWNERSHIP_TRANSFERRED:
+                client = esi_client_factory()
+                structure_type, _ = EveType.objects.get_or_create_esi(
+                    parsed_text['structureTypeID'],
+                    client
+                )
+                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                    parsed_text['solarSystemID'],
+                    client
+                )
+                description = 'The {} **{}** in {} '.format(
+                    structure_type.name,
+                    parsed_text['structureName'],
+                    gen_solar_system_text(solar_system)
+                )
+                from_corporation, _ = \
+                    NotificationEntity.objects.get_or_create_esi(
+                        parsed_text['oldOwnerCorpID'],
+                        client
+                    )
+                to_corporation, _ = \
+                    NotificationEntity.objects.get_or_create_esi(
+                        parsed_text['newOwnerCorpID'],
+                        client
+                    )
+                character, _ = \
+                    NotificationEntity.objects.get_or_create_esi(
+                        parsed_text['charID'],
+                        client
+                    )
+                description += 'has been transferred from {} to {} by {}.'\
+                    .format(
+                        gen_corporation_link(from_corporation.name),
+                        gen_corporation_link(to_corporation.name),
+                        character.name
+                )
+                title = 'Ownership transferred'
+                color = self.EMBED_COLOR_INFO
+                thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+            
+            else:
+                raise NotImplementedError()
+                
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=thumbnail,
+            timestamp=self.timestamp
+        )
+
+
     def send_to_webhook(self):
         """sends this notification to the configured webhook"""
         if self.owner.webhook:
@@ -599,14 +812,17 @@ class Notification(models.Model):
                 )))                
                 
                 desc = self.text
-                embed = dhooks_lite.Embed(
-                    description=desc,
-                    timestamp=self.timestamp
-                )                
-                                                
-                hook.execute(embeds=[embed]) 
-                self.is_sent = True
-                self.save()
+                try:
+                    embed = self._generate_embed()         
+                except Exception as ex:
+                    logger.warning(add_prefix(
+                        'Failed to generate embed: {}'.format(ex)
+                    ))
+                    raise ex
+                else:                                                
+                    hook.execute(embeds=[embed])
+                    self.is_sent = True
+                    self.save()
 
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:

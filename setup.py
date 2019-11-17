@@ -37,6 +37,7 @@ setup(
     ],
     install_requires=[ 
         'dhooks-lite',
-        'django-navhelper',        
+        'django-navhelper',
+        'pytz'
     ]
 )

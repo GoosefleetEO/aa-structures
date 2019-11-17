@@ -1,0 +1,167 @@
+{    
+    "1045790513": {
+        "id": 1045790513,
+        "type": "OwnershipTransferred",
+        "senderId": 1000125,
+        "senderType": "corporation",
+        "timestamp": 1559589000,
+        "text": "charID: 93330670\nnewOwnerCorpID: 98570034\noldOwnerCorpID: 98394960\nsolarSystemID: 30003068\nstructureID: 1025146539197\nstructureName: Kourmonen - Eve is Dark and Full of Sweg\nstructureTypeID: 35832\n",
+        "isRead": true,
+        "textParsed": {
+            "charID": 93330670,
+            "newOwnerCorpID": 98570034,
+            "oldOwnerCorpID": 98394960,
+            "solarSystemID": 30003068,
+            "structureID": 1025146539197,
+            "structureName": "Kourmonen - Eve is Dark and Full of Sweg",
+            "structureTypeID": 35832
+        }
+    },
+    "986823936": {
+        "id": 986823936,
+        "type": "StructureServicesOffline",
+        "senderId": 1000137,
+        "senderType": "corporation",
+        "timestamp": 1550376000,
+        "text": "listOfServiceModuleIDs:\n- 35894\nsolarsystemID: 30004984\nstructureID: &id001 1027529291443\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "textParsed": {
+            "listOfServiceModuleIDs": [
+                35894
+            ],
+            "solarsystemID": 30004984,
+            "structureID": "&id001 1027529291443",
+            "structureShowInfoData": [
+                "showinfo",
+                35832,
+                "*id001"
+            ],
+            "structureTypeID": 35832
+        }
+    },
+    "1007661575": {
+        "id": 1007661575,
+        "type": "CharLeftCorpMsg",
+        "senderId": 773530765,
+        "senderType": "character",
+        "timestamp": 1553637000,
+        "text": "charID: 773530765\ncorpID: 98394960\n",
+        "textParsed": {
+            "charID": 773530765,
+            "corpID": 98394960
+        }
+    },
+    "1007801053": {
+        "id": 1007801053,
+        "type": "StructureUnderAttack",
+        "senderId": 1000137,
+        "senderType": "corporation",
+        "timestamp": 1553665440,
+        "text": "allianceID: 99006625\nallianceLinkData:\n- showinfo\n- 16159\n- 99006625\nallianceName: Pen Is Out\narmorPercentage: 98.65129050962584\ncharID: 940357753\ncorpLinkData:\n- showinfo\n- 2\n- 98406814\ncorpName: Victory or Whatever\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30004984\nstructureID: &id001 1027529291443\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "textParsed": {
+            "allianceID": 99006625,
+            "allianceLinkData": [
+                "showinfo",
+                16159,
+                99006625
+            ],
+            "allianceName": "Pen Is Out",
+            "armorPercentage": 98.65129050962584,
+            "charID": 940357753,
+            "corpLinkData": [
+                "showinfo",
+                2,
+                98406814
+            ],
+            "corpName": "Victory or Whatever",
+            "hullPercentage": 100,
+            "shieldPercentage": 4.704536686417284e-14,
+            "solarsystemID": 30004984,
+            "structureID": "&id001 1027529291443",
+            "structureShowInfoData": [
+                "showinfo",
+                35832,
+                "*id001"
+            ],
+            "structureTypeID": 35832
+        }
+    },
+    "1007802916": {
+        "id": 1007802916,
+        "type": "StructureLostArmor",
+        "senderId": 1000137,
+        "senderType": "corporation",
+        "timestamp": 1553665800,
+        "text": "solarsystemID: 30004984\nstructureID: &id001 1027529291443\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n",
+        "textParsed": {
+            "solarsystemID": 30004984,
+            "structureID": "&id001 1027529291443",
+            "structureShowInfoData": [
+                "showinfo",
+                35832,
+                "*id001"
+            ],
+            "structureTypeID": 35832,
+            "timeLeft": 7333797161804,
+            "timestamp": 131988727900000000,
+            "vulnerableTime": 18000000000
+        }
+    },
+    "1027272058": {
+        "id": 1027272058,
+        "type": "CharAppAcceptMsg",
+        "senderId": 2112124363,
+        "senderType": "character",
+        "timestamp": 1556828760,
+        "text": "applicationText: ''\ncharID: 2112124363\ncorpID: 98394960\n",
+        "textParsed": {
+            "applicationText": "",
+            "charID": 2112124363,
+            "corpID": 98394960
+        }
+    },
+    "1033521794": {
+        "id": 1033521794,
+        "type": "StructureFuelAlert",
+        "senderId": 1000137,
+        "senderType": "corporation",
+        "timestamp": 1557749400,
+        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30004984\nstructureID: &id001 1027529291443\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "isRead": true,
+        "textParsed": {
+            "listOfTypesAndQty": [
+                154,
+                4312
+            ],
+            "solarsystemID": 30004984,
+            "structureID": "&id001 1027529291443",
+            "structureShowInfoData": [
+                "showinfo",
+                35832,
+                "*id001"
+            ],
+            "structureTypeID": 35832
+        }
+    },
+    "1056803780": {
+        "id": 1056803780,
+        "type": "WarDeclared",
+        "senderId": 1000125,
+        "senderType": "corporation",
+        "timestamp": 1561243440,
+        "text": "againstID: 99007974\ncost: 100000000\ndeclaredByID: 99001134\ndelayHours: 24\nhostileState: false\ntimeStarted: 132058033800000000\nwarHQ: <b>Mahtista - RLCMAK<\/b>\nwarHQ_IdType:\n- 1030817133575\n- 35832\n",
+        "isRead": true,
+        "textParsed": {
+            "againstID": 99007974,
+            "cost": 100000000,
+            "declaredByID": 99001134,
+            "delayHours": 24,
+            "hostileState": "false",
+            "timeStarted": 132058033800000000,
+            "warHQ": "<b>Mahtista - RLCMAK<\/b>",
+            "warHQ_IdType": [
+                1030817133575,
+                35832
+            ]
+        }
+    }
+}

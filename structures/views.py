@@ -32,7 +32,7 @@ def structure_list_data(request):
     else:
         if request.user.has_perm('structures.view_alliance_structures'):
             alliance = EveAllianceInfo.objects.get(
-                alliance_id=request.user.main.character.alliance_id
+                alliance_id=request.user.profile.main_character.alliance_id
             )
             corporations = alliance.evecorporationinfo_set.all()          
         else:
@@ -92,10 +92,8 @@ def structure_list_data(request):
         
         # type icon
         row['type_icon'] = '<img src="{}"/>'.format(
-            evelinks.get_type_image_url(
-                structure.eve_type_id,
-                32
-        ))        
+            structure.eve_type.icon_url()
+        )        
         
         # type name              
         row['type_name'] = structure.eve_type.name
@@ -110,7 +108,7 @@ def structure_list_data(request):
 
         # services
         services = ''        
-        for service in structure.structureservice_set.all():
+        for service in structure.structureservice_set.all().order_by('name'):
             if service.state == StructureService.STATE_OFFLINE:
                 service_name = '<del>{}</del>'. format(service.name)
             else:

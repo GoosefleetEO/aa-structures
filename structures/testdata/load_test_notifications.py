@@ -1,4 +1,3 @@
-# scripts generates large amount of random structures for load testing
 import os
 import sys
 import inspect
@@ -30,7 +29,7 @@ from esi.clients import esi_client_factory
 
 from structures.models import *
 
-print('generate_structure - scripts generates large amount of random structures for load testing ')
+print('load_test_notifications - script loads test notification into the local database ')
 
 # create structures
 print('Creating base data ...')

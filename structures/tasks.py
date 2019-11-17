@@ -38,9 +38,7 @@ def update_structures_for_owner(
         owner = Owner.objects.get(pk=owner_pk)
     except Owner.DoesNotExist:
         raise Owner.DoesNotExist(
-            "Requested owner with pk {} does not exist".format(
-                owner
-            )
+            "Requested owner with pk {} does not exist".format(owner_pk)
         )
 
     add_prefix = make_logger_prefix(owner)
@@ -141,7 +139,13 @@ def update_structures_for_owner(
 
             if settings.DEBUG:
                 # store to disk (for debugging)
-                with open('structures_raw.json', 'w', encoding='utf-8') as f:
+                with open(
+                    'structures_raw_{}.json'.format(
+                        owner.corporation.corporation_id
+                    ), 
+                    'w', 
+                    encoding='utf-8'
+                ) as f:
                     json.dump(
                         structures, 
                         f, 
@@ -170,13 +174,13 @@ def update_structures_for_owner(
                             structure['name']
                         ).group(1)                        
                         eve_type, _ = EveType.objects.get_or_create_esi(
-                            client,
-                            structure['type_id']
+                            structure['type_id'],
+                            client
                         )
                         eve_solar_system, _ = \
                             EveSolarSystem.objects.get_or_create_esi(
-                                client,
-                                structure['system_id']
+                                structure['system_id'],
+                                client
                         )
                         fuel_expires = structure['fuel_expires'] \
                             if 'fuel_expires' in structure else None
@@ -320,9 +324,7 @@ def update_notifications_for_owner(
         owner = Owner.objects.get(pk=owner_pk)
     except Owner.DoesNotExist:
         raise Owner.DoesNotExist(
-            "Requested owner with pk {} does not exist".format(
-                owner
-            )
+            "Requested owner with pk {} does not exist".format(owner_pk)
         )
 
     add_prefix = make_logger_prefix(owner)
@@ -401,7 +403,13 @@ def update_notifications_for_owner(
             
             if settings.DEBUG:
                 # store to disk (for debugging)
-                with open('notifications_raw.json', 'w', encoding='utf-8') as f:
+                with open(
+                    'notifications_raw_{}.json'.format(
+                        owner.corporation.corporation_id
+                    ), 
+                    'w', 
+                    encoding='utf-8'
+                ) as f:
                     json.dump(
                         notifications, 
                         f, 
@@ -510,3 +518,17 @@ def update_notifications_for_owner(
             ))
     
     return success
+
+
+@shared_task
+def send_notification(notification_pk):
+    try:
+        notification = Notification.objects.get(pk=notification_pk)
+    except Notification.DoesNotExist:
+        raise Notification.DoesNotExist(
+            "Requested notification with pk {} does not exist".format(
+                notification_pk
+            )
+        )
+    
+    notification.send_to_webhook()
