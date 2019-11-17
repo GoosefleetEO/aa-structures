@@ -66,6 +66,10 @@ class Webhook(models.Model):
         blank=True,        
         help_text='you can add notes about this webhook here if you want'
     )
+    is_default = models.BooleanField(        
+        default=False,
+        help_text='default webhook for all newly added owners'
+    )
 
     def __str__(self):
         return self.name
@@ -544,7 +548,7 @@ class Notification(models.Model):
     TYPE_STRUCTURE_UNDER_ATTACK = 509
     TYPE_STRUCTURE_WENT_HIGH_POWER = 510
     TYPE_STRUCTURE_WENT_LOW_POWER = 511  
-    TYPE_STRUCTURE_REINFORCEMENT_CHANGED = 512
+    TYPE_STRUCTURE_REINFORCE_CHANGED = 512
     TYPE_OWNERSHIP_TRANSFERRED = 513
 
     TYPE_CHOICES = [
@@ -559,7 +563,6 @@ class Notification(models.Model):
         (TYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
         (TYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
         (TYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),        
-        (TYPE_STRUCTURE_REINFORCEMENT_CHANGED, 'StructuresReinforcementChanged'),
         (TYPE_OWNERSHIP_TRANSFERRED, 'OwnershipTransferred'),        
     ]
 
@@ -661,6 +664,8 @@ class Notification(models.Model):
             self.TYPE_STRUCTURE_LOST_ARMOR,
             self.TYPE_STRUCTURE_DESTROYED
         ]:
+            # with these types we can assume we have the corresponding
+            # structure in our database
             structure = Structure.objects\
                 .get(id=parsed_text['structureID'])
 
@@ -671,6 +676,11 @@ class Notification(models.Model):
                 structure.name,
                 gen_solar_system_text(structure.eve_solar_system)
             )
+
+            if self.notification_type == self.StructureOnline:
+                title = 'Structure online'
+                description += 'is now online.'
+                color = self.EMBED_COLOR_SUCCESS
 
             if self.notification_type == self.TYPE_STRUCTURE_FUEL_ALERT:
                 title = 'Structure fuel alert'
@@ -704,7 +714,7 @@ class Notification(models.Model):
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'has started un-anchoring. '\
                     + 'It will be fully un-anchored at {}'.format(unanchored_at)
-                color = self.EMBED_COLOR_SUCCESS
+                color = self.EMBED_COLOR_INFO
 
             elif self.notification_type == self.TYPE_STRUCTURE_UNDER_ATTACK:
                 title = 'Structure under attack'
@@ -743,6 +753,7 @@ class Notification(models.Model):
                     parsed_text['structureTypeID'],
                     client
                 )
+                thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
                 solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                     parsed_text['solarSystemID'],
                     client
@@ -774,9 +785,32 @@ class Notification(models.Model):
                         character.name
                 )
                 title = 'Ownership transferred'
-                color = self.EMBED_COLOR_INFO
-                thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+                color = self.EMBED_COLOR_INFO                
             
+            elif self.notification_type == self.TYPE_STRUCTURE_ANCHORING:
+                client = esi_client_factory()
+                structure_type, _ = EveType.objects.get_or_create_esi(
+                    parsed_text['structureTypeID'],
+                    client
+                )
+                thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                    parsed_text['solarSystemID'],
+                    client
+                )
+                description = 'An {} has started anchoring in {}. '.format(
+                    parsed_text['structureName'],
+                    gen_solar_system_text(solar_system)
+                )                
+                unanchored_at = self.timestamp \
+                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                description += 'The anchoring timer ends at {}'.format(
+                    unanchored_at
+                )
+                
+                title = 'Structure anchording'
+                color = self.EMBED_COLOR_INFO
+
             else:
                 raise NotImplementedError()
                 

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.conf import settings
 
 from .models import *
 from . import tasks
@@ -82,6 +83,18 @@ class StructureAdmin(admin.ModelAdmin):
 
     inlines = (StructureAdminInline, )
 
+    def has_add_permission(self, request):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
+    def has_change_permission(self, request, obj=None):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
@@ -115,7 +128,30 @@ class NotificationAdmin(admin.ModelAdmin):
     
     send_to_webhook.short_description = "Send to configured webhook"
 
+    def has_add_permission(self, request):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
+    def has_change_permission(self, request, obj=None):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
 
 @admin.register(Webhook)
 class WebhookAdmin(admin.ModelAdmin):
     list_display = ('name', 'webhook_type')
+
+
+@admin.register(NotificationEntity)
+class NotificationEntityAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 
+        'name', 
+        'entity_type',         
+    )
+    list_filter = ( 'entity_type', )
+    list_display_links = None

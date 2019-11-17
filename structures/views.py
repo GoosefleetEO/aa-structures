@@ -172,8 +172,7 @@ def add_structure_owner(request, token):
     except CharacterOwnership.DoesNotExist:
         messages_plus.error(
             request,
-            'You can only use your main or alt characters to add '
-            + ' corporations. '
+            'You can only use your main or alt characters to add corporations.'
             + 'However, character <strong>{}</strong> is neither. '.format(
                 token_char.character_name
             )
@@ -189,11 +188,16 @@ def add_structure_owner(request, token):
             corporation = EveCorporationInfo.objects.create_corporation(
                 token_char.corporation_id
             )            
-
+        
+        default_webhook = Webhook.objects\
+            .filter(is_default__exact=True)\
+            .first()
+        
         owner, created = Owner.objects.update_or_create(
             corporation=corporation,
             defaults={
-                'character': owned_char
+                'character': owned_char,
+                'webhook': default_webhook
             }
         )          
         tasks.update_structures_for_owner.delay(            

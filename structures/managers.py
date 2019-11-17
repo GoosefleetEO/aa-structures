@@ -292,6 +292,7 @@ class EveSolarSystemManager(models.Manager):
         
         return obj, created
 
+
 class NotificationEntityManager(models.Manager):
     
     def get_or_create_esi(

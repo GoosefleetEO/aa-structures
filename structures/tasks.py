@@ -441,12 +441,20 @@ def update_notifications_for_owner(
                                 NotificationEntity.get_matching_entity_type(
                                     notification['sender_type']
                                 )
-                            sender, _ = NotificationEntity.objects.get_or_create(
-                                id=notification['sender_id'],
-                                defaults={
-                                    'entity_type': sender_type
-                                }
-                            )                        
+                            if sender_type != NotificationEntity.TYPE_OTHER:
+                                sender, _ = NotificationEntity\
+                                .objects.get_or_create_esi(
+                                    notification['sender_id'],
+                                    client
+                                )
+                            else:
+                                sender, _ = NotificationEntity\
+                                    .objects.get_or_create(
+                                        id=notification['sender_id'],
+                                        defaults={
+                                            'entity_type': sender_type
+                                        }
+                                    )
                             text = notification['text'] \
                                 if 'text' in notification else None
                             is_read = notification['is_read'] \
