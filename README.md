@@ -2,7 +2,7 @@
 
 This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA) that adds support for structures
 
-**Status: IN DEVELOPMENT**
+**Status: IN DEVELOPMENT - NOT YET READY FOR PRODUCTION**
 
 ## Contents
 

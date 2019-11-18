@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 from allianceauth.services.hooks import MenuItemHook, UrlHook
 from allianceauth import hooks
 
-from . import urls
+from . import urls, __title__
 
 
 class StructuresMenuItem(MenuItemHook):
@@ -12,7 +12,7 @@ class StructuresMenuItem(MenuItemHook):
         # setup menu entry for sidebar
         MenuItemHook.__init__(
             self,
-            _('Alliance Structures'),
+            _(__title__),
             'fa fa-building fa-fw',
             'structures:index',
             navactive=['structures:index']

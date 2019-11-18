@@ -2,6 +2,7 @@ import logging
 from time import sleep
 import yaml
 import datetime
+import json
 
 import pytz
 import dhooks_lite
@@ -13,7 +14,7 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from esi.clients import esi_client_factory
 
-from . import evelinks
+from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, NotificationEntityManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
@@ -68,11 +69,56 @@ class Webhook(models.Model):
     )
     is_default = models.BooleanField(        
         default=False,
-        help_text='default webhook for all newly added owners'
+        help_text='whether this webhook is automatically set as '\
+            + 'default webhook for all newly added owners'
+    )
+    is_active = models.BooleanField(        
+        default=False,
+        help_text='whether notifications are sent to this webhook'
     )
 
     def __str__(self):
         return self.name
+
+    def send_new_notifications(self, send_all = False):
+        """Send new notifications to this webhook"""
+        
+        add_prefix = make_logger_prefix(str(self))   
+        if self.webhook:
+            q = self.notification_set
+
+            if not send_all:
+                q = q.filter(is_sent__exact=False)
+            
+            q = q.select_related()
+
+            if q.count() > 0:
+                logger.info(add_prefix(
+                    'Trying to send {} notifications'.format(q.count())
+                ))
+                
+                for notification in q:
+                    notification.send_to_webhook()
+                    sleep(1)
+            else:
+                logger.info(add_prefix('No new notifications to send'))
+        
+        else:
+            logger.info(add_prefix('Discord webhook not configured - '
+                + 'skipping sending notifications'))
+
+    def send_test_notification(self) -> dict:
+        """Sends a test notification to this webhook and returns send report"""
+        hook = dhooks_lite.Webhook(
+            self.url            
+        )
+        send_report = hook.execute(
+            'This is a test notification from **{}**.\n'.format(__title__)
+            + 'The webhook appears to be correctly configured.', 
+            wait_for_response=True
+        )
+        send_report_json = json.dumps(send_report, indent=4, sort_keys=True)
+        return send_report_json
 
 
 class Owner(models.Model):
@@ -142,33 +188,6 @@ class Owner(models.Model):
     def __str__(self):
         return str(self.corporation.corporation_name)
     
-    def send_notifications_to_webhook(self, force_sent = False):
-        """Send notifications to configured webhook"""
-        
-        add_prefix = make_logger_prefix(str(self))   
-        if self.webhook:
-            q = self.notification_set
-
-            if not force_sent:
-                q = q.filter(is_sent__exact=False)
-            
-            q = q.select_related()
-
-            if q.count() > 0:
-                logger.info(add_prefix('Trying to send {} notifications'.format(
-                    q.count()
-                )))
-                
-                for notification in q:
-                    notification.send_to_webhook()
-                    sleep(1)
-            else:
-                logger.info(add_prefix('No new notifications to send'))
-        
-        else:
-            logger.info(add_prefix('Discord webhook not configured - '
-                + 'skipping sending notifications'))
-
     @classmethod
     def get_esi_scopes(cls) -> list:
         return [
@@ -622,7 +641,7 @@ class Notification(models.Model):
 
         def ldap_timedelta_2_timedelta(ldap_td: int) -> datetime.timedelta:
             """converts a ldap timedelta into a dt timedelta"""
-            return datetime.timedelta(microsecond=ldap_td / 10)
+            return datetime.timedelta(microseconds=ldap_td / 10)
 
         def gen_alliance_link(alliance_name):
             return '[{}]({})'.format(
@@ -677,7 +696,7 @@ class Notification(models.Model):
                 gen_solar_system_text(structure.eve_solar_system)
             )
 
-            if self.notification_type == self.StructureOnline:
+            if self.notification_type == self.TYPE_STRUCTURE_ONLINE:
                 title = 'Structure online'
                 description += 'is now online.'
                 color = self.EMBED_COLOR_SUCCESS
@@ -713,7 +732,8 @@ class Notification(models.Model):
                 unanchored_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'has started un-anchoring. '\
-                    + 'It will be fully un-anchored at {}'.format(unanchored_at)
+                    + 'It will be fully un-anchored at: {}'.format(
+                        unanchored_at.strftime(DATETIME_FORMAT))
                 color = self.EMBED_COLOR_INFO
 
             elif self.notification_type == self.TYPE_STRUCTURE_UNDER_ATTACK:
@@ -727,8 +747,8 @@ class Notification(models.Model):
                 title = 'Structure lost shield'
                 timer_ends_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description = 'has lost its shields. Armor timer end at {}.'.format(
-                    timer_ends_at
+                description = 'has lost its shields. Armor timer end at: {}'.format(
+                    timer_ends_at.strftime(DATETIME_FORMAT)
                 )
                 color = self.EMBED_COLOR_DANGER
 
@@ -736,8 +756,8 @@ class Notification(models.Model):
                 title = 'Structure lost armor'
                 timer_ends_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description = 'has lost its shields. Hull timer end at {}.'.format(
-                    timer_ends_at
+                description = 'has lost its shields. Hull timer end at: {}'.format(
+                    timer_ends_at.strftime(DATETIME_FORMAT)
                 )
                 color = self.EMBED_COLOR_DANGER
 
@@ -795,20 +815,20 @@ class Notification(models.Model):
                 )
                 thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
                 solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    parsed_text['solarSystemID'],
+                    parsed_text['solarsystemID'],
                     client
                 )
-                description = 'An {} has started anchoring in {}. '.format(
-                    parsed_text['structureName'],
+                description = '**{}** has started anchoring in {}. '.format(
+                    structure_type.name,
                     gen_solar_system_text(solar_system)
                 )                
                 unanchored_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += 'The anchoring timer ends at {}'.format(
-                    unanchored_at
+                description += 'The anchoring timer ends at: {}'.format(
+                    unanchored_at.strftime(DATETIME_FORMAT)
                 )
                 
-                title = 'Structure anchording'
+                title = 'Structure anchoring'
                 color = self.EMBED_COLOR_INFO
 
             else:

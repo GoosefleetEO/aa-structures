@@ -3,8 +3,9 @@ import os
 import hashlib
 import json
 import re
+from time import sleep
 
-from celery import shared_task
+from celery import shared_task, group, chain
 
 from django.db import transaction
 from django.conf import settings
@@ -19,6 +20,7 @@ from esi.clients import esi_client_factory
 from esi.errors import TokenExpiredError, TokenInvalidError
 from esi.models import Token
 
+from . import __title__
 from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
 from .models import *
 
@@ -270,11 +272,12 @@ def update_structures_for_owner(
 
     except Exception as ex:
         success = False              
+        error_code = str(ex)
     else:
         success = True
-        
-    if user_pk:
         error_code = None
+
+    if user_pk:        
         try:
             message = 'Syncing of structures for "{}" {}.\n'.format(
                 owner.corporation.corporation_name,
@@ -289,7 +292,8 @@ def update_structures_for_owner(
             
             notify(
                 user=User.objects.get(pk=user_pk),
-                title='Alliance Structures: Structures updated for {}: {}'.format(
+                title='{}: Structures updated for {}: {}'.format(
+                   __title__,
                    owner.corporation.corporation_name,
                     'OK' if success else 'FAILED'
                 ),
@@ -492,12 +496,13 @@ def update_notifications_for_owner(
                 raise ex
 
     except Exception as ex:
-        success = False              
+        success = False
+        error_code = str(ex)
     else:
         success = True
-
-    if user_pk:
         error_code = None
+
+    if user_pk:        
         try:
             message = 'Fetching notifications for "{}" {}.\n'.format(
                 owner.corporation.corporation_name,
@@ -512,7 +517,8 @@ def update_notifications_for_owner(
             
             notify(
                 user=User.objects.get(pk=user_pk),
-                title='Alliance Structures: Notification sync for {}: {}'.format(
+                title='{}: Notification sync for {}: {}'.format(
+                   __title__,
                    owner.corporation.corporation_name,
                     'OK' if success else 'FAILED'
                 ),
@@ -533,10 +539,93 @@ def send_notification(notification_pk):
     try:
         notification = Notification.objects.get(pk=notification_pk)
     except Notification.DoesNotExist:
-        raise Notification.DoesNotExist(
-            "Requested notification with pk {} does not exist".format(
+        logger.error(
+            'Can not sent not existing notification for given pk {}'.format(
                 notification_pk
-            )
+        ))
+    else:    
+        notification.send_to_webhook()
+
+
+@shared_task
+def send_new_notifications_to_webhook(webhook_pk):
+    """sends unsent notifications for given webhook"""    
+    try:
+        webhook = Webhook.objects.get(pk=webhook_pk)
+    except Webhook.DoesNotExist:
+        logger.error(
+            'Can not sent notifications to non existing webhook '
+            + 'with pk {} does not exist'.format(webhook_pk)
         )
+    else:
+        webhook.send_new_notifications()
     
-    notification.send_to_webhook()
+
+@shared_task
+def send_all_new_notifications():
+    """sends all unsent notifications to active webhooks"""
+    for webhook in Webhook.objects.filter(is_active__exact=True):
+        send_new_notifications_to_webhook.delay(webhook)
+
+
+@shared_task
+def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
+    """sends test notification to given webhook"""    
+    
+    add_prefix = make_logger_prefix('test notification')
+    try:
+        webhook = Webhook.objects.get(pk=webhook_pk)
+        add_prefix = make_logger_prefix(webhook)
+        send_report = webhook.send_test_notification()
+        error_code = None        
+    except Exception as ex:
+        send_report = None
+        error_code = str(ex)        
+    
+    success = (error_code == None)
+    if user_pk:        
+        try:
+            message = 'Test notification to webhook "{}" {}.\n'.format(
+                webhook,
+                'completed successfully' if success else 'has failed'
+            )
+            if success:
+                message += 'send report:\n{}'.format(send_report)
+            else:
+                message += 'Error code: {}'.format(error_code)
+            
+            notify(
+                user=User.objects.get(pk=user_pk),
+                title='{}: Test notification to "{}": {}'.format(
+                    __title__,
+                    webhook,
+                    'OK' if success else 'FAILED'
+                ),
+                message=message,
+                level='success' if success else 'danger'
+            )
+        except Exception as ex:
+            logger.error(add_prefix(
+                'An unexpected error ocurred while trying to '
+                + 'report to user: {}'. format(ex)
+            ))
+      
+"""
+@shared_task
+def test_task_a():    
+    sleep(2)
+    
+@shared_task
+def test_task_b():    
+    sleep(3)
+
+@shared_task
+def test_task_c():
+    pass
+
+@shared_task
+def test_canvas():    
+    workflow = chain(test_task_a.si(), test_task_b.si(), test_task_c.si())
+    workflow.delay()
+
+"""

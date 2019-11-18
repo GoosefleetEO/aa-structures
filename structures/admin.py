@@ -143,7 +143,26 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(Webhook)
 class WebhookAdmin(admin.ModelAdmin):
-    list_display = ('name', 'webhook_type')
+    list_display = ('name', 'webhook_type', 'is_default', 'is_active')
+    list_filter = ( 'webhook_type', 'is_active')
+
+    actions = ('test_notification', )
+
+    def test_notification(self, request, queryset):                        
+        for obj in queryset:
+            tasks.send_test_notifications_to_webhook.delay(                
+                obj.pk,
+                user_pk=request.user.pk
+            )            
+            text = 'Initiated sending test notification to webhook "{}".'\
+                .format(obj) + ' You will receive a report on completion.'
+
+            self.message_user(
+                request, 
+                text
+            )
+    
+    test_notification.short_description = "Send test notification to webhook"
 
 
 @admin.register(NotificationEntity)
@@ -155,3 +174,15 @@ class NotificationEntityAdmin(admin.ModelAdmin):
     )
     list_filter = ( 'entity_type', )
     list_display_links = None
+
+    def has_add_permission(self, request):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
+    def has_change_permission(self, request, obj=None):
+        if settings.DEBUG:
+            return True
+        else:
+            return False

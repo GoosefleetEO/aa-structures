@@ -13,7 +13,7 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='allianceauth-structures-plugin',
+    name='aa-structures',
     version=__version__,
     packages=find_packages(),
     include_package_data=True,
@@ -21,8 +21,8 @@ setup(
     description='Structures plugin app for Alliance Auth',
     long_description=long_description,
     long_description_content_type='text/markdown',    
-    author='John Doe',
-    author_email='john.doe@structures.com',
+    author='Erik Kalkoken',
+    author_email='kalkoken87@gmail.com',
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
