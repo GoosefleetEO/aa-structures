@@ -80,33 +80,36 @@ class Webhook(models.Model):
     def __str__(self):
         return self.name
 
-    def send_new_notifications(self, send_all = False):
+    def send_new_notifications(self, send_again = False):
         """Send new notifications to this webhook"""
         
         add_prefix = make_logger_prefix(str(self))   
-        if self.webhook:
-            q = self.notification_set
+        
+        new_notifications_count = 0
+        for owner in self.owner_set.all():
+            q = owner.notification_set
 
-            if not send_all:
+            if not send_again:
                 q = q.filter(is_sent__exact=False)
             
             q = q.select_related()
 
             if q.count() > 0:
+                new_notifications_count += q.count()
                 logger.info(add_prefix(
-                    'Trying to send {} notifications'.format(q.count())
-                ))
+                    'Found {} new notifications for {}'.format(
+                        q.count(), 
+                        owner
+                )))
                 
                 for notification in q:
                     notification.send_to_webhook()
                     sleep(1)
-            else:
-                logger.info(add_prefix('No new notifications to send'))
         
-        else:
-            logger.info(add_prefix('Discord webhook not configured - '
-                + 'skipping sending notifications'))
-
+        if new_notifications_count == 0:
+            logger.info(add_prefix('No new notifications found'))
+    
+    
     def send_test_notification(self) -> dict:
         """Sends a test notification to this webhook and returns send report"""
         hook = dhooks_lite.Webhook(
@@ -704,7 +707,7 @@ class Notification(models.Model):
             if self.notification_type == self.TYPE_STRUCTURE_FUEL_ALERT:
                 title = 'Structure fuel alert'
                 description += 'has less then 24hrs fuel left.'
-                color = self.EMBED_COLOR_DANGER
+                color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == self.TYPE_STRUCTURE_SERVICES_OFFLINE:
                 services_list = '\n'.join([
@@ -874,7 +877,13 @@ class Notification(models.Model):
                     ))
                     raise ex
                 else:                                                
-                    hook.execute(embeds=[embed])
+                    if embed.color == self.EMBED_COLOR_DANGER:
+                        content = '@everyone'
+                    elif embed.color == self.EMBED_COLOR_WARNING:
+                        content = '@here'
+                    else:
+                        content = None
+                    hook.execute(content=content, embeds=[embed])
                     self.is_sent = True
                     self.save()
 

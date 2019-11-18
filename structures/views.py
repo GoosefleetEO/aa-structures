@@ -205,7 +205,7 @@ def add_structure_owner(request, token):
             force_sync=True,
             user_pk=request.user.pk
         )
-        tasks.update_notifications_for_owner.delay(            
+        tasks.fetch_notifications_for_owner.delay(            
             owner_pk=owner.pk,
             force_sync=True,
             user_pk=request.user.pk

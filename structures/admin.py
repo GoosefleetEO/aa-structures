@@ -31,7 +31,7 @@ class OwnerAdmin(admin.ModelAdmin):
     def fetch_notifications(self, request, queryset):
                         
         for obj in queryset:            
-            tasks.update_notifications_for_owner.delay(                
+            tasks.fetch_notifications_for_owner.delay(                
                 obj.pk,
                 force_sync=True,
                 user_pk=request.user.pk
@@ -107,26 +107,55 @@ class NotificationAdmin(admin.ModelAdmin):
         'is_sent'
     )
     list_filter = ( 'owner', 'notification_type', 'is_sent')
-    actions = ['send_to_webhook']
-
+    
     def webhook(self, obj):
         return obj.owner.webhook
 
-    def send_to_webhook(self, request, queryset):
-                        
-        for obj in queryset:            
-            tasks.send_notification.delay(obj.pk)
-            text = 'Initiated sending of notification {} to webhook {}'.format(
-                obj.notification_id,
-                obj.owner.webhook
-            )
-            
-            self.message_user(
-                request, 
-                text
-            )
+    actions = ('mark_as_sent', 'mark_as_unsent', 'send_to_webhook')
+
+    def mark_as_sent(self, request, queryset):                        
+        notifications_count = 0
+        for obj in queryset:
+            obj.is_sent = True
+            obj.save()
+            notifications_count += 1
+
+        self.message_user(
+            request, 
+            '{} notifications marked as sent'.format(notifications_count)
+        )
+
+    mark_as_sent.short_description = "Mark selected notifications as sent"
+
+    def mark_as_unsent(self, request, queryset):                        
+        notifications_count = 0
+        for obj in queryset:
+            obj.is_sent = False
+            obj.save()
+            notifications_count += 1
+
+        self.message_user(
+            request, 
+            '{} notifications marked as unsent'.format(notifications_count)
+        )
+
+    mark_as_unsent.short_description = \
+        "Mark selected notifications as unsent"
     
-    send_to_webhook.short_description = "Send to configured webhook"
+    def send_to_webhook(self, request, queryset):
+        notifications_count = 0
+        for obj in queryset:            
+            tasks.send_notification.delay(obj.pk)            
+            notifications_count += 1
+            
+        self.message_user(
+            request, 
+            'Initiated sending of {} notifications to configured webhooks'.format(
+                notifications_count
+        ))
+    
+    send_to_webhook.short_description = \
+        "Send selected notifications to configured webhook"
 
     def has_add_permission(self, request):
         if settings.DEBUG:
@@ -146,7 +175,31 @@ class WebhookAdmin(admin.ModelAdmin):
     list_display = ('name', 'webhook_type', 'is_default', 'is_active')
     list_filter = ( 'webhook_type', 'is_active')
 
-    actions = ('test_notification', )
+    actions = ('activate', 'deactivate', 'test_notification', )
+
+    def activate(self, request, queryset):                                
+        for obj in queryset:
+            obj.is_active = True
+            obj.save()
+            
+            self.message_user(
+                request, 
+                'You have activated webhook "{}"'.format(obj)
+            )
+
+    activate.short_description = 'Activate selected webhooks'
+
+    def deactivate(self, request, queryset):                        
+        for obj in queryset:
+            obj.is_active = False
+            obj.save()
+            
+            self.message_user(
+                request, 
+                'You have de-activated webhook "{}"'.format(obj)
+            )
+
+    deactivate.short_description = 'Deactivate selected webhooks'
 
     def test_notification(self, request, queryset):                        
         for obj in queryset:
@@ -154,15 +207,14 @@ class WebhookAdmin(admin.ModelAdmin):
                 obj.pk,
                 user_pk=request.user.pk
             )            
-            text = 'Initiated sending test notification to webhook "{}".'\
-                .format(obj) + ' You will receive a report on completion.'
-
             self.message_user(
-                request, 
-                text
+                request,
+                'Initiated sending test notification to webhook "{}".'\
+                    .format(obj) + ' You will receive a report on completion.'
             )
     
-    test_notification.short_description = "Send test notification to webhook"
+    test_notification.short_description = \
+        "Send test notification to selected webhooks"
 
 
 @admin.register(NotificationEntity)

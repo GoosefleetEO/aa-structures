@@ -68,11 +68,18 @@ Configure your AA settings (`local.py`) as follows:
 - Add these lines add to bottom of your settings file:
 
    ```python
-   # settings for standingssync
-   CELERYBEAT_SCHEDULE['structures_update_all'] = {
-       'task': 'structures.tasks.update_all_structures',
-       'schedule': crontab(minute='*/30'),
-   }
+    CELERYBEAT_SCHEDULE['structures_update_all_structures'] = {
+        'task': 'structures.tasks.update_all_structures',
+        'schedule': crontab(minute='*/30'),
+    }
+    CELERYBEAT_SCHEDULE['structures_fetch_all_notifications'] = {
+        'task': 'structures.tasks.fetch_all_notifications',
+        'schedule': crontab(minute='*/5'),
+    }
+    CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
+        'task': 'structures.tasks.send_all_new_notifications',
+        'schedule': crontab(minute='*/1'),
+    }
    ```
 
 ### 4. Finalize installation into AA

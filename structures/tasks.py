@@ -317,7 +317,7 @@ def update_all_structures(force_sync = False):
 
 
 @shared_task
-def update_notifications_for_owner(
+def fetch_notifications_for_owner(
     owner_pk, 
     force_sync: bool = False,    
     user_pk = None
@@ -535,6 +535,13 @@ def update_notifications_for_owner(
 
 
 @shared_task
+def fetch_all_notifications(force_sync = False):
+    """fetch notifications for all owners"""
+    for owner in Owner.objects.all():
+        fetch_notifications_for_owner.delay(owner.pk, force_sync=force_sync)
+
+
+@shared_task
 def send_notification(notification_pk):
     try:
         notification = Notification.objects.get(pk=notification_pk)
@@ -564,8 +571,13 @@ def send_new_notifications_to_webhook(webhook_pk):
 @shared_task
 def send_all_new_notifications():
     """sends all unsent notifications to active webhooks"""
+    active_webhooks_count = 0
     for webhook in Webhook.objects.filter(is_active__exact=True):
-        send_new_notifications_to_webhook.delay(webhook)
+        active_webhooks_count += 1
+        send_new_notifications_to_webhook.delay(webhook.pk)
+    
+    if active_webhooks_count == 0:
+        logger.warn('No active webhook found for sending notifications')
 
 
 @shared_task
@@ -610,22 +622,3 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
                 + 'report to user: {}'. format(ex)
             ))
       
-"""
-@shared_task
-def test_task_a():    
-    sleep(2)
-    
-@shared_task
-def test_task_b():    
-    sleep(3)
-
-@shared_task
-def test_task_c():
-    pass
-
-@shared_task
-def test_canvas():    
-    workflow = chain(test_task_a.si(), test_task_b.si(), test_task_c.si())
-    workflow.delay()
-
-"""
