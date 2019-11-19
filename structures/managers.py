@@ -337,12 +337,12 @@ class NotificationEntityManager(models.Manager):
                     first['category']
                 )
                 if not type:
-                    type = NotificationEntity.TYPE_OTHER
+                    type = NotificationEntity.CATEGORY_OTHER
 
                 obj, created = self.update_or_create(
                     id=eve_entity_id,
                     defaults={
-                        'entity_type': type,
+                        'category': type,
                         'name': first['name']
                     }
                 )

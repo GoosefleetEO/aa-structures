@@ -222,9 +222,9 @@ class NotificationEntityAdmin(admin.ModelAdmin):
     list_display = (
         'id', 
         'name', 
-        'entity_type',         
+        'category',         
     )
-    list_filter = ( 'entity_type', )
+    list_filter = ( 'category', )
     list_display_links = None
 
     def has_add_permission(self, request):

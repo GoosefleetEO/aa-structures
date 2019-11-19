@@ -231,7 +231,6 @@ def update_structures_for_owner(
                             next_reinforce_hour=next_reinforce_hour,
                             next_reinforce_weekday=next_reinforce_weekday,
                             next_reinforce_apply=next_reinforce_apply,
-                            profile_id=structure['profile_id'],
                             reinforce_hour=structure['reinforce_hour'],
                             reinforce_weekday=reinforce_weekday,
                             state=state,
@@ -445,7 +444,7 @@ def fetch_notifications_for_owner(
                                 NotificationEntity.get_matching_entity_type(
                                     notification['sender_type']
                                 )
-                            if sender_type != NotificationEntity.TYPE_OTHER:
+                            if sender_type != NotificationEntity.CATEGORY_OTHER:
                                 sender, _ = NotificationEntity\
                                 .objects.get_or_create_esi(
                                     notification['sender_id'],
@@ -456,7 +455,7 @@ def fetch_notifications_for_owner(
                                     .objects.get_or_create(
                                         id=notification['sender_id'],
                                         defaults={
-                                            'entity_type': sender_type
+                                            'category': sender_type
                                         }
                                     )
                             text = notification['text'] \
@@ -497,7 +496,7 @@ def fetch_notifications_for_owner(
 
     except Exception as ex:
         success = False
-        error_code = str(ex)
+        error_code = str(ex)        
     else:
         success = True
         error_code = None

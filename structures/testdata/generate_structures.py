@@ -62,14 +62,9 @@ with transaction.atomic():
             owner=owner,
             eve_type=eve_type,
             name='Test structure #{:05d}'.format(i),
-            eve_solar_system=eve_solar_system,
-            position_x=0,
-            position_y=0,
-            position_z=0,
-            profile_id=0,
+            eve_solar_system=eve_solar_system,                        
             reinforce_hour=12,
-            state=Structure.STATE_SHIELD_VULNERABLE,
-            last_updated=last_updated
+            state=Structure.STATE_SHIELD_VULNERABLE
         )
 
 print('DONE')

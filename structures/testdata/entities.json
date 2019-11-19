@@ -69,6 +69,12 @@
             "corporation_name": "Wayne Enterprises",
             "corporation_ticker": "WYE",
             "member_count": 4200
+        },
+        {
+            "corporation_id": 2002,
+            "corporation_name": "Lexcorp",
+            "corporation_ticker": "LEX",
+            "member_count": 2500
         }
     ],
     "EveCharacter":
@@ -79,6 +85,58 @@
             "corporation_id": 2001,
             "corporation_name": "Wayne Enterprises",
             "corporation_ticker": "WYE"
+        },
+        {
+            "character_id": 1002,
+            "character_name": "Lex Luther",
+            "corporation_id": 2002,
+            "corporation_name": "Lexcorp",
+            "corporation_ticker": "LEX"
+        }
+    ],
+    "NotificationEntity":
+    [
+        {
+            "id": 3011,
+            "category": 3,
+            "name": "Big Bad Alliance"
+        },
+        {
+            "id": 2011,
+            "category": 2,
+            "name": "Bad Company"
+        },
+        {
+            "id": 1011,
+            "category": 1,
+            "name": "Bad Dude"
+        },
+        {
+            "id": 2021,
+            "category": 2,
+            "name": "Dummy Corp 1"
+        },
+        {
+            "id": 2022,
+            "category": 2,
+            "name": "Dummy Corp 2"
+        }
+    ],
+    "Owner":
+    [
+        {
+            "corporation_id": 1
+        }
+    ],
+    "Structure":
+    [
+        {
+            "id": 1000000000001,            
+            "name": "Test Structure Alpha",
+            "eve_type_id": 35832,
+            "eve_solar_system_id": 30002537,            
+            "reinforce_hour": 12,
+            "state": 11
         }
     ]
 }

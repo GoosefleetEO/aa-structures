@@ -28,7 +28,7 @@ logger.level = logging.DEBUG
 logger.addHandler(c_handler)
 
 
-class TestTasksStructureUpdate(TestCase):
+class TestTasksStructures(TestCase):
     
     # note: setup is making calls to ESI to get full info for entities
     # all ESI calls in the tested module are mocked though
@@ -36,7 +36,7 @@ class TestTasksStructureUpdate(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestTasksStructureUpdate, cls).setUpClass()
+        super(TestTasksStructures, cls).setUpClass()
 
         # load test data
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
@@ -259,3 +259,218 @@ class TestTasksStructureUpdate(TestCase):
             [1031369432897, 1028151259819]
         )
 
+
+class TestTasksNotifications(TestCase):
+    
+    # note: setup is making calls to ESI to get full info for entities
+    # all ESI calls in the tested module are mocked though
+
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestTasksNotifications, cls).setUpClass()
+
+        # load test data
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
+            inspect.currentframe()
+        )))
+
+        # ESI corp structures        
+        with open(
+            currentdir + '/testdata/corp_structures.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            cls.corp_structures = json.load(f)
+
+        # ESI universe structures
+        with open(
+            currentdir + '/testdata/notifications.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            cls.notifications = json.load(f)
+
+        # entities
+        with open(
+            currentdir + '/testdata/entities.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            entities = json.load(f)
+
+        entities_def = [
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveGroup,
+            EveType,
+            EveCorporationInfo,
+            EveCharacter,    
+            NotificationEntity    
+        ]
+    
+        for EntityClass in entities_def:
+            entity_name = EntityClass.__name__
+            for x in entities[entity_name]:
+                EntityClass.objects.create(**x)
+            assert(len(entities[entity_name]) == EntityClass.objects.count())
+                
+        # 1 user
+        cls.character = EveCharacter.objects.get(character_id=1001)
+                
+        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        cls.user = User.objects.create_user(
+            cls.character.character_name,
+            'abc@example.com',
+            'password'
+        )
+
+        cls.main_ownership = CharacterOwnership.objects.create(
+            character=cls.character,
+            owner_hash='x1',
+            user=cls.user
+        )
+
+        cls.owner = Owner.objects.create(
+            corporation=cls.corporation,
+            character=cls.main_ownership
+        )
+
+        for x in entities['Structure']:
+            x['owner'] = cls.owner
+            Structure.objects.create(**x)
+                
+   
+    # run without char        
+    def test_run_no_sync_char(self):
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
+        )
+        self.assertFalse(
+            tasks.fetch_notifications_for_owner(owner_pk=owner.pk)
+        )
+        owner.refresh_from_db()
+        self.assertEqual(
+            owner.last_error, 
+            Owner.ERROR_NO_CHARACTER
+        )
+
+    
+    # test expired token    
+    @patch('structures.tasks.Token')    
+    def test_check_expired_token(
+            self,             
+            mock_Token
+        ):                        
+        mock_Token.objects.filter.side_effect = TokenExpiredError()        
+
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
+            character=self.main_ownership
+        )
+                        
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+                
+        # run update task
+        self.assertFalse(
+            tasks.fetch_notifications_for_owner(owner_pk=owner.pk)
+        )
+
+        owner.refresh_from_db()
+        self.assertEqual(
+            owner.last_error, 
+            Owner.ERROR_TOKEN_EXPIRED            
+        )
+
+    
+    # test invalid token    
+    @patch('structures.tasks.Token')
+    def test_check_invalid_token(
+            self,             
+            mock_Token
+        ):                        
+        mock_Token.objects.filter.side_effect = TokenInvalidError()
+
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
+            character=self.main_ownership
+        )
+                        
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+                
+        # run update task
+        self.assertFalse(
+            tasks.fetch_notifications_for_owner(owner_pk=owner.pk)
+        )
+
+        owner.refresh_from_db()
+        self.assertEqual(
+            owner.last_error, 
+            Owner.ERROR_TOKEN_INVALID            
+        )
+        
+    # normal synch of new structures, mode my_alliance            
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_fetch_notifications_for_owner_normal(
+            self, 
+            mock_esi_client_factory,             
+            mock_Token
+        ):
+        
+        # create mocks        
+        def get_characters_character_id_notifications(            
+            *args, 
+            **kwargs
+        ):            
+            x = Mock()
+            x.result.return_value = self.notifications
+            return x
+        
+        # mock_Token.objects.filter.side_effect = [Token()]
+        
+        mock_client = Mock()       
+        mock_client.Character\
+            .get_characters_character_id_notifications.side_effect =\
+                get_characters_character_id_notifications
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+                
+        # run update task
+        self.assertTrue(
+            tasks.fetch_notifications_for_owner(owner_pk=self.owner.pk)
+        )
+
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.last_error, 
+            Owner.ERROR_NONE            
+        )
+                
+        # should only contain the right notifications
+        structure_ids = [
+            x['notification_id'] 
+            for x in Notification.objects.values('notification_id')
+        ]
+        self.assertCountEqual(
+            structure_ids,
+            [1045790513, 986823936, 1007801053, 1007802916, 1033521794]
+        )
+        

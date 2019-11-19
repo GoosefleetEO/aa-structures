@@ -352,12 +352,21 @@ class Structure(models.Model):
         on_delete=models.CASCADE
     )
     position_x = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
         help_text='x position of the structure in the solar system'
     )
     position_y = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
         help_text='y position of the structure in the solar system'
     )
     position_z = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
         help_text='z position of the structure in the solar system'
     )    
     fuel_expires = models.DateTimeField(
@@ -385,11 +394,7 @@ class Structure(models.Model):
         default=None, 
         blank=True,
         help_text='The requested change to reinforce_weekday that will take effect at the time shown by next_reinforce_apply'
-    )
-    profile_id = models.IntegerField(
-        validators=[MinValueValidator(0)],
-        help_text='The id of the ACL profile for this citadel'
-    )
+    )    
     reinforce_hour = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(23)],
         help_text='The hour of day that determines the four hour window when the structure will randomly exit its reinforcement periods and become vulnerable to attack against its armor and/or hull. The structure will become vulnerable at a random time that is +/- 2 hours centered on the value of this property'
@@ -424,6 +429,9 @@ class Structure(models.Model):
         help_text='Date at which the structure will unanchor'
     )    
     last_updated = models.DateTimeField(
+        null=True, 
+        default=None, 
+        blank=True,
         help_text='date this structure was last updated from the EVE server'
     )
 
@@ -504,26 +512,26 @@ class StructureService(models.Model):
 class NotificationEntity(models.Model):
     """An EVE entity used in notifications"""
     
-    TYPE_CHARACTER = 1
-    TYPE_CORPORATION = 2
-    TYPE_ALLIANCE = 3
-    TYPE_FACTION = 4
-    TYPE_OTHER = 5
+    CATEGORY_CHARACTER = 1
+    CATEGORY_CORPORATION = 2
+    CATEGORY_ALLIANCE = 3
+    CATEGORY_FACTION = 4
+    CATEGORY_OTHER = 5
 
-    TYPE_CHOICES = [
-        (TYPE_CHARACTER, 'character'),
-        (TYPE_CORPORATION, 'corporation'),
-        (TYPE_ALLIANCE, 'alliance'),
-        (TYPE_FACTION, 'faction'),
-        (TYPE_OTHER, 'other'),
+    CATEGORY_CHOICES = [
+        (CATEGORY_CHARACTER, 'character'),
+        (CATEGORY_CORPORATION, 'corporation'),
+        (CATEGORY_ALLIANCE, 'alliance'),
+        (CATEGORY_FACTION, 'faction'),
+        (CATEGORY_OTHER, 'other'),
     ]
     
     id = models.IntegerField(
         primary_key=True, 
         validators=[MinValueValidator(0)]
     )
-    entity_type = models.IntegerField(
-        choices=TYPE_CHOICES
+    category = models.IntegerField(
+        choices=CATEGORY_CHOICES
     )
     name = models.CharField(
         max_length=255,
@@ -541,7 +549,7 @@ class NotificationEntity(models.Model):
     def get_matching_entity_type(cls, type_name) -> int:
         """returns matching entity type for given state name"""
         match = None
-        for x in cls.TYPE_CHOICES:
+        for x in cls.CATEGORY_CHOICES:
             if type_name == x[1]:
                 match = x
                 break
