@@ -1,0 +1,73 @@
+[
+    {
+        "is_read": true,
+        "notification_id": 1045790513,
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "text": "charID: 93330670\nnewOwnerCorpID: 98570034\noldOwnerCorpID: 98394960\nsolarSystemID: 30003068\nstructureID: 1000000000001\nstructureName: Kourmonen - Eve is Dark and Full of Sweg\nstructureTypeID: 35832\n",
+        "timestamp": "2019-06-03T19:10:00+00:00",
+        "type": "OwnershipTransferred"
+    },
+    {
+        "notification_id": 986823936,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "listOfServiceModuleIDs:\n- 35894\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
+        "timestamp": "2019-02-17T04:00:00+00:00",
+        "type": "StructureServicesOffline"
+    },
+    {
+        "notification_id": 1007661575,
+        "sender_id": 773530765,
+        "sender_type": "character",
+        "text": "charID: 773530765\ncorpID: 98394960\n",
+        "textParsed": {
+            "charID": 773530765,
+            "corpID": 98394960
+        },
+        "timestamp": "2019-03-26T21:50:00+00:00",
+        "type": "CharLeftCorpMsg"
+    },
+    {
+        "notification_id": 1007801053,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "allianceID: 99006625\nallianceLinkData:\n- showinfo\n- 16159\n- 99006625\nallianceName: Pen Is Out\narmorPercentage: 98.65129050962584\ncharID: 940357753\ncorpLinkData:\n- showinfo\n- 2\n- 98406814\ncorpName: Victory or Whatever\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
+        "timestamp": "2019-03-27T05:44:00+00:00",
+        "type": "StructureUnderAttack"
+    },
+    {
+        "notification_id": 1007802916,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "solarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n",
+        "timestamp": "2019-03-27T05:50:00+00:00",
+        "type": "StructureLostArmor"
+    },
+    {
+        "notification_id": 1027272058,
+        "sender_id": 2112124363,
+        "sender_type": "character",
+        "text": "applicationText: ''\ncharID: 2112124363\ncorpID: 98394960\n",
+        "timestamp": "2019-05-02T20:26:00+00:00",
+        "type": "CharAppAcceptMsg"
+    },
+    {
+        "is_read": true,
+        "notification_id": 1033521794,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
+        "timestamp": "2019-05-13T12:10:00+00:00",
+        "type": "StructureFuelAlert"
+    },
+    {
+        "is_read": true,
+        "notification_id": 1056803780,
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "text": "againstID: 99007974\ncost: 100000000\ndeclaredByID: 99001134\ndelayHours: 24\nhostileState: false\ntimeStarted: 132058033800000000\nwarHQ: <b>Mahtista - RLCMAK</b>\nwarHQ_IdType:\n- 1030817133575\n- 35832\n",
+        "timestamp": "2019-06-22T22:44:00+00:00",
+        "type": "WarDeclared"
+    }
+]

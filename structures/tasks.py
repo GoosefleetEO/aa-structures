@@ -407,10 +407,10 @@ def fetch_notifications_for_owner(
             if settings.DEBUG:
                 # store to disk (for debugging)
                 with open(
-                    'notifications_raw_{}.json'.format(
+                    file='notifications_raw_{}.json'.format(
                         owner.corporation.corporation_id
                     ), 
-                    'w', 
+                    mode='w',
                     encoding='utf-8'
                 ) as f:
                     json.dump(

@@ -159,6 +159,7 @@ class Owner(models.Model):
         on_delete=models.SET_DEFAULT,
         default=None,
         null=True,
+        blank=True,
         help_text='character used for syncing structures'
     )
     version_hash = models.CharField(
@@ -670,7 +671,7 @@ class Notification(models.Model):
                     corporation_name
             ))
 
-        def get_attacker_name(self, parsed_text):
+        def get_attacker_name(parsed_text):
             """returns the attacker name from a parsed_text"""
             if "allianceName" in parsed_text:               
                 name = gen_alliance_link(parsed_text['allianceName'])
@@ -749,7 +750,7 @@ class Notification(models.Model):
 
             elif self.notification_type == self.TYPE_STRUCTURE_UNDER_ATTACK:
                 title = 'Structure under attack'
-                description = 'is under attack by {}.'.format(
+                description += 'is under attack by {}.'.format(
                     get_attacker_name(parsed_text)
                 )
                 color = self.EMBED_COLOR_DANGER
@@ -758,7 +759,7 @@ class Notification(models.Model):
                 title = 'Structure lost shield'
                 timer_ends_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description = 'has lost its shields. Armor timer end at: {}'.format(
+                description += 'has lost its shields. Armor timer end at: {}'.format(
                     timer_ends_at.strftime(DATETIME_FORMAT)
                 )
                 color = self.EMBED_COLOR_DANGER
@@ -767,14 +768,14 @@ class Notification(models.Model):
                 title = 'Structure lost armor'
                 timer_ends_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description = 'has lost its shields. Hull timer end at: {}'.format(
+                description += 'has lost its armor. Hull timer end at: {}'.format(
                     timer_ends_at.strftime(DATETIME_FORMAT)
                 )
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == self.TYPE_STRUCTURE_DESTROYED:
                 title = 'Structure destroyed'
-                description = 'has been destroyed.'
+                description += 'has been destroyed.'
                 color = self.EMBED_COLOR_DANGER
 
         else:
