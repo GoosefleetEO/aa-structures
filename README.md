@@ -127,7 +127,11 @@ Finally restart your AA supervisor services.
 
 ## Settings
 
-tbd.
+Here is a list of available settings for this app. They can be configured by adding them to your AA settings file (`local.py`). If they are not set the defaults are used.
+
+Name | Description | Default
+-- | -- | --
+`STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | 24
 
 ## Permissions
 

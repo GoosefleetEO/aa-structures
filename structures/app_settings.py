@@ -1,12 +1,10 @@
 from django.conf import settings
 
 
-# put your app settings here
-
-"""
-EXAMPLE_SETTING_ONE = getattr(
+# defines after how many hours a notification becomes stale
+# stale notification will no longer be sent automatically
+STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION = getattr(
     settings, 
-    'EXAMPLE_SETTING_ONE', 
-    None
+    'STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION', 
+    24
 )
-"""

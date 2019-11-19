@@ -9,11 +9,13 @@ import dhooks_lite
 
 from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from esi.clients import esi_client_factory
 
+from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, NotificationEntityManager
@@ -90,7 +92,11 @@ class Webhook(models.Model):
             q = owner.notification_set
 
             if not send_again:
-                q = q.filter(is_sent__exact=False)
+                cutoff_dt_for_stale = now() - datetime.timedelta(
+                    hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+                )
+                q = q.filter(is_sent__exact=False)\
+                        .filter(timestamp__gte=cutoff_dt_for_stale)
             
             q = q.select_related()
 

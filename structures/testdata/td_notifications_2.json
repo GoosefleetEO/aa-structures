@@ -69,5 +69,29 @@
         "text": "againstID: 99007974\ncost: 100000000\ndeclaredByID: 99001134\ndelayHours: 24\nhostileState: false\ntimeStarted: 132058033800000000\nwarHQ: <b>Mahtista - RLCMAK</b>\nwarHQ_IdType:\n- 1030817133575\n- 35832\n",
         "timestamp": "2019-06-22T22:44:00+00:00",
         "type": "WarDeclared"
+    },
+    {        
+        "notification_id": "1128113293",
+        "type": "StructureDestroyed",
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-11-07 19:30:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98394960\nownerCorpName: VOLTAGE REGULATORS\nsolarsystemID: 30004984\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
+    },
+    {        
+        "notification_id": "1112367054",
+        "type": "StructureLostShields",
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-10-04 14:52:00",
+        "text": "solarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35825\n- *id001\nstructureTypeID: 35825\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n"
+    },
+    {      
+        "notification_id": "1064627694",
+        "type": "StructureUnanchoring",
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-07-06 16:12:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98151631\nownerCorpName: I Swear She Was 18\nsolarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 6047994755245\n"
     }
 ]
