@@ -13,10 +13,13 @@ from . import tasks
 from .models import *
 from .utils import messages_plus, DATETIME_FORMAT
 
+STRUCTURE_LIST_ICON_RENDER_SIZE = 64
+STRUCTURE_LIST_ICON_OUTPUT_SIZE = 40
 
 @login_required
 @permission_required('structures.basic_access')
 def index(request):       
+    """main view showing the structure list"""
     context = {
         'page_title': 'Alliance Structures'
     }    
@@ -26,7 +29,7 @@ def index(request):
 @login_required
 @permission_required('structures.basic_access')
 def structure_list_data(request):
-    
+    """returns structure list in JSON for AJAX call in index view"""
     if request.user.has_perm('structures.view_all_structures'):
         structures = Structure.objects.all().select_related()
     else:
@@ -73,9 +76,12 @@ def structure_list_data(request):
         row['corporation_name'] = corporation.corporation_name
 
         # corporation icon
-        row['corporation_icon'] = '<img src="{}">'.format(
-            corporation.logo_url()
-        )
+        row['corporation_icon'] = '<img src="{}" width="{}" height="{}"/>'\
+            .format(
+                corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            )
         
         # location        
         row['solar_system_name'] = structure.eve_solar_system.name
@@ -91,8 +97,10 @@ def structure_list_data(request):
         )        
         
         # type icon
-        row['type_icon'] = '<img src="{}"/>'.format(
-            structure.eve_type.icon_url()
+        row['type_icon'] = '<img src="{}" width="{}" height="{}"/>'.format(
+            structure.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
         )        
         
         # type name              

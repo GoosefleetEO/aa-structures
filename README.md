@@ -82,6 +82,8 @@ Configure your AA settings (`local.py`) as follows:
     }
    ```
 
+- Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
+
 ### 4. Finalize installation into AA
 
 Run migrations & copy static files
@@ -95,15 +97,25 @@ Restart your supervisor services for AA
 
 ### 5. Setup permissions
 
-Now you can access Alliance Auth and setup permissions for your users. See section **Permissions** below for details.
+Now you can setup permissions in Alliance Auth for your users.
+
+See section [Permissions](#permissions) below for details.
 
 ### 6. Add structure owner
 
-Finally you need to add your first structure owner with the character that will be used for fetching structures. Just click on "Add Structure Owner" and add the requested token. Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
+Next you need to add your first structure owner with the character that will be used for fetching structures. Just open the Alliance Structures app and click on "Add Structure Owner". Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
 
-Once a structure owner is set the app will start fetching contracts. Wait a minute and then reload the contract list page to see the result.
+Once a structure owner is set the app will start fetching the corporation structures and related notifications. Wait a minute and then reload the structure list page to see the result.
 
-You will need to add structure owners for every corporation that owns structures. This task is best delegated to the leadership of the respective corporations in your alliance. Note that you may want to encourage adding both alliance and non-alliance corporations of your members.
+You will need to add every corporation as Structure Owner to include their structures and notifications in the app.
+
+Note that as admin you can review all structures and notifications on the admin panel.
+
+### 7. Setup notifications to Discord
+
+The setup and configuration for Discord webhooks is done on the admin page under **Structures**.
+
+To setup notifications you first need to add your Discord webhooks to **Webhooks**. You can then assign those webhooks to the respective structure owners. Once all webhooks are assigned you can active the webhook to enable the forwarding of notifications to the configured webhooks.
 
 ## Updating
 
