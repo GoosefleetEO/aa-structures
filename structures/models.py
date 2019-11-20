@@ -6,6 +6,7 @@ import json
 
 import pytz
 import dhooks_lite
+from multiselectfield import MultiSelectField
 
 from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -18,12 +19,54 @@ from esi.clients import esi_client_factory
 from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
-    EveConstellationManager, EveSolarSystemManager, NotificationEntityManager
+    EveConstellationManager, EveSolarSystemManager, \
+    NotificationEntityManager, EveMoonManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
+# Notification types
+NTYPE_MOONMINING_AUTOMATIC_FRACTURE = 401
+NTYPE_MOONMINING_EXTRACTION_CANCELED = 402
+NTYPE_MOONMINING_EXTRACTION_FINISHED = 403
+NTYPE_MOONMINING_EXTRACTION_STARTED = 404   
+NTYPE_MOONMINING_LASER_FIRED = 405
+
+NTYPE_STRUCTURE_ANCHORING = 501
+NTYPE_STRUCTURE_DESTROYED = 502
+NTYPE_STRUCTURE_FUEL_ALERT = 503
+NTYPE_STRUCTURE_LOST_ARMOR = 504
+NTYPE_STRUCTURE_LOST_SHIELD = 505
+NTYPE_STRUCTURE_ONLINE = 506
+NTYPE_STRUCTURE_SERVICES_OFFLINE = 507
+NTYPE_STRUCTURE_UNANCHORING = 508
+NTYPE_STRUCTURE_UNDER_ATTACK = 509
+NTYPE_STRUCTURE_WENT_HIGH_POWER = 510
+NTYPE_STRUCTURE_WENT_LOW_POWER = 511  
+NTYPE_STRUCTURE_REINFORCE_CHANGED = 512
+NTYPE_OWNERSHIP_TRANSFERRED = 513
+
+NTYPE_CHOICES = [
+    (NTYPE_MOONMINING_AUTOMATIC_FRACTURE, 'MoonminingAutomaticFracture'),    
+    (NTYPE_MOONMINING_EXTRACTION_CANCELED, 'MoonminingExtractionCancelled'),
+    (NTYPE_MOONMINING_EXTRACTION_FINISHED, 'MoonminingExtractionFinished'),
+    (NTYPE_MOONMINING_EXTRACTION_STARTED, 'MoonminingExtractionStarted'),
+    (NTYPE_MOONMINING_LASER_FIRED, 'MoonminingLaserFired'),
+            
+    (NTYPE_OWNERSHIP_TRANSFERRED, 'OwnershipTransferred'),
+    (NTYPE_STRUCTURE_ANCHORING, 'StructureAnchoring'),
+    (NTYPE_STRUCTURE_DESTROYED, 'StructureDestroyed'),
+    (NTYPE_STRUCTURE_FUEL_ALERT, 'StructureFuelAlert'),
+    (NTYPE_STRUCTURE_LOST_ARMOR, 'StructureLostArmor'),
+    (NTYPE_STRUCTURE_LOST_SHIELD, 'StructureLostShields'),
+    (NTYPE_STRUCTURE_ONLINE, 'StructureOnline'),
+    (NTYPE_STRUCTURE_SERVICES_OFFLINE, 'StructureServicesOffline'),
+    (NTYPE_STRUCTURE_UNANCHORING, 'StructureUnanchoring'),
+    (NTYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
+    (NTYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
+    (NTYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),
+]
 
 class General(models.Model):
     """Meta model for global app permissions"""
@@ -69,16 +112,7 @@ class Webhook(models.Model):
         blank=True,        
         help_text='you can add notes about this webhook here if you want'
     )
-    is_default = models.BooleanField(        
-        default=False,
-        help_text='whether this webhook is automatically set as '\
-            + 'default webhook for all newly added owners'
-    )
-    is_active = models.BooleanField(        
-        default=False,
-        help_text='whether notifications are sent to this webhook'
-    )
-
+        
     def __str__(self):
         return self.name
 
@@ -185,15 +219,7 @@ class Owner(models.Model):
         choices=ERRORS_LIST, 
         default=ERROR_NONE,
         help_text='error that occurred at the last sync atttempt (if any)'
-    )
-    webhook = models.ForeignKey(
-        Webhook, 
-        on_delete=models.SET_DEFAULT,
-        null=True, 
-        default=None, 
-        blank=True,
-        help_text='Webhook used for sending structure notifications'
-    )
+    )    
 
     def __str__(self):
         return str(self.corporation.corporation_name)
@@ -205,6 +231,45 @@ class Owner(models.Model):
             'esi-universe.read_structures.v1',
             'esi-characters.read_notifications.v1'
         ]
+
+
+def get_default_notification_types():
+    """generates a set of all existing notification types as default"""
+    return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
+
+class Profile(models.Model):
+    """Profile defines which notification types are sent to which webhook
+    Each owner can have multiple profiles
+    """
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text='Name of this profile',        
+    )
+    owner = models.ForeignKey(
+        Owner, 
+        on_delete=models.CASCADE,
+        help_text='Corporation that owns the structure'
+    )
+    webhook = models.ForeignKey(
+        Webhook, 
+        on_delete=models.SET_DEFAULT,
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='Notifications are sent to this webhook'
+    )
+    notification_types = MultiSelectField(
+        choices=NTYPE_CHOICES,
+        default=get_default_notification_types
+    )    
+    is_active = models.BooleanField(        
+        default=True,
+        help_text='whether notifications are sent with this profile'
+    )
+    
+    def __str__(self):
+        return self.name
 
 
 class EveRegion(models.Model):
@@ -258,8 +323,44 @@ class EveSolarSystem(models.Model):
         return self.name
 
 
+class EveMoon(models.Model):
+    id = models.IntegerField(
+        primary_key=True,
+        validators=[MinValueValidator(0)],
+        help_text='Eve Online item ID'
+    )
+    name = models.CharField(max_length=100)
+    position_x = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='x position of the structure in the solar system'
+    )
+    position_y = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='y position of the structure in the solar system'
+    )
+    position_z = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='z position of the structure in the solar system'
+    )
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem, 
+        on_delete=models.CASCADE
+    )
+
+    objects = EveMoonManager()
+
+    def __str__(self):
+        return self.name
+
+
 class EveGroup(models.Model):
-    """type in Eve Online"""
+    """group in Eve Online"""
     id = models.IntegerField(
         primary_key=True,
         validators=[MinValueValidator(0)],
@@ -550,7 +651,7 @@ class NotificationEntity(models.Model):
     objects = NotificationEntityManager()
 
     def __str__(self):
-        return str(self.id)
+        return str(self.name)
 
     @classmethod
     def get_matching_entity_type(cls, type_name) -> int:
@@ -574,35 +675,6 @@ class Notification(models.Model):
     EMBED_COLOR_WARNING = 0xf0ad4e
     EMBED_COLOR_DANGER = 0xd9534f
     
-    TYPE_STRUCTURE_ANCHORING = 501
-    TYPE_STRUCTURE_DESTROYED = 502
-    TYPE_STRUCTURE_FUEL_ALERT = 503
-    TYPE_STRUCTURE_LOST_ARMOR = 504
-    TYPE_STRUCTURE_LOST_SHIELD = 505
-    TYPE_STRUCTURE_ONLINE = 506
-    TYPE_STRUCTURE_SERVICES_OFFLINE = 507
-    TYPE_STRUCTURE_UNANCHORING = 508
-    TYPE_STRUCTURE_UNDER_ATTACK = 509
-    TYPE_STRUCTURE_WENT_HIGH_POWER = 510
-    TYPE_STRUCTURE_WENT_LOW_POWER = 511  
-    TYPE_STRUCTURE_REINFORCE_CHANGED = 512
-    TYPE_OWNERSHIP_TRANSFERRED = 513
-
-    TYPE_CHOICES = [
-        (TYPE_STRUCTURE_ANCHORING, 'StructureAnchoring'),
-        (TYPE_STRUCTURE_DESTROYED, 'StructureDestroyed'),
-        (TYPE_STRUCTURE_FUEL_ALERT, 'StructureFuelAlert'),
-        (TYPE_STRUCTURE_LOST_ARMOR, 'StructureLostArmor'),
-        (TYPE_STRUCTURE_LOST_SHIELD, 'StructureLostShields'),
-        (TYPE_STRUCTURE_ONLINE, 'StructureOnline'),
-        (TYPE_STRUCTURE_SERVICES_OFFLINE, 'StructureServicesOffline'),
-        (TYPE_STRUCTURE_UNANCHORING, 'StructureUnanchoring'),
-        (TYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
-        (TYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
-        (TYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),        
-        (TYPE_OWNERSHIP_TRANSFERRED, 'OwnershipTransferred'),        
-    ]
-
     notification_id = models.BigIntegerField(        
         validators=[MinValueValidator(0)]
     )
@@ -614,7 +686,7 @@ class Notification(models.Model):
     sender = models.ForeignKey(NotificationEntity, on_delete=models.CASCADE)
     timestamp = models.DateTimeField()
     notification_type = models.IntegerField(
-        choices=TYPE_CHOICES
+        choices=NTYPE_CHOICES
     )
     text = models.TextField(        
         null=True, 
@@ -691,21 +763,19 @@ class Notification(models.Model):
         parsed_text = yaml.safe_load(self.text)        
         
         if self.notification_type in [
-            self.TYPE_STRUCTURE_FUEL_ALERT,
-            self.TYPE_STRUCTURE_SERVICES_OFFLINE,
-            self.TYPE_STRUCTURE_WENT_LOW_POWER,
-            self.TYPE_STRUCTURE_WENT_HIGH_POWER,
-            self.TYPE_STRUCTURE_UNANCHORING,
-            self.TYPE_STRUCTURE_UNDER_ATTACK,
-            self.TYPE_STRUCTURE_LOST_SHIELD,
-            self.TYPE_STRUCTURE_LOST_ARMOR,
-            self.TYPE_STRUCTURE_DESTROYED
+            NTYPE_STRUCTURE_FUEL_ALERT,
+            NTYPE_STRUCTURE_SERVICES_OFFLINE,
+            NTYPE_STRUCTURE_WENT_LOW_POWER,
+            NTYPE_STRUCTURE_WENT_HIGH_POWER,
+            NTYPE_STRUCTURE_UNANCHORING,
+            NTYPE_STRUCTURE_UNDER_ATTACK,
+            NTYPE_STRUCTURE_LOST_SHIELD,
+            NTYPE_STRUCTURE_LOST_ARMOR,
+            NTYPE_STRUCTURE_DESTROYED
         ]:
             # with these types we can assume we have the corresponding
             # structure in our database
-            structure = Structure.objects\
-                .get(id=parsed_text['structureID'])
-
+            structure = Structure.objects.get(id=parsed_text['structureID'])
             thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
 
             description = 'The {} **{}** in {} '.format(
@@ -714,17 +784,17 @@ class Notification(models.Model):
                 gen_solar_system_text(structure.eve_solar_system)
             )
 
-            if self.notification_type == self.TYPE_STRUCTURE_ONLINE:
+            if self.notification_type == NTYPE_STRUCTURE_ONLINE:
                 title = 'Structure online'
                 description += 'is now online.'
                 color = self.EMBED_COLOR_SUCCESS
 
-            if self.notification_type == self.TYPE_STRUCTURE_FUEL_ALERT:
+            if self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
                 title = 'Structure fuel alert'
                 description += 'has less then 24hrs fuel left.'
                 color = self.EMBED_COLOR_WARNING
 
-            elif self.notification_type == self.TYPE_STRUCTURE_SERVICES_OFFLINE:
+            elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:
                 services_list = '\n'.join([
                     x.name 
                     for x in structure.structureservice_set.all().order_by('name')
@@ -735,17 +805,17 @@ class Notification(models.Model):
                     )
                 color = self.EMBED_COLOR_DANGER
 
-            elif self.notification_type == self.TYPE_STRUCTURE_WENT_LOW_POWER:
+            elif self.notification_type == NTYPE_STRUCTURE_WENT_LOW_POWER:
                 title = 'Structure low power'
                 description += 'went to **low power** mode.'
                 color = self.EMBED_COLOR_WARNING
 
-            elif self.notification_type == self.TYPE_STRUCTURE_WENT_HIGH_POWER:
+            elif self.notification_type == NTYPE_STRUCTURE_WENT_HIGH_POWER:
                 title = 'Structure full power'
                 description += 'went to **full power** mode.'
                 color = self.EMBED_COLOR_SUCCESS
 
-            elif self.notification_type == self.TYPE_STRUCTURE_UNANCHORING:
+            elif self.notification_type == NTYPE_STRUCTURE_UNANCHORING:
                 title = 'Structure un-anchoring'            
                 unanchored_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
@@ -754,14 +824,14 @@ class Notification(models.Model):
                         unanchored_at.strftime(DATETIME_FORMAT))
                 color = self.EMBED_COLOR_INFO
 
-            elif self.notification_type == self.TYPE_STRUCTURE_UNDER_ATTACK:
+            elif self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
                 title = 'Structure under attack'
                 description += 'is under attack by {}.'.format(
                     get_attacker_name(parsed_text)
                 )
                 color = self.EMBED_COLOR_DANGER
 
-            elif self.notification_type == self.TYPE_STRUCTURE_LOST_SHIELD:
+            elif self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
                 title = 'Structure lost shield'
                 timer_ends_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
@@ -770,7 +840,7 @@ class Notification(models.Model):
                 )
                 color = self.EMBED_COLOR_DANGER
 
-            elif self.notification_type == self.TYPE_STRUCTURE_LOST_ARMOR:
+            elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
                 title = 'Structure lost armor'
                 timer_ends_at = self.timestamp \
                     + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
@@ -779,13 +849,111 @@ class Notification(models.Model):
                 )
                 color = self.EMBED_COLOR_DANGER
 
-            elif self.notification_type == self.TYPE_STRUCTURE_DESTROYED:
+            elif self.notification_type == NTYPE_STRUCTURE_DESTROYED:
                 title = 'Structure destroyed'
                 description += 'has been destroyed.'
                 color = self.EMBED_COLOR_DANGER
 
+        if self.notification_type in [
+            NTYPE_MOONMINING_AUTOMATIC_FRACTURE,
+            NTYPE_MOONMINING_EXTRACTION_CANCELED,
+            NTYPE_MOONMINING_EXTRACTION_FINISHED,
+            NTYPE_MOONMINING_EXTRACTION_STARTED,
+            NTYPE_MOONMINING_LASER_FIRED
+        ]:
+            structure = Structure.objects.get(id=parsed_text['structureID'])
+            moon, _ = EveMoon.objects.get_or_create_esi(parsed_text['moonID'])
+            thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
+            solar_system_link = gen_solar_system_text(
+                structure.eve_solar_system
+            )
+
+            if self.notification_type == \
+                NTYPE_MOONMINING_EXTRACTION_STARTED:   
+                                
+                started_by, _ = NotificationEntity.objects.get_or_create_esi(
+                    parsed_text['startedBy']
+                )
+                ready_time = ldap_datetime_2_dt(parsed_text['readyTime'])
+                auto_time = ldap_datetime_2_dt(parsed_text['autoTime'])
+                title = 'Moon mining extraction started'
+                description = 'A moon mining extraction has been started ' \
+                    + 'for {} at {} in {}.\n'.format(
+                        structure.name,
+                        moon.name,
+                        solar_system_link
+                    ) + 'Extraction was started by {}.\n'.format(started_by) \
+                        +  'The chunk will be ready on ' + 'location at {}, '.format(
+                            ready_time.strftime(DATETIME_FORMAT)
+                    ) + 'but will autofracture on {}.\n'.format(
+                        auto_time.strftime(DATETIME_FORMAT)
+                    )
+                color = self.EMBED_COLOR_INFO
+
+            elif self.notification_type == \
+                NTYPE_MOONMINING_EXTRACTION_FINISHED:   
+                
+                auto_time = ldap_datetime_2_dt(parsed_text['autoTime'])
+                title = 'Extraction finished'
+                description = 'The extraction for {} at {} in {}'.format(
+                        structure.name,
+                        moon.name,
+                        solar_system_link
+                    ) + 'is finished and the chunk is ready to be shot at.\n'\
+                        +  'The chunk will automatically fracture on {}'\
+                            .format(auto_time.strftime(DATETIME_FORMAT)
+                    )
+                color = self.EMBED_COLOR_INFO
+
+
+            elif self.notification_type == \
+                NTYPE_MOONMINING_AUTOMATIC_FRACTURE:   
+                                
+                title = 'Automatic Fracture'
+                description = 'The moondrill fitted to {} at {} in {}'.format(
+                        structure.name,
+                        moon.name,
+                        solar_system_link
+                    ) + 'has automatically been fired and the moon ' \
+                        + 'products are ready to be harvested.\n'
+                color = self.EMBED_COLOR_SUCCESS
+
+
+            elif self.notification_type == \
+                NTYPE_MOONMINING_EXTRACTION_CANCELED:   
+                
+                cancelled_by, _ = NotificationEntity.objects.get_or_create_esi(
+                    parsed_text['cancelledBy']
+                )
+                title = 'Extraction cancelled'
+                description = 'An ongoing extraction for {} at {}'.format(
+                    structure.name,
+                    moon.name
+                ) + 'in {} has been cancelled by {}.'.format(
+                    solar_system_link,
+                    cancelled_by
+                )
+                color = self.EMBED_COLOR_WARNING
+
+
+            elif self.notification_type == \
+                NTYPE_MOONMINING_LASER_FIRED:
+                
+                fired_by, _ = NotificationEntity.objects.get_or_create_esi(
+                    parsed_text['firedBy']
+                )
+                title = 'Moondrill fired'
+                description = 'The moondrill fitted to {} at {}'.format(
+                    structure.name,
+                    moon.name
+                ) + 'in {} has been fired by {}.'.format(
+                    solar_system_link,
+                    fired_by
+                ) + 'and the moon products are ready to be harvested.'
+                color = self.EMBED_COLOR_SUCCESS
+
         else:
-            if self.notification_type == self.TYPE_OWNERSHIP_TRANSFERRED:
+            if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:
                 client = esi_client_factory()
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
@@ -825,7 +993,7 @@ class Notification(models.Model):
                 title = 'Ownership transferred'
                 color = self.EMBED_COLOR_INFO                
             
-            elif self.notification_type == self.TYPE_STRUCTURE_ANCHORING:
+            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
                 client = esi_client_factory()
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
@@ -906,7 +1074,7 @@ class Notification(models.Model):
     def get_matching_notification_type(cls, type_name) -> int:
         """returns matching notification type for given name or None"""
         match = None
-        for x in cls.TYPE_CHOICES:
+        for x in cls.NTYPE_CHOICES:
             if type_name == x[1]:
                 match = x
                 break

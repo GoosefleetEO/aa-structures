@@ -62,6 +62,11 @@ class EveSolarSystemAdmin(admin.ModelAdmin):
     pass
 
 
+@admin.register(EveMoon)
+class EveMoonAdmin(admin.ModelAdmin):
+    pass
+
+
 @admin.register(EveType)
 class EveTypeAdmin(admin.ModelAdmin):
     pass
@@ -170,53 +175,6 @@ class NotificationAdmin(admin.ModelAdmin):
             return False
 
 
-@admin.register(Webhook)
-class WebhookAdmin(admin.ModelAdmin):
-    list_display = ('name', 'webhook_type', 'is_default', 'is_active')
-    list_filter = ( 'webhook_type', 'is_active')
-
-    actions = ('activate', 'deactivate', 'test_notification', )
-
-    def activate(self, request, queryset):                                
-        for obj in queryset:
-            obj.is_active = True
-            obj.save()
-            
-            self.message_user(
-                request, 
-                'You have activated webhook "{}"'.format(obj)
-            )
-
-    activate.short_description = 'Activate selected webhooks'
-
-    def deactivate(self, request, queryset):                        
-        for obj in queryset:
-            obj.is_active = False
-            obj.save()
-            
-            self.message_user(
-                request, 
-                'You have de-activated webhook "{}"'.format(obj)
-            )
-
-    deactivate.short_description = 'Deactivate selected webhooks'
-
-    def test_notification(self, request, queryset):                        
-        for obj in queryset:
-            tasks.send_test_notifications_to_webhook.delay(                
-                obj.pk,
-                user_pk=request.user.pk
-            )            
-            self.message_user(
-                request,
-                'Initiated sending test notification to webhook "{}".'\
-                    .format(obj) + ' You will receive a report on completion.'
-            )
-    
-    test_notification.short_description = \
-        "Send test notification to selected webhooks"
-
-
 @admin.register(NotificationEntity)
 class NotificationEntityAdmin(admin.ModelAdmin):
     list_display = (
@@ -238,3 +196,58 @@ class NotificationEntityAdmin(admin.ModelAdmin):
             return True
         else:
             return False
+
+
+@admin.register(Webhook)
+class WebhookAdmin(admin.ModelAdmin):
+    list_display = ('name', 'webhook_type')
+    list_filter = ( 'webhook_type', )
+
+    actions = ('test_notification', )
+
+    def test_notification(self, request, queryset):                        
+        for obj in queryset:
+            tasks.send_test_notifications_to_webhook.delay(                
+                obj.pk,
+                user_pk=request.user.pk
+            )            
+            self.message_user(
+                request,
+                'Initiated sending test notification to webhook "{}".'\
+                    .format(obj) + ' You will receive a report on completion.'
+            )
+    
+    test_notification.short_description = \
+        "Send test notification to selected webhooks"
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'owner', 'webhook', 'is_active')
+    list_filter = ('owner', 'webhook', 'is_active')
+
+    actions = ('activate', 'deactivate', )
+
+    def activate(self, request, queryset):                                
+        for obj in queryset:
+            obj.is_active = True
+            obj.save()
+            
+            self.message_user(
+                request, 
+                'You have activated profile "{}"'.format(obj)
+            )
+
+    activate.short_description = 'Activate selected profiles'
+
+    def deactivate(self, request, queryset):                        
+        for obj in queryset:
+            obj.is_active = False
+            obj.save()
+            
+            self.message_user(
+                request, 
+                'You have de-activated profile "{}"'.format(obj)
+            )
+
+    deactivate.short_description = 'Deactivate selected profiles'

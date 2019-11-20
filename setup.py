@@ -38,6 +38,7 @@ setup(
     install_requires=[ 
         'dhooks-lite',
         'django-navhelper',
-        'pytz'
+        'pytz',
+        'django-multiselectfield'
     ]
 )

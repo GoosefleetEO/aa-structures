@@ -91,7 +91,7 @@ class EveTypeManager(models.Manager):
     def update_or_create_esi(
             self,             
             eve_type_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """updates or creates eve_type object with data fetched from ESI"""
         from .models import EveType, EveGroup
@@ -130,7 +130,7 @@ class EveRegionManager(models.Manager):
     def get_or_create_esi(
             self,             
             eve_region_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """gets or creates eve_region object with data fetched from ESI"""
         from .models import EveRegion
@@ -149,7 +149,7 @@ class EveRegionManager(models.Manager):
     def update_or_create_esi(
             self,             
             eve_region_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """updates or creates eve_region object with data fetched from ESI"""
         from .models import EveGroup
@@ -157,6 +157,8 @@ class EveRegionManager(models.Manager):
         addPrefix = make_logger_prefix(eve_region_id)
 
         logger.info(addPrefix('Fetching eve_region from ESI'))
+        if not client:
+            client = esi_client_factory()
         try:
             eve_region = client.Universe.get_universe_regions_region_id(
                 region_id=eve_region_id
@@ -181,7 +183,7 @@ class EveConstellationManager(models.Manager):
     def get_or_create_esi(
             self,             
             eve_constellation_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """gets or creates eve_constellation object with data fetched from ESI"""
         from .models import EveConstellation
@@ -200,7 +202,7 @@ class EveConstellationManager(models.Manager):
     def update_or_create_esi(
             self,             
             eve_constellation_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """updates or creates eve_constellation object with data fetched from ESI"""
         from .models import EveConstellation, EveRegion
@@ -239,7 +241,7 @@ class EveSolarSystemManager(models.Manager):
     def get_or_create_esi(
             self,             
             eve_solar_system_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """gets or creates eve_solar_system object with data fetched from ESI"""
         from .models import EveSolarSystem
@@ -258,7 +260,7 @@ class EveSolarSystemManager(models.Manager):
     def update_or_create_esi(
             self,             
             eve_solar_system_id: int,
-            client: object
+            client: object = None
     ) -> list:
         """updates or creates eve_solar_system object with data fetched from ESI"""
         from .models import EveSolarSystem, EveConstellation
@@ -287,6 +289,67 @@ class EveSolarSystemManager(models.Manager):
         except Exception as ex:
             logger.warn(addPrefix(
                 'Failed to load eve_solar_system: '.format(ex)
+            ))
+            raise ex
+        
+        return obj, created
+
+
+class EveMoonManager(models.Manager):
+    
+    def get_or_create_esi(
+            self,             
+            moon_id: int,
+            client: object = None
+    ) -> list:
+        """gets or creates EveMoon object with data fetched from ESI"""
+        from .models import EveMoon
+        try:
+            obj = self.get(id=moon_id)
+            created = False
+        except EveMoon.DoesNotExist:
+            obj, created = self.update_or_create_esi(                
+                moon_id,
+                client
+            )
+        
+        return obj, created
+
+
+    def update_or_create_esi(
+            self,             
+            moon_id: int,
+            client: object = None
+    ) -> list:
+        """updates or creates EveMoon object with data fetched from ESI"""
+        from .models import EveMoon, EveSolarSystem
+
+        addPrefix = make_logger_prefix(moon_id)
+
+        logger.info(addPrefix('Fetching eve_moon from ESI'))
+        if not client:
+            client = esi_client_factory()
+        try:
+            eve_moon = client.Universe.get_universe_moons_moon_id(
+                moon_id=moon_id
+            ).result()
+            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi( 
+                eve_moon['system_id'],
+                client
+            )
+            obj, created = self.update_or_create(
+                id=moon_id,
+                defaults={
+                    'name': eve_moon['name'],                    
+                    'position_x': eve_moon['position']['x'],
+                    'position_y': eve_moon['position']['y'],
+                    'position_z': eve_moon['position']['z'],
+                    'eve_solar_system': eve_solar_system,
+                }
+            ) 
+        except Exception as ex:
+            logger.warn(addPrefix(
+                'Failed to load eve_moon: '.format(ex)
             ))
             raise ex
         
