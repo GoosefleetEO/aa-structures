@@ -229,7 +229,10 @@ def add_structure_owner(request, token):
                 owner.corporation.corporation_name,
                 request.user.username
             ), 
-            title='{}: Structure owner added'.format(__title__)
+            title='{}: Structure owner added: {}'.format(
+                __title__,
+                owner.corporation.corporation_name
+            )
         )
     return redirect('structures:index')
 

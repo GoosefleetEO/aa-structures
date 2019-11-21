@@ -137,7 +137,9 @@ class Webhook(models.Model):
     def send_new_notifications(self, send_again = False):
         """Send new notifications to this webhook"""
         
-        add_prefix = make_logger_prefix(str(self))   
+        add_prefix = make_logger_prefix(str(self))
+
+        esi_client = esi_client_factory()
         
         new_notifications_count = 0
         for owner in self.owner_set.all():
@@ -162,7 +164,7 @@ class Webhook(models.Model):
                 )))
                 
                 for notification in q:
-                    notification.send_to_webhook(self)
+                    notification.send_to_webhook(self, esi_client)
                     sleep(1)
         
         if new_notifications_count == 0:
@@ -699,7 +701,7 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.notification_id)
 
-    def _generate_embed(self) -> dhooks_lite.Embed:
+    def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
         def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
             text = '[{}]({}) ({})'.format(
@@ -852,7 +854,10 @@ class Notification(models.Model):
             NTYPE_MOONMINING_LASER_FIRED
         ]:
             structure = Structure.objects.get(id=parsed_text['structureID'])
-            moon, _ = EveMoon.objects.get_or_create_esi(parsed_text['moonID'])
+            moon, _ = EveMoon.objects.get_or_create_esi(
+                parsed_text['moonID'], 
+                esi_client if esi_client else None
+            )
             thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
             solar_system_link = gen_solar_system_text(
                 structure.eve_solar_system
@@ -944,15 +949,16 @@ class Notification(models.Model):
 
         else:
             if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:
-                client = esi_client_factory()
+                if not esi_client:
+                    esi_client = esi_client_factory()
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
-                    client
+                    esi_client
                 )
                 thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
                 solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                     parsed_text['solarSystemID'],
-                    client
+                    esi_client
                 )
                 description = 'The {} **{}** in {} '.format(
                     structure_type.name,
@@ -962,17 +968,17 @@ class Notification(models.Model):
                 from_corporation, _ = \
                     EveEntity.objects.get_or_create_esi(
                         parsed_text['oldOwnerCorpID'],
-                        client
+                        esi_client
                     )
                 to_corporation, _ = \
                     EveEntity.objects.get_or_create_esi(
                         parsed_text['newOwnerCorpID'],
-                        client
+                        esi_client
                     )
                 character, _ = \
                     EveEntity.objects.get_or_create_esi(
                         parsed_text['charID'],
-                        client
+                        esi_client
                     )
                 description += 'has been transferred from {} to {} by {}.'\
                     .format(
@@ -984,15 +990,16 @@ class Notification(models.Model):
                 color = self.EMBED_COLOR_INFO                
             
             elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
-                client = esi_client_factory()
+                if not esi_client:
+                    esi_client = esi_client_factory()
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
-                    client
+                    esi_client
                 )
                 thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
                 solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                     parsed_text['solarsystemID'],
-                    client
+                    esi_client
                 )
                 description = '**{}** has started anchoring in {}. '.format(
                     structure_type.name,
@@ -1021,7 +1028,7 @@ class Notification(models.Model):
         )
 
 
-    def send_to_webhook(self, webhook: Webhook):
+    def send_to_webhook(self, webhook: Webhook, esi_client: object = None):
         """sends this notification to the configured webhook"""        
     
         add_prefix = make_logger_prefix(
@@ -1045,7 +1052,7 @@ class Notification(models.Model):
             
             desc = self.text
             try:
-                embed = self._generate_embed()         
+                embed = self._generate_embed(esi_client)         
             except Exception as ex:
                 logger.warning(add_prefix(
                     'Failed to generate embed: {}'.format(ex)

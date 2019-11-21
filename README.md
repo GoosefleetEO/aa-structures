@@ -34,7 +34,7 @@ Alliance Structures adds the following features to Alliance Auth:
 
 ### Structure Notification
 
-- *Structure notifications are forwarded to a Discord channel as alerts (planned)*
+- Structure notifications are automatically forwarded to Discord channels as alerts
 - *Structure timers are added to aa-timers app (if installed) (planned)*
 
 ## Screenshots
@@ -115,7 +115,9 @@ Note that as admin you can review all structures and notifications on the admin 
 
 The setup and configuration for Discord webhooks is done on the admin page under **Structures**.
 
-To setup notifications you first need to add your Discord webhooks to **Webhooks**. You can then assign those webhooks to the respective structure owners. Once all webhooks are assigned you can active the webhook to enable the forwarding of notifications to the configured webhooks.
+To setup notifications you first need to add your Discord webhooks to **Webhook**. You can then assign those webhooks to the respective structure owners. Once all webhooks are assigned you can active the webhook to enable the forwarding of notifications to the configured webhooks.
+
+Note that its possible to define different webhooks for different sets of notification types. e.g. one webhook for structures alerts, and one for moon mining alerts. To get this setup you need to first create one webhook for each set and specify which notification types each webhook shall support. Then assign all those webhooks to the same owner.
 
 ## Updating
 
