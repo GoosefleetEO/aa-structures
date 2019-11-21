@@ -1,5 +1,6 @@
 import calendar
 
+from django.db import transaction
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
@@ -8,10 +9,9 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, EveAllianceInfo
 from esi.decorators import token_required
 
-from . import evelinks
-from . import tasks
+from . import evelinks, tasks, __title__
 from .models import *
-from .utils import messages_plus, DATETIME_FORMAT
+from .utils import messages_plus, DATETIME_FORMAT, notify_admins
 
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 40
@@ -197,17 +197,19 @@ def add_structure_owner(request, token):
                 token_char.corporation_id
             )            
         
-        default_webhook = Webhook.objects\
-            .filter(is_default__exact=True)\
-            .first()
-        
-        owner, created = Owner.objects.update_or_create(
-            corporation=corporation,
-            defaults={
-                'character': owned_char,
-                'webhook': default_webhook
-            }
-        )          
+        with transaction.atomic():
+            owner, created = Owner.objects.update_or_create(
+                corporation=corporation,
+                defaults={
+                    'character': owned_char
+                }                    
+            )
+            default_webhooks = Webhook.objects.filter(is_default__exact=True)
+            if default_webhooks:
+                for webhook in default_webhooks:
+                    owner.webhooks.add(webhook)
+                owner.save()
+
         tasks.update_structures_for_owner.delay(            
             owner_pk=owner.pk,
             force_sync=True,
@@ -227,13 +229,13 @@ def add_structure_owner(request, token):
             + 'We have started fetching structures and notifications for this corporation. '
             + 'You will receive a reports for both once completed.'
         )
-    return redirect('structures:index')
-
-
-@login_required
-@permission_required('structures.basic_access')
-def test(request):
-    tasks.update_structures_for_owner()
+        notify_admins(
+            message='{} was added as new structure owner by {}.'.format(
+                owner.corporation.corporation_name,
+                request.user.username
+            ), 
+            title='{}: Structure owner added'.format(__title__)
+        )
     return redirect('structures:index')
 
 

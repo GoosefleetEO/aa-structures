@@ -110,7 +110,7 @@ class TestTasksStructures(TestCase):
         )
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.structures_last_error, 
             Owner.ERROR_NO_CHARACTER
         )
 
@@ -142,7 +142,7 @@ class TestTasksStructures(TestCase):
 
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.structures_last_error, 
             Owner.ERROR_TOKEN_EXPIRED            
         )
 
@@ -175,7 +175,7 @@ class TestTasksStructures(TestCase):
 
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.structures_last_error, 
             Owner.ERROR_TOKEN_INVALID            
         )
     
@@ -243,7 +243,7 @@ class TestTasksStructures(TestCase):
 
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.structures_last_error, 
             Owner.ERROR_NONE            
         )
         
@@ -352,7 +352,7 @@ class TestTasksNotifications(TestCase):
         )
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.notifications_last_error, 
             Owner.ERROR_NO_CHARACTER
         )
 
@@ -384,7 +384,7 @@ class TestTasksNotifications(TestCase):
 
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.notifications_last_error, 
             Owner.ERROR_TOKEN_EXPIRED            
         )
 
@@ -416,7 +416,7 @@ class TestTasksNotifications(TestCase):
 
         owner.refresh_from_db()
         self.assertEqual(
-            owner.last_error, 
+            owner.notifications_last_error, 
             Owner.ERROR_TOKEN_INVALID            
         )
         
@@ -460,7 +460,7 @@ class TestTasksNotifications(TestCase):
 
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.last_error, 
+            self.owner.notifications_last_error, 
             Owner.ERROR_NONE            
         )
                 

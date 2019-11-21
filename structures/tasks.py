@@ -1,6 +1,5 @@
 import logging
 import os
-import hashlib
 import json
 import re
 from time import sleep
@@ -46,7 +45,7 @@ def update_structures_for_owner(
     add_prefix = make_logger_prefix(owner)
 
     try:        
-        owner.last_sync = now()
+        owner.structures_last_sync = now()
         owner.save()
         
         # abort if character is not configured
@@ -54,7 +53,7 @@ def update_structures_for_owner(
             logger.error(add_prefix(
                 'No character configured to sync'
             ))           
-            owner.last_error = Owner.ERROR_NO_CHARACTER
+            owner.structures_last_error = Owner.ERROR_NO_CHARACTER
             owner.save()
             raise ValueError()
 
@@ -66,7 +65,7 @@ def update_structures_for_owner(
                 'Character does not have sufficient permission '
                 + 'to sync structures'
             ))            
-            owner.last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
+            owner.structures_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
             owner.save()
             raise ValueError()
 
@@ -82,14 +81,14 @@ def update_structures_for_owner(
             logger.error(add_prefix(
                 'Invalid token for fetching structures'
             ))            
-            owner.last_error = Owner.ERROR_TOKEN_INVALID
+            owner.structures_last_error = Owner.ERROR_TOKEN_INVALID
             owner.save()
             raise TokenInvalidError()                    
         except TokenExpiredError:            
             logger.error(add_prefix(
                 'Token expired for fetching structures'
             ))
-            owner.last_error = Owner.ERROR_TOKEN_EXPIRED
+            owner.structures_last_error = Owner.ERROR_TOKEN_EXPIRED
             owner.save()
             raise TokenExpiredError()
         else:
@@ -97,7 +96,7 @@ def update_structures_for_owner(
                 logger.error(add_prefix(
                     'Missing token for fetching structures'
                 ))            
-                owner.last_error = Owner.ERROR_TOKEN_INVALID
+                owner.structures_last_error = Owner.ERROR_TOKEN_INVALID
                 owner.save()
                 raise TokenInvalidError()                    
             
@@ -155,117 +154,101 @@ def update_structures_for_owner(
                         sort_keys=True, 
                         indent=4
                     )
-            
-            # determine if structures have changed by comparing their hashes
-            new_version_hash = hashlib.md5(
-                json.dumps(structures, cls=DjangoJSONEncoder).encode('utf-8')
-            ).hexdigest()
-            if force_sync or new_version_hash != owner.version_hash:
-                logger.info(add_prefix(
-                    'Storing update with {:,} structures'.format(
-                        len(structures)
-                    ))
-                )
-                
-                # update structures in local DB                
-                with transaction.atomic():                
-                    Structure.objects.filter(owner=owner).delete()
-                    for structure in structures:                    
-                        name = re.search(
-                            '^\S+ - (.+)', 
-                            structure['name']
-                        ).group(1)                        
-                        eve_type, _ = EveType.objects.get_or_create_esi(
-                            structure['type_id'],
-                            client
-                        )
-                        eve_solar_system, _ = \
-                            EveSolarSystem.objects.get_or_create_esi(
-                                structure['system_id'],
-                                client
-                        )
-                        fuel_expires = structure['fuel_expires'] \
-                            if 'fuel_expires' in structure else None
-
-                        next_reinforce_hour = \
-                            structure['next_reinforce_hour']  \
-                            if 'next_reinforce_hour' in structure else None
-
-                        next_reinforce_weekday = \
-                            structure['next_reinforce_weekday'] \
-                            if 'next_reinforce_weekday' in structure else None
-
-                        next_reinforce_apply = \
-                            structure['next_reinforce_apply'] \
-                            if 'next_reinforce_apply' in structure else None
-
-                        reinforce_hour = structure['reinforce_hour'] \
-                                if 'reinforce_hour' in structure else None
                         
-                        reinforce_weekday = structure['reinforce_weekday'] \
-                            if 'reinforce_weekday' in structure else None
+            logger.info(add_prefix(
+                'Storing update for {:,} structures'.format(
+                    len(structures)
+            )))
+            with transaction.atomic():
+                Structure.objects.filter(owner=owner).delete()
+                for structure in structures:                    
+                    name = re.search(
+                        '^\S+ - (.+)', 
+                        structure['name']
+                    ).group(1)                        
+                    eve_type, _ = EveType.objects.get_or_create_esi(
+                        structure['type_id'],
+                        client
+                    )
+                    eve_solar_system, _ = \
+                        EveSolarSystem.objects.get_or_create_esi(
+                            structure['system_id'],
+                            client
+                    )
+                    fuel_expires = structure['fuel_expires'] \
+                        if 'fuel_expires' in structure else None
 
-                        state = Structure.get_matching_state(
-                            structure['state']
-                        )
+                    next_reinforce_hour = \
+                        structure['next_reinforce_hour']  \
+                        if 'next_reinforce_hour' in structure else None
 
-                        state_timer_start = structure['state_timer_start'] \
-                            if 'state_timer_start' in structure else None
+                    next_reinforce_weekday = \
+                        structure['next_reinforce_weekday'] \
+                        if 'next_reinforce_weekday' in structure else None
 
-                        state_timer_end = structure['state_timer_end'] \
-                            if 'state_timer_end' in structure else None
+                    next_reinforce_apply = \
+                        structure['next_reinforce_apply'] \
+                        if 'next_reinforce_apply' in structure else None
 
-                        unanchors_at =  structure['unanchors_at']\
-                            if 'unanchors_at' in structure else None
+                    reinforce_hour = structure['reinforce_hour'] \
+                            if 'reinforce_hour' in structure else None
+                    
+                    reinforce_weekday = structure['reinforce_weekday'] \
+                        if 'reinforce_weekday' in structure else None
 
-                        obj = Structure.objects.create(
-                            id=structure['structure_id'],
-                            owner=owner,
-                            eve_type=eve_type,
-                            name=name,
-                            eve_solar_system=eve_solar_system,
-                            position_x=structure['position']['x'],
-                            position_y=structure['position']['y'],
-                            position_z=structure['position']['z'],
-                            fuel_expires=fuel_expires,
-                            next_reinforce_hour=next_reinforce_hour,
-                            next_reinforce_weekday=next_reinforce_weekday,
-                            next_reinforce_apply=next_reinforce_apply,
-                            reinforce_hour=structure['reinforce_hour'],
-                            reinforce_weekday=reinforce_weekday,
-                            state=state,
-                            state_timer_start=state_timer_start,
-                            state_timer_end=state_timer_end,
-                            unanchors_at=unanchors_at,
-                            last_updated=owner.last_sync
-                        )
-                        if structure['services']:
-                            for service in structure['services']:
-                                state = StructureService.get_matching_state(
-                                    service['state']
-                                )
-                                StructureService.objects.create(
-                                    structure=obj,
-                                    name=service['name'],
-                                    state=state
-                                )
-                    owner.version_hash = new_version_hash                
-                    owner.save()
-                    success = True
+                    state = Structure.get_matching_state(
+                        structure['state']
+                    )
 
-                owner.last_error = Owner.ERROR_NONE
+                    state_timer_start = structure['state_timer_start'] \
+                        if 'state_timer_start' in structure else None
+
+                    state_timer_end = structure['state_timer_end'] \
+                        if 'state_timer_end' in structure else None
+
+                    unanchors_at =  structure['unanchors_at']\
+                        if 'unanchors_at' in structure else None
+
+                    obj = Structure.objects.create(
+                        id=structure['structure_id'],
+                        owner=owner,
+                        eve_type=eve_type,
+                        name=name,
+                        eve_solar_system=eve_solar_system,
+                        position_x=structure['position']['x'],
+                        position_y=structure['position']['y'],
+                        position_z=structure['position']['z'],
+                        fuel_expires=fuel_expires,
+                        next_reinforce_hour=next_reinforce_hour,
+                        next_reinforce_weekday=next_reinforce_weekday,
+                        next_reinforce_apply=next_reinforce_apply,
+                        reinforce_hour=structure['reinforce_hour'],
+                        reinforce_weekday=reinforce_weekday,
+                        state=state,
+                        state_timer_start=state_timer_start,
+                        state_timer_end=state_timer_end,
+                        unanchors_at=unanchors_at,
+                        last_updated=owner.structures_last_sync
+                    )
+                    if structure['services']:
+                        for service in structure['services']:
+                            state = StructureService.get_matching_state(
+                                service['state']
+                            )
+                            StructureService.objects.create(
+                                structure=obj,
+                                name=service['name'],
+                                state=state
+                            )                                
+                
+                owner.structures_last_error = Owner.ERROR_NONE
                 owner.save()
 
-            else:
-                logger.info(add_prefix('Structures are unchanged.'))
-                success = True
-
-            
         except Exception as ex:
                 logger.error(add_prefix(
                     'An unexpected error ocurred {}'. format(ex)
                 ))                                
-                owner.last_error = Owner.ERROR_UNKNOWN
+                owner.structures_last_error = Owner.ERROR_UNKNOWN
                 owner.save()
                 raise ex
 
@@ -333,7 +316,7 @@ def fetch_notifications_for_owner(
     add_prefix = make_logger_prefix(owner)
 
     try:        
-        owner.last_sync = now()
+        owner.notifications_last_sync = now()
         owner.save()
         
         # abort if character is not configured
@@ -341,7 +324,7 @@ def fetch_notifications_for_owner(
             logger.error(add_prefix(
                 'No character configured to sync'
             ))           
-            owner.last_error = Owner.ERROR_NO_CHARACTER
+            owner.notifications_last_error = Owner.ERROR_NO_CHARACTER
             owner.save()
             raise ValueError()
 
@@ -353,7 +336,7 @@ def fetch_notifications_for_owner(
                 'Character does not have sufficient permission '
                 + 'to fetch notifications'
             ))            
-            owner.last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
+            owner.notifications_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
             owner.save()
             raise ValueError()
 
@@ -369,14 +352,14 @@ def fetch_notifications_for_owner(
             logger.error(add_prefix(
                 'Invalid token for fetching notifications'
             ))            
-            owner.last_error = Owner.ERROR_TOKEN_INVALID
+            owner.notifications_last_error = Owner.ERROR_TOKEN_INVALID
             owner.save()
             raise TokenInvalidError()                    
         except TokenExpiredError:            
             logger.error(add_prefix(
                 'Token expired for fetching notifications'
             ))
-            owner.last_error = Owner.ERROR_TOKEN_EXPIRED
+            owner.notifications_last_error = Owner.ERROR_TOKEN_EXPIRED
             owner.save()
             raise TokenExpiredError()
         else:
@@ -384,7 +367,7 @@ def fetch_notifications_for_owner(
                 logger.error(add_prefix(
                     'Missing token for fetching notifications'
                 ))            
-                owner.last_error = Owner.ERROR_TOKEN_INVALID
+                owner.notifications_last_error = Owner.ERROR_TOKEN_INVALID
                 owner.save()
                 raise TokenInvalidError()                    
             
@@ -421,76 +404,61 @@ def fetch_notifications_for_owner(
                         indent=4
                     )
             
-            # determine if notifications have changed by comparing their hashes
-            new_version_hash = hashlib.md5(
-                json.dumps(notifications, cls=DjangoJSONEncoder).encode('utf-8')
-            ).hexdigest()
-            if force_sync or new_version_hash != owner.version_hash:
-                logger.info(add_prefix(
-                    'Storing update with {:,} notifications'.format(
-                        len(notifications)
-                    ))
-                )
-                
-                # update notifications in local DB                
-                with transaction.atomic():                                    
-                    for notification in notifications:                        
-                        notification_type = \
-                            Notification.get_matching_notification_type(
-                                notification['type']
+            logger.info(add_prefix(
+                'Storing update with {:,} notifications'.format(
+                    len(notifications)
+            )))
+            
+            # update notifications in local DB                
+            with transaction.atomic():                                    
+                for notification in notifications:                        
+                    notification_type = \
+                        Notification.get_matching_notification_type(
+                            notification['type']
+                        )
+                    if notification_type:
+                        sender_type = \
+                            NotificationEntity.get_matching_entity_type(
+                                notification['sender_type']
                             )
-                        if notification_type:
-                            sender_type = \
-                                NotificationEntity.get_matching_entity_type(
-                                    notification['sender_type']
+                        if sender_type != NotificationEntity.CATEGORY_OTHER:
+                            sender, _ = NotificationEntity\
+                            .objects.get_or_create_esi(
+                                notification['sender_id'],
+                                client
+                            )
+                        else:
+                            sender, _ = NotificationEntity\
+                                .objects.get_or_create(
+                                    id=notification['sender_id'],
+                                    defaults={
+                                        'category': sender_type
+                                    }
                                 )
-                            if sender_type != NotificationEntity.CATEGORY_OTHER:
-                                sender, _ = NotificationEntity\
-                                .objects.get_or_create_esi(
-                                    notification['sender_id'],
-                                    client
-                                )
-                            else:
-                                sender, _ = NotificationEntity\
-                                    .objects.get_or_create(
-                                        id=notification['sender_id'],
-                                        defaults={
-                                            'category': sender_type
-                                        }
-                                    )
-                            text = notification['text'] \
-                                if 'text' in notification else None
-                            is_read = notification['is_read'] \
-                                if 'is_read' in notification else None
-                            obj = Notification.objects.update_or_create(
-                                notification_id=notification['notification_id'],
-                                owner=owner,
-                                defaults={
-                                    'sender': sender,
-                                    'timestamp': notification['timestamp'],
-                                    'notification_type': notification_type,
-                                    'text': text,
-                                    'is_read': is_read,
-                                    'last_updated': owner.last_sync,
-                                }
-                            )                        
-                    owner.version_hash = new_version_hash                
-                    owner.save()
-                    success = True
-
-                owner.last_error = Owner.ERROR_NONE
+                        text = notification['text'] \
+                            if 'text' in notification else None
+                        is_read = notification['is_read'] \
+                            if 'is_read' in notification else None
+                        obj = Notification.objects.update_or_create(
+                            notification_id=notification['notification_id'],
+                            owner=owner,
+                            defaults={
+                                'sender': sender,
+                                'timestamp': notification['timestamp'],
+                                'notification_type': notification_type,
+                                'text': text,
+                                'is_read': is_read,
+                                'last_updated': owner.notifications_last_sync,
+                            }
+                        )                                      
+                owner.notifications_last_error = Owner.ERROR_NONE
                 owner.save()
-
-            else:
-                logger.info(add_prefix('No new notifications'))
-                success = True
-
             
         except Exception as ex:
                 logger.error(add_prefix(
                     'An unexpected error ocurred {}'. format(ex)
                 ))                                
-                owner.last_error = Owner.ERROR_UNKNOWN
+                owner.notifications_last_error = Owner.ERROR_UNKNOWN
                 owner.save()
                 raise ex
 
@@ -550,11 +518,13 @@ def send_notification(notification_pk):
                 notification_pk
         ))
     else:    
-        notification.send_to_webhook()
+        for webhook in notification.owner.webhooks.all():
+            if str(notification.notification_type) in webhook.notification_types:
+                notification.send_to_webhook(webhook)
 
 
 @shared_task
-def send_new_notifications_to_webhook(webhook_pk):
+def send_new_notifications_to_webhook(webhook_pk, send_again = False):
     """sends unsent notifications for given webhook"""    
     try:
         webhook = Webhook.objects.get(pk=webhook_pk)

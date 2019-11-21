@@ -82,6 +82,11 @@ class General(models.Model):
         )
 
 
+def get_default_notification_types():
+    """generates a set of all existing notification types as default"""
+    return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
+
+
 class Webhook(models.Model):
     """A destination for forwarding notification alerts"""
     
@@ -112,6 +117,19 @@ class Webhook(models.Model):
         blank=True,        
         help_text='you can add notes about this webhook here if you want'
     )
+    notification_types = MultiSelectField(
+        choices=NTYPE_CHOICES,
+        default=get_default_notification_types,        
+        help_text='only notifications which selected types are sent to this webhook'
+    )    
+    is_active = models.BooleanField(        
+        default=True,
+        help_text='whether notifications are currently sent to this webhook'
+    )
+    is_default = models.BooleanField(        
+        default=False,
+        help_text='whether newly added owners have this automatically webhook preset'
+    )
         
     def __str__(self):
         return self.name
@@ -132,6 +150,7 @@ class Webhook(models.Model):
                 q = q.filter(is_sent__exact=False)\
                         .filter(timestamp__gte=cutoff_dt_for_stale)
             
+            q = q.filter(notification_type__in=self.notification_types)
             q = q.select_related()
 
             if q.count() > 0:
@@ -143,7 +162,7 @@ class Webhook(models.Model):
                 )))
                 
                 for notification in q:
-                    notification.send_to_webhook()
+                    notification.send_to_webhook(self)
                     sleep(1)
         
         if new_notifications_count == 0:
@@ -201,25 +220,35 @@ class Owner(models.Model):
         null=True,
         blank=True,
         help_text='character used for syncing structures'
-    )
-    version_hash = models.CharField(
-        max_length=32, 
-        null=True, 
-        default=None, 
-        blank=True,
-        help_text='hash to identify changes to structures'
-    )
-    last_sync = models.DateTimeField(
+    )    
+    structures_last_sync = models.DateTimeField(
         null=True, 
         default=None, 
         blank=True,
         help_text='when the last sync happened'
     )
-    last_error = models.IntegerField(
+    structures_last_error = models.IntegerField(
         choices=ERRORS_LIST, 
         default=ERROR_NONE,
         help_text='error that occurred at the last sync atttempt (if any)'
-    )    
+    )
+    notifications_last_sync = models.DateTimeField(
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='when the last sync happened'
+    )
+    notifications_last_error = models.IntegerField(
+        choices=ERRORS_LIST, 
+        default=ERROR_NONE,
+        help_text='error that occurred at the last sync atttempt (if any)'
+    )
+    webhooks = models.ManyToManyField(
+        Webhook,         
+        default=None, 
+        blank=True,
+        help_text='notifications are sent to these webhooks. '
+    )
 
     def __str__(self):
         return str(self.corporation.corporation_name)
@@ -231,46 +260,6 @@ class Owner(models.Model):
             'esi-universe.read_structures.v1',
             'esi-characters.read_notifications.v1'
         ]
-
-
-def get_default_notification_types():
-    """generates a set of all existing notification types as default"""
-    return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
-
-class Profile(models.Model):
-    """Profile defines which notification types are sent to which webhook
-    Each owner can have multiple profiles
-    """
-    name = models.CharField(
-        max_length=255,
-        unique=True,
-        help_text='Name of this profile',        
-    )
-    owner = models.ForeignKey(
-        Owner, 
-        on_delete=models.CASCADE,
-        help_text='Corporation that owns the structure'
-    )
-    webhook = models.ForeignKey(
-        Webhook, 
-        on_delete=models.SET_DEFAULT,
-        null=True, 
-        default=None, 
-        blank=True,
-        help_text='Notifications are sent to this webhook'
-    )
-    notification_types = MultiSelectField(
-        choices=NTYPE_CHOICES,
-        default=get_default_notification_types
-    )    
-    is_active = models.BooleanField(        
-        default=True,
-        help_text='whether notifications are sent with this profile'
-    )
-    
-    def __str__(self):
-        return self.name
-
 
 class EveRegion(models.Model):
     """region in Eve Online"""
@@ -1029,52 +1018,52 @@ class Notification(models.Model):
         )
 
 
-    def send_to_webhook(self):
-        """sends this notification to the configured webhook"""
-        if self.owner.webhook:
-            add_prefix = make_logger_prefix(
-                'notification:{}'.format(self.notification_id)
-            )            
-            username = '{} Notification'.format(
-                self.owner.corporation.corporation_ticker
-            )
-            avatar_url = self.owner.corporation.logo_url()
+    def send_to_webhook(self, webhook: Webhook):
+        """sends this notification to the configured webhook"""        
+    
+        add_prefix = make_logger_prefix(
+            'notification:{}'.format(self.notification_id)
+        )            
+        username = '{} Notification'.format(
+            self.owner.corporation.corporation_ticker
+        )
+        avatar_url = self.owner.corporation.logo_url()
 
-            hook = dhooks_lite.Webhook(
-                self.owner.webhook.url, 
-                username=username,
-                avatar_url=avatar_url
-            )                        
-            with transaction.atomic():
-                logger.info(add_prefix(
-                    'Trying to sent notification to webhook: {}'.format(
-                        self.owner.webhook
-                )))                
-                
-                desc = self.text
-                try:
-                    embed = self._generate_embed()         
-                except Exception as ex:
-                    logger.warning(add_prefix(
-                        'Failed to generate embed: {}'.format(ex)
-                    ))
-                    raise ex
-                else:                                                
-                    if embed.color == self.EMBED_COLOR_DANGER:
-                        content = '@everyone'
-                    elif embed.color == self.EMBED_COLOR_WARNING:
-                        content = '@here'
-                    else:
-                        content = None
-                    hook.execute(content=content, embeds=[embed])
-                    self.is_sent = True
-                    self.save()
+        hook = dhooks_lite.Webhook(
+            webhook.url, 
+            username=username,
+            avatar_url=avatar_url
+        )                        
+        with transaction.atomic():
+            logger.info(add_prefix(
+                'Trying to sent to webhook: {}'.format(
+                    webhook
+            )))                
+            
+            desc = self.text
+            try:
+                embed = self._generate_embed()         
+            except Exception as ex:
+                logger.warning(add_prefix(
+                    'Failed to generate embed: {}'.format(ex)
+                ))
+                raise ex
+            else:                                                
+                if embed.color == self.EMBED_COLOR_DANGER:
+                    content = '@everyone'
+                elif embed.color == self.EMBED_COLOR_WARNING:
+                    content = '@here'
+                else:
+                    content = None
+                hook.execute(content=content, embeds=[embed])
+                self.is_sent = True
+                self.save()
 
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:
         """returns matching notification type for given name or None"""
         match = None
-        for x in cls.NTYPE_CHOICES:
+        for x in NTYPE_CHOICES:
             if type_name == x[1]:
                 match = x
                 break
