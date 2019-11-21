@@ -307,7 +307,7 @@ class TestTasksNotifications(TestCase):
             EveType,
             EveCorporationInfo,
             EveCharacter,    
-            NotificationEntity    
+            EveEntity    
         ]
     
         for EntityClass in entities_def:

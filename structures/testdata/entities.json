@@ -94,7 +94,7 @@
             "corporation_ticker": "LEX"
         }
     ],
-    "NotificationEntity":
+    "EveEntity":
     [
         {
             "id": 3011,

@@ -20,7 +20,7 @@ from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, \
-    NotificationEntityManager, EveMoonManager
+    EveEntityManager, EveMoonManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 
@@ -606,8 +606,8 @@ class StructureService(models.Model):
         return match[0]
 
 
-class NotificationEntity(models.Model):
-    """An EVE entity used in notifications"""
+class EveEntity(models.Model):
+    """An EVE entity like a character or an alliance"""
     
     CATEGORY_CHARACTER = 1
     CATEGORY_CORPORATION = 2
@@ -637,7 +637,7 @@ class NotificationEntity(models.Model):
         blank=True
     )
 
-    objects = NotificationEntityManager()
+    objects = EveEntityManager()
 
     def __str__(self):
         return str(self.name)
@@ -672,7 +672,7 @@ class Notification(models.Model):
         on_delete=models.CASCADE,
         help_text='Corporation that received this notification'
     )
-    sender = models.ForeignKey(NotificationEntity, on_delete=models.CASCADE)
+    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
     timestamp = models.DateTimeField()
     notification_type = models.IntegerField(
         choices=NTYPE_CHOICES
@@ -760,7 +760,8 @@ class Notification(models.Model):
             NTYPE_STRUCTURE_UNDER_ATTACK,
             NTYPE_STRUCTURE_LOST_SHIELD,
             NTYPE_STRUCTURE_LOST_ARMOR,
-            NTYPE_STRUCTURE_DESTROYED
+            NTYPE_STRUCTURE_DESTROYED,
+            NTYPE_STRUCTURE_ONLINE
         ]:
             # with these types we can assume we have the corresponding
             # structure in our database
@@ -843,7 +844,7 @@ class Notification(models.Model):
                 description += 'has been destroyed.'
                 color = self.EMBED_COLOR_DANGER
 
-        if self.notification_type in [
+        elif self.notification_type in [
             NTYPE_MOONMINING_AUTOMATIC_FRACTURE,
             NTYPE_MOONMINING_EXTRACTION_CANCELED,
             NTYPE_MOONMINING_EXTRACTION_FINISHED,
@@ -860,7 +861,7 @@ class Notification(models.Model):
             if self.notification_type == \
                 NTYPE_MOONMINING_EXTRACTION_STARTED:   
                                 
-                started_by, _ = NotificationEntity.objects.get_or_create_esi(
+                started_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['startedBy']
                 )
                 ready_time = ldap_datetime_2_dt(parsed_text['readyTime'])
@@ -911,7 +912,7 @@ class Notification(models.Model):
             elif self.notification_type == \
                 NTYPE_MOONMINING_EXTRACTION_CANCELED:   
                 
-                cancelled_by, _ = NotificationEntity.objects.get_or_create_esi(
+                cancelled_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['cancelledBy']
                 )
                 title = 'Extraction cancelled'
@@ -928,7 +929,7 @@ class Notification(models.Model):
             elif self.notification_type == \
                 NTYPE_MOONMINING_LASER_FIRED:
                 
-                fired_by, _ = NotificationEntity.objects.get_or_create_esi(
+                fired_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['firedBy']
                 )
                 title = 'Moondrill fired'
@@ -959,17 +960,17 @@ class Notification(models.Model):
                     gen_solar_system_text(solar_system)
                 )
                 from_corporation, _ = \
-                    NotificationEntity.objects.get_or_create_esi(
+                    EveEntity.objects.get_or_create_esi(
                         parsed_text['oldOwnerCorpID'],
                         client
                     )
                 to_corporation, _ = \
-                    NotificationEntity.objects.get_or_create_esi(
+                    EveEntity.objects.get_or_create_esi(
                         parsed_text['newOwnerCorpID'],
                         client
                     )
                 character, _ = \
-                    NotificationEntity.objects.get_or_create_esi(
+                    EveEntity.objects.get_or_create_esi(
                         parsed_text['charID'],
                         client
                     )
@@ -1007,7 +1008,9 @@ class Notification(models.Model):
                 color = self.EMBED_COLOR_INFO
 
             else:
-                raise NotImplementedError()
+                raise NotImplementedError('type: {}'.format(
+                    self.notification_type
+                ))
                 
         return dhooks_lite.Embed(
             title=title,

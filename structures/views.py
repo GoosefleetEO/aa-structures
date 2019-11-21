@@ -14,7 +14,7 @@ from .models import *
 from .utils import messages_plus, DATETIME_FORMAT, notify_admins
 
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
-STRUCTURE_LIST_ICON_OUTPUT_SIZE = 40
+STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 
 @login_required
 @permission_required('structures.basic_access')
@@ -214,20 +214,15 @@ def add_structure_owner(request, token):
             owner_pk=owner.pk,
             force_sync=True,
             user_pk=request.user.pk
-        )
-        tasks.fetch_notifications_for_owner.delay(            
-            owner_pk=owner.pk,
-            force_sync=True,
-            user_pk=request.user.pk
-        )
+        )        
         messages_plus.success(
             request,             
             '<strong>{}</strong> has been added '.format(owner)
             + 'with <strong>{}</strong> as sync character. '.format(
                     owner.character.character.character_name, 
                 )                        
-            + 'We have started fetching structures and notifications for this corporation. '
-            + 'You will receive a reports for both once completed.'
+            + 'We have started fetching structures for this corporation. '
+            + 'You will receive a reports once completed.'
         )
         notify_admins(
             message='{} was added as new structure owner by {}.'.format(

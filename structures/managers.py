@@ -356,19 +356,19 @@ class EveMoonManager(models.Manager):
         return obj, created
 
 
-class NotificationEntityManager(models.Manager):
+class EveEntityManager(models.Manager):
     
     def get_or_create_esi(
             self,             
             eve_entity_id: int,
             client: object = None
     ) -> list:
-        """gets or creates NotificationEntity obj with data fetched from ESI"""
-        from .models import NotificationEntity
+        """gets or creates EveEntity obj with data fetched from ESI"""
+        from .models import EveEntity
         try:
             obj = self.get(id=eve_entity_id)
             created = False
-        except NotificationEntity.DoesNotExist:
+        except EveEntity.DoesNotExist:
             obj, created = self.update_or_create_esi(                
                 eve_entity_id,
                 client
@@ -383,7 +383,7 @@ class NotificationEntityManager(models.Manager):
             client: object = None
     ) -> list:
         """updates or creates eve_group object with data fetched from ESI"""
-        from .models import NotificationEntity
+        from .models import EveEntity
 
         addPrefix = make_logger_prefix(eve_entity_id)
 
@@ -396,11 +396,11 @@ class NotificationEntityManager(models.Manager):
             ).result()
             if len(response) > 0:
                 first = response[0]
-                type = NotificationEntity.get_matching_entity_type(
+                type = EveEntity.get_matching_entity_type(
                     first['category']
                 )
                 if not type:
-                    type = NotificationEntity.CATEGORY_OTHER
+                    type = EveEntity.CATEGORY_OTHER
 
                 obj, created = self.update_or_create(
                     id=eve_entity_id,

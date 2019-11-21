@@ -418,17 +418,17 @@ def fetch_notifications_for_owner(
                         )
                     if notification_type:
                         sender_type = \
-                            NotificationEntity.get_matching_entity_type(
+                            EveEntity.get_matching_entity_type(
                                 notification['sender_type']
                             )
-                        if sender_type != NotificationEntity.CATEGORY_OTHER:
-                            sender, _ = NotificationEntity\
+                        if sender_type != EveEntity.CATEGORY_OTHER:
+                            sender, _ = EveEntity\
                             .objects.get_or_create_esi(
                                 notification['sender_id'],
                                 client
                             )
                         else:
-                            sender, _ = NotificationEntity\
+                            sender, _ = EveEntity\
                                 .objects.get_or_create(
                                     id=notification['sender_id'],
                                     defaults={

@@ -22,6 +22,29 @@ class EveConstellationAdmin(admin.ModelAdmin):
             return False
 
 
+@admin.register(EveEntity)
+class EveEntityAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 
+        'name', 
+        'category',         
+    )
+    list_filter = ( 'category', )
+    list_display_links = None
+
+    def has_add_permission(self, request):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
+    def has_change_permission(self, request, obj=None):
+        if settings.DEBUG:
+            return True
+        else:
+            return False
+
+
 @admin.register(EveGroup)
 class EveGroupAdmin(admin.ModelAdmin):
     
@@ -176,46 +199,23 @@ class NotificationAdmin(admin.ModelAdmin):
             return False
 
 
-@admin.register(NotificationEntity)
-class NotificationEntityAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 
-        'name', 
-        'category',         
-    )
-    list_filter = ( 'category', )
-    list_display_links = None
-
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
     list_display = (
         'corporation', 
         'character', 
         'webhooks_list',
-        'sync_ok',         
+        'last_sync_ok',         
     )
     
     def webhooks_list(self, obj):
         return ', '.join([x.name for x in obj.webhooks.all().order_by('name')])
 
-    def sync_ok(self, obj):
+    def last_sync_ok(self, obj):
         return obj.notifications_last_error == Owner.ERROR_NONE \
             and obj.structures_last_error == Owner.ERROR_NONE
 
-    sync_ok.boolean = True
+    last_sync_ok.boolean = True
 
 
     def get_readonly_fields(self, request, obj = None):
