@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('eveonline', '0010_alliance_ticker'),
-        ('authentication', '0018_delete_group'),
+        ('authentication', '0016_ownershiprecord'),
     ]
 
     operations = [
