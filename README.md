@@ -99,7 +99,15 @@ Now you can setup permissions in Alliance Auth for your users.
 
 See section [Permissions](#permissions) below for details.
 
-### 6. Add structure owner
+### 6. Setup notifications to Discord
+
+The setup and configuration for Discord webhooks is done on the admin page under **Structures**.
+
+To setup notifications you first need to add the Discord webhook that point to the channel you want notifications to appear to **Webhooks**. We would recommend that you also enable `is_default` for your main webhook, so that newly added structure owners automatically use this webhook. Alternatively you need to manually assign webhooks to existing owners after they have been added (see below).
+
+Finally to verify that your webhook is correctly setup you can send a test notification. This is one of the available actions on Webhooks page.
+
+### 7. Add structure owners
 
 Next you need to add your first structure owner with the character that will be used for fetching structures. Just open the Alliance Structures app and click on "Add Structure Owner". Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
 
@@ -108,14 +116,6 @@ Once a structure owner is set the app will start fetching the corporation struct
 You will need to add every corporation as Structure Owner to include their structures and notifications in the app.
 
 Note that as admin you can review all structures and notifications on the admin panel.
-
-### 7. Setup notifications to Discord
-
-The setup and configuration for Discord webhooks is done on the admin page under **Structures**.
-
-To setup notifications you first need to add your Discord webhooks to **Webhook**. You can then assign those webhooks to the respective structure owners. Once all webhooks are assigned you can active the webhook to enable the forwarding of notifications to the configured webhooks.
-
-Note that its possible to define different webhooks for different sets of notification types. e.g. one webhook for structures alerts, and one for moon mining alerts. To get this setup you need to first create one webhook for each set and specify which notification types each webhook shall support. Then assign all those webhooks to the same owner.
 
 ## Updating
 

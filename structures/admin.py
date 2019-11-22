@@ -196,6 +196,18 @@ class OwnerAdmin(admin.ModelAdmin):
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
 
+    def has_add_permission(self, request):
+        if STRUCTURES_DEVELOPER_MODE:
+            return True
+        else:
+            return False
+
+    def has_change_permission(self, request, obj=None):
+        if STRUCTURES_DEVELOPER_MODE:
+            return True
+        else:
+            return False
+
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
