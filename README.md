@@ -13,6 +13,7 @@ This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianc
 - [Updating](#updating)
 - [Settings](#settings)
 - [Permissions](#permissions)
+- [Service monitoring](#service-monitoring)
 - [Change Log](CHANGELOG.md)
 
 ## Overview
@@ -23,23 +24,20 @@ This app add support for structures to Alliance Auth. It's main purpose is to ma
 
 Alliance Structures adds the following features to Alliance Auth:
 
-### Structure Browser
-
 - Detailed list of all structures owned by alliances / corporation showing location, services, fuel status and state
 - Access to structure list can be configured based on permissions
 - Ability to search and filter in structure list
 - Directors can add their corporation to include it's structures
 - Structure list is automatically kept up-to-date
-- *Structures include Upwell structures, POCOs (planned) and POSes (planned)*
-
-### Structure Notification
-
 - Structure notifications are automatically forwarded to Discord channels as alerts
+- Interface for 3rd party monitoring of the services status
+
+- *Structures include Upwell structures, POCOs (planned) and POSes (planned)*
 - *Structure timers are added to aa-timers app (if installed) (planned)*
 
 ## Screenshots
 
-(tbd.)
+![StructureList](https://i.imgur.com/AW2NXLI.png)
 
 ## Installation
 
@@ -146,6 +144,9 @@ Here is a list of available settings for this app. They can be configured by add
 Name | Description | Default
 -- | -- | --
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | 24
+`STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES`| Max time in minutes since last successful structures sync before service is reported as down  | 120
+`STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | 15
+`STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notification forwarding before service is reported as down  | 5
 
 ## Permissions
 
@@ -157,3 +158,16 @@ Can access this app and view | User can access the app and see the structure lis
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
 Can add new structure owner | User can add a corporation with it's structures |  `general.add_structure_owner`
+
+## Service monitoring
+
+Alliance Services has a simple monitoring interface to enable monitoring of the services status by 3rd party applications like www.uptimerobot.com.
+
+The monitoring route is: `[your AA URL]/structures/service_status/`
+
+Status | Reporting | Condition
+-- | -- | --
+Up | HTTP 200 and the text `service is up` | Tasks for updating of structures, updating of notifications and forwarding to webhooks have last run within the configured grace period and there are no errors
+Down | HTTP 500 and the text `service is down` | Above condition for "up" not met
+
+By default the stauts of all existing owners will be included in determining the overall status. However, it's possible to exclude owners on the admin page.

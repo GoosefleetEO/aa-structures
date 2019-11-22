@@ -1,128 +1,49 @@
 from django.contrib import admin
-from django.conf import settings
 
+from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import *
 from . import tasks
 
 
-
-@admin.register(EveConstellation)
-class EveConstellationAdmin(admin.ModelAdmin):
-    
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
+if STRUCTURES_DEVELOPER_MODE:
+    @admin.register(EveConstellation)
+    class EveConstellationAdmin(admin.ModelAdmin):
+       pass
 
 
-@admin.register(EveEntity)
-class EveEntityAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 
-        'name', 
-        'category',         
-    )
-    list_filter = ( 'category', )
-    list_display_links = None
-
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
+    @admin.register(EveEntity)
+    class EveEntityAdmin(admin.ModelAdmin):
+        list_display = (
+            'id', 
+            'name', 
+            'category',         
+        )
+        list_filter = ( 'category', )
+        list_display_links = None
 
 
-@admin.register(EveGroup)
-class EveGroupAdmin(admin.ModelAdmin):
-    
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
+    @admin.register(EveGroup)
+    class EveGroupAdmin(admin.ModelAdmin):
+        pass
 
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
+    @admin.register(EveMoon)
+    class EveMoonAdmin(admin.ModelAdmin):
+        pass
 
 
-@admin.register(EveMoon)
-class EveMoonAdmin(admin.ModelAdmin):
-    
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
+    @admin.register(EveRegion)
+    class EveRegionAdmin(admin.ModelAdmin):
+        pass
 
 
-@admin.register(EveRegion)
-class EveRegionAdmin(admin.ModelAdmin):
-    
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
+    @admin.register(EveSolarSystem)
+    class EveSolarSystemAdmin(admin.ModelAdmin):
+       pass
 
 
-@admin.register(EveSolarSystem)
-class EveSolarSystemAdmin(admin.ModelAdmin):
-    
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-
-@admin.register(EveType)
-class EveTypeAdmin(admin.ModelAdmin):
-
-    def has_add_permission(self, request):
-        if settings.DEBUG:
-            return True
-        else:
-            return False
-
-    def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
-            return True
-        else:
-            return False    
+    @admin.register(EveType)
+    class EveTypeAdmin(admin.ModelAdmin):
+        pass   
 
 
 @admin.register(Notification)
@@ -187,13 +108,13 @@ class NotificationAdmin(admin.ModelAdmin):
         "Send selected notifications to configured webhooks"
 
     def has_add_permission(self, request):
-        if settings.DEBUG:
+        if STRUCTURES_DEVELOPER_MODE:
             return True
         else:
             return False
 
     def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
+        if STRUCTURES_DEVELOPER_MODE:
             return True
         else:
             return False
@@ -205,17 +126,18 @@ class OwnerAdmin(admin.ModelAdmin):
         'corporation', 
         'character', 
         'webhooks_list',
-        'last_sync_ok',         
+        'no_errors',         
     )
     
     def webhooks_list(self, obj):
         return ', '.join([x.name for x in obj.webhooks.all().order_by('name')])
 
-    def last_sync_ok(self, obj):
+    def no_errors(self, obj):
         return obj.notifications_last_error == Owner.ERROR_NONE \
-            and obj.structures_last_error == Owner.ERROR_NONE
+            and obj.structures_last_error == Owner.ERROR_NONE \
+            and obj.forwarding_last_error == Owner.ERROR_NONE
 
-    last_sync_ok.boolean = True
+    no_errors.boolean = True
 
 
     def get_readonly_fields(self, request, obj = None):
@@ -225,6 +147,8 @@ class OwnerAdmin(admin.ModelAdmin):
                 'notifications_last_sync',
                 'structures_last_error',
                 'structures_last_sync',
+                'forwarding_last_sync',
+                'forwarding_last_error',
             )
         return self.readonly_fields
 
@@ -281,13 +205,13 @@ class StructureAdmin(admin.ModelAdmin):
     inlines = (StructureAdminInline, )
 
     def has_add_permission(self, request):
-        if settings.DEBUG:
+        if STRUCTURES_DEVELOPER_MODE:
             return True
         else:
             return False
 
     def has_change_permission(self, request, obj=None):
-        if settings.DEBUG:
+        if STRUCTURES_DEVELOPER_MODE:
             return True
         else:
             return False
@@ -300,11 +224,30 @@ class WebhookAdmin(admin.ModelAdmin):
 
     save_as = True
 
-    actions = ('test_notification', 'activate', 'deactivate', )
+    actions = (
+        'test_notification', 
+        'activate', 
+        'deactivate', 
+        'send_new_notifications'
+    )
 
-    def test_notification(self, request, queryset):                        
+    def send_new_notifications(self, request, queryset):
         for obj in queryset:
-            tasks.send_test_notifications_to_webhook.delay(                
+            tasks.send_new_notifications_to_webhook.delay(
+                obj.pk
+            )            
+            self.message_user(
+                request,
+                'Initiated sendinging new notifications to webhook "{}".'\
+                    .format(obj)
+            )
+    
+    send_new_notifications.short_description = \
+        "Send new notifications to selected webhooks"
+
+    def test_notification(self, request, queryset):
+        for obj in queryset:
+            tasks.send_test_notifications_to_webhook.delay(
                 obj.pk,
                 user_pk=request.user.pk
             )            

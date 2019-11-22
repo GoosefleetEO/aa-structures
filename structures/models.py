@@ -16,7 +16,11 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from esi.clients import esi_client_factory
 
-from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION, \
+    STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES, \
+    STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES, \
+    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
+
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, \
@@ -143,29 +147,37 @@ class Webhook(models.Model):
         
         new_notifications_count = 0
         for owner in self.owner_set.all():
-            q = owner.notification_set
+            try:
+                q = owner.notification_set
 
-            if not send_again:
-                cutoff_dt_for_stale = now() - datetime.timedelta(
-                    hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-                )
-                q = q.filter(is_sent__exact=False)\
-                        .filter(timestamp__gte=cutoff_dt_for_stale)
-            
-            q = q.filter(notification_type__in=self.notification_types)
-            q = q.select_related()
-
-            if q.count() > 0:
-                new_notifications_count += q.count()
-                logger.info(add_prefix(
-                    'Found {} new notifications for {}'.format(
-                        q.count(), 
-                        owner
-                )))
+                if not send_again:
+                    cutoff_dt_for_stale = now() - datetime.timedelta(
+                        hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+                    )
+                    q = q.filter(is_sent__exact=False)\
+                            .filter(timestamp__gte=cutoff_dt_for_stale)
                 
-                for notification in q:
-                    notification.send_to_webhook(self, esi_client)
-                    sleep(1)
+                q = q.filter(notification_type__in=self.notification_types)
+                q = q.select_related()
+
+                if q.count() > 0:
+                    new_notifications_count += q.count()
+                    logger.info(add_prefix(
+                        'Found {} new notifications for {}'.format(
+                            q.count(), 
+                            owner
+                    )))
+                    
+                    for notification in q:
+                        notification.send_to_webhook(self, esi_client)
+                        sleep(1)
+            except Exception as ex:
+                owner.forwarding_last_error = Owner.ERROR_UNKNOWN                
+            else:
+                owner.forwarding_last_error = Owner.ERROR_NONE
+            
+            owner.forwarding_last_sync = now()
+            owner.save()
         
         if new_notifications_count == 0:
             logger.info(add_prefix('No new notifications found'))
@@ -186,7 +198,7 @@ class Webhook(models.Model):
 
 
 class Owner(models.Model):
-    """corporation that owns structures"""
+    """A corporation that owns structures"""
 
     # errors
     ERROR_NONE = 0
@@ -203,7 +215,7 @@ class Owner(models.Model):
         (ERROR_TOKEN_INVALID, 'Invalid token'),
         (ERROR_TOKEN_EXPIRED, 'Expired token'),
         (ERROR_INSUFFICIENT_PERMISSIONS, 'Insufficient permissions'),
-        (ERROR_NO_CHARACTER, 'No character set for fetching alliance contacts'),
+        (ERROR_NO_CHARACTER, 'No character set for fetching data from ESI'),
         (ERROR_ESI_UNAVAILABLE, 'ESI API is currently unavailable'),
         (ERROR_OPERATION_MODE_MISMATCH, 'Operaton mode does not match with current setting'),
         (ERROR_UNKNOWN, 'Unknown error'),
@@ -245,15 +257,74 @@ class Owner(models.Model):
         default=ERROR_NONE,
         help_text='error that occurred at the last sync atttempt (if any)'
     )
+    forwarding_last_sync = models.DateTimeField(
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='when the last sync happened'
+    )
+    forwarding_last_error = models.IntegerField(
+        choices=ERRORS_LIST, 
+        default=ERROR_NONE,
+        help_text='error that occurred at the last sync atttempt (if any)'
+    )
     webhooks = models.ManyToManyField(
         Webhook,         
         default=None, 
         blank=True,
         help_text='notifications are sent to these webhooks. '
     )
+    is_alliance_main =  models.BooleanField(        
+        default=False,
+        help_text='whether alliance wide notifications ' \
+            + '(e.g. sov notifications) are forwarded for this owner'
+    )
+    is_included_in_service_status =  models.BooleanField(        
+        default=True,
+        help_text='whether the sync status of this owner is included in '\
+            + 'the overall status of this services'
+    )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.corporation.corporation_name)
+
+    def is_structure_sync_ok(self) -> bool:
+        """returns true if they have been no errors 
+        and last syncing occurred within alloted time
+        """
+        return self.structures_last_error == self.ERROR_NONE \
+            and self.structures_last_sync \
+            and self.structures_last_sync > (now() - datetime.timedelta(
+                minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES
+            ))
+
+    def is_notification_sync_ok(self) -> bool:
+        """returns true if they have been no errors 
+        and last syncing occurred within alloted time
+        """
+        return self.notifications_last_error == self.ERROR_NONE \
+            and self.notifications_last_sync \
+            and self.notifications_last_sync > (now() - datetime.timedelta(
+                    minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES
+            ))
+
+    def is_forwarding_sync_ok(self) -> bool:
+        """returns true if they have been no errors 
+        and last syncing occurred within alloted time
+        """
+        return self.forwarding_last_error == self.ERROR_NONE \
+            and self.forwarding_last_sync \
+            and self.forwarding_last_sync > (now() - datetime.timedelta(
+                minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
+            ))
+
+    def is_all_syncs_ok(self) -> bool:
+        """returns true if they have been no errors 
+        and last syncing occurred within alloted time for all sync categories
+        """
+        return self.is_structure_sync_ok() \
+            and self.is_notification_sync_ok() \
+            and self.is_forwarding_sync_ok()
     
     @classmethod
     def get_esi_scopes(cls) -> list:

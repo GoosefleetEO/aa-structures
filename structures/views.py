@@ -1,7 +1,7 @@
 import calendar
 
 from django.db import transaction
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
 
@@ -10,6 +10,7 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, EveA
 from esi.decorators import token_required
 
 from . import evelinks, tasks, __title__
+from .app_settings import STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
 from .models import *
 from .utils import messages_plus, DATETIME_FORMAT, notify_admins
 
@@ -224,16 +225,33 @@ def add_structure_owner(request, token):
             + 'We have started fetching structures for this corporation. '
             + 'You will receive a reports once completed.'
         )
-        notify_admins(
-            message='{} was added as new structure owner by {}.'.format(
-                owner.corporation.corporation_name,
-                request.user.username
-            ), 
-            title='{}: Structure owner added: {}'.format(
-                __title__,
-                owner.corporation.corporation_name
+        if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
+            notify_admins(
+                message='{} was added as new structure owner by {}.'.format(
+                    owner.corporation.corporation_name,
+                    request.user.username
+                ), 
+                title='{}: Structure owner added: {}'.format(
+                    __title__,
+                    owner.corporation.corporation_name
+                )
             )
-        )
     return redirect('structures:index')
 
+
+def service_status(request):
+    """public view to 3rd party monitoring
+    
+    This is view allows running a 3rd party monitoring on the status 
+    of this services. Service will be reported as down if any of the
+    configured structure or notifications syncs fails or is delayed
+    """
+    ok = True
+    for owner in Owner.objects.filter(is_included_in_service_status__exact=True):
+        ok = ok and owner.is_all_syncs_ok()
+    
+    if ok:
+        return HttpResponse('service is up')
+    else:
+        return HttpResponseServerError('service is down')
 
