@@ -53,13 +53,27 @@ if webhook:
 
 eve_type, _ = EveType.objects.get_or_create_esi(35834, client)
 eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(30000142, client)
-
-structure, _ = Structure.objects.update_or_create(
+Structure.objects.update_or_create(
     id=1000000000001,
     defaults={
         "owner": owner,
         "eve_type": eve_type,
-        "name": 'Test structure for notifications',
+        "name": 'Test structure for notifications A',
+        "eve_solar_system": eve_solar_system,                        
+        "reinforce_hour": 12,
+        "reinforce_weekday": 4,
+        "state":Structure.STATE_SHIELD_VULNERABLE
+    }
+)
+
+eve_type, _ = EveType.objects.get_or_create_esi(35835, client)
+eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(30002537, client)
+Structure.objects.update_or_create(
+    id=1000000000002,
+    defaults={
+        "owner": owner,
+        "eve_type": eve_type,
+        "name": 'Test structure for notifications B',
         "eve_solar_system": eve_solar_system,                        
         "reinforce_hour": 12,
         "reinforce_weekday": 4,

@@ -134,7 +134,7 @@ class Webhook(models.Model):
     def __str__(self):
         return self.name
 
-    def send_new_notifications(self, send_again = False):
+    def send_new_notifications(self, send_again = False, rate_limited = True):
         """Send new notifications to this webhook"""
         
         add_prefix = make_logger_prefix(str(self))
@@ -166,7 +166,8 @@ class Webhook(models.Model):
                     
                     for notification in q:
                         notification.send_to_webhook(self, esi_client)
-                        sleep(1)
+                        if rate_limited:
+                            sleep(1)
             except Exception as ex:
                 owner.forwarding_last_error = Owner.ERROR_UNKNOWN                
             else:
@@ -940,14 +941,14 @@ class Notification(models.Model):
                 auto_time = ldap_datetime_2_dt(parsed_text['autoTime'])
                 title = 'Moon mining extraction started'
                 description = 'A moon mining extraction has been started ' \
-                    + 'for {} at {} in {}.\n'.format(
+                    + 'for **{}** at {} in {}.\n'.format(
                         structure.name,
                         moon.name,
                         solar_system_link
                     ) + 'Extraction was started by {}.\n'.format(started_by) \
                         +  'The chunk will be ready on ' + 'location at {}, '.format(
                             ready_time.strftime(DATETIME_FORMAT)
-                    ) + 'but will autofracture on {}.\n'.format(
+                    ) + 'and will autofracture on {}.\n'.format(
                         auto_time.strftime(DATETIME_FORMAT)
                     )
                 color = self.EMBED_COLOR_INFO
@@ -961,7 +962,7 @@ class Notification(models.Model):
                         structure.name,
                         moon.name,
                         solar_system_link
-                    ) + 'is finished and the chunk is ready to be shot at.\n'\
+                    ) + ' is finished and the chunk is ready to be shot at.\n'\
                         +  'The chunk will automatically fracture on {}'\
                             .format(auto_time.strftime(DATETIME_FORMAT)
                     )
@@ -972,11 +973,11 @@ class Notification(models.Model):
                 NTYPE_MOONMINING_AUTOMATIC_FRACTURE:   
                                 
                 title = 'Automatic Fracture'
-                description = 'The moondrill fitted to {} at {} in {}'.format(
+                description = 'The moondrill fitted to **{}** at {} in {}'.format(
                         structure.name,
                         moon.name,
                         solar_system_link
-                    ) + 'has automatically been fired and the moon ' \
+                    ) + ' has automatically been fired and the moon ' \
                         + 'products are ready to be harvested.\n'
                 color = self.EMBED_COLOR_SUCCESS
 
@@ -984,14 +985,17 @@ class Notification(models.Model):
             elif self.notification_type == \
                 NTYPE_MOONMINING_EXTRACTION_CANCELED:   
                 
-                cancelled_by, _ = EveEntity.objects.get_or_create_esi(
-                    parsed_text['cancelledBy']
-                )
+                if parsed_text['cancelledBy']:
+                    cancelled_by, _ = EveEntity.objects.get_or_create_esi(
+                        parsed_text['cancelledBy']
+                    )
+                else:
+                    cancelled_by = '(unknown)'
                 title = 'Extraction cancelled'
-                description = 'An ongoing extraction for {} at {}'.format(
+                description = 'An ongoing extraction for **{}** at {}'.format(
                     structure.name,
                     moon.name
-                ) + 'in {} has been cancelled by {}.'.format(
+                ) + ' in {} has been cancelled by {}.'.format(
                     solar_system_link,
                     cancelled_by
                 )
@@ -1005,10 +1009,10 @@ class Notification(models.Model):
                     parsed_text['firedBy']
                 )
                 title = 'Moondrill fired'
-                description = 'The moondrill fitted to {} at {}'.format(
+                description = 'The moondrill fitted to **{}** at {}'.format(
                     structure.name,
                     moon.name
-                ) + 'in {} has been fired by {}.'.format(
+                ) + ' in {} has been fired by {} '.format(
                     solar_system_link,
                     fired_by
                 ) + 'and the moon products are ready to be harvested.'

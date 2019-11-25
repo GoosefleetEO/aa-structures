@@ -38,6 +38,14 @@
             "eve_constellation_id": 20000069
         }
     ],
+    "EveMoon":
+    [
+        {
+            "id": 40161465,
+            "name": "Amamake II - Moon 1",
+            "eve_solar_system_id": 30002537
+        }
+    ],
     "EveGroup":
     [
         {
@@ -134,6 +142,14 @@
             "id": 1000000000001,            
             "name": "Test Structure Alpha",
             "eve_type_id": 35832,
+            "eve_solar_system_id": 30002537,            
+            "reinforce_hour": 12,
+            "state": 11
+        },
+        {
+            "id": 1000000000002,  
+            "name": "Test Structure Bravo",
+            "eve_type_id": 35835,
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 12,
             "state": 11

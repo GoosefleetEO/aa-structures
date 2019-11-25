@@ -24,7 +24,7 @@ from .models import *
 
 # reconfigure logger so we get logging from tasks to console during test
 c_handler = logging.StreamHandler(sys.stdout)
-logger = logging.getLogger('structures.tasks')
+logger = logging.getLogger('structures.models')
 logger.level = logging.DEBUG
 logger.addHandler(c_handler)
 
@@ -469,6 +469,11 @@ class TestTasksNotifications(TestCase):
         self.assertCountEqual(
             notification_ids,
             [
+                1000000401,
+                1000000402,
+                1000000403,
+                1000000404,
+                1000000405,
                 1000000501,
                 1000000502,
                 1000000503,
@@ -524,6 +529,7 @@ class TestWebhook(TestCase):
             EveRegion,
             EveConstellation,
             EveSolarSystem,
+            EveMoon,
             EveGroup,
             EveType,
             EveCorporationInfo,
@@ -617,6 +623,10 @@ class TestWebhook(TestCase):
             
     @patch('structures.models.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_new_notifications(self, mock_execute, mock_esi_client_factory):
-        self.webhook.send_new_notifications()
-        self.assertEqual(mock_execute.call_count, 12)
+    def test_send_new_notifications(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):
+        self.webhook.send_new_notifications(rate_limited = False)
+        self.assertEqual(mock_execute.call_count, 17)
