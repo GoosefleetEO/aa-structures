@@ -12,3 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 ### Fixed
+
+## [0.1.1] - 2019-11-25
+
+### Added
+
+- Initial release

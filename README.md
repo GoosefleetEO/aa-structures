@@ -2,8 +2,6 @@
 
 This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA) that adds support for structures
 
-**Status: IN DEVELOPMENT - NOT YET READY FOR PRODUCTION**
-
 ## Contents
 
 - [Overview](#overview)
@@ -31,9 +29,14 @@ Alliance Structures adds the following features to Alliance Auth:
 - Structure list is automatically kept up-to-date
 - Structure notifications are automatically forwarded to Discord channels as alerts
 - Interface for 3rd party monitoring of the services status
+- Structures include Upwell structures
+- Notification types include structures, moon mining
 
-- *Structures include Upwell structures, POCOs (planned) and POSes (planned)*
-- *Structure timers are added to aa-timers app (if installed) (planned)*
+Planned features:
+
+- Structure timers are automatically added to aa-timers app (if installed)
+- Structures include POCOs and POSes
+- Notification types include sovereignty, war decs
 
 ## Screenshots
 
@@ -139,7 +142,9 @@ Finally restart your AA supervisor services.
 
 ## Settings
 
-Here is a list of available settings for this app. They can be configured by adding them to your AA settings file (`local.py`). If they are not set the defaults are used.
+Here is a list of available settings for this app. They can be configured by adding them to your AA settings file (`local.py`).
+
+Note that all settings are optional and the app will use the documented default settings if they are not used.
 
 Name | Description | Default
 -- | -- | --
@@ -161,7 +166,9 @@ Can add new structure owner | User can add a corporation with it's structures | 
 
 ## Service monitoring
 
-Alliance Services has a simple monitoring interface to enable monitoring of the services status by 3rd party applications like www.uptimerobot.com.
+Alliances may want to rely on getting prompt notifications on Discord to keep their assets save. However, an app like Alliance Structures is fully dependant on external services like the Eve API (ESI) to stay operational.
+
+In order stay alliance apprised about any potential service outages, this app has a simple HTTP interface that enables monitoring of it's service status by a 3rd party monitoring application. (e.g. [Uptimerobot](https://www.uptimerobot.com)).
 
 The monitoring route is: `[your AA URL]/structures/service_status/`
 
@@ -170,4 +177,4 @@ Status | Reporting | Condition
 Up | HTTP 200 and the text `service is up` | Tasks for updating of structures, updating of notifications and forwarding to webhooks have last run within the configured grace period and there are no errors
 Down | HTTP 500 and the text `service is down` | Above condition for "up" not met
 
-By default the stauts of all existing owners will be included in determining the overall status. However, it's possible to exclude owners on the admin page.
+By default the status of all existing owners will be included in determining the overall status. However, it's also possible to manually exclude owners by setting the property "Is included in service status".

@@ -405,7 +405,7 @@ def fetch_notifications_for_owner(
                     )
             
             logger.info(add_prefix(
-                'Storing update with {:,} notifications'.format(
+                'Processing {:,} notifications received from ESI'.format(
                     len(notifications)
             )))
             
