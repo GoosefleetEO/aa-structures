@@ -16,11 +16,7 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from esi.clients import esi_client_factory
 
-from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION, \
-    STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES, \
-    STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES, \
-    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
-
+from .app_settings import *
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, \
@@ -724,7 +720,7 @@ class EveEntity(models.Model):
                 match = x
                 break
         if not match:
-            raise ValueError('Invalid entity type')
+            raise ValueError('Invalid entity type: {}'.format(type_name))
         else:
             return match[0]
 
@@ -1090,12 +1086,18 @@ class Notification(models.Model):
                     self.notification_type
                 ))
                 
+        if STRUCTURES_DEVELOPER_MODE:
+            footer = dhooks_lite.Footer(self.notification_id)
+        else:
+            footer = None
+        
         return dhooks_lite.Embed(
             title=title,
             description=description,
             color=color,
             thumbnail=thumbnail,
-            timestamp=self.timestamp
+            timestamp=self.timestamp,
+            footer=footer
         )
 
 

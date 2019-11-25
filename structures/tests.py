@@ -10,6 +10,7 @@ from django.contrib.auth.models import User, Permission
 from django.urls import reverse
 from django.test import TestCase
 from django.test.client import Client
+from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.authentication.models import CharacterOwnership
@@ -260,11 +261,7 @@ class TestTasksStructures(TestCase):
         )
 
 
-class TestTasksNotifications(TestCase):
-    
-    # note: setup is making calls to ESI to get full info for entities
-    # all ESI calls in the tested module are mocked though
-
+class TestTasksNotifications(TestCase):    
 
     @classmethod
     def setUpClass(cls):
@@ -465,12 +462,161 @@ class TestTasksNotifications(TestCase):
         )
                 
         # should only contain the right notifications
-        structure_ids = [
+        notification_ids = [
             x['notification_id'] 
             for x in Notification.objects.values('notification_id')
         ]
         self.assertCountEqual(
-            structure_ids,
-            [1045790513, 986823936, 1007801053, 1007802916, 1033521794]
+            notification_ids,
+            [
+                1000000501,
+                1000000502,
+                1000000503,
+                1000000504,
+                1000000505,
+                1000000506,
+                1000000507,
+                1000000508,
+                1000000509,
+                1000000510,
+                1000000511,
+                1000000513,
+            ]
         )
-        
+
+
+class TestWebhook(TestCase):    
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestWebhook, cls).setUpClass()
+
+        # load test data
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
+            inspect.currentframe()
+        )))
+
+        # ESI corp structures        
+        with open(
+            currentdir + '/testdata/corp_structures.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            cls.corp_structures = json.load(f)
+
+        # ESI universe structures
+        with open(
+            currentdir + '/testdata/notifications.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            notifications = json.load(f)
+
+        # entities
+        with open(
+            currentdir + '/testdata/entities.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            entities = json.load(f)
+
+        entities_def = [
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveGroup,
+            EveType,
+            EveCorporationInfo,
+            EveCharacter,    
+            EveEntity    
+        ]
+    
+        for EntityClass in entities_def:
+            entity_name = EntityClass.__name__
+            for x in entities[entity_name]:
+                EntityClass.objects.create(**x)
+            assert(len(entities[entity_name]) == EntityClass.objects.count())
+                
+        for x in EveCorporationInfo.objects.all():
+            EveEntity.objects.get_or_create(
+                id = x.corporation_id,
+                defaults={
+                    'category': EveEntity.CATEGORY_CORPORATION,
+                    'name': x.corporation_name
+                }
+            )
+
+        for x in EveCharacter.objects.all():
+            EveEntity.objects.get_or_create(
+                id = x.character_id,
+                defaults={
+                    'category': EveEntity.CATEGORY_CHARACTER,
+                    'name': x.character_name
+                }
+            )
+               
+        # 1 user
+        cls.character = EveCharacter.objects.get(character_id=1001)
+                
+        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        cls.user = User.objects.create_user(
+            cls.character.character_name,
+            'abc@example.com',
+            'password'
+        )
+
+        cls.main_ownership = CharacterOwnership.objects.create(
+            character=cls.character,
+            owner_hash='x1',
+            user=cls.user
+        )
+
+        cls.owner = Owner.objects.create(
+            corporation=cls.corporation,
+            character=cls.main_ownership,            
+        )
+        cls.webhook = Webhook.objects.create(
+            name='Test',
+            url='dummy-url'
+        )
+        cls.owner.webhooks.add(cls.webhook)
+        cls.owner.save()
+
+        for x in entities['Structure']:
+            x['owner'] = cls.owner
+            Structure.objects.create(**x)
+
+        for notification in notifications:                        
+            notification_type = \
+                Notification.get_matching_notification_type(
+                    notification['type']
+                )
+            if notification_type:
+                sender_type = \
+                    EveEntity.get_matching_entity_type(
+                        notification['sender_type']
+                    )                
+                sender = EveEntity.objects.get(id=notification['sender_id'])                
+                text = notification['text'] \
+                    if 'text' in notification else None
+                is_read = notification['is_read'] \
+                    if 'is_read' in notification else None
+                obj = Notification.objects.update_or_create(
+                    notification_id=notification['notification_id'],
+                    owner=cls.owner,
+                    defaults={
+                        'sender': sender,
+                        'timestamp': now(),
+                        'notification_type': notification_type,
+                        'text': text,
+                        'is_read': is_read,
+                        'last_updated': now(),
+                        'is_sent': False
+                    }
+                )   
+            
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_new_notifications(self, mock_execute, mock_esi_client_factory):
+        self.webhook.send_new_notifications()
+        self.assertEqual(mock_execute.call_count, 12)

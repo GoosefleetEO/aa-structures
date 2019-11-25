@@ -1,20 +1,114 @@
-[
-    {
-        "is_read": true,
-        "notification_id": 1045790513,
-        "sender_id": 1000125,
+[    
+    {        
+        "notification_id": 1000000501,
+        "type": "StructureAnchoring",        
+        "sender_id": 1000137,
         "sender_type": "corporation",
-        "text": "charID: 93330670\nnewOwnerCorpID: 98570034\noldOwnerCorpID: 98394960\nsolarSystemID: 30003068\nstructureID: 1000000000001\nstructureName: Kourmonen - Eve is Dark and Full of Sweg\nstructureTypeID: 35832\n",
-        "timestamp": "2019-06-03T19:10:00+00:00",
-        "type": "OwnershipTransferred"
+        "timestamp": "2019-10-16 20:36:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98267621\nownerCorpName: The Congregation\nsolarsystemID: 30004984\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
+        "is_read": false        
+    },
+    {        
+        "notification_id": 1000000502,
+        "type": "StructureDestroyed",
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-07 19:30:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98394960\nownerCorpName: VOLTAGE REGULATORS\nsolarsystemID: 30004984\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
+    },
+    {        
+        "notification_id": 1000000503,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
+        "timestamp": "2019-05-13T12:10:00+00:00",
+        "type": "StructureFuelAlert",
+        "is_read": true
     },
     {
-        "notification_id": 986823936,
+        "notification_id": 1000000504,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "solarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n",
+        "timestamp": "2019-03-27T05:50:00+00:00",
+        "type": "StructureLostArmor"
+    },
+    {        
+        "notification_id": 1000000505,
+        "type": "StructureLostShields",
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-04 14:52:00",
+        "text": "solarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35825\n- *id001\nstructureTypeID: 35825\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n"
+    },
+    {        
+        "notification_id": 1000000506,
+        "type": "StructureOnline",        
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-10-17 20:51:00",
+        "text": "solarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35825\n- *id001\nstructureTypeID: 35825\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000507,
         "sender_id": 1000137,
         "sender_type": "corporation",
         "text": "listOfServiceModuleIDs:\n- 35894\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
         "timestamp": "2019-02-17T04:00:00+00:00",
         "type": "StructureServicesOffline"
+    },       
+    {      
+        "notification_id": 1000000508,
+        "type": "StructureUnanchoring",
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-07-06 16:12:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98151631\nownerCorpName: I Swear She Was 18\nsolarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 6047994755245\n"
+    },
+    {
+        "notification_id": 1000000509,
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "text": "allianceID: 99006625\nallianceLinkData:\n- showinfo\n- 16159\n- 99006625\nallianceName: Pen Is Out\narmorPercentage: 98.65129050962584\ncharID: 940357753\ncorpLinkData:\n- showinfo\n- 2\n- 98406814\ncorpName: Victory or Whatever\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
+        "timestamp": "2019-03-27T05:44:00+00:00",
+        "type": "StructureUnderAttack"
+    },    
+    {        
+        "notification_id": 1000000510,
+        "type": "StructureWentHighPower",        
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-11-12 18:41:00",
+        "text": "solarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000511,        
+        "type": "StructureWentLowPower",
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-11-20 22:02:00",
+        "text": "solarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "is_read": false
+    },
+    {        
+        "notification_id": 1000000512,
+        "type": "StructuresReinforcementChanged",        
+        "sender_id": "1000137",
+        "sender_type": "corporation",
+        "timestamp": "2019-09-21 18:53:00",
+        "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 2\n",
+        "is_read": false
+    },
+    {
+        "is_read": true,
+        "notification_id": 1000000513,
+        "sender_id": 1000125,
+        "sender_type": "corporation",
+        "text": "charID: 93330670\nnewOwnerCorpID: 98570034\noldOwnerCorpID: 98394960\nsolarSystemID: 30003068\nstructureID: 1000000000001\nstructureName: Kourmonen - Eve is Dark and Full of Sweg\nstructureTypeID: 35832\n",
+        "timestamp": "2019-06-03T19:10:00+00:00",
+        "type": "OwnershipTransferred"
     },
     {
         "notification_id": 1007661575,
@@ -29,38 +123,13 @@
         "type": "CharLeftCorpMsg"
     },
     {
-        "notification_id": 1007801053,
-        "sender_id": 1000137,
-        "sender_type": "corporation",
-        "text": "allianceID: 99006625\nallianceLinkData:\n- showinfo\n- 16159\n- 99006625\nallianceName: Pen Is Out\narmorPercentage: 98.65129050962584\ncharID: 940357753\ncorpLinkData:\n- showinfo\n- 2\n- 98406814\ncorpName: Victory or Whatever\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
-        "timestamp": "2019-03-27T05:44:00+00:00",
-        "type": "StructureUnderAttack"
-    },
-    {
-        "notification_id": 1007802916,
-        "sender_id": 1000137,
-        "sender_type": "corporation",
-        "text": "solarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n",
-        "timestamp": "2019-03-27T05:50:00+00:00",
-        "type": "StructureLostArmor"
-    },
-    {
         "notification_id": 1027272058,
         "sender_id": 2112124363,
         "sender_type": "character",
         "text": "applicationText: ''\ncharID: 2112124363\ncorpID: 98394960\n",
         "timestamp": "2019-05-02T20:26:00+00:00",
         "type": "CharAppAcceptMsg"
-    },
-    {
-        "is_read": true,
-        "notification_id": 1033521794,
-        "sender_id": 1000137,
-        "sender_type": "corporation",
-        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30004984\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *notification_id001\nstructureTypeID: 35832\n",
-        "timestamp": "2019-05-13T12:10:00+00:00",
-        "type": "StructureFuelAlert"
-    },
+    },   
     {
         "is_read": true,
         "notification_id": 1056803780,
@@ -69,29 +138,5 @@
         "text": "againstID: 99007974\ncost: 100000000\ndeclaredByID: 99001134\ndelayHours: 24\nhostileState: false\ntimeStarted: 132058033800000000\nwarHQ: <b>Mahtista - RLCMAK</b>\nwarHQ_IdType:\n- 1030817133575\n- 35832\n",
         "timestamp": "2019-06-22T22:44:00+00:00",
         "type": "WarDeclared"
-    },
-    {        
-        "notification_id": "1128113293",
-        "type": "StructureDestroyed",
-        "sender_id": "1000137",
-        "sender_type": "corporation",
-        "timestamp": "2019-11-07 19:30:00",
-        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98394960\nownerCorpName: VOLTAGE REGULATORS\nsolarsystemID: 30004984\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
-    },
-    {        
-        "notification_id": "1112367054",
-        "type": "StructureLostShields",
-        "sender_id": "1000137",
-        "sender_type": "corporation",
-        "timestamp": "2019-10-04 14:52:00",
-        "text": "solarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35825\n- *id001\nstructureTypeID: 35825\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n"
-    },
-    {      
-        "notification_id": "1064627694",
-        "type": "StructureUnanchoring",
-        "sender_id": "1000137",
-        "sender_type": "corporation",
-        "timestamp": "2019-07-06 16:12:00",
-        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 98151631\nownerCorpName: I Swear She Was 18\nsolarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 6047994755245\n"
     }
 ]

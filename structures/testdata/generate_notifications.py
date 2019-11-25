@@ -47,6 +47,9 @@ except EveCorporationInfo.DoesNotExist:
     )
 
 owner, _ = Owner.objects.get_or_create(corporation=corporation)
+webhook = Webhook.objects.first()
+if webhook:
+    owner.webhooks.add(webhook)
 
 eve_type, _ = EveType.objects.get_or_create_esi(35834, client)
 eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(30000142, client)
@@ -106,11 +109,12 @@ with transaction.atomic():
                 owner=owner,
                 defaults={
                     'sender': sender,
-                    'timestamp': notification['timestamp'],
+                    'timestamp': now(),
                     'notification_type': notification_type,
                     'text': text,
                     'is_read': is_read,
-                    'last_updated': now()
+                    'last_updated': now(),
+                    'is_sent': True
                 }
             )                            
 

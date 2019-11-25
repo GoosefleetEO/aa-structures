@@ -1,20 +1,114 @@
 [    
-    {
-        "notification_id": 1045790513,
-        "type": "OwnershipTransferred",
-        "sender_id": 2022,
+    {        
+        "notification_id": 1000000501,
+        "type": "StructureAnchoring",
+        "sender_id": 2021,
         "sender_type": "corporation",
-        "timestamp": "2019-08-16T10:08:00Z",
-        "text": "charID: 1001\nnewOwnerCorpID: 2002\noldOwnerCorpID: 2001\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureName: Test Structure Alpha\nstructureTypeID: 35832\n",
+        "timestamp": "2019-10-16 20:36:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Enterprises\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
+        "is_read": false        
+    },
+    {        
+        "notification_id": 1000000502,
+        "type": "StructureDestroyed",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-07 19:30:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Enterprises\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
+    },
+    {
+        "notification_id": 1000000503,
+        "type": "StructureFuelAlert",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T16:08:00Z",
+        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
         "is_read": true
     },
     {
-        "notification_id": 986823936,
+        "notification_id": 1000000504,
+        "type": "StructureLostArmor",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T14:08:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n"
+    },
+    {        
+        "notification_id": 1000000505,
+        "type": "StructureLostShields",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-04 14:52:00",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n"
+    },
+    {        
+        "notification_id": 1000000506,
+        "type": "StructureOnline",        
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-17 20:51:00",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000507,
         "type": "StructureServicesOffline",
         "sender_id": 2021,
         "sender_type": "corporation",
         "timestamp": "2019-08-16T11:08:00Z",
         "text": "listOfServiceModuleIDs:\n- 35894\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
+    },
+    {      
+        "notification_id": 1000000508,
+        "type": "StructureUnanchoring",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-07-06 16:12:00",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Enterprises\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 6047994755245\n"
+    },
+    {
+        "notification_id": 1000000509,
+        "type": "StructureUnderAttack",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T13:08:00Z",
+        "text": "allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
+    },
+    {        
+        "notification_id": 1000000510,
+        "type": "StructureWentHighPower",        
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-12 18:41:00",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000511,        
+        "type": "StructureWentLowPower",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-20 22:02:00",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
+        "is_read": false
+    },
+    {        
+        "notification_id": 1000000512,
+        "type": "StructuresReinforcementChanged",        
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-09-21 18:53:00",
+        "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 2\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000513,
+        "type": "OwnershipTransferred",
+        "sender_id": 2021,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T10:08:00Z",
+        "text": "charID: 1001\nnewOwnerCorpID: 2002\noldOwnerCorpID: 2001\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureName: Test Structure Alpha\nstructureTypeID: 35832\n",
+        "is_read": true
     },
     {
         "notification_id": 1007661575,
@@ -23,23 +117,7 @@
         "sender_type": "character",
         "timestamp": "2019-08-16T12:08:00Z",
         "text": "charID: 1011\ncorpID: 2001\n"
-    },
-    {
-        "notification_id": 1007801053,
-        "type": "StructureUnderAttack",
-        "sender_id": 2021,
-        "sender_type": "corporation",
-        "timestamp": "2019-08-16T13:08:00Z",
-        "text": "allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
-    },
-    {
-        "notification_id": 1007802916,
-        "type": "StructureLostArmor",
-        "sender_id": 2021,
-        "sender_type": "corporation",
-        "timestamp": "2019-08-16T14:08:00Z",
-        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n"
-    },
+    },       
     {
         "notification_id": 1027272058,
         "type": "CharAppAcceptMsg",
@@ -47,15 +125,6 @@
         "sender_type": "character",
         "timestamp": "2019-08-16T15:08:00Z",
         "text": "applicationText: ''\ncharID: 1002\ncorpID: 2001\n"
-    },
-    {
-        "notification_id": 1033521794,
-        "type": "StructureFuelAlert",
-        "sender_id": 2021,
-        "sender_type": "corporation",
-        "timestamp": "2019-08-16T16:08:00Z",
-        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
-        "is_read": true
     },
     {
         "notification_id": 1056803780,
