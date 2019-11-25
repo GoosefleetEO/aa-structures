@@ -539,7 +539,7 @@ def send_new_notifications_to_webhook(webhook_pk, send_again = False):
 
 @shared_task
 def send_all_new_notifications():
-    """sends all unsent notifications to active webhooks"""
+    """sends all unsent notifications to active webhooks and add timers"""
     active_webhooks_count = 0
     for webhook in Webhook.objects.filter(is_active__exact=True):
         active_webhooks_count += 1
@@ -547,6 +547,16 @@ def send_all_new_notifications():
     
     if active_webhooks_count == 0:
         logger.warn('No active webhook found for sending notifications')
+
+    if STRUCTURES_ADD_TIMERS:
+        notifications = Notification.objects\
+            .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
+            .exclude(is_timer_added__exact=True)
+        
+        if len(notifications) > 0:
+            esi_client = esi_client_factory()
+            for notification in notifications:
+                notification.add_to_timerboard(esi_client)
 
 
 @shared_task

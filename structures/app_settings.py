@@ -47,3 +47,11 @@ STRUCTURES_DEVELOPER_MODE = getattr(
     'STRUCTURES_DEVELOPER_MODE', 
     False
 )
+
+# Whether to automatically add timers for certain notifications 
+# on the timerboard (will have no effect if aa-timerboard app is not installed)
+STRUCTURES_ADD_TIMERS = getattr(
+    settings, 
+    'STRUCTURES_ADD_TIMERS', 
+    True
+)

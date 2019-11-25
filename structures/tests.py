@@ -6,6 +6,7 @@ import os
 import sys
 from unittest.mock import Mock, patch
 
+from django.conf import settings
 from django.contrib.auth.models import User, Permission 
 from django.urls import reverse
 from django.test import TestCase
@@ -490,11 +491,11 @@ class TestTasksNotifications(TestCase):
         )
 
 
-class TestWebhook(TestCase):    
+class TestProcessNotifications(TestCase):    
 
     @classmethod
     def setUpClass(cls):
-        super(TestWebhook, cls).setUpClass()
+        super(TestProcessNotifications, cls).setUpClass()
 
         # load test data
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
@@ -630,3 +631,35 @@ class TestWebhook(TestCase):
     ):
         self.webhook.send_new_notifications(rate_limited = False)
         self.assertEqual(mock_execute.call_count, 17)
+
+        
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.send_new_notifications_to_webhook', autospec=True)
+    def test_add_timers_normal(
+        self,         
+        mock_esi_client_factory,
+        mock_send_new_notifications_to_webhook
+    ):
+        if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
+            from allianceauth.timerboard.models import Timer
+        
+            tasks.send_all_new_notifications()
+            self.assertEqual(Timer.objects.count(), 3)
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.send_new_notifications_to_webhook', autospec=True)
+    def test_add_timers_already_added(
+        self,         
+        mock_esi_client_factory,
+        mock_send_new_notifications_to_webhook
+    ):
+        if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
+            from allianceauth.timerboard.models import Timer
+        
+            for x in Notification.objects.all():
+                x.is_timer_added = True
+                x.save()
+
+            tasks.send_all_new_notifications()
+            self.assertEqual(Timer.objects.count(), 0)

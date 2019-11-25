@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.2.0] - 2019-11-26
+
+### Added
+
+- Automatically add timers to aa-timerboard for relevant notifications
+
 ## [0.1.1] - 2019-11-25
 
 ### Added

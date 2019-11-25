@@ -54,14 +54,15 @@ class NotificationAdmin(admin.ModelAdmin):
         'notification_type', 
         'timestamp',
         'webhook_list',
-        'is_sent'
+        'is_sent',
+        'is_timer_added'
     )
     list_filter = ( 'owner', 'notification_type', 'is_sent')
     
     def webhook_list(self, obj):
         return ', '.join([x.name for x in obj.owner.webhooks.all().order_by('name')])
 
-    actions = ('mark_as_sent', 'mark_as_unsent', 'send_to_webhook')
+    actions = ('mark_as_sent', 'mark_as_unsent', 'send_to_webhook', 'add_to_timerboard')
 
     def mark_as_sent(self, request, queryset):                        
         notifications_count = 0
@@ -106,6 +107,21 @@ class NotificationAdmin(admin.ModelAdmin):
     
     send_to_webhook.short_description = \
         "Send selected notifications to configured webhooks"
+
+    def add_to_timerboard(self, request, queryset):
+        notifications_count = 0
+        for obj in queryset:            
+            if obj.add_to_timerboard():
+                notifications_count += 1
+            
+        self.message_user(
+            request, 
+            'Added timers from {} notifications to timerboard'.format(
+                notifications_count
+        ))
+    
+    add_to_timerboard.short_description = \
+        "Add selected notifications to timerboard"
 
     def has_add_permission(self, request):
         if STRUCTURES_DEVELOPER_MODE:

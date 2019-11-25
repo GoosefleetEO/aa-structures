@@ -9,6 +9,7 @@ import dhooks_lite
 from multiselectfield import MultiSelectField
 
 from django.db import models, transaction
+from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.timezone import now
 
@@ -66,6 +67,12 @@ NTYPE_CHOICES = [
     (NTYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
     (NTYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
     (NTYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),
+]
+
+NTYPE_RELEVANT_FOR_TIMERBOARD = [
+    NTYPE_STRUCTURE_LOST_SHIELD,
+    NTYPE_STRUCTURE_LOST_ARMOR,
+    NTYPE_STRUCTURE_ANCHORING
 ]
 
 class General(models.Model):
@@ -756,18 +763,37 @@ class Notification(models.Model):
         null=True, 
         default=None, 
         blank=True
-    )    
+    )
     is_sent = models.BooleanField(
         default=False,
-        blank=True
+        blank=True,
+        help_text='True when this notification has been forwarded to Discord'
     )
-    last_updated = models.DateTimeField()
+    is_timer_added = models.BooleanField(
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='True when a timer has been added for this notification'
+    )
+    last_updated = models.DateTimeField(
+        help_text='Date when this notification has last been updated from ESI'
+    )
 
     class Meta:
         unique_together = (('notification_id', 'owner'),)
 
     def __str__(self):
         return str(self.notification_id)
+
+    def _ldap_datetime_2_dt(self, ldap_dt: int) -> datetime:
+        """converts ldap time to datatime"""    
+        return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
+            (ldap_dt / 10000000) - 11644473600
+        ))
+
+    def _ldap_timedelta_2_timedelta(self, ldap_td: int) -> datetime.timedelta:
+        """converts a ldap timedelta into a dt timedelta"""
+        return datetime.timedelta(microseconds=ldap_td / 10)
 
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
@@ -782,15 +808,7 @@ class Notification(models.Model):
             )
             return text
 
-        def ldap_datetime_2_dt(ldap_dt: int) -> datetime:
-            """converts ldap time to datatime"""    
-            return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
-                (ldap_dt / 10000000) - 11644473600
-            ))
-
-        def ldap_timedelta_2_timedelta(ldap_td: int) -> datetime.timedelta:
-            """converts a ldap timedelta into a dt timedelta"""
-            return datetime.timedelta(microseconds=ldap_td / 10)
+        
 
         def gen_alliance_link(alliance_name):
             return '[{}]({})'.format(
@@ -819,7 +837,7 @@ class Notification(models.Model):
 
             return name
 
-        parsed_text = yaml.safe_load(self.text)        
+        parsed_text = yaml.safe_load(self.text)
         
         if self.notification_type in [
             NTYPE_STRUCTURE_FUEL_ALERT,
@@ -878,7 +896,7 @@ class Notification(models.Model):
             elif self.notification_type == NTYPE_STRUCTURE_UNANCHORING:
                 title = 'Structure un-anchoring'            
                 unanchored_at = self.timestamp \
-                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'has started un-anchoring. '\
                     + 'It will be fully un-anchored at: {}'.format(
                         unanchored_at.strftime(DATETIME_FORMAT))
@@ -894,7 +912,7 @@ class Notification(models.Model):
             elif self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
                 title = 'Structure lost shield'
                 timer_ends_at = self.timestamp \
-                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'has lost its shields. Armor timer end at: {}'.format(
                     timer_ends_at.strftime(DATETIME_FORMAT)
                 )
@@ -903,7 +921,7 @@ class Notification(models.Model):
             elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
                 title = 'Structure lost armor'
                 timer_ends_at = self.timestamp \
-                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'has lost its armor. Hull timer end at: {}'.format(
                     timer_ends_at.strftime(DATETIME_FORMAT)
                 )
@@ -937,8 +955,8 @@ class Notification(models.Model):
                 started_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['startedBy']
                 )
-                ready_time = ldap_datetime_2_dt(parsed_text['readyTime'])
-                auto_time = ldap_datetime_2_dt(parsed_text['autoTime'])
+                ready_time = self._ldap_datetime_2_dt(parsed_text['readyTime'])
+                auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
                 title = 'Moon mining extraction started'
                 description = 'A moon mining extraction has been started ' \
                     + 'for **{}** at {} in {}.\n'.format(
@@ -956,7 +974,7 @@ class Notification(models.Model):
             elif self.notification_type == \
                 NTYPE_MOONMINING_EXTRACTION_FINISHED:   
                 
-                auto_time = ldap_datetime_2_dt(parsed_text['autoTime'])
+                auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
                 title = 'Extraction finished'
                 description = 'The extraction for {} at {} in {}'.format(
                         structure.name,
@@ -1077,7 +1095,7 @@ class Notification(models.Model):
                     gen_solar_system_text(solar_system)
                 )                
                 unanchored_at = self.timestamp \
-                    + ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'The anchoring timer ends at: {}'.format(
                     unanchored_at.strftime(DATETIME_FORMAT)
                 )
@@ -1145,6 +1163,90 @@ class Notification(models.Model):
                 hook.execute(content=content, embeds=[embed])
                 self.is_sent = True
                 self.save()
+
+    def add_to_timerboard(self, esi_client: object = None) -> bool:
+        """add a timer for this notification if the type is right
+        returns True when timer was added, else False
+        """
+        success = False
+        if self.notification_type in NTYPE_RELEVANT_FOR_TIMERBOARD \
+            and 'allianceauth.timerboard' in settings.INSTALLED_APPS:
+            
+            from allianceauth.timerboard.models import Timer
+                        
+            parsed_text = yaml.safe_load(self.text)
+            
+            if self.notification_type in [
+                NTYPE_STRUCTURE_LOST_ARMOR,
+                NTYPE_STRUCTURE_LOST_SHIELD,
+            ]:
+                structure_obj = Structure.objects.get(
+                    id=parsed_text['structureID']
+                )            
+                system = structure_obj.eve_solar_system.name
+                structure = structure_obj.eve_type.name
+                objective = 'Friendly'
+                eve_time = timer_ends_at = self.timestamp \
+                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
+                eve_corp = self.owner.corporation            
+
+                if self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
+                    details = "Armor timer"
+
+                elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
+                    details = "Final timer"
+            
+            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
+                if not esi_client:
+                    esi_client = esi_client_factory()
+                structure_type, _ = EveType.objects.get_or_create_esi(
+                    parsed_text['structureTypeID'],
+                    esi_client
+                )                
+                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                    parsed_text['solarsystemID'],
+                    esi_client
+                )                                
+                system =  solar_system.name
+                structure = structure_type.name
+                objective = 'Friendly'
+                eve_time = timer_ends_at = self.timestamp \
+                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
+                eve_corp = self.owner.corporation
+                details = "Anchor timer"
+
+            else:
+                raise NotImplementedError()
+
+            try:
+                with transaction.atomic():
+                    if eve_time > now():
+                        Timer.objects.create(
+                            details=details,
+                            system=system,
+                            structure=structure,
+                            objective=objective,
+                            eve_time=eve_time,                            
+                            eve_corp=eve_corp,     
+                        )
+                        logger.info('{}: added timer from notification'.format(
+                            self.notification_id
+                        ))
+                    else:
+                        logger.info('{}: ignored timer from outdated '.format(
+                            self.notification_id) + 'notification')
+                    self.is_timer_added = True
+                    self.save()
+                    success = True
+            except Exception as ex:
+                logger.error('{}: Failed to add timer from notification: {}'\
+                    .format(
+                        self.notification_id,
+                        ex
+                    ))
+        
+        return success
+
 
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:

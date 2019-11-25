@@ -31,10 +31,10 @@ Alliance Structures adds the following features to Alliance Auth:
 - Interface for 3rd party monitoring of the services status
 - Structures include Upwell structures
 - Notification types include structures, moon mining
+- Automatically adds timers from relevant notifications to aa-timers app (if installed)
 
 Planned features:
 
-- Structure timers are automatically added to aa-timers app (if installed)
 - Structures include POCOs and POSes
 - Notification types include sovereignty, war decs
 
@@ -148,10 +148,11 @@ Note that all settings are optional and the app will use the documented default 
 
 Name | Description | Default
 -- | -- | --
-`STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | 24
-`STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES`| Max time in minutes since last successful structures sync before service is reported as down  | 120
-`STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | 15
+`STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed).<br>Will create timers from anchoring, lost shield and lost armor notifications  | True
 `STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notification forwarding before service is reported as down  | 5
+`STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | 24
+`STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | 15
+`STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES`| Max time in minutes since last successful structures sync before service is reported as down  | 120
 
 ## Permissions
 
