@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- Improve unit tests stability for add timers
+
 ## [0.2.1] - 2019-11-28
 
 ### Fixed

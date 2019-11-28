@@ -1222,22 +1222,19 @@ class Notification(models.Model):
                 raise NotImplementedError()
 
             try:
-                with transaction.atomic():
-                    if eve_time > now():
-                        Timer.objects.create(
-                            details=details,
-                            system=system,
-                            structure=structure,
-                            objective=objective,
-                            eve_time=eve_time,                            
-                            eve_corp=eve_corp,     
-                        )
-                        logger.info('{}: added timer from notification'.format(
-                            self.notification_id
-                        ))
-                    else:
-                        logger.info('{}: ignored timer from outdated '.format(
-                            self.notification_id) + 'notification')
+                with transaction.atomic():                  
+                    Timer.objects.create(
+                        details=details,
+                        system=system,
+                        structure=structure,
+                        objective=objective,
+                        eve_time=eve_time,                            
+                        eve_corp=eve_corp,     
+                    )
+                    logger.info('{}: added timer from notification'.format(
+                        self.notification_id
+                    ))
+                  
                     self.is_timer_added = True
                     self.save()
                     success = True

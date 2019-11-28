@@ -1,8 +1,10 @@
+from datetime import timedelta
 import inspect
 import json
 import logging
 import math
 import os
+from random import randrange
 import sys
 from unittest.mock import Mock, patch
 
@@ -29,6 +31,7 @@ c_handler = logging.StreamHandler(sys.stdout)
 logger = logging.getLogger('structures.models')
 logger.level = logging.DEBUG
 logger.addHandler(c_handler)
+
 
 
 class TestTasksStructures(TestCase):
@@ -653,7 +656,11 @@ class TestProcessNotifications(TestCase):
                     owner=cls.owner,
                     defaults={
                         'sender': sender,
-                        'timestamp': now(),
+                        'timestamp': now() - timedelta(
+                            hours=randrange(3), 
+                            minutes=randrange(60), 
+                            seconds=randrange(60)
+                        ),
                         'notification_type': notification_type,
                         'text': text,
                         'is_read': is_read,
@@ -683,7 +690,7 @@ class TestProcessNotifications(TestCase):
         if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
             from allianceauth.timerboard.models import Timer
         
-            tasks.send_all_new_notifications()
+            tasks.send_all_new_notifications()                        
             self.assertEqual(Timer.objects.count(), 3)
 
 
