@@ -1,6 +1,6 @@
-import logging
 import inspect
 import json
+import logging
 import math
 import os
 import sys
@@ -15,6 +15,7 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.authentication.models import CharacterOwnership
+from bravado.exception import *
 from esi.models import Token, Scope
 from esi.errors import TokenExpiredError, TokenInvalidError
 
@@ -148,7 +149,6 @@ class TestTasksStructures(TestCase):
             Owner.ERROR_TOKEN_EXPIRED            
         )
 
-    
     
     # test invalid token    
     @patch('structures.tasks.Token')
@@ -490,6 +490,46 @@ class TestTasksNotifications(TestCase):
             ]
         )
 
+    
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_fetch_notifications_for_owner_esi_error(
+            self, 
+            mock_esi_client_factory,             
+            mock_Token
+        ):
+        
+        # create mocks        
+        def get_characters_character_id_notifications(            
+            *args, 
+            **kwargs
+        ):            
+            raise HTTPBadGateway()
+        
+        mock_client = Mock()       
+        mock_client.Character\
+            .get_characters_character_id_notifications.side_effect =\
+                get_characters_character_id_notifications
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+                
+        # run update task
+        self.assertFalse(
+            tasks.fetch_notifications_for_owner(owner_pk=self.owner.pk)
+        )
+
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.notifications_last_error, 
+            Owner.ERROR_UNKNOWN
+        )
+        
 
 class TestProcessNotifications(TestCase):    
 

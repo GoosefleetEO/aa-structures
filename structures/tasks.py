@@ -24,7 +24,7 @@ from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
 from .models import *
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger('allianceauth'), __package__)
 
 
 @shared_task

@@ -161,7 +161,7 @@ class Webhook(models.Model):
                             .filter(timestamp__gte=cutoff_dt_for_stale)
                 
                 q = q.filter(notification_type__in=self.notification_types)
-                q = q.select_related()
+                q = q.select_related().order_by('timestamp')
 
                 if q.count() > 0:
                     new_notifications_count += q.count()
@@ -872,15 +872,18 @@ class Notification(models.Model):
                 description += 'has less then 24hrs fuel left.'
                 color = self.EMBED_COLOR_WARNING
 
-            elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:
-                services_list = '\n'.join([
-                    x.name 
-                    for x in structure.structureservice_set.all().order_by('name')
-                ])
+            elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:                
                 title = 'Structure services off-line'
-                description += 'has all services off-lined:\n*{}*'.format(
+                description += 'has all services off-lined.'
+                if structure.structureservice_set.count() > 0:
+                    services_list = '\n'.join([
+                        x.name 
+                        for x in structure.structureservice_set.all().order_by('name')
+                    ])
+                    description += '\n*{}*'.format(
                         services_list
                     )
+                
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == NTYPE_STRUCTURE_WENT_LOW_POWER:

@@ -1,6 +1,10 @@
+from datetime import datetime, timedelta
+import inspect
+import json
+import logging
 import os
 import sys
-import inspect
+from random import randrange
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
     inspect.currentframe()
@@ -9,9 +13,6 @@ myauth_dir = os.path.dirname(os.path.dirname(os.path.dirname(currentdir))) \
     + "/myauth"
 sys.path.insert(0, myauth_dir)
 
-import json
-import logging
-from datetime import datetime
 
 import django
 from django.db import transaction
@@ -123,12 +124,12 @@ with transaction.atomic():
                 owner=owner,
                 defaults={
                     'sender': sender,
-                    'timestamp': now(),
+                    'timestamp': now() - timedelta(minutes=randrange(60), seconds=randrange(60)),
                     'notification_type': notification_type,
                     'text': text,
                     'is_read': is_read,
                     'last_updated': now(),
-                    'is_sent': True
+                    'is_sent': False
                 }
             )                            
 

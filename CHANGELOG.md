@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.2.1] - 2019-11-28
+
+### Fixed
+
+- Notifications on Discord are now posted in order of their timestamp
+- Improved Discord output for `StructureServicesOffline` notifications
+- Tasks logging should now work properly
+
 ## [0.2.0] - 2019-11-26
 
 ### Added
