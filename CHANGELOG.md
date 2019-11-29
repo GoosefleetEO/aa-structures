@@ -11,10 +11,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Reduced time for new notifications to appear after structure transfers
+### Fixed
+
+## [0.3.0] - 2019-11-29
+
+This release further increases overall stability and performance of the notification engine.
+
+### Changed
+
+- Removed dependency between notifications and already synced structures
 
 ### Fixed
 
+- Notifications on Discord delayed for recently transferred structures
 - Improved unit tests stability for add timers
 
 ## [0.2.1] - 2019-11-28

@@ -84,6 +84,7 @@ def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:
 def _send_report_to_user(
     owner: Owner, 
     topic: str,
+    topic_count: int,
     success: bool,
     error_code,
     user_pk, 
@@ -97,7 +98,7 @@ def _send_report_to_user(
         )
         if success:
             message += '{:,} {} synced.'.format(                
-                owner.structure_set.count(),
+                topic_count,
                 topic
             )
         else:
@@ -235,6 +236,7 @@ def update_structures_for_owner(
         _send_report_to_user(
             owner, 
             'structures', 
+            owner.structure_set.count(),
             success, 
             error_code,
             user_pk, 
@@ -267,6 +269,7 @@ def fetch_notifications_for_owner(
         )
 
     add_prefix = make_logger_prefix(owner)
+    notifications_count = 0
 
     try:        
         owner.notifications_last_sync = now()        
@@ -315,7 +318,7 @@ def fetch_notifications_for_owner(
                     len(notifications)
             )))
             
-            # update notifications in local DB                
+            # update notifications in local DB            
             with transaction.atomic():                                    
                 for notification in notifications:                        
                     notification_type = \
@@ -323,6 +326,7 @@ def fetch_notifications_for_owner(
                             notification['type']
                         )
                     if notification_type:
+                        notifications_count += 1
                         sender_type = \
                             EveEntity.get_matching_entity_type(
                                 notification['sender_type']
@@ -380,6 +384,7 @@ def fetch_notifications_for_owner(
         _send_report_to_user(
             owner, 
             'notifications', 
+            notifications_count,
             success, 
             error_code,
             user_pk, 
@@ -457,7 +462,7 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
         if active_webhooks_count == 0:
             logger.info(add_prefix('No active webhooks'))
         
-        elif new_notifications_count == 0:
+        if new_notifications_count == 0:
             logger.info(add_prefix('No new notifications found'))
 
         owner.forwarding_last_error = Owner.ERROR_NONE

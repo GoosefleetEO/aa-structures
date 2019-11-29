@@ -745,55 +745,7 @@ class Notification(models.Model):
 
     def __str__(self):
         return str(self.notification_id)
-
-    """
-    def create_related_structure(self, owner: object, esi_client: object):
-        # creates the structure related to this notification
-
-        parsed_text = yaml.safe_load(self.text)
-        
-        if self.notification_type in [
-            NTYPE_STRUCTURE_FUEL_ALERT,
-            NTYPE_STRUCTURE_SERVICES_OFFLINE,
-            NTYPE_STRUCTURE_WENT_LOW_POWER,
-            NTYPE_STRUCTURE_WENT_HIGH_POWER,
-            NTYPE_STRUCTURE_UNANCHORING,
-            NTYPE_STRUCTURE_UNDER_ATTACK,
-            NTYPE_STRUCTURE_LOST_SHIELD,
-            NTYPE_STRUCTURE_LOST_ARMOR,            
-            NTYPE_STRUCTURE_ONLINE,
-            NTYPE_MOONMINING_AUTOMATIC_FRACTURE,
-            NTYPE_MOONMINING_EXTRACTION_CANCELED,
-            NTYPE_MOONMINING_EXTRACTION_FINISHED,
-            NTYPE_MOONMINING_EXTRACTION_STARTED,
-            NTYPE_MOONMINING_LASER_FIRED,
-            NTYPE_OWNERSHIP_TRANSFERRED,
-            NTYPE_STRUCTURE_ANCHORING
-        ] and 'structureID' in parsed_text:
-
-            structure_id = parsed_text['structureID']
-            try:
-                Structure.objects.get(id=structure_id)
-            except Structure.DoesNotExist:
-                structure_info = \
-                    esi_client.Universe.get_universe_structures_structure_id(
-                        structure_id=structure_id
-                    ).result()
-                structure = {
-                    'structure_id': structure_id,
-                    'name': structure_info['name'],
-                    'position': structure_info['position'],
-                    'type_id': structure_info['type_id'],
-                    'system_id': structure_info['solar_system_id'],
-                    'state': 'unknown'
-                }
-                obj, created = Structure.objects.update_or_create_from_dict(
-                    structure,
-                    owner,
-                    esi_client
-                )                
-    """  
-
+    
     def _ldap_datetime_2_dt(self, ldap_dt: int) -> datetime:
         """converts ldap time to datatime"""    
         return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
@@ -858,10 +810,11 @@ class Notification(models.Model):
             NTYPE_STRUCTURE_LOST_ARMOR,
             NTYPE_STRUCTURE_DESTROYED,
             NTYPE_STRUCTURE_ONLINE
-        ]:
-            # with these types we can assume we have the corresponding
-            # structure in our database
-            structure = Structure.objects.get(id=parsed_text['structureID'])
+        ]:            
+            structure, _ = Structure.objects.get_or_create_esi(
+                parsed_text['structureID'],
+                esi_client
+            )
             thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
 
             description = 'The {} **{}** in {} '.format(
@@ -950,10 +903,13 @@ class Notification(models.Model):
             NTYPE_MOONMINING_EXTRACTION_STARTED,
             NTYPE_MOONMINING_LASER_FIRED
         ]:
-            structure = Structure.objects.get(id=parsed_text['structureID'])
+            structure, _ = Structure.objects.get_or_create_esi(
+                parsed_text['structureID'],
+                esi_client
+            )
             moon, _ = EveMoon.objects.get_or_create_esi(
                 parsed_text['moonID'], 
-                esi_client if esi_client else None
+                esi_client
             )
             thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
             solar_system_link = gen_solar_system_text(
@@ -1048,9 +1004,7 @@ class Notification(models.Model):
                 color = self.EMBED_COLOR_SUCCESS
 
         else:
-            if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:
-                if not esi_client:
-                    esi_client = esi_client_factory()
+            if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:                
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
                     esi_client
@@ -1089,9 +1043,7 @@ class Notification(models.Model):
                 title = 'Ownership transferred'
                 color = self.EMBED_COLOR_INFO                
             
-            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
-                if not esi_client:
-                    esi_client = esi_client_factory()
+            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:                
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
                     esi_client

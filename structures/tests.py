@@ -261,7 +261,7 @@ class TestTasksStructures(TestCase):
         ]
         self.assertCountEqual(
             structure_ids,
-            [1031369432897, 1028151259819]
+            [1000000000002, 1000000000001]
         )
 
 
@@ -284,7 +284,7 @@ class TestTasksNotifications(TestCase):
         ) as f:
             cls.corp_structures = json.load(f)
 
-        # ESI universe structures
+        # ESI notifications
         with open(
             currentdir + '/testdata/notifications.json', 
             'r', 
@@ -530,17 +530,6 @@ class TestTasksNotifications(TestCase):
                 1000000513,
             ]
         )
-
-        """        
-
-        # check that all notifications have been sent
-        self.assertEqual(mock_execute.call_count, 17)
-
-        # check that timers have been added
-        if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
-            from allianceauth.timerboard.models import Timer                    
-            self.assertEqual(Timer.objects.count(), 3)
-        """
             
         
     @patch('structures.tasks.Token', autospec=True)
@@ -685,6 +674,14 @@ class TestProcessNotifications(TestCase):
             x['owner'] = cls.owner
             Structure.objects.create(**x)
 
+        # ESI universe structures
+        with open(
+            currentdir + '/testdata/universe_structures.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            cls.universe_structures = json.load(f)
+
         for notification in notifications:                        
             notification_type = \
                 Notification.get_matching_notification_type(
@@ -786,3 +783,53 @@ class TestProcessNotifications(TestCase):
 
             tasks.send_all_new_notifications(rate_limited = False)
             self.assertEqual(Timer.objects.count(), 0)
+    
+    
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_new_notifications_no_structures_preloaded(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory,
+        mock_token
+    ):
+        def get_universe_structure(structure_id, *args, **kwargs):
+            if str(structure_id) in self.universe_structures:
+                x = Mock()
+                x.result.return_value = \
+                    self.universe_structures[str(structure_id)]
+                return x
+            else:
+                raise RuntimeError(
+                    'Can not find structure for {}'.format(structure_id)
+                )
+
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_structures_structure_id.side_effect =\
+            get_universe_structure
+        mock_esi_client_factory.return_value = mock_client
+        
+        # remove structures from setup so we can start from scratch
+        Structure.objects.all().delete()
+        
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        
+        tasks.send_all_new_notifications(rate_limited = False)
+        
+        # should have sent all notications
+        self.assertEqual(mock_execute.call_count, 17)
+
+        # should have created structures on the fly        
+        structure_ids = [
+            x['id'] for x in Structure.objects.values('id')
+        ]
+        self.assertCountEqual(
+            structure_ids,
+            [1000000000002, 1000000000001]
+        )

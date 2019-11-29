@@ -1,6 +1,6 @@
 [
     {
-        "corporation_id": 98394960,
+        "corporation_id": 2001,
         "fuel_expires": "2020-03-05T05:00:00Z",        
         "next_reinforce_apply": null,
         "next_reinforce_hour": null,
@@ -21,13 +21,13 @@
         "state": "shield_vulnerable",
         "state_timer_end": null,
         "state_timer_start": null,
-        "structure_id": 1031369432897,
+        "structure_id": 1000000000002,
         "system_id": 30002537,
         "type_id": 35835,
         "unanchors_at": null
     },
     {
-        "corporation_id": 98394960,
+        "corporation_id": 2001,
         "fuel_expires": null,        
         "next_reinforce_apply": null,
         "next_reinforce_hour": null,
@@ -45,8 +45,8 @@
         "state": "shield_vulnerable",
         "state_timer_end": null,
         "state_timer_start": null,
-        "structure_id": 1028151259819,
-        "system_id": 30000474,
+        "structure_id": 1000000000001,
+        "system_id": 30002537,
         "type_id": 35832,
         "unanchors_at": null
     }

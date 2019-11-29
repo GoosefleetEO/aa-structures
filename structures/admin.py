@@ -169,7 +169,7 @@ class OwnerAdmin(admin.ModelAdmin):
         return self.readonly_fields
 
 
-    actions = ('update_structures', 'fetch_notifications')
+    actions = ('update_structures', 'fetch_notifications', 'send_notifications')
 
 
     def update_structures(self, request, queryset):
@@ -207,6 +207,22 @@ class OwnerAdmin(admin.ModelAdmin):
             )
     
     fetch_notifications.short_description = "Fetch notifications from EVE server"
+
+    def send_notifications(self, request, queryset):
+                        
+        for obj in queryset:            
+            tasks.send_new_notifications_for_owner.delay(                
+                obj.pk
+            )            
+            text = 'Started sending new notifications for: {}. '.format(obj)
+            #text += 'You will receive a notification once it is completed.'
+
+            self.message_user(
+                request, 
+                text
+            )
+    
+    send_notifications.short_description = "Send new notifications to Discord"
 
 
 class StructureAdminInline(admin.TabularInline):

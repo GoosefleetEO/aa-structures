@@ -1,3 +1,5 @@
+# this scripts adds test notifications to a specified corporation / structure
+
 from datetime import datetime, timedelta
 import inspect
 import json
@@ -31,64 +33,40 @@ from esi.clients import esi_client_factory
 
 from structures.models import *
 
+# corporation / structure the notifications will be added to
+CORPORATION_ID = 98394960 # VREGS
+STRUCTURE_ID = 1031369646549 # Big business Tatara
+
 print('load_test_notifications - script loads test notification into the local database ')
 
 print('Connecting to ESI ...')
 client = esi_client_factory()
 
 print('Creating base data ...')
-corporation_id = 1000127
 try:
     corporation = EveCorporationInfo.objects.get(
-        corporation_id=corporation_id
+        corporation_id=CORPORATION_ID
     )
 except EveCorporationInfo.DoesNotExist:
     corporation = EveCorporationInfo.objects.create_corporation(
-        corporation_id
+        CORPORATION_ID
     )
 
-owner, _ = Owner.objects.get_or_create(corporation=corporation)
-webhook = Webhook.objects.first()
-if webhook:
-    owner.webhooks.add(webhook)
-
-eve_type, _ = EveType.objects.get_or_create_esi(35834, client)
-eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(30000142, client)
-Structure.objects.update_or_create(
-    id=1000000000001,
-    defaults={
-        "owner": owner,
-        "eve_type": eve_type,
-        "name": 'Test structure for notifications A',
-        "eve_solar_system": eve_solar_system,                        
-        "reinforce_hour": 12,
-        "reinforce_weekday": 4,
-        "state":Structure.STATE_SHIELD_VULNERABLE
-    }
-)
-
-eve_type, _ = EveType.objects.get_or_create_esi(35835, client)
-eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(30002537, client)
-Structure.objects.update_or_create(
-    id=1000000000002,
-    defaults={
-        "owner": owner,
-        "eve_type": eve_type,
-        "name": 'Test structure for notifications B',
-        "eve_solar_system": eve_solar_system,                        
-        "reinforce_hour": 12,
-        "reinforce_weekday": 4,
-        "state":Structure.STATE_SHIELD_VULNERABLE
-    }
-)
-
+owner = Owner.objects.get(corporation=corporation)
+structure = Structure.objects.get(id=STRUCTURE_ID)
 
 with open(
     file=currentdir + '/td_notifications_2.json', 
     mode='r', 
     encoding='utf-8'
 ) as f:
-    notifications = json.load(f)
+    notifications_json = f.read()
+
+notifications_json = notifications_json.replace('1000000000001', str(structure.id))
+notifications_json = notifications_json.replace('35835', str(structure.eve_type_id))
+notifications_json = notifications_json.replace('35835', str(structure.eve_type_id))
+notifications_json = notifications_json.replace('30002537', str(structure.eve_solar_system_id))
+notifications = json.loads(notifications_json)
 
 with transaction.atomic():                                    
     for notification in notifications:                        

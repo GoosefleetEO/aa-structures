@@ -1,26 +1,26 @@
 {
-    "1031369432897": 
+    "1000000000001": 
     {
-        "owner_id": 98394960,
-        "name": "Amamake - Test Operations",
+        "owner_id": 2001,
+        "name": "Test Structure Alpha",
         "position": {
             "x": 55028384780.0,
             "y": 7310316270.0,
             "z": -163686684205.0
         },            
         "solar_system_id": 30002537,
-        "type_id": 35835
+        "type_id": 35832
     },
-    "1028151259819":
+    "1000000000002":
     {
-        "owner_id": 98394960,
-        "name": "1-PGSG - Pineapple On Pizza Approval Club",
+        "owner_id": 2001,
+        "name": "Test Structure Bravo",
         "position": {
             "x": -2518743930339.066,
             "y": -130157937025.56424,
             "z": -442026427345.6355
         },            
-        "solar_system_id": 30000474,
-        "type_id": 35832
+        "solar_system_id": 30002537,
+        "type_id": 35835
     }
 }

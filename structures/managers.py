@@ -426,19 +426,53 @@ class EveEntityManager(models.Manager):
 
 class StructureManager(models.Manager):
 
+    def get_or_create_esi(
+        self,
+        structure_id,
+        esi_client
+    ):    
+        """get or create a structure from ESI for given structure ID"""
+        from .models import Structure, Owner
+
+        try:
+            obj = Structure.objects.get(id=structure_id)
+            created = False
+        except Structure.DoesNotExist:
+            structure_info = \
+                esi_client.Universe.get_universe_structures_structure_id(
+                    structure_id=structure_id
+                ).result()
+            structure = {
+                'structure_id': structure_id,
+                'name': structure_info['name'],
+                'position': structure_info['position'],
+                'type_id': structure_info['type_id'],
+                'system_id': structure_info['solar_system_id']
+            }            
+            owner = Owner.objects.get(
+                corporation__corporation_id=structure_info['owner_id']
+            )
+            obj, created = self.update_or_create_from_dict(
+                structure,
+                owner,
+                esi_client
+            ) 
+        return obj, created
+        
     def update_or_create_from_dict(
         self, 
         structure: dict, 
-        owner: object,
+        owner: object,        
         esi_client: object
     ):
         """update or create structure from given dict"""
         from .models import EveType, EveSolarSystem, Structure,\
             StructureService, Owner
-        name = re.search(
-            '^\S+ - (.+)', 
-            structure['name']
-        ).group(1)                        
+        matches = re.search('^\S+ - (.+)', structure['name'])
+        if matches:
+            name = matches.group(1)
+        else:
+            name = structure['name']        
         eve_type, _ = EveType.objects.get_or_create_esi(
             structure['type_id'],
             esi_client
@@ -474,7 +508,7 @@ class StructureManager(models.Manager):
 
         state = \
             Structure.get_matching_state(structure['state']) \
-            if 'state' in structure else None
+            if 'state' in structure else Structure.STATE_UNKNOWN
 
         state_timer_start = \
             structure['state_timer_start'] \
