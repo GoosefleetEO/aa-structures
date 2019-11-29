@@ -26,6 +26,100 @@ from .models import *
 logger = LoggerAddTag(logging.getLogger('allianceauth'), __package__)
 
 
+def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:        
+    """returns a valid token for given owner or an error code"""
+    
+    token = None
+    error = Owner.ERROR_NONE
+
+    # abort if character is not configured
+    if owner.character is None:
+        logger.error(add_prefix(
+            'No character configured to sync'
+        ))           
+        error = Owner.ERROR_NO_CHARACTER        
+
+    # abort if character does not have sufficient permissions
+    elif not owner.character.user.has_perm(
+            'structures.add_structure_owner'
+        ):
+        logger.error(add_prefix(
+            'Character does not have sufficient permission '
+            + 'to sync structures'
+        ))            
+        error = Owner.ERROR_INSUFFICIENT_PERMISSIONS        
+
+    else:
+        try:
+            # get token    
+            token = Token.objects.filter(
+                user=owner.character.user, 
+                character_id=owner.character.character.character_id
+            ).require_scopes(
+                Owner.get_esi_scopes()
+            ).require_valid().first()
+        except TokenInvalidError:        
+            logger.error(add_prefix(
+                'Invalid token for fetching structures'
+            ))            
+            error = Owner.ERROR_TOKEN_INVALID                
+        except TokenExpiredError:            
+            logger.error(add_prefix(
+                'Token expired for fetching structures'
+            ))
+            error = Owner.ERROR_TOKEN_EXPIRED        
+        else:
+            if not token:
+                logger.error(add_prefix(
+                    'Missing token for fetching structures'
+                ))            
+                error = Owner.ERROR_TOKEN_INVALID
+            
+    if token:
+        logger.info('Using token: {}'.format(token))
+    
+    return token, error
+
+
+def _send_report_to_user(
+    owner: Owner, 
+    topic: str,
+    success: bool,
+    error_code,
+    user_pk, 
+    add_prefix: make_logger_prefix
+):
+    try:
+        message = 'Syncing of {} for "{}" {}.\n'.format(
+            topic,
+            owner.corporation.corporation_name,
+            'completed successfully' if success else 'has failed'
+        )
+        if success:
+            message += '{:,} {} synced.'.format(                
+                owner.structure_set.count(),
+                topic
+            )
+        else:
+            message += 'Error code: {}'.format(error_code)
+        
+        notify(
+            user=User.objects.get(pk=user_pk),
+            title='{}: {} updated for {}: {}'.format(
+                __title__,
+                topic,
+                owner.corporation.corporation_name,
+                'OK' if success else 'FAILED'
+            ),
+            message=message,
+            level='success' if success else 'danger'
+        )
+    except Exception as ex:
+        logger.error(add_prefix(
+            'An unexpected error ocurred while trying to '
+            + 'report to user: {}'. format(ex)
+        ))
+
 @shared_task
 def update_structures_for_owner(
     owner_pk, 
@@ -44,62 +138,14 @@ def update_structures_for_owner(
     add_prefix = make_logger_prefix(owner)
 
     try:        
-        owner.structures_last_sync = now()
+        owner.structures_last_sync = now()        
         owner.save()
         
-        # abort if character is not configured
-        if owner.character is None:
-            logger.error(add_prefix(
-                'No character configured to sync'
-            ))           
-            owner.structures_last_error = Owner.ERROR_NO_CHARACTER
+        token, error = _get_token_for_owner(owner, add_prefix)
+        if not token:
+            owner.structures_last_error = error
             owner.save()
-            raise ValueError()
-
-        # abort if character does not have sufficient permissions
-        if not owner.character.user.has_perm(
-                'structures.add_structure_owner'
-            ):
-            logger.error(add_prefix(
-                'Character does not have sufficient permission '
-                + 'to sync structures'
-            ))            
-            owner.structures_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
-            owner.save()
-            raise ValueError()
-
-        try:            
-            # get token    
-            token = Token.objects.filter(
-                user=owner.character.user, 
-                character_id=owner.character.character.character_id
-            ).require_scopes(
-                Owner.get_esi_scopes()
-            ).require_valid().first()
-        except TokenInvalidError:        
-            logger.error(add_prefix(
-                'Invalid token for fetching structures'
-            ))            
-            owner.structures_last_error = Owner.ERROR_TOKEN_INVALID
-            owner.save()
-            raise TokenInvalidError()                    
-        except TokenExpiredError:            
-            logger.error(add_prefix(
-                'Token expired for fetching structures'
-            ))
-            owner.structures_last_error = Owner.ERROR_TOKEN_EXPIRED
-            owner.save()
-            raise TokenExpiredError()
-        else:
-            if not token:
-                logger.error(add_prefix(
-                    'Missing token for fetching structures'
-                ))            
-                owner.structures_last_error = Owner.ERROR_TOKEN_INVALID
-                owner.save()
-                raise TokenInvalidError()                    
-            
-        logger.info('Using token: {}'.format(token))
+            raise RuntimeError()        
         
         try:
             # fetching data from ESI
@@ -171,12 +217,12 @@ def update_structures_for_owner(
                 owner.save()
 
         except Exception as ex:
-                logger.error(add_prefix(
-                    'An unexpected error ocurred {}'. format(ex)
-                ))                                
-                owner.structures_last_error = Owner.ERROR_UNKNOWN
-                owner.save()
-                raise ex
+            logger.exception(add_prefix(
+                'An unexpected error ocurred {}'. format(ex)
+            ))                                
+            owner.structures_last_error = Owner.ERROR_UNKNOWN
+            owner.save()       
+            raise ex     
 
     except Exception as ex:
         success = False              
@@ -185,35 +231,16 @@ def update_structures_for_owner(
         success = True
         error_code = None
 
-    if user_pk:        
-        try:
-            message = 'Syncing of structures for "{}" {}.\n'.format(
-                owner.corporation.corporation_name,
-                'completed successfully' if success else 'has failed'
-            )
-            if success:
-                message += '{:,} structures synced.'.format(
-                    owner.structure_set.count()
-                )
-            else:
-                message += 'Error code: {}'.format(error_code)
-            
-            notify(
-                user=User.objects.get(pk=user_pk),
-                title='{}: Structures updated for {}: {}'.format(
-                   __title__,
-                   owner.corporation.corporation_name,
-                    'OK' if success else 'FAILED'
-                ),
-                message=message,
-                level='success' if success else 'danger'
-            )
-        except Exception as ex:
-            logger.error(add_prefix(
-                'An unexpected error ocurred while trying to '
-                + 'report to user: {}'. format(ex)
-            ))
-    
+    if user_pk:
+        _send_report_to_user(
+            owner, 
+            'structures', 
+            success, 
+            error_code,
+            user_pk, 
+            add_prefix
+        )
+        
     return success
 
 
@@ -230,7 +257,7 @@ def fetch_notifications_for_owner(
     force_sync: bool = False,    
     user_pk = None
 ):
-    """fetches notification for owner and stored them in local storage"""
+    """fetches notification for owner and proceses them"""
     
     try:
         owner = Owner.objects.get(pk=owner_pk)
@@ -242,63 +269,16 @@ def fetch_notifications_for_owner(
     add_prefix = make_logger_prefix(owner)
 
     try:        
-        owner.notifications_last_sync = now()
+        owner.notifications_last_sync = now()        
         owner.save()
         
-        # abort if character is not configured
-        if owner.character is None:
-            logger.error(add_prefix(
-                'No character configured to sync'
-            ))           
-            owner.notifications_last_error = Owner.ERROR_NO_CHARACTER
+        token, error = _get_token_for_owner(owner, add_prefix)
+        if not token:
+            owner.notifications_last_error = error
             owner.save()
-            raise ValueError()
-
-        # abort if character does not have sufficient permissions
-        if not owner.character.user.has_perm(
-                'structures.add_structure_owner'
-            ):
-            logger.error(add_prefix(
-                'Character does not have sufficient permission '
-                + 'to fetch notifications'
-            ))            
-            owner.notifications_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
-            owner.save()
-            raise ValueError()
-
-        try:            
-            # get token    
-            token = Token.objects.filter(
-                user=owner.character.user, 
-                character_id=owner.character.character.character_id
-            ).require_scopes(
-                Owner.get_esi_scopes()
-            ).require_valid().first()
-        except TokenInvalidError:        
-            logger.error(add_prefix(
-                'Invalid token for fetching notifications'
-            ))            
-            owner.notifications_last_error = Owner.ERROR_TOKEN_INVALID
-            owner.save()
-            raise TokenInvalidError()                    
-        except TokenExpiredError:            
-            logger.error(add_prefix(
-                'Token expired for fetching notifications'
-            ))
-            owner.notifications_last_error = Owner.ERROR_TOKEN_EXPIRED
-            owner.save()
-            raise TokenExpiredError()
-        else:
-            if not token:
-                logger.error(add_prefix(
-                    'Missing token for fetching notifications'
-                ))            
-                owner.notifications_last_error = Owner.ERROR_TOKEN_INVALID
-                owner.save()
-                raise TokenInvalidError()                    
-            
-        logger.info('Using token: {}'.format(token))
+            raise RuntimeError()
         
+        # fetch notifications from ESI
         try:
             # fetching data from ESI
             logger.info(add_prefix('Fetching notifications from ESI'))
@@ -365,7 +345,7 @@ def fetch_notifications_for_owner(
                             if 'text' in notification else None
                         is_read = notification['is_read'] \
                             if 'is_read' in notification else None
-                        obj, created = Notification.objects.update_or_create(
+                        Notification.objects.update_or_create(
                             notification_id=notification['notification_id'],
                             owner=owner,
                             defaults={
@@ -376,56 +356,35 @@ def fetch_notifications_for_owner(
                                 'is_read': is_read,
                                 'last_updated': owner.notifications_last_sync,
                             }                        
-                        )
-                        obj.create_related_structure(owner, esi_client)
+                        )                        
 
                 owner.notifications_last_error = Owner.ERROR_NONE
                 owner.save()
             
         except Exception as ex:
-                logger.error(add_prefix(
-                    'An unexpected error ocurred {}'. format(ex)
-                ))                                
-                owner.notifications_last_error = Owner.ERROR_UNKNOWN
-                owner.save()
-                raise ex
+            logger.exception(add_prefix(
+                'An unexpected error ocurred {}'. format(ex)
+            ))                                
+            owner.notifications_last_error = Owner.ERROR_UNKNOWN
+            owner.save()        
+            raise ex
 
     except Exception as ex:
         success = False
-        error_code = str(ex)
-        raise ex
+        error_code = str(ex)        
     else:
         success = True
         error_code = None
 
     if user_pk:        
-        try:
-            message = 'Fetching notifications for "{}" {}.\n'.format(
-                owner.corporation.corporation_name,
-                'completed successfully' if success else 'has failed'
-            )
-            if success:
-                message += '{:,} notifications fetched.'.format(
-                    owner.structure_set.count()
-                )
-            else:
-                message += 'Error code: {}'.format(error_code)
-            
-            notify(
-                user=User.objects.get(pk=user_pk),
-                title='{}: Notification sync for {}: {}'.format(
-                   __title__,
-                   owner.corporation.corporation_name,
-                    'OK' if success else 'FAILED'
-                ),
-                message=message,
-                level='success' if success else 'danger'
-            )
-        except Exception as ex:
-            logger.error(add_prefix(
-                'An unexpected error ocurred while trying to '
-                + 'report to user: {}'. format(ex)
-            ))
+        _send_report_to_user(
+            owner, 
+            'notifications', 
+            success, 
+            error_code,
+            user_pk, 
+            add_prefix
+        )
     
     return success
 
@@ -435,6 +394,97 @@ def fetch_all_notifications(force_sync = False):
     """fetch notifications for all owners"""
     for owner in Owner.objects.all():
         fetch_notifications_for_owner.delay(owner.pk, force_sync=force_sync)
+
+
+@shared_task
+def send_new_notifications_for_owner(owner_pk, rate_limited = True):
+    """forwards new notification for this owner to Discord"""
+    try:
+        owner = Owner.objects.get(pk=owner_pk)
+    except Owner.DoesNotExist:
+        raise Owner.DoesNotExist(
+            "Requested owner with pk {} does not exist".format(owner_pk)
+        )
+
+    add_prefix = make_logger_prefix(owner)
+
+    try:        
+        owner.forwarding_last_sync = now()
+        owner.save()
+        
+        token, error = _get_token_for_owner(owner, add_prefix)
+        if not token:
+            owner.forwarding_last_error = error
+            owner.save()
+            raise RuntimeError()
+                    
+        # fetching data from ESI
+        logger.info(add_prefix('Checking for new notifications'))
+        esi_client = esi_client_factory(
+            token=token, 
+            spec_file=get_swagger_spec_path()
+        )            
+        cutoff_dt_for_stale = now() - datetime.timedelta(
+            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+        )
+        new_notifications_count = 0            
+        active_webhooks_count = 0            
+        for webhook in owner.webhooks.all():                
+            q = Notification.objects\
+                .filter(is_sent__exact=False)\
+                .filter(timestamp__gte=cutoff_dt_for_stale) \
+                .filter(notification_type__in=webhook.notification_types)\
+                .select_related().order_by('timestamp')
+
+            if q.count() > 0:                
+                new_notifications_count += q.count()
+                logger.info(add_prefix(
+                    'Found {} new notifications'.format(
+                        q.count(), 
+                        owner
+                )))
+                
+                if webhook.is_active:
+                    active_webhooks_count += 1
+                    for notification in q:
+                        notification.send_to_webhook(
+                            webhook, 
+                            esi_client
+                        )
+                        if rate_limited:
+                            sleep(1)
+
+        if active_webhooks_count == 0:
+            logger.info(add_prefix('No active webhooks'))
+        
+        elif new_notifications_count == 0:
+            logger.info(add_prefix('No new notifications found'))
+
+        owner.forwarding_last_error = Owner.ERROR_NONE
+        owner.save()
+
+        if STRUCTURES_ADD_TIMERS:
+            notifications = Notification.objects\
+                .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
+                .exclude(is_timer_added__exact=True)
+            
+            if len(notifications) > 0:                    
+                for notification in notifications:
+                    notification.add_to_timerboard(esi_client)
+
+    except Exception as ex:
+        logger.exception(add_prefix(
+            'An unexpected error ocurred {}'. format(ex)
+        ))                                
+        owner.forwarding_last_error = Owner.ERROR_UNKNOWN
+        owner.save()
+        raise ex
+
+@shared_task
+def send_all_new_notifications(rate_limited = True):
+    """sends all unsent notifications to active webhooks and add timers"""
+    for owner in Owner.objects.all():
+        send_new_notifications_for_owner(owner.pk, rate_limited)
 
 
 @shared_task
@@ -453,42 +503,6 @@ def send_notification(notification_pk):
 
 
 @shared_task
-def send_new_notifications_to_webhook(webhook_pk, send_again = False):
-    """sends unsent notifications for given webhook"""    
-    try:
-        webhook = Webhook.objects.get(pk=webhook_pk)
-    except Webhook.DoesNotExist:
-        logger.error(
-            'Can not sent notifications to non existing webhook '
-            + 'with pk {} does not exist'.format(webhook_pk)
-        )
-    else:
-        webhook.send_new_notifications()
-    
-
-@shared_task
-def send_all_new_notifications():
-    """sends all unsent notifications to active webhooks and add timers"""
-    active_webhooks_count = 0
-    for webhook in Webhook.objects.filter(is_active__exact=True):
-        active_webhooks_count += 1
-        send_new_notifications_to_webhook.delay(webhook.pk)
-    
-    if active_webhooks_count == 0:
-        logger.warn('No active webhook found for sending notifications')
-
-    if STRUCTURES_ADD_TIMERS:
-        notifications = Notification.objects\
-            .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
-            .exclude(is_timer_added__exact=True)
-        
-        if len(notifications) > 0:
-            esi_client = esi_client_factory()
-            for notification in notifications:
-                notification.add_to_timerboard(esi_client)
-
-
-@shared_task
 def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
     """sends test notification to given webhook"""    
     
@@ -499,6 +513,7 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
         send_report = webhook.send_test_notification()
         error_code = None        
     except Exception as ex:
+        logger.exception('Failed to send test notification')
         send_report = None
         error_code = str(ex)        
     
@@ -525,7 +540,7 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
                 level='success' if success else 'danger'
             )
         except Exception as ex:
-            logger.error(add_prefix(
+            logger.exception(add_prefix(
                 'An unexpected error ocurred while trying to '
                 + 'report to user: {}'. format(ex)
             ))

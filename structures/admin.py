@@ -255,23 +255,8 @@ class WebhookAdmin(admin.ModelAdmin):
     actions = (
         'test_notification', 
         'activate', 
-        'deactivate', 
-        'send_new_notifications'
+        'deactivate'
     )
-
-    def send_new_notifications(self, request, queryset):
-        for obj in queryset:
-            tasks.send_new_notifications_to_webhook.delay(
-                obj.pk
-            )            
-            self.message_user(
-                request,
-                'Initiated sendinging new notifications to webhook "{}".'\
-                    .format(obj)
-            )
-    
-    send_new_notifications.short_description = \
-        "Send new notifications to selected webhooks"
 
     def test_notification(self, request, queryset):
         for obj in queryset:

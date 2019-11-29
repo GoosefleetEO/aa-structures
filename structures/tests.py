@@ -290,7 +290,16 @@ class TestTasksNotifications(TestCase):
             'r', 
             encoding='utf-8'
         ) as f:
-            cls.notifications = json.load(f)
+            notifications = json.load(f)
+
+        cls.notifications = list()
+        for notification in notifications:
+            notification['timestamp'] =  now() - timedelta(
+                hours=randrange(3), 
+                minutes=randrange(60), 
+                seconds=randrange(60)
+            )
+            cls.notifications.append(notification)            
 
         # entities
         with open(
@@ -304,6 +313,7 @@ class TestTasksNotifications(TestCase):
             EveRegion,
             EveConstellation,
             EveSolarSystem,
+            EveMoon,
             EveGroup,
             EveType,
             EveCorporationInfo,
@@ -316,6 +326,24 @@ class TestTasksNotifications(TestCase):
             for x in entities[entity_name]:
                 EntityClass.objects.create(**x)
             assert(len(entities[entity_name]) == EntityClass.objects.count())
+
+        for x in EveCorporationInfo.objects.all():
+            EveEntity.objects.get_or_create(
+                id = x.corporation_id,
+                defaults={
+                    'category': EveEntity.CATEGORY_CORPORATION,
+                    'name': x.corporation_name
+                }
+            )
+
+        for x in EveCharacter.objects.all():
+            EveEntity.objects.get_or_create(
+                id = x.character_id,
+                defaults={
+                    'category': EveEntity.CATEGORY_CHARACTER,
+                    'name': x.character_name
+                }
+            )
                 
         # 1 user
         cls.character = EveCharacter.objects.get(character_id=1001)
@@ -337,6 +365,13 @@ class TestTasksNotifications(TestCase):
             corporation=cls.corporation,
             character=cls.main_ownership
         )
+
+        cls.webhook = Webhook.objects.create(
+            name='Test',
+            url='dummy-url'
+        )
+        cls.owner.webhooks.add(cls.webhook)
+        cls.owner.save()
 
         for x in entities['Structure']:
             x['owner'] = cls.owner
@@ -421,9 +456,10 @@ class TestTasksNotifications(TestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
         
-    # normal synch of new structures, mode my_alliance            
+    # "structures.tests.TestTasksNotifications.test_fetch_notifications_for_owner_normal"
+    # normal synch of new structures, mode my_alliance                
     @patch('structures.tasks.Token', autospec=True)
-    @patch('structures.tasks.esi_client_factory')
+    @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_normal(
             self, 
             mock_esi_client_factory,             
@@ -456,7 +492,9 @@ class TestTasksNotifications(TestCase):
                 
         # run update task
         self.assertTrue(
-            tasks.fetch_notifications_for_owner(owner_pk=self.owner.pk)
+            tasks.fetch_notifications_for_owner(
+                owner_pk=self.owner.pk
+            )
         )
 
         self.owner.refresh_from_db()
@@ -493,9 +531,20 @@ class TestTasksNotifications(TestCase):
             ]
         )
 
-    
+        """        
+
+        # check that all notifications have been sent
+        self.assertEqual(mock_execute.call_count, 17)
+
+        # check that timers have been added
+        if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
+            from allianceauth.timerboard.models import Timer                    
+            self.assertEqual(Timer.objects.count(), 3)
+        """
+            
+        
     @patch('structures.tasks.Token', autospec=True)
-    @patch('structures.tasks.esi_client_factory')
+    @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_esi_error(
             self, 
             mock_esi_client_factory,             
@@ -668,39 +717,66 @@ class TestProcessNotifications(TestCase):
                         'is_sent': False
                     }
                 )   
-            
-    @patch('structures.models.esi_client_factory', autospec=True)
+       
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_new_notifications(
         self, 
         mock_execute, 
-        mock_esi_client_factory
+        mock_esi_client_factory,
+        mock_token
     ):
-        self.webhook.send_new_notifications(rate_limited = False)
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        
+        tasks.send_all_new_notifications(rate_limited = False)
         self.assertEqual(mock_execute.call_count, 17)
 
-        
+    
+    @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
-    @patch('structures.tasks.send_new_notifications_to_webhook', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
     def test_add_timers_normal(
         self,         
         mock_esi_client_factory,
-        mock_send_new_notifications_to_webhook
+        mock_send_to_webhook,
+        mock_token
     ):
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        
         if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
             from allianceauth.timerboard.models import Timer
         
-            tasks.send_all_new_notifications()                        
+            tasks.send_all_new_notifications(rate_limited = False)
             self.assertEqual(Timer.objects.count(), 3)
 
 
+    @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
-    @patch('structures.tasks.send_new_notifications_to_webhook', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
     def test_add_timers_already_added(
         self,         
         mock_esi_client_factory,
-        mock_send_new_notifications_to_webhook
+        mock_send_to_webhook,
+        mock_token
     ):
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        
         if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
             from allianceauth.timerboard.models import Timer
         
@@ -708,5 +784,5 @@ class TestProcessNotifications(TestCase):
                 x.is_timer_added = True
                 x.save()
 
-            tasks.send_all_new_notifications()
+            tasks.send_all_new_notifications(rate_limited = False)
             self.assertEqual(Timer.objects.count(), 0)

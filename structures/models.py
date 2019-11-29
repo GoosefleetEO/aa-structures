@@ -141,52 +141,6 @@ class Webhook(models.Model):
     def __str__(self):
         return self.name
 
-    def send_new_notifications(self, send_again = False, rate_limited = True):
-        """Send new notifications to this webhook"""
-        
-        add_prefix = make_logger_prefix(str(self))
-
-        esi_client = esi_client_factory()
-        
-        new_notifications_count = 0
-        for owner in self.owner_set.all():
-            try:
-                q = owner.notification_set
-
-                if not send_again:
-                    cutoff_dt_for_stale = now() - datetime.timedelta(
-                        hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-                    )
-                    q = q.filter(is_sent__exact=False)\
-                            .filter(timestamp__gte=cutoff_dt_for_stale)
-                
-                q = q.filter(notification_type__in=self.notification_types)
-                q = q.select_related().order_by('timestamp')
-
-                if q.count() > 0:
-                    new_notifications_count += q.count()
-                    logger.info(add_prefix(
-                        'Found {} new notifications for {}'.format(
-                            q.count(), 
-                            owner
-                    )))
-                    
-                    for notification in q:
-                        notification.send_to_webhook(self, esi_client)
-                        if rate_limited:
-                            sleep(1)
-            except Exception as ex:
-                owner.forwarding_last_error = Owner.ERROR_UNKNOWN                
-            else:
-                owner.forwarding_last_error = Owner.ERROR_NONE
-            
-            owner.forwarding_last_sync = now()
-            owner.save()
-        
-        if new_notifications_count == 0:
-            logger.info(add_prefix('No new notifications found'))
-    
-    
     def send_test_notification(self) -> dict:
         """Sends a test notification to this webhook and returns send report"""
         hook = dhooks_lite.Webhook(
@@ -792,8 +746,9 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.notification_id)
 
+    """
     def create_related_structure(self, owner: object, esi_client: object):
-        """creates the structure related to this notification"""
+        # creates the structure related to this notification
 
         parsed_text = yaml.safe_load(self.text)
         
@@ -836,13 +791,8 @@ class Notification(models.Model):
                     structure,
                     owner,
                     esi_client
-                )
-                if created:
-                    logger.info(
-                        'Created structure from notification {}'.format(
-                            self.notification_id
-                    ))
-                    
+                )                
+    """  
 
     def _ldap_datetime_2_dt(self, ldap_dt: int) -> datetime:
         """converts ldap time to datatime"""    
