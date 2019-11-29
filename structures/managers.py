@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 from time import sleep
 
 from bravado.exception import *
@@ -420,4 +421,104 @@ class EveEntityManager(models.Manager):
             ))
             raise ex
         
+        return obj, created
+
+
+class StructureManager(models.Manager):
+
+    def update_or_create_from_dict(
+        self, 
+        structure: dict, 
+        owner: object,
+        esi_client: object
+    ):
+        """update or create structure from given dict"""
+        from .models import EveType, EveSolarSystem, Structure,\
+            StructureService, Owner
+        name = re.search(
+            '^\S+ - (.+)', 
+            structure['name']
+        ).group(1)                        
+        eve_type, _ = EveType.objects.get_or_create_esi(
+            structure['type_id'],
+            esi_client
+        )
+        eve_solar_system, _ = \
+            EveSolarSystem.objects.get_or_create_esi(
+                structure['system_id'],
+                esi_client
+        )
+        fuel_expires = \
+            structure['fuel_expires'] \
+            if 'fuel_expires' in structure else None
+
+        next_reinforce_hour = \
+            structure['next_reinforce_hour']  \
+            if 'next_reinforce_hour' in structure else None
+
+        next_reinforce_weekday = \
+            structure['next_reinforce_weekday'] \
+            if 'next_reinforce_weekday' in structure else None
+
+        next_reinforce_apply = \
+            structure['next_reinforce_apply'] \
+            if 'next_reinforce_apply' in structure else None
+
+        reinforce_hour = \
+            structure['reinforce_hour'] \
+            if 'reinforce_hour' in structure else None
+        
+        reinforce_weekday = \
+            structure['reinforce_weekday'] \
+            if 'reinforce_weekday' in structure else None
+
+        state = \
+            Structure.get_matching_state(structure['state']) \
+            if 'state' in structure else None
+
+        state_timer_start = \
+            structure['state_timer_start'] \
+            if 'state_timer_start' in structure else None
+
+        state_timer_end = \
+            structure['state_timer_end'] \
+            if 'state_timer_end' in structure else None
+
+        unanchors_at =  \
+            structure['unanchors_at']\
+            if 'unanchors_at' in structure else None
+
+        obj, created = Structure.objects.update_or_create(
+            id=structure['structure_id'],
+            defaults={
+                'owner': owner,
+                'eve_type': eve_type,
+                'name': name,
+                'eve_solar_system': eve_solar_system,
+                'position_x': structure['position']['x'],
+                'position_y': structure['position']['y'],
+                'position_z': structure['position']['z'],
+                'fuel_expires': fuel_expires,
+                'next_reinforce_hour': next_reinforce_hour,
+                'next_reinforce_weekday': next_reinforce_weekday,
+                'next_reinforce_apply': next_reinforce_apply,
+                'reinforce_hour': reinforce_hour,
+                'reinforce_weekday': reinforce_weekday,
+                'state': state,
+                'state_timer_start': state_timer_start,
+                'state_timer_end': state_timer_end,
+                'unanchors_at': unanchors_at,
+                'last_updated': owner.structures_last_sync
+            }
+        )
+        if 'services' in structure and structure['services']:
+            for service in structure['services']:
+                state = StructureService.get_matching_state(
+                    service['state']
+                )
+                StructureService.objects.create(
+                    structure=obj,
+                    name=service['name'],
+                    state=state
+                ) 
         return obj, created

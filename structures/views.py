@@ -128,11 +128,16 @@ def structure_list_data(request):
         # add reinforcement infos
         row['is_reinforced'] = structure.is_reinforced
         row['is_reinforced_str'] = 'yes' if structure.is_reinforced else 'no'
-        reinforce_hour_str = str(structure.reinforce_hour) + ":00"
+        if structure.reinforce_hour:
+            reinforce_hour_str = str(structure.reinforce_hour) + ":00"
+        else:
+            reinforce_hour_str = ''
+        
         if structure.reinforce_weekday:            
             reinforce_day_str = calendar.day_name[structure.reinforce_weekday]
         else:
-            reinforce_day_str = ""
+            reinforce_day_str = ''
+        
         if not row['is_poco']:
             row['reinforcement'] = '{}<br>{}'.format(
                 reinforce_day_str,
@@ -142,11 +147,14 @@ def structure_list_data(request):
             row['reinforcement'] = reinforce_hour_str
 
         # add date when fuel runs out
-        if structure.fuel_expires:
-            row['fuel_expires'] = \
-                structure.fuel_expires.strftime(DATETIME_FORMAT)
+        if structure.state == Structure.STATE_UNKNOWN:
+            row['fuel_expires'] = ''
         else:
-            row['fuel_expires'] = 'N/A'
+            if structure.fuel_expires:
+                row['fuel_expires'] = \
+                    structure.fuel_expires.strftime(DATETIME_FORMAT)
+            else:
+                row['fuel_expires'] = 'N/A'
         
         # state
         if row['is_poco']:

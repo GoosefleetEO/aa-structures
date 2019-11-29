@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- Reduced time for new notifications to appear after structure transfers
+
 ### Fixed
 
-- Improve unit tests stability for add timers
+- Improved unit tests stability for add timers
 
 ## [0.2.1] - 2019-11-28
 

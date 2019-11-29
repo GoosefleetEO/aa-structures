@@ -21,7 +21,7 @@ from .app_settings import *
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, \
-    EveEntityManager, EveMoonManager
+    EveEntityManager, EveMoonManager, StructureManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 
@@ -571,6 +571,9 @@ class Structure(models.Model):
     )    
     reinforce_hour = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(23)],
+        null=True, 
+        default=None, 
+        blank=True,
         help_text='The hour of day that determines the four hour window when the structure will randomly exit its reinforcement periods and become vulnerable to attack against its armor and/or hull. The structure will become vulnerable at a random time that is +/- 2 hours centered on the value of this property'
     )
     reinforce_weekday = models.IntegerField(
@@ -582,11 +585,13 @@ class Structure(models.Model):
     )
     state = models.IntegerField(
         choices=STATE_CHOICES,
+        default=STATE_UNKNOWN,
+        blank=True,
         help_text='Current state of the structure'
     )    
     state_timer_start = models.DateTimeField(
         null=True, 
-        default=None, 
+        default=None,
         blank=True,
         help_text='Date at which the structure will move to it’s next state'
     )
@@ -608,6 +613,8 @@ class Structure(models.Model):
         blank=True,
         help_text='date this structure was last updated from the EVE server'
     )
+
+    objects = StructureManager()
 
     @property
     def state_str(self):
@@ -785,6 +792,58 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.notification_id)
 
+    def create_related_structure(self, owner: object, esi_client: object):
+        """creates the structure related to this notification"""
+
+        parsed_text = yaml.safe_load(self.text)
+        
+        if self.notification_type in [
+            NTYPE_STRUCTURE_FUEL_ALERT,
+            NTYPE_STRUCTURE_SERVICES_OFFLINE,
+            NTYPE_STRUCTURE_WENT_LOW_POWER,
+            NTYPE_STRUCTURE_WENT_HIGH_POWER,
+            NTYPE_STRUCTURE_UNANCHORING,
+            NTYPE_STRUCTURE_UNDER_ATTACK,
+            NTYPE_STRUCTURE_LOST_SHIELD,
+            NTYPE_STRUCTURE_LOST_ARMOR,            
+            NTYPE_STRUCTURE_ONLINE,
+            NTYPE_MOONMINING_AUTOMATIC_FRACTURE,
+            NTYPE_MOONMINING_EXTRACTION_CANCELED,
+            NTYPE_MOONMINING_EXTRACTION_FINISHED,
+            NTYPE_MOONMINING_EXTRACTION_STARTED,
+            NTYPE_MOONMINING_LASER_FIRED,
+            NTYPE_OWNERSHIP_TRANSFERRED,
+            NTYPE_STRUCTURE_ANCHORING
+        ] and 'structureID' in parsed_text:
+
+            structure_id = parsed_text['structureID']
+            try:
+                Structure.objects.get(id=structure_id)
+            except Structure.DoesNotExist:
+                structure_info = \
+                    esi_client.Universe.get_universe_structures_structure_id(
+                        structure_id=structure_id
+                    ).result()
+                structure = {
+                    'structure_id': structure_id,
+                    'name': structure_info['name'],
+                    'position': structure_info['position'],
+                    'type_id': structure_info['type_id'],
+                    'system_id': structure_info['solar_system_id'],
+                    'state': 'unknown'
+                }
+                obj, created = Structure.objects.update_or_create_from_dict(
+                    structure,
+                    owner,
+                    esi_client
+                )
+                if created:
+                    logger.info(
+                        'Created structure from notification {}'.format(
+                            self.notification_id
+                    ))
+                    
+
     def _ldap_datetime_2_dt(self, ldap_dt: int) -> datetime:
         """converts ldap time to datatime"""    
         return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
@@ -797,6 +856,7 @@ class Notification(models.Model):
 
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
+
         def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
             text = '[{}]({}) ({})'.format(
                 solar_system.name,
@@ -807,8 +867,6 @@ class Notification(models.Model):
                 solar_system.eve_constellation.eve_region.name
             )
             return text
-
-        
 
         def gen_alliance_link(alliance_name):
             return '[{}]({})'.format(

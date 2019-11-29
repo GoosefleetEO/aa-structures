@@ -1,7 +1,6 @@
 import logging
 import os
 import json
-import re
 from time import sleep
 
 from celery import shared_task, group, chain
@@ -105,14 +104,14 @@ def update_structures_for_owner(
         try:
             # fetching data from ESI
             logger.info(add_prefix('Fetching structures from ESI - page 1'))
-            client = esi_client_factory(
+            esi_client = esi_client_factory(
                 token=token, 
                 spec_file=get_swagger_spec_path()
             )
 
             # get structures from first page
             operation = \
-                client.Corporation.get_corporations_corporation_id_structures(
+                esi_client.Corporation.get_corporations_corporation_id_structures(
                     corporation_id=owner.corporation.corporation_id
                 )
             operation.also_return_response = True
@@ -124,7 +123,7 @@ def update_structures_for_owner(
                 logger.info(add_prefix(
                     'Fetching structures from ESI - page {}'.format(page)
                 ))
-                structures += client.Corporation.get_corporations_corporation_id_structures(
+                structures += esi_client.Corporation.get_corporations_corporation_id_structures(
                     corporation_id=owner.corporation_id,
                     page=page
                 ).result()
@@ -132,7 +131,7 @@ def update_structures_for_owner(
             # fetch additional information for structures
             for structure in structures:
                 structure_info = \
-                    client.Universe.get_universe_structures_structure_id(
+                    esi_client.Universe.get_universe_structures_structure_id(
                         structure_id=structure['structure_id']
                     ).result()
                 structure['name'] = structure_info['name']
@@ -162,84 +161,11 @@ def update_structures_for_owner(
             with transaction.atomic():
                 Structure.objects.filter(owner=owner).delete()
                 for structure in structures:                    
-                    name = re.search(
-                        '^\S+ - (.+)', 
-                        structure['name']
-                    ).group(1)                        
-                    eve_type, _ = EveType.objects.get_or_create_esi(
-                        structure['type_id'],
-                        client
-                    )
-                    eve_solar_system, _ = \
-                        EveSolarSystem.objects.get_or_create_esi(
-                            structure['system_id'],
-                            client
-                    )
-                    fuel_expires = structure['fuel_expires'] \
-                        if 'fuel_expires' in structure else None
-
-                    next_reinforce_hour = \
-                        structure['next_reinforce_hour']  \
-                        if 'next_reinforce_hour' in structure else None
-
-                    next_reinforce_weekday = \
-                        structure['next_reinforce_weekday'] \
-                        if 'next_reinforce_weekday' in structure else None
-
-                    next_reinforce_apply = \
-                        structure['next_reinforce_apply'] \
-                        if 'next_reinforce_apply' in structure else None
-
-                    reinforce_hour = structure['reinforce_hour'] \
-                            if 'reinforce_hour' in structure else None
-                    
-                    reinforce_weekday = structure['reinforce_weekday'] \
-                        if 'reinforce_weekday' in structure else None
-
-                    state = Structure.get_matching_state(
-                        structure['state']
-                    )
-
-                    state_timer_start = structure['state_timer_start'] \
-                        if 'state_timer_start' in structure else None
-
-                    state_timer_end = structure['state_timer_end'] \
-                        if 'state_timer_end' in structure else None
-
-                    unanchors_at =  structure['unanchors_at']\
-                        if 'unanchors_at' in structure else None
-
-                    obj = Structure.objects.create(
-                        id=structure['structure_id'],
-                        owner=owner,
-                        eve_type=eve_type,
-                        name=name,
-                        eve_solar_system=eve_solar_system,
-                        position_x=structure['position']['x'],
-                        position_y=structure['position']['y'],
-                        position_z=structure['position']['z'],
-                        fuel_expires=fuel_expires,
-                        next_reinforce_hour=next_reinforce_hour,
-                        next_reinforce_weekday=next_reinforce_weekday,
-                        next_reinforce_apply=next_reinforce_apply,
-                        reinforce_hour=structure['reinforce_hour'],
-                        reinforce_weekday=reinforce_weekday,
-                        state=state,
-                        state_timer_start=state_timer_start,
-                        state_timer_end=state_timer_end,
-                        unanchors_at=unanchors_at,
-                        last_updated=owner.structures_last_sync
-                    )
-                    if structure['services']:
-                        for service in structure['services']:
-                            state = StructureService.get_matching_state(
-                                service['state']
-                            )
-                            StructureService.objects.create(
-                                structure=obj,
-                                name=service['name'],
-                                state=state
-                            )                                
+                    Structure.objects.update_or_create_from_dict(
+                        structure,
+                        owner,
+                        esi_client
+                    )                
                 
                 owner.structures_last_error = Owner.ERROR_NONE
                 owner.save()
@@ -376,14 +302,14 @@ def fetch_notifications_for_owner(
         try:
             # fetching data from ESI
             logger.info(add_prefix('Fetching notifications from ESI'))
-            client = esi_client_factory(
+            esi_client = esi_client_factory(
                 token=token, 
                 spec_file=get_swagger_spec_path()
             )
 
             # get notifications from first page
             notifications = \
-                client.Character.get_characters_character_id_notifications(
+                esi_client.Character.get_characters_character_id_notifications(
                     character_id=token.character_id
                 ).result()
             
@@ -425,7 +351,7 @@ def fetch_notifications_for_owner(
                             sender, _ = EveEntity\
                             .objects.get_or_create_esi(
                                 notification['sender_id'],
-                                client
+                                esi_client
                             )
                         else:
                             sender, _ = EveEntity\
@@ -439,7 +365,7 @@ def fetch_notifications_for_owner(
                             if 'text' in notification else None
                         is_read = notification['is_read'] \
                             if 'is_read' in notification else None
-                        obj = Notification.objects.update_or_create(
+                        obj, created = Notification.objects.update_or_create(
                             notification_id=notification['notification_id'],
                             owner=owner,
                             defaults={
@@ -449,8 +375,10 @@ def fetch_notifications_for_owner(
                                 'text': text,
                                 'is_read': is_read,
                                 'last_updated': owner.notifications_last_sync,
-                            }
-                        )                                      
+                            }                        
+                        )
+                        obj.create_related_structure(owner, esi_client)
+
                 owner.notifications_last_error = Owner.ERROR_NONE
                 owner.save()
             
@@ -464,7 +392,8 @@ def fetch_notifications_for_owner(
 
     except Exception as ex:
         success = False
-        error_code = str(ex)        
+        error_code = str(ex)
+        raise ex
     else:
         success = True
         error_code = None
