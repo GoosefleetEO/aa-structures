@@ -39,11 +39,8 @@ class TestTasksStructures(TestCase):
     # note: setup is making calls to ESI to get full info for entities
     # all ESI calls in the tested module are mocked though
 
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestTasksStructures, cls).setUpClass()
-
+    
+    def setUp(self):        
         # load test data
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
             inspect.currentframe()
@@ -55,7 +52,7 @@ class TestTasksStructures(TestCase):
             'r', 
             encoding='utf-8'
         ) as f:
-            cls.corp_structures = json.load(f)
+            self.corp_structures = json.load(f)
 
         # ESI universe structures
         with open(
@@ -63,7 +60,7 @@ class TestTasksStructures(TestCase):
             'r', 
             encoding='utf-8'
         ) as f:
-            cls.universe_structures = json.load(f)
+            self.universe_structures = json.load(f)
 
         # entities
         with open(
@@ -90,19 +87,19 @@ class TestTasksStructures(TestCase):
             assert(len(entities[entity_name]) == EntityClass.objects.count())
         
         # 1 user
-        cls.character = EveCharacter.objects.get(character_id=1001)
+        self.character = EveCharacter.objects.get(character_id=1001)
                 
-        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        cls.user = User.objects.create_user(
-            cls.character.character_name,
+        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        self.user = User.objects.create_user(
+            self.character.character_name,
             'abc@example.com',
             'password'
         )
 
-        cls.main_ownership = CharacterOwnership.objects.create(
-            character=cls.character,
+        self.main_ownership = CharacterOwnership.objects.create(
+            character=self.character,
             owner_hash='x1',
-            user=cls.user
+            user=self.user
         )        
 
 
@@ -267,9 +264,7 @@ class TestTasksStructures(TestCase):
 
 class TestTasksNotifications(TestCase):    
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestTasksNotifications, cls).setUpClass()
+    def setUp(self): 
 
         # load test data
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
@@ -284,14 +279,14 @@ class TestTasksNotifications(TestCase):
         ) as f:
             notifications = json.load(f)
 
-        cls.notifications = list()
+        self.notifications = list()
         for notification in notifications:
             notification['timestamp'] =  now() - timedelta(
                 hours=randrange(3), 
                 minutes=randrange(60), 
                 seconds=randrange(60)
             )
-            cls.notifications.append(notification)            
+            self.notifications.append(notification)            
 
         # entities
         with open(
@@ -338,35 +333,36 @@ class TestTasksNotifications(TestCase):
             )
                 
         # 1 user
-        cls.character = EveCharacter.objects.get(character_id=1001)
+        self.character = EveCharacter.objects.get(character_id=1001)
                 
-        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        cls.user = User.objects.create_user(
-            cls.character.character_name,
+        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        self.user = User.objects.create_user(
+            self.character.character_name,
             'abc@example.com',
             'password'
         )
 
-        cls.main_ownership = CharacterOwnership.objects.create(
-            character=cls.character,
+        self.main_ownership = CharacterOwnership.objects.create(
+            character=self.character,
             owner_hash='x1',
-            user=cls.user
+            user=self.user
         )
 
-        cls.owner = Owner.objects.create(
-            corporation=cls.corporation,
-            character=cls.main_ownership
+        self.owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
         )
 
-        cls.webhook = Webhook.objects.create(
+        self.webhook = Webhook.objects.create(
             name='Test',
             url='dummy-url'
         )
-        cls.owner.webhooks.add(cls.webhook)
-        cls.owner.save()
+        self.owner.webhooks.add(self.webhook)
+        self.owner.save()
 
         for x in entities['Structure']:
-            x['owner'] = cls.owner
+            x['owner'] = self.owner
+            del x['owner_corporation_id']
             Structure.objects.create(**x)
                 
    
@@ -566,9 +562,7 @@ class TestTasksNotifications(TestCase):
 
 class TestProcessNotifications(TestCase):    
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestProcessNotifications, cls).setUpClass()
+    def setUp(self): 
 
         # load test data
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
@@ -627,37 +621,38 @@ class TestProcessNotifications(TestCase):
                 }
             )
                
-        cls.factory = RequestFactory()
+        self.factory = RequestFactory()
         
         # 1 user
-        cls.character = EveCharacter.objects.get(character_id=1001)
+        self.character = EveCharacter.objects.get(character_id=1001)
                 
-        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        cls.user = User.objects.create_user(
-            cls.character.character_name,
+        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        self.user = User.objects.create_user(
+            self.character.character_name,
             'abc@example.com',
             'password'
         )
 
-        cls.main_ownership = CharacterOwnership.objects.create(
-            character=cls.character,
+        self.main_ownership = CharacterOwnership.objects.create(
+            character=self.character,
             owner_hash='x1',
-            user=cls.user
+            user=self.user
         )
 
-        cls.owner = Owner.objects.create(
-            corporation=cls.corporation,
-            character=cls.main_ownership,            
+        self.owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership,            
         )
-        cls.webhook = Webhook.objects.create(
+        self.webhook = Webhook.objects.create(
             name='Test',
             url='dummy-url'
         )
-        cls.owner.webhooks.add(cls.webhook)
-        cls.owner.save()
+        self.owner.webhooks.add(self.webhook)
+        self.owner.save()
 
         for x in entities['Structure']:
-            x['owner'] = cls.owner
+            x['owner'] = self.owner
+            del x['owner_corporation_id']
             Structure.objects.create(**x)
 
         # ESI universe structures
@@ -666,7 +661,7 @@ class TestProcessNotifications(TestCase):
             'r', 
             encoding='utf-8'
         ) as f:
-            cls.universe_structures = json.load(f)
+            self.universe_structures = json.load(f)
 
         for notification in notifications:                        
             notification_type = \
@@ -685,7 +680,7 @@ class TestProcessNotifications(TestCase):
                     if 'is_read' in notification else None
                 obj = Notification.objects.update_or_create(
                     notification_id=notification['notification_id'],
-                    owner=cls.owner,
+                    owner=self.owner,
                     defaults={
                         'sender': sender,
                         'timestamp': now() - timedelta(
@@ -823,12 +818,9 @@ class TestProcessNotifications(TestCase):
 
 
 class TestViewStructureList(TestCase):    
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestViewStructureList, cls).setUpClass()
-
-         # load test data
+    
+    def setUp(self):        
+        # load test data
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
             inspect.currentframe()
         )))
@@ -893,16 +885,16 @@ class TestViewStructureList(TestCase):
                 character.alliance_name = corporation.alliance.alliance_name
                 character.save()
                
-        cls.factory = RequestFactory()
+        self.factory = RequestFactory()
         
         # 1 user
-        cls.character = EveCharacter.objects.get(character_id=1001)
+        self.character = EveCharacter.objects.get(character_id=1001)
                 
-        cls.corporation = EveCorporationInfo.objects.get(
-            corporation_id=cls.character.corporation_id
+        self.corporation = EveCorporationInfo.objects.get(
+            corporation_id=self.character.corporation_id
         )
-        cls.user = User.objects.create_user(
-            cls.character.character_name,
+        self.user = User.objects.create_user(
+            self.character.character_name,
             'abc@example.com',
             'password'
         )
@@ -912,20 +904,20 @@ class TestViewStructureList(TestCase):
             codename='basic_access', 
             content_type__app_label=__package__
         )
-        cls.user.user_permissions.add(p)
-        cls.user.save()
+        self.user.user_permissions.add(p)
+        self.user.save()
 
-        cls.main_ownership = CharacterOwnership.objects.create(
-            character=cls.character,
+        self.main_ownership = CharacterOwnership.objects.create(
+            character=self.character,
             owner_hash='x1',
-            user=cls.user
+            user=self.user
         )
-        cls.user.profile.main_character = cls.character
+        self.user.profile.main_character = self.character
         
-        cls.owner = Owner.objects.get(
-            corporation__corporation_id=cls.character.corporation_id
+        self.owner = Owner.objects.get(
+            corporation__corporation_id=self.character.corporation_id
         )
-        cls.owner.character = cls.main_ownership
+        self.owner.character = self.main_ownership
 
 
         for x in entities['Structure']:
@@ -936,6 +928,13 @@ class TestViewStructureList(TestCase):
             Structure.objects.create(**x)
         
 
+    def test_basic_access_main_view(self):
+        request = self.factory.get(reverse('structures:index'))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+    
     def test_basic_access_own_structures_only(self):
                 
         request = self.factory.get(reverse('structures:structure_list_data'))
@@ -961,7 +960,8 @@ class TestViewStructureList(TestCase):
         print(Structure.objects.all().values())
         """
 
-    def test_perm_view_alliance_structures(self):
+
+    def test_perm_view_alliance_structures_normal(self):
         
         # user needs permission to access view
         p = Permission.objects.get(
@@ -981,6 +981,47 @@ class TestViewStructureList(TestCase):
         self.assertSetEqual(
             structure_ids, 
             {1000000000001, 1000000000002}
+        )
+
+
+    def test_perm_view_alliance_structures_no_alliance(self):
+        # run with a user that is not a member of an alliance        
+        character = EveCharacter.objects.get(character_id=1002)        
+        user = User.objects.create_user(
+            character.character_name,
+            'abc@example.com',
+            'password'
+        )
+        main_ownership = CharacterOwnership.objects.create(
+            character=character,
+            owner_hash='x2',
+            user=user
+        )
+        user.profile.main_character = character
+        
+        # user needs permission to access view
+        p = Permission.objects.get(
+            codename='basic_access', 
+            content_type__app_label=__package__
+        )
+        user.user_permissions.add(p)
+        p = Permission.objects.get(
+            codename='view_alliance_structures', 
+            content_type__app_label=__package__
+        )
+        user.user_permissions.add(p)
+        user.save()
+
+        request = self.factory.get(reverse('structures:structure_list_data'))
+        request.user = user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))
+        structure_ids = { x['structure_id'] for x in data }
+        self.assertSetEqual(
+            structure_ids, 
+            {1000000000003}
         )
             
 

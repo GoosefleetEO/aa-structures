@@ -40,18 +40,23 @@ def structure_list_data(request):
     if request.user.has_perm('structures.view_all_structures'):
         structures = Structure.objects.all().select_related()
     else:
+        corporation_ids = {
+            character.character.corporation_id 
+            for character in request.user.character_ownerships.all()
+        }
+        corporations = list(EveCorporationInfo.objects\
+            .filter(corporation_id__in=corporation_ids)
+        )
         if request.user.has_perm('structures.view_alliance_structures'):
-            alliance = EveAllianceInfo.objects.get(
-                alliance_id=request.user.profile.main_character.alliance_id
-            )
-            corporations = alliance.evecorporationinfo_set.all()          
-        else:
-            corporations = [
-                EveCorporationInfo.objects.get(
-                    corporation_id=x.character.corporation_id
-                )
-                for x in request.user.character_ownerships.all()
-            ]
+            alliances = {
+                corporation.alliance
+                for corporation in corporations if corporation.alliance
+            }
+            for alliance in alliances:
+                corporations += alliance.evecorporationinfo_set.all()            
+            
+            corporations = list(set(corporations))
+            
         structures = Structure.objects\
             .filter(owner__corporation__in=corporations) \
             .select_related()

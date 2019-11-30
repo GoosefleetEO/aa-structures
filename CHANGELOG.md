@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.3.1] - 2019-11-30
+
+### Fixed
+
+- Structure list did not show, when user had view_alliance permission, but main did not belong to any alliance.
+
 ## [0.3.0] - 2019-11-29
 
 This release further increases overall stability and performance of the notification engine.
