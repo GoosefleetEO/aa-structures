@@ -23,7 +23,7 @@ from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
 from .models import *
 
 
-logger = LoggerAddTag(logging.getLogger('allianceauth'), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
 def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:        
@@ -434,7 +434,8 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
         )
         new_notifications_count = 0            
         active_webhooks_count = 0            
-        for webhook in owner.webhooks.all():                
+        for webhook in owner.webhooks.filter(is_active__exact=True):             
+            active_webhooks_count += 1
             q = Notification.objects\
                 .filter(is_sent__exact=False)\
                 .filter(timestamp__gte=cutoff_dt_for_stale) \
@@ -449,15 +450,13 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
                         owner
                 )))
                 
-                if webhook.is_active:
-                    active_webhooks_count += 1
-                    for notification in q:
-                        notification.send_to_webhook(
-                            webhook, 
-                            esi_client
-                        )
-                        if rate_limited:
-                            sleep(1)
+                for notification in q:
+                    notification.send_to_webhook(
+                        webhook, 
+                        esi_client
+                    )
+                    if rate_limited:
+                        sleep(1)
 
         if active_webhooks_count == 0:
             logger.info(add_prefix('No active webhooks'))

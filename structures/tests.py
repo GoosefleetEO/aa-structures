@@ -11,11 +11,12 @@ from unittest.mock import Mock, patch
 from django.conf import settings
 from django.contrib.auth.models import User, Permission 
 from django.urls import reverse
-from django.test import TestCase
-from django.test.client import Client
+from django.test import TestCase, RequestFactory
+from django.urls import reverse
 from django.utils.timezone import now
 
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, \
+    EveAllianceInfo
 from allianceauth.authentication.models import CharacterOwnership
 from bravado.exception import *
 from esi.models import Token, Scope
@@ -24,14 +25,13 @@ from esi.errors import TokenExpiredError, TokenInvalidError
 from . import tasks
 from .app_settings import *
 from .models import *
-
+from . import views
 
 # reconfigure logger so we get logging from tasks to console during test
 c_handler = logging.StreamHandler(sys.stdout)
 logger = logging.getLogger('structures.models')
 logger.level = logging.DEBUG
 logger.addHandler(c_handler)
-
 
 
 class TestTasksStructures(TestCase):
@@ -275,14 +275,6 @@ class TestTasksNotifications(TestCase):
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
             inspect.currentframe()
         )))
-
-        # ESI corp structures        
-        with open(
-            currentdir + '/testdata/corp_structures.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            cls.corp_structures = json.load(f)
 
         # ESI notifications
         with open(
@@ -583,14 +575,6 @@ class TestProcessNotifications(TestCase):
             inspect.currentframe()
         )))
 
-        # ESI corp structures        
-        with open(
-            currentdir + '/testdata/corp_structures.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            cls.corp_structures = json.load(f)
-
         # ESI universe structures
         with open(
             currentdir + '/testdata/notifications.json', 
@@ -643,6 +627,8 @@ class TestProcessNotifications(TestCase):
                 }
             )
                
+        cls.factory = RequestFactory()
+        
         # 1 user
         cls.character = EveCharacter.objects.get(character_id=1001)
                 
@@ -813,23 +799,211 @@ class TestProcessNotifications(TestCase):
         # remove structures from setup so we can start from scratch
         Structure.objects.all().delete()
         
-        # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
+        # user needs permission to run tasks
+        p = Permission.objects.get(
+            codename='add_structure_owner', 
+            content_type__app_label=__package__
+        )
         self.user.user_permissions.add(p)
         self.user.save()
         
         tasks.send_all_new_notifications(rate_limited = False)
         
-        # should have sent all notications
+        # should have sent all notifications
         self.assertEqual(mock_execute.call_count, 17)
 
         # should have created structures on the fly        
-        structure_ids = [
+        structure_ids = {
             x['id'] for x in Structure.objects.values('id')
-        ]
-        self.assertCountEqual(
+        }
+        self.assertSetEqual(
             structure_ids,
-            [1000000000002, 1000000000001]
+            {1000000000002, 1000000000001}
         )
+
+
+class TestViewStructureList(TestCase):    
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestViewStructureList, cls).setUpClass()
+
+         # load test data
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
+            inspect.currentframe()
+        )))
+
+        # entities
+        with open(
+            currentdir + '/testdata/entities.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            entities = json.load(f)
+
+        entities_def = [
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon,
+            EveGroup,
+            EveType,
+            EveAllianceInfo,
+            EveCorporationInfo,
+            EveCharacter,    
+            EveEntity    
+        ]
+    
+        for EntityClass in entities_def:
+            entity_name = EntityClass.__name__
+            for x in entities[entity_name]:
+                EntityClass.objects.create(**x)
+            assert(len(entities[entity_name]) == EntityClass.objects.count())
+                
+        for corporation in EveCorporationInfo.objects.all():
+            EveEntity.objects.get_or_create(
+                id = corporation.corporation_id,
+                defaults={
+                    'category': EveEntity.CATEGORY_CORPORATION,
+                    'name': corporation.corporation_name
+                }
+            )
+            Owner.objects.create(
+                corporation=corporation
+            )
+            if int(corporation.corporation_id) in [2001, 2002]:
+                alliance = EveAllianceInfo.objects.get(alliance_id=3001)
+                corporation.alliance = alliance
+                corporation.save()
+
+
+        for character in EveCharacter.objects.all():
+            EveEntity.objects.get_or_create(
+                id = character.character_id,
+                defaults={
+                    'category': EveEntity.CATEGORY_CHARACTER,
+                    'name': character.character_name
+                }
+            )
+            corporation = EveCorporationInfo.objects.get(
+                corporation_id=character.corporation_id
+            )
+            if corporation.alliance:                
+                character.alliance_id = corporation.alliance.alliance_id
+                character.alliance_name = corporation.alliance.alliance_name
+                character.save()
+               
+        cls.factory = RequestFactory()
+        
+        # 1 user
+        cls.character = EveCharacter.objects.get(character_id=1001)
+                
+        cls.corporation = EveCorporationInfo.objects.get(
+            corporation_id=cls.character.corporation_id
+        )
+        cls.user = User.objects.create_user(
+            cls.character.character_name,
+            'abc@example.com',
+            'password'
+        )
+
+        # user needs basic permission to access the app
+        p = Permission.objects.get(
+            codename='basic_access', 
+            content_type__app_label=__package__
+        )
+        cls.user.user_permissions.add(p)
+        cls.user.save()
+
+        cls.main_ownership = CharacterOwnership.objects.create(
+            character=cls.character,
+            owner_hash='x1',
+            user=cls.user
+        )
+        cls.user.profile.main_character = cls.character
+        
+        cls.owner = Owner.objects.get(
+            corporation__corporation_id=cls.character.corporation_id
+        )
+        cls.owner.character = cls.main_ownership
+
+
+        for x in entities['Structure']:
+            x['owner'] = Owner.objects.get(
+                corporation__corporation_id=x['owner_corporation_id']
+            )
+            del x['owner_corporation_id']
+            Structure.objects.create(**x)
+        
+
+    def test_basic_access_own_structures_only(self):
+                
+        request = self.factory.get(reverse('structures:structure_list_data'))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))
+        structure_ids = [x['structure_id'] for x in data]
+        structure_ids = { x['structure_id'] for x in data }
+        self.assertSetEqual(
+            structure_ids, 
+            {1000000000001}
+        )
+        
+
+        """
+        print('\nCorporations')
+        print(EveCorporationInfo.objects.all().values())
+        print('\nOwners')
+        print(Owner.objects.all().values())
+        print('\nStructures')
+        print(Structure.objects.all().values())
+        """
+
+    def test_perm_view_alliance_structures(self):
+        
+        # user needs permission to access view
+        p = Permission.objects.get(
+            codename='view_alliance_structures', 
+            content_type__app_label=__package__
+        )
+        self.user.user_permissions.add(p)
+        self.user.save()
+
+        request = self.factory.get(reverse('structures:structure_list_data'))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))
+        structure_ids = { x['structure_id'] for x in data }
+        self.assertSetEqual(
+            structure_ids, 
+            {1000000000001, 1000000000002}
+        )
+            
+
+    def test_perm_view_all_structures(self):
+        
+        # user needs permission to access view
+        p = Permission.objects.get(
+            codename='view_all_structures', 
+            content_type__app_label=__package__
+        )
+        self.user.user_permissions.add(p)
+        self.user.save()
+
+        request = self.factory.get(reverse('structures:structure_list_data'))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))
+        structure_ids = { x['structure_id'] for x in data }
+        self.assertSetEqual(
+            structure_ids, 
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+
+

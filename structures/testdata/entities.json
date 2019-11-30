@@ -70,34 +70,49 @@
             "eve_group_id": 1406
         }
     ],
+    "EveAllianceInfo":
+    [
+        {
+            "alliance_id": 3001,
+            "alliance_name": "Wayne Enterprises",
+            "alliance_ticker": "WYE",            
+            "executor_corp_id": 2001
+        }
+    ],
     "EveCorporationInfo":
     [
         {
             "corporation_id": 2001,
-            "corporation_name": "Wayne Enterprises",
-            "corporation_ticker": "WYE",
+            "corporation_name": "Wayne Technologies",
+            "corporation_ticker": "WYT",
             "member_count": 4200
         },
         {
             "corporation_id": 2002,
+            "corporation_name": "Wayne Foods",
+            "corporation_ticker": "WYF",
+            "member_count": 8875
+        },
+        {
+            "corporation_id": 2102,
             "corporation_name": "Lexcorp",
             "corporation_ticker": "LEX",
             "member_count": 2500
         }
-    ],
+    ],    
     "EveCharacter":
     [
         {
             "character_id": 1001,
             "character_name": "Bruce Wayne",
             "corporation_id": 2001,
-            "corporation_name": "Wayne Enterprises",
+            "corporation_name": "Wayne Technologies",
             "corporation_ticker": "WYE"
         },
         {
             "character_id": 1002,
             "character_name": "Lex Luther",
-            "corporation_id": 2002,
+            "corporation_id": 2102,
             "corporation_name": "Lexcorp",
             "corporation_ticker": "LEX"
         }
@@ -130,12 +145,7 @@
             "name": "Dummy Corp 2"
         }
     ],
-    "Owner":
-    [
-        {
-            "corporation_id": 1
-        }
-    ],
+   
     "Structure":
     [
         {
@@ -144,7 +154,8 @@
             "eve_type_id": 35832,
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 12,
-            "state": 11
+            "state": 11,
+            "owner_corporation_id": 2001
         },
         {
             "id": 1000000000002,  
@@ -152,7 +163,17 @@
             "eve_type_id": 35835,
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 12,
-            "state": 11
+            "state": 11,
+            "owner_corporation_id": 2002
+        },
+        {
+            "id": 1000000000003,  
+            "name": "Test Structure Charlie",
+            "eve_type_id": 35832,
+            "eve_solar_system_id": 30002537,            
+            "reinforce_hour": 12,
+            "state": 11,
+            "owner_corporation_id": 2102
         }
     ]
 }

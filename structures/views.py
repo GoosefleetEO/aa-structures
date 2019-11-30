@@ -1,4 +1,5 @@
 import calendar
+import logging
 
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
@@ -6,13 +7,18 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
 
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, EveAllianceInfo
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, \
+    EveAllianceInfo
 from esi.decorators import token_required
 
 from . import evelinks, tasks, __title__
 from .app_settings import STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
 from .models import *
-from .utils import messages_plus, DATETIME_FORMAT, notify_admins
+from .utils import messages_plus, DATETIME_FORMAT, notify_admins, LoggerAddTag
+
+
+logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+
 
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
@@ -53,8 +59,10 @@ def structure_list_data(request):
     structures_data = list()
     for structure in structures:        
         
-        row = dict()
-        row['is_poco'] = structure.eve_type.is_poco
+        row = {
+            'structure_id': structure.id,
+            'is_poco': structure.eve_type.is_poco
+        }
         
         # owner
         corporation = structure.owner.corporation

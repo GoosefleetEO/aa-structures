@@ -50,7 +50,7 @@
         "sender_id": 2021,
         "sender_type": "corporation",
         "timestamp": "2019-10-16 20:36:00",
-        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Enterprises\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
         "is_read": false        
     },
     {        
@@ -59,7 +59,7 @@
         "sender_id": 2021,
         "sender_type": "corporation",
         "timestamp": "2019-11-07 19:30:00",
-        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Enterprises\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n"
     },
     {
         "notification_id": 1000000503,
@@ -109,7 +109,7 @@
         "sender_id": 2021,
         "sender_type": "corporation",
         "timestamp": "2019-07-06 16:12:00",
-        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Enterprises\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 6047994755245\n"
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 6047994755245\n"
     },
     {
         "notification_id": 1000000509,
