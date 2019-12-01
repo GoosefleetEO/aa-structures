@@ -1143,9 +1143,10 @@ class Notification(models.Model):
                 NTYPE_STRUCTURE_LOST_ARMOR,
                 NTYPE_STRUCTURE_LOST_SHIELD,
             ]:
-                structure_obj = Structure.objects.get(
-                    id=parsed_text['structureID']
-                )            
+                structure_obj, _ = Structure.objects.get_or_create_esi(
+                    parsed_text['structureID'],
+                    esi_client
+                )                      
                 system = structure_obj.eve_solar_system.name
                 structure = structure_obj.eve_type.name
                 objective = 'Friendly'
@@ -1159,9 +1160,7 @@ class Notification(models.Model):
                 elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
                     details = "Final timer"
             
-            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
-                if not esi_client:
-                    esi_client = esi_client_factory()
+            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:                
                 structure_type, _ = EveType.objects.get_or_create_esi(
                     parsed_text['structureTypeID'],
                     esi_client
