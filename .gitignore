@@ -10,6 +10,6 @@ build/
 *.pyc
 htmlcov/
 .coverage
-.coveragerc
 coverage.xml
+update_coverage.sh
 

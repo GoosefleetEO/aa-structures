@@ -101,7 +101,11 @@ class TestTasksStructures(TestCase):
             owner_hash='x1',
             user=self.user
         )        
-
+     
+    def test_run_unknown_owner(self):        
+        with self.assertRaises(Owner.DoesNotExist):
+            tasks.update_structures_for_owner(owner_pk=1)
+        
 
     # run without char        
     def test_run_no_sync_char(self):
@@ -181,6 +185,7 @@ class TestTasksStructures(TestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
     
+
     # normal synch of new structures, mode my_alliance            
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
@@ -240,8 +245,10 @@ class TestTasksStructures(TestCase):
         
         # run update task
         self.assertTrue(
-            tasks.update_structures_for_owner(owner_pk=owner.pk)
-        )
+            tasks.update_structures_for_owner(
+                owner_pk=owner.pk, 
+                user_pk=self.user.pk
+        ))
 
         owner.refresh_from_db()
         self.assertEqual(
@@ -365,7 +372,14 @@ class TestTasksNotifications(TestCase):
             del x['owner_corporation_id']
             Structure.objects.create(**x)
                 
+
+    def test_run_unknown_owner(self):
+        owner_pks = [x.pk for x in Owner.objects.all()]
+        
+        with self.assertRaises(Owner.DoesNotExist):
+            tasks.update_structures_for_owner(owner_pk=max(owner_pks) + 1)
    
+
     # run without char        
     def test_run_no_sync_char(self):
         owner = Owner.objects.create(
@@ -695,7 +709,22 @@ class TestProcessNotifications(TestCase):
                         'is_sent': False
                     }
                 )   
-       
+    
+
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
+    def test_run_unknown_owner(
+        self,         
+        mock_esi_client_factory,
+        mock_send_to_webhook,
+        mock_token
+    ):      
+        owner_pks = [x.pk for x in Owner.objects.all()]
+        
+        with self.assertRaises(Owner.DoesNotExist):
+            tasks.update_structures_for_owner(owner_pk=max(owner_pks) + 1)
+
 
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
@@ -915,7 +944,38 @@ class TestProcessNotifications(TestCase):
         )
 
 
-class TestViewStructureList(TestCase):    
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_single_notification(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory,
+        mock_token
+    ):
+        notification = Notification.objects.first()
+        tasks.send_notification(notification.pk)
+
+        # should have sent notification
+        self.assertEqual(mock_execute.call_count, 1)
+
+
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_test_notification(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory,
+        mock_token
+    ):        
+        tasks.send_test_notifications_to_webhook(self.webhook.pk, self.user.pk)
+
+        # should have sent notification
+        self.assertEqual(mock_execute.call_count, 1)
+
+
+class TestViews(TestCase):
     
     def setUp(self):        
         # load test data
@@ -1058,7 +1118,6 @@ class TestViewStructureList(TestCase):
         print(Structure.objects.all().values())
         """
 
-
     def test_perm_view_alliance_structures_normal(self):
         
         # user needs permission to access view
@@ -1145,4 +1204,650 @@ class TestViewStructureList(TestCase):
             {1000000000001, 1000000000002, 1000000000003}
         )
 
+
+    def test_view_add_structure_owner(self):
+        
+        # user needs permission to access view
+        p = Permission.objects.get(
+            codename='add_structure_owner', 
+            content_type__app_label=__package__
+        )
+        self.user.user_permissions.add(p)
+        self.user.save()
+
+        request = self.factory.get(reverse('structures:add_structure_owner'))
+        request.user = self.user
+        response = views.index(request)
+        self.assertEqual(response.status_code, 200)
+
+
+    def test_view_service_status_ok(self):
+                
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now()
+            owner.structures_last_error = Owner.ERROR_NONE
+            owner.notifications_last_sync = now()
+            owner.notifications_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_sync = now()
+            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 200)
+
+    
+    def test_view_service_status_fail(self):
+                
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now()
+            owner.structures_last_error = Owner.ERROR_UNKNOWN
+            owner.notifications_last_sync = now()
+            owner.notifications_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_sync = now()
+            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 500)
+
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now()
+            owner.structures_last_error = Owner.ERROR_NONE
+            owner.notifications_last_sync = now()
+            owner.notifications_last_error = Owner.ERROR_UNKNOWN
+            owner.forwarding_last_sync = now()
+            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 500)
+
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now()
+            owner.structures_last_error = Owner.ERROR_NONE
+            owner.notifications_last_sync = now()
+            owner.notifications_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_sync = now()
+            owner.forwarding_last_error = Owner.ERROR_UNKNOWN
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 500)
+
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now() - timedelta(
+                minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES + 1
+            )
+            owner.structures_last_error = Owner.ERROR_NONE
+            owner.notifications_last_sync = now()
+            owner.notifications_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_sync = now()
+            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 500)
+
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now()
+            owner.structures_last_error = Owner.ERROR_NONE
+            owner.notifications_last_sync = now()- timedelta(
+                minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES + 1
+            )
+            owner.notifications_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_sync = now()
+            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 500)
+
+        for owner in Owner.objects.filter(
+            is_included_in_service_status__exact=True
+        ):
+            owner.structures_last_sync = now()
+            owner.structures_last_error = Owner.ERROR_NONE
+            owner.notifications_last_sync = now()
+            owner.notifications_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_sync = now()- timedelta(
+                minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES + 1
+            )
+            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.save()
+
+        request = self.factory.get(reverse('structures:service_status'))
+        response = views.service_status(request)
+        self.assertEqual(response.status_code, 500)
+
+
+class TestManagers(TestCase):    
+    
+    def setUp(self):        
+        # load test data
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
+            inspect.currentframe()
+        )))
+
+        # entities
+        with open(
+            currentdir + '/testdata/entities.json', 
+            'r', 
+            encoding='utf-8'
+        ) as f:
+            self.entities = json.load(f)
+    
+
+    def _load_entity(self, EntityClass):            
+        entity_name = EntityClass.__name__        
+        for x in self.entities[entity_name]:
+            EntityClass.objects.create(**x)
+        assert(len(self.entities[entity_name]) == EntityClass.objects.count())
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_group_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        self._load_entity(EveGroup)
+        
+        obj, created = EveGroup.objects.get_or_create_esi(1657)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 1657)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_group_create(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.return_value = {
+            "id": 1657,
+            "name": "Citadel"
+        }        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_groups_group_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        obj, created = EveGroup.objects.get_or_create_esi(1657)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 1657)
+        self.assertIsInstance(EveGroup.objects.get(id=1657), EveGroup)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_group_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_groups_group_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveGroup.objects.get_or_create_esi(1657)
+        
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_type_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        self._load_entity(EveGroup)
+        self._load_entity(EveType)
+
+        obj, created = EveType.objects.get_or_create_esi(35832)        
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 35832)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_type_create(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.return_value = {
+            "id": 35832,
+            "name": "Astrahus",
+            "group_id": 1657
+        }
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_types_type_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        self._load_entity(EveGroup)
+        
+        obj, created = EveType.objects.get_or_create_esi(35832)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 35832)
+        self.assertIsInstance(EveType.objects.get(id=35832), EveType)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_type_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_types_type_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveType.objects.get_or_create_esi(35832)
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_region_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        self._load_entity(EveRegion)
+
+        obj, created = EveRegion.objects.get_or_create_esi(10000005)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 10000005)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_region_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = {
+            "id": 10000005,
+            "name": "Detorid"
+        }        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_regions_region_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        obj, created = EveRegion.objects.get_or_create_esi(10000005)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 10000005)
+        self.assertIsInstance(EveRegion.objects.get(id=10000005), EveRegion)
+        
+    
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_region_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_regions_region_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveRegion.objects.get_or_create_esi(35832)
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_constellation_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+
+        obj, created = EveConstellation.objects.get_or_create_esi(20000069)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 20000069)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_constellation_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = {
+            "id": 20000069,
+            "name": "1RG-GU",
+            "region_id": 10000005
+        }        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_constellations_constellation_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        self._load_entity(EveRegion)
+
+        obj, created = EveConstellation.objects.get_or_create_esi(10000005)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 10000005)
+        self.assertIsInstance(
+            EveConstellation.objects.get(id=10000005),
+            EveConstellation
+        )
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_constellation_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_constellations_constellation_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveConstellation.objects.get_or_create_esi(10000005)
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_solar_system_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+        self._load_entity(EveSolarSystem)
+
+        obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 30000474)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_solar_system_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = {
+            "id": 30000474,
+            "name": "1-PGSG",
+            "security_status": -0.496552765369415,
+            "constellation_id": 20000069
+        }        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_systems_system_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+
+        obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 30000474)
+        self.assertIsInstance(
+            EveSolarSystem.objects.get(id=30000474), 
+            EveSolarSystem
+        )        
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_solar_system_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_systems_system_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveSolarSystem.objects.get_or_create_esi(30000474)
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_moon_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+        self._load_entity(EveSolarSystem)
+        self._load_entity(EveMoon)
+
+        obj, created = EveMoon.objects.get_or_create_esi(40161465)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 40161465)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_moon_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = {
+            "id": 40161465,
+            "name": "Amamake II - Moon 1",
+            "system_id": 30002537,
+            "position": {
+                "x": 1,
+                "y": 2,
+                "z": 3
+            }
+        }        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_moons_moon_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+        self._load_entity(EveSolarSystem)
+
+        obj, created = EveMoon.objects.get_or_create_esi(40161465)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 40161465)
+        self.assertIsInstance(
+            EveMoon.objects.get(id=40161465), 
+            EveMoon
+        )        
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_moon_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_moons_moon_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveMoon.objects.get_or_create_esi(40161465)
+
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_entity_get(
+        self, 
+        mock_esi_client_factory
+    ):        
+        self._load_entity(EveEntity)
+
+        obj, created = EveEntity.objects.get_or_create_esi(3011)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 3011)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_entity_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = [
+            {
+                "id": 3011,
+                "category": "alliance",
+                "name": "Big Bad Alliance"
+            }                
+        ]
+        mock_client = Mock()        
+        mock_client.Universe.post_universe_names\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        obj, created = EveEntity.objects.get_or_create_esi(3011)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 3011)
+        self.assertIsInstance(
+            EveEntity.objects.get(id=3011), 
+            EveEntity
+        )        
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_entity_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.post_universe_names\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EveEntity.objects.get_or_create_esi(3011)
+
+        
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_structure_get(
+        self, 
+        mock_esi_client_factory
+    ):                   
+        mock_client = Mock()
+
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+        self._load_entity(EveSolarSystem)
+        self._load_entity(EveGroup)
+        self._load_entity(EveType)
+        self._load_entity(EveCorporationInfo)        
+        owner = Owner.objects.create(
+            corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        )
+        for x in self.entities['Structure']:
+            x['owner'] = owner
+            del x['owner_corporation_id']
+            Structure.objects.create(**x)
+        
+        obj, created = Structure.objects.get_or_create_esi(
+            1000000000001,
+            mock_client
+        )
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 1000000000001)
+
+    
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_structure_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = {
+            'id': 1000000000001,            
+            'name': 'Test Structure Alpha',
+            'type_id': 35832,
+            'solar_system_id': 30002537,
+            'owner_id': 2001,
+            "position": {
+                "x": 1,
+                "y": 2,
+                "z": 3
+            }
+        }
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_structures_structure_id\
+            .return_value = x        
+                
+        self._load_entity(EveRegion)
+        self._load_entity(EveConstellation)
+        self._load_entity(EveSolarSystem)
+        self._load_entity(EveGroup)
+        self._load_entity(EveType)
+        self._load_entity(EveCorporationInfo)
+        owner = Owner.objects.create(
+            corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        )
+
+        obj, created = Structure.objects.get_or_create_esi(
+            1000000000001,
+            mock_client
+        )
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 1000000000001)
+        self.assertIsInstance(
+            Structure.objects.get(id=1000000000001), 
+            Structure
+        )        
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_structure_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_structures_structure_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            Structure.objects.get_or_create_esi(1000000000001, mock_client)
 

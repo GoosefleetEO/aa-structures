@@ -268,7 +268,9 @@ def service_status(request):
     configured structure or notifications syncs fails or is delayed
     """
     ok = True
-    for owner in Owner.objects.filter(is_included_in_service_status__exact=True):
+    for owner in Owner.objects.filter(
+        is_included_in_service_status__exact=True
+    ):
         ok = ok and owner.is_all_syncs_ok()
     
     if ok:
