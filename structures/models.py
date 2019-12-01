@@ -1123,7 +1123,11 @@ class Notification(models.Model):
                     content = '@here'
                 else:
                     content = None
-                hook.execute(content=content, embeds=[embed])
+                hook.execute(
+                    content=content, 
+                    embeds=[embed], 
+                    wait_for_response=True
+                )
                 self.is_sent = True
                 self.save()
 

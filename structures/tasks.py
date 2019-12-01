@@ -15,7 +15,7 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.notifications import notify
 from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
 from esi.clients import esi_client_factory
-from esi.errors import TokenExpiredError, TokenInvalidError
+from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
 from esi.models import Token
 
 from . import __title__
@@ -404,36 +404,41 @@ def fetch_all_notifications(force_sync = False):
 @shared_task
 def send_new_notifications_for_owner(owner_pk, rate_limited = True):
     """forwards new notification for this owner to Discord"""
+    
+    def get_esi_client(owner: Owner) -> object:
+        """returns a new ESI client for the given owner"""
+        token, error = _get_token_for_owner(owner, add_prefix)
+        if not token:
+            owner.forwarding_last_error = error
+            owner.save()
+            raise TokenError(add_prefix(
+                'Failed to get a valid token'
+            ))
+
+        return esi_client_factory(
+            token=token, 
+            spec_file=get_swagger_spec_path()
+        )     
+
     try:
         owner = Owner.objects.get(pk=owner_pk)
     except Owner.DoesNotExist:
         raise Owner.DoesNotExist(
             "Requested owner with pk {} does not exist".format(owner_pk)
         )
-
+    
     add_prefix = make_logger_prefix(owner)
 
     try:        
         owner.forwarding_last_sync = now()
         owner.save()
-        
-        token, error = _get_token_for_owner(owner, add_prefix)
-        if not token:
-            owner.forwarding_last_error = error
-            owner.save()
-            raise RuntimeError()
-                    
-        # fetching data from ESI
-        logger.info(add_prefix('Checking for new notifications'))
-        esi_client = esi_client_factory(
-            token=token, 
-            spec_file=get_swagger_spec_path()
-        )            
+                                                    
         cutoff_dt_for_stale = now() - datetime.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
         new_notifications_count = 0            
-        active_webhooks_count = 0            
+        active_webhooks_count = 0    
+        esi_client = None        
         for webhook in owner.webhooks.filter(is_active__exact=True):             
             active_webhooks_count += 1
             q = Notification.objects\
@@ -449,6 +454,8 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
                         q.count(), 
                         owner
                 )))
+                if not esi_client:
+                    esi_client = get_esi_client(owner)
                 
                 for notification in q:
                     notification.send_to_webhook(
@@ -475,16 +482,22 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
                 .select_related().order_by('timestamp')
             
             if len(notifications) > 0:                    
+                if not esi_client:
+                    esi_client = get_esi_client(owner)
+                
                 for notification in notifications:
                     notification.add_to_timerboard(esi_client)
-
+        
+    except TokenError:
+        pass
+    
     except Exception as ex:
         logger.exception(add_prefix(
             'An unexpected error ocurred {}'. format(ex)
         ))                                
         owner.forwarding_last_error = Owner.ERROR_UNKNOWN
         owner.save()
-        raise ex
+    
 
 @shared_task
 def send_all_new_notifications(rate_limited = True):

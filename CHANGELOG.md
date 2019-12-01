@@ -13,11 +13,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.3.2] - 2019-12-01
+
+### Changed
+
+- Significant reduction of avg. task runtime that checks for new notifications
+
+- Improved error detection when sending of notifications to Discord webhook fails
+
 ## [0.3.1] - 2019-11-30
 
 ### Fixed
 
-- Structure list did not show, when user had view_alliance permission, but main did not belong to any alliance.
+- Structure list AJAX error for users with view_alliance permission, which main did not actually belong to an alliance.
 
 ## [0.3.0] - 2019-11-29
 

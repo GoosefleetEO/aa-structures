@@ -696,6 +696,104 @@ class TestProcessNotifications(TestCase):
                     }
                 )   
        
+
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
+    def test_run_no_sync_char(
+        self,         
+        mock_esi_client_factory,
+        mock_send_to_webhook,
+        mock_token
+    ):    
+        self.owner.character = None
+        self.owner.save()
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        
+        self.assertFalse(
+            tasks.send_new_notifications_for_owner(
+                self.owner.pk, 
+                rate_limited = False
+            )
+        )
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.forwarding_last_error, 
+            Owner.ERROR_NO_CHARACTER
+        )
+
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
+    def test_check_expired_token(
+        self,         
+        mock_esi_client_factory,
+        mock_send_to_webhook,
+        mock_token
+    ):  
+        mock_token.objects.filter.side_effect = TokenExpiredError()        
+                        
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+                
+        # run update task
+        self.assertFalse(
+            tasks.send_new_notifications_for_owner(
+                self.owner.pk, 
+                rate_limited = False
+            )
+        )
+
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.forwarding_last_error, 
+            Owner.ERROR_TOKEN_EXPIRED            
+        )
+
+    
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
+    def test_check_invalid_token(
+        self,         
+        mock_esi_client_factory,
+        mock_send_to_webhook,
+        mock_token
+    ):   
+        mock_token.objects.filter.side_effect = TokenInvalidError()
+                        
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+                
+        # run update task
+        self.assertFalse(
+            tasks.send_new_notifications_for_owner(
+                self.owner.pk, 
+                rate_limited = False
+            )
+        )
+
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.forwarding_last_error, 
+            Owner.ERROR_TOKEN_INVALID            
+        )
+
+
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
