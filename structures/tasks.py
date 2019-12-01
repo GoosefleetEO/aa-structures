@@ -470,7 +470,9 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
         if STRUCTURES_ADD_TIMERS:
             notifications = Notification.objects\
                 .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
-                .exclude(is_timer_added__exact=True)
+                .exclude(is_timer_added__exact=True) \
+                .filter(timestamp__gte=cutoff_dt_for_stale) \
+                .select_related().order_by('timestamp')
             
             if len(notifications) > 0:                    
                 for notification in notifications:

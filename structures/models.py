@@ -1139,48 +1139,48 @@ class Notification(models.Model):
                         
             parsed_text = yaml.safe_load(self.text)
             
-            if self.notification_type in [
-                NTYPE_STRUCTURE_LOST_ARMOR,
-                NTYPE_STRUCTURE_LOST_SHIELD,
-            ]:
-                structure_obj, _ = Structure.objects.get_or_create_esi(
-                    parsed_text['structureID'],
-                    esi_client
-                )                      
-                system = structure_obj.eve_solar_system.name
-                structure = structure_obj.eve_type.name
-                objective = 'Friendly'
-                eve_time = timer_ends_at = self.timestamp \
-                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
-                eve_corp = self.owner.corporation            
-
-                if self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
-                    details = "Armor timer"
-
-                elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
-                    details = "Final timer"
-            
-            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:                
-                structure_type, _ = EveType.objects.get_or_create_esi(
-                    parsed_text['structureTypeID'],
-                    esi_client
-                )                
-                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    parsed_text['solarsystemID'],
-                    esi_client
-                )                                
-                system =  solar_system.name
-                structure = structure_type.name
-                objective = 'Friendly'
-                eve_time = timer_ends_at = self.timestamp \
-                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
-                eve_corp = self.owner.corporation
-                details = "Anchor timer"
-
-            else:
-                raise NotImplementedError()
-
             try:
+                if self.notification_type in [
+                    NTYPE_STRUCTURE_LOST_ARMOR,
+                    NTYPE_STRUCTURE_LOST_SHIELD,
+                ]:
+                    structure_obj, _ = Structure.objects.get_or_create_esi(
+                        parsed_text['structureID'],
+                        esi_client
+                    )                      
+                    system = structure_obj.eve_solar_system.name
+                    structure = structure_obj.eve_type.name
+                    objective = 'Friendly'
+                    eve_time = timer_ends_at = self.timestamp \
+                        + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
+                    eve_corp = self.owner.corporation            
+
+                    if self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
+                        details = "Armor timer"
+
+                    elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
+                        details = "Final timer"
+                
+                elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:                
+                    structure_type, _ = EveType.objects.get_or_create_esi(
+                        parsed_text['structureTypeID'],
+                        esi_client
+                    )                
+                    solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                        parsed_text['solarsystemID'],
+                        esi_client
+                    )                                
+                    system =  solar_system.name
+                    structure = structure_type.name
+                    objective = 'Friendly'
+                    eve_time = timer_ends_at = self.timestamp \
+                        + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
+                    eve_corp = self.owner.corporation
+                    details = "Anchor timer"
+
+                else:
+                    raise NotImplementedError()
+
                 with transaction.atomic():                  
                     Timer.objects.create(
                         details=details,
@@ -1197,8 +1197,9 @@ class Notification(models.Model):
                     self.is_timer_added = True
                     self.save()
                     success = True
+                    
             except Exception as ex:
-                logger.error('{}: Failed to add timer from notification: {}'\
+                logger.exception('{}: Failed to add timer from notification: {}'\
                     .format(
                         self.notification_id,
                         ex
