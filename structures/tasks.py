@@ -76,7 +76,7 @@ def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:
                 error = Owner.ERROR_TOKEN_INVALID
             
     if token:
-        logger.info('Using token: {}'.format(token))
+        logger.debug('Using token: {}'.format(token))
     
     return token, error
 
@@ -136,7 +136,7 @@ def update_structures_for_owner(
             "Requested owner with pk {} does not exist".format(owner_pk)
         )
 
-    add_prefix = make_logger_prefix(owner)
+    add_prefix = make_logger_prefix(owner.corporation.corporation_ticker)
 
     try:        
         owner.structures_last_sync = now()        
@@ -268,7 +268,7 @@ def fetch_notifications_for_owner(
             "Requested owner with pk {} does not exist".format(owner_pk)
         )
 
-    add_prefix = make_logger_prefix(owner)
+    add_prefix = make_logger_prefix(owner.corporation.corporation_ticker)
     notifications_count = 0
 
     try:        
@@ -313,12 +313,13 @@ def fetch_notifications_for_owner(
                         indent=4
                     )
             
-            logger.info(add_prefix(
+            logger.debug(add_prefix(
                 'Processing {:,} notifications received from ESI'.format(
                     len(notifications)
             )))
             
-            # update notifications in local DB            
+            # update notifications in local DB
+            new_notifications_count = 0
             with transaction.atomic():                                    
                 for notification in notifications:                        
                     notification_type = \
@@ -349,7 +350,7 @@ def fetch_notifications_for_owner(
                             if 'text' in notification else None
                         is_read = notification['is_read'] \
                             if 'is_read' in notification else None
-                        Notification.objects.update_or_create(
+                        obj, created = Notification.objects.update_or_create(
                             notification_id=notification['notification_id'],
                             owner=owner,
                             defaults={
@@ -360,11 +361,25 @@ def fetch_notifications_for_owner(
                                 'is_read': is_read,
                                 'last_updated': owner.notifications_last_sync,
                             }                        
-                        )                        
-
+                        )
+                        if created:
+                            obj.created = now()
+                            obj.save()
+                            new_notifications_count += 1
+                
                 owner.notifications_last_error = Owner.ERROR_NONE
                 owner.save()
-            
+
+            if new_notifications_count > 0:
+                logger.info(add_prefix(
+                    'Received {} new notifications from ESI'.format(
+                        new_notifications_count
+                )))
+            else:
+                logger.info(add_prefix(
+                    'No new notifications received from ESI'
+                ))
+
         except Exception as ex:
             logger.exception(add_prefix(
                 'An unexpected error ocurred {}'. format(ex)
@@ -427,7 +442,7 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
             "Requested owner with pk {} does not exist".format(owner_pk)
         )
     
-    add_prefix = make_logger_prefix(owner)
+    add_prefix = make_logger_prefix(owner.corporation.corporation_ticker)
 
     try:        
         owner.forwarding_last_sync = now()

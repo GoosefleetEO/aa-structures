@@ -739,6 +739,12 @@ class Notification(models.Model):
     last_updated = models.DateTimeField(
         help_text='Date when this notification has last been updated from ESI'
     )
+    created = models.DateTimeField(
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='Date when this notification was first received from ESI'
+    )
 
     class Meta:
         unique_together = (('notification_id', 'owner'),)

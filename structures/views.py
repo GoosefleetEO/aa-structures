@@ -129,14 +129,14 @@ def structure_list_data(request):
             row['structure_name'] += '<br>[LOW POWER]'
 
         # services
-        services = ''        
+        services = list()
         for service in structure.structureservice_set.all().order_by('name'):
             if service.state == StructureService.STATE_OFFLINE:
                 service_name = '<del>{}</del>'. format(service.name)
             else:
                 service_name = service.name
-            services += '<p>{}</p>'.format(service_name)
-        row['services'] = services
+            services.append(service_name)
+        row['services'] = '<br>'.join(services)
             
         # add reinforcement infos
         row['is_reinforced'] = structure.is_reinforced

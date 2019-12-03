@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.3.3] - 2019-12-03
+
+### Added
+
+- Now tracks when notifications are first received from ESI
+
+### Changed
+
+- Reduced line spacing in services list
+- Reduced logging messages for notifications on info
+
 ## [0.3.2] - 2019-12-01
 
 ### Changed

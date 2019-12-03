@@ -53,6 +53,8 @@ class NotificationAdmin(admin.ModelAdmin):
         'owner', 
         'notification_type', 
         'timestamp',
+        'created',
+        'last_updated',        
         'webhook_list',
         'is_sent',
         'is_timer_added'
