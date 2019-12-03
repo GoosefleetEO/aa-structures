@@ -823,10 +823,11 @@ class TestProcessNotifications(TestCase):
         )
 
 
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_new_notifications(
+    def test_send_new_notifications_normal(
         self, 
         mock_execute, 
         mock_esi_client_factory,
@@ -841,6 +842,101 @@ class TestProcessNotifications(TestCase):
         
         tasks.send_all_new_notifications(rate_limited = False)
         self.assertEqual(mock_execute.call_count, 17)
+
+    
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.models.Notification.send_to_webhook', autospec=True)    
+    def test_send_new_notifications_to_multiple_webhooks(
+        self, 
+        mock_send_to_webhook, 
+        mock_esi_client_factory,
+        mock_token
+    ):
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+
+        notification_types = ','.join([str(x) for x in [
+            NTYPE_OWNERSHIP_TRANSFERRED,
+            NTYPE_STRUCTURE_ANCHORING,
+            NTYPE_STRUCTURE_DESTROYED,
+            NTYPE_STRUCTURE_FUEL_ALERT,
+            NTYPE_STRUCTURE_LOST_ARMOR,
+            NTYPE_STRUCTURE_LOST_SHIELD,
+            NTYPE_STRUCTURE_ONLINE,
+            NTYPE_STRUCTURE_SERVICES_OFFLINE,
+            NTYPE_STRUCTURE_UNANCHORING,
+            NTYPE_STRUCTURE_UNDER_ATTACK,
+            NTYPE_STRUCTURE_WENT_HIGH_POWER,
+            NTYPE_STRUCTURE_WENT_LOW_POWER
+        ]])
+        wh_structures = Webhook.objects.create(
+            name='Structures',
+            url='dummy-url-1',
+            notification_types=notification_types
+        )
+
+        notification_types = ','.join([str(x) for x in [
+            NTYPE_MOONMINING_AUTOMATIC_FRACTURE,
+            NTYPE_MOONMINING_EXTRACTION_CANCELED,
+            NTYPE_MOONMINING_EXTRACTION_FINISHED,
+            NTYPE_MOONMINING_EXTRACTION_STARTED,
+            NTYPE_MOONMINING_LASER_FIRED
+        ]])
+        wh_mining = Webhook.objects.create(
+            name='Mining',
+            url='dummy-url-2',
+            notification_types=notification_types
+        )
+
+        self.owner.webhooks.clear()
+        self.owner.webhooks.add(wh_structures)
+        self.owner.webhooks.add(wh_mining)
+        
+        tasks.send_all_new_notifications(rate_limited = False)
+        results = {            
+            wh_mining.pk: set(),
+            wh_structures.pk: set()
+        }
+        for x in mock_send_to_webhook.call_args_list:
+            first = x[0]
+            notification = first[0]
+            hook = first[1]
+            results[hook.pk].add(notification.notification_id)
+
+        self.assertSetEqual(
+            results[wh_mining.pk],
+            {
+                1000000401,
+                1000000402,
+                1000000403,
+                1000000404,
+                1000000405
+            }
+        )
+
+        self.assertSetEqual(
+            results[wh_structures.pk],
+            {
+                1000000501,
+                1000000502,
+                1000000503,
+                1000000504,
+                1000000505,
+                1000000506,
+                1000000507,
+                1000000508,
+                1000000509,
+                1000000510,
+                1000000511,
+                1000000513
+            }
+        )
 
     
     @patch('structures.tasks.Token', autospec=True)
@@ -893,6 +989,7 @@ class TestProcessNotifications(TestCase):
             self.assertEqual(Timer.objects.count(), 0)
     
     
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
