@@ -457,6 +457,7 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
         for webhook in owner.webhooks.filter(is_active__exact=True):             
             active_webhooks_count += 1
             q = Notification.objects\
+                .filter(owner__exact=owner)\
                 .filter(is_sent__exact=False)\
                 .filter(timestamp__gte=cutoff_dt_for_stale) \
                 .filter(notification_type__in=webhook.notification_types)\
@@ -465,9 +466,9 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
             if q.count() > 0:                
                 new_notifications_count += q.count()
                 logger.info(add_prefix(
-                    'Found {} new notifications'.format(
+                    'Found {} new notifications for webhook {}'.format(
                         q.count(), 
-                        owner
+                        webhook
                 )))
                 if not esi_client:
                     esi_client = get_esi_client(owner)
@@ -491,6 +492,7 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
 
         if STRUCTURES_ADD_TIMERS:
             notifications = Notification.objects\
+                .filter(owner__exact=owner)\
                 .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
                 .exclude(is_timer_added__exact=True) \
                 .filter(timestamp__gte=cutoff_dt_for_stale) \

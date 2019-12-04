@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.3.4] - 2019-12-04
+
+### Fixed
+
+- Notifications sent to non configured webhooks ([#2](https://gitlab.com/ErikKalkoken/aa-structures/issues/2))
+- List of ESI scopes incomplete in readme
+
 ## [0.3.3] - 2019-12-03
 
 ### Added

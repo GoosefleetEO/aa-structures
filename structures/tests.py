@@ -29,7 +29,7 @@ from . import views
 
 # reconfigure logger so we get logging from tasks to console during test
 c_handler = logging.StreamHandler(sys.stdout)
-logger = logging.getLogger('structures.models')
+logger = logging.getLogger('structures.tasks')
 logger.level = logging.DEBUG
 logger.addHandler(c_handler)
 
@@ -533,7 +533,7 @@ class TestTasksNotifications(TestCase):
             ]
         )
             
-        
+            
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_esi_error(
@@ -546,7 +546,7 @@ class TestTasksNotifications(TestCase):
         def get_characters_character_id_notifications(            
             *args, 
             **kwargs
-        ):            
+        ):                        
             raise HTTPBadGateway()
         
         mock_client = Mock()       
@@ -938,6 +938,110 @@ class TestProcessNotifications(TestCase):
             }
         )
 
+
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.models.Notification.send_to_webhook', autospec=True)    
+    def test_send_new_notifications_to_multiple_webhooks_2(
+        self, 
+        mock_send_to_webhook, 
+        mock_esi_client_factory,
+        mock_token
+    ):
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+
+        notification_types_1 = ','.join([str(x) for x in sorted([            
+            NTYPE_MOONMINING_EXTRACTION_CANCELED,
+            NTYPE_STRUCTURE_DESTROYED,            
+            NTYPE_STRUCTURE_LOST_ARMOR,
+            NTYPE_STRUCTURE_LOST_SHIELD,            
+            NTYPE_STRUCTURE_UNDER_ATTACK
+        ])])
+        wh_structures = Webhook.objects.create(
+            name='Structures',
+            url='dummy-url-1',
+            notification_types=notification_types_1,
+            is_active=True
+        )
+
+        notification_types_2 = ','.join([str(x) for x in sorted([
+            NTYPE_MOONMINING_EXTRACTION_CANCELED,
+            NTYPE_MOONMINING_AUTOMATIC_FRACTURE,            
+            NTYPE_MOONMINING_EXTRACTION_FINISHED,
+            NTYPE_MOONMINING_EXTRACTION_STARTED,
+            NTYPE_MOONMINING_LASER_FIRED
+        ])])
+        wh_mining = Webhook.objects.create(
+            name='Mining',
+            url='dummy-url-2',
+            notification_types=notification_types_2,
+            is_default=True,
+            is_active=True
+        )
+
+        self.owner.webhooks.clear()
+        self.owner.webhooks.add(wh_structures)
+        self.owner.webhooks.add(wh_mining)
+
+        owner2 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
+            character=self.main_ownership,            
+        )
+        owner2.webhooks.add(wh_structures)
+        owner2.webhooks.add(wh_mining)
+
+        # move most mining notification to 2nd owner
+        notifications = Notification.objects.filter(
+            notification_id__in=[
+                1000000401,                
+                1000000403,
+                1000000404,
+                1000000405
+        ])
+        for x in notifications:
+            x.owner = owner2
+            x.save()
+        
+        # send notifications for 1st owner only
+        tasks.send_new_notifications_for_owner(
+            self.owner.pk, 
+            rate_limited = False
+        )
+        results = {            
+            wh_mining.pk: set(),
+            wh_structures.pk: set()
+        }
+        for x in mock_send_to_webhook.call_args_list:
+            first = x[0]
+            notification = first[0]
+            hook = first[1]
+            results[hook.pk].add(notification.notification_id)
+
+        # structure notifications should have been sent
+        self.assertSetEqual(
+            results[wh_structures.pk],
+            {
+                1000000402,
+                1000000502,
+                1000000504,
+                1000000505,                
+                1000000509
+            }
+        )
+        # but mining notifications should NOT have been sent
+        self.assertSetEqual(
+            results[wh_mining.pk],
+            {
+                1000000402
+            }
+        )
+
     
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
@@ -1066,6 +1170,7 @@ class TestProcessNotifications(TestCase):
         mock_esi_client_factory,
         mock_token
     ):        
+        mock_execute.return_value={"dummy_response": True}
         tasks.send_test_notifications_to_webhook(self.webhook.pk, self.user.pk)
 
         # should have sent notification

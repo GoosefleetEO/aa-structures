@@ -57,8 +57,9 @@ pip install git+https://gitlab.com/ErikKalkoken/aa-structures.git
 Update the Eve Online app used for authentication in your AA installation to include the following scopes:
 
 ```plain
-esi-universe.read_structures.v1
+esi-characters.read_notifications.v1
 esi-corporations.read_structures.v1
+esi-universe.read_structures.v1
 ```
 
 ### 3. Configure AA settings
