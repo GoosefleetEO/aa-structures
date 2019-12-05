@@ -29,7 +29,7 @@ from . import views
 
 # reconfigure logger so we get logging from tasks to console during test
 c_handler = logging.StreamHandler(sys.stdout)
-logger = logging.getLogger('structures.tasks')
+logger = logging.getLogger('structures.models')
 logger.level = logging.DEBUG
 logger.addHandler(c_handler)
 
@@ -1176,6 +1176,83 @@ class TestProcessNotifications(TestCase):
         # should have sent notification
         self.assertEqual(mock_execute.call_count, 1)
 
+    
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_normal(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.status_ok = True
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(x.is_sent)
+        self.assertTrue(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+        self.assertTrue(x.is_sent)
+
+
+    @patch('structures.models.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
+    @patch('structures.models.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_http_error(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.status_ok = False
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+        
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+
+
+    @patch('structures.models.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_too_many_requests(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                
+        mock_response = Mock()
+        mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
+        mock_response.status_ok = False
+        mock_response.content = {'retry_after': 100}        
+        mock_execute.return_value = mock_response
+
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+
+        
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_exception(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                        
+        mock_execute.side_effect = RuntimeError('Dummy exception')
+
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+        
 
 class TestViews(TestCase):
     

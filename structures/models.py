@@ -146,12 +146,21 @@ class Webhook(models.Model):
         hook = dhooks_lite.Webhook(
             self.url            
         )
-        send_report = hook.execute(
+        response = hook.execute(
             'This is a test notification from **{}**.\n'.format(__title__)
             + 'The webhook appears to be correctly configured.', 
             wait_for_response=True
         )
-        send_report_json = json.dumps(send_report, indent=4, sort_keys=True)
+        if response.status_ok:
+            send_report_json = json.dumps(
+                response.content, 
+                indent=4, 
+                sort_keys=True
+            )
+        else:
+            send_report_json = 'HTTP status code {}'.format(
+                response.status_code
+            )
         return send_report_json
 
 
@@ -701,6 +710,8 @@ class Notification(models.Model):
     EMBED_COLOR_SUCCESS = 0x5cb85c
     EMBED_COLOR_WARNING = 0xf0ad4e
     EMBED_COLOR_DANGER = 0xd9534f
+
+    HTTP_CODE_TOO_MANY_REQUESTS = 429
     
     notification_id = models.BigIntegerField(        
         validators=[MinValueValidator(0)]
@@ -1092,9 +1103,15 @@ class Notification(models.Model):
         )
 
 
-    def send_to_webhook(self, webhook: Webhook, esi_client: object = None):
-        """sends this notification to the configured webhook"""        
-    
+    def send_to_webhook(
+        self, 
+        webhook: Webhook, 
+        esi_client: object = None
+    ) -> bool:
+        """sends this notification to the configured webhook
+        returns True if successful, else False
+        """
+        success = False
         add_prefix = make_logger_prefix(
             'notification:{}'.format(self.notification_id)
         )            
@@ -1108,34 +1125,73 @@ class Notification(models.Model):
             username=username,
             avatar_url=avatar_url
         )                        
-        with transaction.atomic():
-            logger.info(add_prefix(
-                'Trying to sent to webhook: {}'.format(
-                    webhook
-            )))                
-            
-            desc = self.text
-            try:
-                embed = self._generate_embed(esi_client)         
-            except Exception as ex:
-                logger.warning(add_prefix(
-                    'Failed to generate embed: {}'.format(ex)
-                ))
-                raise ex
-            else:                                                
-                if embed.color == self.EMBED_COLOR_DANGER:
-                    content = '@everyone'
-                elif embed.color == self.EMBED_COLOR_WARNING:
-                    content = '@here'
-                else:
-                    content = None
-                hook.execute(
-                    content=content, 
-                    embeds=[embed], 
-                    wait_for_response=True
-                )
-                self.is_sent = True
-                self.save()
+    
+        logger.info(add_prefix(
+            'Trying to sent to webhook: {}'.format(
+                webhook
+        )))                        
+        desc = self.text
+        try:
+            embed = self._generate_embed(esi_client)         
+        except Exception as ex:
+            logger.warning(add_prefix(
+                'Failed to generate embed: {}'.format(ex)
+            ))
+            raise ex
+        else:                                                
+            if embed.color == self.EMBED_COLOR_DANGER:
+                content = '@everyone'
+            elif embed.color == self.EMBED_COLOR_WARNING:
+                content = '@here'
+            else:
+                content = None
+                        
+            max_retries = STRUCTURES_NOTIFICATION_MAX_RETRIES
+            for retry_count in range(max_retries + 1):
+                if retry_count > 0:
+                    logger.warn(add_prefix('Retry {} / {}'.format(
+                        retry_count, max_retries
+                    )))                
+                try:
+                    response = hook.execute(
+                        content=content, 
+                        embeds=[embed], 
+                        wait_for_response=True
+                    )
+                    if response.status_ok:
+                        self.is_sent = True
+                        self.save()
+                        success = True
+                        break
+                    
+                    elif response.status_code == self.HTTP_CODE_TOO_MANY_REQUESTS:                 
+                        if 'retry_after' in response.content:
+                            retry_after = \
+                                response.content['retry_after'] / 1000
+                        else:
+                            retry_after = STRUCTURES_NOTIFICATION_WAIT_SEC                    
+                        logger.warn(add_prefix(
+                            'rate limited - retry after {} secs'.format(retry_after)
+                        ))
+                        sleep(retry_after)
+
+                    else:                    
+                        logger.warn(add_prefix(
+                            'HTTP error {} while trying '.format(
+                                response.status_code
+                            ) + 'to send notifications'
+                        ))
+                        if retry_count < max_retries + 1:
+                            sleep(STRUCTURES_NOTIFICATION_WAIT_SEC)
+                
+                except Exception as ex:
+                    logger.warn(add_prefix(
+                        'Unexpected issue when trying to'
+                            + ' send message: {}'.format(ex)
+                    ))
+                    break
+
+        return success
 
     def add_to_timerboard(self, esi_client: object = None) -> bool:
         """add a timer for this notification if the type is right

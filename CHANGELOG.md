@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.4.0] - 2019-12-05
+
+### Added
+
+- Improved handling of errors and rate limiting for Discord notifications
+
 ## [0.3.4] - 2019-12-04
 
 ### Fixed

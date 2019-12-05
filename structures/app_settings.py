@@ -41,6 +41,22 @@ STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES = getattr(
     5
 )
 
+# Max number of retries for sending a notification if an error occurred
+# e.g. rate limiting
+STRUCTURES_NOTIFICATION_MAX_RETRIES = getattr(
+    settings, 
+    'STRUCTURES_NOTIFICATION_MAX_RETRIES', 
+    3
+)
+
+# Default wait time in seconds before retrying to send a notification 
+# to Discord after an error occurred
+STRUCTURES_NOTIFICATION_WAIT_SEC = getattr(
+    settings, 
+    'STRUCTURES_NOTIFICATION_WAIT_SEC', 
+    5
+)
+
 # Enables features for developers, e.g. write access to all models in admin
 STRUCTURES_DEVELOPER_MODE = getattr(
     settings, 
