@@ -1379,8 +1379,7 @@ class TestViews(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
         
-        data = json.loads(response.content.decode('utf-8'))
-        structure_ids = [x['structure_id'] for x in data]
+        data = json.loads(response.content.decode('utf-8'))        
         structure_ids = { x['structure_id'] for x in data }
         self.assertSetEqual(
             structure_ids, 

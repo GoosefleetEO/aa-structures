@@ -7,9 +7,8 @@ __pycache__
 dist/
 build/
 *.egg-info/
-*.pyc
-htmlcov/
-.coverage
-coverage.xml
 update_coverage.sh
+coverage.xml
+.coverage
+.tox/
 
