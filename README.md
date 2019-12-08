@@ -40,7 +40,13 @@ Planned features:
 
 ## Screenshots
 
+Here is an example for the structure browser:
+
 ![StructureList](https://i.imgur.com/AW2NXLI.png)
+
+This is an example for a notification posted on Discord:
+
+![Notification example](https://i.imgur.com/OrJsQfW.png)
 
 ## Installation
 
