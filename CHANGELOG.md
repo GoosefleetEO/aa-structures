@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.4.1] - 2019-12-14
+
+### Fixed
+
+- CRITICAL FIX: Notification sync breaks with newest ESI version ([#6](https://gitlab.com/ErikKalkoken/aa-structures/issues/6))
+
 ## [0.4.0] - 2019-12-05
 
 ### Added
