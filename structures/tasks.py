@@ -19,6 +19,7 @@ from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
 from esi.models import Token
 
 from . import __title__
+from .app_settings import STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED
 from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
 from .models import *
 
@@ -312,6 +313,33 @@ def fetch_notifications_for_owner(
                         sort_keys=True, 
                         indent=4
                     )
+
+            if STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED:
+                # store notifications to disk in continuous file per corp
+                filename = 'notifications_archive_{}.json'.format(
+                    owner.corporation.corporation_id
+                )
+                logger.info(add_prefix(
+                    'Storing notifications into archive file: {}'.format(
+                        filename
+                )))
+                with open(
+                    file=filename, 
+                    mode='a',
+                    encoding='utf-8'
+                ) as f:
+                    f.write('[{}] {}:\n'.format(
+                        now().strftime(DATETIME_FORMAT), 
+                        owner.corporation.corporation_ticker
+                    ))
+                    json.dump(
+                        notifications, 
+                        f, 
+                        cls=DjangoJSONEncoder, 
+                        sort_keys=True, 
+                        indent=4
+                    )
+                    f.write('\n')
             
             logger.debug(add_prefix(
                 'Processing {:,} notifications received from ESI'.format(

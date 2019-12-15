@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.4.2] - 2019-12-15
+
+### Changed
+
+- Changed the installation requirement to include Django>=2.1;<3 ([#3](https://gitlab.com/ErikKalkoken/aa-structures/issues/3))
+
 ## [0.4.1] - 2019-12-14
 
 ### Fixed

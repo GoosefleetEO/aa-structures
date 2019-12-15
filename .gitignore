@@ -11,4 +11,5 @@ update_coverage.sh
 coverage.xml
 .coverage
 .tox/
+announce_release.py
 

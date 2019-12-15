@@ -64,6 +64,14 @@ STRUCTURES_DEVELOPER_MODE = getattr(
     False
 )
 
+# Enables archiving of all notifications received from ESI to files
+# notifications will by stored into one continuous file per corporations
+STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED = getattr(
+    settings, 
+    'STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED', 
+    False
+)
+
 # Whether to automatically add timers for certain notifications 
 # on the timerboard (will have no effect if aa-timerboard app is not installed)
 STRUCTURES_ADD_TIMERS = getattr(

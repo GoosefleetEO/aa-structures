@@ -92,6 +92,11 @@ Configure your AA settings (`local.py`) as follows:
 
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
 
+> **Recommended celery setup**:<br>The Alliance Structures apps uses celery a lot to constantly refresh data from ESI. We therefore recommend to enable the following additional settings for celery workers to enable logging and to protect against memory leaks:<br>
+`-l info --max-memory-per-child 512000`
+<br><br>In many setups this config is part of your supervisor configuration.<br>On Ubuntu you can run `systemctl status supervisor` to see where that config file is located. <br><br>Note that you need to restart the supervisor service itself to activate those changes.<br>
+e.g. on Ubuntu:<br>`systemctl restart supervisor`
+
 ### 4. Finalize installation into AA
 
 Run migrations & copy static files
