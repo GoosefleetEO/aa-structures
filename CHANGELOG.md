@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.4.3] - 2019-12-17
+
+### Fixed
+
+- Dotlan link for corporations not working ([#8](https://gitlab.com/ErikKalkoken/aa-structures/issues/8))
+
 ## [0.4.2] - 2019-12-15
 
 ### Changed

@@ -139,7 +139,7 @@ To update your existing installation of Alliance Structures first enable your vi
 Then run the following commands from your AA project directory (the one that contains `manage.py`).
 
 ```bash
-pip install git+https://gitlab.com/ErikKalkoken/aa-structures.git
+pip install git+https://gitlab.com/ErikKalkoken/aa-structures.git -U
 ```
 
 ```bash

@@ -82,7 +82,7 @@ def get_entity_profile_url_by_name(category: str, name: str) -> str:
         )
 
     elif category == ESI_CATEGORY_CORPORATION:        
-        url = "{}/corporation/{}".format(
+        url = "{}/corp/{}".format(
             DOTLAN_BASE_URL,
             urllib.parse.quote(name.replace(" ", "_"))
         )

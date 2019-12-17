@@ -316,8 +316,12 @@ def fetch_notifications_for_owner(
 
             if STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED:
                 # store notifications to disk in continuous file per corp
-                filename = 'notifications_archive_{}.json'.format(
-                    owner.corporation.corporation_id
+                folder_name = 'structures_notifications_archive'
+                os.makedirs(folder_name, exist_ok=True)
+                filename = '{}/notifications_{}_{}.txt'.format(
+                    folder_name,
+                    owner.corporation.corporation_id,
+                    now().date().isoformat()
                 )
                 logger.info(add_prefix(
                     'Storing notifications into archive file: {}'.format(
