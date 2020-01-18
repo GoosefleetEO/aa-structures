@@ -84,7 +84,10 @@ notifications_testdata = _load_testdata_notifications()
 # functions for mocking calls to ESI with test data
 
 def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
-    """simulates ESI endpoint of same name for mock test"""
+    """simulates ESI endpoint of same name for mock test
+    will use the respective test data (corp_structures_data)
+    unless the function property override_data is set
+    """
 
     def mock_result():
         """simulates behavior of result()"""
@@ -99,12 +102,24 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     if not page:
         page = 1
 
-    if not str(corporation_id) in corp_structures_data:
+    if esi_get_corporations_corporation_id_structures.override_data is None:
+        my_corp_structures_data = corp_structures_data
+    else:
+        if (not isinstance(
+            esi_get_corporations_corporation_id_structures.override_data, 
+            dict
+        )):
+            raise TypeError('data must be dict')
+
+        my_corp_structures_data \
+            = esi_get_corporations_corporation_id_structures.override_data
+
+    if not str(corporation_id) in my_corp_structures_data:
         raise ValueError(
             'No test data for corporation ID: {}'. format(corporation_id)
         )
     
-    corp_data = corp_structures_data[str(corporation_id)]
+    corp_data = my_corp_structures_data[str(corporation_id)]
 
     start = (page - 1) * page_size
     stop = start + page_size
@@ -117,6 +132,7 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     mock_operation.result.side_effect = mock_result
     return mock_operation
     
+esi_get_corporations_corporation_id_structures.override_data = None
 
 def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""

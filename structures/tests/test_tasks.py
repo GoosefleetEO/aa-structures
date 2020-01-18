@@ -26,7 +26,8 @@ from .testdata import \
     esi_get_universe_structures_structure_id, \
     esi_get_characters_character_id_notifications, \
     entities_testdata,\
-    notifications_testdata
+    notifications_testdata,\
+    corp_structures_data
 
 logger = set_logger('structures.tasks', __file__)
 
@@ -71,6 +72,8 @@ class TestTasksStructures(TestCase):
             owner_hash='x1',
             user=self.user
         )        
+        Structure.objects.all().delete()
+     
      
     def test_run_unknown_owner(self):        
         with self.assertRaises(Owner.DoesNotExist):
@@ -155,15 +158,15 @@ class TestTasksStructures(TestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
         
-
-    # normal synch of new structures, mode my_alliance            
+    
+    #normal synch of new structures, mode my_alliance
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
     def test_update_structures_for_owner_normal(
         self, 
         mock_esi_client_factory,             
         mock_Token
-    ):                       
+    ):                               
         mock_client = Mock()        
         mock_client.Corporation\
             .get_corporations_corporation_id_structures.side_effect = \
@@ -190,27 +193,75 @@ class TestTasksStructures(TestCase):
                 owner_pk=owner.pk, 
                 user_pk=self.user.pk
         ))
-
         owner.refresh_from_db()
         self.assertEqual(
             owner.structures_last_error, 
             Owner.ERROR_NONE            
-        )
-        
+        )        
         # should have tried to fetch structures
         self.assertEqual(
             mock_client.Corporation\
                 .get_corporations_corporation_id_structures.call_count, 
             1
+        )                
+        # should contain the right structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000002, 1000000000001}
         )
+
+    # synch of structures, ensure old structures are removed
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_remove_olds(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )        
         
-        # should only contain the right structures
-        structure_ids = [
-            x['id'] for x in Structure.objects.values('id')
-        ]
-        self.assertCountEqual(
-            structure_ids,
-            [1000000000002, 1000000000001]
+        # run update task with all structures
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        )        
+        # should contain the right structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000002, 1000000000001}
+        )
+
+        # run update task 2nd time with one less structure
+        my_corp_structures_data = corp_structures_data.copy()
+        del(my_corp_structures_data["2001"][1])
+        esi_get_corporations_corporation_id_structures.override_data = \
+            my_corp_structures_data
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        )        
+        # should contain only the remaining structure
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000002}
         )
 
 
