@@ -21,7 +21,7 @@ from .. import tasks
 from ..app_settings import *
 from ..models import *
 
-from .my_test_data import \
+from .testdata import \
     esi_get_corporations_corporation_id_structures, \
     esi_get_universe_structures_structure_id, \
     esi_get_characters_character_id_notifications, \

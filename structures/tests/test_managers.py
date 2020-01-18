@@ -6,7 +6,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .my_test_data import entities_testdata
+from .testdata import entities_testdata
 from ..models import *
 
 

@@ -1,3 +1,5 @@
+"""functions for loading test data and for building mocks"""
+
 from datetime import timedelta
 import inspect
 import json
@@ -21,7 +23,7 @@ _currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
 
 def _load_corp_structures_data():
     with open(
-        _currentdir + '/testdata/corp_structures.json', 
+        _currentdir + '/corp_structures.json', 
         'r', 
         encoding='utf-8'
     ) as f:
@@ -32,7 +34,7 @@ def _load_corp_structures_data():
 
 def _load_universe_structures_data():
     with open(
-        _currentdir + '/testdata/universe_structures.json', 
+        _currentdir + '/universe_structures.json', 
         'r', 
         encoding='utf-8'
     ) as f:
@@ -43,7 +45,7 @@ def _load_universe_structures_data():
 
 def _load_testdata_notifications() -> dict:    
     with open(
-        _currentdir + '/testdata/notifications.json', 
+        _currentdir + '/notifications.json', 
         'r', 
         encoding='utf-8'
     ) as f:
@@ -63,7 +65,7 @@ def _load_testdata_notifications() -> dict:
 
 def _load_testdata_entities() -> dict:    
     with open(
-        _currentdir + '/testdata/entities.json', 
+        _currentdir + '/entities.json', 
         'r', 
         encoding='utf-8'
     ) as f:
@@ -96,15 +98,22 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
         page = 1
+
+    if not str(corporation_id) in corp_structures_data:
+        raise ValueError(
+            'No test data for corporation ID: {}'. format(corporation_id)
+        )
     
+    corp_data = corp_structures_data[str(corporation_id)]
+
     start = (page - 1) * page_size
     stop = start + page_size
-    pages_count = int(math.ceil(len(corp_structures_data) / page_size))
+    pages_count = int(math.ceil(len(corp_data) / page_size))
     
     mock_operation = Mock()
     mock_operation.also_return_response = False
     mock_operation._headers = {'x-pages': pages_count}    
-    mock_operation._data = corp_structures_data[start:stop]
+    mock_operation._data = corp_data[start:stop]
     mock_operation.result.side_effect = mock_result
     return mock_operation
     
