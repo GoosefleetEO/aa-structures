@@ -5,6 +5,21 @@ import json
 import os
 
 
+def load_testdata_entities() -> dict:
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
+        inspect.currentframe()
+    )))
+
+    with open(
+        currentdir + '/testdata/entities.json', 
+        'r', 
+        encoding='utf-8'
+    ) as f:
+        entities = json.load(f)
+    
+    return entities
+    
+
 def dt_eveformat(dt: object) -> str:
     """converts a datetime to a string in eve format
     e.g. '2019-06-25T19:04:44'

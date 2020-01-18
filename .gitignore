@@ -12,4 +12,6 @@ coverage.xml
 .coverage
 .tox/
 announce_release.py
+htmlcov/
+structures_notifications_archive/
 
