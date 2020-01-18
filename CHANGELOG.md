@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.4.4] - 2020-01-19
+
+- Fixed bug in structure sync occurring only when trying to sync a corp with a large number of structures (e.g. > 1.000)
+
+### Fixed
+
 ## [0.4.3] - 2019-12-17
 
 ### Fixed

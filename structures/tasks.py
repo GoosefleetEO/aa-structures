@@ -172,7 +172,7 @@ def update_structures_for_owner(
                     'Fetching structures from ESI - page {}'.format(page)
                 ))
                 structures += esi_client.Corporation.get_corporations_corporation_id_structures(
-                    corporation_id=owner.corporation_id,
+                    corporation_id=owner.corporation.corporation_id,
                     page=page
                 ).result()
             
@@ -207,7 +207,24 @@ def update_structures_for_owner(
                     len(structures)
             )))
             with transaction.atomic():
-                Structure.objects.filter(owner=owner).delete()
+                # remove locally stored structures no longer returned from ESI
+                ids_local = {
+                    x.id 
+                    for x in Structure.objects.filter(owner=owner)
+                }
+                ids_from_esi = {x['structure_id'] for x in structures}
+                ids_to_remove = ids_local - ids_from_esi
+                
+                if len(ids_to_remove) > 0:                    
+                    Structure.objects\
+                        .filter(id__in=ids_to_remove)\
+                        .delete()
+                    logger.info(
+                        'Removed {} structures which apparently no longer '
+                        'exist.'.format(len(ids_to_remove))
+                    )
+                
+                # update structures
                 for structure in structures:                    
                     Structure.objects.update_or_create_from_dict(
                         structure,

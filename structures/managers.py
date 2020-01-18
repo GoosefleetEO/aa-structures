@@ -545,7 +545,8 @@ class StructureManager(models.Manager):
                 'last_updated': owner.structures_last_sync
             }
         )
-        if 'services' in structure and structure['services']:
+        StructureService.objects.filter(structure=obj).delete()
+        if 'services' in structure and structure['services']:            
             for service in structure['services']:
                 state = StructureService.get_matching_state(
                     service['state']

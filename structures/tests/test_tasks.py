@@ -202,12 +202,12 @@ class TestTasksStructures(TestCase):
         self.assertEqual(
             mock_client.Corporation\
                 .get_corporations_corporation_id_structures.call_count, 
-            1
+            2
         )                
         # should contain the right structures
         self.assertSetEqual(
             { x['id'] for x in Structure.objects.values('id') },
-            {1000000000002, 1000000000001}
+            {1000000000001, 1000000000002, 1000000000003}
         )
 
     # synch of structures, ensure old structures are removed
@@ -246,7 +246,7 @@ class TestTasksStructures(TestCase):
         # should contain the right structures
         self.assertSetEqual(
             { x['id'] for x in Structure.objects.values('id') },
-            {1000000000002, 1000000000001}
+            {1000000000001, 1000000000002, 1000000000003}
         )
 
         # run update task 2nd time with one less structure
@@ -261,7 +261,7 @@ class TestTasksStructures(TestCase):
         # should contain only the remaining structure
         self.assertSetEqual(
             { x['id'] for x in Structure.objects.values('id') },
-            {1000000000002}
+            {1000000000002, 1000000000003}
         )
 
 

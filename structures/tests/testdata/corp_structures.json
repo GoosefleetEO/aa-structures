@@ -50,6 +50,23 @@
             "system_id": 30002537,
             "type_id": 35832,
             "unanchors_at": null
+        },
+        {
+            "corporation_id": 2001,
+            "fuel_expires": null,        
+            "next_reinforce_apply": null,
+            "next_reinforce_hour": null,
+            "next_reinforce_weekday": null,        
+            "profile_id": 101853,
+            "reinforce_hour": 18,
+            "reinforce_weekday": 5,           
+            "state": "shield_vulnerable",
+            "state_timer_end": null,
+            "state_timer_start": null,
+            "structure_id": 1000000000003,
+            "system_id": 30002537,
+            "type_id": 35832,
+            "unanchors_at": null
         }
     ]
 }
