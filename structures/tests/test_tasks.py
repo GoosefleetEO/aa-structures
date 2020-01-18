@@ -22,16 +22,14 @@ from bravado.exception import *
 from esi.models import Token, Scope
 from esi.errors import TokenExpiredError, TokenInvalidError
 
-from . import tasks
-from .app_settings import *
-from .models import *
-from . import views
+from . import set_logger
+from .. import tasks
+from ..app_settings import *
+from ..models import *
+from .. import views
 
-# reconfigure logger so we get logging from tasks to console during test
-c_handler = logging.StreamHandler(sys.stdout)
-logger = logging.getLogger('structures.models')
-logger.level = logging.DEBUG
-logger.addHandler(c_handler)
+
+logger = set_logger('structures.models', __file__)
 
 
 class TestTasksStructures(TestCase):
@@ -1125,7 +1123,7 @@ class TestProcessNotifications(TestCase):
         # user needs permission to run tasks
         p = Permission.objects.get(
             codename='add_structure_owner', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         self.user.user_permissions.add(p)
         self.user.save()
@@ -1339,7 +1337,7 @@ class TestViews(TestCase):
         # user needs basic permission to access the app
         p = Permission.objects.get(
             codename='basic_access', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         self.user.user_permissions.add(p)
         self.user.save()
@@ -1401,7 +1399,7 @@ class TestViews(TestCase):
         # user needs permission to access view
         p = Permission.objects.get(
             codename='view_alliance_structures', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         self.user.user_permissions.add(p)
         self.user.save()
@@ -1437,12 +1435,12 @@ class TestViews(TestCase):
         # user needs permission to access view
         p = Permission.objects.get(
             codename='basic_access', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         user.user_permissions.add(p)
         p = Permission.objects.get(
             codename='view_alliance_structures', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         user.user_permissions.add(p)
         user.save()
@@ -1465,7 +1463,7 @@ class TestViews(TestCase):
         # user needs permission to access view
         p = Permission.objects.get(
             codename='view_all_structures', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         self.user.user_permissions.add(p)
         self.user.save()
@@ -1488,7 +1486,7 @@ class TestViews(TestCase):
         # user needs permission to access view
         p = Permission.objects.get(
             codename='add_structure_owner', 
-            content_type__app_label=__package__
+            content_type__app_label='structures'
         )
         self.user.user_permissions.add(p)
         self.user.save()
