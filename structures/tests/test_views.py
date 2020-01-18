@@ -8,7 +8,8 @@ from django.urls import reverse
 from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
-from . import set_logger, load_testdata_entities
+from . import set_logger
+from .my_test_data import entities_testdata
 from ..models import *
 from .. import views
 
@@ -18,9 +19,7 @@ logger = set_logger('structures.views', __file__)
 
 class TestViews(TestCase):
     
-    def setUp(self):        
-        entities = load_testdata_entities()
-
+    def setUp(self):                
         entities_def = [
             EveRegion,
             EveConstellation,
@@ -36,9 +35,9 @@ class TestViews(TestCase):
     
         for EntityClass in entities_def:
             entity_name = EntityClass.__name__
-            for x in entities[entity_name]:
+            for x in entities_testdata[entity_name]:
                 EntityClass.objects.create(**x)
-            assert(len(entities[entity_name]) == EntityClass.objects.count())
+            assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
                 
         for corporation in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
@@ -108,7 +107,8 @@ class TestViews(TestCase):
         self.owner.character = self.main_ownership
 
 
-        for x in entities['Structure']:
+        for structure in entities_testdata['Structure']:
+            x = structure.copy()
             x['owner'] = Owner.objects.get(
                 corporation__corporation_id=x['owner_corporation_id']
             )

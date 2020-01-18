@@ -5,7 +5,8 @@ from django.test import TestCase
 from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
-from . import set_logger, load_testdata_entities
+from . import set_logger
+from .my_test_data import entities_testdata
 from ..models import *
 
 
@@ -14,14 +15,11 @@ logger = set_logger('structures.managers', __file__)
 
 class TestManagers(TestCase):    
     
-    def setUp(self):                
-        self.entities = load_testdata_entities()
-
     def _load_entity(self, EntityClass):            
         entity_name = EntityClass.__name__        
-        for x in self.entities[entity_name]:
+        for x in entities_testdata[entity_name]:
             EntityClass.objects.create(**x)
-        assert(len(self.entities[entity_name]) == EntityClass.objects.count())
+        assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
 
 
     @patch('structures.tasks.esi_client_factory', autospec=True)
@@ -439,7 +437,8 @@ class TestManagers(TestCase):
         owner = Owner.objects.create(
             corporation = EveCorporationInfo.objects.get(corporation_id=2001)
         )
-        for x in self.entities['Structure']:
+        for structure in entities_testdata['Structure']:
+            x = structure.copy()
             x['owner'] = owner
             del x['owner_corporation_id']
             Structure.objects.create(**x)

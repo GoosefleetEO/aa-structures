@@ -289,9 +289,7 @@ def fetch_notifications_for_owner(
             esi_client = esi_client_factory(
                 token=token, 
                 spec_file=get_swagger_spec_path()
-            )
-
-            # get notifications from first page
+            )            
             notifications = \
                 esi_client.Character.get_characters_character_id_notifications(
                     character_id=token.character_id

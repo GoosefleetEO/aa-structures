@@ -5,7 +5,7 @@ from django.test import TestCase
 from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
-from . import set_logger, load_testdata_entities
+from . import set_logger
 from ..models import *
 
 

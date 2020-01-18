@@ -1,8 +1,4 @@
 from datetime import timedelta
-import inspect
-import json
-import math
-import os
 from random import randrange
 from unittest.mock import Mock, patch
 
@@ -20,13 +16,19 @@ from bravado.exception import *
 from esi.models import Token, Scope
 from esi.errors import TokenExpiredError, TokenInvalidError
 
-from . import set_logger, load_testdata_entities
+from . import set_logger
 from .. import tasks
 from ..app_settings import *
 from ..models import *
 
+from .my_test_data import \
+    esi_get_corporations_corporation_id_structures, \
+    esi_get_universe_structures_structure_id, \
+    esi_get_characters_character_id_notifications, \
+    entities_testdata,\
+    notifications_testdata
 
-logger = set_logger('structures.models', __file__)
+logger = set_logger('structures.tasks', __file__)
 
 
 class TestTasksStructures(TestCase):
@@ -34,31 +36,7 @@ class TestTasksStructures(TestCase):
     # note: setup is making calls to ESI to get full info for entities
     # all ESI calls in the tested module are mocked though
 
-    
-    def setUp(self):        
-        # load test data
-        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
-            inspect.currentframe()
-        )))
-
-        # ESI corp structures        
-        with open(
-            currentdir + '/testdata/corp_structures.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            self.corp_structures = json.load(f)
-
-        # ESI universe structures
-        with open(
-            currentdir + '/testdata/universe_structures.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            self.universe_structures = json.load(f)
-                
-        entities = load_testdata_entities()
-
+    def setUp(self):            
         entities_def = [
             EveRegion,
             EveConstellation,
@@ -71,9 +49,12 @@ class TestTasksStructures(TestCase):
     
         for EntityClass in entities_def:
             entity_name = EntityClass.__name__
-            for x in entities[entity_name]:
+            for x in entities_testdata[entity_name]:
                 EntityClass.objects.create(**x)
-            assert(len(entities[entity_name]) == EntityClass.objects.count())
+            assert(
+                len(entities_testdata[entity_name]) == \
+                EntityClass.objects.count()
+            )
         
         # 1 user
         self.character = EveCharacter.objects.get(character_id=1001)
@@ -173,52 +154,23 @@ class TestTasksStructures(TestCase):
             owner.structures_last_error, 
             Owner.ERROR_TOKEN_INVALID            
         )
-    
+        
 
     # normal synch of new structures, mode my_alliance            
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
     def test_update_structures_for_owner_normal(
-            self, 
-            mock_esi_client_factory,             
-            mock_Token
-        ):
-        
-        # create mocks
-        def get_corp_structures_page(*args, **kwargs):
-            #returns single page for operation.result(), first with header
-            page_size = 2
-            mock_calls_count = len(mock_operation.mock_calls)
-            start = (mock_calls_count - 1) * page_size
-            stop = start + page_size
-            pages_count = int(math.ceil(len(self.corp_structures) / page_size))
-            if mock_calls_count == 1:
-                mock_response = Mock()
-                mock_response.headers = {'x-pages': pages_count}
-                return [self.corp_structures[start:stop], mock_response]
-            else:
-                return self.corp_structures[start:stop]
-
-        def get_universe_structure(structure_id, *args, **kwargs):
-            if str(structure_id) in self.universe_structures:
-                x = Mock()
-                x.result.return_value = \
-                    self.universe_structures[str(structure_id)]
-                return x
-            else:
-                raise RuntimeError(
-                    'Can not find structure for {}'.format(structure_id)
-                )
-
-        # mock_Token.objects.filter.side_effect = [Token()]
-        
-        mock_client = Mock()
-        mock_operation = Mock()
-        mock_operation.result.side_effect = get_corp_structures_page        
-        mock_client.Corporation.get_corporations_corporation_id_structures =\
-            Mock(return_value=mock_operation)
-        mock_client.Universe.get_universe_structures_structure_id.side_effect =\
-            get_universe_structure
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
@@ -246,7 +198,11 @@ class TestTasksStructures(TestCase):
         )
         
         # should have tried to fetch structures
-        self.assertEqual(mock_operation.result.call_count, 1)
+        self.assertEqual(
+            mock_client.Corporation\
+                .get_corporations_corporation_id_structures.call_count, 
+            1
+        )
         
         # should only contain the right structures
         structure_ids = [
@@ -262,31 +218,7 @@ class TestTasksNotifications(TestCase):
 
     def setUp(self): 
 
-        # load test data
-        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
-            inspect.currentframe()
-        )))
-
-        # ESI notifications
-        with open(
-            currentdir + '/testdata/notifications.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            notifications = json.load(f)
-
-        self.notifications = list()
-        for notification in notifications:
-            notification['timestamp'] =  now() - timedelta(
-                hours=randrange(3), 
-                minutes=randrange(60), 
-                seconds=randrange(60)
-            )
-            self.notifications.append(notification)            
-
-        # entities
-        entities = load_testdata_entities()
-
+        # entities        
         entities_def = [
             EveRegion,
             EveConstellation,
@@ -301,9 +233,11 @@ class TestTasksNotifications(TestCase):
     
         for EntityClass in entities_def:
             entity_name = EntityClass.__name__
-            for x in entities[entity_name]:
+            for x in entities_testdata[entity_name]:
                 EntityClass.objects.create(**x)
-            assert(len(entities[entity_name]) == EntityClass.objects.count())
+            assert(
+                len(entities_testdata[entity_name]) == EntityClass.objects.count()
+            )
 
         for x in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
@@ -351,7 +285,8 @@ class TestTasksNotifications(TestCase):
         self.owner.webhooks.add(self.webhook)
         self.owner.save()
 
-        for x in entities['Structure']:
+        for structure in entities_testdata['Structure']:
+            x = structure.copy()
             x['owner'] = self.owner
             del x['owner_corporation_id']
             Structure.objects.create(**x)
@@ -450,23 +385,11 @@ class TestTasksNotifications(TestCase):
             self, 
             mock_esi_client_factory,             
             mock_Token
-        ):
-        
-        # create mocks        
-        def get_characters_character_id_notifications(            
-            *args, 
-            **kwargs
-        ):            
-            x = Mock()
-            x.result.return_value = self.notifications
-            return x
-        
-        # mock_Token.objects.filter.side_effect = [Token()]
-        
+    ):        
         mock_client = Mock()       
         mock_client.Character\
             .get_characters_character_id_notifications.side_effect =\
-                get_characters_character_id_notifications
+                esi_get_characters_character_id_notifications
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
@@ -524,13 +447,10 @@ class TestTasksNotifications(TestCase):
             self, 
             mock_esi_client_factory,             
             mock_Token
-        ):
+    ):
         
         # create mocks        
-        def get_characters_character_id_notifications(            
-            *args, 
-            **kwargs
-        ):                        
+        def get_characters_character_id_notifications_error(*args, **kwargs):
             mock_response = Mock()
             mock_response.status_code = None
             raise HTTPBadGateway(mock_response)
@@ -538,7 +458,7 @@ class TestTasksNotifications(TestCase):
         mock_client = Mock()       
         mock_client.Character\
             .get_characters_character_id_notifications.side_effect =\
-                get_characters_character_id_notifications
+                get_characters_character_id_notifications_error
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
@@ -562,24 +482,7 @@ class TestTasksNotifications(TestCase):
 
 class TestProcessNotifications(TestCase):    
 
-    def setUp(self): 
-
-        # load test data
-        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
-            inspect.currentframe()
-        )))
-
-        # ESI universe structures
-        with open(
-            currentdir + '/testdata/notifications.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            notifications = json.load(f)
-
-        # entities
-        entities = load_testdata_entities()
-
+    def setUp(self):         
         entities_def = [
             EveRegion,
             EveConstellation,
@@ -594,9 +497,11 @@ class TestProcessNotifications(TestCase):
     
         for EntityClass in entities_def:
             entity_name = EntityClass.__name__
-            for x in entities[entity_name]:
+            for x in entities_testdata[entity_name]:
                 EntityClass.objects.create(**x)
-            assert(len(entities[entity_name]) == EntityClass.objects.count())
+            assert(
+                len(entities_testdata[entity_name]) == EntityClass.objects.count()
+            )
                 
         for x in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
@@ -645,20 +550,13 @@ class TestProcessNotifications(TestCase):
         self.owner.webhooks.add(self.webhook)
         self.owner.save()
 
-        for x in entities['Structure']:
+        for structure in entities_testdata['Structure']:
+            x = structure.copy()
             x['owner'] = self.owner
             del x['owner_corporation_id']
             Structure.objects.create(**x)
-
-        # ESI universe structures
-        with open(
-            currentdir + '/testdata/universe_structures.json', 
-            'r', 
-            encoding='utf-8'
-        ) as f:
-            self.universe_structures = json.load(f)
-
-        for notification in notifications:                        
+        
+        for notification in notifications_testdata:                        
             notification_type = \
                 Notification.get_matching_notification_type(
                     notification['type']
@@ -814,6 +712,7 @@ class TestProcessNotifications(TestCase):
         mock_esi_client_factory,
         mock_token
     ):
+        logger.debug('test_send_new_notifications_normal')
         # create test data
         p = Permission.objects.filter(            
             codename='add_structure_owner'
@@ -1083,21 +982,11 @@ class TestProcessNotifications(TestCase):
         mock_execute, 
         mock_esi_client_factory,
         mock_token
-    ):
-        def get_universe_structure(structure_id, *args, **kwargs):
-            if str(structure_id) in self.universe_structures:
-                x = Mock()
-                x.result.return_value = \
-                    self.universe_structures[str(structure_id)]
-                return x
-            else:
-                raise RuntimeError(
-                    'Can not find structure for {}'.format(structure_id)
-                )
-
+    ):        
+        logger.debug('test_send_new_notifications_no_structures_preloaded')
         mock_client = Mock()        
         mock_client.Universe.get_universe_structures_structure_id.side_effect =\
-            get_universe_structure
+            esi_get_universe_structures_structure_id
         mock_esi_client_factory.return_value = mock_client
         
         # remove structures from setup so we can start from scratch
@@ -1135,6 +1024,7 @@ class TestProcessNotifications(TestCase):
         mock_esi_client_factory,
         mock_token
     ):
+        logger.debug('test_send_single_notification')
         notification = Notification.objects.first()
         tasks.send_notification(notification.pk)
 
@@ -1151,8 +1041,11 @@ class TestProcessNotifications(TestCase):
         mock_esi_client_factory,
         mock_token
     ):        
-        mock_execute.return_value={"dummy_response": True}        
-        mock_execute.status_ok = True
+        logger.debug('test_send_test_notification')
+        mock_response = Mock()
+        mock_response.status_ok = True
+        mock_response.content = {"dummy_response": True}
+        mock_execute.return_value = mock_response
         tasks.send_test_notifications_to_webhook(self.webhook.pk, self.user.pk)
 
         # should have sent notification
@@ -1166,6 +1059,7 @@ class TestProcessNotifications(TestCase):
         mock_execute, 
         mock_esi_client_factory
     ):                                
+        logger.debug('test_send_to_webhook_normal')
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.status_ok = True
@@ -1189,6 +1083,7 @@ class TestProcessNotifications(TestCase):
         mock_execute, 
         mock_esi_client_factory
     ):                                
+        logger.debug('test_send_to_webhook_http_error')
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.status_ok = False
@@ -1209,6 +1104,7 @@ class TestProcessNotifications(TestCase):
         mock_execute, 
         mock_esi_client_factory
     ):                                
+        logger.debug('test_send_to_webhook_too_many_requests')
         mock_response = Mock()
         mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
         mock_response.status_ok = False
@@ -1228,6 +1124,7 @@ class TestProcessNotifications(TestCase):
         mock_execute, 
         mock_esi_client_factory
     ):                                        
+        logger.debug('test_send_to_webhook_exception')
         mock_execute.side_effect = RuntimeError('Dummy exception')
 
         x = Notification.objects.get(notification_id=1000000502)
