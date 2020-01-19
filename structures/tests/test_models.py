@@ -6,9 +6,35 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from ..models import *
+from ..models import Owner
 
 
 logger = set_logger('structures.views', __file__)
 
-# tbd
+class TestOwner(TestCase):
+
+    def test_to_friendly_error_message(self):
+        
+        #normal error
+        self.assertEqual(
+            Owner.to_friendly_error_message(Owner.ERROR_NO_CHARACTER), 
+            'No character set for fetching data from ESI'
+        )
+
+        #normal error
+        self.assertEqual(
+            Owner.to_friendly_error_message(0), 
+            'No error'
+        )
+
+        #undefined error
+        self.assertEqual(
+            Owner.to_friendly_error_message(9876), 
+            'Undefined error'
+        )
+
+        #undefined error
+        self.assertEqual(
+            Owner.to_friendly_error_message(-1), 
+            'Undefined error'
+        )

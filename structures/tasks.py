@@ -103,7 +103,7 @@ def _send_report_to_user(
                 topic
             )
         else:
-            message += 'Error code: {}'.format(error_code)
+            message += 'Error: {}'.format(error_code)
         
         notify(
             user=User.objects.get(pk=user_pk),
@@ -147,7 +147,7 @@ def update_structures_for_owner(
         if not token:
             owner.structures_last_error = error
             owner.save()
-            raise RuntimeError()        
+            raise RuntimeError(Owner.to_friendly_error_message(error))
         
         try:
             # fetching data from ESI

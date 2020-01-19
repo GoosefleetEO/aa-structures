@@ -294,6 +294,11 @@ class Owner(models.Model):
             and self.is_forwarding_sync_ok()
     
     @classmethod
+    def to_friendly_error_message(cls, error) -> str:
+        msg = [(x, y) for x, y in cls.ERRORS_LIST if x == error]
+        return msg[0][1] if len(msg) > 0 else 'Undefined error'
+
+    @classmethod
     def get_esi_scopes(cls) -> list:
         return [
             'esi-corporations.read_structures.v1',
