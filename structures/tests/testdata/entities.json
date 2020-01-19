@@ -175,5 +175,18 @@
             "state": 11,
             "owner_corporation_id": 2102
         }
+    ],
+    
+    "StructureTag":
+    [
+        {
+            "name": "tag_a"
+        },
+        {
+            "name": "tag_b"
+        },
+        {
+            "name": "tag_c"
+        }
     ]
 }

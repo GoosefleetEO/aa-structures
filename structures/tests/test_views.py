@@ -106,7 +106,7 @@ class TestViews(TestCase):
         )
         self.owner.character = self.main_ownership
 
-
+        # create Structure objects
         for structure in entities_testdata['Structure']:
             x = structure.copy()
             x['owner'] = Owner.objects.get(
@@ -114,7 +114,10 @@ class TestViews(TestCase):
             )
             del x['owner_corporation_id']
             Structure.objects.create(**x)
-        
+
+        # create StructureTag objects
+        for x in entities_testdata['StructureTag']:
+            StructureTag.objects.create(**x)
 
     def test_basic_access_main_view(self):
         request = self.factory.get(reverse('structures:index'))
@@ -365,3 +368,80 @@ class TestViews(TestCase):
         request = self.factory.get(reverse('structures:service_status'))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
+
+
+    def test_list_filter_by_tag_1(self):        
+        # apply tags to structures
+        tag_a = StructureTag.objects.get(name='tag_a')
+        tag_b = StructureTag.objects.get(name='tag_b')
+        x = Structure.objects.get(id=1000000000002)
+        x.tags.add(tag_a)
+        x.save()
+        x = Structure.objects.get(id=1000000000003)
+        x.tags.add(tag_a)
+        x.tags.add(tag_b)
+        x.save()
+                
+        # user needs permission to access view
+        p = Permission.objects.get(
+            codename='view_all_structures', 
+            content_type__app_label='structures'
+        )
+        self.user.user_permissions.add(p)
+        self.user.save()
+
+        # no filter
+        request = self.factory.get('{}'.format(
+            reverse('structures:structure_list_data')
+        ))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))        
+        self.assertSetEqual(
+            { x['structure_id'] for x in data }, 
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+
+        # filter for tag_a
+        request = self.factory.get('{}?tags=tag_a'.format(
+            reverse('structures:structure_list_data')
+        ))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))        
+        self.assertSetEqual(
+            { x['structure_id'] for x in data }, 
+            {1000000000002, 1000000000003}
+        )
+
+        # filter for tag_b
+        request = self.factory.get('{}?tags=tag_b'.format(
+            reverse('structures:structure_list_data')
+        ))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))        
+        self.assertSetEqual(
+            { x['structure_id'] for x in data }, 
+            {1000000000003}
+        )
+
+        # filter for tag_a, tag_b
+        request = self.factory.get('{}?tags=tag_a,tag_b'.format(
+            reverse('structures:structure_list_data')
+        ))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))        
+        self.assertSetEqual(
+            { x['structure_id'] for x in data }, 
+            {1000000000002, 1000000000003}
+        )
