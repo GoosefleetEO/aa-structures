@@ -436,6 +436,29 @@ class EveType(models.Model):
         return id == self.EVE_TYPE_ID_POCO    
 
 
+class StructureTag(models.Model):
+    """tag for organizing structures"""
+
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text='name of the tag - must be unique'
+    )    
+    description = models.TextField(
+        null=True, 
+        default=None, 
+        blank=True,        
+        help_text='description for this tag'
+    )
+    is_default = models.BooleanField(        
+        default=False,
+        help_text='if true this tag will automatically added to new structures'
+    )
+
+    def __str__(self):
+        return self.name
+
+
 class Structure(models.Model):
     """structure of a corporation"""
 
@@ -580,6 +603,12 @@ class Structure(models.Model):
         default=None, 
         blank=True,
         help_text='date this structure was last updated from the EVE server'
+    )
+    tags = models.ManyToManyField(
+        StructureTag,         
+        default=None, 
+        blank=True,
+        help_text='list of tags for this structure'
     )
 
     objects = StructureManager()

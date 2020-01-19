@@ -227,6 +227,18 @@ class OwnerAdmin(admin.ModelAdmin):
     send_notifications.short_description = "Send new notifications to Discord"
 
 
+@admin.register(StructureTag)
+class StructureTagAdmin(admin.ModelAdmin):
+    list_display = (        
+        'name', 
+        'description',
+        #'is_default',
+    )
+    #list_filter = ( 'is_default', )
+
+    fields = ('name', 'description')
+        
+
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
 
@@ -242,25 +254,56 @@ class StructureAdminInline(admin.TabularInline):
         else:
             return False
 
+    def has_delete_permission(self, request, obj=None):
+        if STRUCTURES_DEVELOPER_MODE:
+            return True
+        else:
+            return False
+
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
-    list_display = ('name', 'eve_solar_system', 'eve_type', 'owner')
-    list_filter = ('eve_solar_system', 'eve_type', 'owner')
+    list_display = ('name', 'eve_solar_system', 'eve_type', 'owner', 'structure_tags')
+    list_filter = ('eve_solar_system', 'eve_type', 'owner', 'tags')
+
+    if not STRUCTURES_DEVELOPER_MODE:        
+        readonly_fields = tuple([
+            x.name for x in Structure._meta.get_fields()
+            if isinstance(x, models.fields.Field)
+            and x.name not in ['tags']
+        ])
+        fields = (
+            'id', 
+            'name', 
+            'eve_type', 
+            'eve_solar_system', 
+            'owner', 
+            'state',
+            ('state_timer_start', 'state_timer_end', 'unanchors_at'),            
+            'fuel_expires',
+            ('reinforce_hour', 'reinforce_weekday'),
+            (
+                'next_reinforce_hour', 
+                'next_reinforce_weekday', 
+                'next_reinforce_apply'
+            ),
+            ('position_x', 'position_y' , 'position_z'),
+            'tags',            
+            'last_updated',
+        )
+
 
     inlines = (StructureAdminInline, )
+
+    def structure_tags(self, obj):
+        return tuple(sorted([x.name for x in obj.tags.all()]))
 
     def has_add_permission(self, request):
         if STRUCTURES_DEVELOPER_MODE:
             return True
         else:
             return False
-
-    def has_change_permission(self, request, obj=None):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+    
 
 
 @admin.register(Webhook)

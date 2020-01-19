@@ -23,12 +23,24 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 
+QUERY_PARAM_TAGS = 'tags'
+
 @login_required
 @permission_required('structures.basic_access')
 def index(request):       
     """main view showing the structure list"""
+    tags_raw = request.GET.get(QUERY_PARAM_TAGS)
+    if tags_raw:
+        tags_parsed = tags_raw.split(',')
+        tags = [
+            x.name for x in StructureTag.objects.all() 
+            if x.name in tags_parsed
+        ]
+    else:
+        tags = None
     context = {
-        'page_title': 'Alliance Structures'
+        'page_title': 'Alliance Structures',
+        'tags': tags
     }    
     return render(request, 'structures/index.html', context)
 
@@ -36,10 +48,21 @@ def index(request):
 @login_required
 @permission_required('structures.basic_access')
 def structure_list_data(request):
-    """returns structure list in JSON for AJAX call in index view"""
-    if request.user.has_perm('structures.view_all_structures'):
-        structures = Structure.objects.all().select_related()
+    """returns structure list in JSON for AJAX call in index view"""    
+    
+    tags_raw = request.GET.get(QUERY_PARAM_TAGS)
+    if tags_raw:
+        tags = tags_raw.split(',')            
     else:
+        tags = None
+    
+    if request.user.has_perm('structures.view_all_structures'):
+        structures_query = Structure.objects.all().select_related()
+        if tags:
+            structures_query = structures_query.filter(tags__name__in=tags)
+    
+    else:                
+        
         corporation_ids = {
             character.character.corporation_id 
             for character in request.user.character_ownerships.all()
@@ -57,12 +80,12 @@ def structure_list_data(request):
             
             corporations = list(set(corporations))
             
-        structures = Structure.objects\
+        structures_query = Structure.objects\
             .filter(owner__corporation__in=corporations) \
             .select_related()
 
     structures_data = list()
-    for structure in structures:        
+    for structure in structures_query:        
         
         row = {
             'structure_id': structure.id,

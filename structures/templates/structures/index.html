@@ -5,6 +5,13 @@
 
 {% block details %}
     
+        
+    {% if tags != None %}
+        {% for tag in tags %}
+            <p>{{ tag}} </p>
+        {% endfor %}
+    {% endif %}
+
     <div class="panel panel-primary">   
         <div class="panel-heading">
             <h3 class="panel-title">Structure List</h3>
@@ -68,9 +75,9 @@
 {% block extra_script %}
     $(document).ready(function(){
         $('#tab_structures').DataTable({
-                        
+                                    
             ajax: {
-                url: '{% url 'structures:structure_list_data' %}',
+                url: '{% url 'structures:structure_list_data' %}?tags={{ tags|default_if_none:""|join:"," }}',
                 dataSrc: '',
                 cache: false
             },

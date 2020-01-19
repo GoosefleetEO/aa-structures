@@ -6,7 +6,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from ..models import Owner
+from ..models import Owner, StructureTag
 
 
 logger = set_logger('structures.views', __file__)
@@ -38,3 +38,13 @@ class TestOwner(TestCase):
             Owner.to_friendly_error_message(-1), 
             'Undefined error'
         )
+
+
+class TestStructureTag(TestCase):
+
+    def test_str(self):
+        tag_name = 'Super cool tag'
+        x = StructureTag(
+            name=tag_name
+        )
+        self.assertEqual(str(x), tag_name)
