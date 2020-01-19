@@ -3,7 +3,7 @@ import logging
 
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, reverse
 from django.contrib.auth.decorators import login_required, permission_required
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -13,6 +13,7 @@ from esi.decorators import token_required
 
 from . import evelinks, tasks, __title__
 from .app_settings import STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
+from .forms import TagsFilterForm
 from .models import *
 from .utils import messages_plus, DATETIME_FORMAT, notify_admins, LoggerAddTag
 
@@ -29,18 +30,35 @@ QUERY_PARAM_TAGS = 'tags'
 @permission_required('structures.basic_access')
 def index(request):       
     """main view showing the structure list"""
-    tags_raw = request.GET.get(QUERY_PARAM_TAGS)
-    if tags_raw:
-        tags_parsed = tags_raw.split(',')
-        tags = [
-            x.name for x in StructureTag.objects.all() 
-            if x.name in tags_parsed
-        ]
-    else:
-        tags = None
+        
+    tags = list()
+    if request.method == 'POST':                    
+        form = TagsFilterForm(data=request.POST)
+        if form.is_valid():                        
+            for name, activated in form.cleaned_data.items():
+                if activated:
+                    tags.append(name)
+
+            url = reverse('structures:index')
+            if tags:
+                url += '?tags={}'.format(','.join(tags))
+            return redirect(url)
+    else:        
+        tags_raw = request.GET.get(QUERY_PARAM_TAGS)
+        if tags_raw:
+            tags_parsed = tags_raw.split(',')
+            tags = [
+                x.name for x in StructureTag.objects.all().order_by('name') 
+                if x.name in tags_parsed
+            ]        
+        
+        form = TagsFilterForm(initial={x: True for x in tags})
+
+
     context = {
         'page_title': 'Alliance Structures',
-        'tags': tags
+        'tags': tags,
+        'tags_filter_form': form
     }    
     return render(request, 'structures/index.html', context)
 
@@ -59,7 +77,9 @@ def structure_list_data(request):
     if request.user.has_perm('structures.view_all_structures'):
         structures_query = Structure.objects.all().select_related()
         if tags:
-            structures_query = structures_query.filter(tags__name__in=tags)
+            structures_query = structures_query\
+                .filter(tags__name__in=tags)\
+                .distinct()
     
     else:                
         
