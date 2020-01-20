@@ -186,7 +186,7 @@ def structure_list_data(request):
         row['is_reinforced'] = structure.is_reinforced
         row['is_reinforced_str'] = 'yes' if structure.is_reinforced else 'no'
         if structure.reinforce_hour:
-            reinforce_hour_str = str(structure.reinforce_hour) + ":00"
+            reinforce_hour_str = '{:02d}:00'.format(structure.reinforce_hour)
         else:
             reinforce_hour_str = ''
         

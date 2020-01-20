@@ -43,7 +43,7 @@ Planned features:
 
 Here is an example for the structure browser:
 
-![StructureList](https://i.imgur.com/AW2NXLI.png)
+![StructureList](https://i.imgur.com/iusH65e.png)
 
 This is an example for a notification posted on Discord:
 

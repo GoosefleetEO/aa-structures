@@ -11,7 +11,7 @@ sys.path.insert(0, myauth_dir)
 
 import json
 import logging
-from datetime import datetime
+from datetime import timedelta
 import pytz
 from random import randrange
 
@@ -34,6 +34,9 @@ from structures.models import *
 
 print('generate_structure - scripts generates large amount of random structures for load testing ')
 
+amount = 50
+
+# random pick of most active corporations on zKillboard in Jan 2020
 corporation_ids = [
     98388312, 
     98558506, 
@@ -74,15 +77,39 @@ services = [
     'Material Efficiency Research',
     'Time Efficiency Research'
 ]
+tag_names = [
+    'Top Secret',
+    'Priority',
+    'Trash',
+    'Needs caretaker',
+    'Taskforce Bravo',
+    'Not so friendly'
+]
 
 def get_random(lst: list) -> object:
     return lst[randrange(len(lst))] 
 
-# create structures
-print('Creating base data ...')
+
+def get_random_subset(lst: list, max_members: int = None) -> list:
+    lst2 = lst.copy()
+    subset = list()
+    if not max_members:
+        max_members = len(lst)
+    else:
+        max_members = min(max_members, len(lst))
+
+    for x in range(randrange(max_members) + 1):
+        m = lst2.pop(randrange(len(lst2)))
+        subset.append(m)
+
+    return subset
+
+
 print('Connecting to ESI ...')
 client = esi_client_factory()
 
+# generating data
+print('Creating base data ...')
 owners = list()
 for corporation_id in corporation_ids:
     try:
@@ -112,7 +139,6 @@ for corporation_id in corporation_ids:
     owner, _ = Owner.objects.get_or_create(corporation=corporation)
     owners.append(owner)
 
-
 eve_types = list()
 for type_id in structure_type_ids:
     eve_type, _ = EveType.objects.get_or_create_esi(type_id, client)
@@ -124,30 +150,66 @@ for system_id in solar_system_ids:
         EveSolarSystem.objects.get_or_create_esi(system_id, client)
     eve_solar_systems.append(eve_solar_system)
 
-last_updated = now()
+tags = list()
+for name in tag_names:
+    tag, _ = StructureTag.objects.update_or_create(
+        name=name,
+        defaults={
+            'style': get_random([x[0] for x in StructureTag.STYLE_CHOICES])
+        }
+    )
+    tags.append(tag)
 
-amount = 10
+# creating structures
 print('Creating {} structures ...'.format(amount))
 Structure.objects.filter(owner__in=owners).delete()
 with transaction.atomic(): 
-    for i in range(1, amount + 1):                
+    for i in range(1, amount + 1):                        
+        state = get_random([
+            Structure.STATE_SHIELD_VULNERABLE,
+            Structure.STATE_SHIELD_VULNERABLE,
+            Structure.STATE_SHIELD_VULNERABLE,
+            Structure.STATE_SHIELD_VULNERABLE,
+            Structure.STATE_SHIELD_VULNERABLE,
+            Structure.STATE_SHIELD_VULNERABLE,            
+            Structure.STATE_ARMOR_REINFORCE,
+            Structure.STATE_HULL_REINFORCE
+        ])        
+        is_low_power = get_random([True, False]) \
+            or state == Structure.STATE_HULL_REINFORCE
+
+        if not is_low_power:
+            fuel_expires = \
+                now() + timedelta(days=randrange(14), hours=randrange(12))
+        else:
+            fuel_expires = None
         structure = Structure.objects.create(
             id=1000000000001 + i,
             owner=get_random(owners),
             eve_type=get_random(eve_types),
-            name='Test structure #{:05d}'.format(i),
+            name='Generated structure #{:05d}'.format(i),
             eve_solar_system=get_random(eve_solar_systems), 
-            reinforce_hour=12,
-            state=Structure.STATE_SHIELD_VULNERABLE
+            reinforce_hour=randrange(24),
+            state=state,
+            fuel_expires=fuel_expires
         )
-        for x in range(randrange(0, 1) + 1):
+        for name in get_random_subset(services, 3):
             StructureService.objects.create(
                 structure=structure,
-                name=get_random(services),
-                state=get_random([
-                    StructureService.STATE_ONLINE, 
-                    StructureService.STATE_OFFLINE
-                ])
-            )
+                name=name,
+                state=StructureService.STATE_OFFLINE \
+                    if is_low_power else StructureService.STATE_ONLINE
+            )        
+        structure.tags.add(*get_random_subset(tags))        
+        if structure.is_reinforced:
+            state_timer_start = \
+                now() - timedelta(days=randrange(3), hours=randrange(12))
+            state_timer_end = \
+                now() + timedelta(days=randrange(3), hours=randrange(12))
+            structure.state_timer_start = state_timer_start
+            structure.state_timer_end = state_timer_end
+
+        structure.save()        
+
 
 print('DONE')
