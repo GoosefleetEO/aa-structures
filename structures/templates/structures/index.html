@@ -15,15 +15,21 @@
             <div class="table-responsive">
                                 
                 <!-- Tags Filter Button -->
-                <span class="pull-right">
-                    {% if tags %}
-                        <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalTagsFilter">
-                        Tags Filter (Active)
-                        </button>                        
+                <span class="pull-right">                    
+                    {% if tags_exist %}
+                        {% if active_tags %}
+                            <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalTagsFilter">
+                            Tags Filter (Active)
+                            </button>                        
+                        {% else %}
+                            <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">
+                                Tags Filter
+                            </button>
+                        {% endif %}
                     {% else %}
-                        <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">
-                        Tags Filter
-                        </button>
+                        <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter" disabled="disabled">
+                            Tags Filter
+                        </button>                        
                     {% endif %}
                 </span>
 
@@ -77,9 +83,9 @@
                 </table>
 
                 <p>                    
-                    {% if tags %}
+                    {% if active_tags %}
                         Active Tags Filter:&nbsp;
-                        {% for tag in tags %}
+                        {% for tag in active_tags %}
                             {{ tag.html }}&#32;
                         {% endfor %}
                     {% endif %}
@@ -130,7 +136,7 @@
         $('#tab_structures').DataTable({
                                     
             ajax: {
-                url: '{% url 'structures:structure_list_data' %}?tags={{ tags|join:"," }}',
+                url: '{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:"," }}',
                 dataSrc: '',
                 cache: false
             },

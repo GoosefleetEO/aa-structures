@@ -31,33 +31,34 @@ QUERY_PARAM_TAGS = 'tags'
 def index(request):       
     """main view showing the structure list"""
         
-    tags = list()
+    active_tags = list()
     if request.method == 'POST':                    
         form = TagsFilterForm(data=request.POST)
         if form.is_valid():                        
             for name, activated in form.cleaned_data.items():
                 if activated:
-                    tags.append(StructureTag.objects.get(name=name))
+                    active_tags.append(StructureTag.objects.get(name=name))
 
             url = reverse('structures:index')
-            if tags:
-                url += '?tags={}'.format(','.join([x.name for x in tags]))
+            if active_tags:
+                url += '?tags={}'.format(','.join([x.name for x in active_tags]))
             return redirect(url)
     else:        
         tags_raw = request.GET.get(QUERY_PARAM_TAGS)
         if tags_raw:
             tags_parsed = tags_raw.split(',')
-            tags = [
+            active_tags = [
                 x for x in StructureTag.objects.all().order_by('name') 
                 if x.name in tags_parsed
             ]        
         
-        form = TagsFilterForm(initial={x.name: True for x in tags})
+        form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
         'page_title': 'Alliance Structures',
-        'tags': tags,
-        'tags_filter_form': form
+        'active_tags': active_tags,
+        'tags_filter_form': form,
+        'tags_exist': StructureTag.objects.exists()
     }    
     return render(request, 'structures/index.html', context)
 
