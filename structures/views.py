@@ -37,23 +37,22 @@ def index(request):
         if form.is_valid():                        
             for name, activated in form.cleaned_data.items():
                 if activated:
-                    tags.append(name)
+                    tags.append(StructureTag.objects.get(name=name))
 
             url = reverse('structures:index')
             if tags:
-                url += '?tags={}'.format(','.join(tags))
+                url += '?tags={}'.format(','.join([x.name for x in tags]))
             return redirect(url)
     else:        
         tags_raw = request.GET.get(QUERY_PARAM_TAGS)
         if tags_raw:
             tags_parsed = tags_raw.split(',')
             tags = [
-                x.name for x in StructureTag.objects.all().order_by('name') 
+                x for x in StructureTag.objects.all().order_by('name') 
                 if x.name in tags_parsed
             ]        
         
-        form = TagsFilterForm(initial={x: True for x in tags})
-
+        form = TagsFilterForm(initial={x.name: True for x in tags})
 
     context = {
         'page_title': 'Alliance Structures',
@@ -81,8 +80,7 @@ def structure_list_data(request):
                 .filter(tags__name__in=tags)\
                 .distinct()
     
-    else:                
-        
+    else:                        
         corporation_ids = {
             character.character.corporation_id 
             for character in request.user.character_ownerships.all()
@@ -164,12 +162,17 @@ def structure_list_data(request):
         row['type_name'] = structure.eve_type.name
         row['type'] = row['type_name']
 
-        # row name
+        # structure name
         row['is_low_power'] = structure.is_low_power
         row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
         row['structure_name'] = structure.name
         if structure.is_low_power:
-            row['structure_name'] += '<br>[LOW POWER]'
+            row['structure_name'] \
+                += '<br><span class="label label-default">Low Power</span>'
+        
+        if structure.tags:
+            for tag in structure.tags.all():
+                row['structure_name'] += ' {}'.format(tag.html)
 
         # services
         services = list()

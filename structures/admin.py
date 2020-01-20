@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import mark_safe
 
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import *
@@ -232,12 +233,16 @@ class StructureTagAdmin(admin.ModelAdmin):
     list_display = (        
         'name', 
         'description',
+        'style'
         #'is_default',
     )
-    #list_filter = ( 'is_default', )
+    list_filter = ( 
+        #'is_default', 
+        'style',
+    )
 
-    fields = ('name', 'description')
-        
+    fields = ('name', 'description', 'style')
+    
 
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
@@ -292,8 +297,9 @@ class StructureAdmin(admin.ModelAdmin):
             'last_updated',
         )
 
-
     inlines = (StructureAdminInline, )
+
+    actions = ('remove_all_tags', )
 
     def structure_tags(self, obj):
         return tuple(sorted([x.name for x in obj.tags.all()]))
@@ -303,6 +309,19 @@ class StructureAdmin(admin.ModelAdmin):
             return True
         else:
             return False
+
+    def remove_all_tags(self, request, queryset):
+        structure_count = 0
+        for obj in queryset:            
+            obj.tags.clear()
+            structure_count += 1
+            
+        self.message_user(
+            request, 
+            'Removed all tags from {} structures'.format(structure_count))
+    
+    remove_all_tags.short_description = \
+        "Remove all tags from selected structures"
     
 
 

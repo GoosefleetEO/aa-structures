@@ -32,6 +32,7 @@ Alliance Structures adds the following features to Alliance Auth:
 - Structures include Upwell structures
 - Notification types include structures, moon mining
 - Automatically adds timers from relevant notifications to aa-timers app (if installed)
+- Self-defined tags help to better organize structures
 
 Planned features:
 

@@ -11,6 +11,7 @@ from multiselectfield import MultiSelectField
 from django.db import models, transaction
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.html import escape, mark_safe, format_html
 from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -438,6 +439,15 @@ class EveType(models.Model):
 
 class StructureTag(models.Model):
     """tag for organizing structures"""
+    
+    STYLE_CHOICES =  [
+        ('default', 'grey'),
+        ('primary', 'dark blue'),
+        ('success', 'green'),
+        ('info', 'light blue'),
+        ('warning', 'yellow'),
+        ('danger', 'red'),
+    ]
 
     name = models.CharField(
         max_length=255,
@@ -447,17 +457,31 @@ class StructureTag(models.Model):
     description = models.TextField(
         null=True, 
         default=None, 
-        blank=True,        
+        blank=True,
         help_text='description for this tag'
+    )
+    style = models.CharField(        
+        max_length=16,
+        choices=STYLE_CHOICES,
+        default='default',
+        blank=True,
+        help_text='color style of tag'
     )
     is_default = models.BooleanField(        
         default=False,
         help_text='if true this tag will automatically added to new structures'
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
+    @property
+    def html(self) -> str:
+        return format_html('<span class="label label-{}">{}</span>'.format(
+            self.style,
+            self.name
+        ))
+        
 
 class Structure(models.Model):
     """structure of a corporation"""

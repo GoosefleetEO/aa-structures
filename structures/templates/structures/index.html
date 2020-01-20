@@ -79,7 +79,9 @@
                 <p>                    
                     {% if tags %}
                         Active Tags Filter: 
-                        <strong>{{ tags|join:", " }}</strong>                    
+                        {% for tag in tags %}
+                            {{ tag.html }}
+                        {% endfor %}
                     {% endif %}
                 </p>
 
