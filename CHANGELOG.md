@@ -13,11 +13,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## [0.5.0] - 2020-01-20
+
+### Added
+
+- New feature "Structure tags": Define custom tags and use them to tag your structures. Tags are shown for each structure on the structure browser and can also be used as filter.
+
+### Changed
+
+- Improved layout on admin panel for structures and owners
+- "Low Power" indicator moved to "Fuel expires" column
+
 ## [0.4.4] - 2020-01-19
 
-- Fixed bug in structure sync occurring only when trying to sync a corp with a large number of structures (e.g. > 1.000)
-
 ### Fixed
+
+- Fixed bug in structure sync occurring only when trying to sync a corp with a large number of structures (e.g. > 1.000)
 
 ## [0.4.3] - 2019-12-17
 
