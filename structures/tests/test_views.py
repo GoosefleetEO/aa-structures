@@ -116,6 +116,7 @@ class TestViews(TestCase):
             Structure.objects.create(**x)
 
         # create StructureTag objects
+        StructureTag.objects.all().delete()
         for x in entities_testdata['StructureTag']:
             StructureTag.objects.create(**x)
 

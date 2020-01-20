@@ -73,6 +73,11 @@ class TestTasksStructures(TestCase):
             user=self.user
         )        
         Structure.objects.all().delete()
+        
+        # create StructureTag objects
+        StructureTag.objects.all().delete()
+        for x in entities_testdata['StructureTag']:
+            StructureTag.objects.create(**x)
      
      
     def test_run_unknown_owner(self):        
@@ -263,6 +268,65 @@ class TestTasksStructures(TestCase):
             { x['id'] for x in Structure.objects.values('id') },
             {1000000000002, 1000000000003}
         )
+
+    # synch of structures, ensure tags are not removed
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_keep_tags(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )        
+        
+        # run update task with all structures
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        )        
+        # should contain the right structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+
+        # adding tags
+        tag_a = StructureTag.objects.get(name='tag_a')
+        s = Structure.objects.get(id=1000000000001)
+        s.tags.add(tag_a)
+        s.save()
+        
+        # run update task 2nd time
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        )        
+        # should still contain alls structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+        # should still contain the tag
+        s_new = Structure.objects.get(id=1000000000001)
+        self.assertEqual(s_new.tags.get(name='tag_a'), tag_a)
 
 
 class TestTasksNotifications(TestCase):    

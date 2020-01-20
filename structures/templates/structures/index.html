@@ -67,7 +67,7 @@
                             <th>Location</th>                    
                             <th></th>
                             <th>Type</th>
-                            <th>Name</th>
+                            <th>Name & Tags</th>
                             <th>Services</th>
                             <th>Reinforcement</th>
                             <th>Fuel Expires</th>
@@ -78,9 +78,9 @@
 
                 <p>                    
                     {% if tags %}
-                        Active Tags Filter: 
+                        Active Tags Filter:&nbsp;
                         {% for tag in tags %}
-                            {{ tag.html }}
+                            {{ tag.html }}&#32;
                         {% endfor %}
                     {% endif %}
                 </p>

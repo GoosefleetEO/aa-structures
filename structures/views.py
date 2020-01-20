@@ -162,18 +162,16 @@ def structure_list_data(request):
         row['type_name'] = structure.eve_type.name
         row['type'] = row['type_name']
 
-        # structure name
-        row['is_low_power'] = structure.is_low_power
-        row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
-        row['structure_name'] = structure.name
-        if structure.is_low_power:
-            row['structure_name'] \
-                += '<br><span class="label label-default">Low Power</span>'
-        
-        if structure.tags:
-            for tag in structure.tags.all():
-                row['structure_name'] += ' {}'.format(tag.html)
-
+        # structure name        
+        row['structure_name'] = structure.name        
+        if structure.tags:            
+            row['structure_name'] += '<br>{}'.format(
+                ' '.join([
+                        x.html 
+                        for x in structure.tags.all().order_by('name')
+                    ])
+            )            
+            
         # services
         services = list()
         for service in structure.structureservice_set.all().order_by('name'):
@@ -205,15 +203,19 @@ def structure_list_data(request):
         else:
             row['reinforcement'] = reinforce_hour_str
 
-        # add date when fuel runs out
-        if structure.state == Structure.STATE_UNKNOWN:
-            row['fuel_expires'] = ''
+        # low power state
+        row['is_low_power'] = structure.is_low_power
+        row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
+        
+        # add low power label or date when fuel runs out
+        if row['is_low_power']:
+            row['fuel_expires'] = \
+                '<span class="label label-default">Low Power</span>'
+        elif structure.fuel_expires:
+            row['fuel_expires'] = \
+                structure.fuel_expires.strftime(DATETIME_FORMAT)
         else:
-            if structure.fuel_expires:
-                row['fuel_expires'] = \
-                    structure.fuel_expires.strftime(DATETIME_FORMAT)
-            else:
-                row['fuel_expires'] = 'N/A'
+            row['fuel_expires'] = '?'
         
         # state
         if row['is_poco']:

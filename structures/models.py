@@ -481,6 +481,11 @@ class StructureTag(models.Model):
             self.style,
             self.name
         ))
+    
+    @classmethod
+    def sorted(cls, tags: list, reverse: bool = False) -> list:
+        """returns a sorted copy of the provided list of tags"""
+        return sorted(tags, key=lambda x: x.name.lower(), reverse=reverse)
         
 
 class Structure(models.Model):

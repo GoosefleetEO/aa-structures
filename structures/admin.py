@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.utils.html import mark_safe
 
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import *
@@ -144,12 +143,31 @@ class OwnerAdmin(admin.ModelAdmin):
     list_display = (
         'corporation', 
         'character', 
-        'webhooks_list',
+        '_webhooks',
         'no_errors',         
     )
+
+    fieldsets = (
+            (None, {
+                'fields': (
+                    'corporation', 'character', 'webhooks', 'is_alliance_main', 'is_included_in_service_status'
+                )
+            }),
+            ('Sync Status', {
+                'classes': ('collapse',),
+                'fields': (                    
+                    ('structures_last_sync', 'structures_last_error', ),
+                    ('notifications_last_sync', 'notifications_last_error', ),
+                    ('forwarding_last_sync', 'forwarding_last_error', ),
+                )
+            }),
+    )
     
-    def webhooks_list(self, obj):
+    def _webhooks(self, obj):
         return ', '.join([x.name for x in obj.webhooks.all().order_by('name')])
+
+    _webhooks.short_description = 'Webhooks'
+
 
     def no_errors(self, obj):
         return obj.notifications_last_error == Owner.ERROR_NONE \
@@ -242,7 +260,7 @@ class StructureTagAdmin(admin.ModelAdmin):
     )
 
     fields = ('name', 'description', 'style')
-    
+
 
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
@@ -268,7 +286,7 @@ class StructureAdminInline(admin.TabularInline):
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
-    list_display = ('name', 'eve_solar_system', 'eve_type', 'owner', 'structure_tags')
+    list_display = ('name', 'eve_solar_system', 'eve_type', 'owner', '_tags')
     list_filter = ('eve_solar_system', 'eve_type', 'owner', 'tags')
 
     if not STRUCTURES_DEVELOPER_MODE:        
@@ -277,6 +295,45 @@ class StructureAdmin(admin.ModelAdmin):
             if isinstance(x, models.fields.Field)
             and x.name not in ['tags']
         ])
+        
+        fieldsets = (
+            (None, {
+                'fields': (
+                    'name', 'eve_type', 'eve_solar_system', 'owner', 'tags'
+                )
+            }),
+            ('Status', {
+                'classes': ('collapse',),
+                'fields': (
+                    'state',
+                    ('state_timer_start', 'state_timer_end', ),
+                    'unanchors_at',
+                    'fuel_expires'
+                )
+            }),
+            ('Reinforcement', {
+                'classes': ('collapse',),
+                'fields': (
+                    ('reinforce_hour', 'reinforce_weekday'),
+                    (
+                        'next_reinforce_hour', 
+                        'next_reinforce_weekday', 
+                        'next_reinforce_apply'
+                    ),
+                )
+            }),
+            ('Position', {
+                'classes': ('collapse',),
+                'fields': ('position_x', 'position_y' , 'position_z')
+            }),
+            (None, {
+                'fields': (                     
+                    ('id', 'last_updated', )
+                )
+            }),
+        )
+        
+        """
         fields = (
             'id', 
             'name', 
@@ -296,13 +353,17 @@ class StructureAdmin(admin.ModelAdmin):
             'tags',            
             'last_updated',
         )
+        """
 
     inlines = (StructureAdminInline, )
 
     actions = ('remove_all_tags', )
 
-    def structure_tags(self, obj):
-        return tuple(sorted([x.name for x in obj.tags.all()]))
+    def _tags(self, obj):
+        return tuple([x.name for x in obj.tags.all().order_by('name')])
+
+    _tags.short_description = 'Tags'
+    
 
     def has_add_permission(self, request):
         if STRUCTURES_DEVELOPER_MODE:

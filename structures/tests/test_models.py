@@ -48,6 +48,21 @@ class TestStructureTag(TestCase):
         )
         self.assertEqual(str(x), 'Super cool tag')
 
+    def test_list_sorted(self):                
+        x1 = StructureTag(name='Alpha')
+        x2 = StructureTag(name='charlie')
+        x3 = StructureTag(name='bravo')
+        tags = [x1, x2, x3]
+        
+        self.assertListEqual(
+            StructureTag.sorted(tags),
+            [x1, x3, x2]
+        )
+        self.assertListEqual(
+            StructureTag.sorted(tags, reverse=True),
+            [x2, x3, x1]
+        )
+        
     def test_html_default(self):
         x = StructureTag(
             name='Super cool tag'
