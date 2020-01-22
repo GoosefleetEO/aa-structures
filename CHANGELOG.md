@@ -7,18 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-The Customs Offices feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it with  `STRUCTURES_FEATURE_CUSTOMS_OFFICES = True` in your local settings.
+## [0.6.0] - 2020-01-22
 
-Note that after activation all structure owners need to update their tokens for pocos by adding themselves again via "Add Structure Owner". Syncing of structures will be suspended for each owner until their respective token has been updated.
+**Important** The new customs offices feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it with  `STRUCTURES_FEATURE_CUSTOMS_OFFICES = True` in your local settings.
+
+Note that after activation all structure owners need to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications will stop working for corporations until the respective owner has updated their token.
 
 ### Added
 
-- New feature "Customs Offices": Adds customs offices in structure browser
+- New feature "Customs Offices": Adds customs offices in structure browser.
 
 ### Changed
 
 - Removed reinforcement day, since it is no longer relevant
 - Improved state text for structures
+- Structures in state 'armor_vulnerable' and 'hull_vulnerable' will now also be shown as reinforced.
 
 ### Fixed
 
