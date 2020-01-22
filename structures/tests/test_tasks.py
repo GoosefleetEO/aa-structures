@@ -18,6 +18,7 @@ from esi.errors import TokenExpiredError, TokenInvalidError
 
 from . import set_logger
 from .. import tasks
+from ..tasks import _fetch_custom_offices
 from ..app_settings import *
 from ..models import *
 
@@ -25,6 +26,9 @@ from .testdata import \
     esi_get_corporations_corporation_id_structures, \
     esi_get_universe_structures_structure_id, \
     esi_get_characters_character_id_notifications, \
+    esi_get_corporations_corporation_id_customs_offices, \
+    esi_post_corporations_corporation_id_assets_locations, \
+    esi_post_corporations_corporation_id_assets_names, \
     entities_testdata,\
     notifications_testdata,\
     corp_structures_data
@@ -32,7 +36,7 @@ from .testdata import \
 logger = set_logger('structures.tasks', __file__)
 
 
-class TestTasksStructures(TestCase):
+class TestSyncStructures(TestCase):
     
     # note: setup is making calls to ESI to get full info for entities
     # all ESI calls in the tested module are mocked though
@@ -79,7 +83,7 @@ class TestTasksStructures(TestCase):
         for x in entities_testdata['StructureTag']:
             StructureTag.objects.create(**x)
      
-     
+
     def test_run_unknown_owner(self):        
         with self.assertRaises(Owner.DoesNotExist):
             tasks.update_structures_for_owner(owner_pk=1)
@@ -165,6 +169,7 @@ class TestTasksStructures(TestCase):
         
     
     #normal synch of new structures, mode my_alliance
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
     def test_update_structures_for_owner_normal(
@@ -180,6 +185,15 @@ class TestTasksStructures(TestCase):
             .get_universe_structures_structure_id.side_effect =\
                 esi_get_universe_structures_structure_id
         mock_esi_client_factory.return_value = mock_client
+        mock_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+                esi_get_corporations_corporation_id_customs_offices
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+                esi_post_corporations_corporation_id_assets_locations
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_names = \
+                esi_post_corporations_corporation_id_assets_names
 
         # create test data
         p = Permission.objects.filter(            
@@ -209,13 +223,21 @@ class TestTasksStructures(TestCase):
                 .get_corporations_corporation_id_structures.call_count, 
             2
         )                
-        # should contain the right structures
+        # must contain all expected structures
         self.assertSetEqual(
             { x['id'] for x in Structure.objects.values('id') },
-            {1000000000001, 1000000000002, 1000000000003}
+            {
+                1000000000001, 
+                1000000000002, 
+                1000000000003, 
+                1200000000003,
+                1200000000004,
+                1200000000005
+            }
         )
 
     # synch of structures, ensure old structures are removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
     def test_update_structures_for_owner_remove_olds(
@@ -270,6 +292,7 @@ class TestTasksStructures(TestCase):
         )
 
     # synch of structures, ensure tags are not removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
     def test_update_structures_for_owner_keep_tags(
@@ -329,7 +352,7 @@ class TestTasksStructures(TestCase):
         self.assertEqual(s_new.tags.get(name='tag_a'), tag_a)
 
 
-class TestTasksNotifications(TestCase):    
+class TestSyncNotifications(TestCase):    
 
     def setUp(self): 
 

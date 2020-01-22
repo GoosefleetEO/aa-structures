@@ -207,6 +207,6 @@ class TestStructure(TestCase):
             StructureTag.objects.create(**x)
 
     def test_is_poco(self):
-        x = Structure.objects.get(id=12000000000003)  
+        x = Structure.objects.get(id=1200000000003)  
         self.assertTrue(x.eve_type.is_poco)
       

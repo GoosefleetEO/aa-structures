@@ -1,0 +1,53 @@
+{
+    "2001":
+    [
+        {
+            "alliance_tax_rate": 0.02,
+            "allow_access_with_standings": true,
+            "allow_alliance_access": true,
+            "bad_standing_tax_rate": 0.02,
+            "corporation_tax_rate": 0.02,
+            "excellent_standing_tax_rate": 0.02,
+            "good_standing_tax_rate": 0.02,
+            "neutral_standing_tax_rate": 0.02,
+            "office_id": 1200000000003,
+            "reinforce_exit_end": 21,
+            "reinforce_exit_start": 19,
+            "standing_level": "terrible",
+            "system_id": 30002537,
+            "terrible_standing_tax_rate": 0.02
+        },
+        {
+            "alliance_tax_rate": 0.02,
+            "allow_access_with_standings": true,
+            "allow_alliance_access": true,
+            "bad_standing_tax_rate": 0.02,
+            "corporation_tax_rate": 0.02,
+            "excellent_standing_tax_rate": 0.02,
+            "good_standing_tax_rate": 0.02,
+            "neutral_standing_tax_rate": 0.02,
+            "office_id": 1200000000004,
+            "reinforce_exit_end": 21,
+            "reinforce_exit_start": 19,
+            "standing_level": "terrible",
+            "system_id": 30000474,
+            "terrible_standing_tax_rate": 0.02
+        },
+        {
+            "alliance_tax_rate": 0.02,
+            "allow_access_with_standings": true,
+            "allow_alliance_access": true,
+            "bad_standing_tax_rate": 0.02,
+            "corporation_tax_rate": 0.02,
+            "excellent_standing_tax_rate": 0.02,
+            "good_standing_tax_rate": 0.02,
+            "neutral_standing_tax_rate": 0.02,
+            "office_id": 1200000000005,
+            "reinforce_exit_end": 21,
+            "reinforce_exit_start": 19,
+            "standing_level": "terrible",
+            "system_id": 30000474,
+            "terrible_standing_tax_rate": 0.02
+        }
+    ]
+}

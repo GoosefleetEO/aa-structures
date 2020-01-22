@@ -138,7 +138,12 @@ class TestViews(TestCase):
         structure_ids = { x['structure_id'] for x in data }
         self.assertSetEqual(
             structure_ids, 
-            {1000000000001, 12000000000003}
+            {
+                1000000000001, 
+                1200000000003, 
+                1200000000004, 
+                1200000000005
+            }
         )
         
 
@@ -170,7 +175,13 @@ class TestViews(TestCase):
         structure_ids = { x['structure_id'] for x in data }
         self.assertSetEqual(
             structure_ids, 
-            {1000000000001, 1000000000002, 12000000000003}
+            {
+                1000000000001, 
+                1000000000002, 
+                1200000000003, 
+                1200000000004, 
+                1200000000005
+            }
         )
 
 
@@ -234,7 +245,14 @@ class TestViews(TestCase):
         structure_ids = { x['structure_id'] for x in data }
         self.assertSetEqual(
             structure_ids, 
-            {1000000000001, 1000000000002, 1000000000003, 12000000000003}
+            {
+                1000000000001, 
+                1000000000002, 
+                1000000000003, 
+                1200000000003,
+                1200000000004, 
+                1200000000005
+            }
         )
 
 
@@ -402,7 +420,14 @@ class TestViews(TestCase):
         data = json.loads(response.content.decode('utf-8'))        
         self.assertSetEqual(
             { x['structure_id'] for x in data }, 
-            {1000000000001, 1000000000002, 1000000000003, 12000000000003}
+            {
+                1000000000001, 
+                1000000000002, 
+                1000000000003, 
+                1200000000003, 
+                1200000000004, 
+                1200000000005
+            }
         )
 
         # filter for tag_a

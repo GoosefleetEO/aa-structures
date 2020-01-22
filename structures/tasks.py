@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import re
 from time import sleep
 
 from celery import shared_task, group, chain
@@ -140,7 +141,7 @@ def _fetch_upwell_structures(
             corporation_id=owner.corporation.corporation_id
         )
     operation.also_return_response = True
-    pocos, response = operation.result()
+    structures, response = operation.result()
     pages = int(response.headers['x-pages'])
     
     # add structures from additional pages if any            
@@ -148,19 +149,24 @@ def _fetch_upwell_structures(
         logger.info(add_prefix(
             'Fetching Upwell structures from ESI - page {}'.format(page)
         ))
-        pocos += esi_client.Corporation.get_corporations_corporation_id_structures(
+        structures += esi_client.Corporation.get_corporations_corporation_id_structures(
             corporation_id=owner.corporation.corporation_id,
             page=page
         ).result()
     
     # fetch additional information for structures
-    for structure in pocos:
+    for structure in structures:
         structure_info = \
             esi_client.Universe.get_universe_structures_structure_id(
                 structure_id=structure['structure_id']
             ).result()
         structure['name'] = structure_info['name']
         structure['position'] = structure_info['position']                
+
+    logger.info(
+        'Retrieved a total of {} Upwell structures from ESI'.format(
+            len(structures)
+        ))
 
     if settings.DEBUG:
         # store to disk (for debugging)
@@ -172,14 +178,14 @@ def _fetch_upwell_structures(
             encoding='utf-8'
         ) as f:
             json.dump(
-                pocos, 
+                structures, 
                 f, 
                 cls=DjangoJSONEncoder, 
                 sort_keys=True, 
                 indent=4
             )
     
-    return pocos
+    return structures
 
 
 def _fetch_custom_offices(
@@ -189,6 +195,15 @@ def _fetch_custom_offices(
 ) -> list:
     """fetch custom offices from ESI for owner"""
     
+    def extract_planet_name(text: str) -> str:        
+        """extract name of planet from assert name for a customs office"""
+        r = re.compile(r'Customs Office \((.+)\)')
+        m = r.match(text)
+        if m:
+            return m.group(1) 
+        else:
+            return text
+
     logger.info(add_prefix('Fetching custom offices from ESI - page 1'))
 
     # get pocos from first page
@@ -211,24 +226,6 @@ def _fetch_custom_offices(
                 corporation_id=owner.corporation.corporation_id,
                 page=page
             ).result()
-             
-
-    if settings.DEBUG:
-        # store to disk (for debugging)
-        with open(
-            'pocos_raw_{}.json'.format(
-                owner.corporation.corporation_id
-            ), 
-            'w', 
-            encoding='utf-8'
-        ) as f:
-            json.dump(
-                pocos, 
-                f, 
-                cls=DjangoJSONEncoder, 
-                sort_keys=True, 
-                indent=4
-            )
         
     logger.info(add_prefix('Fetching custom office locations from ESI'))
     item_ids = [ x['office_id'] for x in pocos ]    
@@ -253,7 +250,7 @@ def _fetch_custom_offices(
             )\
             .result()
         names_data += names_data_chunk
-    names = {x['item_id']: x['name'] for x in names_data}
+    names = {x['item_id']: extract_planet_name(x['name']) for x in names_data}
 
     structures = list()
     for poco in pocos:        
@@ -278,6 +275,28 @@ def _fetch_custom_offices(
             'state': Structure.STATE_UNKNOWN
         })
 
+    logger.info(
+        'Retrieved a total of {} customs offices from ESI'.format(
+            len(structures)
+        ))
+
+    if settings.DEBUG:
+        # store to disk (for debugging)
+        with open(
+            'customs_offices_raw_{}.json'.format(
+                owner.corporation.corporation_id
+            ), 
+            'w', 
+            encoding='utf-8'
+        ) as f:
+            json.dump(
+                structures, 
+                f, 
+                cls=DjangoJSONEncoder, 
+                sort_keys=True, 
+                indent=4
+            )
+    
     return structures
 
 

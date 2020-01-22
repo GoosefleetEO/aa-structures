@@ -185,11 +185,29 @@
             "owner_corporation_id": 2102
         },
         {
-            "id": 12000000000003,  
-            "name": "Customs Office",
+            "id": 1200000000003,  
+            "name": "Customs Office (Amamake IX)",
             "eve_type_id": 2233,
             "eve_solar_system_id": 30002537,            
-            "reinforce_hour": 12,
+            "reinforce_hour": 3,
+            "state": 13,
+            "owner_corporation_id": 2001
+        },
+        {
+            "id": 1200000000004,  
+            "name": "Customs Office (1-PGSG VI)",
+            "eve_type_id": 2233,
+            "eve_solar_system_id": 30000474,            
+            "reinforce_hour": 16,
+            "state": 13,
+            "owner_corporation_id": 2001
+        },
+        {
+            "id": 1200000000005,  
+            "name": "Customs Office (1-PGSG VII)",
+            "eve_type_id": 2233,
+            "eve_solar_system_id": 30000474,            
+            "reinforce_hour": 16,
             "state": 13,
             "owner_corporation_id": 2001
         }
