@@ -144,7 +144,7 @@ class OwnerAdmin(admin.ModelAdmin):
         'corporation', 
         'character', 
         '_webhooks',
-        'no_errors',         
+        'sync_status',         
     )
 
     fieldsets = (
@@ -169,12 +169,12 @@ class OwnerAdmin(admin.ModelAdmin):
     _webhooks.short_description = 'Webhooks'
 
 
-    def no_errors(self, obj):
+    def sync_status(self, obj):
         return obj.notifications_last_error == Owner.ERROR_NONE \
             and obj.structures_last_error == Owner.ERROR_NONE \
             and obj.forwarding_last_error == Owner.ERROR_NONE
 
-    no_errors.boolean = True
+    sync_status.boolean = True
 
 
     def get_readonly_fields(self, request, obj = None):

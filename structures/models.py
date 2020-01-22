@@ -76,6 +76,11 @@ NTYPE_RELEVANT_FOR_TIMERBOARD = [
     NTYPE_STRUCTURE_ANCHORING
 ]
 
+def get_default_notification_types():
+    """generates a set of all existing notification types as default"""
+    return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
+
+
 class General(models.Model):
     """Meta model for global app permissions"""
 
@@ -88,11 +93,6 @@ class General(models.Model):
             ('view_all_structures', 'Can view all structures'),
             ('add_structure_owner', 'Can add new structure owner'), 
         )
-
-
-def get_default_notification_types():
-    """generates a set of all existing notification types as default"""
-    return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
 
 
 class Webhook(models.Model):
@@ -142,7 +142,7 @@ class Webhook(models.Model):
     def __str__(self):
         return self.name
 
-    def send_test_notification(self) -> dict:
+    def send_test_notification(self) -> str:
         """Sends a test notification to this webhook and returns send report"""
         hook = dhooks_lite.Webhook(
             self.url            
@@ -657,7 +657,7 @@ class Structure(models.Model):
     @property
     def state_str(self):
         msg = [(x, y) for x, y in self.STATE_CHOICES if x == self.state]
-        return msg[0][1] if len(msg) > 0 else 'Undefined'
+        return msg[0][1].replace('_', ' ') if len(msg) > 0 else 'undefined'
 
     @property
     def is_low_power(self):
@@ -670,7 +670,9 @@ class Structure(models.Model):
     def is_reinforced(self):
         return self.state in [
             self.STATE_ARMOR_REINFORCE, 
-            self.STATE_HULL_REINFORCE
+            self.STATE_HULL_REINFORCE,
+            self.STATE_ANCHOR_VULNERABLE,
+            self.STATE_HULL_VULNERABLE
         ]
 
     def __str__(self):
@@ -717,7 +719,7 @@ class StructureService(models.Model):
         unique_together = (('structure', 'name'),)
 
     def __str__(self):
-        return '{}-{}'.format(str(self.structure), self.name)
+        return '{} - {}'.format(str(self.structure), self.name)
 
     @classmethod
     def get_matching_state(cls, state_name) -> int:

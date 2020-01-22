@@ -18,6 +18,7 @@ Note that after activation all structure owners need to update their tokens for 
 ### Changed
 
 - Removed reinforcement day, since it is no longer relevant
+- Improved state text for structures
 
 ### Fixed
 

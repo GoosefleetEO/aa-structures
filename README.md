@@ -170,7 +170,6 @@ Name | Description | Default
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | 5
 `STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES`| Max time in minutes since last successful structures sync before service is reported as down  | 120
 
-
 ## Permissions
 
 This is an overview of all permissions used by this app:

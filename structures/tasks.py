@@ -74,8 +74,7 @@ def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:
         else:
             if not token:
                 logger.error(add_prefix(
-                    'No token found with sufficient scopes '
-                    'for fetching structures'
+                    'No token found with sufficient scopes'                    
                 ))            
                 error = Owner.ERROR_TOKEN_INVALID
             
@@ -163,10 +162,10 @@ def _fetch_upwell_structures(
         structure['name'] = structure_info['name']
         structure['position'] = structure_info['position']                
 
-    logger.info(
+    logger.info(add_prefix(
         'Retrieved a total of {} Upwell structures from ESI'.format(
             len(structures)
-        ))
+        )))
 
     if settings.DEBUG:
         # store to disk (for debugging)
@@ -275,10 +274,10 @@ def _fetch_custom_offices(
             'state': Structure.STATE_UNKNOWN
         })
 
-    logger.info(
+    logger.info(add_prefix(
         'Retrieved a total of {} customs offices from ESI'.format(
             len(structures)
-        ))
+        )))
 
     if settings.DEBUG:
         # store to disk (for debugging)
