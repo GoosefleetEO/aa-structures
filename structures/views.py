@@ -174,62 +174,52 @@ def structure_list_data(request):
             )            
             
         # services
-        services = list()
-        for service in structure.structureservice_set.all().order_by('name'):
-            if service.state == StructureService.STATE_OFFLINE:
-                service_name = '<del>{}</del>'. format(service.name)
-            else:
-                service_name = service.name
-            services.append(service_name)
-        row['services'] = '<br>'.join(services)
+        if row['is_poco']:
+            row['services'] = 'N/A'
+        else:
+            services = list()
+            for service in structure.structureservice_set.all().order_by('name'):
+                if service.state == StructureService.STATE_OFFLINE:
+                    service_name = '<del>{}</del>'. format(service.name)
+                else:
+                    service_name = service.name
+                services.append(service_name)
+            row['services'] = '<br>'.join(services)        
+
             
         # add reinforcement infos
         row['is_reinforced'] = structure.is_reinforced
         row['is_reinforced_str'] = 'yes' if structure.is_reinforced else 'no'
+        
         if structure.reinforce_hour:
-            reinforce_hour_str = '{:02d}:00'.format(structure.reinforce_hour)
+            row['reinforcement'] = '{:02d}:00'.format(structure.reinforce_hour)
         else:
-            reinforce_hour_str = ''
+            row['reinforcement'] = ''
         
-        if structure.reinforce_weekday:            
-            reinforce_day_str = calendar.day_name[structure.reinforce_weekday]
-        else:
-            reinforce_day_str = ''
-        
-        if not row['is_poco']:
-            row['reinforcement'] = '{}<br>{}'.format(
-                reinforce_day_str,
-                reinforce_hour_str
-            )
-        else:
-            row['reinforcement'] = reinforce_hour_str
-
         # low power state
         row['is_low_power'] = structure.is_low_power
         row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
         
         # add low power label or date when fuel runs out
-        if row['is_low_power']:
-            row['fuel_expires'] = \
-                '<span class="label label-default">Low Power</span>'
-        elif structure.fuel_expires:
-            row['fuel_expires'] = \
-                structure.fuel_expires.strftime(DATETIME_FORMAT)
-        else:
-            row['fuel_expires'] = '?'
-        
-        # state
         if row['is_poco']:
-            row['state_str'] = 'N/A'
-            row['state_details'] = 'N/A'
-            
+            row['fuel_expires'] = 'N/A'
         else:
-            row['state_str'] = structure.state_str
-            row['state_details'] = row['state_str']
-            if structure.state_timer_end:
-                row['state_details'] += '<br>{}'.format(                    
-                    structure.state_timer_end.strftime(DATETIME_FORMAT)
-                )
+            if row['is_low_power']:
+                row['fuel_expires'] = \
+                    '<span class="label label-default">Low Power</span>'
+            elif structure.fuel_expires:
+                row['fuel_expires'] = \
+                    structure.fuel_expires.strftime(DATETIME_FORMAT)
+            else:
+                row['fuel_expires'] = '?'
+        
+        # state    
+        row['state_str'] = structure.state_str
+        row['state_details'] = row['state_str']
+        if structure.state_timer_end:
+            row['state_details'] += '<br>{}'.format(                    
+                structure.state_timer_end.strftime(DATETIME_FORMAT)
+            )
 
         structures_data.append(row)
        

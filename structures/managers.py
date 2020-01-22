@@ -502,10 +502,6 @@ class StructureManager(models.Manager):
             structure['reinforce_hour'] \
             if 'reinforce_hour' in structure else None
         
-        reinforce_weekday = \
-            structure['reinforce_weekday'] \
-            if 'reinforce_weekday' in structure else None
-
         state = \
             Structure.get_matching_state(structure['state']) \
             if 'state' in structure else Structure.STATE_UNKNOWN
@@ -522,6 +518,18 @@ class StructureManager(models.Manager):
             structure['unanchors_at']\
             if 'unanchors_at' in structure else None
 
+        position_x = \
+            structure['position']['x']\
+            if 'position' in structure else None
+
+        position_y = \
+            structure['position']['y']\
+            if 'position' in structure else None
+
+        position_z = \
+            structure['position']['z']\
+            if 'position' in structure else None
+
         obj, created = Structure.objects.update_or_create(
             id=structure['structure_id'],
             defaults={
@@ -529,15 +537,14 @@ class StructureManager(models.Manager):
                 'eve_type': eve_type,
                 'name': name,
                 'eve_solar_system': eve_solar_system,
-                'position_x': structure['position']['x'],
-                'position_y': structure['position']['y'],
-                'position_z': structure['position']['z'],
+                'position_x': position_x,
+                'position_y': position_y,
+                'position_z': position_z,
                 'fuel_expires': fuel_expires,
                 'next_reinforce_hour': next_reinforce_hour,
                 'next_reinforce_weekday': next_reinforce_weekday,
                 'next_reinforce_apply': next_reinforce_apply,
-                'reinforce_hour': reinforce_hour,
-                'reinforce_weekday': reinforce_weekday,
+                'reinforce_hour': reinforce_hour,                
                 'state': state,
                 'state_timer_start': state_timer_start,
                 'state_timer_end': state_timer_end,

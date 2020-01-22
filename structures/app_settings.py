@@ -79,3 +79,10 @@ STRUCTURES_ADD_TIMERS = getattr(
     'STRUCTURES_ADD_TIMERS', 
     True
 )
+
+# Whether the customs offices feature is active
+STRUCTURES_FEATURE_CUSTOMS_OFFICES = getattr(
+    settings, 
+    'STRUCTURES_FEATURE_CUSTOMS_OFFICES', 
+    False
+)

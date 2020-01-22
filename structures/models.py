@@ -300,12 +300,24 @@ class Owner(models.Model):
         return msg[0][1] if len(msg) > 0 else 'Undefined error'
 
     @classmethod
-    def get_esi_scopes(cls) -> list:
-        return [
-            'esi-corporations.read_structures.v1',
-            'esi-universe.read_structures.v1',
-            'esi-characters.read_notifications.v1'
-        ]
+    def get_esi_scopes(cls) -> list:        
+        if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
+            scopes = [
+                'esi-corporations.read_structures.v1',
+                'esi-universe.read_structures.v1',
+                'esi-characters.read_notifications.v1',
+                'esi-planets.read_customs_offices.v1',
+                'esi-assets.read_corporation_assets.v1'
+            ]
+        else:
+            scopes = [
+                'esi-corporations.read_structures.v1',
+                'esi-universe.read_structures.v1',
+                'esi-characters.read_notifications.v1',                
+            ]
+        
+        return scopes
+
 
 class EveRegion(models.Model):
     """region in Eve Online"""
@@ -434,7 +446,7 @@ class EveType(models.Model):
 
     @property
     def is_poco(self):
-        return id == self.EVE_TYPE_ID_POCO    
+        return self.id == self.EVE_TYPE_ID_POCO    
 
 
 class StructureTag(models.Model):
@@ -649,7 +661,10 @@ class Structure(models.Model):
 
     @property
     def is_low_power(self):
-        return not self.fuel_expires
+        if self.eve_type.is_poco:
+            return False
+        else:
+            return not self.fuel_expires
 
     @property
     def is_reinforced(self):
@@ -664,7 +679,7 @@ class Structure(models.Model):
     @classmethod
     def get_matching_state(cls, state_name) -> int:
         """returns matching state for given state name"""
-        match = cls.STATE_UNKNOWN
+        match = [cls.STATE_UNKNOWN]
         for x in cls.STATE_CHOICES:
             if state_name == x[1]:
                 match = x

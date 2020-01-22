@@ -20,7 +20,8 @@ from esi.models import Token
 
 from . import __title__
 from .app_settings import STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED
-from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
+from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path, \
+    chunks
 from .models import *
 
 
@@ -72,7 +73,8 @@ def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:
         else:
             if not token:
                 logger.error(add_prefix(
-                    'Missing token for fetching structures'
+                    'No token found with sufficient scopes '
+                    'for fetching structures'
                 ))            
                 error = Owner.ERROR_TOKEN_INVALID
             
@@ -122,6 +124,163 @@ def _send_report_to_user(
             + 'report to user: {}'. format(ex)
         ))
 
+
+def _fetch_upwell_structures(
+    owner: Owner, 
+    esi_client: object,
+    add_prefix: make_logger_prefix
+) -> list:
+    """fetch Upwell structures from ESI for owner"""
+
+    logger.info(add_prefix('Fetching Upwell structures from ESI - page 1'))
+
+    # get structures from first page
+    operation = \
+        esi_client.Corporation.get_corporations_corporation_id_structures(
+            corporation_id=owner.corporation.corporation_id
+        )
+    operation.also_return_response = True
+    pocos, response = operation.result()
+    pages = int(response.headers['x-pages'])
+    
+    # add structures from additional pages if any            
+    for page in range(2, pages + 1):
+        logger.info(add_prefix(
+            'Fetching Upwell structures from ESI - page {}'.format(page)
+        ))
+        pocos += esi_client.Corporation.get_corporations_corporation_id_structures(
+            corporation_id=owner.corporation.corporation_id,
+            page=page
+        ).result()
+    
+    # fetch additional information for structures
+    for structure in pocos:
+        structure_info = \
+            esi_client.Universe.get_universe_structures_structure_id(
+                structure_id=structure['structure_id']
+            ).result()
+        structure['name'] = structure_info['name']
+        structure['position'] = structure_info['position']                
+
+    if settings.DEBUG:
+        # store to disk (for debugging)
+        with open(
+            'structures_raw_{}.json'.format(
+                owner.corporation.corporation_id
+            ), 
+            'w', 
+            encoding='utf-8'
+        ) as f:
+            json.dump(
+                pocos, 
+                f, 
+                cls=DjangoJSONEncoder, 
+                sort_keys=True, 
+                indent=4
+            )
+    
+    return pocos
+
+
+def _fetch_custom_offices(
+    owner: Owner, 
+    esi_client: object,    
+    add_prefix: make_logger_prefix
+) -> list:
+    """fetch custom offices from ESI for owner"""
+    
+    logger.info(add_prefix('Fetching custom offices from ESI - page 1'))
+
+    # get pocos from first page
+    operation = \
+        esi_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices(
+                corporation_id=owner.corporation.corporation_id
+            )
+    operation.also_return_response = True
+    pocos, response = operation.result()
+    pages = int(response.headers['x-pages'])
+    
+    # add pocos from additional pages if any            
+    for page in range(2, pages + 1):
+        logger.info(add_prefix(
+            'Fetching custom offices from ESI - page {}'.format(page)
+        ))
+        pocos += esi_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices(
+                corporation_id=owner.corporation.corporation_id,
+                page=page
+            ).result()
+             
+
+    if settings.DEBUG:
+        # store to disk (for debugging)
+        with open(
+            'pocos_raw_{}.json'.format(
+                owner.corporation.corporation_id
+            ), 
+            'w', 
+            encoding='utf-8'
+        ) as f:
+            json.dump(
+                pocos, 
+                f, 
+                cls=DjangoJSONEncoder, 
+                sort_keys=True, 
+                indent=4
+            )
+        
+    logger.info(add_prefix('Fetching custom office locations from ESI'))
+    item_ids = [ x['office_id'] for x in pocos ]    
+    locations_data = list()
+    for item_ids_chunk in chunks(item_ids, 999):
+        locations_data_chunk = esi_client.Assets\
+            .post_corporations_corporation_id_assets_locations(
+                corporation_id=owner.corporation.corporation_id,
+                item_ids=item_ids_chunk
+            )\
+            .result()
+        locations_data += locations_data_chunk        
+    positions = {x['item_id']: x['position'] for x in locations_data}
+
+    logger.info(add_prefix('Fetching custom office names from ESI'))    
+    names_data = list()
+    for item_ids_chunk in chunks(item_ids, 999):
+        names_data_chunk = esi_client.Assets\
+            .post_corporations_corporation_id_assets_names(
+                corporation_id=owner.corporation.corporation_id,
+                item_ids=item_ids
+            )\
+            .result()
+        names_data += names_data_chunk
+    names = {x['item_id']: x['name'] for x in names_data}
+
+    structures = list()
+    for poco in pocos:        
+        office_id = poco['office_id']
+        reinforce_exit_start = datetime.datetime(
+            year=2000, 
+            month=1, 
+            day=1, 
+            hour=poco['reinforce_exit_start']
+        )
+        reinforce_hour = reinforce_exit_start + datetime.timedelta(hours=1)        
+        structures.append({
+            'structure_id': office_id,
+            'type_id': EveType.EVE_TYPE_ID_POCO,
+            'corporation_id': owner.corporation.corporation_id,
+            'name': names[office_id]\
+                if office_id in names else 'Customs Office',
+            'system_id': poco['system_id'],
+            'reinforce_hour': reinforce_hour.hour,
+            'position': positions[office_id] \
+                if office_id in positions else None,
+            'state': Structure.STATE_UNKNOWN
+        })
+
+    return structures
+
+
 @shared_task
 def update_structures_for_owner(
     owner_pk, 
@@ -149,61 +308,26 @@ def update_structures_for_owner(
             owner.save()
             raise RuntimeError(Owner.to_friendly_error_message(error))
         
-        try:
-            # fetching data from ESI
-            logger.info(add_prefix('Fetching structures from ESI - page 1'))
+        try:            
+            logger.info(add_prefix('Starting ESI client...'))
             esi_client = esi_client_factory(
                 token=token, 
                 spec_file=get_swagger_spec_path()
             )
-
-            # get structures from first page
-            operation = \
-                esi_client.Corporation.get_corporations_corporation_id_structures(
-                    corporation_id=owner.corporation.corporation_id
+            structures = _fetch_upwell_structures(
+                owner, 
+                esi_client, 
+                add_prefix
+            )
+            if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
+                structures += _fetch_custom_offices(
+                    owner, 
+                    esi_client,                    
+                    add_prefix,                
                 )
-            operation.also_return_response = True
-            structures, response = operation.result()
-            pages = int(response.headers['x-pages'])
-            
-            # add structures from additional pages if any            
-            for page in range(2, pages + 1):
-                logger.info(add_prefix(
-                    'Fetching structures from ESI - page {}'.format(page)
-                ))
-                structures += esi_client.Corporation.get_corporations_corporation_id_structures(
-                    corporation_id=owner.corporation.corporation_id,
-                    page=page
-                ).result()
-            
-            # fetch additional information for structures
-            for structure in structures:
-                structure_info = \
-                    esi_client.Universe.get_universe_structures_structure_id(
-                        structure_id=structure['structure_id']
-                    ).result()
-                structure['name'] = structure_info['name']
-                structure['position'] = structure_info['position']                
 
-            if settings.DEBUG:
-                # store to disk (for debugging)
-                with open(
-                    'structures_raw_{}.json'.format(
-                        owner.corporation.corporation_id
-                    ), 
-                    'w', 
-                    encoding='utf-8'
-                ) as f:
-                    json.dump(
-                        structures, 
-                        f, 
-                        cls=DjangoJSONEncoder, 
-                        sort_keys=True, 
-                        indent=4
-                    )
-                        
             logger.info(add_prefix(
-                'Storing update for {:,} structures'.format(
+                'Storing updates for {:,} structures'.format(
                     len(structures)
             )))
             with transaction.atomic():

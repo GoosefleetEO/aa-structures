@@ -314,7 +314,7 @@ class StructureAdmin(admin.ModelAdmin):
             ('Reinforcement', {
                 'classes': ('collapse',),
                 'fields': (
-                    ('reinforce_hour', 'reinforce_weekday'),
+                    ('reinforce_hour', ),
                     (
                         'next_reinforce_hour', 
                         'next_reinforce_weekday', 
@@ -332,29 +332,7 @@ class StructureAdmin(admin.ModelAdmin):
                 )
             }),
         )
-        
-        """
-        fields = (
-            'id', 
-            'name', 
-            'eve_type', 
-            'eve_solar_system', 
-            'owner', 
-            'state',
-            ('state_timer_start', 'state_timer_end', 'unanchors_at'),            
-            'fuel_expires',
-            ('reinforce_hour', 'reinforce_weekday'),
-            (
-                'next_reinforce_hour', 
-                'next_reinforce_weekday', 
-                'next_reinforce_apply'
-            ),
-            ('position_x', 'position_y' , 'position_z'),
-            'tags',            
-            'last_updated',
-        )
-        """
-
+       
     inlines = (StructureAdminInline, )
 
     actions = ('remove_all_tags', )

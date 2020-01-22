@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+The Customs Offices feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it with  `STRUCTURES_FEATURE_CUSTOMS_OFFICES = True` in your local settings.
+
+Note that after activation all structure owners need to update their tokens for pocos by adding themselves again via "Add Structure Owner". Syncing of structures will be suspended for each owner until their respective token has been updated.
+
 ### Added
 
+- New feature "Customs Offices": Adds customs offices in structure browser
+
 ### Changed
+
+- Removed reinforcement day, since it is no longer relevant
 
 ### Fixed
 
