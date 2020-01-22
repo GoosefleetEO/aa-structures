@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import *
@@ -138,13 +139,50 @@ class NotificationAdmin(admin.ModelAdmin):
             return False
 
 
+class OwnerSyncStatusFilter(admin.SimpleListFilter):
+    title = 'sync status'
+
+    parameter_name = 'sync_status'
+    
+    def lookups(self, request, model_admin):
+        """List of values to allow admin to select"""
+        return (
+            ('online', 'Online'),
+            ('offline', 'Offline'),
+        )
+
+    def queryset(self, request, queryset):
+        """Return the filtered queryset"""
+
+        if self.value() == 'online':
+            return queryset.filter(
+                structures_last_error__exact=Owner.ERROR_NONE,
+                notifications_last_error=Owner.ERROR_NONE,
+                forwarding_last_error=Owner.ERROR_NONE
+            )
+        elif self.value() == 'offline':
+            return queryset.exclude(
+                structures_last_error__exact=Owner.ERROR_NONE,
+                notifications_last_error=Owner.ERROR_NONE,
+                forwarding_last_error=Owner.ERROR_NONE
+            )
+        else:
+            return queryset
+
+
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
     list_display = (
         'corporation', 
+        'alliance',
         'character', 
         '_webhooks',
         'sync_status',         
+    )
+
+    list_filter = (        
+        ('corporation__alliance', admin.RelatedOnlyFieldListFilter),
+        OwnerSyncStatusFilter, 
     )
 
     fieldsets = (
@@ -162,6 +200,10 @@ class OwnerAdmin(admin.ModelAdmin):
                 )
             }),
     )
+    
+    def alliance(self, obj):        
+        return obj.corporation.alliance
+        
     
     def _webhooks(self, obj):
         return ', '.join([x.name for x in obj.webhooks.all().order_by('name')])
@@ -286,8 +328,23 @@ class StructureAdminInline(admin.TabularInline):
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
-    list_display = ('name', 'eve_solar_system', 'eve_type', 'owner', '_tags')
-    list_filter = ('eve_solar_system', 'eve_type', 'owner', 'tags')
+    list_display = (
+        'name', 
+        'eve_solar_system', 
+        'eve_type', 
+        'owner', 
+        'alliance', 
+        '_tags'
+    )
+    list_filter = (        
+        ('eve_solar_system', admin.RelatedOnlyFieldListFilter),        
+        ('eve_type', admin.RelatedOnlyFieldListFilter),
+        'owner',                 
+        ('tags', admin.RelatedOnlyFieldListFilter),
+    )
+
+    def alliance(self, obj):        
+        return obj.owner.corporation.alliance
 
     if not STRUCTURES_DEVELOPER_MODE:        
         readonly_fields = tuple([

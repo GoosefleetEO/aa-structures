@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.6.1] - 2020-01-22
+
+### Added
+
+- Added alliance info to owner and structure on admin panel and filters incl. owner by sync status
+
 ## [0.6.0] - 2020-01-22
 
 **Important** The new customs offices feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it with  `STRUCTURES_FEATURE_CUSTOMS_OFFICES = True` in your local settings.
