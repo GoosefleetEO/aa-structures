@@ -3,6 +3,7 @@ from time import sleep
 import yaml
 import datetime
 import json
+import urllib
 
 import pytz
 import dhooks_lite
@@ -423,7 +424,8 @@ class EveGroup(models.Model):
 
 class EveType(models.Model):
     """type in Eve Online"""
-    EVE_TYPE_ID_POCO = 2233
+    EVE_TYPE_ID_POCO = 2233    
+    EVE_IMAGESERVER_BASE_URL = 'https://images.evetech.net'
 
     id = models.IntegerField(
         primary_key=True,
@@ -439,10 +441,18 @@ class EveType(models.Model):
         return self.name
 
     def icon_url(self, size=64):
-        return evelinks.get_type_image_url(
-            self.id,
-            size
-        )
+        if size < 32 or size > 1024 or (size % 2 != 0):
+            raise ValueError("Invalid size: {}".format(size))
+    
+        url = '{}/types/{}/icon'.format(
+            self.EVE_IMAGESERVER_BASE_URL,            
+            int(self.id)
+        )    
+        if size:                
+            args = {'size': size}
+            url += '?{}'.format(urllib.parse.urlencode(args))
+        
+        return url
 
     @property
     def is_poco(self):

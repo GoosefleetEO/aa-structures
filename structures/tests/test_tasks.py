@@ -352,6 +352,64 @@ class TestSyncStructures(TestCase):
         self.assertEqual(s_new.tags.get(name='tag_a'), tag_a)
 
 
+    # catch exception during storing of structures
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.tasks.Structure.objects.update_or_create_from_dict')
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_storing_structures_error(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token,
+        mock_update_or_create_from_dict
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+
+        mock_update_or_create_from_dict.side_effect = RuntimeError
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )        
+        
+        # run update task with all structures        
+        self.assertFalse(tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        ))
+
+    
+    @patch('structures.tasks.update_structures_for_owner')
+    def test_update_all_structures(self, mock_update_structures_for_owner):
+        Owner.objects.all().delete()
+        owner_2001 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2001)
+        )
+        owner_2002 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
+        )
+        tasks.update_all_structures()
+        self.assertEqual(mock_update_structures_for_owner.delay.call_count, 2)
+        call_args_list = mock_update_structures_for_owner.delay.call_args_list
+        args, kwargs = call_args_list[0]
+        self.assertEqual(args[0], owner_2001.pk)
+        args, kwargs = call_args_list[1]
+        self.assertEqual(args[0], owner_2002.pk)
+
+
 class TestSyncNotifications(TestCase):    
 
     def setUp(self): 
@@ -616,6 +674,26 @@ class TestSyncNotifications(TestCase):
             self.owner.notifications_last_error, 
             Owner.ERROR_UNKNOWN
         )
+
+    @patch('structures.tasks.send_new_notifications_for_owner')
+    def test_send_all_new_notifications(
+        self, 
+        mock_send_new_notifications_for_owner
+    ):
+        Owner.objects.all().delete()
+        owner_2001 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2001)
+        )
+        owner_2002 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
+        )
+        tasks.send_all_new_notifications()
+        self.assertEqual(mock_send_new_notifications_for_owner.call_count, 2)
+        call_args_list = mock_send_new_notifications_for_owner.call_args_list
+        args, kwargs = call_args_list[0]
+        self.assertEqual(args[0], owner_2001.pk)
+        args, kwargs = call_args_list[1]
+        self.assertEqual(args[0], owner_2002.pk)
         
 
 class TestProcessNotifications(TestCase):    
