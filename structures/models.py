@@ -50,6 +50,9 @@ NTYPE_STRUCTURE_WENT_LOW_POWER = 511
 NTYPE_STRUCTURE_REINFORCE_CHANGED = 512
 NTYPE_OWNERSHIP_TRANSFERRED = 513
 
+NTYPE_ORBITAL_ATTACKED = 601
+NTYPE_ORBITAL_REINFORCED = 602
+
 NTYPE_CHOICES = [
     (NTYPE_MOONMINING_AUTOMATIC_FRACTURE, 'MoonminingAutomaticFracture'),    
     (NTYPE_MOONMINING_EXTRACTION_CANCELED, 'MoonminingExtractionCancelled'),
@@ -69,6 +72,9 @@ NTYPE_CHOICES = [
     (NTYPE_STRUCTURE_UNDER_ATTACK, 'StructureUnderAttack'),
     (NTYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
     (NTYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),
+
+    (NTYPE_ORBITAL_ATTACKED, 'OrbitalAttacked'),    
+    (NTYPE_ORBITAL_REINFORCED, 'OrbitalReinforced'),
 ]
 
 NTYPE_RELEVANT_FOR_TIMERBOARD = [
@@ -437,26 +443,30 @@ class EveType(models.Model):
 
     objects = EveTypeManager()
     
-    def __str__(self):
-        return self.name
+    @property
+    def is_poco(self):
+        return self.id == self.EVE_TYPE_ID_POCO    
 
-    def icon_url(self, size=64):
+    @classmethod
+    def generic_icon_url(cls, type_id: int, size: int =64) -> str:
         if size < 32 or size > 1024 or (size % 2 != 0):
             raise ValueError("Invalid size: {}".format(size))
     
         url = '{}/types/{}/icon'.format(
-            self.EVE_IMAGESERVER_BASE_URL,            
-            int(self.id)
+            cls.EVE_IMAGESERVER_BASE_URL,            
+            int(type_id)
         )    
         if size:                
-            args = {'size': size}
+            args = {'size': int(size)}
             url += '?{}'.format(urllib.parse.urlencode(args))
         
         return url
 
-    @property
-    def is_poco(self):
-        return self.id == self.EVE_TYPE_ID_POCO    
+    def __str__(self):
+        return self.name
+
+    def icon_url(self, size=64):
+        return self.generic_icon_url(self.id, size)
 
 
 class StructureTag(models.Model):
@@ -850,18 +860,23 @@ class Notification(models.Model):
     class Meta:
         unique_together = (('notification_id', 'owner'),)
 
+
     def __str__(self):
         return str(self.notification_id)
-    
-    def _ldap_datetime_2_dt(self, ldap_dt: int) -> datetime:
+
+
+    @classmethod
+    def _ldap_datetime_2_dt(cls, ldap_dt: int) -> datetime:
         """converts ldap time to datatime"""    
         return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
             (ldap_dt / 10000000) - 11644473600
         ))
 
-    def _ldap_timedelta_2_timedelta(self, ldap_td: int) -> datetime.timedelta:
+    @classmethod
+    def _ldap_timedelta_2_timedelta(cls, ldap_td: int) -> datetime.timedelta:
         """converts a ldap timedelta into a dt timedelta"""
         return datetime.timedelta(microseconds=ldap_td / 10)
+
 
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
@@ -1109,6 +1124,59 @@ class Notification(models.Model):
                     fired_by
                 ) + 'and the moon products are ready to be harvested.'
                 color = self.EMBED_COLOR_SUCCESS
+
+        elif self.notification_type in [
+            NTYPE_ORBITAL_ATTACKED,
+            NTYPE_ORBITAL_REINFORCED,            
+        ]:            
+            if not esi_client:
+                esi_client = esi_client_factory()
+
+            planet, _ = EveMoon.objects.get_or_create_esi(
+                parsed_text['planetID'], 
+                esi_client
+            )
+            thumbnail = dhooks_lite.Thumbnail(
+                EveType.generic_icon_url(EveType.EVE_TYPE_ID_POCO)
+            )
+            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                parsed_text['solarSystemID'],
+                esi_client
+            )
+            solar_system_link = gen_solar_system_text(
+                solar_system
+            )
+            aggressor_corporation, _ = \
+                EveEntity.objects.get_or_create_esi(
+                    parsed_text['aggressorCorpID'],
+                    esi_client
+                )
+            aggressor_corporation_link = gen_corporation_link(
+                aggressor_corporation.name
+            )
+
+            if self.notification_type == NTYPE_ORBITAL_ATTACKED:
+                title = 'Orbital under attack'                
+                description = ('The customs office **{}** in {} '
+                    'is under attack by {}.').format(
+                        planet.name,
+                        solar_system_link,                        
+                        aggressor_corporation_link
+                    )                    
+                color = self.EMBED_COLOR_WARNING
+
+            elif self.notification_type == NTYPE_ORBITAL_REINFORCED:               
+                reinforce_exit_time = \
+                    self._ldap_datetime_2_dt(parsed_text['reinforceExitTime'])
+                title = 'Orbital reinforced'                
+                description = ('The customs office **{}** at {} has been '
+                    'reinforced by {} and will come out at: {}.').format(
+                        planet.name,
+                        solar_system_link,                        
+                        aggressor_corporation_link,
+                        reinforce_exit_time.strftime(DATETIME_FORMAT)
+                    )                    
+                color = self.EMBED_COLOR_DANGER
 
         else:
             if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:                

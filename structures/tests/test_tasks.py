@@ -633,6 +633,8 @@ class TestSyncNotifications(TestCase):
                 1000000510,
                 1000000511,
                 1000000513,
+                1000000601,
+                1000000602,
             ]
         )
             
@@ -937,7 +939,7 @@ class TestProcessNotifications(TestCase):
         self.user.save()
         
         tasks.send_all_new_notifications(rate_limited = False)
-        self.assertEqual(mock_execute.call_count, 17)
+        self.assertEqual(mock_execute.call_count, 19)
 
     
     @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
@@ -1219,7 +1221,7 @@ class TestProcessNotifications(TestCase):
         tasks.send_all_new_notifications(rate_limited = False)
         
         # should have sent all notifications
-        self.assertEqual(mock_execute.call_count, 17)
+        self.assertEqual(mock_execute.call_count, 19)
 
         # should have created structures on the fly        
         structure_ids = {

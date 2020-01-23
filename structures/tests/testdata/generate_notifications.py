@@ -11,7 +11,7 @@ from random import randrange
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
     inspect.currentframe()
 )))
-myauth_dir = os.path.dirname(os.path.dirname(os.path.dirname(currentdir))) \
+myauth_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(currentdir)))) \
     + "/myauth"
 sys.path.insert(0, myauth_dir)
 
@@ -34,8 +34,8 @@ from esi.clients import esi_client_factory
 from structures.models import *
 
 # corporation / structure the notifications will be added to
-CORPORATION_ID = 98394960 # VREGS
-STRUCTURE_ID = 1031369646549 # Big business Tatara
+CORPORATION_ID = 98612071 # SODIC
+STRUCTURE_ID = 1030681055667 # Alpha
 
 print('load_test_notifications - script loads test notification into the local database ')
 

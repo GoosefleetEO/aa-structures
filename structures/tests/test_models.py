@@ -2,6 +2,8 @@ from datetime import timedelta
 from random import randrange
 from unittest.mock import Mock, patch
 
+import pytz
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 
@@ -693,3 +695,26 @@ class TestNotification(TestCase):
     def test_str(self):
         x = Notification.objects.get(notification_id=1000000403)
         self.assertEqual(str(x), '1000000403')
+
+    def test_ldap_datetime_2_dt(self):
+        self.assertEqual(
+            Notification._ldap_datetime_2_dt(131924601300000000),
+            pytz.utc.localize(datetime.datetime(
+                year=2019,
+                month=1,
+                day=20,
+                hour=12,
+                minute=15,
+                second=30
+            ))
+        )
+
+    def test_ldap_timedelta_2_timedelta(self):
+        pass
+        # tbd
+
+    
+    def test_orbital_notifications(self):
+        x = Notification.objects.get(notification_id=1000000601)
+        # tbd        
+        
