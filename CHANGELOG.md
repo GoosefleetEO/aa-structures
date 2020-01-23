@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.7.0] - 2020-01-23
 
+To activate the new notification types make sure to enable them on already existing webhooks. For newly created webhooks they will be activated by default.
+
 ### Added
 
 - Notifications for customs offices
