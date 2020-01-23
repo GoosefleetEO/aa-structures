@@ -44,15 +44,27 @@
             "id": 40161465,
             "name": "Amamake II - Moon 1",
             "eve_solar_system_id": 30002537
-        },
+        }
+    ], 
+    "EvePlanet":
+    [        
         {
             "id": 40161469,
             "name": "Amamake IV",
-            "eve_solar_system_id": 30002537
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 2016
         }
     ],
     "EveGroup":
     [
+        {
+            "id": 7,
+            "name": "Planet"
+        },
+        {
+            "id": 8,
+            "name": "Moon"
+        },
         {
             "id": 1657,
             "name": "Citadel"
@@ -82,6 +94,16 @@
             "id": 2233,
             "name": "Customs Office",
             "eve_group_id": 1025
+        },
+        {
+            "id": 2016,
+            "name": "Planet (Barren)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 14,
+            "name": "Moon",
+            "eve_group_id": 8
         }
     ],
     "EveAllianceInfo":

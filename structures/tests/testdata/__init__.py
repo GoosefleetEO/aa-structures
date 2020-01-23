@@ -10,6 +10,11 @@ from unittest.mock import Mock
 
 from django.utils.timezone import now
 
+from allianceauth.eveonline.models \
+    import EveCharacter, EveCorporationInfo, EveAllianceInfo
+
+from ...models import *
+
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
 
@@ -267,6 +272,7 @@ def esi_post_corporations_corporation_id_assets_locations(
         item_ids
     )
 
+
 def esi_post_corporations_corporation_id_assets_names(
     corporation_id: int, 
     item_ids: list
@@ -277,3 +283,40 @@ def esi_post_corporations_corporation_id_assets_names(
         item_ids
     )
     
+
+###################################
+# helper functions
+# 
+
+def load_entity(EntityClass):
+    """loads testdata for given entity class"""
+    entity_name = EntityClass.__name__        
+    for x in entities_testdata[entity_name]:
+        EntityClass.objects.create(**x)
+    assert(len(entities_testdata[entity_name]) == EntityClass.objects.count()) 
+
+
+def load_entities(entities_def: list = None):
+    """loads testdata for given entities classes"""
+    if not entities_def:
+        entities_def = [
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon,
+            EvePlanet,            
+            EveAllianceInfo,
+            EveCorporationInfo,
+            EveCharacter,    
+            EveEntity
+        ]
+    
+    for EntityClass in entities_def:
+        entity_name = EntityClass.__name__
+        for x in entities_testdata[entity_name]:
+            EntityClass.objects.create(**x)
+        assert(
+            len(entities_testdata[entity_name]) == EntityClass.objects.count()
+        )

@@ -357,6 +357,72 @@ class EveMoonManager(models.Manager):
         return obj, created
 
 
+class EvePlanetManager(models.Manager):
+    
+    def get_or_create_esi(
+            self,             
+            planet_id: int,
+            esi_client: object = None
+    ) -> list:
+        """gets or creates EvePlanet object with data fetched from ESI"""
+        from .models import EvePlanet
+        try:
+            obj = self.get(id=planet_id)
+            created = False
+        except EvePlanet.DoesNotExist:
+            obj, created = self.update_or_create_esi(                
+                planet_id,
+                esi_client
+            )
+        
+        return obj, created
+
+
+    def update_or_create_esi(
+            self,             
+            planet_id: int,
+            esi_client: object = None
+    ) -> list:
+        """updates or creates EvePlanet object with data fetched from ESI"""
+        from .models import EvePlanet, EveSolarSystem, EveType
+
+        addPrefix = make_logger_prefix(planet_id)
+
+        logger.info(addPrefix('Fetching eve_planet from ESI'))
+        if not esi_client:
+            esi_client = esi_client_factory()
+        try:
+            eve_planet = esi_client.Universe.get_universe_planets_planet_id(
+                planet_id=planet_id
+            ).result()
+            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi( 
+                eve_planet['system_id'],
+                esi_client
+            )
+            eve_type, _ = EveType.objects.get_or_create_esi( 
+                eve_planet['type_id'],
+                esi_client
+            )
+            obj, created = self.update_or_create(
+                id=planet_id,
+                defaults={
+                    'name': eve_planet['name'],                    
+                    'position_x': eve_planet['position']['x'],
+                    'position_y': eve_planet['position']['y'],
+                    'position_z': eve_planet['position']['z'],
+                    'eve_solar_system': eve_solar_system,
+                    'eve_type': eve_type
+                }
+            ) 
+        except Exception as ex:
+            logger.warn(addPrefix(
+                'Failed to load eve_planet: '.format(ex)
+            ))
+            raise ex
+        
+        return obj, created
+
+
 class EveEntityManager(models.Manager):
     
     def get_or_create_esi(

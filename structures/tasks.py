@@ -154,18 +154,22 @@ def _fetch_upwell_structures(
         ).result()
     
     # fetch additional information for structures
-    for structure in structures:
-        structure_info = \
-            esi_client.Universe.get_universe_structures_structure_id(
-                structure_id=structure['structure_id']
-            ).result()
-        structure['name'] = structure_info['name']
-        structure['position'] = structure_info['position']                
-
-    logger.info(add_prefix(
-        'Retrieved a total of {} Upwell structures from ESI'.format(
+    if not structures:
+        logger.info(add_prefix(
+            'No Upwell structures retrieved from ESI'
+        ))
+    else:
+        logger.info(add_prefix(
+        'Fetching additional infos for {} Upwell structures from ESI'.format(
             len(structures)
         )))
+        for structure in structures:
+            structure_info = \
+                esi_client.Universe.get_universe_structures_structure_id(
+                    structure_id=structure['structure_id']
+                ).result()
+            structure['name'] = structure_info['name']
+            structure['position'] = structure_info['position']                
 
     if settings.DEBUG:
         # store to disk (for debugging)
@@ -226,58 +230,64 @@ def _fetch_custom_offices(
                 page=page
             ).result()
         
-    logger.info(add_prefix('Fetching custom office locations from ESI'))
-    item_ids = [ x['office_id'] for x in pocos ]    
-    locations_data = list()
-    for item_ids_chunk in chunks(item_ids, 999):
-        locations_data_chunk = esi_client.Assets\
-            .post_corporations_corporation_id_assets_locations(
-                corporation_id=owner.corporation.corporation_id,
-                item_ids=item_ids_chunk
-            )\
-            .result()
-        locations_data += locations_data_chunk        
-    positions = {x['item_id']: x['position'] for x in locations_data}
-
-    logger.info(add_prefix('Fetching custom office names from ESI'))    
-    names_data = list()
-    for item_ids_chunk in chunks(item_ids, 999):
-        names_data_chunk = esi_client.Assets\
-            .post_corporations_corporation_id_assets_names(
-                corporation_id=owner.corporation.corporation_id,
-                item_ids=item_ids
-            )\
-            .result()
-        names_data += names_data_chunk
-    names = {x['item_id']: extract_planet_name(x['name']) for x in names_data}
-
     structures = list()
-    for poco in pocos:        
-        office_id = poco['office_id']
-        reinforce_exit_start = datetime.datetime(
-            year=2000, 
-            month=1, 
-            day=1, 
-            hour=poco['reinforce_exit_start']
-        )
-        reinforce_hour = reinforce_exit_start + datetime.timedelta(hours=1)        
-        structures.append({
-            'structure_id': office_id,
-            'type_id': EveType.EVE_TYPE_ID_POCO,
-            'corporation_id': owner.corporation.corporation_id,
-            'name': names[office_id]\
-                if office_id in names else 'Customs Office',
-            'system_id': poco['system_id'],
-            'reinforce_hour': reinforce_hour.hour,
-            'position': positions[office_id] \
-                if office_id in positions else None,
-            'state': Structure.STATE_UNKNOWN
-        })
-
-    logger.info(add_prefix(
-        'Retrieved a total of {} customs offices from ESI'.format(
-            len(structures)
+    if not pocos:
+        logger.info(add_prefix(
+            'No custom offices retrieved from ESI'
+        ))
+    else:
+        logger.info(add_prefix(
+            'Fetching locations for {} custom offices from ESI'.format(
+                len(pocos)
         )))
+        item_ids = [ x['office_id'] for x in pocos ]    
+        locations_data = list()
+        for item_ids_chunk in chunks(item_ids, 999):
+            locations_data_chunk = esi_client.Assets\
+                .post_corporations_corporation_id_assets_locations(
+                    corporation_id=owner.corporation.corporation_id,
+                    item_ids=item_ids_chunk
+                )\
+                .result()
+            locations_data += locations_data_chunk        
+        positions = {x['item_id']: x['position'] for x in locations_data}
+
+        logger.info(add_prefix(
+            'Fetching names for {} custom office names from ESI'.format(
+                len(pocos)
+        )))
+        names_data = list()
+        for item_ids_chunk in chunks(item_ids, 999):
+            names_data_chunk = esi_client.Assets\
+                .post_corporations_corporation_id_assets_names(
+                    corporation_id=owner.corporation.corporation_id,
+                    item_ids=item_ids
+                )\
+                .result()
+            names_data += names_data_chunk
+        names = {x['item_id']: extract_planet_name(x['name']) for x in names_data}
+    
+        for poco in pocos:        
+            office_id = poco['office_id']
+            reinforce_exit_start = datetime.datetime(
+                year=2000, 
+                month=1, 
+                day=1, 
+                hour=poco['reinforce_exit_start']
+            )
+            reinforce_hour = reinforce_exit_start + datetime.timedelta(hours=1)        
+            structures.append({
+                'structure_id': office_id,
+                'type_id': EveType.EVE_TYPE_ID_POCO,
+                'corporation_id': owner.corporation.corporation_id,
+                'name': names[office_id]\
+                    if office_id in names else 'Customs Office',
+                'system_id': poco['system_id'],
+                'reinforce_hour': reinforce_hour.hour,
+                'position': positions[office_id] \
+                    if office_id in positions else None,
+                'state': Structure.STATE_UNKNOWN
+            })
 
     if settings.DEBUG:
         # store to disk (for debugging)

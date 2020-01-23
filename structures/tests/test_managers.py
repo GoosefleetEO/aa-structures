@@ -6,28 +6,21 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata
+from .testdata import entities_testdata, load_entity
 from ..models import *
 
 
 logger = set_logger('structures.managers', __file__)
 
 
-class TestManagers(TestCase):    
+class TestEveGroupManager(TestCase):
     
-    def _load_entity(self, EntityClass):            
-        entity_name = EntityClass.__name__        
-        for x in entities_testdata[entity_name]:
-            EntityClass.objects.create(**x)
-        assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
-
-
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_group_get(
         self, 
         mock_esi_client_factory
     ):
-        self._load_entity(EveGroup)
+        load_entity(EveGroup)
         
         obj, created = EveGroup.objects.get_or_create_esi(1657)
         
@@ -73,13 +66,15 @@ class TestManagers(TestCase):
             EveGroup.objects.get_or_create_esi(1657)
         
 
+class TestEveTypeManager(TestCase):
+
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_type_get(
         self, 
         mock_esi_client_factory
     ):
-        self._load_entity(EveGroup)
-        self._load_entity(EveType)
+        load_entity(EveGroup)
+        load_entity(EveType)
 
         obj, created = EveType.objects.get_or_create_esi(35832)        
         
@@ -103,7 +98,7 @@ class TestManagers(TestCase):
             .return_value = x        
         mock_esi_client_factory.return_value = mock_client
         
-        self._load_entity(EveGroup)
+        load_entity(EveGroup)
         
         obj, created = EveType.objects.get_or_create_esi(35832)
         
@@ -128,12 +123,14 @@ class TestManagers(TestCase):
             EveType.objects.get_or_create_esi(35832)
 
 
+class TestEveRegionManager(TestCase):
+
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_region_get(
         self, 
         mock_esi_client_factory
     ):
-        self._load_entity(EveRegion)
+        load_entity(EveRegion)
 
         obj, created = EveRegion.objects.get_or_create_esi(10000005)
         
@@ -179,13 +176,15 @@ class TestManagers(TestCase):
             EveRegion.objects.get_or_create_esi(35832)
 
 
+class TestEveConstellationManager(TestCase):
+
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_constellation_get(
         self, 
         mock_esi_client_factory
     ):
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
 
         obj, created = EveConstellation.objects.get_or_create_esi(20000069)
         
@@ -208,7 +207,7 @@ class TestManagers(TestCase):
         mock_client.Universe.get_universe_constellations_constellation_id\
             .return_value = x        
         mock_esi_client_factory.return_value = mock_client
-        self._load_entity(EveRegion)
+        load_entity(EveRegion)
 
         obj, created = EveConstellation.objects.get_or_create_esi(10000005)
         
@@ -236,14 +235,16 @@ class TestManagers(TestCase):
             EveConstellation.objects.get_or_create_esi(10000005)
 
 
+class TestEveSolarSystemManager(TestCase):
+    
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_solar_system_get(
         self, 
         mock_esi_client_factory
     ):
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
-        self._load_entity(EveSolarSystem)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
 
         obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
@@ -268,8 +269,8 @@ class TestManagers(TestCase):
             .return_value = x        
         mock_esi_client_factory.return_value = mock_client
         
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
 
         obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
@@ -297,15 +298,17 @@ class TestManagers(TestCase):
             EveSolarSystem.objects.get_or_create_esi(30000474)
 
 
+class TestEveMoonManager(TestCase):
+
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_moon_get(
         self, 
         mock_esi_client_factory
     ):
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
-        self._load_entity(EveSolarSystem)
-        self._load_entity(EveMoon)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+        load_entity(EveMoon)
 
         obj, created = EveMoon.objects.get_or_create_esi(40161465)
         
@@ -334,9 +337,9 @@ class TestManagers(TestCase):
             .return_value = x        
         mock_esi_client_factory.return_value = mock_client
         
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
-        self._load_entity(EveSolarSystem)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
 
         obj, created = EveMoon.objects.get_or_create_esi(40161465)
         
@@ -364,12 +367,89 @@ class TestManagers(TestCase):
             EveMoon.objects.get_or_create_esi(40161465)
 
 
+
+class TestEvePlanetManager(TestCase):
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_planet_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        load_entity(EveGroup)
+        load_entity(EveType)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+        load_entity(EvePlanet)
+
+        obj, created = EvePlanet.objects.get_or_create_esi(40161469)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 40161469)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_planet_create(
+        self, 
+        mock_esi_client_factory
+    ):                
+        x = Mock()
+        x.result.return_value = {
+            "id": 40161469,
+            "name": "Amamake IV",
+            "system_id": 30002537,
+            "position": {
+                "x": 1,
+                "y": 2,
+                "z": 3
+            },
+            "type_id": 2016,
+        }        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_planets_planet_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        load_entity(EveGroup)
+        load_entity(EveType)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+        
+        obj, created = EvePlanet.objects.get_or_create_esi(40161469)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 40161469)
+        self.assertIsInstance(
+            EvePlanet.objects.get(id=40161469), 
+            EvePlanet
+        )        
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_planet_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):        
+        x = Mock()
+        x.result.side_effect = RuntimeError()
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_planets_planet_id\
+            .return_value = x        
+        mock_esi_client_factory.return_value = mock_client
+        
+        with self.assertRaises(RuntimeError):
+            EvePlanet.objects.get_or_create_esi(40161469)
+
+
+class TestEveEntityManager(TestCase):
+
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_entity_get(
         self, 
         mock_esi_client_factory
     ):        
-        self._load_entity(EveEntity)
+        load_entity(EveEntity)
 
         obj, created = EveEntity.objects.get_or_create_esi(3011)
         
@@ -420,7 +500,9 @@ class TestManagers(TestCase):
         with self.assertRaises(RuntimeError):
             EveEntity.objects.get_or_create_esi(3011)
 
-        
+
+class TestStructureManager(TestCase):
+            
     @patch('structures.managers.esi_client_factory', autospec=True)
     def test_structure_get(
         self, 
@@ -428,12 +510,12 @@ class TestManagers(TestCase):
     ):                   
         mock_client = Mock()
 
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
-        self._load_entity(EveSolarSystem)
-        self._load_entity(EveGroup)
-        self._load_entity(EveType)
-        self._load_entity(EveCorporationInfo)        
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+        load_entity(EveGroup)
+        load_entity(EveType)
+        load_entity(EveCorporationInfo)        
         owner = Owner.objects.create(
             corporation = EveCorporationInfo.objects.get(corporation_id=2001)
         )
@@ -474,12 +556,12 @@ class TestManagers(TestCase):
         mock_client.Universe.get_universe_structures_structure_id\
             .return_value = x        
                 
-        self._load_entity(EveRegion)
-        self._load_entity(EveConstellation)
-        self._load_entity(EveSolarSystem)
-        self._load_entity(EveGroup)
-        self._load_entity(EveType)
-        self._load_entity(EveCorporationInfo)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+        load_entity(EveGroup)
+        load_entity(EveType)
+        load_entity(EveCorporationInfo)
         owner = Owner.objects.create(
             corporation = EveCorporationInfo.objects.get(corporation_id=2001)
         )

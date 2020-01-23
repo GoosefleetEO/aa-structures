@@ -31,7 +31,8 @@ from .testdata import \
     esi_post_corporations_corporation_id_assets_names, \
     entities_testdata,\
     notifications_testdata,\
-    corp_structures_data
+    corp_structures_data,\
+    load_entities
 
 logger = set_logger('structures.tasks', __file__)
 
@@ -42,25 +43,16 @@ class TestSyncStructures(TestCase):
     # all ESI calls in the tested module are mocked though
 
     def setUp(self):            
-        entities_def = [
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
+        load_entities([
             EveGroup,
             EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,            
             EveCorporationInfo,
             EveCharacter
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(
-                len(entities_testdata[entity_name]) == \
-                EntityClass.objects.count()
-            )
-        
+        ])
+            
         # 1 user
         self.character = EveCharacter.objects.get(character_id=1001)
                 
@@ -415,26 +407,8 @@ class TestSyncNotifications(TestCase):
     def setUp(self): 
 
         # entities        
-        entities_def = [
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EveGroup,
-            EveType,
-            EveCorporationInfo,
-            EveCharacter,    
-            EveEntity    
-        ]
+        load_entities()
     
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(
-                len(entities_testdata[entity_name]) == EntityClass.objects.count()
-            )
-
         for x in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
                 id = x.corporation_id,
@@ -701,25 +675,7 @@ class TestSyncNotifications(TestCase):
 class TestProcessNotifications(TestCase):    
 
     def setUp(self):         
-        entities_def = [
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EveGroup,
-            EveType,
-            EveCorporationInfo,
-            EveCharacter,    
-            EveEntity    
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(
-                len(entities_testdata[entity_name]) == EntityClass.objects.count()
-            )
+        load_entities()
                 
         for x in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(

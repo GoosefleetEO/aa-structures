@@ -11,7 +11,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata, notifications_testdata
+from .testdata import entities_testdata, notifications_testdata, load_entities
 from ..models import *
 
 
@@ -282,22 +282,17 @@ class TestOwner(TestCase):
 class TestEveEntities(TestCase):
 
     def setUp(self):
-                  
-        entities_def = [
+                          
+        load_entities([
+            EveGroup,
+            EveType,
             EveRegion,
             EveConstellation,
             EveSolarSystem,
-            EveMoon,
-            EveGroup,
-            EveType,            
+            EveMoon,            
+            EvePlanet,            
             EveEntity    
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
+        ])
 
 
     def test_region_str(self):
@@ -318,6 +313,11 @@ class TestEveEntities(TestCase):
     def test_moon_str(self):
         x = EveMoon.objects.get(id=40161465)
         self.assertEqual(str(x), 'Amamake II - Moon 1')
+
+
+    def test_planet_str(self):
+        x = EvePlanet.objects.get(id=40161469)
+        self.assertEqual(str(x), 'Amamake IV')
 
 
     def test_group_str(self):

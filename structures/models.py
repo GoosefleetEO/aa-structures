@@ -23,7 +23,7 @@ from .app_settings import *
 from . import evelinks, __title__
 from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
     EveConstellationManager, EveSolarSystemManager, \
-    EveEntityManager, EveMoonManager, StructureManager
+    EveEntityManager, EveMoonManager, EvePlanetManager, StructureManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 
@@ -326,6 +326,62 @@ class Owner(models.Model):
         return scopes
 
 
+class EveGroup(models.Model):
+    """group in Eve Online"""
+    id = models.IntegerField(
+        primary_key=True,
+        validators=[MinValueValidator(0)],
+        help_text='Eve Online group ID'
+    )
+    name = models.CharField(max_length=100)
+
+    objects = EveGroupManager()
+    
+    def __str__(self):
+        return self.name
+
+
+class EveType(models.Model):
+    """type in Eve Online"""
+    EVE_TYPE_ID_POCO = 2233    
+    EVE_IMAGESERVER_BASE_URL = 'https://images.evetech.net'
+
+    id = models.IntegerField(
+        primary_key=True,
+        validators=[MinValueValidator(0)],
+        help_text='Eve Online type ID'
+    )
+    name = models.CharField(max_length=100)
+    eve_group = models.ForeignKey(EveGroup, on_delete=models.CASCADE)
+
+    objects = EveTypeManager()
+    
+    @property
+    def is_poco(self):
+        return self.id == self.EVE_TYPE_ID_POCO    
+
+    @classmethod
+    def generic_icon_url(cls, type_id: int, size: int =64) -> str:
+        if size < 32 or size > 1024 or (size % 2 != 0):
+            raise ValueError("Invalid size: {}".format(size))
+    
+        url = '{}/types/{}/icon'.format(
+            cls.EVE_IMAGESERVER_BASE_URL,            
+            int(type_id)
+        )    
+        if size:                
+            args = {'size': int(size)}
+            url += '?{}'.format(urllib.parse.urlencode(args))
+        
+        return url
+
+    def __str__(self):
+        return self.name
+
+    def icon_url(self, size=64):
+        return self.generic_icon_url(self.id, size)
+
+
 class EveRegion(models.Model):
     """region in Eve Online"""
     id = models.IntegerField(
@@ -413,60 +469,44 @@ class EveMoon(models.Model):
         return self.name
 
 
-class EveGroup(models.Model):
-    """group in Eve Online"""
+class EvePlanet(models.Model):
     id = models.IntegerField(
         primary_key=True,
         validators=[MinValueValidator(0)],
-        help_text='Eve Online group ID'
+        help_text='Eve Online item ID'
     )
     name = models.CharField(max_length=100)
-
-    objects = EveGroupManager()
-    
-    def __str__(self):
-        return self.name
-
-
-class EveType(models.Model):
-    """type in Eve Online"""
-    EVE_TYPE_ID_POCO = 2233    
-    EVE_IMAGESERVER_BASE_URL = 'https://images.evetech.net'
-
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online type ID'
+    position_x = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='x position of the structure in the solar system'
     )
-    name = models.CharField(max_length=100)
-    eve_group = models.ForeignKey(EveGroup, on_delete=models.CASCADE)
+    position_y = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='y position of the structure in the solar system'
+    )
+    position_z = models.FloatField(        
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='z position of the structure in the solar system'
+    )
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem, 
+        on_delete=models.CASCADE
+    )
+    eve_type = models.ForeignKey(
+        EveType, 
+        on_delete=models.CASCADE
+    )
 
-    objects = EveTypeManager()
-    
-    @property
-    def is_poco(self):
-        return self.id == self.EVE_TYPE_ID_POCO    
-
-    @classmethod
-    def generic_icon_url(cls, type_id: int, size: int =64) -> str:
-        if size < 32 or size > 1024 or (size % 2 != 0):
-            raise ValueError("Invalid size: {}".format(size))
-    
-        url = '{}/types/{}/icon'.format(
-            cls.EVE_IMAGESERVER_BASE_URL,            
-            int(type_id)
-        )    
-        if size:                
-            args = {'size': int(size)}
-            url += '?{}'.format(urllib.parse.urlencode(args))
-        
-        return url
+    objects = EvePlanetManager()
 
     def __str__(self):
         return self.name
-
-    def icon_url(self, size=64):
-        return self.generic_icon_url(self.id, size)
 
 
 class StructureTag(models.Model):
@@ -1132,7 +1172,7 @@ class Notification(models.Model):
             if not esi_client:
                 esi_client = esi_client_factory()
 
-            planet, _ = EveMoon.objects.get_or_create_esi(
+            planet, _ = EvePlanet.objects.get_or_create_esi(
                 parsed_text['planetID'], 
                 esi_client
             )
