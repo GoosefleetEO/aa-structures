@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.7.0] - 2020-01-23
+
 ### Added
 
 - Notifications for customs offices
+
+### Changed
+
+- Improved info logging for structure sync
 
 ## [0.6.1] - 2020-01-22
 

@@ -30,14 +30,14 @@ Alliance Structures adds the following features to Alliance Auth:
 - Structure notifications are automatically forwarded to Discord channels as alerts
 - Interface for 3rd party monitoring of the services status
 - Structures include Upwell structures, Custom Offices
-- Notification types include Upwell structures, moon mining
+- Notification types include Upwell structures, moon mining, customs offices
 - Automatically adds timers from relevant notifications to aa-timers app (if installed)
 - Self-defined tags help to better organize structures
 
 Planned features:
 
 - Structures include POSes
-- Notification types include Customs Offices, POSes, sovereignty, war decs
+- Notification types include POSes, sovereignty, war decs
 
 ## Screenshots
 
