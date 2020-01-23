@@ -837,10 +837,10 @@ class EveEntity(models.Model):
             if type_name == x[1]:
                 match = x
                 break
-        if not match:
-            raise ValueError('Invalid entity type: {}'.format(type_name))
+        if match:
+            return match[0]            
         else:
-            return match[0]
+            return cls.CATEGORY_OTHER
 
 
 class Notification(models.Model):

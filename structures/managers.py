@@ -465,10 +465,7 @@ class EveEntityManager(models.Manager):
                 first = response[0]
                 type = EveEntity.get_matching_entity_type(
                     first['category']
-                )
-                if not type:
-                    type = EveEntity.CATEGORY_OTHER
-
+                )                
                 obj, created = self.update_or_create(
                     id=eve_entity_id,
                     defaults={

@@ -132,7 +132,7 @@
         "notification_id": 1000000511,        
         "type": "StructureWentLowPower",
         "sender_id": 2021,
-        "sender_type": "corporation",
+        "sender_type": "other",
         "timestamp": "2019-11-20 22:02:00",
         "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\n",
         "is_read": false

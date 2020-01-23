@@ -29,21 +29,37 @@ class TestEveGroupManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_group_create(
+    def test_eve_group_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.return_value = {
-            "id": 1657,
-            "name": "Citadel"
-        }        
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_groups_group_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 1657,
+                "name": "Citadel"
+            }       
         mock_esi_client_factory.return_value = mock_client
         
         obj, created = EveGroup.objects.get_or_create_esi(1657)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 1657)
+        self.assertIsInstance(EveGroup.objects.get(id=1657), EveGroup)
+
+    
+    def test_eve_group_create_w_client(self):                
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_groups_group_id\
+            .return_value.result.return_value = {
+                "id": 1657,
+                "name": "Citadel"
+            }
+        
+        obj, created = EveGroup.objects.get_or_create_esi(
+            1657, 
+            mock_client
+        )
         
         self.assertTrue(created)
         self.assertEqual(obj.id, 1657)
@@ -54,12 +70,10 @@ class TestEveGroupManager(TestCase):
     def test_eve_group_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_groups_group_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -83,19 +97,17 @@ class TestEveTypeManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_type_create(
+    def test_eve_type_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.return_value = {
-            "id": 35832,
-            "name": "Astrahus",
-            "group_id": 1657
-        }
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_types_type_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 35832,
+                "name": "Astrahus",
+                "group_id": 1657
+            }        
         mock_esi_client_factory.return_value = mock_client
         
         load_entity(EveGroup)
@@ -106,17 +118,33 @@ class TestEveTypeManager(TestCase):
         self.assertEqual(obj.id, 35832)
         self.assertIsInstance(EveType.objects.get(id=35832), EveType)
 
+    
+    def test_eve_type_create_w_client(self):                
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_types_type_id\
+            .return_value.result.return_value = {
+                "id": 35832,
+                "name": "Astrahus",
+                "group_id": 1657
+            }        
+        
+        load_entity(EveGroup)
+        
+        obj, created = EveType.objects.get_or_create_esi(35832, mock_client)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 35832)
+        self.assertIsInstance(EveType.objects.get(id=35832), EveType)
+
 
     @patch('structures.managers.esi_client_factory', autospec=True)
     def test_eve_type_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_types_type_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()     
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -139,21 +167,36 @@ class TestEveRegionManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_region_create(
+    def test_eve_region_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = {
-            "id": 10000005,
-            "name": "Detorid"
-        }        
+    ):                        
         mock_client = Mock()        
         mock_client.Universe.get_universe_regions_region_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 10000005,
+                "name": "Detorid"
+            }
         mock_esi_client_factory.return_value = mock_client
         
         obj, created = EveRegion.objects.get_or_create_esi(10000005)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 10000005)
+        self.assertIsInstance(EveRegion.objects.get(id=10000005), EveRegion)
+
+
+    def test_eve_region_create_w_client(
+        self
+    ):                        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_regions_region_id\
+            .return_value.result.return_value = {
+                "id": 10000005,
+                "name": "Detorid"
+            }        
+        
+        obj, created = EveRegion.objects.get_or_create_esi(10000005, mock_client)
         
         self.assertTrue(created)
         self.assertEqual(obj.id, 10000005)
@@ -164,12 +207,10 @@ class TestEveRegionManager(TestCase):
     def test_eve_region_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_regions_region_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()     
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -193,23 +234,44 @@ class TestEveConstellationManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_constellation_create(
+    def test_eve_constellation_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = {
-            "id": 20000069,
-            "name": "1RG-GU",
-            "region_id": 10000005
-        }        
+    ):                        
         mock_client = Mock()        
         mock_client.Universe.get_universe_constellations_constellation_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 20000069,
+                "name": "1RG-GU",
+                "region_id": 10000005
+            }
         mock_esi_client_factory.return_value = mock_client
         load_entity(EveRegion)
 
         obj, created = EveConstellation.objects.get_or_create_esi(10000005)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 10000005)
+        self.assertIsInstance(
+            EveConstellation.objects.get(id=10000005),
+            EveConstellation
+        )
+
+    
+    def test_eve_constellation_create_w_client(self):                        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_constellations_constellation_id\
+            .return_value.result.return_value = {
+                "id": 20000069,
+                "name": "1RG-GU",
+                "region_id": 10000005
+            }        
+        load_entity(EveRegion)
+
+        obj, created = EveConstellation.objects.get_or_create_esi(
+            10000005,
+            mock_client
+        )
         
         self.assertTrue(created)
         self.assertEqual(obj.id, 10000005)
@@ -223,12 +285,10 @@ class TestEveConstellationManager(TestCase):
     def test_eve_constellation_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_constellations_constellation_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -253,20 +313,18 @@ class TestEveSolarSystemManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_solar_system_create(
+    def test_eve_solar_system_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = {
-            "id": 30000474,
-            "name": "1-PGSG",
-            "security_status": -0.496552765369415,
-            "constellation_id": 20000069
-        }        
+    ):                        
         mock_client = Mock()        
         mock_client.Universe.get_universe_systems_system_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 30000474,
+                "name": "1-PGSG",
+                "security_status": -0.496552765369415,
+                "constellation_id": 20000069
+            }      
         mock_esi_client_factory.return_value = mock_client
         
         load_entity(EveRegion)
@@ -282,16 +340,40 @@ class TestEveSolarSystemManager(TestCase):
         )        
 
 
+    def test_eve_solar_system_create_w_client(self):                        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_systems_system_id\
+            .return_value.result.return_value = {
+                "id": 30000474,
+                "name": "1-PGSG",
+                "security_status": -0.496552765369415,
+                "constellation_id": 20000069
+            }      
+                
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+
+        obj, created = EveSolarSystem.objects.get_or_create_esi(
+            30000474,
+            mock_client
+        )
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 30000474)
+        self.assertIsInstance(
+            EveSolarSystem.objects.get(id=30000474), 
+            EveSolarSystem
+        )        
+
+
     @patch('structures.managers.esi_client_factory', autospec=True)
     def test_eve_solar_system_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_systems_system_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -317,24 +399,22 @@ class TestEveMoonManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_moon_create(
+    def test_eve_moon_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = {
-            "id": 40161465,
-            "name": "Amamake II - Moon 1",
-            "system_id": 30002537,
-            "position": {
-                "x": 1,
-                "y": 2,
-                "z": 3
-            }
-        }        
+    ):                        
         mock_client = Mock()        
         mock_client.Universe.get_universe_moons_moon_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 40161465,
+                "name": "Amamake II - Moon 1",
+                "system_id": 30002537,
+                "position": {
+                    "x": 1,
+                    "y": 2,
+                    "z": 3
+                }
+            }
         mock_esi_client_factory.return_value = mock_client
         
         load_entity(EveRegion)
@@ -351,21 +431,49 @@ class TestEveMoonManager(TestCase):
         )        
 
 
+    def test_eve_moon_create_w_client(self):                        
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_moons_moon_id\
+            .return_value.result.return_value = {
+                "id": 40161465,
+                "name": "Amamake II - Moon 1",
+                "system_id": 30002537,
+                "position": {
+                    "x": 1,
+                    "y": 2,
+                    "z": 3
+                }
+            }
+        
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+
+        obj, created = EveMoon.objects.get_or_create_esi(
+            40161465, 
+            mock_client
+        )
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 40161465)
+        self.assertIsInstance(
+            EveMoon.objects.get(id=40161465), 
+            EveMoon
+        )        
+
+
     @patch('structures.managers.esi_client_factory', autospec=True)
     def test_eve_moon_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_moons_moon_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()  
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
             EveMoon.objects.get_or_create_esi(40161465)
-
 
 
 class TestEvePlanetManager(TestCase):
@@ -389,25 +497,23 @@ class TestEvePlanetManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_planet_create(
+    def test_eve_planet_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = {
-            "id": 40161469,
-            "name": "Amamake IV",
-            "system_id": 30002537,
-            "position": {
-                "x": 1,
-                "y": 2,
-                "z": 3
-            },
-            "type_id": 2016,
-        }        
+    ):                           
         mock_client = Mock()        
         mock_client.Universe.get_universe_planets_planet_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                "id": 40161469,
+                "name": "Amamake IV",
+                "system_id": 30002537,
+                "position": {
+                    "x": 1,
+                    "y": 2,
+                    "z": 3
+                },
+                "type_id": 2016,
+            }
         mock_esi_client_factory.return_value = mock_client
         
         load_entity(EveGroup)
@@ -426,16 +532,48 @@ class TestEvePlanetManager(TestCase):
         )        
 
 
+    def test_eve_planet_create_wo_client(self):                           
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_planets_planet_id\
+            .return_value.result.return_value = {
+                "id": 40161469,
+                "name": "Amamake IV",
+                "system_id": 30002537,
+                "position": {
+                    "x": 1,
+                    "y": 2,
+                    "z": 3
+                },
+                "type_id": 2016,
+            }
+        
+        load_entity(EveGroup)
+        load_entity(EveType)
+        load_entity(EveRegion)
+        load_entity(EveConstellation)
+        load_entity(EveSolarSystem)
+        
+        obj, created = EvePlanet.objects.get_or_create_esi(
+            40161469, 
+            mock_client
+        )
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 40161469)
+        self.assertIsInstance(
+            EvePlanet.objects.get(id=40161469), 
+            EvePlanet
+        )        
+
+
     @patch('structures.managers.esi_client_factory', autospec=True)
     def test_eve_planet_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.get_universe_planets_planet_id\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -458,21 +596,19 @@ class TestEveEntityManager(TestCase):
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
-    def test_eve_entity_create(
+    def test_eve_entity_create_wo_client(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = [
-            {
-                "id": 3011,
-                "category": "alliance",
-                "name": "Big Bad Alliance"
-            }                
-        ]
+    ):                        
         mock_client = Mock()        
         mock_client.Universe.post_universe_names\
-            .return_value = x        
+            .return_value.result.return_value = [
+                {
+                    "id": 3011,
+                    "category": "alliance",
+                    "name": "Big Bad Alliance"
+                }                
+            ]      
         mock_esi_client_factory.return_value = mock_client
         
         obj, created = EveEntity.objects.get_or_create_esi(3011)
@@ -485,16 +621,65 @@ class TestEveEntityManager(TestCase):
         )        
 
 
+    def test_eve_entity_create_w_client(self):                        
+        mock_client = Mock()        
+        mock_client.Universe.post_universe_names\
+            .return_value.result.return_value = [
+                {
+                    "id": 3011,
+                    "category": "alliance",
+                    "name": "Big Bad Alliance"
+                }                
+            ]      
+        
+        obj, created = EveEntity.objects.get_or_create_esi(3011, mock_client)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 3011)
+        self.assertIsInstance(
+            EveEntity.objects.get(id=3011), 
+            EveEntity
+        )  
+
+
+    def test_eve_entity_create_w_client_no_match(self):                        
+        mock_client = Mock()        
+        mock_client.Universe.post_universe_names\
+            .return_value.result.return_value = []      
+        
+        with self.assertRaises(ValueError):
+            EveEntity.objects.get_or_create_esi(3011, mock_client)
+        
+
+    def test_eve_entity_create_w_client_wrong_type(self):                        
+        mock_client = Mock()        
+        mock_client.Universe.post_universe_names\
+            .return_value.result.return_value = [
+                {
+                    "id": 6666,
+                    "category": "XXX",
+                    "name": "Unclear entity"
+                }                
+            ]      
+        
+        obj, created = EveEntity.objects.get_or_create_esi(6666, mock_client)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 6666)
+        self.assertIsInstance(
+            EveEntity.objects.get(id=6666), 
+            EveEntity
+        )  
+
+        
     @patch('structures.managers.esi_client_factory', autospec=True)
     def test_eve_entity_create_failed(
         self, 
         mock_esi_client_factory
-    ):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+    ):                
         mock_client = Mock()        
         mock_client.Universe.post_universe_names\
-            .return_value = x        
+            .return_value.result.side_effect = RuntimeError()
         mock_esi_client_factory.return_value = mock_client
         
         with self.assertRaises(RuntimeError):
@@ -538,23 +723,21 @@ class TestStructureManager(TestCase):
     def test_structure_create(
         self, 
         mock_esi_client_factory
-    ):                
-        x = Mock()
-        x.result.return_value = {
-            'id': 1000000000001,            
-            'name': 'Test Structure Alpha',
-            'type_id': 35832,
-            'solar_system_id': 30002537,
-            'owner_id': 2001,
-            "position": {
-                "x": 1,
-                "y": 2,
-                "z": 3
-            }
-        }
+    ):                        
         mock_client = Mock()        
         mock_client.Universe.get_universe_structures_structure_id\
-            .return_value = x        
+            .return_value.result.return_value = {
+                'id': 1000000000001,            
+                'name': 'Test Structure Alpha',
+                'type_id': 35832,
+                'solar_system_id': 30002537,
+                'owner_id': 2001,
+                "position": {
+                    "x": 1,
+                    "y": 2,
+                    "z": 3
+                }
+            }   
                 
         load_entity(EveRegion)
         load_entity(EveConstellation)

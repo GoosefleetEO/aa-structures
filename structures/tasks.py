@@ -47,8 +47,7 @@ def _get_token_for_owner(owner: Owner, add_prefix: make_logger_prefix) -> list:
             'structures.add_structure_owner'
         ):
         logger.error(add_prefix(
-            'Character does not have sufficient permission '
-            + 'to sync structures'
+            'Owner character does not have sufficient permission to sync'
         ))            
         error = Owner.ERROR_INSUFFICIENT_PERMISSIONS        
 
@@ -533,10 +532,10 @@ def fetch_notifications_for_owner(
                             )
                         if sender_type != EveEntity.CATEGORY_OTHER:
                             sender, _ = EveEntity\
-                            .objects.get_or_create_esi(
-                                notification['sender_id'],
-                                esi_client
-                            )
+                                .objects.get_or_create_esi(
+                                    notification['sender_id'],
+                                    esi_client
+                                )
                         else:
                             sender, _ = EveEntity\
                                 .objects.get_or_create(

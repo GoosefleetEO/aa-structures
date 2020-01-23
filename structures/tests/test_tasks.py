@@ -37,12 +37,24 @@ from .testdata import \
 logger = set_logger('structures.tasks', __file__)
 
 
+def _get_invalid_owner_pk():
+    owner_pks = [x.pk for x in Owner.objects.all()]
+    if owner_pks:
+        return max(owner_pks) + 1
+    else:
+        return 99
+
+
 class TestSyncStructures(TestCase):
     
     # note: setup is making calls to ESI to get full info for entities
     # all ESI calls in the tested module are mocked though
 
     def setUp(self):            
+        # reset data that might be overridden
+        esi_get_corporations_corporation_id_structures.override_data = None
+        esi_get_corporations_corporation_id_customs_offices.override_data = None
+        
         load_entities([
             EveGroup,
             EveType,
@@ -75,11 +87,10 @@ class TestSyncStructures(TestCase):
         for x in entities_testdata['StructureTag']:
             StructureTag.objects.create(**x)
      
-
-    def test_run_unknown_owner(self):        
+    
+    def test_run_unknown_owner(self):                                
         with self.assertRaises(Owner.DoesNotExist):
-            tasks.update_structures_for_owner(owner_pk=1)
-        
+            tasks.update_structures_for_owner(owner_pk=_get_invalid_owner_pk())
 
     # run without char        
     def test_run_no_sync_char(self):
@@ -162,12 +173,14 @@ class TestSyncStructures(TestCase):
     
     #normal synch of new structures, mode my_alliance
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch('structures.tasks.notify', autospec=True)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
     def test_update_structures_for_owner_normal(
         self, 
         mock_esi_client_factory,             
-        mock_Token
+        mock_Token,
+        mock_notify
     ):                               
         mock_client = Mock()        
         mock_client.Corporation\
@@ -227,6 +240,230 @@ class TestSyncStructures(TestCase):
                 1200000000005
             }
         )
+        # user report has been sent
+        self.assertTrue(mock_notify.called)
+    
+
+    # synch of structures, ensure old structures are removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_remove_olds(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )        
+        
+        # run update task with all structures
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk
+        )        
+        # should contain the right structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+
+        # run update task 2nd time with one less structure
+        my_corp_structures_data = corp_structures_data.copy()
+        del(my_corp_structures_data["2001"][1])
+        esi_get_corporations_corporation_id_structures.override_data = \
+            my_corp_structures_data
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk
+        )        
+        # should contain only the remaining structure
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000002, 1000000000003}
+        )
+    
+    # synch of structures, ensure tags are not removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_keep_tags(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )        
+        
+        # run update task with all structures
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk
+        )        
+        # should contain the right structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+
+        # adding tags
+        tag_a = StructureTag.objects.get(name='tag_a')
+        s = Structure.objects.get(id=1000000000001)
+        s.tags.add(tag_a)
+        s.save()
+        
+        # run update task 2nd time
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk
+        )        
+        # should still contain alls structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+        # should still contain the tag
+        s_new = Structure.objects.get(id=1000000000001)
+        self.assertEqual(s_new.tags.get(name='tag_a'), tag_a)
+    
+    
+    #no structures retrieved from ESI during sync
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_empty_and_no_user_report(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                               
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        esi_get_corporations_corporation_id_structures.override_data = \
+            {'2001': []}
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+        mock_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+                esi_get_corporations_corporation_id_customs_offices
+        esi_get_corporations_corporation_id_customs_offices.override_data = \
+            {'2001': []}
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+                esi_post_corporations_corporation_id_assets_locations
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_names = \
+                esi_post_corporations_corporation_id_assets_names
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )
+        
+        # run update task
+        self.assertTrue(
+            tasks.update_structures_for_owner(
+                owner_pk=owner.pk
+        ))
+        owner.refresh_from_db()
+        self.assertEqual(
+            owner.structures_last_error, 
+            Owner.ERROR_NONE            
+        )                
+        # must be empty
+        self.assertEqual(Structure.objects.count(), 0)
+
+
+    # error during user report
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.tasks.notify')
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_user_report_error(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token,
+        mock_notify
+    ):                               
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        esi_get_corporations_corporation_id_structures.override_data = \
+            {'2001': []}
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+        mock_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+                esi_get_corporations_corporation_id_customs_offices
+        esi_get_corporations_corporation_id_customs_offices.override_data = \
+            {'2001': []}
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+                esi_post_corporations_corporation_id_assets_locations
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_names = \
+                esi_post_corporations_corporation_id_assets_names
+        mock_notify.side_effect = RuntimeError
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )
+        
+        # run update task
+        self.assertTrue(
+            tasks.update_structures_for_owner(
+                owner_pk=owner.pk,
+                user_pk=self.user.pk
+        ))       
+
 
     # synch of structures, ensure old structures are removed
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
@@ -283,67 +520,6 @@ class TestSyncStructures(TestCase):
             {1000000000002, 1000000000003}
         )
 
-    # synch of structures, ensure tags are not removed
-    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
-    @patch('structures.tasks.Token', autospec=True)
-    @patch('structures.tasks.esi_client_factory')
-    def test_update_structures_for_owner_keep_tags(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token
-    ):                       
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-                esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-                esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
-
-        # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
-        owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership
-        )        
-        
-        # run update task with all structures
-        tasks.update_structures_for_owner(
-            owner_pk=owner.pk, 
-            user_pk=self.user.pk
-        )        
-        # should contain the right structures
-        self.assertSetEqual(
-            { x['id'] for x in Structure.objects.values('id') },
-            {1000000000001, 1000000000002, 1000000000003}
-        )
-
-        # adding tags
-        tag_a = StructureTag.objects.get(name='tag_a')
-        s = Structure.objects.get(id=1000000000001)
-        s.tags.add(tag_a)
-        s.save()
-        
-        # run update task 2nd time
-        tasks.update_structures_for_owner(
-            owner_pk=owner.pk, 
-            user_pk=self.user.pk
-        )        
-        # should still contain alls structures
-        self.assertSetEqual(
-            { x['id'] for x in Structure.objects.values('id') },
-            {1000000000001, 1000000000002, 1000000000003}
-        )
-        # should still contain the tag
-        s_new = Structure.objects.get(id=1000000000001)
-        self.assertEqual(s_new.tags.get(name='tag_a'), tag_a)
-
-
     # catch exception during storing of structures
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Structure.objects.update_or_create_from_dict')
@@ -379,8 +555,7 @@ class TestSyncStructures(TestCase):
         
         # run update task with all structures        
         self.assertFalse(tasks.update_structures_for_owner(
-            owner_pk=owner.pk, 
-            user_pk=self.user.pk
+            owner_pk=owner.pk
         ))
 
     
@@ -463,10 +638,8 @@ class TestSyncNotifications(TestCase):
                 
 
     def test_run_unknown_owner(self):
-        owner_pks = [x.pk for x in Owner.objects.all()]
-        
         with self.assertRaises(Owner.DoesNotExist):
-            tasks.update_structures_for_owner(owner_pk=max(owner_pks) + 1)
+            tasks.fetch_notifications_for_owner(owner_pk=_get_invalid_owner_pk())
    
 
     # run without char        
@@ -547,14 +720,16 @@ class TestSyncNotifications(TestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
         
-    # "structures.tests.TestTasksNotifications.test_fetch_notifications_for_owner_normal"
+    
     # normal synch of new structures, mode my_alliance                
+    @patch('structures.tasks.notify', autospec=True)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_normal(
             self, 
             mock_esi_client_factory,             
-            mock_Token
+            mock_Token,
+            mock_notify
     ):        
         mock_client = Mock()       
         mock_client.Character\
@@ -572,7 +747,8 @@ class TestSyncNotifications(TestCase):
         # run update task
         self.assertTrue(
             tasks.fetch_notifications_for_owner(
-                owner_pk=self.owner.pk
+                owner_pk=self.owner.pk,
+                user_pk=self.user.pk
             )
         )
 
@@ -611,6 +787,8 @@ class TestSyncNotifications(TestCase):
                 1000000602,
             ]
         )
+        # user report has been sent
+        self.assertTrue(mock_notify.called)
             
             
     @patch('structures.tasks.Token', autospec=True)
@@ -651,10 +829,11 @@ class TestSyncNotifications(TestCase):
             Owner.ERROR_UNKNOWN
         )
 
-    @patch('structures.tasks.send_new_notifications_for_owner')
-    def test_send_all_new_notifications(
+           
+    @patch('structures.tasks.fetch_notifications_for_owner')
+    def test_fetch_all_notifications(
         self, 
-        mock_send_new_notifications_for_owner
+        mock_fetch_notifications_for_owner
     ):
         Owner.objects.all().delete()
         owner_2001 = Owner.objects.create(
@@ -663,9 +842,9 @@ class TestSyncNotifications(TestCase):
         owner_2002 = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2002)
         )
-        tasks.send_all_new_notifications()
-        self.assertEqual(mock_send_new_notifications_for_owner.call_count, 2)
-        call_args_list = mock_send_new_notifications_for_owner.call_args_list
+        tasks.fetch_all_notifications()
+        self.assertEqual(mock_fetch_notifications_for_owner.delay.call_count, 2)
+        call_args_list = mock_fetch_notifications_for_owner.delay.call_args_list
         args, kwargs = call_args_list[0]
         self.assertEqual(args[0], owner_2001.pk)
         args, kwargs = call_args_list[1]
@@ -763,20 +942,12 @@ class TestProcessNotifications(TestCase):
                     }
                 )   
     
-
-    @patch('structures.tasks.Token', autospec=True)
-    @patch('structures.tasks.esi_client_factory', autospec=True)
-    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
-    def test_run_unknown_owner(
-        self,         
-        mock_esi_client_factory,
-        mock_send_to_webhook,
-        mock_token
-    ):      
-        owner_pks = [x.pk for x in Owner.objects.all()]
-        
+    
+    def test_run_unknown_owner(self):      
         with self.assertRaises(Owner.DoesNotExist):
-            tasks.update_structures_for_owner(owner_pk=max(owner_pks) + 1)
+            tasks.send_new_notifications_for_owner(
+                owner_pk=_get_invalid_owner_pk()
+            )
 
 
     @patch('structures.tasks.Token', autospec=True)
@@ -1305,4 +1476,24 @@ class TestProcessNotifications(TestCase):
         self.assertFalse(
             x.send_to_webhook(self.webhook, mock_esi_client_factory)
         )
-        
+
+
+    @patch('structures.tasks.send_new_notifications_for_owner')
+    def test_send_all_new_notifications(
+        self, 
+        mock_send_new_notifications_for_owner
+    ):
+        Owner.objects.all().delete()
+        owner_2001 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2001)
+        )
+        owner_2002 = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
+        )
+        tasks.send_all_new_notifications()
+        self.assertEqual(mock_send_new_notifications_for_owner.call_count, 2)
+        call_args_list = mock_send_new_notifications_for_owner.call_args_list
+        args, kwargs = call_args_list[0]
+        self.assertEqual(args[0], owner_2001.pk)
+        args, kwargs = call_args_list[1]
+        self.assertEqual(args[0], owner_2002.pk)

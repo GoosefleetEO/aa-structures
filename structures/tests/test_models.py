@@ -376,9 +376,11 @@ class TestEveEntities(TestCase):
             EveEntity.get_matching_entity_type('other'),
             EveEntity.CATEGORY_OTHER
         )
-        with self.assertRaises(ValueError):
-            EveEntity.get_matching_entity_type('does not exist')
-
+        self.assertEqual(
+            EveEntity.get_matching_entity_type('does not exist'),
+            EveEntity.CATEGORY_OTHER
+        )
+        
 
 class TestStructureTag(TestCase):
     
