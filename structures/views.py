@@ -30,7 +30,7 @@ STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 TIME_STRINGS = {
     'year': ngettext_lazy('%d y', '%d y'),
     'month': ngettext_lazy('%d m', '%d m'),
-    'week': ngettext_lazy('%d w', '%d d'),
+    'week': ngettext_lazy('%d w', '%d w'),
     'day': ngettext_lazy('%d d', '%d d'),
     'hour': ngettext_lazy('%d h', '%d h'),
     'minute': ngettext_lazy('%d m', '%d m'),
