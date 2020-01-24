@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.7.1] - 2020-01-24
+
+- Changes display of "fuel expires" to relative figures, same as in-game. Can be turned back to absolute figures with the new setting `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE` ([#12](https://gitlab.com/ErikKalkoken/aa-structures/issues/8))
+
 ## [0.7.0] - 2020-01-23
 
 To activate the new notification types make sure to enable them on already existing webhooks. For newly created webhooks they will be activated by default.

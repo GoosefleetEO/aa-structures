@@ -1,10 +1,12 @@
 import calendar
 import logging
 
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect, reverse
-from django.contrib.auth.decorators import login_required, permission_required
+from django.utils.translation import ngettext_lazy
+from django.utils.timesince import timeuntil
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, \
@@ -12,7 +14,8 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo, \
 from esi.decorators import token_required
 
 from . import evelinks, tasks, __title__
-from .app_settings import STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
+from .app_settings import STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED, \
+    STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
 from .forms import TagsFilterForm
 from .models import *
 from .utils import messages_plus, DATETIME_FORMAT, notify_admins, LoggerAddTag
@@ -23,6 +26,15 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
+
+TIME_STRINGS = {
+    'year': ngettext_lazy('%d y', '%d y'),
+    'month': ngettext_lazy('%d m', '%d m'),
+    'week': ngettext_lazy('%d w', '%d d'),
+    'day': ngettext_lazy('%d d', '%d d'),
+    'hour': ngettext_lazy('%d h', '%d h'),
+    'minute': ngettext_lazy('%d m', '%d m'),
+}
 
 QUERY_PARAM_TAGS = 'tags'
 
@@ -202,16 +214,31 @@ def structure_list_data(request):
         
         # add low power label or date when fuel runs out
         if row['is_poco']:
-            row['fuel_expires'] = 'N/A'
+            fuel_expires_display = 'N/A'
+            fuel_expires_timestamp = None
         else:
-            if row['is_low_power']:
-                row['fuel_expires'] = \
+            if row['is_low_power']:                
+                fuel_expires_display = \
                     '<span class="label label-default">Low Power</span>'
-            elif structure.fuel_expires:
-                row['fuel_expires'] = \
-                    structure.fuel_expires.strftime(DATETIME_FORMAT)
+                fuel_expires_timestamp = None
+            elif structure.fuel_expires:                
+                fuel_expires_timestamp = structure.fuel_expires.isoformat()
+                if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
+                    fuel_expires_display =  timeuntil(
+                        structure.fuel_expires, 
+                        time_strings=TIME_STRINGS
+                    )
+                else:
+                    fuel_expires_display = \
+                        structure.fuel_expires.strftime(DATETIME_FORMAT)                
             else:
-                row['fuel_expires'] = '?'
+                fuel_expires_display = '?'
+                fuel_expires_timestamp = None
+
+        row['fuel_expires'] = {
+            'display': fuel_expires_display,
+            'timestamp' : fuel_expires_timestamp
+        }
         
         # state    
         row['state_str'] = structure.state_str

@@ -150,7 +150,12 @@
                 { data: 'structure_name' },
                 { data: 'services' },
                 { data: 'reinforcement' },
-                { data: 'fuel_expires' },
+                { data: 'fuel_expires',
+                    render: {
+                        _: 'display',
+                        sort: 'timestamp'
+                    }
+                },
                 { data: 'state_details' },
 
                 { data: 'alliance_name' },
@@ -158,7 +163,7 @@
                 { data: 'region_name' },
                 { data: 'solar_system_name' },
                 { data: 'type_name' },
-                { data: 'is_reinforced_str' },                
+                { data: 'is_reinforced_str' },
                 { data: 'state_str' },
                 { data: 'is_low_power_str' }
             ],
@@ -167,7 +172,7 @@
             
             columnDefs: [
                 { "sortable": false, "targets": [0, 3, 4, 6] },
-                { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17] },
+                { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17] }
             ],
             
             order: [ [ 1, "asc" ], [ 5, "asc" ] ],

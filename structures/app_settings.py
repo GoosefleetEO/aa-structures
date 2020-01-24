@@ -86,3 +86,10 @@ STRUCTURES_FEATURE_CUSTOMS_OFFICES = getattr(
     'STRUCTURES_FEATURE_CUSTOMS_OFFICES', 
     False
 )
+
+# whether fuel expires in structures browser is shown as absolute value
+STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE = getattr(
+    settings, 
+    'STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE', 
+    True
+)
