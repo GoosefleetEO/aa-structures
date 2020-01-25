@@ -268,7 +268,7 @@ DEBUG = False
 
 # Add any additional apps to this list.
 INSTALLED_APPS += [
-    'allianceauth.optimer',
+    'allianceauth.timerboard',
     'structures'
 ]
 

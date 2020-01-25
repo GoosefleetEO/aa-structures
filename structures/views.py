@@ -1,5 +1,6 @@
 import calendar
 import logging
+import urllib
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
@@ -15,7 +16,7 @@ from esi.decorators import token_required
 
 from . import evelinks, tasks, __title__
 from .app_settings import STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED, \
-    STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
+    STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE, STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED
 from .forms import TagsFilterForm
 from .models import *
 from .utils import messages_plus, DATETIME_FORMAT, notify_admins, LoggerAddTag
@@ -38,9 +39,26 @@ TIME_STRINGS = {
 
 QUERY_PARAM_TAGS = 'tags'
 
+
 @login_required
 @permission_required('structures.basic_access')
 def index(request):       
+    url = reverse('structures:structure_list')
+    if STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED:
+        params = {
+            QUERY_PARAM_TAGS: ','.join([
+                x.name 
+                for x in StructureTag.objects\
+                    .filter(is_default__exact=True)
+            ])
+        }
+        url += '?{}'.format(urllib.parse.urlencode(params))
+    return redirect(url)
+
+
+@login_required
+@permission_required('structures.basic_access')
+def structure_list(request):       
     """main view showing the structure list"""
         
     active_tags = list()
@@ -51,9 +69,12 @@ def index(request):
                 if activated:
                     active_tags.append(StructureTag.objects.get(name=name))
 
-            url = reverse('structures:index')
+            url = reverse('structures:structure_list')
             if active_tags:
-                url += '?tags={}'.format(','.join([x.name for x in active_tags]))
+                params = {
+                    QUERY_PARAM_TAGS: ','.join([x.name for x in active_tags])
+                }
+                url += '?{}'.format(urllib.parse.urlencode(params))
             return redirect(url)
     else:        
         tags_raw = request.GET.get(QUERY_PARAM_TAGS)
@@ -72,13 +93,13 @@ def index(request):
         'tags_filter_form': form,
         'tags_exist': StructureTag.objects.exists()
     }    
-    return render(request, 'structures/index.html', context)
+    return render(request, 'structures/structure_list.html', context)
 
 
 @login_required
 @permission_required('structures.basic_access')
 def structure_list_data(request):
-    """returns structure list in JSON for AJAX call in index view"""    
+    """returns structure list in JSON for AJAX call in structure_list view"""    
     
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:

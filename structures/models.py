@@ -80,7 +80,8 @@ NTYPE_CHOICES = [
 NTYPE_RELEVANT_FOR_TIMERBOARD = [
     NTYPE_STRUCTURE_LOST_SHIELD,
     NTYPE_STRUCTURE_LOST_ARMOR,
-    NTYPE_STRUCTURE_ANCHORING
+    NTYPE_STRUCTURE_ANCHORING,
+    NTYPE_ORBITAL_REINFORCED
 ]
 
 def get_default_notification_types():
@@ -1176,8 +1177,12 @@ class Notification(models.Model):
                 parsed_text['planetID'], 
                 esi_client
             )
+            structure_type, _ = EveType.objects.get_or_create_esi(
+                EveType.EVE_TYPE_ID_POCO,
+                esi_client
+            )
             thumbnail = dhooks_lite.Thumbnail(
-                EveType.generic_icon_url(EveType.EVE_TYPE_ID_POCO)
+                structure_type.icon_url()
             )
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 parsed_text['solarSystemID'],
@@ -1194,11 +1199,12 @@ class Notification(models.Model):
             aggressor_corporation_link = gen_corporation_link(
                 aggressor_corporation.name
             )
-
+            
             if self.notification_type == NTYPE_ORBITAL_ATTACKED:
                 title = 'Orbital under attack'                
-                description = ('The customs office **{}** in {} '
+                description = ('The {} **{}** in {} '
                     'is under attack by {}.').format(
+                        structure_type.name,
                         planet.name,
                         solar_system_link,                        
                         aggressor_corporation_link
@@ -1209,8 +1215,9 @@ class Notification(models.Model):
                 reinforce_exit_time = \
                     self._ldap_datetime_2_dt(parsed_text['reinforceExitTime'])
                 title = 'Orbital reinforced'                
-                description = ('The customs office **{}** at {} has been '
+                description = ('The {} **{}** at {} has been '
                     'reinforced by {} and will come out at: {}.').format(
+                        structure_type.name,
                         planet.name,
                         solar_system_link,                        
                         aggressor_corporation_link,
@@ -1413,6 +1420,7 @@ class Notification(models.Model):
                         esi_client
                     )                      
                     system = structure_obj.eve_solar_system.name
+                    planet_moon = None
                     structure = structure_obj.eve_type.name
                     objective = 'Friendly'
                     eve_time = timer_ends_at = self.timestamp \
@@ -1425,7 +1433,7 @@ class Notification(models.Model):
                     elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
                         details = "Final timer"
                 
-                elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:                
+                elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
                     structure_type, _ = EveType.objects.get_or_create_esi(
                         parsed_text['structureTypeID'],
                         esi_client
@@ -1435,12 +1443,36 @@ class Notification(models.Model):
                         esi_client
                     )                                
                     system =  solar_system.name
+                    planet_moon = None
                     structure = structure_type.name
                     objective = 'Friendly'
                     eve_time = timer_ends_at = self.timestamp \
                         + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])            
                     eve_corp = self.owner.corporation
                     details = "Anchor timer"
+
+                elif self.notification_type == NTYPE_ORBITAL_REINFORCED: 
+                    structure_type, _ = EveType.objects.get_or_create_esi(
+                        EveType.EVE_TYPE_ID_POCO,
+                        esi_client
+                    )               
+                    solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                        parsed_text['solarSystemID'],
+                        esi_client
+                    )                                
+                    system =  solar_system.name
+                    planet, _ = EvePlanet.objects.get_or_create_esi(
+                        parsed_text['planetID'], 
+                        esi_client
+                    )
+                    planet_moon = planet.name
+                    structure = 'POCO'
+                    objective = 'Friendly'
+                    eve_time = self._ldap_datetime_2_dt(
+                        parsed_text['reinforceExitTime']
+                    )          
+                    eve_corp = self.owner.corporation
+                    details = "Final timer"
 
                 else:
                     raise NotImplementedError()
@@ -1449,6 +1481,7 @@ class Notification(models.Model):
                     Timer.objects.create(
                         details=details,
                         system=system,
+                        planet_moon=planet_moon,
                         structure=structure,
                         objective=objective,
                         eve_time=eve_time,                            

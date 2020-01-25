@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.8.0] - 2020-01-25
+
+### Added
+
+- Structure tags can be set as default to be automatically added to new structures
+- Structure list can have default tags filter enabled as default (see new setting `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`) ([#11](https://gitlab.com/ErikKalkoken/aa-structures/issues/11))
+- Admin command to add default tags to selected structures
+
+### Fixed
+
+- Reinforced POCOs notifications are now also added to the timerboard
+
 ## [0.7.1] - 2020-01-24
 
-- Changes display of "fuel expires" to relative figures, same as in-game. Can be turned back to absolute figures with the new setting `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE` ([#12](https://gitlab.com/ErikKalkoken/aa-structures/issues/8))
+- Changes display of "fuel expires" to relative figures, same as in-game. Can be turned back to absolute figures. (see new setting `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE`) ([#12](https://gitlab.com/ErikKalkoken/aa-structures/issues/12))
 
 ## [0.7.0] - 2020-01-23
 
@@ -51,7 +63,7 @@ Note that after activation all structure owners need to update their tokens by a
 
 ### Added
 
-- New feature "Structure tags": Define custom tags and use them to tag your structures. Tags are shown for each structure on the structure browser and can also be used as filter.
+- New feature "Structure tags": Define custom tags and use them to tag your structures. Tags are shown for each structure on the structure browser and can also be used as filter. ([#11](https://gitlab.com/ErikKalkoken/aa-structures/issues/11))
 
 ### Changed
 

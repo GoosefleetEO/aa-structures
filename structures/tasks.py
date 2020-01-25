@@ -573,6 +573,25 @@ def fetch_notifications_for_owner(
                     'Received {} new notifications from ESI'.format(
                         new_notifications_count
                 )))
+
+                if STRUCTURES_ADD_TIMERS:
+                    cutoff_dt_for_stale = now() - datetime.timedelta(
+                        hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+                    )
+                    notifications = Notification.objects\
+                        .filter(owner__exact=owner)\
+                        .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
+                        .exclude(is_timer_added__exact=True) \
+                        .filter(timestamp__gte=cutoff_dt_for_stale) \
+                        .select_related().order_by('timestamp')
+                    
+                    if len(notifications) > 0:                    
+                        if not esi_client:
+                            esi_client = get_esi_client(owner)
+                        
+                        for notification in notifications:
+                            notification.add_to_timerboard(esi_client)
+
             else:
                 logger.info(add_prefix(
                     'No new notifications received from ESI'
@@ -687,21 +706,6 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
 
         owner.forwarding_last_error = Owner.ERROR_NONE
         owner.save()
-
-        if STRUCTURES_ADD_TIMERS:
-            notifications = Notification.objects\
-                .filter(owner__exact=owner)\
-                .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
-                .exclude(is_timer_added__exact=True) \
-                .filter(timestamp__gte=cutoff_dt_for_stale) \
-                .select_related().order_by('timestamp')
-            
-            if len(notifications) > 0:                    
-                if not esi_client:
-                    esi_client = get_esi_client(owner)
-                
-                for notification in notifications:
-                    notification.add_to_timerboard(esi_client)
         
     except TokenError:
         pass

@@ -189,7 +189,7 @@
             "name": "Test Structure Alpha",
             "eve_type_id": 35832,
             "eve_solar_system_id": 30002537,            
-            "reinforce_hour": 12,
+            "reinforce_hour": 5,
             "state": 11,
             "owner_corporation_id": 2001
         },
@@ -198,7 +198,7 @@
             "name": "Test Structure Bravo",
             "eve_type_id": 35835,
             "eve_solar_system_id": 30002537,            
-            "reinforce_hour": 12,
+            "reinforce_hour": 3,
             "state": 11,
             "owner_corporation_id": 2002
         },
@@ -207,7 +207,7 @@
             "name": "Test Structure Charlie",
             "eve_type_id": 35832,
             "eve_solar_system_id": 30002537,            
-            "reinforce_hour": 12,
+            "reinforce_hour": 11,
             "state": 11,
             "owner_corporation_id": 2102
         },
@@ -234,7 +234,7 @@
             "name": "Customs Office (1-PGSG VII)",
             "eve_type_id": 2233,
             "eve_solar_system_id": 30000474,            
-            "reinforce_hour": 16,
+            "reinforce_hour": 22,
             "state": 13,
             "owner_corporation_id": 2001
         }
@@ -243,7 +243,8 @@
     "StructureTag":
     [
         {
-            "name": "tag_a"
+            "name": "tag_a",
+            "is_default": true
         },
         {
             "name": "tag_b"

@@ -721,7 +721,9 @@ class TestSyncNotifications(TestCase):
         )
         
     
-    # normal synch of new structures, mode my_alliance                
+    # normal synch of new structures, mode my_alliance                    
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', True)
+    @patch('allianceauth.timerboard.models.Timer.objects.create', autospec=True)
     @patch('structures.tasks.notify', autospec=True)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
@@ -729,7 +731,8 @@ class TestSyncNotifications(TestCase):
             self, 
             mock_esi_client_factory,             
             mock_Token,
-            mock_notify
+            mock_notify,
+            mock_Timer_objects_create
     ):        
         mock_client = Mock()       
         mock_client.Character\
@@ -751,13 +754,11 @@ class TestSyncNotifications(TestCase):
                 user_pk=self.user.pk
             )
         )
-
         self.owner.refresh_from_db()
         self.assertEqual(
             self.owner.notifications_last_error, 
             Owner.ERROR_NONE            
-        )
-                
+        )                
         # should only contain the right notifications
         notification_ids = [
             x['notification_id'] 
@@ -789,8 +790,22 @@ class TestSyncNotifications(TestCase):
         )
         # user report has been sent
         self.assertTrue(mock_notify.called)
+        
+        # should have added timers
+        self.assertEqual(mock_Timer_objects_create.call_count, 4)
+
+        # run sync again
+        self.assertTrue(
+            tasks.fetch_notifications_for_owner(
+                owner_pk=self.owner.pk
+            )
+        )
+
+        # should not have more timers
+        self.assertEqual(mock_Timer_objects_create.call_count, 4)
+        
             
-            
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)        
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_esi_error(
@@ -829,7 +844,8 @@ class TestSyncNotifications(TestCase):
             Owner.ERROR_UNKNOWN
         )
 
-           
+
+    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.fetch_notifications_for_owner')
     def test_fetch_all_notifications(
         self, 
@@ -849,7 +865,7 @@ class TestSyncNotifications(TestCase):
         self.assertEqual(args[0], owner_2001.pk)
         args, kwargs = call_args_list[1]
         self.assertEqual(args[0], owner_2002.pk)
-        
+
 
 class TestProcessNotifications(TestCase):    
 
@@ -1047,7 +1063,6 @@ class TestProcessNotifications(TestCase):
         )
 
 
-    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
@@ -1069,7 +1084,6 @@ class TestProcessNotifications(TestCase):
         self.assertEqual(mock_execute.call_count, 19)
 
     
-    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.Notification.send_to_webhook', autospec=True)    
@@ -1164,7 +1178,6 @@ class TestProcessNotifications(TestCase):
         )
 
 
-    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.Notification.send_to_webhook', autospec=True)    
@@ -1266,59 +1279,8 @@ class TestProcessNotifications(TestCase):
                 1000000402
             }
         )
-
     
-    @patch('structures.tasks.Token', autospec=True)
-    @patch('structures.tasks.esi_client_factory', autospec=True)
-    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
-    def test_add_timers_normal(
-        self,         
-        mock_esi_client_factory,
-        mock_send_to_webhook,
-        mock_token
-    ):
-        # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
         
-        if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
-            from allianceauth.timerboard.models import Timer
-        
-            tasks.send_all_new_notifications(rate_limited = False)
-            self.assertEqual(Timer.objects.count(), 3)
-
-
-    @patch('structures.tasks.Token', autospec=True)
-    @patch('structures.tasks.esi_client_factory', autospec=True)
-    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
-    def test_add_timers_already_added(
-        self,         
-        mock_esi_client_factory,
-        mock_send_to_webhook,
-        mock_token
-    ):
-        # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
-        
-        if 'allianceauth.timerboard' in settings.INSTALLED_APPS:            
-            from allianceauth.timerboard.models import Timer
-        
-            for x in Notification.objects.all():
-                x.is_timer_added = True
-                x.save()
-
-            tasks.send_all_new_notifications(rate_limited = False)
-            self.assertEqual(Timer.objects.count(), 0)
-    
-    
-    @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)

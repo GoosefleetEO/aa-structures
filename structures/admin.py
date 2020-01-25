@@ -4,7 +4,9 @@ from django.contrib.admin import SimpleListFilter
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import *
 from . import tasks
+from .utils import LoggerAddTag
 
+logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 if STRUCTURES_DEVELOPER_MODE:
     @admin.register(EveConstellation)
@@ -293,16 +295,14 @@ class StructureTagAdmin(admin.ModelAdmin):
     list_display = (        
         'name', 
         'description',
-        'style'
-        #'is_default',
+        'style',
+        'is_default',
     )
     list_filter = ( 
-        #'is_default', 
+        'is_default', 
         'style',
     )
-
-    fields = ('name', 'description', 'style')
-
+    
 
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
@@ -392,7 +392,7 @@ class StructureAdmin(admin.ModelAdmin):
        
     inlines = (StructureAdminInline, )
 
-    actions = ('remove_all_tags', )
+    actions = ('add_default_tags', 'remove_all_tags', )
 
     def _tags(self, obj):
         return tuple([x.name for x in obj.tags.all().order_by('name')])
@@ -406,6 +406,24 @@ class StructureAdmin(admin.ModelAdmin):
         else:
             return False
 
+    def add_default_tags(self, request, queryset):
+        structure_count = 0
+        tags = StructureTag.objects.filter(is_default__exact=True)
+        for obj in queryset:            
+            for tag in tags:
+                obj.tags.add(tag)            
+            structure_count += 1
+            
+        self.message_user(
+            request, 
+            'Added {:,} default tags to {:,} structures'.format(
+                tags.count(),
+                structure_count
+            ))
+    
+    add_default_tags.short_description = \
+        "Add default tags to selected structures"
+
     def remove_all_tags(self, request, queryset):
         structure_count = 0
         for obj in queryset:            
@@ -414,7 +432,7 @@ class StructureAdmin(admin.ModelAdmin):
             
         self.message_user(
             request, 
-            'Removed all tags from {} structures'.format(structure_count))
+            'Removed all tags from {:,} structures'.format(structure_count))
     
     remove_all_tags.short_description = \
         "Remove all tags from selected structures"

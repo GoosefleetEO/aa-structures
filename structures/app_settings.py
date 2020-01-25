@@ -93,3 +93,10 @@ STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE = getattr(
     'STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE', 
     True
 )
+
+# whether the structure list has default tags filter enabled by default
+STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED = getattr(
+    settings, 
+    'STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', 
+    True
+)

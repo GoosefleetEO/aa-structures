@@ -1,4 +1,5 @@
 from datetime import timedelta
+from random import randrange
 from unittest.mock import Mock, patch
 
 from django.contrib.auth.models import User, Permission 
@@ -9,7 +10,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata
+from .testdata import entities_testdata, load_entities
 from ..models import *
 from .. import views
 
@@ -20,7 +21,7 @@ logger = set_logger('structures.views', __file__)
 class TestViews(TestCase):
     
     def setUp(self):                
-        entities_def = [
+        load_entities([
             EveRegion,
             EveConstellation,
             EveSolarSystem,
@@ -31,14 +32,8 @@ class TestViews(TestCase):
             EveCorporationInfo,
             EveCharacter,    
             EveEntity    
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
-                
+        ])
+                    
         for corporation in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
                 id = corporation.corporation_id,
@@ -111,20 +106,59 @@ class TestViews(TestCase):
             x = structure.copy()
             x['owner'] = Owner.objects.get(
                 corporation__corporation_id=x['owner_corporation_id']
-            )
-            del x['owner_corporation_id']
-            Structure.objects.create(**x)
+            )            
+            del(x['owner_corporation_id'])
+            obj = Structure.objects.create(**x)
+            if obj.id in [1000000000001, 1000000000002]:
+                obj.fuel_expires = now() + timedelta(days=randrange(10) + 1)
+            if obj.state != 11:
+                obj.state_timer_start = \
+                    now() - timedelta(days=randrange(3) + 1)
+                obj.state_timer_start = \
+                    obj.state_timer_start + timedelta(days=randrange(4) + 1)
+            if obj.id in [1000000000001, 1000000000002]:
+                StructureService.objects.create(
+                    structure=obj,
+                    name='Clone Bay',
+                    state=StructureService.STATE_ONLINE
+                )
+                StructureService.objects.create(
+                    structure=obj,
+                    name='Market Hub',
+                    state=StructureService.STATE_OFFLINE
+                )
+            obj.save()
+
 
         # create StructureTag objects
         StructureTag.objects.all().delete()
         for x in entities_testdata['StructureTag']:
             StructureTag.objects.create(**x)
 
+    
     def test_basic_access_main_view(self):
+        request = self.factory.get(reverse('structures:structure_list'))
+        request.user = self.user
+        response = views.structure_list(request)
+        self.assertEqual(response.status_code, 200)
+
+    
+    @patch('structures.views.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', True)
+    def test_default_filter_enabled(self):
         request = self.factory.get(reverse('structures:index'))
         request.user = self.user
-        response = views.structure_list_data(request)
-        self.assertEqual(response.status_code, 200)
+        response = views.index(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/structures/list/?tags=tag_a')
+
+
+    @patch('structures.views.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', False)
+    def test_default_filter_disabled(self):
+        request = self.factory.get(reverse('structures:index'))
+        request.user = self.user
+        response = views.index(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/structures/list/')
         
     
     def test_basic_access_own_structures_only(self):
@@ -268,7 +302,7 @@ class TestViews(TestCase):
 
         request = self.factory.get(reverse('structures:add_structure_owner'))
         request.user = self.user
-        response = views.index(request)
+        response = views.structure_list(request)
         self.assertEqual(response.status_code, 200)
 
 
