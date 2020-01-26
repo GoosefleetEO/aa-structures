@@ -26,20 +26,9 @@ _currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
 ##############################
 # internal functions
 
-def _load_corp_structures_data():
+def _load_esi_data():
     with open(
-        _currentdir + '/corp_structures.json', 
-        'r', 
-        encoding='utf-8'
-    ) as f:
-        data = json.load(f)
-
-    return data
-
-
-def _load_universe_structures_data():
-    with open(
-        _currentdir + '/universe_structures.json', 
+        _currentdir + '/esi_data.json', 
         'r', 
         encoding='utf-8'
     ) as f:
@@ -67,33 +56,10 @@ def _load_testdata_entities() -> dict:
     return entities
 
 
-def _load_corp_customs_offices_data():
-    with open(
-        _currentdir + '/corp_customs_offices.json', 
-        'r', 
-        encoding='utf-8'
-    ) as f:
-        data = json.load(f)
-
-    return data
-
-
-def _load_corp_asset_data():
-    with open(
-        _currentdir + '/corp_assets.json', 
-        'r', 
-        encoding='utf-8'
-    ) as f:
-        data = json.load(f)
-
-    return data
-
-
-corp_structures_data = _load_corp_structures_data()
-universe_structures_data = _load_universe_structures_data()
+_esi_data = _load_esi_data()
+esi_corp_structures_data = \
+    _esi_data['Corporation']['get_corporations_corporation_id_structures']
 entities_testdata = _load_testdata_entities()
-corp_customs_offices_data = _load_corp_customs_offices_data()
-corp_asset_data = _load_corp_asset_data()
 
 
 ##############################
@@ -101,7 +67,7 @@ corp_asset_data = _load_corp_asset_data()
 
 def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     """simulates ESI endpoint of same name for mock test
-    will use the respective test data (corp_structures_data)
+    will use the respective test data 
     unless the function property override_data is set
     """
 
@@ -119,7 +85,7 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
         page = 1
 
     if esi_get_corporations_corporation_id_structures.override_data is None:
-        my_corp_structures_data = corp_structures_data
+        my_corp_structures_data = esi_corp_structures_data
     else:
         if (not isinstance(
             esi_get_corporations_corporation_id_structures.override_data, 
@@ -154,6 +120,8 @@ esi_get_corporations_corporation_id_structures.override_data = None
 def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
 
+    universe_structures_data = \
+        _esi_data['Universe']['get_universe_structures_structure_id']
     if str(structure_id) in universe_structures_data:
         mock_operation = Mock()
         mock_operation.result.return_value = \
@@ -179,7 +147,7 @@ def esi_get_corporations_corporation_id_customs_offices(
     page=None
 ):
     """simulates ESI endpoint of same name for mock test
-    will use the respective test data (corp_customs_offices_data)
+    will use the respective test data
     unless the function property override_data is set
     """
 
@@ -197,7 +165,9 @@ def esi_get_corporations_corporation_id_customs_offices(
         page = 1
 
     if esi_get_corporations_corporation_id_customs_offices.override_data is None:
-        my_corp_customs_offices_data = corp_customs_offices_data
+        my_corp_customs_offices_data = \
+            _esi_data['Planetary_Interaction']['get_corporations_corporation_id_customs_offices']
+
     else:
         if (not isinstance(
             esi_get_corporations_corporation_id_customs_offices.override_data, 
@@ -236,7 +206,7 @@ def _esi_post_corporations_corporation_id_assets(
 ) -> list:
     """simulates ESI endpoint of same name for mock test"""
 
-    if str(corporation_id) not in corp_asset_data[category]:
+    if str(corporation_id) not in _esi_data['Corporation'][category]:
         raise RuntimeError(
             'No asset data found for corporation {} in {}'.format(
                 corporation_id,
@@ -245,7 +215,7 @@ def _esi_post_corporations_corporation_id_assets(
     else:        
         mock_operation = Mock()
         mock_operation.result.return_value = \
-            corp_asset_data[category][str(corporation_id)]
+            _esi_data['Corporation'][category][str(corporation_id)]
         return mock_operation
 
 
@@ -254,7 +224,7 @@ def esi_post_corporations_corporation_id_assets_locations(
     item_ids: list
 ) -> list:
     return _esi_post_corporations_corporation_id_assets(
-        'locations', 
+        'post_corporations_corporation_id_assets_locations', 
         corporation_id,
         item_ids
     )
@@ -265,7 +235,7 @@ def esi_post_corporations_corporation_id_assets_names(
     item_ids: list
 ) -> list:
     return _esi_post_corporations_corporation_id_assets(
-        'names', 
+        'post_corporations_corporation_id_assets_names', 
         corporation_id,
         item_ids
     )

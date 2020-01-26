@@ -30,7 +30,7 @@ from .testdata import \
     esi_post_corporations_corporation_id_assets_locations, \
     esi_post_corporations_corporation_id_assets_names, \
     entities_testdata,\
-    corp_structures_data,\
+    esi_corp_structures_data,\
     load_entities
 
 logger = set_logger('structures.tasks', __file__)
@@ -283,7 +283,7 @@ class TestSyncStructures(TestCase):
         )
 
         # run update task 2nd time with one less structure
-        my_corp_structures_data = corp_structures_data.copy()
+        my_corp_structures_data = esi_corp_structures_data.copy()
         del(my_corp_structures_data["2001"][1])
         esi_get_corporations_corporation_id_structures.override_data = \
             my_corp_structures_data
@@ -505,7 +505,7 @@ class TestSyncStructures(TestCase):
         )
 
         # run update task 2nd time with one less structure
-        my_corp_structures_data = corp_structures_data.copy()
+        my_corp_structures_data = esi_corp_structures_data.copy()
         del(my_corp_structures_data["2001"][1])
         esi_get_corporations_corporation_id_structures.override_data = \
             my_corp_structures_data
