@@ -48,26 +48,6 @@ def _load_universe_structures_data():
     return data
 
 
-def _load_testdata_notifications() -> dict:    
-    with open(
-        _currentdir + '/notifications.json', 
-        'r', 
-        encoding='utf-8'
-    ) as f:
-        notifications_stale = json.load(f)
-    
-    notifications_fresh = list()
-    for notification in notifications_stale:
-        notification['timestamp'] =  now() - timedelta(
-            hours=randrange(3), 
-            minutes=randrange(60), 
-            seconds=randrange(60)
-        )
-        notifications_fresh.append(notification)   
-
-    return notifications_fresh
-
-
 def _load_testdata_entities() -> dict:    
     with open(
         _currentdir + '/entities.json', 
@@ -76,6 +56,14 @@ def _load_testdata_entities() -> dict:
     ) as f:
         entities = json.load(f)
     
+    # update timestamp to current
+    for notification in entities['Notification']:
+        notification['timestamp'] =  now() - timedelta(
+            hours=randrange(3), 
+            minutes=randrange(60), 
+            seconds=randrange(60)
+        )
+        
     return entities
 
 
@@ -104,7 +92,6 @@ def _load_corp_asset_data():
 corp_structures_data = _load_corp_structures_data()
 universe_structures_data = _load_universe_structures_data()
 entities_testdata = _load_testdata_entities()
-notifications_testdata = _load_testdata_notifications()
 corp_customs_offices_data = _load_corp_customs_offices_data()
 corp_asset_data = _load_corp_asset_data()
 
@@ -183,7 +170,7 @@ def esi_get_characters_character_id_notifications(character_id):
     """simulates ESI endpoint of same name for mock test"""
 
     mock_operation = Mock()
-    mock_operation.result.return_value = notifications_testdata
+    mock_operation.result.return_value = entities_testdata['Notification']
     return mock_operation
 
 

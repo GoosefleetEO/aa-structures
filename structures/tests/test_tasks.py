@@ -30,7 +30,6 @@ from .testdata import \
     esi_post_corporations_corporation_id_assets_locations, \
     esi_post_corporations_corporation_id_assets_names, \
     entities_testdata,\
-    notifications_testdata,\
     corp_structures_data,\
     load_entities
 
@@ -925,7 +924,7 @@ class TestProcessNotifications(TestCase):
             del x['owner_corporation_id']
             Structure.objects.create(**x)
         
-        for notification in notifications_testdata:                        
+        for notification in entities_testdata['Notification']:
             notification_type = \
                 Notification.get_matching_notification_type(
                     notification['type']

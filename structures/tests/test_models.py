@@ -11,7 +11,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata, notifications_testdata, load_entities
+from .testdata import entities_testdata, load_entities
 from ..models import *
 
 
@@ -661,7 +661,7 @@ class TestNotification(TestCase):
             del x['owner_corporation_id']
             Structure.objects.create(**x)
         
-        for notification in notifications_testdata:                        
+        for notification in entities_testdata['Notification']:                        
             notification_type = \
                 Notification.get_matching_notification_type(
                     notification['type']
