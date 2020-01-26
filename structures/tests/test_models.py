@@ -718,5 +718,11 @@ class TestNotification(TestCase):
     
     def test_orbital_notifications(self):
         x = Notification.objects.get(notification_id=1000000601)
-        # tbd        
+        # tbd     
+
+    def test_is_npc_attacking(self):
+        x = Notification.objects.get(notification_id=1000000509)
+        self.assertFalse(x.is_npc_attacking())
+        x.text = "allianceID: 500012\nallianceLinkData:\n- showinfo\n- 30\n- 500012\nallianceName: Blood Raider Covenant\narmorPercentage: 98.65129050962584\ncharID: 1000134\ncorpLinkData:\n- showinfo\n- 2\n- 1000134\ncorpName: Blood Raiders\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *notification_id001\nstructureTypeID: 35835\n"
+        self.assertTrue(x.is_npc_attacking())
         

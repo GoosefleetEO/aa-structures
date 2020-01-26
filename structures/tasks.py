@@ -20,7 +20,8 @@ from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
 from esi.models import Token
 
 from . import __title__
-from .app_settings import STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED
+from .app_settings import STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED, \
+    STRUCTURES_REPORT_NPC_ATTACKS
 from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path, \
     chunks
 from .models import *
@@ -691,12 +692,15 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
                     esi_client = get_esi_client(owner)
                 
                 for notification in q:
-                    notification.send_to_webhook(
-                        webhook, 
-                        esi_client
-                    )
-                    if rate_limited:
-                        sleep(1)
+                    if (STRUCTURES_REPORT_NPC_ATTACKS
+                        or not notification.is_npc_attacking()
+                    ):
+                        notification.send_to_webhook(
+                            webhook, 
+                            esi_client
+                        )
+                        if rate_limited:
+                            sleep(1)
 
         if active_webhooks_count == 0:
             logger.info(add_prefix('No active webhooks'))

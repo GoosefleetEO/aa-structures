@@ -100,3 +100,11 @@ STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED = getattr(
     'STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', 
     False
 )
+
+# how to handle notification about NPC attacks
+if (hasattr(settings, 'STRUCTURES_REPORT_NPC_ATTACKS')
+    and settings.STRUCTURES_REPORT_NPC_ATTACKS in [True, False]       
+):
+    STRUCTURES_REPORT_NPC_ATTACKS = settings.STRUCTURES_REPORT_NPC_ATTACKS
+else:
+    STRUCTURES_REPORT_NPC_ATTACKS = True

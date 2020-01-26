@@ -1504,6 +1504,22 @@ class Notification(models.Model):
         
         return success
 
+    def is_npc_attacking(self):
+        """returns true if notification is about a NPC attacking"""
+        result = False
+        if self.notification_type in [
+            NTYPE_ORBITAL_ATTACKED, 
+            NTYPE_STRUCTURE_UNDER_ATTACK
+        ]:
+            parsed_text = yaml.safe_load(self.text)
+            if ('corpLinkData' in parsed_text 
+                and len(parsed_text['corpLinkData']) >= 3
+            ):
+                corporation_id = parsed_text['corpLinkData'][2]
+                if corporation_id >= 1000000 and corporation_id <= 2000000:
+                    result = True
+
+        return result
 
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:

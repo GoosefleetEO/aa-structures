@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.8.1] - 2020-01-26
+
+### Added
+
+- Option to turn off notification for attacks by NPCs (see new setting: `STRUCTURES_REPORT_NPC_ATTACKS`)
+
 ## [0.8.0] - 2020-01-25
 
 ### Added
