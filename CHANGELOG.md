@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.8.2] - 2020-01-26
+
+### Fixed
+
+- Turning off attacker notification for NPCs now also works with orbitals
+
 ## [0.8.1] - 2020-01-26
 
 ### Added
