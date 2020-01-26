@@ -1512,15 +1512,27 @@ class Notification(models.Model):
             NTYPE_STRUCTURE_UNDER_ATTACK
         ]:
             parsed_text = yaml.safe_load(self.text)
-            if ('corpLinkData' in parsed_text 
-                and len(parsed_text['corpLinkData']) >= 3
-            ):
-                corporation_id = parsed_text['corpLinkData'][2]
-                if corporation_id >= 1000000 and corporation_id <= 2000000:
-                    result = True
+            corporation_id = None
+            if self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
+                if ('corpLinkData' in parsed_text 
+                    and len(parsed_text['corpLinkData']) >= 3
+                ):
+                    corporation_id = int(parsed_text['corpLinkData'][2])
+                
+            if self.notification_type == NTYPE_ORBITAL_ATTACKED:
+                if 'aggressorCorpID' in parsed_text:
+                    corporation_id = int(parsed_text['aggressorCorpID'])
+                
+            if corporation_id >= 1000000 and corporation_id <= 2000000:
+                result = True
 
         return result
 
+    @classmethod
+    def get_notification_types(cls):
+        """returns a set with all supported notification types"""
+        return {x[1] for x in NTYPE_CHOICES}
+    
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:
         """returns matching notification type for given name or None"""

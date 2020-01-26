@@ -11,7 +11,8 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata, load_entities
+from .testdata import entities_testdata, load_entities, \
+    load_notification_entities
 from ..models import *
 
 
@@ -590,25 +591,7 @@ class TestStructure(TestCase):
 class TestNotification(TestCase):
     
     def setUp(self):         
-        entities_def = [
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EveGroup,
-            EveType,
-            EveCorporationInfo,
-            EveCharacter,    
-            EveEntity    
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(
-                len(entities_testdata[entity_name]) == EntityClass.objects.count()
-            )
+        load_entities()
                 
         for x in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
@@ -655,44 +638,7 @@ class TestNotification(TestCase):
         self.owner.webhooks.add(self.webhook)
         self.owner.save()
 
-        for structure in entities_testdata['Structure']:
-            x = structure.copy()
-            x['owner'] = self.owner
-            del x['owner_corporation_id']
-            Structure.objects.create(**x)
-        
-        for notification in entities_testdata['Notification']:                        
-            notification_type = \
-                Notification.get_matching_notification_type(
-                    notification['type']
-                )
-            if notification_type:
-                sender_type = \
-                    EveEntity.get_matching_entity_type(
-                        notification['sender_type']
-                    )                
-                sender = EveEntity.objects.get(id=notification['sender_id'])                
-                text = notification['text'] \
-                    if 'text' in notification else None
-                is_read = notification['is_read'] \
-                    if 'is_read' in notification else None
-                obj = Notification.objects.update_or_create(
-                    notification_id=notification['notification_id'],
-                    owner=self.owner,
-                    defaults={
-                        'sender': sender,
-                        'timestamp': now() - timedelta(
-                            hours=randrange(3), 
-                            minutes=randrange(60), 
-                            seconds=randrange(60)
-                        ),
-                        'notification_type': notification_type,
-                        'text': text,
-                        'is_read': is_read,
-                        'last_updated': now(),
-                        'is_sent': False
-                    }
-                )   
+        load_notification_entities(self.owner)
 
     def test_str(self):
         x = Notification.objects.get(notification_id=1000000403)
@@ -720,9 +666,101 @@ class TestNotification(TestCase):
         x = Notification.objects.get(notification_id=1000000601)
         # tbd     
 
+
     def test_is_npc_attacking(self):
-        x = Notification.objects.get(notification_id=1000000509)
-        self.assertFalse(x.is_npc_attacking())
-        x.text = "allianceID: 500012\nallianceLinkData:\n- showinfo\n- 30\n- 500012\nallianceName: Blood Raider Covenant\narmorPercentage: 98.65129050962584\ncharID: 1000134\ncorpLinkData:\n- showinfo\n- 2\n- 1000134\ncorpName: Blood Raiders\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *notification_id001\nstructureTypeID: 35835\n"
-        self.assertTrue(x.is_npc_attacking())
+        x1 = Notification.objects.get(notification_id=1000000509)
+        self.assertFalse(x1.is_npc_attacking())
+        x2 = Notification.objects.get(notification_id=1000010509)
+        self.assertTrue(x2.is_npc_attacking())
+        x3 = Notification.objects.get(notification_id=1000010601)
+        self.assertTrue(x3.is_npc_attacking())
         
+
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_all_notification_types(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                
+        logger.debug('test_send_to_webhook_normal')
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.status_ok = True
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+
+        types_tested = set()
+        for x in Notification.objects.all():
+            self.assertFalse(x.is_sent)
+            self.assertTrue(
+                x.send_to_webhook(self.webhook, mock_esi_client_factory)
+            )
+            self.assertTrue(x.is_sent)
+            types_tested.add(x.notification_type)
+
+        # make sure we have tested all existing notification types
+        self.assertSetEqual(
+            {x[0] for x in NTYPE_CHOICES},
+            types_tested
+        )
+
+
+    @patch('structures.models.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
+    @patch('structures.models.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_http_error(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                
+        logger.debug('test_send_to_webhook_http_error')
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.status_ok = False
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+        
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+
+
+    @patch('structures.models.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_too_many_requests(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                
+        logger.debug('test_send_to_webhook_too_many_requests')
+        mock_response = Mock()
+        mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
+        mock_response.status_ok = False
+        mock_response.content = {'retry_after': 100}        
+        mock_execute.return_value = mock_response
+
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+
+        
+    @patch('structures.models.esi_client_factory', autospec=True)
+    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    def test_send_to_webhook_exception(
+        self, 
+        mock_execute, 
+        mock_esi_client_factory
+    ):                                        
+        logger.debug('test_send_to_webhook_exception')
+        mock_execute.side_effect = RuntimeError('Dummy exception')
+
+        x = Notification.objects.get(notification_id=1000000502)
+        self.assertFalse(
+            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+        )
+

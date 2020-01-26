@@ -113,6 +113,12 @@
             "alliance_name": "Wayne Enterprises",
             "alliance_ticker": "WYE",            
             "executor_corp_id": 2001
+        },
+        {
+            "alliance_id": 500012,
+            "alliance_name": "Blood Raider Covenant",
+            "alliance_ticker": "NPC1",            
+            "executor_corp_id": 1000134
         }
     ],
     "EveCorporationInfo":
@@ -134,6 +140,12 @@
             "corporation_name": "Lexcorp",
             "corporation_ticker": "LEX",
             "member_count": 2500
+        },
+        {
+            "corporation_id": 1000134,
+            "corporation_name": "Blood Raiders",
+            "corporation_ticker": "NPC1",
+            "member_count": 1234
         }
     ],    
     "EveCharacter":
@@ -454,7 +466,23 @@
             "timestamp": "2019-10-11 21:01:00",
             "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
             "is_read": true
+        },
+        {
+            "notification_id": 1000010509,
+            "type": "StructureUnderAttack",
+            "sender_id": 2021,
+            "sender_type": "corporation",
+            "timestamp": "2019-08-16T13:08:00Z",
+            "text": "allianceID: 500012\nallianceLinkData:\n- showinfo\n- 30\n- 500012\nallianceName: Blood Raider Covenant\narmorPercentage: 98.65129050962584\ncharID: 1000134\ncorpLinkData:\n- showinfo\n- 2\n- 1000134\ncorpName: Blood Raiders\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *notification_id001\nstructureTypeID: 35835\n"
+        },
+        {     
+            "notification_id": 1000010601,
+            "type": "OrbitalAttacked",
+            "sender_id": 2021,
+            "sender_type": "corporation",
+            "timestamp": "2019-10-11 21:01:00",
+            "text": "aggressorAllianceID: 500012\naggressorCorpID: 1000134\naggressorID: 1000134\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
+            "is_read": true
         }
     ]
-
 }

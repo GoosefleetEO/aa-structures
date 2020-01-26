@@ -6,7 +6,7 @@ from bravado.requests_client import IncomingResponse
 
 from django.conf import settings
 from django.contrib.auth.models import User, Permission 
-from django.test import TestCase, RequestFactory
+from django.test import TestCase
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models \
@@ -31,7 +31,9 @@ from .testdata import \
     esi_post_corporations_corporation_id_assets_names, \
     entities_testdata,\
     esi_corp_structures_data,\
-    load_entities
+    load_entities,\
+    load_notification_entities,\
+    get_all_notification_ids
 
 logger = set_logger('structures.tasks', __file__)
 
@@ -759,33 +761,13 @@ class TestSyncNotifications(TestCase):
             Owner.ERROR_NONE            
         )                
         # should only contain the right notifications
-        notification_ids = [
+        notification_ids = {
             x['notification_id'] 
             for x in Notification.objects.values('notification_id')
-        ]
-        self.assertCountEqual(
+        }
+        self.assertSetEqual(
             notification_ids,
-            [
-                1000000401,
-                1000000402,
-                1000000403,
-                1000000404,
-                1000000405,
-                1000000501,
-                1000000502,
-                1000000503,
-                1000000504,
-                1000000505,
-                1000000506,
-                1000000507,
-                1000000508,
-                1000000509,
-                1000000510,
-                1000000511,
-                1000000513,
-                1000000601,
-                1000000602,
-            ]
+            get_all_notification_ids()
         )
         # user report has been sent
         self.assertTrue(mock_notify.called)
@@ -866,7 +848,7 @@ class TestSyncNotifications(TestCase):
         self.assertEqual(args[0], owner_2002.pk)
 
 
-class TestProcessNotifications(TestCase):    
+class TestForwardNotifications(TestCase):    
 
     def setUp(self):         
         load_entities()
@@ -887,9 +869,7 @@ class TestProcessNotifications(TestCase):
                     'category': EveEntity.CATEGORY_CHARACTER,
                     'name': x.character_name
                 }
-            )
-               
-        self.factory = RequestFactory()
+            )               
         
         # 1 user
         self.character = EveCharacter.objects.get(character_id=1001)
@@ -918,44 +898,7 @@ class TestProcessNotifications(TestCase):
         self.owner.webhooks.add(self.webhook)
         self.owner.save()
 
-        for structure in entities_testdata['Structure']:
-            x = structure.copy()
-            x['owner'] = self.owner
-            del x['owner_corporation_id']
-            Structure.objects.create(**x)
-        
-        for notification in entities_testdata['Notification']:
-            notification_type = \
-                Notification.get_matching_notification_type(
-                    notification['type']
-                )
-            if notification_type:
-                sender_type = \
-                    EveEntity.get_matching_entity_type(
-                        notification['sender_type']
-                    )                
-                sender = EveEntity.objects.get(id=notification['sender_id'])                
-                text = notification['text'] \
-                    if 'text' in notification else None
-                is_read = notification['is_read'] \
-                    if 'is_read' in notification else None
-                obj = Notification.objects.update_or_create(
-                    notification_id=notification['notification_id'],
-                    owner=self.owner,
-                    defaults={
-                        'sender': sender,
-                        'timestamp': now() - timedelta(
-                            hours=randrange(3), 
-                            minutes=randrange(60), 
-                            seconds=randrange(60)
-                        ),
-                        'notification_type': notification_type,
-                        'text': text,
-                        'is_read': is_read,
-                        'last_updated': now(),
-                        'is_sent': False
-                    }
-                )   
+        load_notification_entities(self.owner)
     
     
     def test_run_unknown_owner(self):      
@@ -1061,13 +1004,14 @@ class TestProcessNotifications(TestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
 
-
+    
+    @patch('structures.tasks.STRUCTURES_REPORT_NPC_ATTACKS', True)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_new_notifications_normal(
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
+    def test_send_new_notifications_normal_with_NPCs(
         self, 
-        mock_execute, 
+        mock_send_to_webhook, 
         mock_esi_client_factory,
         mock_token
     ):
@@ -1080,9 +1024,52 @@ class TestProcessNotifications(TestCase):
         self.user.save()
         
         tasks.send_all_new_notifications(rate_limited = False)
-        self.assertEqual(mock_execute.call_count, 19)
+        
+        tested_notification_ids = set()
+        for x in mock_send_to_webhook.call_args_list:
+            args, kwargs = x
+            tested_notification_ids.add(args[0].notification_id)
 
-    
+        self.assertSetEqual(
+            get_all_notification_ids(),
+            tested_notification_ids
+        )
+
+
+    @patch('structures.tasks.STRUCTURES_REPORT_NPC_ATTACKS', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
+    def test_send_new_notifications_normal_wo_NPCs(
+        self, 
+        mock_send_to_webhook, 
+        mock_esi_client_factory,
+        mock_token
+    ):
+        logger.debug('test_send_new_notifications_normal')
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        
+        tasks.send_all_new_notifications(rate_limited = False)
+        
+        tested_notification_ids = set()
+        for x in mock_send_to_webhook.call_args_list:
+            args, kwargs = x
+            tested_notification_ids.add(args[0].notification_id)
+
+        all_notification_ids_wo_npcs = get_all_notification_ids()
+        all_notification_ids_wo_npcs.remove(1000010601)
+        all_notification_ids_wo_npcs.remove(1000010509)
+        self.assertSetEqual(
+            all_notification_ids_wo_npcs,
+            tested_notification_ids
+        )
+
+
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.models.Notification.send_to_webhook', autospec=True)    
@@ -1172,7 +1159,8 @@ class TestProcessNotifications(TestCase):
                 1000000509,
                 1000000510,
                 1000000511,
-                1000000513
+                1000000513,
+                1000010509
             }
         )
 
@@ -1268,7 +1256,8 @@ class TestProcessNotifications(TestCase):
                 1000000502,
                 1000000504,
                 1000000505,                
-                1000000509
+                1000000509,
+                1000010509
             }
         )
         # but mining notifications should NOT have been sent
@@ -1309,7 +1298,10 @@ class TestProcessNotifications(TestCase):
         tasks.send_all_new_notifications(rate_limited = False)
         
         # should have sent all notifications
-        self.assertEqual(mock_execute.call_count, 19)
+        self.assertEqual(
+            mock_execute.call_count, 
+            len(get_all_notification_ids())
+        )
 
         # should have created structures on the fly        
         structure_ids = {
@@ -1358,87 +1350,6 @@ class TestProcessNotifications(TestCase):
         self.assertEqual(mock_execute.call_count, 1)
 
     
-    @patch('structures.models.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_normal(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
-    ):                                
-        logger.debug('test_send_to_webhook_normal')
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.status_ok = True
-        mock_response.content = None        
-        mock_execute.return_value = mock_response
-
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(x.is_sent)
-        self.assertTrue(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
-        )
-        self.assertTrue(x.is_sent)
-
-
-    @patch('structures.models.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
-    @patch('structures.models.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch('structures.models.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_http_error(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
-    ):                                
-        logger.debug('test_send_to_webhook_http_error')
-        mock_response = Mock()
-        mock_response.status_code = 400
-        mock_response.status_ok = False
-        mock_response.content = None        
-        mock_execute.return_value = mock_response
-        
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
-        )
-
-
-    @patch('structures.models.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch('structures.models.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_too_many_requests(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
-    ):                                
-        logger.debug('test_send_to_webhook_too_many_requests')
-        mock_response = Mock()
-        mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
-        mock_response.status_ok = False
-        mock_response.content = {'retry_after': 100}        
-        mock_execute.return_value = mock_response
-
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
-        )
-
-        
-    @patch('structures.models.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_exception(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
-    ):                                        
-        logger.debug('test_send_to_webhook_exception')
-        mock_execute.side_effect = RuntimeError('Dummy exception')
-
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
-        )
-
-
     @patch('structures.tasks.send_new_notifications_for_owner')
     def test_send_all_new_notifications(
         self, 
