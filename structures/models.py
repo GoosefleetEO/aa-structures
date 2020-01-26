@@ -77,7 +77,7 @@ NTYPE_CHOICES = [
     (NTYPE_ORBITAL_REINFORCED, 'OrbitalReinforced'),
 ]
 
-NTYPE_RELEVANT_FOR_TIMERBOARD = [
+_NTYPE_RELEVANT_FOR_TIMERBOARD = [
     NTYPE_STRUCTURE_LOST_SHIELD,
     NTYPE_STRUCTURE_LOST_ARMOR,
     NTYPE_STRUCTURE_ANCHORING,
@@ -1403,7 +1403,7 @@ class Notification(models.Model):
         returns True when timer was added, else False
         """
         success = False
-        if self.notification_type in NTYPE_RELEVANT_FOR_TIMERBOARD \
+        if self.notification_type in _NTYPE_RELEVANT_FOR_TIMERBOARD \
             and 'allianceauth.timerboard' in settings.INSTALLED_APPS:
             
             from allianceauth.timerboard.models import Timer
@@ -1529,9 +1529,19 @@ class Notification(models.Model):
         return result
 
     @classmethod
-    def get_notification_types(cls):
+    def get_all_types(cls):
         """returns a set with all supported notification types"""
+        return {x[0] for x in NTYPE_CHOICES}
+    
+    @classmethod
+    def get_all_type_names(cls):
+        """returns a set with names of all supported notification types"""
         return {x[1] for x in NTYPE_CHOICES}
+
+    @classmethod
+    def get_types_for_timerboard(cls):
+        """returns set of types relevant for the timerboard"""
+        return _NTYPE_RELEVANT_FOR_TIMERBOARD
     
     @classmethod
     def get_matching_notification_type(cls, type_name) -> int:

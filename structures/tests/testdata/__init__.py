@@ -324,6 +324,6 @@ def get_all_notification_ids() -> set:
     """returns a set of all notification ids"""
     ids = set()        
     for x in entities_testdata['Notification']:        
-        if x['type'] in Notification.get_notification_types():
+        if x['type'] in Notification.get_all_type_names():
             ids.add(x['notification_id'])
     return ids

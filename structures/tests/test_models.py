@@ -701,7 +701,7 @@ class TestNotification(TestCase):
 
         # make sure we have tested all existing notification types
         self.assertSetEqual(
-            {x[0] for x in NTYPE_CHOICES},
+            Notification.get_all_types(),
             types_tested
         )
 

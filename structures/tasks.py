@@ -581,7 +581,8 @@ def fetch_notifications_for_owner(
                     )
                     notifications = Notification.objects\
                         .filter(owner__exact=owner)\
-                        .filter(notification_type__in=NTYPE_RELEVANT_FOR_TIMERBOARD)\
+                        .filter(notification_type__in=\
+                                Notification.get_types_for_timerboard())\
                         .exclude(is_timer_added__exact=True) \
                         .filter(timestamp__gte=cutoff_dt_for_stale) \
                         .select_related().order_by('timestamp')
