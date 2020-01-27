@@ -1,30 +1,12 @@
 [    
     {        
-        "notification_id": 1000000401,
-        "type": "MoonminingAutomaticFracture",
+        "notification_id": 1000000405,
+        "type": "MoonminingLaserFired",
         "sender_id": 1000137,
         "sender_type": "corporation",
-        "timestamp": "2019-07-07 01:37:00",
-        "text": "moonID: 40161465\noreVolumeByType:\n  45499: 1928443.0826145012\n  46676: 3308839.521195312\n  46688: 1780056.9386565287\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">2-X0PF - Tasmin<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
-        "is_read": false        
-    },
-    {        
-        "notification_id": 1000000402,
-        "type": "MoonminingExtractionCancelled",
-        "sender_id": 1000137,
-        "sender_type": "corporation",
-        "timestamp": "2019-11-13 23:36:00",
-        "text": "cancelledBy: null\ncancelledByLink: ''\nmoonID: 40161465\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
-        "is_read": false
-    },
-    {        
-        "notification_id": 1000000403,
-        "type": "MoonminingExtractionFinished",
-        "sender_id": 1000137,
-        "sender_type": "corporation",
-        "timestamp": "2019-11-20 19:01:00",
-        "text": "autoTime: 132187608610000000\nmoonID: 40161465\noreVolumeByType:\n  45501: 6022254.470615254\n  46684: 1920395.2662618621\n  46686: 5420930.859831968\n  46687: 4866796.773587994\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
-        "is_read": false
+        "timestamp": "2019-11-20 21:29:00",
+        "text": "firedBy: 93330670\nfiredByLink: <a href=\"showinfo:1383\/\/93330670\">Erik Kalkoken<\/a>\nmoonID: 40161465\noreVolumeByType:\n  45501: 6022254.470615254\n  46684: 1920395.2662618621\n  46686: 5420930.859831968\n  46687: 4866796.773587994\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": true
     },
     {        
         "notification_id": 1000000404,
@@ -36,14 +18,32 @@
         "is_read": false
     },
     {        
-        "notification_id": 1000000405,
-        "type": "MoonminingLaserFired",
+        "notification_id": 1000000402,
+        "type": "MoonminingExtractionCancelled",
         "sender_id": 1000137,
         "sender_type": "corporation",
-        "timestamp": "2019-11-20 21:29:00",
-        "text": "firedBy: 93330670\nfiredByLink: <a href=\"showinfo:1383\/\/93330670\">Erik Kalkoken<\/a>\nmoonID: 40161465\noreVolumeByType:\n  45501: 6022254.470615254\n  46684: 1920395.2662618621\n  46686: 5420930.859831968\n  46687: 4866796.773587994\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
-        "is_read": true
+        "timestamp": "2019-11-13 23:36:00",
+        "text": "cancelledBy: null\ncancelledByLink: ''\nmoonID: 40161465\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false
     },
+    {        
+        "notification_id": 1000000401,
+        "type": "MoonminingAutomaticFracture",
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "timestamp": "2019-07-07 01:37:00",
+        "text": "moonID: 40161465\noreVolumeByType:\n  45499: 1928443.0826145012\n  46676: 3308839.521195312\n  46688: 1780056.9386565287\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">2-X0PF - Tasmin<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false        
+    },   
+    {        
+        "notification_id": 1000000403,
+        "type": "MoonminingExtractionFinished",
+        "sender_id": 1000137,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-20 19:01:00",
+        "text": "autoTime: 132187608610000000\nmoonID: 40161465\noreVolumeByType:\n  45501: 6022254.470615254\n  46684: 1920395.2662618621\n  46686: 5420930.859831968\n  46687: 4866796.773587994\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureLink: <a href=\"showinfo:35835\/\/1000000000001\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false
+    },       
     {        
         "notification_id": 1000000501,
         "type": "StructureAnchoring",        

@@ -723,6 +723,7 @@ class TestSyncNotifications(TestCase):
         
     
     # normal synch of new structures, mode my_alliance                    
+    @patch('structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
     @patch('structures.tasks.STRUCTURES_ADD_TIMERS', True)
     @patch('allianceauth.timerboard.models.Timer.objects.create', autospec=True)
     @patch('structures.tasks.notify', autospec=True)

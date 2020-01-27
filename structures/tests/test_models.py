@@ -9,6 +9,7 @@ from django.test import TestCase
 
 from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
+from allianceauth.timerboard.models import Timer
 
 from . import set_logger
 from .testdata import entities_testdata, load_entities, \
@@ -16,7 +17,7 @@ from .testdata import entities_testdata, load_entities, \
 from ..models import *
 
 
-logger = set_logger('structures.views', __file__)
+logger = set_logger('structures.models', __file__)
 
 
 class TestWebhook(TestCase):
@@ -763,4 +764,97 @@ class TestNotification(TestCase):
         self.assertFalse(
             x.send_to_webhook(self.webhook, mock_esi_client_factory)
         )
+
+
+    @patch('structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
+    @patch('allianceauth.timerboard.models.Timer', autospec=True)
+    def test_add_to_timerboard_setting_disabled(self, mock_Timer):
+        x = Notification.objects.get(notification_id=1000000404)
+        self.assertFalse(x.process_for_timerboard())
+        self.assertFalse(mock_Timer.objects.create.called)
+
+        x = Notification.objects.get(notification_id=1000000402)
+        self.assertFalse(x.process_for_timerboard())
+        self.assertFalse(mock_Timer.delete.called)
+    
+
+    @patch('structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
+    def test_add_to_timerboard_normal(self):
+        Timer.objects.all().delete()        
+        notification_without_timer_query = Notification.objects\
+            .filter(notification_id__in=[
+                1000000401,
+                1000000403,                
+                1000000405,                
+                1000000502,
+                1000000503,                
+                1000000506,
+                1000000507,
+                1000000508,
+                1000000509,
+                1000000510,
+                1000000511,
+                1000000512,
+                1000000513,                                                
+                1000000601,
+                1000010509,
+                1000010601
+            ])
+        for x in notification_without_timer_query:
+            self.assertFalse(x.process_for_timerboard())
+            
+        self.assertEqual(Timer.objects.count(), 0)
+
+        x = Notification.objects.get(notification_id=1000000501)
+        self.assertTrue(x.process_for_timerboard())
+        self.assertEqual(Timer.objects.count(), 1)
+
+        x = Notification.objects.get(notification_id=1000000504)
+        self.assertTrue(x.process_for_timerboard())
+        self.assertEqual(Timer.objects.count(), 2)
+
+        x = Notification.objects.get(notification_id=1000000505)
+        self.assertTrue(x.process_for_timerboard())
+        self.assertEqual(Timer.objects.count(), 3)
+
+        x = Notification.objects.get(notification_id=1000000602)
+        self.assertTrue(x.process_for_timerboard())
+        self.assertEqual(Timer.objects.count(), 4)
+        
+        ids_set_1 = {x.id for x in Timer.objects.all()}
+        x = Notification.objects.get(notification_id=1000000404)
+        self.assertTrue(x.process_for_timerboard())
+        self.assertEqual(Timer.objects.count(), 5)
+                
+        # this should remove the right timer only
+        x = Notification.objects.get(notification_id=1000000402)
+        self.assertTrue(x.process_for_timerboard())
+        self.assertEqual(Timer.objects.count(), 4)
+        ids_set_2 = {x.id for x in Timer.objects.all()}
+        self.assertSetEqual(ids_set_1, ids_set_2)
+
+
+    @patch('structures.models.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', False)
+    def test_add_to_timerboard_corp_restriction(self):
+        Timer.objects.all().delete()  
+
+        x = Notification.objects.get(notification_id=1000000504)
+        self.assertTrue(x.process_for_timerboard())
+        t = Timer.objects.first()
+        self.assertFalse(t.corp_timer)
+
+    
+    @patch('structures.models.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', True)
+    def test_add_to_timerboard_corp_restriction(self):
+        Timer.objects.all().delete()  
+
+        x = Notification.objects.get(notification_id=1000000504)
+        self.assertTrue(x.process_for_timerboard())
+        t = Timer.objects.first()
+        self.assertTrue(t.corp_timer)
+
+
+        
+
+
 

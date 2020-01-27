@@ -1,6 +1,6 @@
 # Structures for Alliance Auth
 
-This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA) that adds support for structures
+This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) for managing structures and for getting structure notifications.
 
 ## Contents
 
@@ -31,7 +31,7 @@ Alliance Structures adds the following features to Alliance Auth:
 - Interface for 3rd party monitoring of the services status
 - Structures include Upwell structures, Custom Offices
 - Notification types include Upwell structures, moon mining, customs offices
-- Automatically adds timers from relevant notifications to aa-timers app (if installed)
+- Automatically adds timers from relevant notifications to Alliance Auth timerboard app (if installed)
 - Self-defined tags help to better organize structures
 
 Planned features:
@@ -166,12 +166,14 @@ Name | Description | Default
 `STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | False
 `STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notification forwarding before service is reported as down  | 5
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | 24
+`STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | False
 `STRUCTURES_NOTIFICATION_MAX_RETRIES`| Max number of retries after a HTTP error occurred incl. rate limiting  | 3
 `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | 15
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | 5
 `STRUCTURES_REPORT_NPC_ATTACKS`| Enable / disable sending notifications for attacks by NPCs (structure reinforcements are still reported) | True
 `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE`| Enable / disable whether fuel expire is shown as relative figure | True
 `STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES`| Max time in minutes since last successful structures sync before service is reported as down  | 120
+`STRUCTURES_TIMERS_ARE_CORP_RESTRICTED`| whether created timers are corp restricted on the timerboard  | False
 
 ## Permissions
 

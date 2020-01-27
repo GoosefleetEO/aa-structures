@@ -592,7 +592,7 @@ def fetch_notifications_for_owner(
                             esi_client = get_esi_client(owner)
                         
                         for notification in notifications:
-                            notification.add_to_timerboard(esi_client)
+                            notification.process_for_timerboard(esi_client)
 
             else:
                 logger.info(add_prefix(

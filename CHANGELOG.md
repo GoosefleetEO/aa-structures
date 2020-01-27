@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.9.0] - 2020-01-27
+
+**Moon extraction timers**
+
+### Added
+
+- Option to automatically create timers for moon extraction notifications on AA timerboard (see new setting: `STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`) ([#14](https://gitlab.com/ErikKalkoken/aa-structures/issues/14))
+- Option to restrict all timers created from notifications to the owning corporation (see new setting: `STRUCTURES_TIMERS_ARE_CORP_RESTRICTED`)
+
 ## [0.8.2] - 2020-01-26
 
 ### Fixed
@@ -37,6 +46,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.7.0] - 2020-01-23
 
+**Notifications for Customs Offices**
+
 To activate the new notification types make sure to enable them on already existing webhooks. For newly created webhooks they will be activated by default.
 
 ### Added
@@ -55,6 +66,8 @@ To activate the new notification types make sure to enable them on already exist
 
 ## [0.6.0] - 2020-01-22
 
+**Customs Offices in structure list**
+
 **Important** The new customs offices feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it with  `STRUCTURES_FEATURE_CUSTOMS_OFFICES = True` in your local settings.
 
 Note that after activation all structure owners need to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications will stop working for corporations until the respective owner has updated their token.
@@ -72,6 +85,8 @@ Note that after activation all structure owners need to update their tokens by a
 ### Fixed
 
 ## [0.5.0] - 2020-01-20
+
+**Structure Tags**
 
 ### Added
 

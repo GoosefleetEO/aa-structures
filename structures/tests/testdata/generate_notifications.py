@@ -69,6 +69,7 @@ notifications_json = notifications_json.replace('30002537', str(structure.eve_so
 notifications = json.loads(notifications_json)
 
 with transaction.atomic():                                    
+    timestamp_start = now() - timedelta(hours=2)
     for notification in notifications:                        
         notification_type = \
             Notification.get_matching_notification_type(
@@ -97,12 +98,13 @@ with transaction.atomic():
                 if 'text' in notification else None
             is_read = notification['is_read'] \
                 if 'is_read' in notification else None
+            timestamp_start = timestamp_start + timedelta(minutes=5)
             obj = Notification.objects.update_or_create(
                 notification_id=notification['notification_id'],
                 owner=owner,
                 defaults={
                     'sender': sender,
-                    'timestamp': now() - timedelta(minutes=randrange(60), seconds=randrange(60)),
+                    'timestamp': timestamp_start,
                     'notification_type': notification_type,
                     'text': text,
                     'is_read': is_read,

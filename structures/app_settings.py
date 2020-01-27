@@ -108,3 +108,22 @@ if (hasattr(settings, 'STRUCTURES_REPORT_NPC_ATTACKS')
     STRUCTURES_REPORT_NPC_ATTACKS = settings.STRUCTURES_REPORT_NPC_ATTACKS
 else:
     STRUCTURES_REPORT_NPC_ATTACKS = True
+
+# whether to create / remove timers from moon extraction notifications
+if (hasattr(settings, 'STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED')
+    and settings.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED in [True, False] 
+):
+    STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED \
+        = settings.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED
+else:
+    STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED = False
+
+
+# whether created timers are corp restricted on the timerboard
+if (hasattr(settings, 'STRUCTURES_TIMERS_ARE_CORP_RESTRICTED')
+    and settings.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED in [True, False]       
+):
+    STRUCTURES_TIMERS_ARE_CORP_RESTRICTED \
+        = settings.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
+else:
+    STRUCTURES_TIMERS_ARE_CORP_RESTRICTED = False
