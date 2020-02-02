@@ -53,6 +53,22 @@ def _load_testdata_entities() -> dict:
             minutes=randrange(60), 
             seconds=randrange(60)
         )
+
+    # update timestamps on structures
+    for structure in entities['Structure']:
+        if 'fuel_expires' in structure:
+            fuel_expires = now() + timedelta(days=1 + randrange(5))
+            structure['fuel_expires'] = fuel_expires
+
+        if 'state_timer_start' in structure:
+            state_timer_start = now() + timedelta(days=1 + randrange(3))
+            structure['state_timer_start'] = state_timer_start
+            state_timer_end = state_timer_start + timedelta(minutes=15)
+            structure['state_timer_end'] = state_timer_end
+
+        if 'unanchors_at' in structure:
+            unanchors_at = now() + timedelta(days=3 + randrange(5))
+            structure['unanchors_at'] = unanchors_at
         
     return entities
 
@@ -327,7 +343,8 @@ def create_structures():
     tag_c = StructureTag.objects.get(name='tag_c')
     Structure.objects.all().delete()
     for structure in entities_testdata['Structure']:
-        x = structure.copy()        
+        x = structure.copy()
+        x['last_updated'] = now()
         x['owner'] = Owner.objects.get(
             corporation__corporation_id=x['owner_corporation_id']
         )
@@ -335,10 +352,8 @@ def create_structures():
         
         if 'services' in x:
             del x['services']
-        
-        obj = Structure.objects.create(**x)
-        if obj.id in [1000000000001, 1000000000002]:
-            obj.fuel_expires = now() + timedelta(days=randrange(10) + 1)
+
+        obj = Structure.objects.create(**x)        
         if obj.state != 11:
             obj.state_timer_start = \
                 now() - timedelta(days=randrange(3) + 1)

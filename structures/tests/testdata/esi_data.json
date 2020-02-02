@@ -45,6 +45,10 @@
                         {
                             "name": "Clone Bay",
                             "state": "offline"
+                        },
+                        {
+                            "name": "Market Hub",
+                            "state": "offline"
                         }
                     ],
                     "state": "shield_vulnerable",

@@ -243,6 +243,15 @@ class TestSyncStructures(TestCase):
                 1200000000005
             }
         )
+        # must have created services
+        structure = Structure.objects.get(id=1000000000001)        
+        self.assertEqual(
+            {
+                x.name 
+                for x in StructureService.objects.filter(structure=structure)
+            },
+            {'Clone Bay', 'Market Hub'}
+        )
         # user report has been sent
         self.assertTrue(mock_notify.called)
     
@@ -523,7 +532,6 @@ class TestSyncStructures(TestCase):
             {1000000000002, 1000000000003}
         )
 
-    """
     # synch of structures, ensure services are removed correctly
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
@@ -557,29 +565,35 @@ class TestSyncStructures(TestCase):
         tasks.update_structures_for_owner(
             owner_pk=owner.pk, 
             user_pk=self.user.pk
-        )        
-        # should contain the right structures
-        self.assertSetEqual(
-            { x['id'] for x in Structure.objects.values('id') },
-            {1000000000001, 1000000000002, 1000000000003}
+        )                        
+        structure = Structure.objects.get(id=1000000000002)        
+        self.assertEqual(
+            {
+                x.name 
+                for x in StructureService.objects.filter(structure=structure)
+            },
+            {'Reprocessing', 'Moon Drilling'}
         )
-
-        # run update task 2nd time with one less structure
+        
+        # run update task 2nd time after removing a service
         my_corp_structures_data = esi_corp_structures_data.copy()
-        del(my_corp_structures_data["2001"][1])
+        del(my_corp_structures_data['2001'][0]['services'][0])
         esi_get_corporations_corporation_id_structures.override_data = \
             my_corp_structures_data
         tasks.update_structures_for_owner(
             owner_pk=owner.pk, 
             user_pk=self.user.pk
         )        
-        # should contain only the remaining structure
-        self.assertSetEqual(
-            { x['id'] for x in Structure.objects.values('id') },
-            {1000000000002, 1000000000003}
+        # should contain only the remaining service
+        structure.refresh_from_db()
+        self.assertEqual(
+            {
+                x.name 
+                for x in StructureService.objects.filter(structure=structure)
+            },
+            {'Moon Drilling'}
         )
-    """
-
+    
 
     # catch exception during storing of structures
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)

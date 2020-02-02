@@ -14,4 +14,7 @@ coverage.xml
 announce_release.py
 htmlcov/
 structures_notifications_archive/
+customs_offices_raw*.json
+notifications_raw*.json
+structures_raw*.json
 

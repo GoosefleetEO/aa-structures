@@ -204,6 +204,7 @@
             "reinforce_hour": 5,
             "state": 11,
             "owner_corporation_id": 2001,
+            "fuel_expires": "dummy",
             "services": [
                 {
                     "name": "Clone Bay",
@@ -221,7 +222,8 @@
             "eve_type_id": 35835,
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 3,
-            "state": 11,
+            "state": 3,
+            "state_timer_start": "dummy",            
             "owner_corporation_id": 2002,
             "services": [
                 {
@@ -237,7 +239,8 @@
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 11,
             "state": 11,
-            "owner_corporation_id": 2102
+            "owner_corporation_id": 2102,
+            "unanchors_at": "dummy"
         },
         {
             "id": 1200000000003,  
