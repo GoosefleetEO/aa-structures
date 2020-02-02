@@ -203,7 +203,17 @@
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 5,
             "state": 11,
-            "owner_corporation_id": 2001
+            "owner_corporation_id": 2001,
+            "services": [
+                {
+                    "name": "Clone Bay",
+                    "state": "offline"
+                },
+                {
+                    "name": "Market Hub",
+                    "state": "offline"
+                }
+            ]
         },
         {
             "id": 1000000000002,  
@@ -212,7 +222,13 @@
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 3,
             "state": 11,
-            "owner_corporation_id": 2002
+            "owner_corporation_id": 2002,
+            "services": [
+                {
+                    "name": "Clone Bay",
+                    "state": "online"
+                }
+            ]
         },
         {
             "id": 1000000000003,  

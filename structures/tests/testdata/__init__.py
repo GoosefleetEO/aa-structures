@@ -8,6 +8,7 @@ import os
 from random import randrange
 from unittest.mock import Mock
 
+from django.contrib.auth.models import User
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models \
@@ -267,11 +268,13 @@ def load_entities(entities_def: list = None):
             EveAllianceInfo,
             EveCorporationInfo,
             EveCharacter,    
-            EveEntity
+            EveEntity,
+            StructureTag
         ]
     
     for EntityClass in entities_def:
         entity_name = EntityClass.__name__
+        EntityClass.objects.all().delete()
         for x in entities_testdata[entity_name]:
             EntityClass.objects.create(**x)
         assert(
@@ -279,13 +282,114 @@ def load_entities(entities_def: list = None):
         )
 
 
-def load_notification_entities(owner: Owner):
-    for structure in entities_testdata['Structure']:
-        x = structure.copy()
-        x['owner'] = owner
-        del x['owner_corporation_id']
-        Structure.objects.create(**x)
+def create_structures():
+    """create structure entities from test data
+    Will create all structure for owner if provided
+    """
     
+    load_entities()
+            
+    for corporation in EveCorporationInfo.objects.all():
+        EveEntity.objects.get_or_create(
+            id = corporation.corporation_id,
+            defaults={
+                'category': EveEntity.CATEGORY_CORPORATION,
+                'name': corporation.corporation_name
+            }
+        )
+        Owner.objects.create(
+            corporation=corporation
+        )
+        if int(corporation.corporation_id) in [2001, 2002]:
+            alliance = EveAllianceInfo.objects.get(alliance_id=3001)
+            corporation.alliance = alliance
+            corporation.save()
+
+
+    for character in EveCharacter.objects.all():
+        EveEntity.objects.get_or_create(
+            id = character.character_id,
+            defaults={
+                'category': EveEntity.CATEGORY_CHARACTER,
+                'name': character.character_name
+            }
+        )
+        corporation = EveCorporationInfo.objects.get(
+            corporation_id=character.corporation_id
+        )
+        if corporation.alliance:                
+            character.alliance_id = corporation.alliance.alliance_id
+            character.alliance_name = corporation.alliance.alliance_name
+            character.save()
+
+    tag_a = StructureTag.objects.get(name='tag_a')
+    tag_b = StructureTag.objects.get(name='tag_b')
+    tag_c = StructureTag.objects.get(name='tag_c')
+    Structure.objects.all().delete()
+    for structure in entities_testdata['Structure']:
+        x = structure.copy()        
+        x['owner'] = Owner.objects.get(
+            corporation__corporation_id=x['owner_corporation_id']
+        )
+        del x['owner_corporation_id']
+        
+        if 'services' in x:
+            del x['services']
+        
+        obj = Structure.objects.create(**x)
+        if obj.id in [1000000000001, 1000000000002]:
+            obj.fuel_expires = now() + timedelta(days=randrange(10) + 1)
+        if obj.state != 11:
+            obj.state_timer_start = \
+                now() - timedelta(days=randrange(3) + 1)
+            obj.state_timer_start = \
+                obj.state_timer_start + timedelta(days=randrange(4) + 1)
+        
+        if obj.id in [1000000000002, 1000000000003]:
+            obj.tags.add(tag_c)
+
+        if obj.id in [1000000000003]:
+            obj.tags.add(tag_b)
+
+
+        if 'services' in structure:            
+            for service in structure['services']:
+                StructureService.objects.create(
+                    structure=obj,
+                    name=service['name'],
+                    state=StructureService.get_matching_state(
+                        service['state']
+                ))
+        obj.save()
+                
+        
+def set_owner_character(character_id) -> list:
+    """sets owner character for the owner related to the given character ir
+    returns user, owner
+    """
+    my_character = EveCharacter.objects.get(character_id=1001)                        
+    my_user = User.objects.create_user(
+        my_character.character_name,
+        'abc@example.com',
+        'password'
+    )
+    my_ownership = CharacterOwnership.objects.create(
+        character=my_character,
+        owner_hash='x1',
+        user=my_user
+    )
+    my_user.profile.main_character = my_character        
+    my_owner = Owner.objects.get(
+        corporation__corporation_id=my_character.corporation_id
+    )
+    my_owner.character = my_ownership
+    my_owner.save()
+
+    return my_user, my_owner
+
+
+def load_notification_entities(owner: Owner):
+        
     timestamp_start = now() - timedelta(hours=2)
     for notification in entities_testdata['Notification']:
         notification_type = \

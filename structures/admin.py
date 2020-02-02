@@ -289,6 +289,12 @@ class OwnerAdmin(admin.ModelAdmin):
     
     send_notifications.short_description = "Send new notifications to Discord"
 
+    def has_add_permission(self, request):
+        if STRUCTURES_DEVELOPER_MODE:
+            return True
+        else:
+            return False
+
 
 @admin.register(StructureTag)
 class StructureTagAdmin(admin.ModelAdmin):

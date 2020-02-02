@@ -33,7 +33,9 @@ from .testdata import \
     esi_corp_structures_data,\
     load_entities,\
     load_notification_entities,\
-    get_all_notification_ids
+    get_all_notification_ids,\
+    create_structures,\
+    set_owner_character
 
 logger = set_logger('structures.tasks', __file__)
 
@@ -521,6 +523,64 @@ class TestSyncStructures(TestCase):
             {1000000000002, 1000000000003}
         )
 
+    """
+    # synch of structures, ensure services are removed correctly
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_structures_for_owner_remove_services(
+        self, 
+        mock_esi_client_factory,             
+        mock_Token
+    ):                       
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )        
+        
+        # run update task with all structures
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        )        
+        # should contain the right structures
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000001, 1000000000002, 1000000000003}
+        )
+
+        # run update task 2nd time with one less structure
+        my_corp_structures_data = esi_corp_structures_data.copy()
+        del(my_corp_structures_data["2001"][1])
+        esi_get_corporations_corporation_id_structures.override_data = \
+            my_corp_structures_data
+        tasks.update_structures_for_owner(
+            owner_pk=owner.pk, 
+            user_pk=self.user.pk
+        )        
+        # should contain only the remaining structure
+        self.assertSetEqual(
+            { x['id'] for x in Structure.objects.values('id') },
+            {1000000000002, 1000000000003}
+        )
+    """
+
+
     # catch exception during storing of structures
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Structure.objects.update_or_create_from_dict')
@@ -582,60 +642,15 @@ class TestSyncNotifications(TestCase):
 
     def setUp(self): 
 
-        # entities        
-        load_entities()
-    
-        for x in EveCorporationInfo.objects.all():
-            EveEntity.objects.get_or_create(
-                id = x.corporation_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CORPORATION,
-                    'name': x.corporation_name
-                }
-            )
-
-        for x in EveCharacter.objects.all():
-            EveEntity.objects.get_or_create(
-                id = x.character_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CHARACTER,
-                    'name': x.character_name
-                }
-            )
-                
-        # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
-                
-        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
-            owner_hash='x1',
-            user=self.user
-        )
-
-        self.owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership
-        )
-
+        create_structures()
+        self.user, self.owner = set_owner_character(character_id=1001)
+        
         self.webhook = Webhook.objects.create(
             name='Test',
             url='dummy-url'
         )
         self.owner.webhooks.add(self.webhook)
         self.owner.save()
-
-        for structure in entities_testdata['Structure']:
-            x = structure.copy()
-            x['owner'] = self.owner
-            del x['owner_corporation_id']
-            Structure.objects.create(**x)
                 
 
     def test_run_unknown_owner(self):
@@ -644,16 +659,14 @@ class TestSyncNotifications(TestCase):
    
 
     # run without char        
-    def test_run_no_sync_char(self):
-        owner = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
-        )
+    def test_run_no_sync_char(self):        
+        my_owner = Owner.objects.get(corporation__corporation_id=2002)
         self.assertFalse(
-            tasks.fetch_notifications_for_owner(owner_pk=owner.pk)
+            tasks.fetch_notifications_for_owner(owner_pk=my_owner.pk)
         )
-        owner.refresh_from_db()
+        my_owner.refresh_from_db()
         self.assertEqual(
-            owner.notifications_last_error, 
+            my_owner.notifications_last_error, 
             Owner.ERROR_NO_CHARACTER
         )
 
@@ -665,11 +678,6 @@ class TestSyncNotifications(TestCase):
             mock_Token
         ):                        
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
-
-        owner = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
-            character=self.main_ownership
-        )
                         
         # create test data
         p = Permission.objects.filter(            
@@ -680,12 +688,12 @@ class TestSyncNotifications(TestCase):
                 
         # run update task
         self.assertFalse(
-            tasks.fetch_notifications_for_owner(owner_pk=owner.pk)
+            tasks.fetch_notifications_for_owner(owner_pk=self.owner.pk)
         )
 
-        owner.refresh_from_db()
+        self.owner.refresh_from_db()
         self.assertEqual(
-            owner.notifications_last_error, 
+            self.owner.notifications_last_error, 
             Owner.ERROR_TOKEN_EXPIRED            
         )
 
@@ -697,12 +705,7 @@ class TestSyncNotifications(TestCase):
             mock_Token
         ):                        
         mock_Token.objects.filter.side_effect = TokenInvalidError()
-
-        owner = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
-            character=self.main_ownership
-        )
-                        
+         
         # create test data
         p = Permission.objects.filter(            
             codename='add_structure_owner'
@@ -712,12 +715,12 @@ class TestSyncNotifications(TestCase):
                 
         # run update task
         self.assertFalse(
-            tasks.fetch_notifications_for_owner(owner_pk=owner.pk)
+            tasks.fetch_notifications_for_owner(owner_pk=self.owner.pk)
         )
 
-        owner.refresh_from_db()
+        self.owner.refresh_from_db()
         self.assertEqual(
-            owner.notifications_last_error, 
+            self.owner.notifications_last_error, 
             Owner.ERROR_TOKEN_INVALID            
         )
         
@@ -852,46 +855,9 @@ class TestSyncNotifications(TestCase):
 class TestForwardNotifications(TestCase):    
 
     def setUp(self):         
-        load_entities()
+        create_structures()
+        self.user, self.owner = set_owner_character(character_id=1001)
                 
-        for x in EveCorporationInfo.objects.all():
-            EveEntity.objects.get_or_create(
-                id = x.corporation_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CORPORATION,
-                    'name': x.corporation_name
-                }
-            )
-
-        for x in EveCharacter.objects.all():
-            EveEntity.objects.get_or_create(
-                id = x.character_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CHARACTER,
-                    'name': x.character_name
-                }
-            )               
-        
-        # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
-                
-        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
-            owner_hash='x1',
-            user=self.user
-        )
-
-        self.owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership,            
-        )
         self.webhook = Webhook.objects.create(
             name='Test',
             url='dummy-url'
@@ -1215,9 +1181,8 @@ class TestForwardNotifications(TestCase):
         self.owner.webhooks.add(wh_structures)
         self.owner.webhooks.add(wh_mining)
 
-        owner2 = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
-            character=self.main_ownership,            
+        owner2 = Owner.objects.get(
+            corporation__corporation_id=2002           
         )
         owner2.webhooks.add(wh_structures)
         owner2.webhooks.add(wh_mining)

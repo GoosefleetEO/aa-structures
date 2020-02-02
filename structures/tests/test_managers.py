@@ -6,7 +6,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata, load_entity
+from .testdata import entities_testdata, load_entity, create_structures
 from ..models import *
 
 
@@ -694,22 +694,8 @@ class TestStructureManager(TestCase):
         mock_esi_client_factory
     ):                   
         mock_client = Mock()
-
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
-        load_entity(EveGroup)
-        load_entity(EveType)
-        load_entity(EveCorporationInfo)        
-        owner = Owner.objects.create(
-            corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        )
-        for structure in entities_testdata['Structure']:
-            x = structure.copy()
-            x['owner'] = owner
-            del x['owner_corporation_id']
-            Structure.objects.create(**x)
         
+        create_structures()        
         obj, created = Structure.objects.get_or_create_esi(
             1000000000001,
             mock_client

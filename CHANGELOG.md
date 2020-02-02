@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.9.1] - 2020-02-01
+
+## Changed
+
+- Moon extraction timers are now using the special structure type "Moon Mining Cycle"
+- It's no longer possible to add owners on the admin panel. Owner must be added through the "Add Structure Owner" button in the app
+
 ## [0.9.0] - 2020-01-27
 
 **Moon extraction timers**

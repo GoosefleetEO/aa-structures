@@ -787,7 +787,7 @@ class StructureService(models.Model):
     @classmethod
     def get_matching_state(cls, state_name) -> int:
         """returns matching state for given state name"""
-        match = cls.STATE_OFFLINE
+        match = [cls.STATE_OFFLINE]
         for x in cls.STATE_CHOICES:
             if state_name == x[1]:
                 match = x
@@ -1486,11 +1486,7 @@ class Notification(models.Model):
                 ]:                    
                     if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
                         add_timer = False
-                    else:
-                        structure_type, _ = EveType.objects.get_or_create_esi(
-                            parsed_text['structureTypeID'],
-                            esi_client
-                        )  
+                    else:                        
                         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                             parsed_text['solarSystemID'],
                             esi_client
@@ -1505,10 +1501,10 @@ class Notification(models.Model):
                             )
                         else:
                             eve_time = None
-                        details='Moon Mining Extraction'
+                        details='Extraction ready'
                         system = solar_system.name
                         planet_moon = moon.name
-                        structure_type_name = structure_type.name
+                        structure_type_name = 'Moon Mining Cycle'
                         objective='Friendly'
 
                         if self.notification_type == NTYPE_MOONMINING_EXTRACTION_STARTED:

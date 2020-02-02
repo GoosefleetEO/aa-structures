@@ -13,7 +13,7 @@ from allianceauth.timerboard.models import Timer
 
 from . import set_logger
 from .testdata import entities_testdata, load_entities, \
-    load_notification_entities
+    load_notification_entities, create_structures, set_owner_character
 from ..models import *
 
 
@@ -59,18 +59,12 @@ class TestWebhook(TestCase):
 class TestOwner(TestCase):
 
     def setUp(self):
-        entities_def = [            
+        load_entities([            
             EveAllianceInfo,
             EveCorporationInfo,
             EveCharacter 
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
-                
+        ])
+                    
         for corporation in EveCorporationInfo.objects.all():
             EveEntity.objects.get_or_create(
                 id = corporation.corporation_id,
@@ -104,28 +98,7 @@ class TestOwner(TestCase):
                 character.alliance_name = corporation.alliance.alliance_name
                 character.save()
                        
-        # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
-                
-        self.corporation = EveCorporationInfo.objects.get(
-            corporation_id=self.character.corporation_id
-        )
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
-            owner_hash='x1',
-            user=self.user
-        )
-        self.user.profile.main_character = self.character
-        
-        self.owner = Owner.objects.get(
-            corporation__corporation_id=self.character.corporation_id
-        )
-        self.owner.character = self.main_ownership
+        set_owner_character(character_id=1001)
     
 
     def test_str(self):
@@ -429,97 +402,10 @@ class TestStructureTag(TestCase):
 
 class TestStructure(TestCase):
 
-    def setUp(self):
-                  
-        entities_def = [
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EveGroup,
-            EveType,
-            EveAllianceInfo,
-            EveCorporationInfo,
-            EveCharacter,    
-            EveEntity    
-        ]
-    
-        for EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(len(entities_testdata[entity_name]) == EntityClass.objects.count())
-                
-        for corporation in EveCorporationInfo.objects.all():
-            EveEntity.objects.get_or_create(
-                id = corporation.corporation_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CORPORATION,
-                    'name': corporation.corporation_name
-                }
-            )
-            Owner.objects.create(
-                corporation=corporation
-            )
-            if int(corporation.corporation_id) in [2001, 2002]:
-                alliance = EveAllianceInfo.objects.get(alliance_id=3001)
-                corporation.alliance = alliance
-                corporation.save()
-
-
-        for character in EveCharacter.objects.all():
-            EveEntity.objects.get_or_create(
-                id = character.character_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CHARACTER,
-                    'name': character.character_name
-                }
-            )
-            corporation = EveCorporationInfo.objects.get(
-                corporation_id=character.corporation_id
-            )
-            if corporation.alliance:                
-                character.alliance_id = corporation.alliance.alliance_id
-                character.alliance_name = corporation.alliance.alliance_name
-                character.save()
-                       
-        # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
-                
-        self.corporation = EveCorporationInfo.objects.get(
-            corporation_id=self.character.corporation_id
-        )
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
-            owner_hash='x1',
-            user=self.user
-        )
-        self.user.profile.main_character = self.character
+    def setUp(self):                  
+        create_structures()        
+        set_owner_character(character_id=1001)
         
-        self.owner = Owner.objects.get(
-            corporation__corporation_id=self.character.corporation_id
-        )
-        self.owner.character = self.main_ownership
-
-        # create Structure objects
-        for structure in entities_testdata['Structure']:
-            x = structure.copy()
-            x['owner'] = Owner.objects.get(
-                corporation__corporation_id=x['owner_corporation_id']
-            )
-            del x['owner_corporation_id']
-            Structure.objects.create(**x)
-
-        # create StructureTag objects
-        StructureTag.objects.all().delete()
-        for x in entities_testdata['StructureTag']:
-            StructureTag.objects.create(**x)
-
 
     def test_state_str(self):
         x = Structure.objects.get(id=1000000000001)
@@ -558,16 +444,6 @@ class TestStructure(TestCase):
         self.assertEqual(str(x), 'Amamake - Test Structure Alpha')
 
 
-    def test_get_matching_state(self):
-        self.assertEqual(
-            Structure.get_matching_state('anchoring'), 
-            Structure.STATE_ANCHORING
-        )
-        self.assertEqual(
-            Structure.get_matching_state('not matching name'), 
-            Structure.STATE_UNKNOWN
-        )
-
     def test_structure_service_str(self):
         structure = Structure.objects.get(id=1000000000001)
         x = StructureService(
@@ -578,7 +454,19 @@ class TestStructure(TestCase):
         self.assertEqual(str(x), 'Amamake - Test Structure Alpha - Dummy')
 
 
-    def test_get_matching_state(self):
+class TestStructureNoSetup(TestCase):
+    
+    def test_structure_get_matching_state(self):
+        self.assertEqual(
+            Structure.get_matching_state('anchoring'), 
+            Structure.STATE_ANCHORING
+        )
+        self.assertEqual(
+            Structure.get_matching_state('not matching name'), 
+            Structure.STATE_UNKNOWN
+        )
+    
+    def test_structure_service_get_matching_state(self):
         self.assertEqual(
             StructureService.get_matching_state('online'), 
             StructureService.STATE_ONLINE
@@ -587,59 +475,28 @@ class TestStructure(TestCase):
             StructureService.get_matching_state('offline'), 
             StructureService.STATE_OFFLINE
         )
+        self.assertEqual(
+            StructureService.get_matching_state('not matching'), 
+            StructureService.STATE_OFFLINE
+        )
 
 
 class TestNotification(TestCase):
     
     def setUp(self):         
-        load_entities()
-                
-        for x in EveCorporationInfo.objects.all():
-            EveEntity.objects.get_or_create(
-                id = x.corporation_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CORPORATION,
-                    'name': x.corporation_name
-                }
-            )
-
-        for x in EveCharacter.objects.all():
-            EveEntity.objects.get_or_create(
-                id = x.character_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CHARACTER,
-                    'name': x.character_name
-                }
-            )
+        create_structures()
+        my_user, my_owner = set_owner_character(character_id=1001)        
+        load_notification_entities(my_owner)
         
-        # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
-                
-        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
-            owner_hash='x1',
-            user=self.user
-        )
-
-        self.owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership,            
-        )
         self.webhook = Webhook.objects.create(
             name='Test',
             url='dummy-url'
         )
-        self.owner.webhooks.add(self.webhook)
-        self.owner.save()
+        my_owner.webhooks.add(self.webhook)
+        my_owner.save()
 
-        load_notification_entities(self.owner)
+        load_notification_entities(my_owner)
+        
 
     def test_str(self):
         x = Notification.objects.get(notification_id=1000000403)

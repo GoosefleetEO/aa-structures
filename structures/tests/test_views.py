@@ -10,7 +10,8 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata, load_entities
+from .testdata import entities_testdata, load_entities, create_structures,\
+    set_owner_character
 from ..models import *
 from .. import views
 
@@ -21,66 +22,9 @@ logger = set_logger('structures.views', __file__)
 class TestViews(TestCase):
     
     def setUp(self):                
-        load_entities([
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EveGroup,
-            EveType,
-            EveAllianceInfo,
-            EveCorporationInfo,
-            EveCharacter,    
-            EveEntity    
-        ])
-                    
-        for corporation in EveCorporationInfo.objects.all():
-            EveEntity.objects.get_or_create(
-                id = corporation.corporation_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CORPORATION,
-                    'name': corporation.corporation_name
-                }
-            )
-            Owner.objects.create(
-                corporation=corporation
-            )
-            if int(corporation.corporation_id) in [2001, 2002]:
-                alliance = EveAllianceInfo.objects.get(alliance_id=3001)
-                corporation.alliance = alliance
-                corporation.save()
-
-
-        for character in EveCharacter.objects.all():
-            EveEntity.objects.get_or_create(
-                id = character.character_id,
-                defaults={
-                    'category': EveEntity.CATEGORY_CHARACTER,
-                    'name': character.character_name
-                }
-            )
-            corporation = EveCorporationInfo.objects.get(
-                corporation_id=character.corporation_id
-            )
-            if corporation.alliance:                
-                character.alliance_id = corporation.alliance.alliance_id
-                character.alliance_name = corporation.alliance.alliance_name
-                character.save()
+        create_structures()
+        self.user, self.owner = set_owner_character(character_id=1001)
                
-        self.factory = RequestFactory()
-        
-        # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
-                
-        self.corporation = EveCorporationInfo.objects.get(
-            corporation_id=self.character.corporation_id
-        )
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-
         # user needs basic permission to access the app
         p = Permission.objects.get(
             codename='basic_access', 
@@ -89,52 +33,8 @@ class TestViews(TestCase):
         self.user.user_permissions.add(p)
         self.user.save()
 
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
-            owner_hash='x1',
-            user=self.user
-        )
-        self.user.profile.main_character = self.character
+        self.factory = RequestFactory()
         
-        self.owner = Owner.objects.get(
-            corporation__corporation_id=self.character.corporation_id
-        )
-        self.owner.character = self.main_ownership
-
-        # create Structure objects
-        for structure in entities_testdata['Structure']:
-            x = structure.copy()
-            x['owner'] = Owner.objects.get(
-                corporation__corporation_id=x['owner_corporation_id']
-            )            
-            del(x['owner_corporation_id'])
-            obj = Structure.objects.create(**x)
-            if obj.id in [1000000000001, 1000000000002]:
-                obj.fuel_expires = now() + timedelta(days=randrange(10) + 1)
-            if obj.state != 11:
-                obj.state_timer_start = \
-                    now() - timedelta(days=randrange(3) + 1)
-                obj.state_timer_start = \
-                    obj.state_timer_start + timedelta(days=randrange(4) + 1)
-            if obj.id in [1000000000001, 1000000000002]:
-                StructureService.objects.create(
-                    structure=obj,
-                    name='Clone Bay',
-                    state=StructureService.STATE_ONLINE
-                )
-                StructureService.objects.create(
-                    structure=obj,
-                    name='Market Hub',
-                    state=StructureService.STATE_OFFLINE
-                )
-            obj.save()
-
-
-        # create StructureTag objects
-        StructureTag.objects.all().delete()
-        for x in entities_testdata['StructureTag']:
-            StructureTag.objects.create(**x)
-
     
     def test_basic_access_main_view(self):
         request = self.factory.get(reverse('structures:structure_list'))
@@ -423,18 +323,11 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 500)
 
 
-    def test_list_filter_by_tag_1(self):        
-        # apply tags to structures
+    def test_list_filter_by_tag_1(self):               
         tag_a = StructureTag.objects.get(name='tag_a')
         tag_b = StructureTag.objects.get(name='tag_b')
-        x = Structure.objects.get(id=1000000000002)
-        x.tags.add(tag_a)
-        x.save()
-        x = Structure.objects.get(id=1000000000003)
-        x.tags.add(tag_a)
-        x.tags.add(tag_b)
-        x.save()
-                
+        tag_c = StructureTag.objects.get(name='tag_c')
+       
         # user needs permission to access view
         p = Permission.objects.get(
             codename='view_all_structures', 
@@ -464,8 +357,8 @@ class TestViews(TestCase):
             }
         )
 
-        # filter for tag_a
-        request = self.factory.get('{}?tags=tag_a'.format(
+        # filter for tag_c
+        request = self.factory.get('{}?tags=tag_c'.format(
             reverse('structures:structure_list_data')
         ))
         request.user = self.user
@@ -492,8 +385,8 @@ class TestViews(TestCase):
             {1000000000003}
         )
 
-        # filter for tag_a, tag_b
-        request = self.factory.get('{}?tags=tag_a,tag_b'.format(
+        # filter for tag_c, tag_b
+        request = self.factory.get('{}?tags=tag_c,tag_b'.format(
             reverse('structures:structure_list_data')
         ))
         request.user = self.user
