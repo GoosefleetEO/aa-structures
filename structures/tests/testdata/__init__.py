@@ -105,9 +105,10 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
         my_corp_structures_data = esi_corp_structures_data
     else:
         if (not isinstance(
-            esi_get_corporations_corporation_id_structures.override_data, 
-            dict
-        )):
+                esi_get_corporations_corporation_id_structures.override_data, 
+                dict
+            )
+        ):
             raise TypeError('data must be dict')
 
         my_corp_structures_data \
@@ -132,6 +133,60 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     return mock_operation
     
 esi_get_corporations_corporation_id_structures.override_data = None
+
+
+def esi_get_corporations_corporation_id_starbases(corporation_id, page=None):
+    """simulates ESI endpoint of same name for mock test
+    will use the respective test data 
+    unless the function property override_data is set
+    """
+
+    def mock_result():
+        """simulates behavior of result()"""
+        if mock_operation.also_return_response:            
+            mock_response = Mock()
+            mock_response.headers = mock_operation._headers
+            return [mock_operation._data, mock_response]
+        else:
+            return mock_operation._data
+  
+    page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
+    if not page:
+        page = 1
+
+    if esi_get_corporations_corporation_id_starbases.override_data is None:
+        my_corp_starbases_data = \
+            _esi_data['Corporation']['get_corporations_corporation_id_starbases']
+    else:
+        if (not isinstance(
+                esi_get_corporations_corporation_id_starbases.override_data, 
+                dict
+            )
+        ):
+            raise TypeError('data must be dict')
+
+        my_corp_starbases_data \
+            = esi_get_corporations_corporation_id_starbases.override_data
+
+    if not str(corporation_id) in my_corp_starbases_data:
+        raise ValueError(
+            'No test data for corporation ID: {}'. format(corporation_id)
+        )
+    
+    corp_data = my_corp_starbases_data[str(corporation_id)]
+
+    start = (page - 1) * page_size
+    stop = start + page_size
+    pages_count = int(math.ceil(len(corp_data) / page_size))
+    
+    mock_operation = Mock()
+    mock_operation.also_return_response = False
+    mock_operation._headers = {'x-pages': pages_count}    
+    mock_operation._data = corp_data[start:stop]
+    mock_operation.result.side_effect = mock_result
+    return mock_operation
+    
+esi_get_corporations_corporation_id_starbases.override_data = None
 
 
 def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):

@@ -24,6 +24,7 @@ from ..models import *
 
 from .testdata import \
     esi_get_corporations_corporation_id_structures, \
+    esi_get_corporations_corporation_id_starbases, \
     esi_get_universe_structures_structure_id, \
     esi_get_characters_character_id_notifications, \
     esi_get_corporations_corporation_id_customs_offices, \
@@ -65,7 +66,8 @@ class TestSyncStructures(TestCase):
             EveConstellation,
             EveSolarSystem,            
             EveCorporationInfo,
-            EveCharacter
+            EveCharacter,
+            EveMoon
         ])
             
         # 1 user
@@ -175,6 +177,7 @@ class TestSyncStructures(TestCase):
         
     
     #normal synch of new structures, mode my_alliance
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', True)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch('structures.tasks.notify', autospec=True)
     @patch('structures.tasks.Token', autospec=True)
@@ -189,6 +192,9 @@ class TestSyncStructures(TestCase):
         mock_client.Corporation\
             .get_corporations_corporation_id_structures.side_effect = \
                 esi_get_corporations_corporation_id_structures
+        mock_client.Corporation\
+            .get_corporations_corporation_id_starbases.side_effect = \
+                esi_get_corporations_corporation_id_starbases
         mock_client.Universe\
             .get_universe_structures_structure_id.side_effect =\
                 esi_get_universe_structures_structure_id
@@ -240,7 +246,9 @@ class TestSyncStructures(TestCase):
                 1000000000003, 
                 1200000000003,
                 1200000000004,
-                1200000000005
+                1200000000005,
+                1300000000001,
+                1300000000002,
             }
         )
         # must have created services

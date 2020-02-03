@@ -311,21 +311,20 @@ class Owner(models.Model):
 
     @classmethod
     def get_esi_scopes(cls) -> list:        
+        scopes = [
+            'esi-corporations.read_structures.v1',
+            'esi-universe.read_structures.v1',
+            'esi-characters.read_notifications.v1',                
+        ]
         if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-            scopes = [
-                'esi-corporations.read_structures.v1',
-                'esi-universe.read_structures.v1',
-                'esi-characters.read_notifications.v1',
+            scopes += [         
                 'esi-planets.read_customs_offices.v1',
                 'esi-assets.read_corporation_assets.v1'
             ]
-        else:
-            scopes = [
-                'esi-corporations.read_structures.v1',
-                'esi-universe.read_structures.v1',
-                'esi-characters.read_notifications.v1',                
-            ]
-        
+        if STRUCTURES_FEATURE_STARBASES:
+            scopes += [         
+                'esi-corporations.read_starbases.v1'
+            ]            
         return scopes
 
 
@@ -580,9 +579,15 @@ class Structure(models.Model):
     STATE_SHIELD_VULNERABLE = 11
     STATE_UNANCHORED = 12
     STATE_UNKNOWN = 13
+
+    STATE_POS_OFFLINE = 21
+    STATE_POS_ONLINE = 22
+    STATE_POS_ONLINING = 23
+    STATE_POS_REINFORCED = 24
+    STATE_POS_UNANCHORING = 25
         
     STATE_CHOICES = [
-        (STATE_NA, 'N/A'),
+        # states Upwell structures        
         (STATE_ANCHOR_VULNERABLE, 'anchor_vulnerable'),
         (STATE_ANCHORING, 'anchoring'),
         (STATE_ARMOR_REINFORCE, 'armor_reinforce'),
@@ -595,9 +600,19 @@ class Structure(models.Model):
         (STATE_ONLINING_VULNERABLE, 'onlining_vulnerable'),
         (STATE_SHIELD_VULNERABLE, 'shield_vulnerable'),
         (STATE_UNANCHORED, 'unanchored'),
+        
+        # starbases
+        (STATE_POS_OFFLINE, 'offline'),
+        (STATE_POS_ONLINE, 'online'),
+        (STATE_POS_ONLINING, 'onlining'),
+        (STATE_POS_REINFORCED, 'reinforced'),
+        (STATE_POS_UNANCHORING, 'unanchoring '),
+        
+        # other
+        (STATE_NA, 'N/A'),
         (STATE_UNKNOWN, 'unknown'),
     ]
-
+    
     id = models.BigIntegerField(
         primary_key=True,
         help_text='The Item ID of the structure'
@@ -743,7 +758,7 @@ class Structure(models.Model):
 
     @classmethod
     def get_matching_state(cls, state_name) -> int:
-        """returns matching state for given state name"""
+        """returns matching state for given state name for Upwell structures"""
         match = [cls.STATE_UNKNOWN]
         for x in cls.STATE_CHOICES:
             if state_name == x[1]:

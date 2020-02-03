@@ -1,6 +1,5 @@
 import logging
 import json
-import re
 from time import sleep
 
 from bravado.exception import *
@@ -530,12 +529,7 @@ class StructureManager(models.Manager):
     ):
         """update or create structure from given dict"""
         from .models import EveType, EveSolarSystem, Structure,\
-            StructureService, Owner
-        matches = re.search('^\S+ - (.+)', structure['name'])
-        if matches:
-            name = matches.group(1)
-        else:
-            name = structure['name']        
+            StructureService, Owner                
         eve_type, _ = EveType.objects.get_or_create_esi(
             structure['type_id'],
             esi_client
@@ -598,7 +592,7 @@ class StructureManager(models.Manager):
             defaults={
                 'owner': owner,
                 'eve_type': eve_type,
-                'name': name,
+                'name': structure['name'],
                 'eve_solar_system': eve_solar_system,
                 'position_x': position_x,
                 'position_y': position_y,

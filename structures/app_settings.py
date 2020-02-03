@@ -21,6 +21,9 @@ set_app_setting('STRUCTURES_DEVELOPER_MODE', False)
 # Whether the customs offices feature is active
 set_app_setting('STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
 
+# Whether the starbases / POSes feature is active
+set_app_setting('STRUCTURES_FEATURE_STARBASES', False)
+
 # Max time in minutes since last successful notification forwarding
 # before service is reported as down
 set_app_setting('STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES', 5)

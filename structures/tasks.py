@@ -168,7 +168,12 @@ def _fetch_upwell_structures(
                 esi_client.Universe.get_universe_structures_structure_id(
                     structure_id=structure['structure_id']
                 ).result()
-            structure['name'] = structure_info['name']
+            matches = re.search('^\S+ - (.+)', structure_info['name'])
+            if matches:
+                name = matches.group(1)
+            else:
+                name = structure_info['name']
+            structure['name'] = name
             structure['position'] = structure_info['position']                
 
     if settings.DEBUG:
@@ -309,6 +314,89 @@ def _fetch_custom_offices(
     return structures
 
 
+def _fetch_starbases(
+    owner: Owner, 
+    esi_client: object,
+    add_prefix: make_logger_prefix
+) -> list:
+    """fetch starbases from ESI for owner"""
+
+    logger.info(add_prefix('Fetching starbases from ESI - page 1'))
+
+    # get starbases from first page
+    operation = \
+        esi_client.Corporation.get_corporations_corporation_id_starbases(
+            corporation_id=owner.corporation.corporation_id
+        )
+    operation.also_return_response = True
+    starbases, response = operation.result()
+    pages = int(response.headers['x-pages'])
+    
+    # add starbases from additional pages if any            
+    for page in range(2, pages + 1):
+        logger.info(add_prefix(
+            'Fetching starbases from ESI - page {}'.format(page)
+        ))
+        starbases += \
+            esi_client.Corporation.get_corporations_corporation_id_starbases(
+                corporation_id=owner.corporation.corporation_id,
+                page=page
+            ).result()
+    
+    # convert into structures data format
+    structures = list()
+    if not starbases:
+        logger.info(add_prefix(
+            'No starbases retrieved from ESI'
+        ))
+    else:        
+        for starbase in starbases:
+            if 'moon_id' in starbase:
+                moon, _ = EveMoon.objects.get_or_create_esi(
+                    starbase['moon_id'], 
+                    esi_client
+                )
+                name = moon.name
+            else:
+                name = 'Not anchored'            
+            structure = {
+                'structure_id': starbase['starbase_id'],
+                'type_id': starbase['type_id'],
+                'corporation_id': owner.corporation.corporation_id,
+                'name': name,
+                'system_id': starbase['system_id']
+            }
+            if 'state' in starbase:
+                structure['state'] = starbase['state']
+
+            if 'reinforced_until' in starbase:
+                structure['state_timer_end'] = starbase['reinforced_until']
+
+            if 'unanchors_at' in starbase:
+                structure['unanchors_at'] = starbase['unanchors_at']
+
+            structures.append(structure)
+
+    if settings.DEBUG:
+        # store to disk (for debugging)
+        with open(
+            'starbases_raw_{}.json'.format(
+                owner.corporation.corporation_id
+            ), 
+            'w', 
+            encoding='utf-8'
+        ) as f:
+            json.dump(
+                structures, 
+                f, 
+                cls=DjangoJSONEncoder, 
+                sort_keys=True, 
+                indent=4
+            )
+    
+    return structures
+
+
 @shared_task
 def update_structures_for_owner(
     owner_pk, 
@@ -349,6 +437,12 @@ def update_structures_for_owner(
             )
             if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
                 structures += _fetch_custom_offices(
+                    owner, 
+                    esi_client,                    
+                    add_prefix,                
+                )
+            if STRUCTURES_FEATURE_STARBASES:
+                structures += _fetch_starbases(
                     owner, 
                     esi_client,                    
                     add_prefix,                

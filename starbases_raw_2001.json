@@ -1,0 +1,18 @@
+[
+    {
+        "corporation_id": "2001",
+        "name": "Amamake II - Moon 1",
+        "state": "online",
+        "structure_id": 1300000000001,
+        "system_id": 30002537,
+        "type_id": 16213
+    },
+    {
+        "corporation_id": "2001",
+        "name": "Amamake II - Moon 2",
+        "state": "offline",
+        "structure_id": 1300000000002,
+        "system_id": 30002537,
+        "type_id": 16214
+    }
+]

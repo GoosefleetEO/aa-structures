@@ -230,6 +230,7 @@ class TestOwner(TestCase):
 
     
     @patch('structures.models.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.models.STRUCTURES_FEATURE_STARBASES', False)
     def test_get_esi_scopes_pocos_off(self):
         self.assertSetEqual(
             set(Owner.get_esi_scopes()),
@@ -241,6 +242,7 @@ class TestOwner(TestCase):
         )
 
     @patch('structures.models.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch('structures.models.STRUCTURES_FEATURE_STARBASES', False)
     def test_get_esi_scopes_pocos_on(self):
         self.assertSetEqual(
             set(Owner.get_esi_scopes()),
@@ -248,6 +250,34 @@ class TestOwner(TestCase):
                 'esi-corporations.read_structures.v1',
                 'esi-universe.read_structures.v1',
                 'esi-characters.read_notifications.v1',
+                'esi-planets.read_customs_offices.v1',
+                'esi-assets.read_corporation_assets.v1'
+            }
+        )
+
+    @patch('structures.models.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch('structures.models.STRUCTURES_FEATURE_STARBASES', True)
+    def test_get_esi_scopes_starbases_on(self):
+        self.assertSetEqual(
+            set(Owner.get_esi_scopes()),
+            {
+                'esi-corporations.read_structures.v1',
+                'esi-universe.read_structures.v1',
+                'esi-characters.read_notifications.v1',
+                'esi-corporations.read_starbases.v1'
+            }
+        )
+
+    @patch('structures.models.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch('structures.models.STRUCTURES_FEATURE_STARBASES', True)
+    def test_get_esi_scopes_starbases_and_custom_offices(self):
+        self.assertSetEqual(
+            set(Owner.get_esi_scopes()),
+            {
+                'esi-corporations.read_structures.v1',
+                'esi-universe.read_structures.v1',
+                'esi-characters.read_notifications.v1',
+                'esi-corporations.read_starbases.v1',
                 'esi-planets.read_customs_offices.v1',
                 'esi-assets.read_corporation_assets.v1'
             }
@@ -479,7 +509,7 @@ class TestStructureNoSetup(TestCase):
             StructureService.get_matching_state('not matching'), 
             StructureService.STATE_OFFLINE
         )
-
+  
 
 class TestNotification(TestCase):
     

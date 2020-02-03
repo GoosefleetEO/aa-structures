@@ -78,6 +78,28 @@
                 }
             ]
         },
+
+        "get_corporations_corporation_id_starbases":
+        {
+            "2001":
+            [
+                {
+                    "moon_id": 40161465,
+                    "starbase_id": 1300000000001,
+                    "state": "online",
+                    "system_id": 30002537,
+                    "type_id": 16213
+                },
+                {
+                    "moon_id": 40161466,
+                    "starbase_id": 1300000000002,
+                    "state": "offline",                    
+                    "system_id": 30002537,
+                    "type_id": 16214
+                }
+            ]
+        },
+
         "post_corporations_corporation_id_assets_locations":
         {
             "2001": 
@@ -108,6 +130,7 @@
                 }
             ]
         },
+
         "post_corporations_corporation_id_assets_names":
         {
             "2001":
