@@ -162,6 +162,7 @@ Note that all settings are optional and the app will use the documented default 
 Name | Description | Default
 -- | -- | --
 `STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed).<br>Will create timers from anchoring, lost shield and lost armor notifications  | True
+`STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`| whether admins will get notifications about import events like when someone adds a structure owner | True
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | False
 `STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | False
 `STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notification forwarding before service is reported as down  | 5
