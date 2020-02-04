@@ -716,7 +716,7 @@
             "sender_id": 2021,
             "sender_type": "corporation",
             "timestamp": "2019-03-28 03:50:00",
-            "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 1.0\nhullValue: 1.0\nmoonID: 40161465\nshieldValue: 0.9950949076033535\nsolarSystemID: 30002537\ntypeID: 16213\n",
+            "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.6950949076033535\nhullValue: 1.0\nmoonID: 40161465\nshieldValue: 0.3950949076033535\nsolarSystemID: 30002537\ntypeID: 16213\n",
             "is_read": true
         },
         {            

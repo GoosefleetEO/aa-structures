@@ -93,8 +93,7 @@ _NTYPE_RELEVANT_FOR_TIMERBOARD = [
     NTYPE_STRUCTURE_ANCHORING,
     NTYPE_ORBITAL_REINFORCED,
     NTYPE_MOONMINING_EXTRACTION_STARTED,
-    NTYPE_MOONMINING_EXTRACTION_CANCELED,
-    # NTYPE_TOWER_ALERT_MSG
+    NTYPE_MOONMINING_EXTRACTION_CANCELED
 ]
 
 def get_default_notification_types():
@@ -1326,14 +1325,25 @@ class Notification(models.Model):
                     )
                 aggressor_corporation_link = gen_corporation_link(
                     aggressor_corporation.name
-                )                
+                )
+                damage_parts = list()
+                for prop in ['shield', 'armor', 'hull']:
+                    prop_yaml = prop + 'Value'
+                    if prop_yaml in parsed_text:
+                        damage_parts.append(
+                            '{}: {:.0f}%'.format(
+                                prop,
+                                parsed_text[prop_yaml] * 100
+                        ))
+                damage_text = ' | '.join(damage_parts)
                 title = 'Starbase under attack'                
                 description = ('The starbase **{}** at {} in {} '
-                    'is under attack by {}.').format(
+                    'is under attack by {}.\n{}').format(
                         structure_name,
                         eve_moon.name,
                         solar_system_link,                        
-                        aggressor_corporation_link
+                        aggressor_corporation_link,
+                        damage_text
                     )                    
                 color = self.EMBED_COLOR_WARNING
 
@@ -1341,7 +1351,7 @@ class Notification(models.Model):
                 quantity = parsed_text['wants'][0]['quantity']
                 title = 'Starbase low on fuel'                
                 description = ('The starbase **{}** at {} in {} '
-                    'is low on fuel. It has {} fuel blocks left.').format(
+                    'is low on fuel. It has *{:,}* fuel blocks left.').format(
                         structure_name,
                         eve_moon.name,
                         solar_system_link,                        
