@@ -516,22 +516,21 @@ class TestNotification(TestCase):
     
     def setUp(self):         
         create_structures()
-        my_user, my_owner = set_owner_character(character_id=1001)        
-        load_notification_entities(my_owner)
+        my_user, self.owner = set_owner_character(character_id=1001)        
+        load_notification_entities(self.owner)
         
         self.webhook = Webhook.objects.create(
             name='Test',
             url='dummy-url'
         )
-        my_owner.webhooks.add(self.webhook)
-        my_owner.save()
-
-        load_notification_entities(my_owner)
+        self.owner.webhooks.add(self.webhook)
+        self.owner.save()
         
 
     def test_str(self):
         x = Notification.objects.get(notification_id=1000000403)
         self.assertEqual(str(x), '1000000403')
+
 
     def test_ldap_datetime_2_dt(self):
         self.assertEqual(
@@ -564,6 +563,51 @@ class TestNotification(TestCase):
         x3 = Notification.objects.get(notification_id=1000010601)
         self.assertTrue(x3.is_npc_attacking())
         
+    
+    @patch('structures.models.STRUCTURES_REPORT_NPC_ATTACKS', True)
+    def test_filter_npc_attacks_1(self):
+        # NPC reporting allowed and not a NPC attacker                    
+        x1 = Notification.objects.get(notification_id=1000000509)
+        self.assertFalse(x1.filter_for_npc_attacks())
+
+        # NPC reporting allowed and a NPC attacker        
+        x1 = Notification.objects.get(notification_id=1000010509)
+        self.assertFalse(x1.filter_for_npc_attacks())
+       
+    @patch('structures.models.STRUCTURES_REPORT_NPC_ATTACKS', False)
+    def test_filter_npc_attacks_2(self):      
+        # NPC reporting not allowed and not a NPC attacker        
+        x1 = Notification.objects.get(notification_id=1000000509)
+        self.assertFalse(x1.filter_for_npc_attacks())
+
+        # NPC reporting not allowed and a NPC attacker        
+        x1 = Notification.objects.get(notification_id=1000010509)
+        self.assertTrue(x1.filter_for_npc_attacks())
+        
+    def test_filter_alliance_level(self):
+        # notification is not and owner is not alliance level
+        self.owner.is_alliance_main = False
+        self.owner.save()
+        x1 = Notification.objects.get(notification_id=1000000509)
+        self.assertFalse(x1.filter_for_alliance_level())
+
+        # notification is, but owner is not
+        self.owner.is_alliance_main = False
+        self.owner.save()
+        x1 = Notification.objects.get(notification_id=1000000803)
+        self.assertTrue(x1.filter_for_alliance_level())
+
+        # notification is and owner is
+        self.owner.is_alliance_main = True
+        self.owner.save()
+        x1 = Notification.objects.get(notification_id=1000000803)
+        self.assertFalse(x1.filter_for_alliance_level())
+
+        # notification is not, but owner is
+        self.owner.is_alliance_main = True
+        self.owner.save()
+        x1 = Notification.objects.get(notification_id=1000000509)
+        self.assertFalse(x1.filter_for_alliance_level())
 
     @patch('structures.models.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
@@ -638,6 +682,7 @@ class TestNotification(TestCase):
         )
 
         
+    @patch('structures.models.settings.DEBUG', False)
     @patch('structures.models.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_exception(
@@ -654,6 +699,7 @@ class TestNotification(TestCase):
         )
 
 
+    @patch('structures.models.STRUCTURES_ADD_TIMERS', True)
     @patch('structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
     @patch('allianceauth.timerboard.models.Timer', autospec=True)
     def test_add_to_timerboard_setting_disabled(self, mock_Timer):
@@ -666,6 +712,7 @@ class TestNotification(TestCase):
         self.assertFalse(mock_Timer.delete.called)
     
 
+    @patch('structures.models.STRUCTURES_ADD_TIMERS', True)
     @patch('structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
     def test_add_to_timerboard_normal(self):
         Timer.objects.all().delete()        
@@ -722,6 +769,14 @@ class TestNotification(TestCase):
         self.assertSetEqual(ids_set_1, ids_set_2)
 
 
+    @patch('structures.models.STRUCTURES_ADD_TIMERS', True)
+    @patch('structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
+    def test_add_to_timerboard_run_all(self):        
+        for x in Notification.objects.all():
+            x.process_for_timerboard()
+
+
+    @patch('structures.models.STRUCTURES_ADD_TIMERS', True)
     @patch('structures.models.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', False)
     def test_add_to_timerboard_corp_restriction(self):
         Timer.objects.all().delete()  
@@ -732,6 +787,7 @@ class TestNotification(TestCase):
         self.assertFalse(t.corp_timer)
 
     
+    @patch('structures.models.STRUCTURES_ADD_TIMERS', True)
     @patch('structures.models.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', True)
     def test_add_to_timerboard_corp_restriction(self):
         Timer.objects.all().delete()  

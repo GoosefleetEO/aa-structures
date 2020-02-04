@@ -445,6 +445,7 @@ class TestSyncStructures(TestCase):
 
 
     # error during user report
+    @patch('structures.tasks.settings.DEBUG', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.notify')
@@ -936,7 +937,7 @@ class TestSyncNotifications(TestCase):
         self.assertTrue(mock_notify.called)
         
         # should have added timers
-        self.assertEqual(mock_Timer_objects_create.call_count, 4)
+        self.assertEqual(mock_Timer_objects_create.call_count, 5)
 
         # run sync again
         self.assertTrue(
@@ -946,7 +947,7 @@ class TestSyncNotifications(TestCase):
         )
 
         # should not have more timers
-        self.assertEqual(mock_Timer_objects_create.call_count, 4)
+        self.assertEqual(mock_Timer_objects_create.call_count, 5)
         
             
     @patch('structures.tasks.STRUCTURES_ADD_TIMERS', False)        
@@ -1022,6 +1023,7 @@ class TestForwardNotifications(TestCase):
             url='dummy-url'
         )
         self.owner.webhooks.add(self.webhook)
+        self.owner.is_alliance_main = True
         self.owner.save()
 
         load_notification_entities(self.owner)
@@ -1131,7 +1133,7 @@ class TestForwardNotifications(TestCase):
         )
 
     
-    @patch('structures.tasks.STRUCTURES_REPORT_NPC_ATTACKS', True)
+    @patch('structures.models.STRUCTURES_REPORT_NPC_ATTACKS', True)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.tasks.Notification.send_to_webhook', autospec=True)
@@ -1162,7 +1164,7 @@ class TestForwardNotifications(TestCase):
         )
 
 
-    @patch('structures.tasks.STRUCTURES_REPORT_NPC_ATTACKS', False)
+    @patch('structures.models.STRUCTURES_REPORT_NPC_ATTACKS', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory', autospec=True)
     @patch('structures.tasks.Notification.send_to_webhook', autospec=True)

@@ -123,6 +123,8 @@ def _send_report_to_user(
             'An unexpected error ocurred while trying to '
             + 'report to user: {}'. format(ex)
         ))
+        if settings.DEBUG:
+            raise ex
 
 def _store_raw_data(name: str, data: list, corporation_id: int):
     """store raw data for debug purposes"""
@@ -794,8 +796,8 @@ def send_new_notifications_for_owner(owner_pk, rate_limited = True):
                     esi_client = get_esi_client(owner)
                 
                 for notification in q:
-                    if (STRUCTURES_REPORT_NPC_ATTACKS
-                        or not notification.is_npc_attacking()
+                    if (not notification.filter_for_npc_attacks() 
+                        and not notification.filter_for_alliance_level()
                     ):
                         notification.send_to_webhook(
                             webhook, 
@@ -842,7 +844,10 @@ def send_notification(notification_pk):
         ))
     else:    
         for webhook in notification.owner.webhooks.all():
-            if str(notification.notification_type) in webhook.notification_types:
+            if (str(notification.notification_type) in webhook.notification_types
+                and not notification.filter_for_npc_attacks() 
+                and not notification.filter_for_alliance_level()
+            ):
                 notification.send_to_webhook(webhook)
 
 

@@ -227,5 +227,50 @@
         "timestamp": "2019-03-20 22:26:00",
         "text": "allianceID: 99007974\ncorpID: 98151631\nmoonID: 40161465\nsolarSystemID: 30002537\ntypeID: 16213\nwants:\n- quantity: 119\n  typeID: 4051\n",
         "is_read": true
+    },
+    {            
+        "notification_id": 1000000801,
+        "type": "EntosisCaptureStarted",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-01-31 17:10:00",
+        "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
+        "is_read": true
+    },
+    {            
+        "notification_id": 1000000802,
+        "type": "SovCommandNodeEventStarted",
+        "sender_id": 99007974,
+        "sender_type": "alliance",
+        "timestamp": "2019-02-02 19:12:00",
+        "text": "campaignEventType: 1\nconstellationID: 20000345\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },        
+    {            
+        "notification_id": 1000000803,
+        "type": "SovAllClaimAquiredMsg",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2018-09-11 23:37:00",
+        "text": "allianceID: 99007974\ncorpID: 98151631\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {            
+        "notification_id": 1000000804,
+        "type": "SovStructureReinforced",
+        "sender_id": 99007974,
+        "sender_type": "alliance",
+        "timestamp": "2018-12-18 19:28:00",
+        "text": "campaignEventType: 1\ndecloakTime: 131897990021334067\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {            
+        "notification_id": 1000000805,
+        "type": "SovStructureDestroyed",
+        "sender_id": 99007974,
+        "sender_type": "alliance",
+        "timestamp": "2019-02-02 22:47:00",
+        "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
+        "is_read": true
     }
 ]

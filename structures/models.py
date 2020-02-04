@@ -56,6 +56,12 @@ NTYPE_ORBITAL_REINFORCED = 602
 NTYPE_TOWER_ALERT_MSG = 701
 NTYPE_TOWER_RESOURCE_ALERT_MSG = 702
 
+NTYPE_SOV_ENTOSIS_CAPTURE_STARTED = 801
+NTYPE_SOV_COMMAND_NODE_EVENT_STARTED = 802
+NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG = 803
+NTYPE_SOV_STRUCTURE_REINFORCED = 804
+NTYPE_SOV_STRUCTURE_DESTROYED = 805
+
 NTYPE_CHOICES = [
     # moon mining
     (NTYPE_MOONMINING_AUTOMATIC_FRACTURE, 'MoonminingAutomaticFracture'),    
@@ -85,6 +91,13 @@ NTYPE_CHOICES = [
     # starbases only
     (NTYPE_TOWER_ALERT_MSG, 'TowerAlertMsg'),    
     (NTYPE_TOWER_RESOURCE_ALERT_MSG, 'TowerResourceAlertMsg'),
+
+    # sov
+    (NTYPE_SOV_ENTOSIS_CAPTURE_STARTED, 'EntosisCaptureStarted'),
+    (NTYPE_SOV_COMMAND_NODE_EVENT_STARTED, 'SovCommandNodeEventStarted'),
+    (NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG, 'SovAllClaimAquiredMsg'),
+    (NTYPE_SOV_STRUCTURE_REINFORCED, 'SovStructureReinforced'),
+    (NTYPE_SOV_STRUCTURE_DESTROYED, 'SovStructureDestroyed'),
 ]
 
 _NTYPE_RELEVANT_FOR_TIMERBOARD = [
@@ -93,7 +106,16 @@ _NTYPE_RELEVANT_FOR_TIMERBOARD = [
     NTYPE_STRUCTURE_ANCHORING,
     NTYPE_ORBITAL_REINFORCED,
     NTYPE_MOONMINING_EXTRACTION_STARTED,
-    NTYPE_MOONMINING_EXTRACTION_CANCELED
+    NTYPE_MOONMINING_EXTRACTION_CANCELED,
+    NTYPE_SOV_STRUCTURE_REINFORCED
+]
+
+NTYPE_FOR_ALLIANCE_LEVEL = [
+    NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
+    NTYPE_SOV_COMMAND_NODE_EVENT_STARTED,
+    NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG,
+    NTYPE_SOV_STRUCTURE_REINFORCED,
+    NTYPE_SOV_STRUCTURE_DESTROYED
 ]
 
 def get_default_notification_types():
@@ -377,7 +399,12 @@ class EveGroup(models.Model):
 
 class EveType(models.Model):
     """type in Eve Online"""
-    EVE_TYPE_ID_POCO = 2233    
+    
+    # named type IDs
+    EVE_TYPE_ID_POCO = 2233
+    EVE_TYPE_ID_TCU = 32226
+    EVE_TYPE_ID_IHUB = 32458
+    
     EVE_IMAGESERVER_BASE_URL = 'https://images.evetech.net'
 
     id = models.IntegerField(
@@ -912,12 +939,25 @@ class EveEntity(models.Model):
 class Notification(models.Model):
     """An EVE Online notification about structures"""
     
+    # embed colors
     EMBED_COLOR_INFO = 0x5bc0de
     EMBED_COLOR_SUCCESS = 0x5cb85c
     EMBED_COLOR_WARNING = 0xf0ad4e
     EMBED_COLOR_DANGER = 0xd9534f
 
     HTTP_CODE_TOO_MANY_REQUESTS = 429
+
+    # event type structure map
+    MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
+        1: EveType.EVE_TYPE_ID_TCU,
+		2: EveType.EVE_TYPE_ID_IHUB
+    }
+
+    MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
+        2233: 'POCO',
+        32226: 'TCU',
+        32458: 'I-HUB'
+    }
     
     notification_id = models.BigIntegerField(        
         validators=[MinValueValidator(0)]
@@ -966,10 +1006,10 @@ class Notification(models.Model):
     class Meta:
         unique_together = (('notification_id', 'owner'),)
 
-
-    def __str__(self):
-        return str(self.notification_id)
-
+    @property
+    def is_alliance_level(self):
+        """ whether this is an alliance level notification"""
+        return self.notification_type in NTYPE_FOR_ALLIANCE_LEVEL
 
     @classmethod
     def _ldap_datetime_2_dt(cls, ldap_dt: int) -> datetime:
@@ -983,6 +1023,8 @@ class Notification(models.Model):
         """converts a ldap timedelta into a dt timedelta"""
         return datetime.timedelta(microseconds=ldap_td / 10)
 
+    def __str__(self):
+        return str(self.notification_id)
 
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
@@ -1025,6 +1067,12 @@ class Notification(models.Model):
 
             return name
 
+        def get_type_id_from_event_type(event_type: int) -> int:
+            if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
+                return self.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
+            else:
+                return None
+        
         parsed_text = yaml.safe_load(self.text)
         
         if self.notification_type in [
@@ -1359,6 +1407,125 @@ class Notification(models.Model):
                     )                    
                 color = self.EMBED_COLOR_WARNING
 
+        elif self.notification_type in [
+            NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
+            NTYPE_SOV_COMMAND_NODE_EVENT_STARTED,
+            NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG,
+            NTYPE_SOV_STRUCTURE_REINFORCED,
+            NTYPE_SOV_STRUCTURE_DESTROYED
+        ]:            
+            if not esi_client:
+                esi_client = esi_client_factory()
+            
+            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                    parsed_text['solarSystemID'],
+                    esi_client
+                )
+            solar_system_link = gen_solar_system_text(solar_system)
+
+            if 'structureTypeID' in parsed_text:
+                structure_type_id = parsed_text['structureTypeID']
+            elif 'campaignEventType' in parsed_text:
+                structure_type_id = get_type_id_from_event_type(
+                    parsed_text['campaignEventType']
+                )
+            else:
+                structure_type_id = EveType.EVE_TYPE_ID_TCU
+            
+            structure_type, _ = EveType.objects.get_or_create_esi(
+                structure_type_id,
+                esi_client
+            )
+            structure_type_name = structure_type.name
+            thumbnail = dhooks_lite.Thumbnail(
+                structure_type.icon_url()
+            )
+        
+            sov_owner_link = gen_alliance_link(
+                self.owner.corporation.alliance.alliance_name
+            ) 
+            
+            if self.notification_type == NTYPE_SOV_ENTOSIS_CAPTURE_STARTED:
+                title = '{} in {} is being captured'.format(
+                    structure_type_name,
+                    solar_system.name
+                )
+                description = ('A capsuleer has started to influence the '
+                    '**{}** in {} belonging to {} '
+                    'with an Entosis Link.'.format(
+                        structure_type_name,                        
+                        solar_system_link,                        
+                        sov_owner_link
+                ))                    
+                color = self.EMBED_COLOR_WARNING
+            
+
+            elif self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED:
+                title = ('Command nodes for {} in {} have begun '
+                    'to decloak').format(
+                        structure_type_name,
+                        solar_system.name
+                )
+                description = ('Command nodes for **{}** in {} can now be found '
+                    'throughout the {} constellation'.format(
+                        structure_type_name,                        
+                        solar_system_link,
+                        solar_system.eve_constellation.name
+                ))                  
+                color = self.EMBED_COLOR_WARNING
+
+
+            elif self.notification_type == NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG:
+                alliance, _ = EveEntity.objects.get_or_create_esi(
+                    parsed_text['allianceID']
+                )
+                corporation, _ = EveEntity.objects.get_or_create_esi(
+                    parsed_text['corpID']
+                )
+                title = 'DED Sovereignty claim acknowledgment: {}'.format(
+                     solar_system.name
+                )
+                description = ('DED now officially acknowledges that your '
+                    'member corporation {} has claimed sovereignty on behalf '
+                    'of {} in {}.'.format(
+                        gen_corporation_link(corporation.name), 
+                        gen_alliance_link(alliance.name),
+                        solar_system_link
+                ))             
+                color = self.EMBED_COLOR_SUCCESS
+
+            
+            elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
+                timer_starts =   self._ldap_datetime_2_dt(
+					parsed_text['decloakTime']
+				);
+                title = '{} in {} has entered reinforced mode'.format(
+                    structure_type_name,                        
+                    solar_system.name
+                )
+                description = ('The **{}** in {} belonging to {} has been '
+                    'reinforced by hostile forces and command nodes '
+                    'will begin decloaking at {}'.format(
+                        structure_type_name,                        
+                        solar_system_link,
+                        sov_owner_link,
+                        timer_starts.strftime(DATETIME_FORMAT)
+                ))
+                color = self.EMBED_COLOR_DANGER
+
+            elif self.notification_type == NTYPE_SOV_STRUCTURE_DESTROYED:
+                title = '{} in {} has been destroyed'.format(
+                    structure_type_name,                        
+                    solar_system.name
+                )
+                description = ('The command nodes for **{}** in {} belonging '
+                    'to {} have been destroyed by hostile forces.'.format(
+                        structure_type_name,                        
+                        solar_system_link,
+                        sov_owner_link
+                ))
+                color = self.EMBED_COLOR_DANGER
+        
         else:
             if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:                
                 structure_type, _ = EveType.objects.get_or_create_esi(
@@ -1454,11 +1621,14 @@ class Notification(models.Model):
         add_prefix = make_logger_prefix(
             'notification:{}'.format(self.notification_id)
         )            
-        username = '{} Notification'.format(
-            self.owner.corporation.corporation_ticker
-        )
-        avatar_url = self.owner.corporation.logo_url()
+        if self.is_alliance_level:
+            avatar_url = self.owner.corporation.alliance.logo_url()
+            ticker = self.owner.corporation.alliance.alliance_ticker            
+        else:
+            avatar_url = self.owner.corporation.logo_url()            
+            ticker = self.owner.corporation.corporation_ticker
 
+        username = '{} Notification'.format(ticker)            
         hook = dhooks_lite.Webhook(
             webhook.url, 
             username=username,
@@ -1528,7 +1698,10 @@ class Notification(models.Model):
                         'Unexpected issue when trying to'
                             + ' send message: {}'.format(ex)
                     ))
-                    break
+                    if settings.DEBUG:
+                        raise ex
+                    else:
+                        break
 
         return success
 
@@ -1537,6 +1710,7 @@ class Notification(models.Model):
         """add/removes a timer related to this notification for some types
         returns True when a timer was processed, else False
         """
+        
         success = False
         if self.notification_type in _NTYPE_RELEVANT_FOR_TIMERBOARD \
             and 'allianceauth.timerboard' in settings.INSTALLED_APPS:
@@ -1589,12 +1763,32 @@ class Notification(models.Model):
                             parsed_text['timeLeft']
                         ) 
 
-                elif self.notification_type == NTYPE_ORBITAL_REINFORCED: 
-                    add_timer = True
-                    structure_type, _ = EveType.objects.get_or_create_esi(
-                        EveType.EVE_TYPE_ID_POCO,
+                elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:  
+                    add_timer = True                                               
+                    solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                        parsed_text['solarSystemID'],
                         esi_client
-                    )               
+                    )                                
+                    system = solar_system.name                    
+                    planet_moon = ''
+                    
+                    event_type = parsed_text['campaignEventType']
+                    if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
+                        structure_type_name = \
+                            self.MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME[
+                                self.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
+                            ]
+                    else:
+                        structure_type_name = 'Other'
+                        
+                    objective = 'Friendly'
+                    details = "Sov timer"
+                    eve_time = self._ldap_datetime_2_dt(
+                        parsed_text['decloakTime']
+                    )     
+
+                elif self.notification_type == NTYPE_ORBITAL_REINFORCED: 
+                    add_timer = True                                
                     solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                         parsed_text['solarSystemID'],
                         esi_client
@@ -1688,13 +1882,14 @@ class Notification(models.Model):
                 else:
                     raise NotImplementedError()
 
-                if add_timer:
+                if add_timer:                    
                     with transaction.atomic():                        
                         Timer.objects.create(
                             details=details,
                             system=system,
                             planet_moon=planet_moon,
-                            structure=structure_type_name,
+                            structure=structure_type_name \
+                                if structure_type_name else 'Other',
                             objective=objective,
                             eve_time=eve_time,                            
                             eve_corp=self.owner.corporation,
@@ -1714,11 +1909,13 @@ class Notification(models.Model):
                         self.notification_id,
                         ex
                     ))
+                if settings.DEBUG:
+                    raise ex
         
         return success
 
     def is_npc_attacking(self):
-        """returns true if notification is about a NPC attacking"""
+        """ whether this notification is about a NPC attacking"""
         result = False
         if self.notification_type in [
             NTYPE_ORBITAL_ATTACKED, 
@@ -1741,6 +1938,14 @@ class Notification(models.Model):
 
         return result
 
+    def filter_for_npc_attacks(self):
+        """true when notification to be filtered out due to npc attacks"""
+        return not STRUCTURES_REPORT_NPC_ATTACKS and self.is_npc_attacking()
+
+    def filter_for_alliance_level(self):
+        """true when notification to be filtered out due to alliance level"""
+        return self.is_alliance_level and not self.owner.is_alliance_main
+        
     @classmethod
     def get_all_types(cls):
         """returns a set with all supported notification types"""
