@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.10.0] - TBD
+
+## Added
+
+- Starbases added to the structure browser
+- Starbase notification added for aggression and fuel alert
+- Filter by category: It is now possible to filter by category (orbital, structure, starbase) in the structures browser
+
+## Changed
+
+- For starbases and POCOs the name of the related celestial (e.g. planet, moon) is now shown on the structure browser under location.
+
 ## [0.9.1] - 2020-02-01
 
 ## Changed

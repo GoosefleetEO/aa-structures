@@ -1,29 +1,55 @@
 {    
+    "EveCategory":
+    [
+        {
+            "id": 2,
+            "name": "Celestial"
+        },
+        {
+            "id": 23,
+            "name": "Starbase"
+        },
+        {
+            "id": 46,
+            "name": "Orbitals"
+        },
+        {
+            "id": 65,
+            "name": "Structure"
+        }
+    ],
+
     "EveGroup":
     [
         {
             "id": 7,
-            "name": "Planet"
+            "name": "Planet",
+            "eve_category_id": 2
         },
         {
             "id": 8,
-            "name": "Moon"
+            "name": "Moon",
+            "eve_category_id": 2
         },
         {
             "id": 365,
-            "name": "Control Tower"
+            "name": "Control Tower",
+            "eve_category_id": 23
         },
         {
             "id": 1657,
-            "name": "Citadel"
+            "name": "Citadel",
+            "eve_category_id": 65
         },
         {
             "id": 1406,
-            "name": "Refinery"
+            "name": "Refinery",
+            "eve_category_id": 65
         },
         {
             "id": 1025,
-            "name": "Orbital Infrastructure"
+            "name": "Orbital Infrastructure",
+            "eve_category_id": 46
         }
     ],   
 

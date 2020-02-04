@@ -197,6 +197,11 @@ def structure_list_data(request):
             add_no_wrap_html(row['region_name'])
         )        
         
+        # category
+        my_group = structure.eve_type.eve_group
+        row['category_name'] = \
+            my_group.eve_category.name if my_group.eve_category else ''
+
         # type icon
         row['type_icon'] = '<img src="{}" width="{}" height="{}"/>'.format(
             structure.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
@@ -336,14 +341,14 @@ def add_structure_owner(request, token):
             force_sync=True,
             user_pk=request.user.pk
         )        
-        messages_plus.success(
+        messages_plus.info(
             request,             
             '<strong>{}</strong> has been added '.format(owner)
             + 'with <strong>{}</strong> as sync character. '.format(
                     owner.character.character.character_name, 
                 )                        
             + 'We have started fetching structures for this corporation. '
-            + 'You will receive a reports once completed.'
+            + 'You will receive a report once the process is finished.'
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
             notify_admins(

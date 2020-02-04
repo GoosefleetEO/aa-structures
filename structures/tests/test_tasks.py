@@ -60,6 +60,7 @@ class TestSyncStructures(TestCase):
         esi_get_corporations_corporation_id_customs_offices.override_data = None
         
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,

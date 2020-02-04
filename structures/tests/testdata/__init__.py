@@ -366,6 +366,7 @@ def load_entity(EntityClass):
 def load_entities(entities_def: list = None):
     """loads testdata for given entities classes"""
     entities_def_master = [
+        EveCategory,
         EveGroup,
         EveType,
         EveRegion,

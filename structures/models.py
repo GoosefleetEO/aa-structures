@@ -21,8 +21,8 @@ from esi.clients import esi_client_factory
 
 from .app_settings import *
 from . import evelinks, __title__
-from .managers import EveGroupManager, EveTypeManager, EveRegionManager,\
-    EveConstellationManager, EveSolarSystemManager, \
+from .managers import EveCategoryManager, EveGroupManager, EveTypeManager, \
+    EveRegionManager, EveConstellationManager, EveSolarSystemManager, \
     EveEntityManager, EveMoonManager, EvePlanetManager, StructureManager
 from .utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
@@ -339,6 +339,21 @@ class Owner(models.Model):
         return scopes
 
 
+class EveCategory(models.Model):
+    """group in Eve Online"""
+    id = models.IntegerField(
+        primary_key=True,
+        validators=[MinValueValidator(0)],
+        help_text='Eve Online category ID'
+    )
+    name = models.CharField(max_length=100)
+
+    objects = EveCategoryManager()
+    
+    def __str__(self):
+        return self.name
+
+
 class EveGroup(models.Model):
     """group in Eve Online"""
     id = models.IntegerField(
@@ -347,6 +362,13 @@ class EveGroup(models.Model):
         help_text='Eve Online group ID'
     )
     name = models.CharField(max_length=100)
+    eve_category = models.ForeignKey(
+        EveCategory, 
+        on_delete=models.SET_DEFAULT,
+        null=True, 
+        default=None, 
+        blank=True
+    )
 
     objects = EveGroupManager()
     

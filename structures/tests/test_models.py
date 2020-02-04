@@ -289,6 +289,7 @@ class TestEveEntities(TestCase):
     def setUp(self):
                           
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,

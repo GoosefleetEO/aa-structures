@@ -14,8 +14,82 @@ from ..models import *
 logger = set_logger('structures.managers', __file__)
 
 
+class TestEveCategoryManager(TestCase):
+    
+    def setUp(self):
+        EveCategory.objects.all().delete()
+
+    @patch('structures.tasks.esi_client_factory', autospec=True)
+    def test_eve_category_get(
+        self, 
+        mock_esi_client_factory
+    ):
+        load_entity(EveCategory)
+        
+        obj, created = EveCategory.objects.get_or_create_esi(65)
+        
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 65)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_category_create_wo_client(
+        self, 
+        mock_esi_client_factory
+    ):                
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_categories_category_id\
+            .return_value.result.return_value = {
+                "id": 65,
+                "name": "Structure"
+            }       
+        mock_esi_client_factory.return_value = mock_client
+        
+        obj, created = EveCategory.objects.get_or_create_esi(65)
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 65)
+        self.assertIsInstance(EveCategory.objects.get(id=65), EveCategory)
+
+    
+    def test_eve_category_create_w_client(self):                
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_categories_category_id\
+            .return_value.result.return_value = {
+               "id": 65,
+                "name": "Structure"
+            }
+        
+        obj, created = EveCategory.objects.get_or_create_esi(
+            65, 
+            mock_client
+        )
+        
+        self.assertTrue(created)
+        self.assertEqual(obj.id, 65)
+        self.assertIsInstance(EveCategory.objects.get(id=65), EveCategory)
+
+
+    @patch('structures.managers.esi_client_factory', autospec=True)
+    def test_eve_category_create_failed(
+        self, 
+        mock_esi_client_factory
+    ):                
+        mock_client = Mock()        
+        mock_client.Universe.get_universe_categories_category_id\
+            .return_value.result.side_effect = RuntimeError()
+        mock_esi_client_factory.return_value = mock_client
+                
+        with self.assertRaises(RuntimeError):
+            EveCategory.objects.get_or_create_esi(65)
+
+
 class TestEveGroupManager(TestCase):
     
+    def setUp(self):
+        load_entity(EveCategory)
+
+
     @patch('structures.tasks.esi_client_factory', autospec=True)
     def test_eve_group_get(
         self, 
@@ -38,7 +112,8 @@ class TestEveGroupManager(TestCase):
         mock_client.Universe.get_universe_groups_group_id\
             .return_value.result.return_value = {
                 "id": 1657,
-                "name": "Citadel"
+                "name": "Citadel",
+                "category_id": 65
             }       
         mock_esi_client_factory.return_value = mock_client
         
@@ -54,7 +129,8 @@ class TestEveGroupManager(TestCase):
         mock_client.Universe.get_universe_groups_group_id\
             .return_value.result.return_value = {
                 "id": 1657,
-                "name": "Citadel"
+                "name": "Citadel",
+                "category_id": 65
             }
         
         obj, created = EveGroup.objects.get_or_create_esi(
@@ -88,7 +164,7 @@ class TestEveTypeManager(TestCase):
         self, 
         mock_esi_client_factory
     ):
-        load_entities([EveGroup,EveType])
+        load_entities([EveCategory, EveGroup, EveType])
 
         obj, created = EveType.objects.get_or_create_esi(35832)        
         
@@ -110,7 +186,7 @@ class TestEveTypeManager(TestCase):
             }        
         mock_esi_client_factory.return_value = mock_client
         
-        load_entity(EveGroup)
+        load_entities([EveCategory, EveGroup])
         
         obj, created = EveType.objects.get_or_create_esi(35832)
         
@@ -127,8 +203,8 @@ class TestEveTypeManager(TestCase):
                 "name": "Astrahus",
                 "group_id": 1657
             }        
-        
-        load_entity(EveGroup)
+                
+        load_entities([EveCategory, EveGroup])
         
         obj, created = EveType.objects.get_or_create_esi(35832, mock_client)
         
@@ -303,6 +379,7 @@ class TestEveSolarSystemManager(TestCase):
         mock_esi_client_factory
     ):        
         load_entities([
+            EveCategory, 
             EveGroup,
             EveType,
             EveRegion,
@@ -346,6 +423,7 @@ class TestEveSolarSystemManager(TestCase):
         mock_esi_client_factory.return_value = mock_client
         
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -391,6 +469,7 @@ class TestEveSolarSystemManager(TestCase):
             .side_effect = esi_get_universe_planets_planet_id      
                 
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -436,6 +515,7 @@ class TestEveMoonManager(TestCase):
         mock_esi_client_factory
     ):
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -470,6 +550,7 @@ class TestEveMoonManager(TestCase):
         mock_esi_client_factory.return_value = mock_client
                 
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -502,6 +583,7 @@ class TestEveMoonManager(TestCase):
             }
                 
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -544,6 +626,7 @@ class TestEvePlanetManager(TestCase):
         mock_esi_client_factory
     ):        
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -570,6 +653,7 @@ class TestEvePlanetManager(TestCase):
         mock_esi_client_factory.return_value = mock_client
         
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -593,6 +677,7 @@ class TestEvePlanetManager(TestCase):
             .side_effect = esi_get_universe_planets_planet_id
         
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,
@@ -773,6 +858,7 @@ class TestStructureManager(TestCase):
             }   
 
         load_entities([
+            EveCategory,
             EveGroup,
             EveType,
             EveRegion,

@@ -14,6 +14,60 @@ from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
+
+class EveCategoryManager(models.Manager):
+    
+    def get_or_create_esi(
+            self,             
+            eve_category_id: int,
+            esi_client: object = None
+    ) -> list:
+        """gets or creates eve_category object with data fetched from ESI"""
+        from .models import EveCategory
+        try:
+            obj = self.get(id=eve_category_id)
+            created = False
+        except EveCategory.DoesNotExist:
+            obj, created = self.update_or_create_esi(                
+                eve_category_id,
+                esi_client
+            )
+        
+        return obj, created
+
+
+    def update_or_create_esi(
+            self,             
+            eve_category_id: int,
+            esi_client: object = None
+    ) -> list:
+        """updates or creates eve_category object with data fetched from ESI"""
+        from .models import EveCategory
+
+        addPrefix = make_logger_prefix(eve_category_id)
+
+        logger.info(addPrefix('Fetching category from ESI'))
+        if not esi_client:
+            esi_client = esi_client_factory()
+        try:
+            eve_category = esi_client.Universe.get_universe_categories_category_id(
+                category_id=eve_category_id
+            ).result()
+            obj, created = self.update_or_create(
+                id=eve_category_id,
+                defaults={
+                    'name': eve_category['name']                    
+                }
+            ) 
+        except Exception as ex:
+            logger.warn(addPrefix(
+                'Failed to load category: '.format(ex)
+            ))
+            raise ex
+        
+        return obj, created
+
+
 class EveGroupManager(models.Manager):
     
     def get_or_create_esi(
@@ -41,7 +95,7 @@ class EveGroupManager(models.Manager):
             esi_client: object = None
     ) -> list:
         """updates or creates eve_group object with data fetched from ESI"""
-        from .models import EveGroup
+        from .models import EveGroup, EveCategory
 
         addPrefix = make_logger_prefix(eve_group_id)
 
@@ -49,13 +103,18 @@ class EveGroupManager(models.Manager):
         if not esi_client:
             esi_client = esi_client_factory()
         try:
-            eve_group = esi_client.Universe.get_universe_groups_group_id(
+            group = esi_client.Universe.get_universe_groups_group_id(
                 group_id=eve_group_id
             ).result()
+            eve_category, _ = EveCategory.objects.get_or_create_esi(                
+                group['category_id'],
+                esi_client
+            )
             obj, created = self.update_or_create(
                 id=eve_group_id,
                 defaults={
-                    'name': eve_group['name']                    
+                    'name': group['name'],                    
+                    'eve_category': eve_category
                 }
             ) 
         except Exception as ex:
