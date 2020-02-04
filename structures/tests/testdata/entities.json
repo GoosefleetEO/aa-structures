@@ -34,16 +34,59 @@
             "name": "Moon",
             "eve_group_id": 8
         },
+
         {
-            "id": 2233,
-            "name": "Customs Office",
-            "eve_group_id": 1025
+            "id": 11,
+            "name": "Planet (Temperate)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 12,
+            "name": "Planet (Ice)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 13,
+            "name": "Planet (Gas)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 2014,
+            "name": "Planet (Oceanic)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 2015,
+            "name": "Planet (Lava)",
+            "eve_group_id": 7
         },
         {
             "id": 2016,
             "name": "Planet (Barren)",
             "eve_group_id": 7
         },
+        {
+            "id": 2017,
+            "name": "Planet (Storm)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 2063,
+            "name": "Planet (Plasma)",
+            "eve_group_id": 7
+        },
+        {
+            "id": 30889,
+            "name": "Planet (Shattered)",
+            "eve_group_id": 7
+        },
+
+        {
+            "id": 2233,
+            "name": "Customs Office",
+            "eve_group_id": 1025
+        },
+        
         {
             "id": 16213,
             "name": "Caldari Control Tower",
@@ -109,9 +152,105 @@
     "EvePlanet":
     [        
         {
+            "id": 40161463,
+            "name": "Amamake I",
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 2016
+        },
+        {
+            "id": 40161464,
+            "name": "Amamake II",
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 11
+        },
+        {
+            "id": 40161467,
+            "name": "Amamake III",
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 2014
+        },
+        {
             "id": 40161469,
             "name": "Amamake IV",
             "eve_solar_system_id": 30002537,
+            "eve_type_id": 2016
+        },
+        {
+            "id": 40161472,
+            "name": "Amamake V",
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 2016
+        },
+        {
+            "id": 40161476,
+            "name": "Amamake IV",
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 13
+        },
+        {
+            "id": 40029526,
+            "name": "1-PGSG I",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 2017
+        },
+        {
+            "id": 40029528,
+            "name": "1-PGSG II",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 2016
+        },
+        {
+            "id": 40029529,
+            "name": "1-PGSG III",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 2015
+        },
+        {
+            "id": 40029531,
+            "name": "1-PGSG IV",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 11
+        },
+        {
+            "id": 40029533,
+            "name": "1-PGSG V",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 13
+        },
+        {
+            "id": 40029537,
+            "name": "1-PGSG VI",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 11
+        },
+        {
+            "id": 40029538,
+            "name": "1-PGSG VII",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 13
+        },
+        {
+            "id": 40029553,
+            "name": "1-PGSG VIII",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 13
+        },
+        {
+            "id": 40029572,
+            "name": "1-PGSG IX",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 13
+        },
+        {
+            "id": 40029610,
+            "name": "1-PGSG X",
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 13
+        },
+        {
+            "id": 40029616,
+            "name": "1-PGSG XI",
+            "eve_solar_system_id": 30000474,
             "eve_type_id": 2016
         }
     ],
@@ -270,7 +409,7 @@
         },
         {
             "id": 1200000000003,  
-            "name": "Customs Office (Amamake IX)",
+            "name": "Customs Office (Amamake V)",
             "eve_type_id": 2233,
             "eve_solar_system_id": 30002537,            
             "reinforce_hour": 3,

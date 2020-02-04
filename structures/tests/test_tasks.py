@@ -65,9 +65,10 @@ class TestSyncStructures(TestCase):
             EveRegion,
             EveConstellation,
             EveSolarSystem,            
+            EvePlanet,
+            EveMoon,
             EveCorporationInfo,
-            EveCharacter,
-            EveMoon
+            EveCharacter,            
         ])
             
         # 1 user
@@ -197,8 +198,7 @@ class TestSyncStructures(TestCase):
                 esi_get_corporations_corporation_id_starbases
         mock_client.Universe\
             .get_universe_structures_structure_id.side_effect =\
-                esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
+                esi_get_universe_structures_structure_id        
         mock_client.Planetary_Interaction\
             .get_corporations_corporation_id_customs_offices = \
                 esi_get_corporations_corporation_id_customs_offices
@@ -208,6 +208,7 @@ class TestSyncStructures(TestCase):
         mock_client.Assets\
             .post_corporations_corporation_id_assets_names = \
                 esi_post_corporations_corporation_id_assets_names
+        mock_esi_client_factory.return_value = mock_client
 
         # create test data
         p = Permission.objects.filter(            
@@ -260,6 +261,13 @@ class TestSyncStructures(TestCase):
             },
             {'Clone Bay', 'Market Hub'}
         )
+        # check name for POCO
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(
+            structure.name,
+            'Planet (Barren)'
+        )
+        
         # user report has been sent
         self.assertTrue(mock_notify.called)
     
@@ -396,8 +404,7 @@ class TestSyncStructures(TestCase):
             {'2001': []}
         mock_client.Universe\
             .get_universe_structures_structure_id.side_effect =\
-                esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
+                esi_get_universe_structures_structure_id        
         mock_client.Planetary_Interaction\
             .get_corporations_corporation_id_customs_offices = \
                 esi_get_corporations_corporation_id_customs_offices
@@ -409,6 +416,7 @@ class TestSyncStructures(TestCase):
         mock_client.Assets\
             .post_corporations_corporation_id_assets_names = \
                 esi_post_corporations_corporation_id_assets_names
+        mock_esi_client_factory.return_value = mock_client
 
         # create test data
         p = Permission.objects.filter(            
@@ -455,8 +463,7 @@ class TestSyncStructures(TestCase):
             {'2001': []}
         mock_client.Universe\
             .get_universe_structures_structure_id.side_effect =\
-                esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
+                esi_get_universe_structures_structure_id        
         mock_client.Planetary_Interaction\
             .get_corporations_corporation_id_customs_offices = \
                 esi_get_corporations_corporation_id_customs_offices
@@ -468,7 +475,9 @@ class TestSyncStructures(TestCase):
         mock_client.Assets\
             .post_corporations_corporation_id_assets_names = \
                 esi_post_corporations_corporation_id_assets_names
+        mock_esi_client_factory.return_value = mock_client
         mock_notify.side_effect = RuntimeError
+        
 
         # create test data
         p = Permission.objects.filter(            
@@ -607,7 +616,127 @@ class TestSyncStructures(TestCase):
             },
             {'Moon Drilling'}
         )
-    
+
+
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch('structures.tasks.notify', autospec=True)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_pocos_no_planet_match(
+        self,         
+        mock_esi_client_factory,
+        mock_Token,
+        mock_notify
+    ):                               
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id        
+        mock_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+                esi_get_corporations_corporation_id_customs_offices
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+                esi_post_corporations_corporation_id_assets_locations
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_names = \
+                esi_post_corporations_corporation_id_assets_names
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )
+
+        EvePlanet.objects.all().delete()
+        
+        # run update task
+        self.assertTrue(
+            tasks.update_structures_for_owner(
+                owner_pk=owner.pk, 
+                user_pk=self.user.pk
+        ))
+
+        # check name for POCO
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(
+            structure.name,
+            'Amamake V'
+        )
+
+
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
+    @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch('structures.tasks.notify', autospec=True)
+    @patch('structures.tasks.Token', autospec=True)
+    @patch('structures.tasks.esi_client_factory')
+    def test_update_pocos_no_asset_name_match(
+        self,         
+        mock_esi_client_factory,
+        mock_Token,
+        mock_notify
+    ):                               
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+                esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+                esi_get_universe_structures_structure_id        
+        mock_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+                esi_get_corporations_corporation_id_customs_offices
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+                esi_post_corporations_corporation_id_assets_locations
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_names = \
+                esi_post_corporations_corporation_id_assets_names
+        mock_esi_client_factory.return_value = mock_client
+
+        esi_post_corporations_corporation_id_assets_names.override_data = {
+            "2001": []
+        }
+        
+        # create test data
+        p = Permission.objects.filter(            
+            codename='add_structure_owner'
+        ).first()
+        self.user.user_permissions.add(p)
+        self.user.save()
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=self.main_ownership
+        )
+
+        EvePlanet.objects.all().delete()
+        
+        # run update task
+        self.assertTrue(
+            tasks.update_structures_for_owner(
+                owner_pk=owner.pk, 
+                user_pk=self.user.pk
+        ))
+
+        # check name for POCO
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(
+            structure.name,
+            ''
+        )
+
+        esi_post_corporations_corporation_id_assets_names.override_data = None
+
 
     # catch exception during storing of structures
     @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)

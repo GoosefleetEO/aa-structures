@@ -6,7 +6,8 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
 from . import set_logger
-from .testdata import entities_testdata, load_entity, create_structures
+from .testdata import entities_testdata, load_entity, load_entities,\
+    create_structures, esi_get_universe_planets_planet_id
 from ..models import *
 
 
@@ -87,8 +88,7 @@ class TestEveTypeManager(TestCase):
         self, 
         mock_esi_client_factory
     ):
-        load_entity(EveGroup)
-        load_entity(EveType)
+        load_entities([EveGroup,EveType])
 
         obj, created = EveType.objects.get_or_create_esi(35832)        
         
@@ -301,10 +301,14 @@ class TestEveSolarSystemManager(TestCase):
     def test_eve_solar_system_get(
         self, 
         mock_esi_client_factory
-    ):
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
+    ):        
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem
+        ])
 
         obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
@@ -323,12 +327,30 @@ class TestEveSolarSystemManager(TestCase):
                 "id": 30000474,
                 "name": "1-PGSG",
                 "security_status": -0.496552765369415,
-                "constellation_id": 20000069
+                "constellation_id": 20000069,
+                "planets":
+                [
+                    {
+                        "planet_id": 40029526
+                    },
+                    {
+                        "planet_id": 40029528
+                    },
+                    {
+                        "planet_id": 40029529
+                    }
+                ]
             }      
+        mock_client.Universe.get_universe_planets_planet_id\
+            .side_effect = esi_get_universe_planets_planet_id
         mock_esi_client_factory.return_value = mock_client
         
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation          
+        ])
 
         obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
@@ -337,7 +359,11 @@ class TestEveSolarSystemManager(TestCase):
         self.assertIsInstance(
             EveSolarSystem.objects.get(id=30000474), 
             EveSolarSystem
-        )        
+        )
+        self.assertSetEqual(
+            {x.id for x in EvePlanet.objects.filter(eve_solar_system=obj)},
+            {40029526, 40029528, 40029529}
+        )
 
 
     def test_eve_solar_system_create_w_client(self):                        
@@ -347,12 +373,30 @@ class TestEveSolarSystemManager(TestCase):
                 "id": 30000474,
                 "name": "1-PGSG",
                 "security_status": -0.496552765369415,
-                "constellation_id": 20000069
-            }      
+                "constellation_id": 20000069,
+                "planets":
+                [
+                    {
+                        "planet_id": 40029526
+                    },
+                    {
+                        "planet_id": 40029528
+                    },
+                    {
+                        "planet_id": 40029529
+                    }
+                ]
+            }
+        mock_client.Universe.get_universe_planets_planet_id\
+            .side_effect = esi_get_universe_planets_planet_id      
                 
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation
+        ])
+                
         obj, created = EveSolarSystem.objects.get_or_create_esi(
             30000474,
             mock_client
@@ -363,7 +407,11 @@ class TestEveSolarSystemManager(TestCase):
         self.assertIsInstance(
             EveSolarSystem.objects.get(id=30000474), 
             EveSolarSystem
-        )        
+        )
+        self.assertSetEqual(
+            {x.id for x in EvePlanet.objects.filter(eve_solar_system=obj)},
+            {40029526, 40029528, 40029529}
+        )
 
 
     @patch('structures.managers.esi_client_factory', autospec=True)
@@ -387,10 +435,14 @@ class TestEveMoonManager(TestCase):
         self, 
         mock_esi_client_factory
     ):
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
-        load_entity(EveMoon)
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon
+        ])
 
         obj, created = EveMoon.objects.get_or_create_esi(40161465)
         
@@ -416,10 +468,14 @@ class TestEveMoonManager(TestCase):
                 }
             }
         mock_esi_client_factory.return_value = mock_client
-        
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
+                
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem          
+        ])
 
         obj, created = EveMoon.objects.get_or_create_esi(40161465)
         
@@ -444,10 +500,14 @@ class TestEveMoonManager(TestCase):
                     "z": 3
                 }
             }
-        
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
+                
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem
+        ])
 
         obj, created = EveMoon.objects.get_or_create_esi(
             40161465, 
@@ -482,13 +542,16 @@ class TestEvePlanetManager(TestCase):
     def test_eve_planet_get(
         self, 
         mock_esi_client_factory
-    ):
-        load_entity(EveGroup)
-        load_entity(EveType)
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
-        load_entity(EvePlanet)
+    ):        
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon,
+            EvePlanet
+        ])
 
         obj, created = EvePlanet.objects.get_or_create_esi(40161469)
         
@@ -503,24 +566,16 @@ class TestEvePlanetManager(TestCase):
     ):                           
         mock_client = Mock()        
         mock_client.Universe.get_universe_planets_planet_id\
-            .return_value.result.return_value = {
-                "id": 40161469,
-                "name": "Amamake IV",
-                "system_id": 30002537,
-                "position": {
-                    "x": 1,
-                    "y": 2,
-                    "z": 3
-                },
-                "type_id": 2016,
-            }
+            .side_effect = esi_get_universe_planets_planet_id
         mock_esi_client_factory.return_value = mock_client
         
-        load_entity(EveGroup)
-        load_entity(EveType)
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem            
+        ])        
         
         obj, created = EvePlanet.objects.get_or_create_esi(40161469)
         
@@ -535,24 +590,16 @@ class TestEvePlanetManager(TestCase):
     def test_eve_planet_create_wo_client(self):                           
         mock_client = Mock()        
         mock_client.Universe.get_universe_planets_planet_id\
-            .return_value.result.return_value = {
-                "id": 40161469,
-                "name": "Amamake IV",
-                "system_id": 30002537,
-                "position": {
-                    "x": 1,
-                    "y": 2,
-                    "z": 3
-                },
-                "type_id": 2016,
-            }
+            .side_effect = esi_get_universe_planets_planet_id
         
-        load_entity(EveGroup)
-        load_entity(EveType)
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
-        
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem            
+        ])
+
         obj, created = EvePlanet.objects.get_or_create_esi(
             40161469, 
             mock_client
@@ -724,13 +771,16 @@ class TestStructureManager(TestCase):
                     "z": 3
                 }
             }   
-                
-        load_entity(EveRegion)
-        load_entity(EveConstellation)
-        load_entity(EveSolarSystem)
-        load_entity(EveGroup)
-        load_entity(EveType)
-        load_entity(EveCorporationInfo)
+
+        load_entities([
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveCorporationInfo            
+        ])
+        
         owner = Owner.objects.create(
             corporation = EveCorporationInfo.objects.get(corporation_id=2001)
         )

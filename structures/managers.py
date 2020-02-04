@@ -45,7 +45,7 @@ class EveGroupManager(models.Manager):
 
         addPrefix = make_logger_prefix(eve_group_id)
 
-        logger.info(addPrefix('Fetching eve_group from ESI'))
+        logger.info(addPrefix('Fetching group from ESI'))
         if not esi_client:
             esi_client = esi_client_factory()
         try:
@@ -60,7 +60,7 @@ class EveGroupManager(models.Manager):
             ) 
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_group: '.format(ex)
+                'Failed to load group: '.format(ex)
             ))
             raise ex
         
@@ -74,7 +74,7 @@ class EveTypeManager(models.Manager):
             eve_type_id: int,
             esi_client: object = None
     ) -> list:
-        """gets or creates eve_type object with data fetched from ESI"""
+        """gets or creates type object with data fetched from ESI"""
         from .models import EveType
         try:
             obj = self.get(id=eve_type_id)
@@ -93,7 +93,7 @@ class EveTypeManager(models.Manager):
             eve_type_id: int,
             esi_client: object = None
     ) -> list:
-        """updates or creates eve_type object with data fetched from ESI"""
+        """updates or creates type object with data fetched from ESI"""
         from .models import EveType, EveGroup
 
         addPrefix = make_logger_prefix(eve_type_id)
@@ -118,7 +118,7 @@ class EveTypeManager(models.Manager):
             ) 
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_type: '.format(ex)
+                'Failed to load type: '.format(ex)
             ))
             raise ex
         
@@ -132,7 +132,7 @@ class EveRegionManager(models.Manager):
             eve_region_id: int,
             esi_client: object = None
     ) -> list:
-        """gets or creates eve_region object with data fetched from ESI"""
+        """gets or creates region object with data fetched from ESI"""
         from .models import EveRegion
         try:
             obj = self.get(id=eve_region_id)
@@ -151,12 +151,12 @@ class EveRegionManager(models.Manager):
             eve_region_id: int,
             esi_client: object = None
     ) -> list:
-        """updates or creates eve_region object with data fetched from ESI"""
+        """updates or creates region object with data fetched from ESI"""
         from .models import EveGroup
 
         addPrefix = make_logger_prefix(eve_region_id)
 
-        logger.info(addPrefix('Fetching eve_region from ESI'))
+        logger.info(addPrefix('Fetching region from ESI'))
         if not esi_client:
             esi_client = esi_client_factory()
         try:
@@ -171,7 +171,7 @@ class EveRegionManager(models.Manager):
             ) 
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_region: '.format(ex)
+                'Failed to load region: '.format(ex)
             ))
             raise ex
         
@@ -209,7 +209,7 @@ class EveConstellationManager(models.Manager):
 
         addPrefix = make_logger_prefix(eve_constellation_id)
 
-        logger.info(addPrefix('Fetching eve_constellation from ESI'))
+        logger.info(addPrefix('Fetching constellation from ESI'))
         if not esi_client:
             esi_client = esi_client_factory()
         try:
@@ -229,7 +229,7 @@ class EveConstellationManager(models.Manager):
             ) 
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_constellation: '.format(ex)
+                'Failed to load constellation: '.format(ex)
             ))
             raise ex
         
@@ -262,33 +262,39 @@ class EveSolarSystemManager(models.Manager):
             eve_solar_system_id: int,
             esi_client: object = None
     ) -> list:
-        """updates or creates eve_solar_system object with data fetched from ESI"""
-        from .models import EveSolarSystem, EveConstellation
+        """updates or creates solar system object with data fetched from ESI"""
+        from .models import EveSolarSystem, EveConstellation, EvePlanet
 
         addPrefix = make_logger_prefix(eve_solar_system_id)
 
-        logger.info(addPrefix('Fetching eve_solar_system from ESI'))
+        logger.info(addPrefix('Fetching solar system from ESI'))
         if not esi_client:
             esi_client = esi_client_factory()
         try:
-            eve_solar_system = esi_client.Universe.get_universe_systems_system_id(
+            solar_system = esi_client.Universe.get_universe_systems_system_id(
                 system_id=eve_solar_system_id
             ).result()
             eve_constellation, _ = EveConstellation.objects.get_or_create_esi( 
-                eve_solar_system['constellation_id'],
+                solar_system['constellation_id'],
                 esi_client
             )
             obj, created = self.update_or_create(
                 id=eve_solar_system_id,
                 defaults={
-                    'name': eve_solar_system['name'],
+                    'name': solar_system['name'],
                     'eve_constellation': eve_constellation,
-                    'security_status': eve_solar_system['security_status'],
+                    'security_status': solar_system['security_status'],
                 }
-            ) 
+            )
+            for planet in solar_system['planets']:
+                eve_planet, _ = EvePlanet.objects.get_or_create_esi(
+                    planet['planet_id'],
+                    esi_client
+                )
+
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_solar_system: '.format(ex)
+                'Failed to load solar system: '.format(ex)
             ))
             raise ex
         
@@ -326,7 +332,7 @@ class EveMoonManager(models.Manager):
 
         addPrefix = make_logger_prefix(moon_id)
 
-        logger.info(addPrefix('Fetching eve_moon from ESI'))
+        logger.info(addPrefix('Fetching moon from ESI'))
         if not esi_client:
             esi_client = esi_client_factory()
         try:
@@ -349,7 +355,7 @@ class EveMoonManager(models.Manager):
             ) 
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_moon: '.format(ex)
+                'Failed to load moon: '.format(ex)
             ))
             raise ex
         
@@ -387,7 +393,7 @@ class EvePlanetManager(models.Manager):
 
         addPrefix = make_logger_prefix(planet_id)
 
-        logger.info(addPrefix('Fetching eve_planet from ESI'))
+        logger.info(addPrefix('Fetching planet from ESI'))
         if not esi_client:
             esi_client = esi_client_factory()
         try:
@@ -415,7 +421,7 @@ class EvePlanetManager(models.Manager):
             ) 
         except Exception as ex:
             logger.warn(addPrefix(
-                'Failed to load eve_planet: '.format(ex)
+                'Failed to load planet: '.format(ex)
             ))
             raise ex
         

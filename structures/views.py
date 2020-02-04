@@ -177,7 +177,8 @@ def structure_list_data(request):
             )
         
         # location        
-        row['region_name'] = structure.eve_solar_system.eve_constellation.eve_region.name
+        row['region_name'] = \
+            structure.eve_solar_system.eve_constellation.eve_region.name
         row['solar_system_name'] = structure.eve_solar_system.name
         solar_system_url = evelinks.get_entity_profile_url_by_name(
             evelinks.ESI_CATEGORY_SOLARSYSTEM,
@@ -185,6 +186,8 @@ def structure_list_data(request):
         )
         if structure.eve_moon:
             location_name = structure.eve_moon.name
+        elif structure.eve_planet:
+            location_name = structure.eve_planet.name
         else:        
             location_name = structure.eve_solar_system.name
         

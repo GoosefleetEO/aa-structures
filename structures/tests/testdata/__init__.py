@@ -82,6 +82,36 @@ entities_testdata = _load_testdata_entities()
 ##############################
 # functions for mocking calls to ESI with test data
 
+def esi_get_universe_planets_planet_id(planet_id):
+    """simulates ESI endpoint of same name for mock test
+    will use the respective test data 
+    unless the function property override_data is set
+    """
+
+    entity = None
+    for x in entities_testdata['EvePlanet']:
+        if x['id'] == planet_id:
+            entity = x.copy()
+            break
+    
+    if entity is None:        
+        raise ValueError(
+            'entity with id {} not found in testdata'.format(planet_id)
+        )
+        
+    entity['planet_id'] = entity.pop('id')
+    entity['system_id'] = entity.pop('eve_solar_system_id')
+    entity['type_id'] = entity.pop('eve_type_id')    
+    entity['position'] = {
+        'x': 0,
+        'y': 0,
+        'z': 0
+    }
+    mock_operation = Mock()
+    mock_operation.result.return_value = entity
+    return mock_operation
+
+
 def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
@@ -274,11 +304,15 @@ esi_get_corporations_corporation_id_customs_offices.override_data = None
 def _esi_post_corporations_corporation_id_assets(
     category: str,
     corporation_id: int, 
-    item_ids: list
+    item_ids: list,
+    my_esi_data: list = None
 ) -> list:
     """simulates ESI endpoint of same name for mock test"""
 
-    if str(corporation_id) not in _esi_data['Corporation'][category]:
+    if my_esi_data is None:
+        my_esi_data = _esi_data['Corporation'][category]
+    
+    if str(corporation_id) not in my_esi_data:
         raise RuntimeError(
             'No asset data found for corporation {} in {}'.format(
                 corporation_id,
@@ -287,9 +321,8 @@ def _esi_post_corporations_corporation_id_assets(
     else:        
         mock_operation = Mock()
         mock_operation.result.return_value = \
-            _esi_data['Corporation'][category][str(corporation_id)]
+            my_esi_data[str(corporation_id)]
         return mock_operation
-
 
 def esi_post_corporations_corporation_id_assets_locations(
     corporation_id: int, 
@@ -298,8 +331,11 @@ def esi_post_corporations_corporation_id_assets_locations(
     return _esi_post_corporations_corporation_id_assets(
         'post_corporations_corporation_id_assets_locations', 
         corporation_id,
-        item_ids
+        item_ids,
+        esi_post_corporations_corporation_id_assets_locations.override_data
     )
+
+esi_post_corporations_corporation_id_assets_locations.override_data = None
 
 
 def esi_post_corporations_corporation_id_assets_names(
@@ -309,9 +345,11 @@ def esi_post_corporations_corporation_id_assets_names(
     return _esi_post_corporations_corporation_id_assets(
         'post_corporations_corporation_id_assets_names', 
         corporation_id,
-        item_ids
+        item_ids,
+        esi_post_corporations_corporation_id_assets_names.override_data
     )
     
+esi_post_corporations_corporation_id_assets_names.override_data = None
 
 ###################################
 # helper functions
@@ -327,30 +365,30 @@ def load_entity(EntityClass):
 
 def load_entities(entities_def: list = None):
     """loads testdata for given entities classes"""
-    if not entities_def:
-        entities_def = [
-            EveGroup,
-            EveType,
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EvePlanet,            
-            EveAllianceInfo,
-            EveCorporationInfo,
-            EveCharacter,    
-            EveEntity,
-            StructureTag
-        ]
+    entities_def_master = [
+        EveGroup,
+        EveType,
+        EveRegion,
+        EveConstellation,
+        EveSolarSystem,
+        EveMoon,
+        EvePlanet,            
+        EveAllianceInfo,
+        EveCorporationInfo,
+        EveCharacter,    
+        EveEntity,
+        StructureTag
+    ]
     
-    for EntityClass in entities_def:
-        entity_name = EntityClass.__name__
-        EntityClass.objects.all().delete()
-        for x in entities_testdata[entity_name]:
-            EntityClass.objects.create(**x)
-        assert(
-            len(entities_testdata[entity_name]) == EntityClass.objects.count()
-        )
+    for EntityClass in entities_def_master:
+        if not entities_def or EntityClass in entities_def:
+            entity_name = EntityClass.__name__
+            EntityClass.objects.all().delete()
+            for x in entities_testdata[entity_name]:
+                EntityClass.objects.create(**x)
+            assert(
+                len(entities_testdata[entity_name]) == EntityClass.objects.count()
+            )
 
 
 def create_structures():

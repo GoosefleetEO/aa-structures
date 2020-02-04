@@ -124,6 +124,20 @@ def _send_report_to_user(
             + 'report to user: {}'. format(ex)
         ))
 
+def _store_raw_data(name: str, data: list, corporation_id: int):
+    """store raw data for debug purposes"""
+    with open(
+        '{}_raw_{}.json'.format(name, corporation_id), 
+        'w', 
+        encoding='utf-8'
+    ) as f:
+        json.dump(
+            data, 
+            f, 
+            cls=DjangoJSONEncoder, 
+            sort_keys=True, 
+            indent=4
+        )
 
 def _fetch_upwell_structures(
     owner: Owner, 
@@ -134,10 +148,11 @@ def _fetch_upwell_structures(
 
     logger.info(add_prefix('Fetching Upwell structures from ESI - page 1'))
 
-    # get structures from first page
+    corporation_id = owner.corporation.corporation_id
+    # get structures from first page    
     operation = \
         esi_client.Corporation.get_corporations_corporation_id_structures(
-            corporation_id=owner.corporation.corporation_id
+            corporation_id=corporation_id
         )
     operation.also_return_response = True
     structures, response = operation.result()
@@ -149,7 +164,7 @@ def _fetch_upwell_structures(
             'Fetching Upwell structures from ESI - page {}'.format(page)
         ))
         structures += esi_client.Corporation.get_corporations_corporation_id_structures(
-            corporation_id=owner.corporation.corporation_id,
+            corporation_id=corporation_id,
             page=page
         ).result()
     
@@ -177,21 +192,7 @@ def _fetch_upwell_structures(
             structure['position'] = structure_info['position']                
 
     if settings.DEBUG:
-        # store to disk (for debugging)
-        with open(
-            'structures_raw_{}.json'.format(
-                owner.corporation.corporation_id
-            ), 
-            'w', 
-            encoding='utf-8'
-        ) as f:
-            json.dump(
-                structures, 
-                f, 
-                cls=DjangoJSONEncoder, 
-                sort_keys=True, 
-                indent=4
-            )
+        _store_raw_data('structures', structures, corporation_id)        
     
     return structures
 
@@ -213,12 +214,13 @@ def _fetch_custom_offices(
             return text
 
     logger.info(add_prefix('Fetching custom offices from ESI - page 1'))
+    corporation_id = owner.corporation.corporation_id
 
     # get pocos from first page
     operation = \
         esi_client.Planetary_Interaction\
             .get_corporations_corporation_id_customs_offices(
-                corporation_id=owner.corporation.corporation_id
+                corporation_id=corporation_id
             )
     operation.also_return_response = True
     pocos, response = operation.result()
@@ -231,7 +233,7 @@ def _fetch_custom_offices(
         ))
         pocos += esi_client.Planetary_Interaction\
             .get_corporations_corporation_id_customs_offices(
-                corporation_id=owner.corporation.corporation_id,
+                corporation_id=corporation_id,
                 page=page
             ).result()
         
@@ -250,7 +252,7 @@ def _fetch_custom_offices(
         for item_ids_chunk in chunks(item_ids, 999):
             locations_data_chunk = esi_client.Assets\
                 .post_corporations_corporation_id_assets_locations(
-                    corporation_id=owner.corporation.corporation_id,
+                    corporation_id=corporation_id,
                     item_ids=item_ids_chunk
                 )\
                 .result()
@@ -265,7 +267,7 @@ def _fetch_custom_offices(
         for item_ids_chunk in chunks(item_ids, 999):
             names_data_chunk = esi_client.Assets\
                 .post_corporations_corporation_id_assets_names(
-                    corporation_id=owner.corporation.corporation_id,
+                    corporation_id=corporation_id,
                     item_ids=item_ids
                 )\
                 .result()
@@ -276,6 +278,19 @@ def _fetch_custom_offices(
     
         for poco in pocos:        
             office_id = poco['office_id']
+            if office_id in names:
+                try:
+                    eve_planet = EvePlanet.objects.get(name=names[office_id])
+                    planet_id = eve_planet.id
+                    name = eve_planet.eve_type.name
+
+                except EvePlanet.DoesNotExist:
+                    name = names[office_id]              
+                    planet_id = None      
+            else:
+                name = None               
+                planet_id = None 
+                    
             reinforce_exit_start = datetime.datetime(
                 year=2000, 
                 month=1, 
@@ -283,35 +298,25 @@ def _fetch_custom_offices(
                 hour=poco['reinforce_exit_start']
             )
             reinforce_hour = reinforce_exit_start + datetime.timedelta(hours=1)        
-            structures.append({
+            structure = {
                 'structure_id': office_id,
                 'type_id': EveType.EVE_TYPE_ID_POCO,
-                'corporation_id': owner.corporation.corporation_id,
-                'name': names[office_id]\
-                    if office_id in names else 'Customs Office',
+                'corporation_id': corporation_id,
+                'name': name if name else '',
                 'system_id': poco['system_id'],
-                'reinforce_hour': reinforce_hour.hour,
-                'position': positions[office_id] \
-                    if office_id in positions else None,
+                'reinforce_hour': reinforce_hour.hour,                
                 'state': Structure.STATE_UNKNOWN
-            })
+            }
+            if planet_id:
+                structure['planet_id'] = planet_id
+            
+            if office_id in positions:
+                structure['position'] = positions[office_id]
+
+            structures.append(structure)
 
     if settings.DEBUG:
-        # store to disk (for debugging)
-        with open(
-            'customs_offices_raw_{}.json'.format(
-                owner.corporation.corporation_id
-            ), 
-            'w', 
-            encoding='utf-8'
-        ) as f:
-            json.dump(
-                structures, 
-                f, 
-                cls=DjangoJSONEncoder, 
-                sort_keys=True, 
-                indent=4
-            )
+        _store_raw_data('customs_offices', structures, corporation_id)
     
     return structures
 
@@ -324,11 +329,12 @@ def _fetch_starbases(
     """fetch starbases from ESI for owner"""
 
     logger.info(add_prefix('Fetching starbases from ESI - page 1'))
+    corporation_id = owner.corporation.corporation_id
 
     # get starbases from first page
     operation = \
         esi_client.Corporation.get_corporations_corporation_id_starbases(
-            corporation_id=owner.corporation.corporation_id
+            corporation_id=corporation_id
         )
     operation.also_return_response = True
     starbases, response = operation.result()
@@ -341,7 +347,7 @@ def _fetch_starbases(
         ))
         starbases += \
             esi_client.Corporation.get_corporations_corporation_id_starbases(
-                corporation_id=owner.corporation.corporation_id,
+                corporation_id=corporation_id,
                 page=page
             ).result()
     
@@ -360,7 +366,7 @@ def _fetch_starbases(
         for item_ids_chunk in chunks(item_ids, 999):
             names_data_chunk = esi_client.Assets\
                 .post_corporations_corporation_id_assets_names(
-                    corporation_id=owner.corporation.corporation_id,
+                    corporation_id=corporation_id,
                     item_ids=item_ids
                 )\
                 .result()
@@ -374,7 +380,7 @@ def _fetch_starbases(
             structure = {
                 'structure_id': starbase['starbase_id'],
                 'type_id': starbase['type_id'],
-                'corporation_id': owner.corporation.corporation_id,
+                'corporation_id': corporation_id,
                 'name': name,
                 'system_id': starbase['system_id']
             }
@@ -393,21 +399,7 @@ def _fetch_starbases(
             structures.append(structure)
 
     if settings.DEBUG:
-        # store to disk (for debugging)
-        with open(
-            'starbases_raw_{}.json'.format(
-                owner.corporation.corporation_id
-            ), 
-            'w', 
-            encoding='utf-8'
-        ) as f:
-            json.dump(
-                structures, 
-                f, 
-                cls=DjangoJSONEncoder, 
-                sort_keys=True, 
-                indent=4
-            )
+        _store_raw_data('starbases', structures, corporation_id)        
     
     return structures
 
@@ -897,3 +889,19 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
                 + 'report to user: {}'. format(ex)
             ))
       
+@shared_task
+def update_solar_system(solar_system_id):
+    """update a solar system from ESI"""
+    EveSolarSystem.objects.update_or_create_esi(solar_system_id)
+
+@shared_task
+def run_sde_update():
+    """update all local SDE models from ESI"""
+    solar_systems_count = EveSolarSystem.objects.count()
+    logger.info(
+        'Started updating {} solar systems from ESI'.format(
+            solar_systems_count
+    ))
+    for solar_system in EveSolarSystem.objects.all():
+        update_solar_system.delay(solar_system.id)
+    
