@@ -1,7 +1,8 @@
 [
     {
         "corporation_id": "2001",
-        "name": "Amamake II - Moon 1",
+        "moon_id": 40161465,
+        "name": "Home Sweat Home",
         "state": "online",
         "structure_id": 1300000000001,
         "system_id": 30002537,
@@ -9,7 +10,8 @@
     },
     {
         "corporation_id": "2001",
-        "name": "Amamake II - Moon 2",
+        "moon_id": 40161466,
+        "name": "Bat cave",
         "state": "offline",
         "structure_id": 1300000000002,
         "system_id": 30002537,

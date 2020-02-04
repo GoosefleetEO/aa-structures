@@ -53,13 +53,18 @@ NTYPE_OWNERSHIP_TRANSFERRED = 513
 NTYPE_ORBITAL_ATTACKED = 601
 NTYPE_ORBITAL_REINFORCED = 602
 
+NTYPE_TOWER_ALERT_MSG = 701
+NTYPE_TOWER_RESOURCE_ALERT_MSG = 702
+
 NTYPE_CHOICES = [
+    # moon mining
     (NTYPE_MOONMINING_AUTOMATIC_FRACTURE, 'MoonminingAutomaticFracture'),    
     (NTYPE_MOONMINING_EXTRACTION_CANCELED, 'MoonminingExtractionCancelled'),
     (NTYPE_MOONMINING_EXTRACTION_FINISHED, 'MoonminingExtractionFinished'),
     (NTYPE_MOONMINING_EXTRACTION_STARTED, 'MoonminingExtractionStarted'),
     (NTYPE_MOONMINING_LASER_FIRED, 'MoonminingLaserFired'),
             
+    # upwell structures general
     (NTYPE_OWNERSHIP_TRANSFERRED, 'OwnershipTransferred'),
     (NTYPE_STRUCTURE_ANCHORING, 'StructureAnchoring'),
     (NTYPE_STRUCTURE_DESTROYED, 'StructureDestroyed'),
@@ -73,8 +78,13 @@ NTYPE_CHOICES = [
     (NTYPE_STRUCTURE_WENT_HIGH_POWER, 'StructureWentHighPower'),
     (NTYPE_STRUCTURE_WENT_LOW_POWER, 'StructureWentLowPower'),
 
+    # custom offices only
     (NTYPE_ORBITAL_ATTACKED, 'OrbitalAttacked'),    
     (NTYPE_ORBITAL_REINFORCED, 'OrbitalReinforced'),
+
+    # starbases only
+    (NTYPE_TOWER_ALERT_MSG, 'TowerAlertMsg'),    
+    (NTYPE_TOWER_RESOURCE_ALERT_MSG, 'TowerResourceAlertMsg'),
 ]
 
 _NTYPE_RELEVANT_FOR_TIMERBOARD = [
@@ -83,7 +93,8 @@ _NTYPE_RELEVANT_FOR_TIMERBOARD = [
     NTYPE_STRUCTURE_ANCHORING,
     NTYPE_ORBITAL_REINFORCED,
     NTYPE_MOONMINING_EXTRACTION_STARTED,
-    NTYPE_MOONMINING_EXTRACTION_CANCELED
+    NTYPE_MOONMINING_EXTRACTION_CANCELED,
+    # NTYPE_TOWER_ALERT_MSG
 ]
 
 def get_default_notification_types():
@@ -634,6 +645,22 @@ class Structure(models.Model):
     eve_solar_system = models.ForeignKey(
         EveSolarSystem, 
         on_delete=models.CASCADE
+    )
+    eve_planet = models.ForeignKey(
+        EvePlanet, 
+        on_delete=models.SET_DEFAULT,
+        null=True, 
+        default=None, 
+        blank=True,
+        help_text='Planet next to this structure - if any'
+    )
+    eve_moon = models.ForeignKey(
+        EveMoon, 
+        on_delete=models.SET_DEFAULT,
+        null=True, 
+        default=None, 
+        blank=True,        
+        help_text='Moon next to this structure - if any'
     )
     position_x = models.FloatField(        
         null=True, 
@@ -1241,6 +1268,64 @@ class Notification(models.Model):
                         reinforce_exit_time.strftime(DATETIME_FORMAT)
                     )                    
                 color = self.EMBED_COLOR_DANGER
+
+        elif self.notification_type in [
+            NTYPE_TOWER_ALERT_MSG,
+            NTYPE_TOWER_RESOURCE_ALERT_MSG,            
+        ]:            
+            if not esi_client:
+                esi_client = esi_client_factory()
+
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(
+                parsed_text['moonID'], 
+                esi_client
+            )
+            structure_type, _ = EveType.objects.get_or_create_esi(
+                parsed_text['typeID'],
+                esi_client
+            )
+            thumbnail = dhooks_lite.Thumbnail(
+                structure_type.icon_url()
+            )            
+            solar_system_link = gen_solar_system_text(
+                eve_moon.eve_solar_system
+            )
+            qs_structures = Structure.objects.filter(eve_moon=eve_moon)
+            if qs_structures.exists():                
+                structure_name = qs_structures.first().name
+            else:
+                structure_name = structure_type.name
+                        
+            if self.notification_type == NTYPE_TOWER_ALERT_MSG:
+                aggressor_corporation, _ = \
+                    EveEntity.objects.get_or_create_esi(
+                        parsed_text['aggressorCorpID'],
+                        esi_client
+                    )
+                aggressor_corporation_link = gen_corporation_link(
+                    aggressor_corporation.name
+                )                
+                title = 'Starbase under attack'                
+                description = ('The starbase **{}** at {} in {} '
+                    'is under attack by {}.').format(
+                        structure_name,
+                        eve_moon.name,
+                        solar_system_link,                        
+                        aggressor_corporation_link
+                    )                    
+                color = self.EMBED_COLOR_WARNING
+
+            elif self.notification_type == NTYPE_TOWER_RESOURCE_ALERT_MSG:
+                quantity = parsed_text['wants'][0]['quantity']
+                title = 'Starbase low on fuel'                
+                description = ('The starbase **{}** at {} in {} '
+                    'is low on fuel. It has {} fuel blocks left.').format(
+                        structure_name,
+                        eve_moon.name,
+                        solar_system_link,                        
+                        quantity
+                    )                    
+                color = self.EMBED_COLOR_WARNING
 
         else:
             if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:                

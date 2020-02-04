@@ -245,7 +245,7 @@ def _fetch_custom_offices(
             'Fetching locations for {} custom offices from ESI'.format(
                 len(pocos)
         )))
-        item_ids = [ x['office_id'] for x in pocos ]    
+        item_ids = [ x['office_id'] for x in pocos ]
         locations_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
             locations_data_chunk = esi_client.Assets\
@@ -270,7 +270,9 @@ def _fetch_custom_offices(
                 )\
                 .result()
             names_data += names_data_chunk
-        names = {x['item_id']: extract_planet_name(x['name']) for x in names_data}
+        names = {
+            x['item_id']: extract_planet_name(x['name']) for x in names_data
+        }
     
         for poco in pocos:        
             office_id = poco['office_id']
@@ -350,15 +352,25 @@ def _fetch_starbases(
             'No starbases retrieved from ESI'
         ))
     else:        
-        for starbase in starbases:
-            if 'moon_id' in starbase:
-                moon, _ = EveMoon.objects.get_or_create_esi(
-                    starbase['moon_id'], 
-                    esi_client
-                )
-                name = moon.name
+        logger.info(add_prefix(
+            'Fetching names for {} starbases from ESI'.format(len(starbases))
+        ))
+        item_ids = [ x['starbase_id'] for x in starbases ]
+        names_data = list()
+        for item_ids_chunk in chunks(item_ids, 999):
+            names_data_chunk = esi_client.Assets\
+                .post_corporations_corporation_id_assets_names(
+                    corporation_id=owner.corporation.corporation_id,
+                    item_ids=item_ids
+                )\
+                .result()
+            names_data += names_data_chunk
+        names = { x['item_id']: x['name'] for x in names_data }
+        for starbase in starbases:           
+            if starbase['starbase_id'] in names:
+                name = names[starbase['starbase_id']]
             else:
-                name = 'Not anchored'            
+                name = 'Starbase'
             structure = {
                 'structure_id': starbase['starbase_id'],
                 'type_id': starbase['type_id'],
@@ -368,6 +380,9 @@ def _fetch_starbases(
             }
             if 'state' in starbase:
                 structure['state'] = starbase['state']
+
+            if 'moon_id' in starbase:
+                structure['moon_id'] = starbase['moon_id']
 
             if 'reinforced_until' in starbase:
                 structure['state_timer_end'] = starbase['reinforced_until']

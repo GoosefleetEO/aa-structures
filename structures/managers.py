@@ -529,7 +529,7 @@ class StructureManager(models.Manager):
     ):
         """update or create structure from given dict"""
         from .models import EveType, EveSolarSystem, Structure,\
-            StructureService, Owner                
+            StructureService, Owner, EvePlanet, EveMoon           
         eve_type, _ = EveType.objects.get_or_create_esi(
             structure['type_id'],
             esi_client
@@ -538,7 +538,7 @@ class StructureManager(models.Manager):
             EveSolarSystem.objects.get_or_create_esi(
                 structure['system_id'],
                 esi_client
-        )
+        )        
         fuel_expires = \
             structure['fuel_expires'] \
             if 'fuel_expires' in structure else None
@@ -587,6 +587,22 @@ class StructureManager(models.Manager):
             structure['position']['z']\
             if 'position' in structure else None
 
+        if 'planet_id' in structure:
+            eve_planet, _ = EvePlanet.objects.get_or_create_esi(
+                structure['planet_id'], 
+                esi_client
+            )
+        else:
+            eve_planet = None
+        
+        if 'moon_id' in structure:
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(
+                structure['moon_id'], 
+                esi_client
+            )
+        else:
+            eve_moon = None
+
         obj, created = Structure.objects.update_or_create(
             id=structure['structure_id'],
             defaults={
@@ -594,6 +610,8 @@ class StructureManager(models.Manager):
                 'eve_type': eve_type,
                 'name': structure['name'],
                 'eve_solar_system': eve_solar_system,
+                'eve_planet': eve_planet,
+                'eve_moon': eve_moon,
                 'position_x': position_x,
                 'position_y': position_y,
                 'position_z': position_z,

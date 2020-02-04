@@ -146,6 +146,13 @@
                 {
                     "item_id": 1200000000005,
                     "name": "Customs Office (1-PGSG VII)"
+                },
+                {
+                    "item_id": 1300000000001,
+                    "name": "Home Sweat Home"
+                },{
+                    "item_id": 1300000000002,
+                    "name": "Bat cave"
                 }
             ]
         }

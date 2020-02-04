@@ -101,6 +101,11 @@ def structure_list(request):
 def structure_list_data(request):
     """returns structure list in JSON for AJAX call in structure_list view"""    
     
+    def add_no_wrap_html(text: str) -> str:
+        """add no-wrap HTML to text"""
+        return '<span style="white-space: nowrap;">{}</span>'.format(text)
+        
+
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:
         tags = tags_raw.split(',')            
@@ -137,8 +142,7 @@ def structure_list_data(request):
             .select_related()
 
     structures_data = list()
-    for structure in structures_query:        
-        
+    for structure in structures_query:                
         row = {
             'structure_id': structure.id,
             'is_poco': structure.eve_type.is_poco
@@ -173,16 +177,21 @@ def structure_list_data(request):
             )
         
         # location        
+        row['region_name'] = structure.eve_solar_system.eve_constellation.eve_region.name
         row['solar_system_name'] = structure.eve_solar_system.name
         solar_system_url = evelinks.get_entity_profile_url_by_name(
             evelinks.ESI_CATEGORY_SOLARSYSTEM,
-            row['solar_system_name']
+            structure.eve_solar_system.name
         )
-        row['region_name'] = structure.eve_solar_system.eve_constellation.eve_region.name
+        if structure.eve_moon:
+            location_name = structure.eve_moon.name
+        else:        
+            location_name = structure.eve_solar_system.name
+        
         row['location'] = '<a href="{}">{}</a><br>{}'.format(
             solar_system_url,
-            structure.eve_solar_system.name,
-            row['region_name']
+            add_no_wrap_html(location_name),
+            add_no_wrap_html(row['region_name'])
         )        
         
         # type icon

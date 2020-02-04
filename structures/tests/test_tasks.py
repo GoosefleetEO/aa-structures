@@ -265,6 +265,7 @@ class TestSyncStructures(TestCase):
     
 
     # synch of structures, ensure old structures are removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
@@ -318,6 +319,7 @@ class TestSyncStructures(TestCase):
         )
     
     # synch of structures, ensure tags are not removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
@@ -377,6 +379,7 @@ class TestSyncStructures(TestCase):
     
     
     #no structures retrieved from ESI during sync
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
@@ -433,6 +436,7 @@ class TestSyncStructures(TestCase):
 
 
     # error during user report
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.notify')
     @patch('structures.tasks.Token', autospec=True)
@@ -486,6 +490,7 @@ class TestSyncStructures(TestCase):
 
 
     # synch of structures, ensure old structures are removed
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
@@ -541,6 +546,7 @@ class TestSyncStructures(TestCase):
         )
 
     # synch of structures, ensure services are removed correctly
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Token', autospec=True)
     @patch('structures.tasks.esi_client_factory')
@@ -604,6 +610,7 @@ class TestSyncStructures(TestCase):
     
 
     # catch exception during storing of structures
+    @patch('structures.tasks.STRUCTURES_FEATURE_STARBASES', False)
     @patch('structures.tasks.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch('structures.tasks.Structure.objects.update_or_create_from_dict')
     @patch('structures.tasks.Token', autospec=True)
