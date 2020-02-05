@@ -363,28 +363,46 @@ class TestEveEntities(TestCase):
     
     def test_eveentity_get_matching_entity_type(self):
         self.assertEqual(
-            EveEntity.get_matching_entity_type('character'),
+            EveEntity.get_matching_entity_category('character'),
             EveEntity.CATEGORY_CHARACTER
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_type('corporation'),
+            EveEntity.get_matching_entity_category('corporation'),
             EveEntity.CATEGORY_CORPORATION
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_type('alliance'),
+            EveEntity.get_matching_entity_category('alliance'),
             EveEntity.CATEGORY_ALLIANCE
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_type('faction'),
+            EveEntity.get_matching_entity_category('faction'),
             EveEntity.CATEGORY_FACTION
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_type('other'),
+            EveEntity.get_matching_entity_category('other'),
             EveEntity.CATEGORY_OTHER
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_type('does not exist'),
+            EveEntity.get_matching_entity_category('does not exist'),
             EveEntity.CATEGORY_OTHER
+        )
+
+    def test_profile_url(self):
+        x = EveEntity.objects.get(id=3001)
+        self.assertEqual(
+            x.profile_url(), 
+            'http://evemaps.dotlan.net/alliance/Wayne_Enterprises'
+        )
+
+        x = EveEntity.objects.get(id=2001)
+        self.assertEqual(
+            x.profile_url(), 
+            'http://evemaps.dotlan.net/corp/Wayne_Technologies'
+        )
+        x = EveEntity.objects.get(id=1011)
+        self.assertEqual(
+            x.profile_url(), 
+            ''
         )
         
 

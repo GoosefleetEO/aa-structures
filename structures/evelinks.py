@@ -15,7 +15,7 @@ ESI_CATEGORY_STATION = "station"
 ESI_CATEGORY_WORMHOLE = "wormhole"
 
 
-DOTLAN_BASE_URL = 'https://evemaps.dotlan.net'
+DOTLAN_BASE_URL = 'http://evemaps.dotlan.net'
 
 
 def get_entity_profile_url_by_name(category: str, name: str) -> str:

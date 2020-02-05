@@ -922,9 +922,28 @@ class EveEntity(models.Model):
     def __str__(self):
         return str(self.name)
 
+    @property
+    def esi_category_name(self):
+        return self.get_matching_entity_category(self.category)
+    
+    def profile_url(self) -> str:
+        """returns link to website with profile info about this entity"""
+        if self.category  == self.CATEGORY_CORPORATION:
+            return evelinks.get_entity_profile_url_by_name(
+                evelinks.ESI_CATEGORY_CORPORATION,
+                self.name
+            )
+        elif self.category  == self.CATEGORY_ALLIANCE:
+            return evelinks.get_entity_profile_url_by_name(
+                evelinks.ESI_CATEGORY_ALLIANCE,
+                self.name
+            )
+        else:
+            return ''
+
     @classmethod
-    def get_matching_entity_type(cls, type_name) -> int:
-        """returns matching entity type for given state name"""
+    def get_matching_entity_category(cls, type_name) -> int:
+        """returns category for given ESI name"""
         match = None
         for x in cls.CATEGORY_CHOICES:
             if type_name == x[1]:
@@ -1056,8 +1075,10 @@ class Notification(models.Model):
                     corporation_name
             ))
 
-        def get_attacker_name(parsed_text):
-            """returns the attacker name from a parsed_text"""
+        def get_attacker_link(parsed_text):
+            """returns the attacker link from a parsed_text
+            For Upwell structures only
+            """
             if "allianceName" in parsed_text:               
                 name = gen_alliance_link(parsed_text['allianceName'])
             elif "corpName" in parsed_text:
@@ -1066,6 +1087,25 @@ class Notification(models.Model):
                 name = "(unknown)"
 
             return name
+
+        def get_aggressor_link(parsed_text: dict, esi_client: object) -> str:
+            """returns the aggressor link from a parsed_text
+            for POS and POCOs only
+            """
+            if 'aggressorAllianceID' in parsed_text: 
+                key = 'aggressorAllianceID'
+            elif 'aggressorCorpID' in parsed_text: 
+                key = 'aggressorCorpID'
+            elif 'aggressorID' in parsed_text: 
+                key = 'aggressorID'
+            else:
+                return '(Unknown aggressor)'
+                
+            entity, _ = EveEntity.objects.get_or_create_esi(
+                parsed_text[key],
+                esi_client
+            )
+            return '[{}]({})'.format(entity.name, entity.profile_url())
 
         def get_type_id_from_event_type(event_type: int) -> int:
             if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
@@ -1145,7 +1185,7 @@ class Notification(models.Model):
             elif self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
                 title = 'Structure under attack'
                 description += 'is under attack by {}.'.format(
-                    get_attacker_name(parsed_text)
+                    get_attacker_link(parsed_text)
                 )
                 color = self.EMBED_COLOR_DANGER
 
@@ -1304,14 +1344,7 @@ class Notification(models.Model):
             solar_system_link = gen_solar_system_text(
                 solar_system
             )
-            aggressor_corporation, _ = \
-                EveEntity.objects.get_or_create_esi(
-                    parsed_text['aggressorCorpID'],
-                    esi_client
-                )
-            aggressor_corporation_link = gen_corporation_link(
-                aggressor_corporation.name
-            )
+            aggressor_link = get_aggressor_link(parsed_text, esi_client)
             
             if self.notification_type == NTYPE_ORBITAL_ATTACKED:
                 title = 'Orbital under attack'                
@@ -1320,7 +1353,7 @@ class Notification(models.Model):
                         structure_type.name,
                         planet.name,
                         solar_system_link,                        
-                        aggressor_corporation_link
+                        aggressor_link
                     )                    
                 color = self.EMBED_COLOR_WARNING
 
@@ -1333,7 +1366,7 @@ class Notification(models.Model):
                         structure_type.name,
                         planet.name,
                         solar_system_link,                        
-                        aggressor_corporation_link,
+                        aggressor_link,
                         reinforce_exit_time.strftime(DATETIME_FORMAT)
                     )                    
                 color = self.EMBED_COLOR_DANGER
@@ -1366,14 +1399,7 @@ class Notification(models.Model):
                 structure_name = structure_type.name
                         
             if self.notification_type == NTYPE_TOWER_ALERT_MSG:
-                aggressor_corporation, _ = \
-                    EveEntity.objects.get_or_create_esi(
-                        parsed_text['aggressorCorpID'],
-                        esi_client
-                    )
-                aggressor_corporation_link = gen_corporation_link(
-                    aggressor_corporation.name
-                )
+                aggressor_link = get_aggressor_link(parsed_text, esi_client)
                 damage_parts = list()
                 for prop in ['shield', 'armor', 'hull']:
                     prop_yaml = prop + 'Value'
@@ -1390,7 +1416,7 @@ class Notification(models.Model):
                         structure_name,
                         eve_moon.name,
                         solar_system_link,                        
-                        aggressor_corporation_link,
+                        aggressor_link,
                         damage_text
                     )                    
                 color = self.EMBED_COLOR_WARNING

@@ -631,7 +631,7 @@ def fetch_notifications_for_owner(
                     if notification_type:
                         notifications_count += 1
                         sender_type = \
-                            EveEntity.get_matching_entity_type(
+                            EveEntity.get_matching_entity_category(
                                 notification['sender_type']
                             )
                         if sender_type != EveEntity.CATEGORY_OTHER:

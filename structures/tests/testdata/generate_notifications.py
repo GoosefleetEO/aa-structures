@@ -77,7 +77,7 @@ with transaction.atomic():
             )
         if notification_type:
             sender_type = \
-                EveEntity.get_matching_entity_type(
+                EveEntity.get_matching_entity_category(
                     notification['sender_type']
                 )
             if sender_type != EveEntity.CATEGORY_OTHER:

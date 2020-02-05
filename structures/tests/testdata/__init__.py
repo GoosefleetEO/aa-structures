@@ -507,7 +507,7 @@ def load_notification_entities(owner: Owner):
             )
         if notification_type:
             sender_type = \
-                EveEntity.get_matching_entity_type(
+                EveEntity.get_matching_entity_category(
                     notification['sender_type']
                 )                
             sender = EveEntity.objects.get(id=notification['sender_id'])                

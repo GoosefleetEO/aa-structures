@@ -527,7 +527,7 @@ class EveEntityManager(models.Manager):
             ).result()
             if len(response) > 0:
                 first = response[0]
-                type = EveEntity.get_matching_entity_type(
+                type = EveEntity.get_matching_entity_category(
                     first['category']
                 )                
                 obj, created = self.update_or_create(

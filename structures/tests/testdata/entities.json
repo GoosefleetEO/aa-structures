@@ -401,7 +401,7 @@
         {
             "id": 2901,
             "category": 2,
-            "name": "NPC Corp"
+            "name": "Dummy Corp 3"
         },
         {
             "id": 3001,
@@ -412,7 +412,17 @@
             "id": 3011,
             "category": 3,
             "name": "Big Bad Alliance"
-        }       
+        },
+        {
+            "id": 500012,
+            "category": 3,
+            "name": "NPC Alliance"
+        },
+        {
+            "id": 1000134,
+            "category": 2,
+            "name": "NPC Corp"
+        }
     ],
    
     "Structure":
