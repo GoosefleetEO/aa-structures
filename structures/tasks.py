@@ -910,3 +910,40 @@ def run_sde_update():
     for solar_system in EveSolarSystem.objects.all():
         update_solar_system.delay(solar_system.id)
     
+@shared_task
+def purge_all_data(i_am_sure: bool = False):
+    """removes all app-related data from the database
+    This tool is required to allow zero migrations, which would otherwise
+    fail to do FK constraints
+    """
+
+    if not i_am_sure:
+        logger.info('No data deleted')
+    else:
+        logger.info('Started deleting all app-related data')
+        
+        models = [
+            EveCategory,
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon,
+            EvePlanet,
+            StructureTag,
+            StructureService,
+            Webhook,
+            EveEntity,
+            Owner,
+            Notification,
+            Structure
+        ]
+        with transaction.atomic():
+            for MyModel in models:
+                logger.info('Deleting data in model: {}'.format(MyModel.__name__))
+                MyModel.objects.all().delete()
+
+        logger.info('Completed deleting all app-related data')
+
+        

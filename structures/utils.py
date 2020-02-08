@@ -137,14 +137,14 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-def set_app_setting(
+def clean_setting(
     name: str,     
     default_value: object,         
     min_value: int = None,
     max_value: int = None,
     required_type: type = None
 ):
-    """sets app setting from local setting file with input checks
+    """cleans the input for a custom setting
     
     Will use `default_value` if settings does not exit or has the wrong type
     or is outside define boundaries (for int only)
@@ -153,8 +153,7 @@ def set_app_setting(
 
     Will assume `min_value` of 0 for int (can be overriden)
 
-    You need to set the name of the module or you'll get AttributeError: 
-     `set_app_setting.my_module = __name__`
+    Returns cleaned value for setting
     """                
     if default_value is None and not required_type:
         raise ValueError('You must specify a required_type for None defaults')
@@ -164,14 +163,12 @@ def set_app_setting(
 
     if min_value is None and required_type == int:
         min_value = 0        
-    
-    my_module = getattr(set_app_setting, 'my_module')
+        
     if (hasattr(settings, name)
         and isinstance(getattr(settings, name), required_type)
         and (min_value is None or getattr(settings, name) >= min_value)
         and (max_value is None or getattr(settings, name) <= max_value)
     ):        
-        setattr(sys.modules[my_module], name, getattr(settings, name))        
-    
+        return getattr(settings, name)    
     else:
-        setattr(sys.modules[my_module], name, default_value)
+        return default_value

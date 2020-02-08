@@ -4,102 +4,104 @@ from django.test import TestCase
 
 from .. import app_settings
 
+MODULE_PATH = 'structures.utils'
+
 class TestSetAppSetting(TestCase):
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_if_not_set(self, mock_settings):        
-        mock_settings.STRUCTURES_TEST_BOOL = Mock(spec=None)
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = Mock(spec=None)
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             False,             
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, False)
+        self.assertEqual(result, False)
 
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_if_not_set_for_none(self, mock_settings):        
-        mock_settings.STRUCTURES_TEST_BOOL = Mock(spec=None)
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = Mock(spec=None)
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             None,
             required_type=int
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, None)
+        self.assertEqual(result, None)
 
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_true_stays_true(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = True
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = True
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             False,         
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, True)
+        self.assertEqual(result, True)
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_false_stays_false(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = False
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = False
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             False
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, False)
+        self.assertEqual(result, False)
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_for_invalid_type_bool(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = 'invalid type'
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = 'invalid type'
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             False
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, False)
+        self.assertEqual(result, False)
 
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_for_invalid_type_int(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = 'invalid type'
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = 'invalid type'
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             50
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, 50)
+        self.assertEqual(result, 50)
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_if_below_minimum_1(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = -5
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = -5
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             default_value=50
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, 50)
+        self.assertEqual(result, 50)
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_if_below_minimum_2(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = -50
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = -50
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             default_value=50,
             min_value=-10
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, 50)
+        self.assertEqual(result, 50)
 
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_for_invalid_type_int(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = 1000
-        app_settings.set_app_setting(
-            'STRUCTURES_TEST_BOOL',             
+        mock_settings.TEST_SETTING_DUMMY = 1000
+        result = app_settings.clean_setting(
+            'TEST_SETTING_DUMMY',             
             default_value=50,
             max_value=100
         )
-        self.assertEqual(app_settings.STRUCTURES_TEST_BOOL, 50)
+        self.assertEqual(result, 50)
 
     
-    @patch('structures.utils.settings')
+    @patch(MODULE_PATH + '.settings')
     def test_default_is_none_needs_required_type(self, mock_settings):
-        mock_settings.STRUCTURES_TEST_BOOL = 'invalid type'
+        mock_settings.TEST_SETTING_DUMMY = 'invalid type'
         with self.assertRaises(ValueError):
-            app_settings.set_app_setting(
-                'STRUCTURES_TEST_BOOL',             
+            result = app_settings.clean_setting(
+                'TEST_SETTING_DUMMY',             
                 default_value=None
             )
         
