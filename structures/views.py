@@ -199,8 +199,13 @@ def structure_list_data(request):
         
         # category
         my_group = structure.eve_type.eve_group
-        row['category_name'] = \
-            my_group.eve_category.name if my_group.eve_category else ''
+        if my_group.eve_category:
+            my_category = my_group.eve_category
+            row['category_name'] = my_category.name
+            row['is_starbase'] = my_category.is_starbase
+        else:
+            row['category_name'] = ''
+            row['is_starbase'] = None
 
         # type icon
         row['type_icon'] = '<img src="{}" width="{}" height="{}"/>'.format(
@@ -224,7 +229,7 @@ def structure_list_data(request):
             )            
             
         # services
-        if row['is_poco']:
+        if row['is_poco'] or row['is_starbase']:
             row['services'] = 'N/A'
         else:
             services = list()
@@ -251,7 +256,7 @@ def structure_list_data(request):
         row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
         
         # add low power label or date when fuel runs out
-        if row['is_poco']:
+        if row['is_poco'] or row['is_starbase']:
             fuel_expires_display = 'N/A'
             fuel_expires_timestamp = None
         else:

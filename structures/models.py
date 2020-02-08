@@ -362,6 +362,12 @@ class Owner(models.Model):
 
 class EveCategory(models.Model):
     """group in Eve Online"""
+    
+    # named category IDs
+    EVE_CATEGORY_ID_ORBITAL = 46
+    EVE_CATEGORY_ID_STARBASE = 23
+    EVE_CATEGORY_ID_STRUCTURE = 65
+    
     id = models.IntegerField(
         primary_key=True,
         validators=[MinValueValidator(0)],
@@ -370,6 +376,14 @@ class EveCategory(models.Model):
     name = models.CharField(max_length=100)
 
     objects = EveCategoryManager()
+    
+    @property
+    def is_starbase(self):
+        return self.id == self.EVE_CATEGORY_ID_STARBASE
+
+    @property
+    def is_upwell_structure(self):
+        return self.id == self.EVE_CATEGORY_ID_STRUCTURE
     
     def __str__(self):
         return self.name
@@ -419,7 +433,15 @@ class EveType(models.Model):
     
     @property
     def is_poco(self):
-        return self.id == self.EVE_TYPE_ID_POCO    
+        return self.id == self.EVE_TYPE_ID_POCO
+
+    @property
+    def is_starbase(self):
+        return self.eve_group.eve_category.is_starbase
+
+    @property
+    def is_upwell_structure(self):
+        return self.eve_group.eve_category.is_upwell_structure
 
     @classmethod
     def generic_icon_url(cls, type_id: int, size: int =64) -> str:
