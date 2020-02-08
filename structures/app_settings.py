@@ -54,7 +54,8 @@ STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES = \
 
 # Default wait time in seconds before retrying to send a notification 
 # to Discord after an error occurred
-clean_setting('STRUCTURES_NOTIFICATION_WAIT_SEC', 5)
+STRUCTURES_NOTIFICATION_WAIT_SEC = \
+    clean_setting('STRUCTURES_NOTIFICATION_WAIT_SEC', 5)
 
 # Enables archiving of all notifications received from ESI to files
 # notifications will by stored into one continuous file per corporations

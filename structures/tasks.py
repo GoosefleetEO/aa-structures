@@ -245,6 +245,7 @@ def _fetch_custom_offices(
             'No custom offices retrieved from ESI'
         ))
     else:
+        # fetching locations
         logger.info(add_prefix(
             'Fetching locations for {} custom offices from ESI'.format(
                 len(pocos)
@@ -261,6 +262,7 @@ def _fetch_custom_offices(
             locations_data += locations_data_chunk        
         positions = {x['item_id']: x['position'] for x in locations_data}
 
+        # fetching names
         logger.info(add_prefix(
             'Fetching names for {} custom office names from ESI'.format(
                 len(pocos)
@@ -277,7 +279,16 @@ def _fetch_custom_offices(
         names = {
             x['item_id']: extract_planet_name(x['name']) for x in names_data
         }
-    
+
+        # making sure we have all solar systems loaded 
+        # incl. their planets for later name matching
+        for solar_system_id in { int(x['system_id']) for x in pocos}:
+            EveSolarSystem.objects.get_or_create_esi(
+                solar_system_id,
+                esi_client
+            )
+
+        # compile pocos into structures list
         for poco in pocos:        
             office_id = poco['office_id']
             if office_id in names:
