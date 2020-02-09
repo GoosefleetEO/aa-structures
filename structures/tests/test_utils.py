@@ -3,8 +3,11 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 
 from .. import app_settings
+from . import set_logger
 
 MODULE_PATH = 'structures.utils'
+
+logger = set_logger(MODULE_PATH, __file__)
 
 class TestSetAppSetting(TestCase):
 

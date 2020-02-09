@@ -22,11 +22,11 @@ STRUCTURES_DEVELOPER_MODE = \
 
 # Whether the customs offices feature is active
 STRUCTURES_FEATURE_CUSTOMS_OFFICES = \
-    clean_setting('STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    clean_setting('STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
 
 # Whether the starbases / POSes feature is active
 STRUCTURES_FEATURE_STARBASES = \
-    clean_setting('STRUCTURES_FEATURE_STARBASES', False)
+    clean_setting('STRUCTURES_FEATURE_STARBASES', True)
 
 # Max time in minutes since last successful notification forwarding
 # before service is reported as down
@@ -40,7 +40,7 @@ STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION = \
 
 # whether to create / remove timers from moon extraction notifications
 STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED = \
-    clean_setting('STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
+    clean_setting('STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
 
 # Max number of retries for sending a notification if an error occurred
 # e.g. rate limiting

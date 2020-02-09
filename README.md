@@ -165,10 +165,11 @@ Name | Description | Default
 `STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed).<br>Will create timers from anchoring, lost shield and lost armor notifications  | True
 `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`| whether admins will get notifications about import events like when someone adds a structure owner | True
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | False
-`STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | False
+`STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | True
+`STRUCTURES_FEATURE_STARBASES`| Enable / disable starbases feature | True
 `STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notification forwarding before service is reported as down  | 5
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | 24
-`STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | False
+`STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | True
 `STRUCTURES_NOTIFICATION_MAX_RETRIES`| Max number of retries after a HTTP error occurred incl. rate limiting  | 3
 `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | 15
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | 5

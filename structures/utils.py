@@ -16,6 +16,19 @@ from allianceauth.notifications import notify
 DATETIME_FORMAT = '%Y-%m-%d %H:%M'
 
 
+class LoggerAddTag(logging.LoggerAdapter):
+    """add custom tag to a logger"""
+    def __init__(self, logger, prefix):
+        super(LoggerAddTag, self).__init__(logger, {})
+        self.prefix = prefix
+
+    def process(self, msg, kwargs):
+        return '[%s] %s' % (self.prefix, msg), kwargs
+
+
+logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+
+
 def get_swagger_spec_path() -> str:
     """returns the path to the current swagger spec file"""
     return os.path.join(
@@ -27,16 +40,6 @@ def get_swagger_spec_path() -> str:
 def make_logger_prefix(tag: str):
     """creates a function to add logger prefix"""
     return lambda text : '{}: {}'.format(tag, text)
-
-
-class LoggerAddTag(logging.LoggerAdapter):
-    """add custom tag to a logger"""
-    def __init__(self, logger, prefix):
-        super(LoggerAddTag, self).__init__(logger, {})
-        self.prefix = prefix
-
-    def process(self, msg, kwargs):
-        return '[%s] %s' % (self.prefix, msg), kwargs
 
 
 class messages_plus():
@@ -164,11 +167,21 @@ def clean_setting(
     if min_value is None and required_type == int:
         min_value = 0        
         
-    if (hasattr(settings, name)
-        and isinstance(getattr(settings, name), required_type)
-        and (min_value is None or getattr(settings, name) >= min_value)
-        and (max_value is None or getattr(settings, name) <= max_value)
-    ):        
-        return getattr(settings, name)    
+    if not hasattr(settings, name):
+        cleaned_value = default_value
     else:
-        return default_value
+        if (isinstance(getattr(settings, name), required_type)
+            and (min_value is None or getattr(settings, name) >= min_value)
+            and (max_value is None or getattr(settings, name) <= max_value)
+        ):        
+            cleaned_value = getattr(settings, name)    
+        else:        
+            logger.warn(
+                'You setting for {} it not valid. Please correct it. '
+                'Using default for now: {}'.format(
+                    name,
+                    default_value
+            ))
+            cleaned_value = default_value
+    
+    return cleaned_value

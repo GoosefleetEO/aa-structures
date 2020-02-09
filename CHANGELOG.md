@@ -11,15 +11,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 **Starbases and Sovereignty**
 
-### ACTION REQUIRED: Starbase feature
+If you are upgrading: there are some important changes included in this release, which may require you to take action. Please read the notes carefully.
 
-The new starbases feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it by adding the following in your local settings:
+### ACTION REQUIRED: Starbase feature required token update
+
+The new starbases feature requires additional ESI scopes to work. After installation of this release all structure owners therefore have to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications for a corporation will stop working until the respective owner has updated its token.
+
+If you don't want to use the new starbase feature (or enable it later) you can turn it off with this new setting:
 
 ```python
-STRUCTURES_FEATURE_STARBASES = True
+STRUCTURES_FEATURE_STARBASES = False
 ```
-
-Note that after activation of this feature all structure owners will have to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications for a corporation will stop working until the respective owner has updated its token.
 
 ### ACTION REQUIRED: SDE data update
 
@@ -50,6 +52,8 @@ For sov notifications you also need to nominate one owner as "alliance main" on 
 
 ## Changed
 
+- POCO feature is not turned on by default! If you don't want to use it (or enable it later) you can disable it with a setting.
+- Moon mining extraction timers are now turned on by default! If you don't want to use it (or enable it later) you can disable it with a setting.
 - For starbases and POCOs the name of the related celestial (e.g. planet, moon) is now shown on the structure browser under location.
 - Improved admin site view for structures to include more information, filters and a search bar
 
