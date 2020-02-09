@@ -18,7 +18,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     license='MIT',
-    description='Structures plugin app for Alliance Auth',
+    description='Alliance Auth plug-in app for managing structures',
     long_description=long_description,
     long_description_content_type='text/markdown',    
     author='Erik Kalkoken',
@@ -28,18 +28,20 @@ setup(
         'Framework :: Django',
         'Framework :: Django :: 2.2',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',  # structures license
+        'License :: OSI Approved :: MIT License', 
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',        
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[ 
-        'django>=2.1,<3.0',
+        'django>=2.2,<3.0',
         'dhooks-lite>=0.3.0',
-        'django-navhelper',
-        'pytz',
+        'django-navhelper',        
         'django-multiselectfield'
     ]
 )

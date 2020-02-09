@@ -1,6 +1,8 @@
 # Structures for Alliance Auth
 
-This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) for managing structures and for getting structure notifications.
+[Alliance Auth](https://gitlab.com/allianceauth/allianceauth) plug-in app for managing structures.
+
+![release](https://img.shields.io/pypi/v/allianceauth?label=release) ![python](https://img.shields.io/pypi/pyversions/allianceauth) ![django](https://img.shields.io/pypi/djversions/allianceauth) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg)
 
 ## Contents
 
@@ -12,6 +14,7 @@ This is a plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianc
 - [Settings](#settings)
 - [Permissions](#permissions)
 - [Service monitoring](#service-monitoring)
+- [Admin tool](#admin-tools)
 - [Change Log](CHANGELOG.md)
 
 ## Overview
@@ -59,8 +62,11 @@ pip install git+https://gitlab.com/ErikKalkoken/aa-structures.git
 Update the Eve Online app used for authentication in your AA installation to include the following scopes:
 
 ```plain
+esi-assets.read_corporation_assets.v1
 esi-characters.read_notifications.v1
+esi-corporations.read_starbases.v1
 esi-corporations.read_structures.v1
+esi-planets.read_customs_offices.v1
 esi-universe.read_structures.v1
 ```
 
@@ -196,3 +202,17 @@ Up | HTTP 200 and the text `service is up` | Tasks for updating of structures, u
 Down | HTTP 500 and the text `service is down` | Above condition for "up" not met
 
 By default the status of all existing owners will be included in determining the overall status. However, it's also possible to manually exclude owners by setting the property "Is included in service status".
+
+## Admin tools
+
+### Admin site
+
+Most admin tools are accessible on the admin site through actions. e.g. you can sent specific notifications or force a sync with the eve server for an owner.
+
+See the respective actions list on the admin site for details.
+
+### Celery tasks
+
+Heres are some additional admin tool available only as celery task.
+
+- **purge_all_data**: This task will purge ALL data of the structures app. Run this command before trying to reverse migrations (e.g. `migrate structures zero` for de-installation) or you will run into foreign key constraints. <br>`celery -A myauth call structures.tasks.purge_all_data --args=[true] `

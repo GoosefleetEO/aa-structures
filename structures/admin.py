@@ -1,12 +1,18 @@
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
+from django.db.models.functions import Lower
+from django.utils.html import format_html
+
+from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
 
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import *
 from . import tasks
 from .utils import LoggerAddTag
 
+
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+
 
 if STRUCTURES_DEVELOPER_MODE:
     @admin.register(EveConstellation)
@@ -62,7 +68,11 @@ class NotificationAdmin(admin.ModelAdmin):
         'is_sent',
         'is_timer_added'
     )
-    list_filter = ( 'owner', 'notification_type', 'is_sent')
+    list_filter = ( 
+        'owner', 
+        'notification_type', 
+        'is_sent'
+    )
     
     def webhook_list(self, obj):
         return ', '.join([x.name for x in obj.owner.webhooks.all().order_by('name')])
@@ -142,7 +152,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 class OwnerSyncStatusFilter(admin.SimpleListFilter):
-    title = 'sync status'
+    title = 'is sync ok'
 
     parameter_name = 'sync_status'
     
@@ -179,28 +189,34 @@ class OwnerAdmin(admin.ModelAdmin):
         'alliance',
         'character', 
         '_webhooks',
-        'sync_status',         
+        'is_active',
+        '_is_sync_ok',         
     )
 
     list_filter = (        
         ('corporation__alliance', admin.RelatedOnlyFieldListFilter),
+        'is_active',
         OwnerSyncStatusFilter, 
     )
 
     fieldsets = (
-            (None, {
-                'fields': (
-                    'corporation', 'character', 'webhooks', 'is_alliance_main', 'is_included_in_service_status'
-                )
-            }),
-            ('Sync Status', {
-                'classes': ('collapse',),
-                'fields': (                    
-                    ('structures_last_sync', 'structures_last_error', ),
-                    ('notifications_last_sync', 'notifications_last_error', ),
-                    ('forwarding_last_sync', 'forwarding_last_error', ),
-                )
-            }),
+        (None, {
+            'fields': (
+                'corporation', 
+                'character', 
+                'webhooks', 
+                'is_alliance_main', 
+                'is_included_in_service_status'
+            )
+        }),
+        ('Sync Status', {
+            'classes': ('collapse',),
+            'fields': (                    
+                ('structures_last_sync', 'structures_last_error', ),
+                ('notifications_last_sync', 'notifications_last_error', ),
+                ('forwarding_last_sync', 'forwarding_last_error', ),
+            )
+        }),
     )
     
     def alliance(self, obj):        
@@ -208,17 +224,21 @@ class OwnerAdmin(admin.ModelAdmin):
         
     
     def _webhooks(self, obj):
-        return ', '.join([x.name for x in obj.webhooks.all().order_by('name')])
+        webhook_names = [x.name for x in obj.webhooks.all().order_by('name')]
+        if webhook_names:
+            return ', '.join(webhook_names)
+        else:
+            return None
 
     _webhooks.short_description = 'Webhooks'
 
 
-    def sync_status(self, obj):
+    def _is_sync_ok(self, obj):
         return obj.notifications_last_error == Owner.ERROR_NONE \
             and obj.structures_last_error == Owner.ERROR_NONE \
             and obj.forwarding_last_error == Owner.ERROR_NONE
 
-    sync_status.boolean = True
+    _is_sync_ok.boolean = True
 
 
     def get_readonly_fields(self, request, obj = None):
@@ -234,11 +254,14 @@ class OwnerAdmin(admin.ModelAdmin):
         return self.readonly_fields
 
 
-    actions = ('update_structures', 'fetch_notifications', 'send_notifications')
+    actions = (
+        'update_structures', 
+        'fetch_notifications', 
+        'send_notifications'
+    )
 
 
-    def update_structures(self, request, queryset):
-                        
+    def update_structures(self, request, queryset):                        
         for obj in queryset:            
             tasks.update_structures_for_owner.delay(                
                 obj.pk,
@@ -255,8 +278,7 @@ class OwnerAdmin(admin.ModelAdmin):
     
     update_structures.short_description = "Update structures from EVE server"
 
-    def fetch_notifications(self, request, queryset):
-                        
+    def fetch_notifications(self, request, queryset):                        
         for obj in queryset:            
             tasks.fetch_notifications_for_owner.delay(                
                 obj.pk,
@@ -271,16 +293,15 @@ class OwnerAdmin(admin.ModelAdmin):
                 text
             )
     
-    fetch_notifications.short_description = "Fetch notifications from EVE server"
+    fetch_notifications.short_description = \
+        "Fetch notifications from EVE server"
 
-    def send_notifications(self, request, queryset):
-                        
+    def send_notifications(self, request, queryset):                        
         for obj in queryset:            
             tasks.send_new_notifications_for_owner.delay(                
                 obj.pk
             )            
-            text = 'Started sending new notifications for: {}. '.format(obj)
-            #text += 'You will receive a notification once it is completed.'
+            text = 'Started sending new notifications for: {}. '.format(obj)            
 
             self.message_user(
                 request, 
@@ -332,76 +353,119 @@ class StructureAdminInline(admin.TabularInline):
             return False
 
 
+
+class OwnerCorporationsFilter(admin.SimpleListFilter):
+    """Custom filter to filter on corporations from owners only"""
+    title = 'owner corporation'
+    parameter_name = 'owner_corporations'
+
+    def lookups(self, request, model_admin):
+        qs = EveCorporationInfo.objects\
+            .filter(owner__isnull=False)\
+            .values('corporation_id', 'corporation_name')\
+            .distinct()\
+            .order_by(Lower('corporation_name'))
+        return tuple(
+            [(x['corporation_id'], x['corporation_name']) for x in qs]
+        )
+
+    def queryset(self, request, qs):
+        if self.value() is None:
+            return qs.all()
+        else:                
+            return qs.filter(owner__corporation__corporation_id=self.value())
+            
+
+class OwnerAllianceFilter(admin.SimpleListFilter):
+    """Custom filter to filter on alliances from owners only"""
+    title = 'owner alliance'
+    parameter_name = 'main_alliances'
+
+    def lookups(self, request, model_admin):
+        qs = EveAllianceInfo.objects\
+            .filter(evecorporationinfo__owner__isnull=False)\
+            .values('alliance_id', 'alliance_name')\
+            .distinct()\
+            .order_by(Lower('alliance_name'))
+        return tuple(
+            [(x['alliance_id'], x['alliance_name']) for x in qs]
+        )
+
+    def queryset(self, request, qs):
+        if self.value() is None:
+            return qs.all()
+        else:    
+            if qs.model == User:
+                return qs\
+                    .filter(profile__main_character__alliance_id=self.value())                
+            else:
+                return qs\
+                    .filter(user__profile__main_character__alliance_id=\
+                        self.value())
+                
+
 @admin.register(Structure)
-class StructureAdmin(admin.ModelAdmin):
-    list_display = (
+class StructureAdmin(admin.ModelAdmin):    
+    show_full_result_count = True
+    list_select_related = True    
+    search_fields = [
         'name', 
-        'eve_solar_system', 
-        'eve_type', 
-        'owner', 
-        'alliance', 
+        'owner__corporation__corporation_name', 
+        'eve_solar_system__name'
+    ]    
+    list_display = (
+        'name',
+        '_owner',
+        '_location',
+        '_type',        
         '_tags'
     )
     list_filter = (        
-        ('eve_solar_system', admin.RelatedOnlyFieldListFilter),        
+        OwnerCorporationsFilter,
+        OwnerAllianceFilter,
+        ('eve_solar_system', admin.RelatedOnlyFieldListFilter),
+        ('eve_solar_system__eve_constellation__eve_region', admin.RelatedOnlyFieldListFilter),
         ('eve_type', admin.RelatedOnlyFieldListFilter),
-        'owner',                 
+        ('eve_type__eve_group', admin.RelatedOnlyFieldListFilter),
+        ('eve_type__eve_group__eve_category', admin.RelatedOnlyFieldListFilter),
         ('tags', admin.RelatedOnlyFieldListFilter),
     )
 
-    def alliance(self, obj):        
-        return obj.owner.corporation.alliance
-
-    if not STRUCTURES_DEVELOPER_MODE:        
-        readonly_fields = tuple([
-            x.name for x in Structure._meta.get_fields()
-            if isinstance(x, models.fields.Field)
-            and x.name not in ['tags']
-        ])
-        
-        fieldsets = (
-            (None, {
-                'fields': (
-                    'name', 'eve_type', 'eve_solar_system', 'owner', 'tags'
-                )
-            }),
-            ('Status', {
-                'classes': ('collapse',),
-                'fields': (
-                    'state',
-                    ('state_timer_start', 'state_timer_end', ),
-                    'unanchors_at',
-                    'fuel_expires'
-                )
-            }),
-            ('Reinforcement', {
-                'classes': ('collapse',),
-                'fields': (
-                    ('reinforce_hour', ),
-                    (
-                        'next_reinforce_hour', 
-                        'next_reinforce_weekday', 
-                        'next_reinforce_apply'
-                    ),
-                )
-            }),
-            ('Position', {
-                'classes': ('collapse',),
-                'fields': ('position_x', 'position_y' , 'position_z')
-            }),
-            (None, {
-                'fields': (                     
-                    ('id', 'last_updated', )
-                )
-            }),
-        )
-       
-    inlines = (StructureAdminInline, )
-
     actions = ('add_default_tags', 'remove_all_tags', )
 
+    def _owner(self, obj):        
+        return format_html(
+            '{}<br>{}',
+            obj.owner.corporation,
+            obj.owner.corporation.alliance
+        ) 
+
+    def _location(self, obj):        
+        if obj.eve_moon:
+            location_name = obj.eve_moon.name
+        elif obj.eve_planet:
+            location_name = obj.eve_planet.name
+        else:
+            location_name = obj.eve_solar_system.name
+        return format_html(
+            '{}<br>{}',
+            location_name,
+            obj.eve_solar_system.eve_constellation.eve_region
+        ) 
+
+    def _type(self, obj):        
+        return format_html(
+            '{}<br>{}',
+            obj.eve_type,
+            obj.eve_type.eve_group
+        ) 
+    
     def _tags(self, obj):
-        return tuple([x.name for x in obj.tags.all().order_by('name')])
+        tag_names = [x.name for x in obj.tags.all().order_by('name')]
+        if tag_names:
+            return tag_names
+        else:
+            return None
 
     _tags.short_description = 'Tags'
     
@@ -443,6 +507,51 @@ class StructureAdmin(admin.ModelAdmin):
     remove_all_tags.short_description = \
         "Remove all tags from selected structures"
     
+    if not STRUCTURES_DEVELOPER_MODE:        
+        readonly_fields = tuple([
+            x.name for x in Structure._meta.get_fields()
+            if isinstance(x, models.fields.Field)
+            and x.name not in ['tags']
+        ])
+        
+    fieldsets = (
+        (None, {
+            'fields': (
+                'name', 'owner', 'eve_solar_system', 'eve_type', 'tags'
+            )
+        }),
+        ('Status', {
+            'classes': ('collapse',),
+            'fields': (
+                'state',
+                ('state_timer_start', 'state_timer_end', ),
+                'unanchors_at',
+                'fuel_expires'
+            )
+        }),
+        ('Reinforcement', {
+            'classes': ('collapse',),
+            'fields': (
+                ('reinforce_hour', ),
+                (
+                    'next_reinforce_hour', 
+                    'next_reinforce_weekday', 
+                    'next_reinforce_apply'
+                ),
+            )
+        }),
+        ('Position', {
+            'classes': ('collapse',),
+            'fields': ('position_x', 'position_y' , 'position_z')
+        }),
+        (None, {
+            'fields': (                     
+                ('id', 'last_updated', )
+            )
+        }),
+    )
+       
+    inlines = (StructureAdminInline, )
 
 
 @admin.register(Webhook)

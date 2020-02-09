@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect, reverse
+from django.utils.html import format_html, mark_safe,escape
 from django.utils.translation import ngettext_lazy
 from django.utils.timesince import timeuntil
 
@@ -103,8 +104,10 @@ def structure_list_data(request):
     
     def add_no_wrap_html(text: str) -> str:
         """add no-wrap HTML to text"""
-        return '<span style="white-space: nowrap;">{}</span>'.format(text)
-        
+        return format_html(
+            '<span style="white-space: nowrap;">{}</span>',
+            mark_safe(text)
+        )
 
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:
@@ -160,7 +163,8 @@ def structure_list_data(request):
             corporation.corporation_name
         )
 
-        row['owner'] = '<a href="{}">{}</a><br>{}'.format(
+        row['owner'] = format_html(
+            '<a href="{}">{}</a><br>{}',
             corporation_url,
             corporation.corporation_name,
             alliance_name
@@ -169,12 +173,12 @@ def structure_list_data(request):
         row['corporation_name'] = corporation.corporation_name
 
         # corporation icon
-        row['corporation_icon'] = '<img src="{}" width="{}" height="{}"/>'\
-            .format(
-                corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            )
+        row['corporation_icon'] = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
         
         # location        
         row['region_name'] = \
@@ -191,7 +195,8 @@ def structure_list_data(request):
         else:        
             location_name = structure.eve_solar_system.name
         
-        row['location'] = '<a href="{}">{}</a><br>{}'.format(
+        row['location'] = format_html(
+            '<a href="{}">{}</a><br>{}',
             solar_system_url,
             add_no_wrap_html(location_name),
             add_no_wrap_html(row['region_name'])
@@ -199,6 +204,7 @@ def structure_list_data(request):
         
         # category
         my_group = structure.eve_type.eve_group
+        row['group_name'] = my_group.name
         if my_group.eve_category:
             my_category = my_group.eve_category
             row['category_name'] = my_category.name
@@ -208,7 +214,8 @@ def structure_list_data(request):
             row['is_starbase'] = None
 
         # type icon
-        row['type_icon'] = '<img src="{}" width="{}" height="{}"/>'.format(
+        row['type_icon'] = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
             structure.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
@@ -216,16 +223,21 @@ def structure_list_data(request):
         
         # type name              
         row['type_name'] = structure.eve_type.name
-        row['type'] = row['type_name']
+        row['type'] = format_html(
+            '{}<br>{}',
+            add_no_wrap_html(row['type_name']),
+            add_no_wrap_html(row['group_name'])
+        )
 
         # structure name        
-        row['structure_name'] = structure.name        
+        row['structure_name'] = escape(structure.name)
         if structure.tags:            
-            row['structure_name'] += '<br>{}'.format(
-                ' '.join([
-                        x.html 
-                        for x in structure.tags.all().order_by('name')
-                    ])
+            row['structure_name'] += format_html(
+                '<br>{}',
+                mark_safe(' '.join([
+                    x.html 
+                    for x in structure.tags.all().order_by('name')
+                ]))
             )            
             
         # services
@@ -235,7 +247,7 @@ def structure_list_data(request):
             services = list()
             for service in structure.structureservice_set.all().order_by('name'):
                 if service.state == StructureService.STATE_OFFLINE:
-                    service_name = '<del>{}</del>'. format(service.name)
+                    service_name = format_html('<del>{}</del>', service.name)
                 else:
                     service_name = service.name
                 services.append(service_name)
@@ -247,7 +259,9 @@ def structure_list_data(request):
         row['is_reinforced_str'] = 'yes' if structure.is_reinforced else 'no'
         
         if structure.reinforce_hour:
-            row['reinforcement'] = '{:02d}:00'.format(structure.reinforce_hour)
+            row['reinforcement'] = '{:02d}:00'.format(
+                structure.reinforce_hour
+            )
         else:
             row['reinforcement'] = ''
         
@@ -287,7 +301,8 @@ def structure_list_data(request):
         row['state_str'] = structure.state_str
         row['state_details'] = row['state_str']
         if structure.state_timer_end:
-            row['state_details'] += '<br>{}'.format(                    
+            row['state_details'] += format_html(
+                '<br>{}',                    
                 structure.state_timer_end.strftime(DATETIME_FORMAT)
             )
 
@@ -311,8 +326,10 @@ def add_structure_owner(request, token):
     except CharacterOwnership.DoesNotExist:
         messages_plus.error(
             request,
-            'You can only use your main or alt characters to add corporations.'
-            + 'However, character <strong>{}</strong> is neither. '.format(
+            format_html((
+                'You can only use your main or alt characters '
+                'to add corporations. '
+                'However, character <strong>{}</strong> is neither. '),
                 token_char.character_name
             )
         )
@@ -348,12 +365,14 @@ def add_structure_owner(request, token):
         )        
         messages_plus.info(
             request,             
-            '<strong>{}</strong> has been added '.format(owner)
-            + 'with <strong>{}</strong> as sync character. '.format(
-                    owner.character.character.character_name, 
-                )                        
-            + 'We have started fetching structures for this corporation. '
-            + 'You will receive a report once the process is finished.'
+            format_html(
+                '<strong>{}</strong> has been added with <strong>{}</strong> '
+                'as sync character. '
+                'We have started fetching structures for this corporation. '
+                'You will receive a report once the process is finished.',
+                owner, 
+                owner.character.character.character_name
+            )
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
             notify_admins(

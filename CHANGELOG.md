@@ -7,17 +7,39 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [0.10.0] - TBD
+## [1.0.0] - 2020-02-09
+
+**Starbases and Sovereignty**
+
+### ACTION REQUIRED: Starbase feature
+
+The new starbases feature requires additional ESI scopes to work and is therefore deactivated by default. You can activate it by adding the following in your local settings:
+
+```python
+STRUCTURES_FEATURE_STARBASES = True
+```
+
+Note that after activation of this feature all structure owners will have to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications for a corporation will stop working until the respective owner has updated its token.
+
+### ACTION REQUIRED: New notifications
+
+To enable the new notifications for starbases and sovereignty you wil need to manually activate them on any already existing webhook.
+
+For sov notifications you also need to nominate one owner as "alliance main" on the admin panel. Sov notifications will then be forwarded from this owner.
 
 ## Added
 
 - Starbases added to the structure browser
-- Starbase notification added for aggression and fuel alert
-- Filter by category: It is now possible to filter by category (orbital, structure, starbase) in the structures browser
+- You can now receive Starbase notifications
+- You can now receive Sovereignty notifications
+- It is now possible to filter by category (orbital, structure, starbase) and group (e.g. Engineering Complex) in the structures browser
+- Ability to deactivate syncing for an owner
+- Admin tool for purging all data to enable de-installation
 
 ## Changed
 
 - For starbases and POCOs the name of the related celestial (e.g. planet, moon) is now shown on the structure browser under location.
+- Improved admin site view for structures to include more information, filters and a search bar
 
 ## [0.9.1] - 2020-02-01
 

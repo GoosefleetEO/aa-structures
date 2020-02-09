@@ -166,6 +166,7 @@
                 { data: 'region_name' },
                 { data: 'solar_system_name' },
                 { data: 'category_name' },
+                { data: 'group_name' },
                 { data: 'type_name' },
                 { data: 'is_reinforced_str' },
                 { data: 'state_str' },
@@ -176,7 +177,7 @@
             
             columnDefs: [
                 { "sortable": false, "targets": [0, 3, 4, 6] },
-                { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18] }
+                { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19] }
             ],
             
             order: [ [ 1, "asc" ], [ 5, "asc" ] ],
@@ -206,18 +207,22 @@
                     },
                     {
                         idx: 15,
+                        title: 'Group'
+                    },  
+                    {
+                        idx: 16,
                         title: 'Type'
                     },                    
                     {
-                        idx: 16,
+                        idx: 17,
                         title: 'Reinforced?'
                     },
                     {
-                        idx: 17,
+                        idx: 18,
                         title: 'State'
                     },
                     {
-                        idx: 18,
+                        idx: 19,
                         title: 'Low Power?'
                     }
                 ],

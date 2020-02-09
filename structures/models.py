@@ -12,7 +12,7 @@ from multiselectfield import MultiSelectField
 from django.db import models, transaction
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.utils.html import escape, mark_safe, format_html
+from django.utils.html import escape, mark_safe, format_html, escape
 from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -221,14 +221,38 @@ class Owner(models.Model):
     ERROR_UNKNOWN = 99
 
     ERRORS_LIST = [
-        (ERROR_NONE, 'No error'),
-        (ERROR_TOKEN_INVALID, 'Invalid token'),
-        (ERROR_TOKEN_EXPIRED, 'Expired token'),
-        (ERROR_INSUFFICIENT_PERMISSIONS, 'Insufficient permissions'),
-        (ERROR_NO_CHARACTER, 'No character set for fetching data from ESI'),
-        (ERROR_ESI_UNAVAILABLE, 'ESI API is currently unavailable'),
-        (ERROR_OPERATION_MODE_MISMATCH, 'Operaton mode does not match with current setting'),
-        (ERROR_UNKNOWN, 'Unknown error'),
+        (
+            ERROR_NONE, 
+            'No error'
+        ),
+        (
+            ERROR_TOKEN_INVALID, 
+            'Invalid token'
+        ),
+        (
+            ERROR_TOKEN_EXPIRED, 
+            'Expired token'
+        ),
+        (
+            ERROR_INSUFFICIENT_PERMISSIONS, 
+            'Insufficient permissions'
+        ),
+        (
+            ERROR_NO_CHARACTER, 
+            'No character set for fetching data from ESI'
+        ),
+        (
+            ERROR_ESI_UNAVAILABLE, 
+            'ESI API is currently unavailable'
+        ),
+        (
+            ERROR_OPERATION_MODE_MISMATCH, 
+            'Operaton mode does not match with current setting'
+        ),
+        (
+            ERROR_UNKNOWN, 
+            'Unknown error'
+        ),
     ]
 
     corporation = models.OneToOneField(
@@ -284,10 +308,14 @@ class Owner(models.Model):
         blank=True,
         help_text='notifications are sent to these webhooks. '
     )
+    is_active =  models.BooleanField(        
+        default=True,
+        help_text='whether this owner is currently included in the sync process'
+    )
     is_alliance_main =  models.BooleanField(        
         default=False,
         help_text='whether alliance wide notifications ' \
-            + '(e.g. sov notifications) are forwarded for this owner'
+            + 'are forwarded for this owner (e.g. sov notifications)'
     )
     is_included_in_service_status =  models.BooleanField(        
         default=True,
@@ -634,7 +662,7 @@ class StructureTag(models.Model):
     def html(self) -> str:
         return format_html('<span class="label label-{}">{}</span>'.format(
             self.style,
-            self.name
+            escape(self.name)
         ))
     
     @classmethod
