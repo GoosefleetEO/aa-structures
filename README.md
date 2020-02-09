@@ -1,8 +1,9 @@
-# Structures for Alliance Auth
+# Alliance Structures
 
-[Alliance Auth](https://gitlab.com/allianceauth/allianceauth) plug-in app for managing structures.
+App for managing Eve Online structures with
+Alliance Auth.
 
-![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg)
+![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures?label=django) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg)
 
 ## Contents
 
@@ -19,23 +20,20 @@
 
 ## Overview
 
-This app add support for structures to Alliance Auth. It's main purpose is to make it easier for corporations and alliances to manage and operate their structures.
+This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows corporations and alliance to see a current list of all their structures in Auth and also get structure related notification on Discord.
 
 ## Features
 
-Alliance Structures adds the following features to Alliance Auth:
+Alliance Structures adds the following main features to Alliance Auth:
 
-- Detailed list of all structures owned by alliances / corporation showing location, services, fuel status and state
-- Access to structure list can be configured based on permissions
-- Ability to search and filter in structure list
-- Directors can add their corporation to include it's structures
-- Structure list is automatically kept up-to-date
-- Structure notifications are automatically forwarded to Discord channels as alerts
-- Interface for 3rd party monitoring of the services status
-- Structures include Upwell structures, Custom Offices and Starbases / POSes
+- Structure browser with a detailed list of all structures owned by alliances / corporation, automatically synced with the game server
+- Structures include all Upwell structures, Custom Offices and Starbases / POSes
+- Structure notifications can be automatically forwarded to Discord channels as alerts
 - Notification types include Upwell Structures, Moon Mining, Customs Offices, Starbases, Sovereignty
-- Automatically adds timers from relevant notifications to Alliance Auth timerboard app (if installed)
+- Automatically adds timers from notifications to Alliance Auth timerboard app (if installed)
+- Permissions allow configuring which structures are visible to a user
 - Self-defined tags help to better organize structures
+- Interface for 3rd party monitoring of the services status
 
 ## Screenshots
 
@@ -49,12 +47,14 @@ This is an example for a notification posted on Discord:
 
 ## Installation
 
+**Important**: This app is a plugin for Alliance Auth. If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
+
 ### 1. Install app
 
-Install into AA virtual environment with PIP install from this repo:
+Make sure you are in the virtual environment (venv) of your Alliance Auth installation. Then install the newest release from PyPI:
 
 ```bash
-pip install git+https://gitlab.com/ErikKalkoken/aa-structures.git
+pip install aa-structures
 ```
 
 ### 2 Update Eve Online app
@@ -94,7 +94,7 @@ Configure your AA settings (`local.py`) as follows:
 
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
 
-> **Recommended celery setup**:<br>The Alliance Structures apps uses celery a lot to constantly refresh data from ESI. We therefore recommend to enable the following additional settings for celery workers to enable logging and to protect against memory leaks:<br>
+> **Recommended celery setup**:<br>The Alliance Structures app uses celery to refresh data from ESI on a regular basis. We recommend to enable the following additional settings for celery workers to enable logging and to protect against potential memory leaks:<br>
 `-l info --max-memory-per-child 512000`
 <br><br>In many setups this config is part of your supervisor configuration.<br>On Ubuntu you can run `systemctl status supervisor` to see where that config file is located. <br><br>Note that you need to restart the supervisor service itself to activate those changes.<br>
 e.g. on Ubuntu:<br>`systemctl restart supervisor`

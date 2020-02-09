@@ -21,6 +21,18 @@ STRUCTURES_FEATURE_STARBASES = True
 
 Note that after activation of this feature all structure owners will have to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications for a corporation will stop working until the respective owner has updated its token.
 
+### ACTION REQUIRED: SDE data update
+
+We have extended the SDE models and therefore need you to do a one-time update of the  local SDE data. This update must be performed AFTER the new migrations have completed and AA has been restarted.
+
+Please start the update with the following command (assuming the name of your AA project is "myauth"):
+
+```bash
+celery -A myauth call structures.tasks.run_sde_update
+```
+
+Until this task is completed some features like category filtering and planet detection for customs offices will not work correctly.
+
 ### ACTION REQUIRED: New notifications
 
 To enable the new notifications for starbases and sovereignty you wil need to manually activate them on any already existing webhook.

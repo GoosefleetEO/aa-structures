@@ -904,22 +904,28 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk = None):
                 'An unexpected error ocurred while trying to '
                 + 'report to user: {}'. format(ex)
             ))
-      
-@shared_task
-def update_solar_system(solar_system_id):
-    """update a solar system from ESI"""
-    EveSolarSystem.objects.update_or_create_esi(solar_system_id)
+
 
 @shared_task
 def run_sde_update():
-    """update all local SDE models from ESI"""
-    solar_systems_count = EveSolarSystem.objects.count()
-    logger.info(
-        'Started updating {} solar systems from ESI'.format(
-            solar_systems_count
-    ))
-    for solar_system in EveSolarSystem.objects.all():
-        update_solar_system.delay(solar_system.id)
+    """update selected SDE models from ESI"""        
+    logger.info('Starting ESI client...')
+    esi_client = esi_client_factory()
+    
+    for EveModel in [EveGroup, EveSolarSystem]:
+        obj_count = EveModel.objects.count()
+        if obj_count > 0:
+            logger.info(
+                'Started updating {} {} objects and related objects '
+                'from from ESI'.format(
+                    obj_count,
+                    EveModel.__name__,                
+            ))
+            for eve_obj in EveModel.objects.all():
+                EveModel.objects.update_or_create_esi(eve_obj.id, esi_client)
+            
+    logger.info('SDE update complete')
+
     
 @shared_task
 def purge_all_data(i_am_sure: bool = False):
