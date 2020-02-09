@@ -2,7 +2,7 @@
 
 [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) plug-in app for managing structures.
 
-![release](https://img.shields.io/pypi/v/allianceauth?label=release) ![python](https://img.shields.io/pypi/pyversions/allianceauth) ![django](https://img.shields.io/pypi/djversions/allianceauth) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg)
+![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg)
 
 ## Contents
 
@@ -41,7 +41,7 @@ Alliance Structures adds the following features to Alliance Auth:
 
 Here is an example for the structure browser:
 
-![StructureList](https://i.imgur.com/iusH65e.png)
+![StructureList](https://i.imgur.com/WtiRap3.png)
 
 This is an example for a notification posted on Discord:
 
