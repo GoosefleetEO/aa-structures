@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 If you are upgrading: there are some important changes included in this release, which may require you to take action. Please read the notes carefully.
 
-### ACTION REQUIRED: Starbase feature required token update
+### ACTION REQUIRED: Starbase feature requires token update
 
 The new starbases feature requires additional ESI scopes to work. After installation of this release all structure owners therefore have to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications for a corporation will stop working until the respective owner has updated its token.
 

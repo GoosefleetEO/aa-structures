@@ -1,7 +1,7 @@
 
 from .utils import clean_setting
 
-# Whether to automatically add timers for certain notifications 
+# Whether to automatically add timers for certain notifications
 # on the timerboard (will have no effect if aa-timerboard app is not installed)
 STRUCTURES_ADD_TIMERS = \
     clean_setting('STRUCTURES_ADD_TIMERS', True)
@@ -47,12 +47,12 @@ STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED = \
 STRUCTURES_NOTIFICATION_MAX_RETRIES = \
     clean_setting('STRUCTURES_NOTIFICATION_MAX_RETRIES', 3)
 
-# Max time in minutes since last successful notification sync 
+# Max time in minutes since last successful notification sync
 # before service is reported as down
 STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES = \
     clean_setting('STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 15)
 
-# Default wait time in seconds before retrying to send a notification 
+# Default wait time in seconds before retrying to send a notification
 # to Discord after an error occurred
 STRUCTURES_NOTIFICATION_WAIT_SEC = \
     clean_setting('STRUCTURES_NOTIFICATION_WAIT_SEC', 5)
@@ -71,7 +71,7 @@ STRUCTURES_REPORT_NPC_ATTACKS = \
 STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE = \
     clean_setting('STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE', True)
 
-# Max time in minutes since last successful structures sync 
+# Max time in minutes since last successful structures sync
 # before service is reported as down
 STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES = \
     clean_setting('STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 120)

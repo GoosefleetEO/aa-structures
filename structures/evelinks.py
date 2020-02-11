@@ -20,14 +20,14 @@ DOTLAN_BASE_URL = 'http://evemaps.dotlan.net'
 
 def get_entity_profile_url_by_name(category: str, name: str) -> str:
     """return url to profile page for an eve entity"""
-    
-    if category == ESI_CATEGORY_ALLIANCE:        
+
+    if category == ESI_CATEGORY_ALLIANCE:
         url = "{}/alliance/{}".format(
             DOTLAN_BASE_URL,
             urllib.parse.quote(name.replace(" ", "_"))
         )
 
-    elif category == ESI_CATEGORY_CORPORATION:        
+    elif category == ESI_CATEGORY_CORPORATION:
         url = "{}/corp/{}".format(
             DOTLAN_BASE_URL,
             urllib.parse.quote(name.replace(" ", "_"))
@@ -38,7 +38,7 @@ def get_entity_profile_url_by_name(category: str, name: str) -> str:
             DOTLAN_BASE_URL,
             urllib.parse.quote(name)
         )
-    
+
     else:
         raise NotImplementedError(
             "Not implemented yet for category:" + category
@@ -47,5 +47,5 @@ def get_entity_profile_url_by_name(category: str, name: str) -> str:
 
 
 def get_entity_profile_url_by_id(category: str, id: int) -> str:
-    """return url to profile page for an eve entity"""    
+    """return url to profile page for an eve entity"""
     raise NotImplementedError()

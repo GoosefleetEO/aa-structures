@@ -1,13 +1,13 @@
 import logging
 import os
-import sys
 
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
-from django.contrib.messages.constants import *
+from django.contrib.messages.constants  \
+    import DEBUG, ERROR, SUCCESS, WARNING, INFO
 from django.contrib import messages
 from django.db.models import Q
-from django.utils.html import mark_safe
+from django.utils.html import format_html
 
 from allianceauth.notifications import notify
 
@@ -32,96 +32,130 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 def get_swagger_spec_path() -> str:
     """returns the path to the current swagger spec file"""
     return os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 
+        os.path.dirname(os.path.abspath(__file__)),
         'swagger.json'
     )
 
 
 def make_logger_prefix(tag: str):
     """creates a function to add logger prefix"""
-    return lambda text : '{}: {}'.format(tag, text)
+    return lambda text: '{}: {}'.format(tag, text)
 
 
 class messages_plus():
     """Pendant to Django messages adding level icons and HTML support
-    
+
     Careful: Use with safe strings only
     """
+    _glyph_map = {
+        DEBUG: 'eye-open',
+        INFO: 'info-sign',
+        SUCCESS: 'ok-sign',
+        WARNING: 'exclamation-sign',
+        ERROR: 'alert',
+    }
 
     @classmethod
-    def add_messages_icon(cls,level, message):
-        """Adds an level based icon to Django messages"""
-        glyph_map = {
-            DEBUG: 'eye-open',
-            INFO: 'info-sign',
-            SUCCESS: 'ok-sign',
-            WARNING: 'exclamation-sign',
-            ERROR: 'alert',
-        }
-        if level in glyph_map:
-            glyph = glyph_map[level]
+    def _add_messages_icon(cls, level: int, message: str) -> str:
+        """Adds an level based icon to standard Django messages"""
+        if level not in cls._glyph_map:
+            raise ValueError('glyph for level not defined')
         else:
-            glyph = glyph_map[INFO]
+            glyph = cls._glyph_map[level]
 
-        message = ('<span class="glyphicon glyphicon-{}" '.format(glyph)
-            + 'aria-hidden="true"></span>&nbsp;&nbsp;' 
-            + message)
-        return mark_safe(message)
+        return format_html(
+            '<span class="glyphicon glyphicon-{}" '
+            'aria-hidden="true"></span>&nbsp;&nbsp;{}',
+            glyph,
+            message
+        )
 
     @classmethod
-    def debug(cls, request, message, extra_tags='', fail_silently=False):
+    def debug(
+        cls,
+        request: object,
+        message: str,
+        extra_tags: str = '',
+        fail_silently: bool = False
+    ):
         messages.debug(
-            request, 
-            cls.add_messages_icon(DEBUG, message), 
-            extra_tags, 
+            request,
+            cls._add_messages_icon(DEBUG, message),
+            extra_tags,
             fail_silently
         )
 
     @classmethod
-    def info(cls, request, message, extra_tags='', fail_silently=False):
+    def info(
+        cls,
+        request: object,
+        message: str,
+        extra_tags: str = '',
+        fail_silently: bool = False
+    ):
         messages.info(
-            request, 
-            cls.add_messages_icon(INFO, message), 
-            extra_tags, 
+            request,
+            cls._add_messages_icon(INFO, message),
+            extra_tags,
             fail_silently
         )
+
     @classmethod
-    def success(cls, request, message, extra_tags='', fail_silently=False):
+    def success(
+        cls,
+        request: object,
+        message: str,
+        extra_tags: str = '',
+        fail_silently: bool = False
+    ):
         messages.success(
-            request, 
-            cls.add_messages_icon(SUCCESS, message), 
-            extra_tags, 
+            request,
+            cls._add_messages_icon(SUCCESS, message),
+            extra_tags,
             fail_silently
         )
-    
+
     @classmethod
-    def warning(cls, request, message, extra_tags='', fail_silently=False):
+    def warning(
+        cls,
+        request: object,
+        message: str,
+        extra_tags: str = '',
+        fail_silently: bool = False
+    ):
         messages.warning(
-            request, 
-            cls.add_messages_icon(WARNING, message), 
-            extra_tags, 
+            request,
+            cls._add_messages_icon(WARNING, message),
+            extra_tags,
             fail_silently
         )
-    
+
     @classmethod
-    def error(cls, request, message, extra_tags='', fail_silently=False):
+    def error(
+        cls,
+        request: object,
+        message: str,
+        extra_tags: str = '',
+        fail_silently: bool = False
+    ):
         messages.error(
-            request, 
-            cls.add_messages_icon(ERROR, message), 
-            extra_tags, 
+            request,
+            cls._add_messages_icon(ERROR, message),
+            extra_tags,
             fail_silently
         )
 
 
-def notify_admins(message: str, title: str, level = 'info') -> None:
+def notify_admins(message: str, title: str, level='info') -> None:
     """send notification to all admins"""
     try:
         perm = Permission.objects.get(codename="logging_notifications")
-        users = User.objects.filter(
-            Q(groups__permissions=perm) 
-            | Q(user_permissions=perm) 
-            | Q(is_superuser=True)
-        ).distinct()
+        users = User.objects\
+            .filter(
+                Q(groups__permissions=perm)
+                | Q(user_permissions=perm)
+                | Q(is_superuser=True)
+            ).distinct()
 
         for user in users:
             notify(
@@ -141,14 +175,14 @@ def chunks(lst, n):
 
 
 def clean_setting(
-    name: str,     
-    default_value: object,         
+    name: str,
+    default_value: object,
     min_value: int = None,
     max_value: int = None,
     required_type: type = None
 ):
     """cleans the input for a custom setting
-    
+
     Will use `default_value` if settings does not exit or has the wrong type
     or is outside define boundaries (for int only)
 
@@ -157,31 +191,31 @@ def clean_setting(
     Will assume `min_value` of 0 for int (can be overriden)
 
     Returns cleaned value for setting
-    """                
+    """
     if default_value is None and not required_type:
         raise ValueError('You must specify a required_type for None defaults')
-    
+
     if not required_type:
         required_type = type(default_value)
 
     if min_value is None and required_type == int:
-        min_value = 0        
-        
+        min_value = 0
+
     if not hasattr(settings, name):
         cleaned_value = default_value
     else:
         if (isinstance(getattr(settings, name), required_type)
             and (min_value is None or getattr(settings, name) >= min_value)
             and (max_value is None or getattr(settings, name) <= max_value)
-        ):        
-            cleaned_value = getattr(settings, name)    
-        else:        
+        ):
+            cleaned_value = getattr(settings, name)
+        else:
             logger.warn(
                 'You setting for {} it not valid. Please correct it. '
                 'Using default for now: {}'.format(
                     name,
                     default_value
-            ))
+                )
+            )
             cleaned_value = default_value
-    
     return cleaned_value

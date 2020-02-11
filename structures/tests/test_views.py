@@ -1,22 +1,28 @@
 from datetime import timedelta
-from random import randrange
-from unittest.mock import Mock, patch
+import json
+from unittest.mock import patch
 
-from django.contrib.auth.models import User, Permission 
+from django.contrib.auth.models import User, Permission
 from django.test import TestCase, RequestFactory
 from django.urls import reverse
+from django.utils.timezone import now
 
-from allianceauth.eveonline.models \
-    import EveCharacter, EveCorporationInfo, EveAllianceInfo
+from allianceauth.authentication.models import CharacterOwnership
+from allianceauth.eveonline.models import EveCharacter
 
 from . import set_logger
-from .testdata import entities_testdata, load_entities, create_structures,\
-    set_owner_character
-from ..models import *
+from ..app_settings import (
+    STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
+    STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
+    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
+)
+from .testdata import create_structures, set_owner_character
+from ..models import Owner, StructureTag
 from .. import views
 
-logger = set_logger('structures.views', __file__)
 
+MODULE_PATH = 'structures.views'
+logger = set_logger(MODULE_PATH, __file__)
 
 
 class TestViews(TestCase):
@@ -33,8 +39,7 @@ class TestViews(TestCase):
         self.user.user_permissions.add(p)
         self.user.save()
 
-        self.factory = RequestFactory()
-        
+        self.factory = RequestFactory()   
     
     def test_basic_access_main_view(self):
         request = self.factory.get(reverse('structures:structure_list'))
@@ -42,8 +47,7 @@ class TestViews(TestCase):
         response = views.structure_list(request)
         self.assertEqual(response.status_code, 200)
 
-    
-    @patch('structures.views.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', True)
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', True)
     def test_default_filter_enabled(self):
         request = self.factory.get(reverse('structures:index'))
         request.user = self.user
@@ -51,8 +55,7 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, '/structures/list/?tags=tag_a')
 
-
-    @patch('structures.views.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', False)
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', False)
     def test_default_filter_disabled(self):
         request = self.factory.get(reverse('structures:index'))
         request.user = self.user
@@ -60,16 +63,14 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, '/structures/list/')
         
-    
     def test_basic_access_own_structures_only(self):
-                
         request = self.factory.get(reverse('structures:structure_list_data'))
         request.user = self.user
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
         
         data = json.loads(response.content.decode('utf-8'))        
-        structure_ids = { x['structure_id'] for x in data }
+        structure_ids = {x['structure_id'] for x in data}
         self.assertSetEqual(
             structure_ids, 
             {
@@ -82,18 +83,7 @@ class TestViews(TestCase):
             }
         )
         
-
-        """
-        print('\nCorporations')
-        print(EveCorporationInfo.objects.all().values())
-        print('\nOwners')
-        print(Owner.objects.all().values())
-        print('\nStructures')
-        print(Structure.objects.all().values())
-        """
-
     def test_perm_view_alliance_structures_normal(self):
-        
         # user needs permission to access view
         p = Permission.objects.get(
             codename='view_alliance_structures', 
@@ -108,7 +98,7 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 200)
         
         data = json.loads(response.content.decode('utf-8'))
-        structure_ids = { x['structure_id'] for x in data }
+        structure_ids = {x['structure_id'] for x in data}
         self.assertSetEqual(
             structure_ids, 
             {
@@ -122,7 +112,6 @@ class TestViews(TestCase):
             }
         )
 
-
     def test_perm_view_alliance_structures_no_alliance(self):
         # run with a user that is not a member of an alliance        
         character = EveCharacter.objects.get(character_id=1002)        
@@ -131,7 +120,7 @@ class TestViews(TestCase):
             'abc@example.com',
             'password'
         )
-        main_ownership = CharacterOwnership.objects.create(
+        CharacterOwnership.objects.create(
             character=character,
             owner_hash='x2',
             user=user
@@ -157,15 +146,13 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 200)
         
         data = json.loads(response.content.decode('utf-8'))
-        structure_ids = { x['structure_id'] for x in data }
+        structure_ids = {x['structure_id'] for x in data}
         self.assertSetEqual(
             structure_ids, 
             {1000000000003}
         )
             
-
     def test_perm_view_all_structures(self):
-        
         # user needs permission to access view
         p = Permission.objects.get(
             codename='view_all_structures', 
@@ -180,7 +167,7 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 200)
         
         data = json.loads(response.content.decode('utf-8'))
-        structure_ids = { x['structure_id'] for x in data }
+        structure_ids = {x['structure_id'] for x in data}
         self.assertSetEqual(
             structure_ids, 
             {
@@ -195,9 +182,7 @@ class TestViews(TestCase):
             }
         )
 
-
     def test_view_add_structure_owner(self):
-        
         # user needs permission to access view
         p = Permission.objects.get(
             codename='add_structure_owner', 
@@ -211,9 +196,7 @@ class TestViews(TestCase):
         response = views.structure_list(request)
         self.assertEqual(response.status_code, 200)
 
-
     def test_view_service_status_ok(self):
-                
         for owner in Owner.objects.filter(
             is_included_in_service_status__exact=True
         ):
@@ -229,9 +212,7 @@ class TestViews(TestCase):
         response = views.service_status(request)
         self.assertEqual(response.status_code, 200)
 
-    
-    def test_view_service_status_fail(self):
-                
+    def test_view_service_status_fail(self):   
         for owner in Owner.objects.filter(
             is_included_in_service_status__exact=True
         ):
@@ -299,7 +280,7 @@ class TestViews(TestCase):
         ):
             owner.structures_last_sync = now()
             owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now()- timedelta(
+            owner.notifications_last_sync = now() - timedelta(
                 minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES + 1
             )
             owner.notifications_last_error = Owner.ERROR_NONE
@@ -318,7 +299,7 @@ class TestViews(TestCase):
             owner.structures_last_error = Owner.ERROR_NONE
             owner.notifications_last_sync = now()
             owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now()- timedelta(
+            owner.forwarding_last_sync = now() - timedelta(
                 minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES + 1
             )
             owner.forwarding_last_error = Owner.ERROR_NONE
@@ -328,11 +309,10 @@ class TestViews(TestCase):
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
-
     def test_list_filter_by_tag_1(self):               
-        tag_a = StructureTag.objects.get(name='tag_a')
-        tag_b = StructureTag.objects.get(name='tag_b')
-        tag_c = StructureTag.objects.get(name='tag_c')
+        StructureTag.objects.get(name='tag_a')
+        StructureTag.objects.get(name='tag_b')
+        StructureTag.objects.get(name='tag_c')
        
         # user needs permission to access view
         p = Permission.objects.get(
@@ -352,7 +332,7 @@ class TestViews(TestCase):
         
         data = json.loads(response.content.decode('utf-8'))        
         self.assertSetEqual(
-            { x['structure_id'] for x in data }, 
+            {x['structure_id'] for x in data}, 
             {
                 1000000000001, 
                 1000000000002, 
@@ -375,7 +355,7 @@ class TestViews(TestCase):
         
         data = json.loads(response.content.decode('utf-8'))        
         self.assertSetEqual(
-            { x['structure_id'] for x in data }, 
+            {x['structure_id'] for x in data}, 
             {1000000000002, 1000000000003}
         )
 
@@ -389,7 +369,7 @@ class TestViews(TestCase):
         
         data = json.loads(response.content.decode('utf-8'))        
         self.assertSetEqual(
-            { x['structure_id'] for x in data }, 
+            {x['structure_id'] for x in data}, 
             {1000000000003}
         )
 
@@ -403,6 +383,6 @@ class TestViews(TestCase):
         
         data = json.loads(response.content.decode('utf-8'))        
         self.assertSetEqual(
-            { x['structure_id'] for x in data }, 
+            {x['structure_id'] for x in data}, 
             {1000000000002, 1000000000003}
         )

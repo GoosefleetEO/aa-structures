@@ -8,4 +8,3 @@ def add_default_tags_to_new_structures(sender, instance, created, **kwargs):
     if created:
         for tag in StructureTag.objects.filter(is_default__exact=True):
             instance.tags.add(tag)
-
