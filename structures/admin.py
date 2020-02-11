@@ -86,7 +86,7 @@ class NotificationAdmin(admin.ModelAdmin):
         'timestamp',
         'created',
         'last_updated',
-        'webhook_list',
+        '_webhooks',
         'is_sent',
         'is_timer_added'
     )
@@ -96,9 +96,14 @@ class NotificationAdmin(admin.ModelAdmin):
         'is_sent'
     )
 
-    def webhook_list(self, obj):
+    def _webhooks(self, obj):
         names = [x.name for x in obj.owner.webhooks.all().order_by('name')]
-        return ', '.join(names)
+        if names:
+            return ', '.join(names)
+        else:
+            return None
+
+    _webhooks.short_description = 'Webhooks'
 
     actions = (
         'mark_as_sent',
@@ -194,13 +199,13 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
         """Return the filtered queryset"""
         if self.value() == 'yes':
             return queryset.filter(
-                structures_last_error__exact=Owner.ERROR_NONE,
+                structures_last_error=Owner.ERROR_NONE,
                 notifications_last_error=Owner.ERROR_NONE,
                 forwarding_last_error=Owner.ERROR_NONE
             )
         elif self.value() == 'no':
             return queryset.exclude(
-                structures_last_error__exact=Owner.ERROR_NONE,
+                structures_last_error=Owner.ERROR_NONE,
                 notifications_last_error=Owner.ERROR_NONE,
                 forwarding_last_error=Owner.ERROR_NONE
             )
@@ -245,7 +250,10 @@ class OwnerAdmin(admin.ModelAdmin):
     )
 
     def alliance(self, obj):
-        return obj.corporation.alliance
+        if obj.corporation.alliance:
+            return obj.corporation.alliance.alliance_name
+        else:
+            return None
 
     def _webhooks(self, obj):
         webhook_names = [x.name for x in obj.webhooks.all().order_by('name')]
@@ -501,7 +509,7 @@ class StructureAdmin(admin.ModelAdmin):
 
     def add_default_tags(self, request, queryset):
         structure_count = 0
-        tags = StructureTag.objects.filter(is_default__exact=True)
+        tags = StructureTag.objects.filter(is_default=True)
         for obj in queryset:
             for tag in tags:
                 obj.tags.add(tag)

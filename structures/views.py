@@ -47,7 +47,7 @@ def index(request):
         params = {
             QUERY_PARAM_TAGS: ','.join([
                 x.name
-                for x in StructureTag.objects.filter(is_default__exact=True)
+                for x in StructureTag.objects.filter(is_default=True)
             ])
         }
         url += '?{}'.format(urllib.parse.urlencode(params))
@@ -350,7 +350,7 @@ def add_structure_owner(request, token):
                     'character': owned_char
                 }
             )
-            default_webhooks = Webhook.objects.filter(is_default__exact=True)
+            default_webhooks = Webhook.objects.filter(is_default=True)
             if default_webhooks:
                 for webhook in default_webhooks:
                     owner.webhooks.add(webhook)
@@ -394,9 +394,7 @@ def service_status(request):
     configured structure or notifications syncs fails or is delayed
     """
     ok = True
-    for owner in Owner.objects.filter(
-        is_included_in_service_status__exact=True
-    ):
+    for owner in Owner.objects.filter(is_included_in_service_status=True):
         ok = ok and owner.is_all_syncs_ok()
 
     if ok:

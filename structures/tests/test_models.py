@@ -290,6 +290,59 @@ class TestOwner(TestCase):
         )
 
 
+class TestEveType(TestCase):
+
+    def setUp(self):                          
+        load_entities([
+            EveCategory,
+            EveGroup,
+            EveType,          
+        ])
+        self.type_astrahus = EveType.objects.get(id=35832)
+        self.type_poco = EveType.objects.get(id=2233)
+        self.type_starbase = EveType.objects.get(id=16213)
+
+    def test_str(self):
+        self.assertEqual(str(self.type_astrahus), self.type_astrahus.name)
+
+    def test_is_poco(self):
+        self.assertFalse(self.type_astrahus.is_poco)
+        self.assertTrue(self.type_poco.is_poco)
+        self.assertFalse(self.type_starbase.is_poco)
+
+    def test_is_starbase(self):
+        self.assertFalse(self.type_astrahus.is_starbase)
+        self.assertFalse(self.type_poco.is_starbase)
+        self.assertTrue(self.type_starbase.is_starbase)
+
+    def test_is_upwell_structure(self):
+        self.assertTrue(self.type_astrahus.is_upwell_structure)
+        self.assertFalse(self.type_poco.is_upwell_structure)
+        self.assertFalse(self.type_starbase.is_upwell_structure)
+
+    def test_generic_icon_url_normal(self):
+        self.assertEqual(
+            EveType.generic_icon_url(self.type_astrahus.id),
+            'https://images.evetech.net/types/35832/icon?size=64'
+        )
+
+    def test_generic_icon_url_w_size(self):
+        self.assertEqual(
+            EveType.generic_icon_url(self.type_astrahus.id, 128),
+            'https://images.evetech.net/types/35832/icon?size=128'
+        )
+
+    def test_generic_icon_url_invalid_size(self):
+        with self.assertRaises(ValueError):
+            EveType.generic_icon_url(self.type_astrahus.id, 127)
+            
+    def test_icon_url(self):
+        self.assertEqual(
+            EveType.generic_icon_url(self.type_astrahus.id),
+            self.type_astrahus.icon_url()
+        )
+
+
 class TestEveEntities(TestCase):
 
     def setUp(self):

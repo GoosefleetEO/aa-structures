@@ -737,9 +737,9 @@ def fetch_notifications_for_owner(
                     )
                     my_types = Notification.get_types_for_timerboard()
                     notifications = Notification.objects\
-                        .filter(owner__exact=owner)\
+                        .filter(owner=owner)\
                         .filter(notification_type__in=my_types)\
-                        .exclude(is_timer_added__exact=True) \
+                        .exclude(is_timer_added=True) \
                         .filter(timestamp__gte=cutoff_dt_for_stale) \
                         .select_related().order_by('timestamp')
 
@@ -818,11 +818,11 @@ def send_new_notifications_for_owner(owner_pk, rate_limited=True):
         new_notifications_count = 0
         active_webhooks_count = 0
         esi_client = None
-        for webhook in owner.webhooks.filter(is_active__exact=True):
+        for webhook in owner.webhooks.filter(is_active=True):
             active_webhooks_count += 1
             q = Notification.objects\
-                .filter(owner__exact=owner)\
-                .filter(is_sent__exact=False)\
+                .filter(owner=owner)\
+                .filter(is_sent=False)\
                 .filter(timestamp__gte=cutoff_dt_for_stale) \
                 .filter(notification_type__in=webhook.notification_types)\
                 .select_related().order_by('timestamp')

@@ -781,14 +781,7 @@ class TestSyncNotifications(TestCase):
 
     def setUp(self): 
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
-        
-        self.webhook = Webhook.objects.create(
-            name='Test',
-            url='dummy-url'
-        )
-        self.owner.webhooks.add(self.webhook)
-        self.owner.save()
+        self.user, self.owner = set_owner_character(character_id=1001)        
                 
     def test_run_unknown_owner(self):
         with self.assertRaises(Owner.DoesNotExist):
@@ -1015,12 +1008,6 @@ class TestForwardNotifications(TestCase):
     def setUp(self):         
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
-                
-        self.webhook = Webhook.objects.create(
-            name='Test',
-            url='dummy-url'
-        )
-        self.owner.webhooks.add(self.webhook)
         self.owner.is_alliance_main = True
         self.owner.save()
 
@@ -1461,7 +1448,8 @@ class TestForwardNotifications(TestCase):
         mock_response.status_ok = True
         mock_response.content = {"dummy_response": True}
         mock_execute.return_value = mock_response
-        tasks.send_test_notifications_to_webhook(self.webhook.pk, self.user.pk)
+        my_webhook = self.owner.webhooks.first()
+        tasks.send_test_notifications_to_webhook(my_webhook.pk, self.user.pk)
 
         # should have sent notification
         self.assertEqual(mock_execute.call_count, 1)

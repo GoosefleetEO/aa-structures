@@ -11,10 +11,27 @@ from unittest.mock import Mock
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 
+from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 
-from ...models import *
+from ...models import (
+    EveCategory,
+    EveGroup,
+    EveType,
+    EveRegion,
+    EveConstellation,
+    EveSolarSystem,
+    EveMoon,
+    EvePlanet,
+    StructureTag,
+    StructureService,    
+    EveEntity,
+    Webhook,
+    Owner,
+    Notification,
+    Structure,    
+)
 
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
@@ -48,7 +65,7 @@ def _load_testdata_entities() -> dict:
     
     # update timestamp to current
     for notification in entities['Notification']:
-        notification['timestamp'] =  now() - timedelta(
+        notification['timestamp'] = now() - timedelta(
             hours=randrange(3), 
             minutes=randrange(60), 
             seconds=randrange(60)
@@ -134,7 +151,8 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     if esi_get_corporations_corporation_id_structures.override_data is None:
         my_corp_structures_data = esi_corp_structures_data
     else:
-        if (not isinstance(
+        if (
+            not isinstance(
                 esi_get_corporations_corporation_id_structures.override_data, 
                 dict
             )
@@ -162,6 +180,7 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
     mock_operation.result.side_effect = mock_result
     return mock_operation
     
+    
 esi_get_corporations_corporation_id_structures.override_data = None
 
 
@@ -186,9 +205,12 @@ def esi_get_corporations_corporation_id_starbases(corporation_id, page=None):
 
     if esi_get_corporations_corporation_id_starbases.override_data is None:
         my_corp_starbases_data = \
-            _esi_data['Corporation']['get_corporations_corporation_id_starbases']
+            _esi_data['Corporation'][
+                'get_corporations_corporation_id_starbases'
+            ]
     else:
-        if (not isinstance(
+        if (
+            not isinstance(
                 esi_get_corporations_corporation_id_starbases.override_data, 
                 dict
             )
@@ -216,6 +238,7 @@ def esi_get_corporations_corporation_id_starbases(corporation_id, page=None):
     mock_operation.result.side_effect = mock_result
     return mock_operation
     
+
 esi_get_corporations_corporation_id_starbases.override_data = None
 
 
@@ -266,9 +289,11 @@ def esi_get_corporations_corporation_id_customs_offices(
     if not page:
         page = 1
 
-    if esi_get_corporations_corporation_id_customs_offices.override_data is None:
+    if esi_get_corporations_corporation_id_customs_offices.override_data is None:   # noqa: E501
         my_corp_customs_offices_data = \
-            _esi_data['Planetary_Interaction']['get_corporations_corporation_id_customs_offices']
+            _esi_data['Planetary_Interaction'][
+                'get_corporations_corporation_id_customs_offices'
+            ]
 
     else:
         if (not isinstance(
@@ -298,6 +323,7 @@ def esi_get_corporations_corporation_id_customs_offices(
     mock_operation.result.side_effect = mock_result
     return mock_operation
     
+
 esi_get_corporations_corporation_id_customs_offices.override_data = None
 
 
@@ -317,12 +343,14 @@ def _esi_post_corporations_corporation_id_assets(
             'No asset data found for corporation {} in {}'.format(
                 corporation_id,
                 category
-        ))
+            )
+        )
     else:        
         mock_operation = Mock()
         mock_operation.result.return_value = \
             my_esi_data[str(corporation_id)]
         return mock_operation
+
 
 def esi_post_corporations_corporation_id_assets_locations(
     corporation_id: int, 
@@ -334,6 +362,7 @@ def esi_post_corporations_corporation_id_assets_locations(
         item_ids,
         esi_post_corporations_corporation_id_assets_locations.override_data
     )
+
 
 esi_post_corporations_corporation_id_assets_locations.override_data = None
 
@@ -349,7 +378,9 @@ def esi_post_corporations_corporation_id_assets_names(
         esi_post_corporations_corporation_id_assets_names.override_data
     )
     
+
 esi_post_corporations_corporation_id_assets_names.override_data = None
+
 
 ###################################
 # helper functions
@@ -378,7 +409,8 @@ def load_entities(entities_def: list = None):
         EveCorporationInfo,
         EveCharacter,    
         EveEntity,
-        StructureTag
+        StructureTag,
+        Webhook
     ]
     
     for EntityClass in entities_def_master:
@@ -388,7 +420,7 @@ def load_entities(entities_def: list = None):
             for x in entities_testdata[entity_name]:
                 EntityClass.objects.create(**x)
             assert(
-                len(entities_testdata[entity_name]) == EntityClass.objects.count()
+                len(entities_testdata[entity_name]) == EntityClass.objects.count()  # noqa: E501
             )
 
 
@@ -399,26 +431,27 @@ def create_structures():
     
     load_entities()
             
+    default_webhooks = Webhook.objects.filter(is_default=True)
     for corporation in EveCorporationInfo.objects.all():
         EveEntity.objects.get_or_create(
-            id = corporation.corporation_id,
+            id=corporation.corporation_id,
             defaults={
                 'category': EveEntity.CATEGORY_CORPORATION,
                 'name': corporation.corporation_name
             }
         )
-        Owner.objects.create(
-            corporation=corporation
-        )
+        my_owner = Owner.objects.create(corporation=corporation)
+        for x in default_webhooks:
+            my_owner.webhooks.add(x)
+
         if int(corporation.corporation_id) in [2001, 2002]:
             alliance = EveAllianceInfo.objects.get(alliance_id=3001)
             corporation.alliance = alliance
             corporation.save()
 
-
     for character in EveCharacter.objects.all():
         EveEntity.objects.get_or_create(
-            id = character.character_id,
+            id=character.character_id,
             defaults={
                 'category': EveEntity.CATEGORY_CHARACTER,
                 'name': character.character_name
@@ -432,7 +465,7 @@ def create_structures():
             character.alliance_name = corporation.alliance.alliance_name
             character.save()
 
-    tag_a = StructureTag.objects.get(name='tag_a')
+    StructureTag.objects.get(name='tag_a')
     tag_b = StructureTag.objects.get(name='tag_b')
     tag_c = StructureTag.objects.get(name='tag_c')
     Structure.objects.all().delete()
@@ -460,7 +493,6 @@ def create_structures():
         if obj.id in [1000000000003]:
             obj.tags.add(tag_b)
 
-
         if 'services' in structure:            
             for service in structure['services']:
                 StructureService.objects.create(
@@ -468,55 +500,59 @@ def create_structures():
                     name=service['name'],
                     state=StructureService.get_matching_state(
                         service['state']
-                ))
+                    )
+                )
         obj.save()
-                
-        
-def set_owner_character(character_id) -> list:
-    """sets owner character for the owner related to the given character ir
-    returns user, owner
-    """
+
+
+def create_user(character_id) -> User:
+    """create a user from the given character id and returns it"""
     my_character = EveCharacter.objects.get(character_id=1001)                        
     my_user = User.objects.create_user(
         my_character.character_name,
         'abc@example.com',
         'password'
     )
-    my_ownership = CharacterOwnership.objects.create(
+    CharacterOwnership.objects.create(
         character=my_character,
         owner_hash='x1',
         user=my_user
     )
-    my_user.profile.main_character = my_character        
+    my_user.profile.main_character = my_character    
+    return my_user
+
+
+def set_owner_character(character_id) -> list:
+    """sets owner character for the owner related to the given character ir
+    returns user, owner
+    """
+    my_user = create_user(character_id)
+    my_character = my_user.profile.main_character
     my_owner = Owner.objects.get(
         corporation__corporation_id=my_character.corporation_id
     )
-    my_owner.character = my_ownership
-    my_owner.save()
-
+    my_owner.character = my_user.character_ownerships.get(
+        character__character_id=my_character.character_id
+    )
+    my_owner.save()    
     return my_user, my_owner
 
 
-def load_notification_entities(owner: Owner):
-        
+def load_notification_entities(owner: Owner):        
     timestamp_start = now() - timedelta(hours=2)
     for notification in entities_testdata['Notification']:
         notification_type = \
             Notification.get_matching_notification_type(
                 notification['type']
             )
-        if notification_type:
-            sender_type = \
-                EveEntity.get_matching_entity_category(
-                    notification['sender_type']
-                )                
+        if notification_type:            
             sender = EveEntity.objects.get(id=notification['sender_id'])                
             text = notification['text'] \
                 if 'text' in notification else None
             is_read = notification['is_read'] \
                 if 'is_read' in notification else None
             timestamp_start = timestamp_start + timedelta(minutes=5)
-            obj = Notification.objects.update_or_create(
+            Notification.objects.update_or_create(
                 notification_id=notification['notification_id'],
                 owner=owner,
                 defaults={
