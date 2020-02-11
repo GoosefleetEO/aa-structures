@@ -1331,8 +1331,7 @@ class Notification(models.Model):
                 title = 'Moon mining extraction started'
                 description = (
                     'A moon mining extraction has been started '
-                    'for **{}** at {} in {}.\n'
-                    'Extraction was started by {}.\n'
+                    'for **{}** at {} in {}. Extraction was started by {}.\n'
                     'The chunk will be ready on location at {}, '
                     'and will autofracture on {}.\n'.format(
                         structure.name,
@@ -1418,7 +1417,9 @@ class Notification(models.Model):
             NTYPE_ORBITAL_REINFORCED,
         ]:
             if not esi_client:
-                esi_client = esi_client_factory(get_swagger_spec_path())
+                esi_client = esi_client_factory(
+                    spec_file=get_swagger_spec_path()
+                )
 
             planet, _ = EvePlanet.objects.get_or_create_esi(
                 parsed_text['planetID'],
@@ -1474,7 +1475,9 @@ class Notification(models.Model):
             NTYPE_TOWER_RESOURCE_ALERT_MSG,
         ]:
             if not esi_client:
-                esi_client = esi_client_factory(get_swagger_spec_path())
+                esi_client = esi_client_factory(
+                    spec_file=get_swagger_spec_path()
+                )
 
             eve_moon, _ = EveMoon.objects.get_or_create_esi(
                 parsed_text['moonID'],
@@ -1544,7 +1547,9 @@ class Notification(models.Model):
             NTYPE_SOV_STRUCTURE_DESTROYED
         ]:
             if not esi_client:
-                esi_client = esi_client_factory(get_swagger_spec_path())
+                esi_client = esi_client_factory(
+                    spec_file=get_swagger_spec_path()
+                )
 
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 parsed_text['solarSystemID'],

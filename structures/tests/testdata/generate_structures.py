@@ -1,4 +1,4 @@
-# scripts generates large amount of random structures for load testing
+"""scripts generates large amount of random structures for load testing"""
 
 import os
 import sys
@@ -7,19 +7,18 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
     inspect.currentframe()
 )))
-myauth_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(currentdir)))) + "/myauth"
+myauth_dir = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(currentdir)))
+) + "/myauth"
 sys.path.insert(0, myauth_dir)
 
-import json
-import logging
-from datetime import timedelta
-import pytz
-from random import randrange
+from datetime import timedelta  # noqa: E402
+from random import randrange    # noqa: E402
 
-import django
-from django.db import transaction
-from django.apps import apps
-from django.utils.timezone import now
+import django   # noqa: E402
+from django.db import transaction   # noqa: E402
+from django.apps import apps    # noqa: E402
+from django.utils.timezone import now   # noqa: E402
 
 # init and setup django project
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myauth.settings.local")
@@ -28,12 +27,18 @@ django.setup()
 if not apps.is_installed('structures'):
     raise RuntimeError("The app structures is not installed")    
 
-from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
-from esi.clients import esi_client_factory
+from allianceauth.eveonline.models import EveCorporationInfo, \
+    EveAllianceInfo     # noqa: E402
+from esi.clients import esi_client_factory  # noqa: E402
 
-from structures.models import *
+from structures.models import (
+    Structure, Owner, EveType, EveSolarSystem, StructureTag, StructureService
+)     # noqa: E402
 
-print('generate_structure - scripts generates large amount of random structures for load testing ')
+print(
+    'generate_structure - '
+    'scripts generates large amount of random structures for load testing '
+)
 
 amount = 50
 
@@ -87,6 +92,7 @@ tag_names = [
     'Not so friendly'
 ]
 
+
 def get_random(lst: list) -> object:
     return lst[randrange(len(lst))] 
 
@@ -125,7 +131,7 @@ for corporation_id in corporation_ids:
             EveAllianceInfo.objects.create_alliance(
                 corporation['alliance_id']
             )
-    except:
+    except Exception:
         pass
     
     try:
@@ -194,12 +200,15 @@ with transaction.atomic():
             state=state,
             fuel_expires=fuel_expires
         )
-        for name in get_random_subset(services, 3):
+        if is_low_power:
+            state = StructureService.STATE_OFFLINE
+        else:
+            state = StructureService.STATE_ONLINE
+        for name in get_random_subset(services, 3):            
             StructureService.objects.create(
                 structure=structure,
                 name=name,
-                state=StructureService.STATE_OFFLINE \
-                    if is_low_power else StructureService.STATE_ONLINE
+                state=state
             )        
         structure.tags.add(*get_random_subset(tags))        
         if structure.is_reinforced:
@@ -211,6 +220,5 @@ with transaction.atomic():
             structure.state_timer_end = state_timer_end
 
         structure.save()        
-
 
 print('DONE')

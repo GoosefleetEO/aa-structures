@@ -878,22 +878,22 @@ def send_all_new_notifications(rate_limited=True):
 
 
 @shared_task
-def send_notification(notification_pk):
-    try:
-        n = Notification.objects.get(pk=notification_pk)
-    except Notification.DoesNotExist:
-        logger.error(
-            'Can not sent not existing n for given pk {}'.format(
-                notification_pk
-            )
-        )
-    else:
-        for webhook in n.owner.webhooks.all():
-            if (str(n.notification_type) in webhook.notification_types
-                and not n.filter_for_npc_attacks()
-                and not n.filter_for_alliance_level()
-            ):
-                n.send_to_webhook(webhook)
+def send_notifications(notification_pks: list):
+    """send notifications defined by list of pks"""    
+    notifications = Notification.objects.filter(pk__in=notification_pks)
+    if notifications:
+        logger.info('Trying to send {} notifications to webhooks...'.format(
+            len(notification_pks)
+        ))
+        esi_client = esi_client_factory(spec_file=get_swagger_spec_path())
+        for n in notifications:
+            for webhook in n.owner.webhooks.all():
+                if (str(n.notification_type) in webhook.notification_types
+                    and not n.filter_for_npc_attacks()
+                    and not n.filter_for_alliance_level()
+                ):
+                    n.send_to_webhook(webhook, esi_client)
+            sleep(1)
 
 
 @shared_task
@@ -944,7 +944,7 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
 def run_sde_update():
     """update selected SDE models from ESI"""
     logger.info('Starting ESI client...')
-    esi_client = esi_client_factory(get_swagger_spec_path())
+    esi_client = esi_client_factory(spec_file=get_swagger_spec_path())
 
     for EveModel in [EveGroup, EveSolarSystem]:
         obj_count = EveModel.objects.count()

@@ -1,25 +1,24 @@
 # this scripts adds test notifications to a specified corporation / structure
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import inspect
 import json
-import logging
 import os
 import sys
-from random import randrange
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
     inspect.currentframe()
 )))
-myauth_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(currentdir)))) \
-    + "/myauth"
+myauth_dir = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(currentdir)))
+) + "/myauth"
 sys.path.insert(0, myauth_dir)
 
 
-import django
-from django.db import transaction
-from django.apps import apps
-from django.utils.timezone import now
+import django   # noqa: E402
+from django.db import transaction   # noqa: E402
+from django.apps import apps    # noqa: E402
+from django.utils.timezone import now   # noqa: E402
 
 # init and setup django project
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myauth.settings.local")
@@ -28,16 +27,19 @@ django.setup()
 if not apps.is_installed('structures'):
     raise RuntimeError("The app structures is not installed")    
 
-from allianceauth.eveonline.models import EveCorporationInfo
-from esi.clients import esi_client_factory
+from allianceauth.eveonline.models import EveCorporationInfo    # noqa: E402
+from esi.clients import esi_client_factory  # noqa: E402
 
-from structures.models import *
+from structures.models import Owner, Structure, Notification, EveEntity  # noqa: E402, E501
 
 # corporation / structure the notifications will be added to
-CORPORATION_ID = 98612071 # SODIC
-STRUCTURE_ID = 1030681055667 # Alpha
+CORPORATION_ID = 98612071   # SODIC
+STRUCTURE_ID = 1030681055667    # Alpha
 
-print('load_test_notifications - script loads test notification into the local database ')
+print(
+    'load_test_notifications - '
+    'script loads test notification into the local database '
+)
 
 print('Connecting to ESI ...')
 client = esi_client_factory()
@@ -62,10 +64,18 @@ with open(
 ) as f:
     notifications_json = f.read()
 
-notifications_json = notifications_json.replace('1000000000001', str(structure.id))
-notifications_json = notifications_json.replace('35835', str(structure.eve_type_id))
-notifications_json = notifications_json.replace('35835', str(structure.eve_type_id))
-notifications_json = notifications_json.replace('30002537', str(structure.eve_solar_system_id))
+notifications_json = notifications_json.replace(
+    '1000000000001', str(structure.id)
+)
+notifications_json = notifications_json.replace(
+    '35835', str(structure.eve_type_id)
+)
+notifications_json = notifications_json.replace(
+    '35835', str(structure.eve_type_id)
+)
+notifications_json = notifications_json.replace(
+    '30002537', str(structure.eve_solar_system_id)
+)
 notifications = json.loads(notifications_json)
 
 with transaction.atomic():                                    
@@ -82,10 +92,10 @@ with transaction.atomic():
                 )
             if sender_type != EveEntity.CATEGORY_OTHER:
                 sender, _ = EveEntity\
-                .objects.get_or_create_esi(
-                    notification['sender_id'],
-                    client
-                )
+                    .objects.get_or_create_esi(
+                        notification['sender_id'],
+                        client
+                    )
             else:
                 sender, _ = EveEntity\
                     .objects.get_or_create(

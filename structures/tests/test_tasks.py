@@ -1431,18 +1431,21 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_single_notification(
+    def test_send_notifications(
         self, 
         mock_execute, 
         mock_esi_client_factory,
         mock_token
     ):
-        logger.debug('test_send_single_notification')
-        notification = Notification.objects.first()
-        tasks.send_notification(notification.pk)
+        logger.debug('test_send_notifications')
+        ids = {1000000401, 1000000402, 1000000403}
+        notification_pks = [
+            x.pk for x in Notification.objects.filter(notification_id__in=ids)
+        ]        
+        tasks.send_notifications(notification_pks)
 
         # should have sent notification
-        self.assertEqual(mock_execute.call_count, 1)
+        self.assertEqual(mock_execute.call_count, 3)
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)

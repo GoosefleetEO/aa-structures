@@ -137,17 +137,13 @@ class NotificationAdmin(admin.ModelAdmin):
         "Mark selected notifications as unsent"
 
     def send_to_webhook(self, request, queryset):
-        notifications_count = 0
-        for obj in queryset:
-            tasks.send_notification.delay(obj.pk)
-            notifications_count += 1
+        obj_pks = [obj.pk for obj in queryset]        
+        tasks.send_notifications.delay(obj_pks)            
 
         self.message_user(
             request,
             'Initiated sending of {} notifications to '
-            'configured webhooks'.format(
-                notifications_count
-            )
+            'configured webhooks'.format(len(obj_pks))
         )
 
     send_to_webhook.short_description = \
@@ -325,11 +321,9 @@ class OwnerAdmin(admin.ModelAdmin):
             tasks.send_new_notifications_for_owner.delay(
                 obj.pk
             )
-            text = 'Started sending new notifications for: {}. '.format(obj)
-
             self.message_user(
                 request,
-                text
+                'Started sending new notifications for: {}. '.format(obj)
             )
 
     send_notifications.short_description = "Send new notifications to Discord"
