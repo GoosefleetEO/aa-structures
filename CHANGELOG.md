@@ -7,45 +7,47 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.0.0] - 2020-02-09
+## [1.0.0] - 2020-02-12
 
 **Starbases and Sovereignty**
 
+### Important notes for upgrading
+
 If you are upgrading: there are some important changes included in this release, which may require you to take action. Please read the notes carefully.
 
-### ACTION REQUIRED: Starbase feature requires token update
+#### Starbase feature requires token update
 
 The new starbases feature requires additional ESI scopes to work. After installation of this release all structure owners therefore have to update their tokens by adding themselves again via "Add Structure Owner". Syncing of structures and notifications for a corporation will stop working until the respective owner has updated its token.
 
-If you don't want to use the new starbase feature (or enable it later) you can turn it off with this new setting:
+The starbase feature is turned on by default. If you don't want to use this feature (or enable it later) you can turn it off with this new setting:
 
 ```python
 STRUCTURES_FEATURE_STARBASES = False
 ```
 
-### ACTION REQUIRED: SDE data update
+#### SDE data update
 
 We have extended the SDE models and therefore need you to do a one-time update of the  local SDE data. This update must be performed AFTER the new migrations have completed and AA has been restarted.
 
-Please start the update with the following command (assuming the name of your AA project is "myauth"):
+You can start the SDE data update with the following command (assuming the name of your AA project is "myauth"):
 
 ```bash
 celery -A myauth call structures.tasks.run_sde_update
 ```
 
-Until this task is completed some features like category filtering and planet detection for customs offices will not work correctly.
+This process can take a while to complete. Until then some features like category filtering and planet detection for customs offices will not work correctly.
 
-### ACTION REQUIRED: New notifications
+#### New notifications
 
 To enable the new notifications for starbases and sovereignty you wil need to manually activate them on any already existing webhook.
 
 For sov notifications you also need to nominate one owner as "alliance main" on the admin panel. Sov notifications will then be forwarded from this owner.
 
-### ACTION REQUIRED: Most features now turned on by default
+#### Most features now turned on by default
 
 With release 1.0.0 most features are not turned on by default and you need to explicitly turn them off if you don't want to use them - or just want to activate them later. Please see section **Changed** for details.
 
-## Added
+### Added
 
 - Starbases added to the structure browser
 - You can now receive Starbase notifications
@@ -54,16 +56,16 @@ With release 1.0.0 most features are not turned on by default and you need to ex
 - Ability to deactivate syncing for an owner
 - Admin tool for purging all data to enable de-installation
 
-## Changed
+### Changed
 
 - POCO feature is not turned on by default! If you don't want to use it (or enable it later) you can disable it with a setting.
 - Moon mining extraction timers are now turned on by default! If you don't want to use it (or enable it later) you can disable it with a setting.
 - For starbases and POCOs the name of the related celestial (e.g. planet, moon) is now shown on the structure browser under location.
-- Improved admin site view for structures to include more information, filters and a search bar
+- Improved admin site views to include more information, filters and a search bar
 
 ## [0.9.1] - 2020-02-01
 
-## Changed
+### Changed
 
 - Moon extraction timers are now using the special structure type "Moon Mining Cycle"
 - It's no longer possible to add owners on the admin panel. Owner must be added through the "Add Structure Owner" button in the app

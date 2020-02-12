@@ -3,7 +3,7 @@
 App for managing Eve Online structures with
 Alliance Auth.
 
-![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures?label=django) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg)
+![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures?label=django) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg) ![license](https://img.shields.io/badge/license-MIT-green)
 
 ## Contents
 
@@ -28,10 +28,10 @@ Alliance Structures adds the following main features to Alliance Auth:
 
 - Structure browser with a detailed list of all structures owned by alliances / corporation, automatically synced with the game server
 - Structures include all Upwell structures, Custom Offices and Starbases / POSes
-- Structure notifications can be automatically forwarded to Discord channels as alerts
-- Notification types include Upwell Structures, Moon Mining, Customs Offices, Starbases, Sovereignty
+- Automatically forwards structure notifications to Discord channels as alerts
+- Notification categories include Upwell Structures, Moon Mining, Customs Offices, Starbases and Sovereignty
 - Automatically adds timers from notifications to Alliance Auth timerboard app (if installed)
-- Permissions allow configuring which structures are visible to a user
+- Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status
 
