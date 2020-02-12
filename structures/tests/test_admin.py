@@ -110,14 +110,19 @@ class TestOwnerAdmin(TestCase):
         create_structures()
         self.user, self.obj = set_owner_character(character_id=1001)        
 
+    def test_corporation(self):
+        self.assertEqual(
+            self.modeladmin._corporation(self.obj), 'Wayne Technologies'
+        )
+    
     def test_alliance_normal(self):
         self.assertEqual(
-            self.modeladmin.alliance(self.obj), 'Wayne Enterprises'
+            self.modeladmin._alliance(self.obj), 'Wayne Enterprises'
         )
 
     def test_alliance_none(self):
         my_owner = Owner.objects.get(corporation__corporation_id=2102)
-        self.assertIsNone(self.modeladmin.alliance(my_owner))
+        self.assertIsNone(self.modeladmin._alliance(my_owner))
 
     def test_webhooks(self):
         self.obj.webhooks.add(Webhook.objects.get(name='Test Webhook 2'))

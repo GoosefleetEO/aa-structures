@@ -94,6 +94,7 @@ class NotificationAdmin(admin.ModelAdmin):
         'notification_type',
         'is_sent'
     )
+    ordering = ['notification_id', 'owner']
 
     def _webhooks(self, obj):
         names = [x.name for x in obj.owner.webhooks.all().order_by('name')]
@@ -214,9 +215,10 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
 
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
+    list_select_related = True
     list_display = (
-        'corporation',
-        'alliance',
+        '_corporation',
+        '_alliance',
         'character',
         '_webhooks',
         'is_active',
@@ -227,6 +229,7 @@ class OwnerAdmin(admin.ModelAdmin):
         'is_active',
         OwnerSyncStatusFilter,
     )
+    ordering = ['corporation__corporation_name']
     fieldsets = (
         (None, {
             'fields': (
@@ -248,11 +251,18 @@ class OwnerAdmin(admin.ModelAdmin):
         }),
     )
 
-    def alliance(self, obj):
+    def _corporation(self, obj):        
+        return obj.corporation.corporation_name
+    
+    _corporation.admin_order_field = 'corporation__corporation_name'
+        
+    def _alliance(self, obj):
         if obj.corporation.alliance:
             return obj.corporation.alliance.alliance_name
         else:
             return None
+
+    _alliance.admin_order_field = 'corporation__alliance__alliance_name'
 
     def _webhooks(self, obj):
         webhook_names = [x.name for x in obj.webhooks.all().order_by('name')]
@@ -354,6 +364,7 @@ class StructureTagAdmin(admin.ModelAdmin):
         'is_default',
         'style',
     )
+    ordering = ['name']
 
 
 class StructureAdminInline(admin.TabularInline):
@@ -432,6 +443,7 @@ class StructureAdmin(admin.ModelAdmin):
         'owner__corporation__corporation_name',
         'eve_solar_system__name'
     ]
+    ordering = ['name']
     list_display = (
         'name',
         '_owner',
@@ -574,17 +586,15 @@ class StructureAdmin(admin.ModelAdmin):
             )
         }),
     )
-
     inlines = (StructureAdminInline, )
 
 
 @admin.register(Webhook)
 class WebhookAdmin(admin.ModelAdmin):
+    ordering = ['name']
     list_display = ('name', 'webhook_type', 'is_active', 'is_default')
     list_filter = ('webhook_type', 'is_active')
-
     save_as = True
-
     actions = (
         'test_notification',
         'activate',
