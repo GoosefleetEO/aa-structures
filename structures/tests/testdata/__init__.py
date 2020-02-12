@@ -388,7 +388,8 @@ esi_post_corporations_corporation_id_assets_names.override_data = None
 
 def load_entity(EntityClass):
     """loads testdata for given entity class"""
-    entity_name = EntityClass.__name__        
+    entity_name = EntityClass.__name__
+    EntityClass.objects.all().delete()
     for x in entities_testdata[entity_name]:
         EntityClass.objects.create(**x)
     assert(len(entities_testdata[entity_name]) == EntityClass.objects.count()) 
@@ -411,17 +412,10 @@ def load_entities(entities_def: list = None):
         EveEntity,
         StructureTag,
         Webhook
-    ]
-    
+    ]    
     for EntityClass in entities_def_master:
         if not entities_def or EntityClass in entities_def:
-            entity_name = EntityClass.__name__
-            EntityClass.objects.all().delete()
-            for x in entities_testdata[entity_name]:
-                EntityClass.objects.create(**x)
-            assert(
-                len(entities_testdata[entity_name]) == EntityClass.objects.count()  # noqa: E501
-            )
+            load_entity(EntityClass)
 
 
 def create_structures():
@@ -505,8 +499,13 @@ def create_structures():
         obj.save()
 
 
-def create_user(character_id) -> User:
-    """create a user from the given character id and returns it"""
+def create_user(character_id, load_data=False) -> User:
+    """create a user from the given character id and returns it
+    Needs: EveCharacter
+    """
+    if load_data:
+        load_entity(EveCharacter)
+    
     my_character = EveCharacter.objects.get(character_id=1001)                        
     my_user = User.objects.create_user(
         my_character.character_name,

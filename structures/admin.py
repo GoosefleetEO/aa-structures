@@ -1,7 +1,6 @@
 import logging
 
 from django.contrib import admin
-from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.html import format_html
@@ -186,7 +185,7 @@ class NotificationAdmin(admin.ModelAdmin):
 class OwnerSyncStatusFilter(admin.SimpleListFilter):
     title = 'is sync ok'
 
-    parameter_name = 'sync_status'
+    parameter_name = 'sync_status__exact'
 
     def lookups(self, request, model_admin):
         """List of values to allow admin to select"""
@@ -382,7 +381,7 @@ class StructureAdminInline(admin.TabularInline):
 class OwnerCorporationsFilter(admin.SimpleListFilter):
     """Custom filter to filter on corporations from owners only"""
     title = 'owner corporation'
-    parameter_name = 'owner_corporations'
+    parameter_name = 'owner_corporation_id__exact'
 
     def lookups(self, request, model_admin):
         qs = EveCorporationInfo.objects\
@@ -404,7 +403,7 @@ class OwnerCorporationsFilter(admin.SimpleListFilter):
 class OwnerAllianceFilter(admin.SimpleListFilter):
     """Custom filter to filter on alliances from owners only"""
     title = 'owner alliance'
-    parameter_name = 'main_alliances'
+    parameter_name = 'owner_alliance_id__exact'
 
     def lookups(self, request, model_admin):
         qs = EveAllianceInfo.objects\
@@ -419,16 +418,10 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
     def queryset(self, request, qs):
         if self.value() is None:
             return qs.all()
-        else:
-            if qs.model == User:
-                return qs\
-                    .filter(profile__main_character__alliance_id=self.value())
-            else:
-                return qs\
-                    .filter(
-                        user__profile__main_character__alliance_id=self.value()
-                    )
-
+        else:        
+            return qs\
+                .filter(owner__corporation__alliance__alliance_id=self.value())
+            
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):

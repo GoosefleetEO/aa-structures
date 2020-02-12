@@ -1,6 +1,7 @@
 from datetime import timedelta
 import json
 from unittest.mock import patch, Mock
+from urllib.parse import urlparse, parse_qs
 
 from django.contrib.auth.models import User, Permission
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -282,13 +283,17 @@ class TestStructureList(TestCase):
         )
         request.user = self.user
         response = views.structure_list(request)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)        
+        parts = urlparse(response.url)
+        path = parts[2]
+        query_dict = parse_qs(parts[4])
         self.assertEqual(
-            response.url, '{}?tags=tag_b%2Ctag_c'.format(
-                reverse('structures:structure_list')                
-            )
+            path, reverse('structures:structure_list')
         )
-
+        self.assertIn('tags', query_dict)
+        params = query_dict['tags'][0].split(',')
+        self.assertSetEqual(set(params), {'tag_c', 'tag_b'})
+        
 
 class TestAddStructureOwner(TestCase):
     

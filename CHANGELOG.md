@@ -41,6 +41,10 @@ To enable the new notifications for starbases and sovereignty you wil need to ma
 
 For sov notifications you also need to nominate one owner as "alliance main" on the admin panel. Sov notifications will then be forwarded from this owner.
 
+### ACTION REQUIRED: Most features now turned on by default
+
+With release 1.0.0 most features are not turned on by default and you need to explicitly turn them off if you don't want to use them - or just want to activate them later. Please see section **Changed** for details.
+
 ## Added
 
 - Starbases added to the structure browser
