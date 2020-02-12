@@ -89,13 +89,13 @@ class NotificationAdmin(admin.ModelAdmin):
         'is_sent',
         'is_timer_added'
     )
+    ordering = ['-timestamp', '-notification_id']
     list_filter = (
         'owner',
         'notification_type',
         'is_sent'
     )
-    ordering = ['notification_id', 'owner']
-
+    
     def _webhooks(self, obj):
         names = [x.name for x in obj.owner.webhooks.all().order_by('name')]
         if names:
