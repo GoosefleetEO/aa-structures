@@ -268,6 +268,7 @@ DEBUG = False
 
 # Add any additional apps to this list.
 INSTALLED_APPS += [
+    'allianceauth.eveonline.autogroups',
     'allianceauth.timerboard',
     'structures'
 ]
