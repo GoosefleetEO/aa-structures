@@ -75,22 +75,22 @@ esi-universe.read_structures.v1
 Configure your AA settings (`local.py`) as follows:
 
 - Add `'structures'` to `INSTALLED_APPS`
-- Add these lines add to bottom of your settings file:
+- Add below lines to your settings file:
 
-   ```python
-    CELERYBEAT_SCHEDULE['structures_update_all_structures'] = {
-        'task': 'structures.tasks.update_all_structures',
-        'schedule': crontab(minute='*/30'),
-    }
-    CELERYBEAT_SCHEDULE['structures_fetch_all_notifications'] = {
-        'task': 'structures.tasks.fetch_all_notifications',
-        'schedule': crontab(minute='*/5'),
-    }
-    CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
-        'task': 'structures.tasks.send_all_new_notifications',
-        'schedule': crontab(minute='*/1'),
-    }
-   ```
+```python
+CELERYBEAT_SCHEDULE['structures_update_all_structures'] = {
+    'task': 'structures.tasks.update_all_structures',
+    'schedule': crontab(minute='*/30'),
+}
+CELERYBEAT_SCHEDULE['structures_fetch_all_notifications'] = {
+    'task': 'structures.tasks.fetch_all_notifications',
+    'schedule': crontab(minute='*/5'),
+}
+CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
+    'task': 'structures.tasks.send_all_new_notifications',
+    'schedule': crontab(minute='*/1'),
+}
+```
 
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
 
