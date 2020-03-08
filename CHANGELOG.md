@@ -29,7 +29,7 @@ STRUCTURES_FEATURE_STARBASES = False
 
 We have extended the SDE models and therefore need you to do a one-time update of the  local SDE data. This update must be performed AFTER the new migrations have completed and AA has been restarted.
 
-You can start the SDE data update with the following command (assuming the name of your AA project is "myauth"):
+You can start the SDE data update with the following command (assuming the name of your AA project is "myauth"). Please make sure to run this command from the folder where `manage.py` is located in.
 
 ```bash
 celery -A myauth call structures.tasks.run_sde_update
@@ -45,7 +45,7 @@ For sov notifications you also need to nominate one owner as "alliance main" on 
 
 #### Most features now turned on by default
 
-With release 1.0.0 most features are not turned on by default and you need to explicitly turn them off if you don't want to use them - or just want to activate them later. Please see section **Changed** for details.
+With release 1.0.0 most features are turned on by default and you need to explicitly turn them off if you don't want to use them - or just want to activate them later. Please see section **Changed** for details.
 
 ### Added
 
