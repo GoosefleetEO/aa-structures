@@ -6,29 +6,28 @@
 
 {% block details %}
     
-            
     <div class="panel panel-primary">   
         <div class="panel-heading">
-            <h3 class="panel-title">Structure List</h3>
+            <h3 class="panel-title">{% trans "Structure List" %}</h3>
         </div>
         <div class="panel-body">        
             <div class="table-responsive">
                                 
-                <!-- Tags Filter Button -->
+                <!-- Tags Filter Button -->                
                 <span class="pull-right">                    
-                    {% if tags_exist %}
+                    {% if tags_exist %}                        
                         {% if active_tags %}
                             <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalTagsFilter">
-                            Tags Filter (Active)
+                            {% trans "Tags Filter (Active)" %}
                             </button>                        
                         {% else %}
-                            <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">
-                                Tags Filter
+                            <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">                                
+                                {% trans "Tags Filter" %}
                             </button>
                         {% endif %}
                     {% else %}
                         <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter" disabled="disabled">
-                            Tags Filter
+                            {% trans "Tags Filter" %}
                         </button>                        
                     {% endif %}
                 </span>
@@ -42,24 +41,24 @@
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
-                                    <h4 class="modal-title">Tags Filter</h4>
+                                    <h4 class="modal-title">{% trans "Tags Filter" %}</h4>
                                 </div>
                                 <div class="modal-body">                                    
                                     {% csrf_token %}
                                     {{ tags_filter_form|bootstrap }}                                                                
                                 </div>
                                 <div class="modal-footer">
-                                    <a class="btn btn-default pull-left" href="{% url 'structures:index' %}" role="button">
-                                        Reset Filter
+                                    <a class="btn btn-default pull-left" href="{% url 'structures:index' %}" role="button">                                        
+                                        {% trans "Reset Filter" %}
                                     </a>
-                                    <a class="btn btn-default pull-left" href="{% url 'structures:structure_list' %}" role="button">
-                                        Clear Filter
+                                    <a class="btn btn-default pull-left" href="{% url 'structures:structure_list' %}" role="button">                                        
+                                        {% trans "Clear Filter" %}
                                     </a>
-                                    <button type="button" class="btn btn-default" data-dismiss="modal">
-                                        Cancel
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">                                        
+                                        {% trans "Cancel" %}
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
-                                        Apply Filter
+                                    <button type="submit" class="btn btn-primary">                                        
+                                        {% trans "Apply Filter" %}
                                     </button>
                                 </div>                            
                             </div>
@@ -72,22 +71,22 @@
                     <thead>
                         <tr>            
                             <th></th>
-                            <th>Owner</th>
-                            <th>Location</th>                    
+                            <th>{% trans "Owner" %}</th>
+                            <th>{% trans "Location" %}</th>
                             <th></th>
-                            <th>Type</th>
-                            <th>Name & Tags</th>
-                            <th>Services</th>
-                            <th>R-Hour</th>
-                            <th>Fuel Expires</th>
-                            <th>State</th>
+                            <th>{% trans "Type" %}</th>
+                            <th>{% trans "Name & Tags" %}</th>
+                            <th>{% trans "Services" %}</th>
+                            <th>{% trans "R-Hour" %}</th>
+                            <th>{% trans "Fuel Expires" %}</th>
+                            <th>{% trans "State" %}</th>
                         </tr>
-                    </thead>        
+                    </thead>
                 </table>
 
                 <p>                    
                     {% if active_tags %}
-                        Active Tags Filter:&nbsp;
+                        {% trans "Active Tags Filter" %}:&nbsp;
                         {% for tag in active_tags %}
                             {{ tag.html }}&#32;
                         {% endfor %}
@@ -98,145 +97,51 @@
         </div>
     </div>
     {% if perms.structures.add_structure_owner %}
-        <a class="btn btn-default navbar-btn pull-right" href="{% url 'structures:add_structure_owner' %}">
-            Add Structure Owner
+        <a class="btn btn-default navbar-btn pull-right" href="{% url 'structures:add_structure_owner' %}">            
+            {% trans "Add Structure Owner" %}
         </a>
     {% endif %} 
     
     <!-- Table Legend -->
-    <p class="text-muted">
-        All dates are EVE time • Offlined services are shown as <del>name</del>
-            • Reinforced structures (except POCOs) are highlighted in red
-            • Data can be outdated by up to 1 hour due to API caching.
+    <p class="text-muted">        
+        {% trans "All dates are EVE time" %} 
+        • {% trans "Offlined services are shown as" %} <del>{% trans "service" %}</del>
+        • {% trans "Reinforced structures (except POCOs) are highlighted in red" %}
+        • {% trans "Data can be outdated by up to 1 hour due to API caching." %}
     </p>
+
+    <!-- share data with JS part -->
+    <div 
+        id="dataExport" 
+        data-listDataUrl="{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:',' }}"
+        data-titleAlliance="{% trans 'Alliance' %}"
+        data-titleCorporation="{% trans 'Corporation' %}"
+        data-titleRegion="{% trans 'Region' %}"
+        data-titleSolarSystem="{% trans 'Solar System' %}"
+        data-titleCategory="{% trans 'Category' %}"
+        data-titleGroup="{% trans 'Group' %}"
+        data-titleType="{% trans 'Type' %}"
+        data-Reinforced="{% trans 'Reinforced?' %}"
+        data-State="{% trans 'State' %}"
+        data-LowPower="{% trans 'Low Power?' %}"
+    >
+    </div>
     
 {% endblock %}
 
 {% block extra_javascript %}
-    {% include 'bundles/datatables-js.html' %}
-    
-    <!-- Start filterDropDown-js -->
-    <script 
-        type="text/javascript" 
-        src="{% static 'structures/filterDropDown.min.js' %}">
-    </script>
-    <!-- End filterDropDown-js -->
+    {% include 'bundles/datatables-js.html' %}    
+    <script type="text/javascript" src="{% static 'js/filterDropDown/filterDropDown.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'structures/structure_list.js' %}"></script>
 {% endblock %}
 
 {% block extra_css %}
     {% include 'bundles/datatables-css.html' %}
-    <link 
-        rel="stylesheet" 
-        href="{% static 'structures/index.css' %}" 
-        type="text/css" 
-        media="screen"
-    >
     
+    <link rel="stylesheet" href="{% static 'structures/structure_list.css' %}" type="text/css" media="screen">    
 {% endblock %}
 
 {% block extra_script %}
-    $(document).ready(function(){
-        $('#tab_structures').DataTable({
-                                    
-            ajax: {
-                url: '{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:"," }}',
-                dataSrc: '',
-                cache: false
-            },
-
-            columns: [
-                { data: 'corporation_icon' },
-                { data: 'owner' },
-                { data: 'location' },
-                { data: 'type_icon' },
-                { data: 'type' },
-                { data: 'structure_name' },
-                { data: 'services' },
-                { data: 'reinforcement' },
-                { data: 'fuel_expires',
-                    render: {
-                        _: 'display',
-                        sort: 'timestamp'
-                    }
-                },
-                { data: 'state_details' },
-
-                { data: 'alliance_name' },
-                { data: 'corporation_name' },
-                { data: 'region_name' },
-                { data: 'solar_system_name' },
-                { data: 'category_name' },
-                { data: 'group_name' },
-                { data: 'type_name' },
-                { data: 'is_reinforced_str' },
-                { data: 'state_str' },
-                { data: 'is_low_power_str' }
-            ],
-                        
-            lengthMenu: [[7, 15, 25, 50, -1], [7, 15, 25, 50, "All"]],
-            
-            columnDefs: [
-                { "sortable": false, "targets": [0, 3, 4, 6] },
-                { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19] }
-            ],
-            
-            order: [ [ 1, "asc" ], [ 5, "asc" ] ],
-            
-            filterDropDown:
-            {
-                columns: [                                       
-                    {
-                        idx: 10,
-                        title: 'Alliance'
-                    },
-                    {
-                        idx: 11,
-                        title: 'Corporation'
-                    },
-                    {
-                        idx: 12,
-                        title: 'Region'
-                    },
-                    {
-                        idx: 13,
-                        title: 'Solar System'
-                    },
-                    {
-                        idx: 14,
-                        title: 'Category'
-                    },
-                    {
-                        idx: 15,
-                        title: 'Group'
-                    },  
-                    {
-                        idx: 16,
-                        title: 'Type'
-                    },                    
-                    {
-                        idx: 17,
-                        title: 'Reinforced?'
-                    },
-                    {
-                        idx: 18,
-                        title: 'State'
-                    },
-                    {
-                        idx: 19,
-                        title: 'Low Power?'
-                    }
-                ],
-                bootstrap: true
-            },
-
-            createdRow: function( row, data, dataIndex ) 
-            {
-                if (data['is_reinforced'])
-                {
-                    $(row).addClass('danger');
-                }               
-            }
-            
-        });       
-    });
+   
 {% endblock %}

@@ -1,8 +1,9 @@
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
-from ..utils import clean_setting, messages_plus, chunks
+from ..utils import clean_setting, messages_plus, chunks, timeuntil_str
 from . import set_logger
 
 
@@ -150,3 +151,37 @@ class TestCleanSetting(TestCase):
                 'TEST_SETTING_DUMMY',             
                 default_value=None
             )
+
+
+class TestTimeUntil(TestCase):
+
+    def test_timeuntil(self):
+        duration = timedelta(
+            days=365 + 30 * 4 + 5, seconds=3600 * 14 + 60 * 33 + 10
+        )
+        expected = '1y 4m 5d 14h 33m 10s'
+        self.assertEqual(timeuntil_str(duration), expected)
+    
+        duration = timedelta(
+            days=2, seconds=3600 * 14 + 60 * 33 + 10
+        )
+        expected = '2d 14h 33m 10s'
+        self.assertEqual(timeuntil_str(duration), expected)
+
+        duration = timedelta(
+            days=2, seconds=3600 * 14 + 60 * 33 + 10
+        )
+        expected = '2d 14h 33m 10s'
+        self.assertEqual(timeuntil_str(duration), expected)
+
+        duration = timedelta(
+            days=0, seconds=60 * 33 + 10
+        )
+        expected = '0h 33m 10s'
+        self.assertEqual(timeuntil_str(duration), expected)
+
+        duration = timedelta(
+            days=0, seconds=10
+        )
+        expected = '0h 0m 10s'
+        self.assertEqual(timeuntil_str(duration), expected)

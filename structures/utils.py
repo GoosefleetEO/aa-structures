@@ -1,3 +1,4 @@
+from datetime import timedelta
 import logging
 import os
 
@@ -7,13 +8,17 @@ from django.contrib.messages.constants  \
     import DEBUG, ERROR, SUCCESS, WARNING, INFO
 from django.contrib import messages
 from django.db.models import Q
+from django.utils.functional import lazy
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 
 from allianceauth.notifications import notify
 
 
 # Format for output of datetime for this app
 DATETIME_FORMAT = '%Y-%m-%d %H:%M'
+
+format_html_lazy = lazy(format_html, str)
 
 
 class LoggerAddTag(logging.LoggerAdapter):
@@ -219,3 +224,64 @@ def clean_setting(
             )
             cleaned_value = default_value
     return cleaned_value
+
+
+def set_test_logger(logger_name: str, name: str) -> object:
+    """set logger for current test module
+    
+    Args:
+    - logger: current logger object
+    - name: name of current module, e.g. __file__
+    
+    Returns:
+    - amended logger
+    """
+    
+    # reconfigure logger so we get logging from tested module
+    f_format = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s'
+    )
+    f_handler = logging.FileHandler(
+        '{}.log'.format(os.path.splitext(name)[0]),
+        'w+'
+    )
+    f_handler.setFormatter(f_format)
+    logger = logging.getLogger(logger_name)
+    logger.level = logging.DEBUG
+    logger.addHandler(f_handler)
+    logger.propagate = False
+    return logger
+
+
+def timeuntil_str(duration: timedelta) -> str:
+    """return the duration as nicely formatted string: 
+    
+    Format: '[[[999y] [99m]] 99d] 99h 99m 99s'
+    """
+    seconds = int(duration.total_seconds())
+    periods = [
+        # Translators: Abbreviation for years
+        (_('y'), 60 * 60 * 24 * 365, False),
+        
+        # Translators: Abbreviation for months
+        (_('mt'), 60 * 60 * 24 * 30, False),
+        
+        # Translators: Abbreviation for days
+        (_('d'), 60 * 60 * 24, False),
+        
+        # Translators: Abbreviation for hours
+        (_('h'), 60 * 60, True),
+        
+        # Translators: Abbreviation for months
+        (_('m'), 60, True),
+        
+        # Translators: Abbreviation for seconds
+        (_('s'), 1, True)
+    ]
+    strings = list()
+    for period_name, period_seconds, period_static in periods:
+        if seconds >= period_seconds or period_static:
+            period_value, seconds = divmod(seconds, period_seconds)            
+            strings.append('{}{}'.format(period_value, period_name))
+
+    return ' '.join(strings)

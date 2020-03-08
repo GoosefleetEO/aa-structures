@@ -1,0 +1,229 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+# Translators:
+# Erik Kalkoken <erik.kalkoken@gmail.com>, 2020
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-09 00:40+0100\n"
+"PO-Revision-Date: 2020-03-08 23:00+0000\n"
+"Last-Translator: Erik Kalkoken <erik.kalkoken@gmail.com>, 2020\n"
+"Language-Team: German (Germany) (https://www.transifex.com/kalkoken-"
+"consulting/teams/107978/de_DE/)\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: structures/templates/structures/base.html:4
+msgid "Alliance Structures"
+msgstr "Allianz Strukturen"
+
+#: structures/templates/structures/structure_list.html:11
+msgid "Structure List"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:21
+msgid "Tags Filter (Active)"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:25
+#: structures/templates/structures/structure_list.html:30
+#: structures/templates/structures/structure_list.html:44
+msgid "Tags Filter"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:52
+msgid "Reset Filter"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:55
+msgid "Clear Filter"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:58
+msgid "Cancel"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:61
+msgid "Apply Filter"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:74
+msgid "Owner"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:75
+msgid "Location"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:77
+#: structures/templates/structures/structure_list.html:123
+msgid "Type"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:78
+msgid "Name & Tags"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:79
+msgid "Services"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:80
+msgid "R-Hour"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:81
+msgid "Fuel Expires"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:82
+#: structures/templates/structures/structure_list.html:125
+msgid "State"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:89
+msgid "Active Tags Filter"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:101
+msgid "Add Structure Owner"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:107
+msgid "All dates are EVE time"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:108
+msgid "Offlined services are shown as"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:108
+msgid "service"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:109
+msgid "Reinforced structures (except POCOs) are highlighted in red"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:110
+msgid "Data can be outdated by up to 1 hour due to API caching."
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:117
+msgid "Alliance"
+msgstr "Allianz"
+
+#: structures/templates/structures/structure_list.html:118
+msgid "Corporation"
+msgstr "Corporation"
+
+#: structures/templates/structures/structure_list.html:119
+msgid "Region"
+msgstr "Region"
+
+#: structures/templates/structures/structure_list.html:120
+msgid "Solar System"
+msgstr "Sonnensystem"
+
+#: structures/templates/structures/structure_list.html:121
+msgid "Category"
+msgstr "Kategorie"
+
+#: structures/templates/structures/structure_list.html:122
+msgid "Group"
+msgstr "Gruppe"
+
+#: structures/templates/structures/structure_list.html:124
+msgid "Reinforced?"
+msgstr ""
+
+#: structures/templates/structures/structure_list.html:126
+msgid "Low Power?"
+msgstr ""
+
+#. Translators: Abbreviation for years
+#: structures/utils.py:264
+msgid "y"
+msgstr ""
+
+#. Translators: Abbreviation for months
+#: structures/utils.py:267
+msgid "mt"
+msgstr ""
+
+#. Translators: Abbreviation for days
+#: structures/utils.py:270
+msgid "d"
+msgstr ""
+
+#. Translators: Abbreviation for hours
+#: structures/utils.py:273
+msgid "h"
+msgstr ""
+
+#. Translators: Abbreviation for months
+#: structures/utils.py:276
+msgid "m"
+msgstr ""
+
+#. Translators: Abbreviation for seconds
+#: structures/utils.py:279
+msgid "s"
+msgstr ""
+
+#: structures/views.py:270
+msgid "N/A"
+msgstr ""
+
+#: structures/views.py:276
+msgid "Low Power"
+msgstr ""
+
+#: structures/views.py:325
+#, python-format
+msgid ""
+"You can only use your main or alt characters to add corporations. However, "
+"character %s is neither. "
+msgstr ""
+
+#: structures/views.py:367
+#, python-format
+msgid ""
+"%(corporation)s has been added with %(character)s as sync character. We have "
+"started fetching structures for this corporation. You will receive a report "
+"once the process is finished."
+msgstr ""
+
+#: structures/views.py:385
+#, python-format
+msgid "%(corporation)s was added as new structure owner by %(user)s."
+msgstr ""
+
+#: structures/views.py:410
+msgid "service is up"
+msgstr ""
+
+#: structures/views.py:412
+msgid "service is down"
+msgstr ""
+
+#: tests/testauth/settings.py:83
+msgid "English"
+msgstr ""
+
+#: tests/testauth/settings.py:84
+msgid "German"
+msgstr ""
+
+#: tests/testauth/settings.py:85
+msgid "Spanish"
+msgstr ""

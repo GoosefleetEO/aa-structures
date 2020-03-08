@@ -6,8 +6,7 @@ from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect, reverse
 from django.utils.html import format_html, mark_safe, escape
-from django.utils.translation import ngettext_lazy
-from django.utils.timesince import timeuntil
+from django.utils.translation import gettext_lazy as _
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
@@ -21,22 +20,20 @@ from .app_settings import (
 )
 from .forms import TagsFilterForm
 from .models import Owner, Structure, StructureTag, StructureService, Webhook
-from .utils import messages_plus, DATETIME_FORMAT, notify_admins, LoggerAddTag
+from .utils import (
+    format_html_lazy, 
+    messages_plus, 
+    DATETIME_FORMAT, 
+    notify_admins, 
+    LoggerAddTag,
+    timeuntil_str
+)
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 QUERY_PARAM_TAGS = 'tags'
-
-TIME_STRINGS = {
-    'year': ngettext_lazy('%d y', '%d y'),
-    'month': ngettext_lazy('%d m', '%d m'),
-    'week': ngettext_lazy('%d w', '%d w'),
-    'day': ngettext_lazy('%d d', '%d d'),
-    'hour': ngettext_lazy('%d h', '%d h'),
-    'minute': ngettext_lazy('%d m', '%d m'),
-}
 
 
 @login_required
@@ -270,20 +267,19 @@ def structure_list_data(request):
 
         # add low power label or date when fuel runs out
         if row['is_poco'] or row['is_starbase']:
-            fuel_expires_display = 'N/A'
+            fuel_expires_display = _('N/A')
             fuel_expires_timestamp = None
         else:
             if row['is_low_power']:
-                fuel_expires_display = \
-                    '<span class="label label-default">Low Power</span>'
+                fuel_expires_display = format_html_lazy(
+                    '<span class="label label-default">{}</span>',
+                    _('Low Power')
+                )                    
                 fuel_expires_timestamp = None
             elif structure.fuel_expires:
                 fuel_expires_timestamp = structure.fuel_expires.isoformat()
                 if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
-                    fuel_expires_display = timeuntil(
-                        structure.fuel_expires,
-                        time_strings=TIME_STRINGS
-                    )
+                    fuel_expires_display = timeuntil_str(structure.fuel_expires)
                 else:
                     fuel_expires_display = \
                         structure.fuel_expires.strftime(DATETIME_FORMAT)
@@ -323,12 +319,15 @@ def add_structure_owner(request, token):
         )
     except CharacterOwnership.DoesNotExist:
         messages_plus.error(
-            request,
+            request,            
             format_html(
-                'You can only use your main or alt characters '
-                'to add corporations. '
-                'However, character <strong>{}</strong> is neither. ',
-                token_char.character_name
+                _(
+                    'You can only use your main or alt characters '
+                    'to add corporations. '
+                    'However, character %s is neither. '
+                ) % format_html(
+                    '<strong>{}</strong>', token_char.character_name
+                )
             )
         )
         success = False
@@ -362,22 +361,32 @@ def add_structure_owner(request, token):
             user_pk=request.user.pk
         )
         messages_plus.info(
-            request,
-            format_html(
-                '<strong>{}</strong> has been added with <strong>{}</strong> '
-                'as sync character. '
-                'We have started fetching structures for this corporation. '
-                'You will receive a report once the process is finished.',
-                owner,
-                owner.character.character.character_name
+            request,            
+            format_html(                
+                _(
+                    '%(corporation)s has been added with %(character)s '
+                    'as sync character. We have started fetching structures '
+                    'for this corporation. You will receive a report once '
+                    'the process is finished.'
+                ) % {
+                    'corporation': format_html(
+                        '<strong>{}</strong>', owner
+                    ),
+                    'character': format_html(
+                        '<strong>{}</strong>', 
+                        owner.character.character.character_name
+                    )
+                }
             )
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
-            notify_admins(
-                message='{} was added as new structure owner by {}.'.format(
-                    owner.corporation.corporation_name,
-                    request.user.username
-                ),
+            notify_admins(                
+                message=_(
+                    '%(corporation)s was added as new '
+                    'structure owner by %(user)s.') % {                    
+                        'corporation': owner.corporation.corporation_name,
+                        'user': request.user.username
+                },
                 title='{}: Structure owner added: {}'.format(
                     __title__,
                     owner.corporation.corporation_name
@@ -398,6 +407,6 @@ def service_status(request):
         ok = ok and owner.is_all_syncs_ok()
 
     if ok:
-        return HttpResponse('service is up')
+        return HttpResponse(_('service is up'))
     else:
-        return HttpResponseServerError('service is down')
+        return HttpResponseServerError(_('service is down'))
