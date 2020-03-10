@@ -9,6 +9,57 @@ from .utils import LoggerAddTag, make_logger_prefix, get_swagger_spec_path
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
+class EveUniverseManager(models.Manager):
+
+    def get_or_create_esi(
+            self,
+            eve_id: int,
+            esi_client: object = None
+    ) -> list:
+        """gets or creates eve universe object with data fetched from ESI"""        
+        try:
+            obj = self.get(id=eve_id)
+            created = False
+        except self.model.DoesNotExist:
+            obj, created = self.update_or_create_esi(
+                eve_id,
+                esi_client
+            )
+
+        return obj, created
+
+    def update_or_create_esi(
+            self,
+            eve_id: int,
+            esi_client: object = None
+    ) -> list:
+        """updates or creates eve object with data fetched from ESI"""
+        addPrefix = make_logger_prefix('{}:{}'.format(
+            self.model.__name__, eve_id
+        ))
+        logger.info(addPrefix('Fetching data from ESI'))
+        if not esi_client:
+            esi_client = esi_client_factory(spec_file=get_swagger_spec_path())
+        try:
+            eve_data_obj = esi_client.Universe\
+                .get_universe_categories_category_id(
+                    category_id=eve_id
+                ).result()
+            obj, created = self.update_or_create(
+                id=eve_id,
+                defaults={
+                    'name': eve_data_obj['name']
+                }
+            )
+        except Exception as ex:
+            logger.warn(addPrefix(
+                'Failed to update or create: '.format(ex)
+            ))
+            raise ex
+
+        return obj, created
+
+
 class EveCategoryManager(models.Manager):
 
     def get_or_create_esi(
@@ -107,9 +158,7 @@ class EveGroupManager(models.Manager):
                 }
             )
         except Exception as ex:
-            logger.warn(addPrefix(
-                'Failed to load group: '.format(ex)
-            ))
+            logger.warn(addPrefix('Failed to load group: '.format(ex)))
             raise ex
 
         return obj, created

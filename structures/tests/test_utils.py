@@ -159,7 +159,7 @@ class TestTimeUntil(TestCase):
         duration = timedelta(
             days=365 + 30 * 4 + 5, seconds=3600 * 14 + 60 * 33 + 10
         )
-        expected = '1y 4m 5d 14h 33m 10s'
+        expected = '1y 4mt 5d 14h 33m 10s'
         self.assertEqual(timeuntil_str(duration), expected)
     
         duration = timedelta(

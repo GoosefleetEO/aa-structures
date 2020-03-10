@@ -14,9 +14,12 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.html import escape, format_html
 from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _, gettext
+from django.utils import translation
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
+from allianceauth.eveonline.evelinks import dotlan
 from esi.clients import esi_client_factory
 
 from .app_settings import (
@@ -32,8 +35,9 @@ from .app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from . import evelinks, __title__
+from . import __title__
 from .managers import (
+    EveUniverseManager,
     EveCategoryManager,
     EveEntityManager,
     EveGroupManager,
@@ -50,7 +54,6 @@ from .utils import \
 
 if 'allianceauth.timerboard' in settings.INSTALLED_APPS:
     from allianceauth.timerboard.models import Timer
-
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
@@ -156,10 +159,10 @@ class General(models.Model):
         managed = False
         default_permissions = ()
         permissions = (
-            ('basic_access', 'Can access this app and view'),
-            ('view_alliance_structures', 'Can view alliance structures'),
-            ('view_all_structures', 'Can view all structures'),
-            ('add_structure_owner', 'Can add new structure owner'),
+            ('basic_access', _('Can access this app and view')),
+            ('view_alliance_structures', _('Can view alliance structures')),
+            ('view_all_structures', _('Can view all structures')),
+            ('add_structure_owner', _('Can add new structure owner')),
         )
 
 
@@ -175,39 +178,45 @@ class Webhook(models.Model):
     name = models.CharField(
         max_length=64,
         unique=True,
-        help_text='short name to identify this webhook'
+        help_text=_('short name to identify this webhook')
     )
     webhook_type = models.IntegerField(
         choices=TYPE_CHOICES,
         default=TYPE_DISCORD,
-        help_text='type of this webhook'
+        help_text=_('type of this webhook')
     )
     url = models.CharField(
         max_length=255,
         unique=True,
-        help_text='URL of this webhook, e.g. '
-        'https://discordapp.com/api/webhooks/123456/abcdef'
+        help_text=_(
+            'URL of this webhook, e.g. '
+            'https://discordapp.com/api/webhooks/123456/abcdef'
+        )
     )
     notes = models.TextField(
         null=True,
         default=None,
         blank=True,
-        help_text='you can add notes about this webhook here if you want'
+        help_text=_('you can add notes about this webhook here if you want')
     )
     notification_types = MultiSelectField(
         choices=NTYPE_CHOICES,
         default=get_default_notification_types,
-        help_text='only notifications which selected types '
-        'are sent to this webhook'
+        help_text=_(
+            'only notifications which selected types '
+            'are sent to this webhook'
+        )
     )
     is_active = models.BooleanField(
         default=True,
-        help_text='whether notifications are currently sent to this webhook'
+        help_text=_('whether notifications are currently sent to this webhook')
     )
     is_default = models.BooleanField(
         default=False,
-        help_text='whether newly added owners have this automatically '
-        'webhook preset'
+        help_text=_(
+            'whether newly added owners have this automatically '
+            'webhook preset'
+        )
     )
 
     def __str__(self):
@@ -219,8 +228,10 @@ class Webhook(models.Model):
             self.url
         )
         response = hook.execute(
-            'This is a test notification from **{}**.\n'.format(__title__)
-            + 'The webhook appears to be correctly configured.',
+            _(
+                'This is a test notification from %s.\n'
+                'The webhook appears to be correctly configured.'
+            ) % __title__,
             wait_for_response=True
         )
         if response.status_ok:
@@ -252,35 +263,35 @@ class Owner(models.Model):
     ERRORS_LIST = [
         (
             ERROR_NONE,
-            'No error'
+            _('No error')
         ),
         (
             ERROR_TOKEN_INVALID,
-            'Invalid token'
+            _('Invalid token')
         ),
         (
             ERROR_TOKEN_EXPIRED,
-            'Expired token'
+            _('Expired token')
         ),
         (
             ERROR_INSUFFICIENT_PERMISSIONS,
-            'Insufficient permissions'
+            _('Insufficient permissions')
         ),
         (
             ERROR_NO_CHARACTER,
-            'No character set for fetching data from ESI'
+            _('No character set for fetching data from ESI')
         ),
         (
             ERROR_ESI_UNAVAILABLE,
-            'ESI API is currently unavailable'
+            _('ESI API is currently unavailable')
         ),
         (
             ERROR_OPERATION_MODE_MISMATCH,
-            'Operaton mode does not match with current setting'
+            _('Operaton mode does not match with current setting')
         ),
         (
             ERROR_UNKNOWN,
-            'Unknown error'
+            _('Unknown error')
         ),
     ]
 
@@ -288,7 +299,7 @@ class Owner(models.Model):
         EveCorporationInfo,
         primary_key=True,
         on_delete=models.CASCADE,
-        help_text='Corporation owning structures'
+        help_text=_('Corporation owning structures')
     )
     character = models.ForeignKey(
         CharacterOwnership,
@@ -296,61 +307,66 @@ class Owner(models.Model):
         default=None,
         null=True,
         blank=True,
-        help_text='character used for syncing structures'
+        help_text=_('character used for syncing structures')
     )
     structures_last_sync = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='when the last sync happened'
+        help_text=_('when the last sync happened')
     )
     structures_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text='error that occurred at the last sync atttempt (if any)'
+        help_text=_('error that occurred at the last sync atttempt (if any)')
     )
     notifications_last_sync = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='when the last sync happened'
+        help_text=_('when the last sync happened')
     )
     notifications_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text='error that occurred at the last sync atttempt (if any)'
+        help_text=_('error that occurred at the last sync atttempt (if any)')
     )
     forwarding_last_sync = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='when the last sync happened'
+        help_text=_('when the last sync happened')
     )
     forwarding_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text='error that occurred at the last sync atttempt (if any)'
+        help_text=_('error that occurred at the last sync atttempt (if any)')
     )
     webhooks = models.ManyToManyField(
         Webhook,
         default=None,
         blank=True,
-        help_text='notifications are sent to these webhooks. '
+        help_text=_('notifications are sent to these webhooks. ')
     )
     is_active = models.BooleanField(
         default=True,
-        help_text='whether this owner is currently included '
-        'in the sync process'
+        help_text=_(
+            'whether this owner is currently included in the sync process'
+        )
     )
     is_alliance_main = models.BooleanField(
         default=False,
-        help_text='whether alliance wide notifications '
-        'are forwarded for this owner (e.g. sov notifications)'
+        help_text=_(
+            'whether alliance wide notifications '
+            'are forwarded for this owner (e.g. sov notifications)'
+        )
     )
     is_included_in_service_status = models.BooleanField(
         default=True,
-        help_text='whether the sync status of this owner is included in '
-        'the overall status of this services'
+        help_text=_(
+            'whether the sync status of this owner is included in '
+            'the overall status of this services'
+        )
     )
 
     def __str__(self) -> str:
@@ -418,20 +434,69 @@ class Owner(models.Model):
         return scopes
 
 
-class EveCategory(models.Model):
+class EveUniverse(models.Model):
+    """Base class for all EveUniverse models"""
+
+    id = models.PositiveIntegerField(
+        primary_key=True, help_text=_('Eve Online ID')
+    )
+    name = models.CharField(
+        max_length=100, help_text=_('Eve Online name')
+    )
+    """
+    language_code = models.CharField(
+        max_length=32, 
+        default=None,
+        null=True,
+        blank=True,
+        help_text=_('language code of this data received from ESI')
+    )
+    last_modified = models.DateTimeField(
+        default=None,
+        null=True,
+        blank=True,
+        help_text=_('Last-Modified from ESI')
+    )
+    """
+
+    # objects = EveUniverseManager()
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def esi_pk(cls):
+        return cls.EveUniverseMeta.esi_pk
+
+    @classmethod
+    def esi_method(cls):
+        return cls.EveUniverseMeta.esi_method
+
+    @classmethod
+    def fetch_object_from_esi(cls, eve_id: int, esi_client: object):
+        return esi_client.Universe\
+            .get_universe_categories_category_id(
+                category_id=eve_id
+            ).result()
+
+    def __repr__(self):
+        return '{}:{}-{}'.format(
+            self.__name,
+            self.id,
+            self.name
+        )
+
+    def __str__(self):
+        return self.name
+
+
+class EveCategory(EveUniverse):
     """group in Eve Online"""
 
     # named category IDs
     EVE_CATEGORY_ID_ORBITAL = 46
     EVE_CATEGORY_ID_STARBASE = 23
     EVE_CATEGORY_ID_STRUCTURE = 65
-
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online category ID'
-    )
-    name = models.CharField(max_length=100)
 
     objects = EveCategoryManager()
 
@@ -442,19 +507,15 @@ class EveCategory(models.Model):
     @property
     def is_upwell_structure(self):
         return self.id == self.EVE_CATEGORY_ID_STRUCTURE
+    
+    class EveUniverseMeta:
+        esi_pk = 'category_id'
+        esi_method = 'get_universe_categories_category_id'
 
-    def __str__(self):
-        return self.name
 
-
-class EveGroup(models.Model):
+class EveGroup(EveUniverse):
     """group in Eve Online"""
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online group ID'
-    )
-    name = models.CharField(max_length=100)
+    
     eve_category = models.ForeignKey(
         EveCategory,
         on_delete=models.SET_DEFAULT,
@@ -465,11 +526,8 @@ class EveGroup(models.Model):
 
     objects = EveGroupManager()
 
-    def __str__(self):
-        return self.name
 
-
-class EveType(models.Model):
+class EveType(EveUniverse):
     """type in Eve Online"""
 
     # named type IDs
@@ -478,13 +536,7 @@ class EveType(models.Model):
     EVE_TYPE_ID_IHUB = 32458
 
     EVE_IMAGESERVER_BASE_URL = 'https://images.evetech.net'
-
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online type ID'
-    )
-    name = models.CharField(max_length=100)
+    
     eve_group = models.ForeignKey(EveGroup, on_delete=models.CASCADE)
 
     objects = EveTypeManager()
@@ -516,52 +568,30 @@ class EveType(models.Model):
 
         return url
 
-    def __str__(self):
-        return self.name
-
     def icon_url(self, size=64):
         return self.generic_icon_url(self.id, size)
 
 
-class EveRegion(models.Model):
+class EveRegion(EveUniverse):
     """region in Eve Online"""
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online region ID'
-    )
-    name = models.CharField(max_length=100)
-
+    
     objects = EveRegionManager()
 
     def __str__(self):
         return self.name
 
 
-class EveConstellation(models.Model):
+class EveConstellation(EveUniverse):
     """constellation in Eve Online"""
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online region ID'
-    )
-    name = models.CharField(max_length=100)
+
     eve_region = models.ForeignKey(EveRegion, on_delete=models.CASCADE)
 
     objects = EveConstellationManager()
 
-    def __str__(self):
-        return self.name
 
-
-class EveSolarSystem(models.Model):
+class EveSolarSystem(EveUniverse):
     """solar system in Eve Online"""
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online solar system ID'
-    )
-    name = models.CharField(max_length=100)
+    
     eve_constellation = models.ForeignKey(
         EveConstellation,
         on_delete=models.CASCADE
@@ -570,34 +600,27 @@ class EveSolarSystem(models.Model):
 
     objects = EveSolarSystemManager()
 
-    def __str__(self):
-        return self.name
 
+class EveMoon(EveUniverse):  
+    """"moon in Eve Online"""
 
-class EveMoon(models.Model):
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online item ID'
-    )
-    name = models.CharField(max_length=100)
     position_x = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='x position of the structure in the solar system'
+        help_text=_('x position in the solar system')
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='y position of the structure in the solar system'
+        help_text=_('y position in the solar system')
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='z position of the structure in the solar system'
+        help_text=_('z position in the solar system')
     )
     eve_solar_system = models.ForeignKey(
         EveSolarSystem,
@@ -606,34 +629,27 @@ class EveMoon(models.Model):
 
     objects = EveMoonManager()
 
-    def __str__(self):
-        return self.name
 
-
-class EvePlanet(models.Model):
-    id = models.IntegerField(
-        primary_key=True,
-        validators=[MinValueValidator(0)],
-        help_text='Eve Online item ID'
-    )
-    name = models.CharField(max_length=100)
+class EvePlanet(EveUniverse):
+    """"planet in Eve Online"""
+    
     position_x = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='x position of the structure in the solar system'
+        help_text=_('x position in the solar system')
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='y position of the structure in the solar system'
+        help_text=_('y position in the solar system')
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='z position of the structure in the solar system'
+        help_text=_('z position in the solar system')
     )
     eve_solar_system = models.ForeignKey(
         EveSolarSystem,
@@ -646,43 +662,43 @@ class EvePlanet(models.Model):
 
     objects = EvePlanetManager()
 
-    def __str__(self):
-        return self.name
-
 
 class StructureTag(models.Model):
     """tag for organizing structures"""
 
     STYLE_CHOICES = [
-        ('default', 'grey'),
-        ('primary', 'dark blue'),
-        ('success', 'green'),
-        ('info', 'light blue'),
-        ('warning', 'yellow'),
-        ('danger', 'red'),
+        ('default', _('grey')),
+        ('primary', _('dark blue')),
+        ('success', _('green')),
+        ('info', _('light blue')),
+        ('warning', _('yellow')),
+        ('danger', _('red')),
     ]
 
     name = models.CharField(
         max_length=255,
         unique=True,
-        help_text='name of the tag - must be unique'
+        help_text=_('name of the tag - must be unique')
     )
     description = models.TextField(
         null=True,
         default=None,
         blank=True,
-        help_text='description for this tag'
+        help_text=_('description for this tag')
     )
     style = models.CharField(
         max_length=16,
         choices=STYLE_CHOICES,
         default='default',
         blank=True,
-        help_text='color style of tag'
+        help_text=_('color style of tag')
     )
     is_default = models.BooleanField(
         default=False,
-        help_text='if true this tag will automatically added to new structures'
+        help_text=_(
+            'if true this tag will automatically be ' 
+            'added to new structures'
+        )
     )
 
     def __str__(self) -> str:
@@ -748,27 +764,27 @@ class Structure(models.Model):
         (STATE_POS_UNANCHORING, 'unanchoring '),
 
         # other
-        (STATE_NA, 'N/A'),
-        (STATE_UNKNOWN, 'unknown'),
+        (STATE_NA, _('N/A')),
+        (STATE_UNKNOWN, _('unknown')),
     ]
 
     id = models.BigIntegerField(
         primary_key=True,
-        help_text='The Item ID of the structure'
+        help_text=_('The Item ID of the structure')
     )
     owner = models.ForeignKey(
         Owner,
         on_delete=models.CASCADE,
-        help_text='Corporation that owns the structure'
+        help_text=_('Corporation that owns the structure')
     )
     eve_type = models.ForeignKey(
         EveType,
         on_delete=models.CASCADE,
-        help_text='type of the structure'
+        help_text=_('type of the structure')
     )
     name = models.CharField(
         max_length=255,
-        help_text='The full name of the structure'
+        help_text=_('The full name of the structure')
     )
     eve_solar_system = models.ForeignKey(
         EveSolarSystem,
@@ -780,7 +796,7 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text='Planet next to this structure - if any'
+        help_text=_('Planet next to this structure - if any')
     )
     eve_moon = models.ForeignKey(
         EveMoon,
@@ -788,111 +804,117 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text='Moon next to this structure - if any'
+        help_text=_('Moon next to this structure - if any')
     )
     position_x = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='x position of the structure in the solar system'
+        help_text=_('x position in the solar system')
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='y position of the structure in the solar system'
+        help_text=_('y position in the solar system')
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text='z position of the structure in the solar system'
+        help_text=_('z position in the solar system')
     )
     fuel_expires = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='Date on which the structure will run out of fuel'
+        help_text=_('Date on which the structure will run out of fuel')
     )
     next_reinforce_hour = models.IntegerField(
         null=True,
         default=None,
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(23)],
-        help_text='The requested change to reinforce_hour that will take '
-        'effect at the time shown by next_reinforce_apply'
+        help_text=_(
+            'The requested change to reinforce_hour that will take '
+            'effect at the time shown by next_reinforce_apply'
+        )
     )
     next_reinforce_weekday = models.IntegerField(
         null=True,
         default=None,
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(6)],
-        help_text='The date and time when the structure’s newly requested '
-        'reinforcement times (e.g. next_reinforce_hour and next_reinforce_day)'
-        ' will take effect'
+        help_text=_(
+            'The date and time when the structure’s newly requested '
+            'reinforcement times (e.g. next_reinforce_hour and '
+            'next_reinforce_day) will take effect'
+        )
     )
     next_reinforce_apply = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='The requested change to reinforce_weekday that will take '
-        'effect at the time shown by next_reinforce_apply'
+        help_text=_(
+            'The requested change to reinforce_weekday that will take '
+            'effect at the time shown by next_reinforce_apply'
+        )
     )
     reinforce_hour = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(23)],
         null=True,
         default=None,
         blank=True,
-        help_text='The hour of day that determines the four hour window '
-        'when the structure will randomly exit its reinforcement periods '
-        'and become vulnerable to attack against its armor and/or hull. '
-        'The structure will become vulnerable at a random time that '
-        'is +/- 2 hours centered on the value of this property'
+        help_text=_(
+            'The hour of day that determines the four hour window '
+            'when the structure will randomly exit its reinforcement periods '
+            'and become vulnerable to attack against its armor and/or hull. '
+            'The structure will become vulnerable at a random time that '
+            'is +/- 2 hours centered on the value of this property'
+        )
     )
     reinforce_weekday = models.IntegerField(
         null=True,
         default=None,
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(6)],
-        help_text='The day of the week when the structure exits its '
-        'final reinforcement period and becomes vulnerable to attack '
-        'against its hull. Monday is 0 and Sunday is 6'
+        help_text='(no longer used)'
     )
     state = models.IntegerField(
         choices=STATE_CHOICES,
         default=STATE_UNKNOWN,
         blank=True,
-        help_text='Current state of the structure'
+        help_text=_('Current state of the structure')
     )
     state_timer_start = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='Date at which the structure will move to it’s next state'
+        help_text=_('Date at which the structure will move to it’s next state')
     )
     state_timer_end = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='Date at which the structure entered it’s current state'
+        help_text=_('Date at which the structure entered it’s current state')
     )
     unanchors_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='Date at which the structure will unanchor'
+        help_text=_('Date at which the structure will unanchor')
     )
     last_updated = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='date this structure was last updated from the EVE server'
+        help_text=_('date this structure was last updated from the EVE server')
     )
     tags = models.ManyToManyField(
         StructureTag,
         default=None,
         blank=True,
-        help_text='list of tags for this structure'
+        help_text=_('list of tags for this structure')
     )
 
     objects = StructureManager()
@@ -900,7 +922,7 @@ class Structure(models.Model):
     @property
     def state_str(self):
         msg = [(x, y) for x, y in self.STATE_CHOICES if x == self.state]
-        return msg[0][1].replace('_', ' ') if len(msg) > 0 else 'undefined'
+        return msg[0][1].replace('_', ' ') if len(msg) > 0 else _('undefined')
 
     @property
     def is_low_power(self):
@@ -947,15 +969,15 @@ class StructureService(models.Model):
     structure = models.ForeignKey(
         Structure,
         on_delete=models.CASCADE,
-        help_text='Structure this service is installed to'
+        help_text=_('Structure this service is installed to')
     )
     name = models.CharField(
         max_length=64,
-        help_text='Name of the service'
+        help_text=_('Name of the service')
     )
     state = models.IntegerField(
         choices=STATE_CHOICES,
-        help_text='Current state of this service'
+        help_text=_('Current state of this service')
     )
 
     class Meta:
@@ -1018,16 +1040,13 @@ class EveEntity(models.Model):
 
     def profile_url(self) -> str:
         """returns link to website with profile info about this entity"""
+        
         if self.category == self.CATEGORY_CORPORATION:
-            return evelinks.get_entity_profile_url_by_name(
-                evelinks.ESI_CATEGORY_CORPORATION,
-                self.name
-            )
+            return dotlan.corporation_url(self.name)
+
         elif self.category == self.CATEGORY_ALLIANCE:
-            return evelinks.get_entity_profile_url_by_name(
-                evelinks.ESI_CATEGORY_ALLIANCE,
-                self.name
-            )
+            return dotlan.alliance_url(self.name)
+        
         else:
             return ''
 
@@ -1074,7 +1093,7 @@ class Notification(models.Model):
     owner = models.ForeignKey(
         Owner,
         on_delete=models.CASCADE,
-        help_text='Corporation that received this notification'
+        help_text=_('Corporation that received this notification')
     )
     sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
     timestamp = models.DateTimeField()
@@ -1082,32 +1101,34 @@ class Notification(models.Model):
     text = models.TextField(
         null=True,
         default=None,
-        blank=True
+        blank=True,
+        help_text=_('Notification details in YAML')
     )
     is_read = models.BooleanField(
         null=True,
         default=None,
-        blank=True
+        blank=True,
+        help_text=_('True when this notification has read in the eve client')
     )
     is_sent = models.BooleanField(
         default=False,
         blank=True,
-        help_text='True when this notification has been forwarded to Discord'
+        help_text=_('True when this notification has been forwarded to Discord')
     )
     is_timer_added = models.BooleanField(
         null=True,
         default=None,
         blank=True,
-        help_text='True when a timer has been added for this notification'
+        help_text=_('True when a timer has been added for this notification')
     )
     last_updated = models.DateTimeField(
-        help_text='Date when this notification has last been updated from ESI'
+        help_text=_('Date when this notification has last been updated from ESI')
     )
     created = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='Date when this notification was first received from ESI'
+        help_text=_('Date when this notification was first received from ESI')
     )
 
     class Meta:
@@ -1115,7 +1136,7 @@ class Notification(models.Model):
 
     @property
     def is_alliance_level(self):
-        """ whether this is an alliance level notification"""
+        """whether this is an alliance level notification"""
         return self.notification_type in NTYPE_FOR_ALLIANCE_LEVEL
 
     @classmethod
@@ -1133,36 +1154,26 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.notification_id)
 
+    @translation.override(settings.LANGUAGE_CODE)
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
 
         def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
             text = '[{}]({}) ({})'.format(
                 solar_system.name,
-                evelinks.get_entity_profile_url_by_name(
-                    evelinks.ESI_CATEGORY_SOLARSYSTEM,
-                    solar_system.name
-                ),
+                dotlan.solar_system_url(solar_system.name),
                 solar_system.eve_constellation.eve_region.name
             )
             return text
 
         def gen_alliance_link(alliance_name):
             return '[{}]({})'.format(
-                alliance_name,
-                evelinks.get_entity_profile_url_by_name(
-                    evelinks.ESI_CATEGORY_ALLIANCE,
-                    alliance_name
-                )
+                alliance_name, dotlan.alliance_url(alliance_name)
             )
 
         def gen_corporation_link(corporation_name):
             return '[{}]({})'.format(
-                corporation_name,
-                evelinks.get_entity_profile_url_by_name(
-                    evelinks.ESI_CATEGORY_CORPORATION,
-                    corporation_name
-                )
+                corporation_name, dotlan.corporation_url(corporation_name)
             )
 
         def get_attacker_link(parsed_text):
@@ -1203,6 +1214,9 @@ class Notification(models.Model):
             else:
                 return None
 
+        logger.info(
+            'Creating embed with language = %s' % translation.get_language()
+        )        
         parsed_text = yaml.safe_load(self.text)
 
         if self.notification_type in [
@@ -1223,25 +1237,27 @@ class Notification(models.Model):
             )
             thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
 
-            description = 'The {} **{}** in {} '.format(
-                structure.eve_type.name,
-                structure.name,
-                gen_solar_system_text(structure.eve_solar_system)
-            )
+            description = gettext(
+                'The %(structure_type)s %(structure_name)s in %(solar_system)s '
+            ) % {
+                'structure_type': structure.eve_type.name,
+                'structure_name': '**%s**' % structure.name,
+                'solar_system': gen_solar_system_text(structure.eve_solar_system)
+            }
 
             if self.notification_type == NTYPE_STRUCTURE_ONLINE:
-                title = 'Structure online'
-                description += 'is now online.'
+                title = gettext('Structure online')
+                description += gettext('is now online.')
                 color = self.EMBED_COLOR_SUCCESS
 
             if self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
-                title = 'Structure fuel alert'
-                description += 'has less then 24hrs fuel left.'
+                title = gettext('Structure fuel alert')
+                description += gettext('has less then 24hrs fuel left.')
                 color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:
-                title = 'Structure services off-line'
-                description += 'has all services off-lined.'
+                title = gettext('Structure services off-line')
+                description += gettext('has all services off-lined.')
                 if structure.structureservice_set.count() > 0:
                     qs = structure.structureservice_set.all().order_by('name')
                     services_list = '\n'.join([x.name for x in qs])
@@ -1252,54 +1268,52 @@ class Notification(models.Model):
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == NTYPE_STRUCTURE_WENT_LOW_POWER:
-                title = 'Structure low power'
-                description += 'went to **low power** mode.'
+                title = gettext('Structure low power')
+                description += gettext('went to low power mode.')
                 color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == NTYPE_STRUCTURE_WENT_HIGH_POWER:
-                title = 'Structure full power'
-                description += 'went to **full power** mode.'
+                title = gettext('Structure full power')
+                description += gettext('went to full power mode.')
                 color = self.EMBED_COLOR_SUCCESS
 
             elif self.notification_type == NTYPE_STRUCTURE_UNANCHORING:
-                title = 'Structure un-anchoring'
+                title = gettext('Structure un-anchoring')
                 unanchored_at = self.timestamp \
                     + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += 'has started un-anchoring. '\
-                    + 'It will be fully un-anchored at: {}'.format(
-                        unanchored_at.strftime(DATETIME_FORMAT))
+                description += gettext(
+                    'has started un-anchoring. '
+                    'It will be fully un-anchored at: %s'
+                ) % unanchored_at.strftime(DATETIME_FORMAT)
                 color = self.EMBED_COLOR_INFO
 
             elif self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
-                title = 'Structure under attack'
-                description += 'is under attack by {}.'.format(
-                    get_attacker_link(parsed_text)
-                )
+                title = gettext('Structure under attack')
+                description += gettext('is under attack by %s') \
+                    % get_attacker_link(parsed_text)
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
-                title = 'Structure lost shield'
+                title = gettext('Structure lost shield')
                 timer_ends_at = self.timestamp \
                     + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += 'has lost its shields. ' + \
-                    'Armor timer end at: {}'.format(
-                        timer_ends_at.strftime(DATETIME_FORMAT)
-                    )
+                description += gettext(
+                    'has lost its shields. Armor timer end at: %s'
+                ) % timer_ends_at.strftime(DATETIME_FORMAT)
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
-                title = 'Structure lost armor'
+                title = gettext('Structure lost armor')
                 timer_ends_at = self.timestamp \
                     + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += 'has lost its armor. ' + \
-                    'Hull timer end at: {}'.format(
-                        timer_ends_at.strftime(DATETIME_FORMAT)
-                    )
+                description += gettext(
+                    'has lost its armor. Hull timer end at: %s'
+                ) % timer_ends_at.strftime(DATETIME_FORMAT)
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == NTYPE_STRUCTURE_DESTROYED:
-                title = 'Structure destroyed'
-                description += 'has been destroyed.'
+                title = gettext('Structure destroyed')
+                description += gettext('has been destroyed.')
                 color = self.EMBED_COLOR_DANGER
 
         elif self.notification_type in [
@@ -1328,50 +1342,52 @@ class Notification(models.Model):
                 )
                 ready_time = self._ldap_datetime_2_dt(parsed_text['readyTime'])
                 auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
-                title = 'Moon mining extraction started'
-                description = (
+                title = gettext('Moon mining extraction started')
+                description = gettext(
                     'A moon mining extraction has been started '
-                    'for **{}** at {} in {}. Extraction was started by {}.\n'
-                    'The chunk will be ready on location at {}, '
-                    'and will autofracture on {}.\n'.format(
-                        structure.name,
-                        moon.name,
-                        solar_system_link,
-                        started_by,
-                        ready_time.strftime(DATETIME_FORMAT),
-                        auto_time.strftime(DATETIME_FORMAT)
-                    )
-                )
+                    'for %(structure_name)s at %(moon)s in %(solar_system)s. '
+                    'Extraction was started by %(character)s.\n'
+                    'The chunk will be ready on location at %(ready_time)s, '
+                    'and will autofracture on %(auto_time)s.\n'
+                ) % {
+                    'structure_name': '**%s**' % structure.name,
+                    'moon': moon.name,
+                    'solar_system': solar_system_link,
+                    'character': started_by,
+                    'ready_time': ready_time.strftime(DATETIME_FORMAT),
+                    'auto_time': auto_time.strftime(DATETIME_FORMAT)
+                }                
                 color = self.EMBED_COLOR_INFO
 
             elif (
                 self.notification_type == NTYPE_MOONS_EXTRACTION_FINISHED
             ):
                 auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
-                title = 'Extraction finished'
-                description = (
-                    'The extraction for {} at {} in {}'
-                    ' is finished and the chunk is ready to be shot at.\n'
-                    'The chunk will automatically fracture on {}'.format(
-                        structure.name,
-                        moon.name,
-                        solar_system_link,
-                        auto_time.strftime(DATETIME_FORMAT)
-                    )
-                )
+                title = gettext('Extraction finished')
+                description = gettext(
+                    'The extraction for %(structure_name)s at %(moon)s '
+                    'in %(solar_system)s is finished and the chunk is ready '
+                    'to be shot at.\n'
+                    'The chunk will automatically fracture on %(auto_time)s.'
+                ) % {
+                    'structure_name': '**%s**' % structure.name,
+                    'moon': moon.name,
+                    'solar_system': solar_system_link,
+                    'auto_time': auto_time.strftime(DATETIME_FORMAT)
+                }                
                 color = self.EMBED_COLOR_INFO
 
             elif self.notification_type == NTYPE_MOONS_AUTOMATIC_FRACTURE:
-                title = 'Automatic Fracture'
-                description = (
-                    'The moondrill fitted to **{}** at {} in {} '
-                    'has automatically been fired and the moon '
-                    'products are ready to be harvested.\n'.format(
-                        structure.name,
-                        moon.name,
-                        solar_system_link
-                    )
-                )
+                title = gettext('Automatic Fracture')
+                description = gettext(
+                    'The moondrill fitted to %(structure_name)s at %(moon)s'
+                    ' in %(solar_system)s has automatically been fired '
+                    'and the moon products are ready to be harvested.\n'
+                ) % {
+                    'structure_name': '**%s**' % structure.name,
+                    'moon': moon.name,
+                    'solar_system': solar_system_link
+                }                
                 color = self.EMBED_COLOR_SUCCESS
 
             elif (
@@ -1382,34 +1398,35 @@ class Notification(models.Model):
                         parsed_text['cancelledBy']
                     )
                 else:
-                    cancelled_by = '(unknown)'
-                title = 'Extraction cancelled'
-                description = (
-                    'An ongoing extraction for **{}** at {} '
-                    'in {} has been cancelled by {}.'.format(
-                        structure.name,
-                        moon.name,
-                        solar_system_link,
-                        cancelled_by
-                    )
-                )
+                    cancelled_by = gettext('(unknown)')
+                title = gettext('Extraction cancelled')
+                description = gettext(
+                    'An ongoing extraction for %(structure_name)s at %(moon)s '
+                    'in %(solar_system)s has been cancelled by %(character)s.'
+                ) % {
+                    'structure_name': '**%s**' % structure.name,
+                    'moon': moon.name,
+                    'solar_system': solar_system_link,
+                    'character': cancelled_by
+                }
+            
                 color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == NTYPE_MOONS_LASER_FIRED:
                 fired_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['firedBy']
                 )
-                title = 'Moondrill fired'
-                description = (
-                    'The moondrill fitted to **{}** at {} in {} '
-                    'has been fired by {} and the moon products are '
-                    'ready to be harvested.'.format(
-                        structure.name,
-                        moon.name,
-                        solar_system_link,
-                        fired_by
-                    )
-                )
+                title = gettext('Moondrill fired')
+                description = gettext(
+                    'The moondrill fitted to %(structure_name)s at %(moon)s '
+                    'in %(solar_system)s has been fired by %(character)s '
+                    'and the moon products are ready to be harvested.'
+                ) % {
+                    'structure_name': '**%s**' % structure.name,
+                    'moon': moon.name,
+                    'solar_system': solar_system_link,
+                    'character': fired_by
+                }
                 color = self.EMBED_COLOR_SUCCESS
 
         elif self.notification_type in [
@@ -1442,32 +1459,33 @@ class Notification(models.Model):
             aggressor_link = get_aggressor_link(parsed_text, esi_client)
 
             if self.notification_type == NTYPE_ORBITAL_ATTACKED:
-                title = 'Orbital under attack'
-                description = (
-                    'The {} **{}** in {} '
-                    'is under attack by {}.'.format(
-                        structure_type.name,
-                        planet.name,
-                        solar_system_link,
-                        aggressor_link
-                    )
-                )
+                title = gettext('Orbital under attack')
+                description = gettext(
+                    'The %(structure_type)s at %(planet)s in %(solar_system)s '
+                    'is under attack by %(aggressor)s.'
+                ) % {
+                    'structure_type': structure_type.name,
+                    'planet': planet.name,
+                    'solar_system': solar_system_link,
+                    'aggressor': aggressor_link
+                }
                 color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
                 reinforce_exit_time = \
                     self._ldap_datetime_2_dt(parsed_text['reinforceExitTime'])
-                title = 'Orbital reinforced'
-                description = (
-                    'The {} **{}** at {} has been '
-                    'reinforced by {} and will come out at: {}.'.format(
-                        structure_type.name,
-                        planet.name,
-                        solar_system_link,
-                        aggressor_link,
-                        reinforce_exit_time.strftime(DATETIME_FORMAT)
-                    )
-                )
+                title = gettext('Orbital reinforced')
+                description = gettext(
+                    'The %(structure_type)s at %(planet)s in %(solar_system)s '
+                    'has been reinforced by %(aggressor)s '
+                    'and will come out at: %(date)s.'
+                ) % {
+                    'structure_type': structure_type.name,
+                    'planet': planet.name,
+                    'solar_system': solar_system_link,
+                    'aggressor': aggressor_link,
+                    'date': reinforce_exit_time.strftime(DATETIME_FORMAT)
+                }
                 color = self.EMBED_COLOR_DANGER
 
         elif self.notification_type in [
@@ -1501,42 +1519,49 @@ class Notification(models.Model):
 
             if self.notification_type == NTYPE_TOWER_ALERT_MSG:
                 aggressor_link = get_aggressor_link(parsed_text, esi_client)
+                damage_labels = [
+                    ('shield', gettext('shield')), 
+                    ('armor', gettext('armor')), 
+                    ('hull', gettext('hull')),                    
+                ]
                 damage_parts = list()
-                for prop in ['shield', 'armor', 'hull']:
-                    prop_yaml = prop + 'Value'
+                for prop in damage_labels:
+                    prop_yaml = prop[0] + 'Value'
                     if prop_yaml in parsed_text:
                         damage_parts.append(
                             '{}: {:.0f}%'.format(
-                                prop,
+                                prop[1],
                                 parsed_text[prop_yaml] * 100
                             )
                         )
                 damage_text = ' | '.join(damage_parts)
-                title = 'Starbase under attack'
-                description = (
-                    'The starbase **{}** at {} in {} '
-                    'is under attack by {}.\n{}'.format(
-                        structure_name,
-                        eve_moon.name,
-                        solar_system_link,
-                        aggressor_link,
-                        damage_text
-                    )
-                )
+                title = gettext('Starbase under attack')
+                description = gettext(
+                    'The starbase %(structure_name)s at %(moon)s '
+                    'in %(solar_system)s is under attack by %(aggressor)s.\n'
+                    '%(damage_text)s'
+                ) % {
+                    'structure_name': '**%s**' % structure_name,
+                    'moon': eve_moon.name,
+                    'solar_system': solar_system_link,
+                    'aggressor': aggressor_link,
+                    'damage_text': damage_text,
+                }
                 color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == NTYPE_TOWER_RESOURCE_ALERT_MSG:
                 quantity = parsed_text['wants'][0]['quantity']
-                title = 'Starbase low on fuel'
-                description = (
-                    'The starbase **{}** at {} in {} '
-                    'is low on fuel. It has *{:,}* fuel blocks left.'.format(
-                        structure_name,
-                        eve_moon.name,
-                        solar_system_link,
-                        quantity
-                    )
-                )
+                title = gettext('Starbase low on fuel')
+                description = gettext(
+                    'The starbase %(structure_name)s at %(moon)s '
+                    'in %(solar_system)s is low on fuel. '
+                    'It has %(quantity)d fuel blocks left.'
+                ) % {
+                    'structure_name': '**%s**' % structure_name,
+                    'moon': eve_moon.name,
+                    'solar_system': solar_system_link,
+                    'quantity': quantity
+                }
                 color = self.EMBED_COLOR_WARNING
 
         elif self.notification_type in [
@@ -1578,39 +1603,42 @@ class Notification(models.Model):
                 self.owner.corporation.alliance.alliance_name
             )
             if self.notification_type == NTYPE_SOV_ENTOSIS_CAPTURE_STARTED:
-                title = '{} in {} is being captured'.format(
-                    structure_type_name,
-                    solar_system.name
-                )
-                description = (
-                    'A capsuleer has started to influence the '
-                    '**{}** in {} belonging to {} '
-                    'with an Entosis Link.'.format(
-                        structure_type_name,
-                        solar_system_link,
-                        sov_owner_link
-                    )
-                )
+                title = gettext(
+                    '%(structure_type)s in %(solar_system)s is being captured'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system.name
+                }
+                description = gettext(
+                    'A capsuleer has started to influence the %(type)s '
+                    'in %(solar_system)s belonging to %(owner)s '
+                    'with an Entosis Link.'
+                ) % {
+                    'type': structure_type_name,
+                    'solar_system': solar_system_link,
+                    'owner': sov_owner_link
+                }
                 color = self.EMBED_COLOR_WARNING
 
             elif (
                 self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED
             ):
-                title = (
-                    'Command nodes for {} in {} have begun '
-                    'to decloak'.format(
-                        structure_type_name,
-                        solar_system.name
-                    )
-                )
-                description = (
-                    'Command nodes for **{}** in {} can now be found '
-                    'throughout the {} constellation'.format(
-                        structure_type_name,
-                        solar_system_link,
-                        solar_system.eve_constellation.name
-                    )
-                )
+                title = gettext(
+                    'Command nodes for %(structure_type)s in %(solar_system)s '
+                    'have begun to decloak'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system.name
+                }
+                description = gettext(
+                    'Command nodes for %(structure_type)s in %(solar_system)s '
+                    'can now be found throughout '
+                    'the %(constellation)s constellation'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system_link,
+                    'constellation': solar_system.eve_constellation.name
+                }
                 color = self.EMBED_COLOR_WARNING
 
             elif self.notification_type == NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG:
@@ -1620,53 +1648,61 @@ class Notification(models.Model):
                 corporation, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['corpID']
                 )
-                title = 'DED Sovereignty claim acknowledgment: {}'.format(
-                    solar_system.name
-                )
-                description = (
+                title = gettext(
+                    'DED Sovereignty claim acknowledgment: %s'
+                ) % solar_system.name
+                
+                description = gettext(
                     'DED now officially acknowledges that your '
-                    'member corporation {} has claimed sovereignty on '
-                    'behalf of {} in {}.'.format(
-                        gen_corporation_link(corporation.name),
-                        gen_alliance_link(alliance.name),
-                        solar_system_link
-                    )
-                )
+                    'member corporation %(corporation)s has claimed '
+                    'sovereignty on behalf of %(alliance)s in %(solar_system)s.'
+                ) % {
+                    'corporation': gen_corporation_link(corporation.name),
+                    'alliance': gen_alliance_link(alliance.name),
+                    'solar_system': solar_system_link
+                }
                 color = self.EMBED_COLOR_SUCCESS
 
             elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
                 timer_starts = self._ldap_datetime_2_dt(
                     parsed_text['decloakTime']
                 )
-                title = '{} in {} has entered reinforced mode'.format(
-                    structure_type_name,
-                    solar_system.name
-                )
-                description = (
-                    'The **{}** in {} belonging to {} has been '
-                    'reinforced by hostile forces and command nodes '
-                    'will begin decloaking at {}'.format(
-                        structure_type_name,
-                        solar_system_link,
-                        sov_owner_link,
-                        timer_starts.strftime(DATETIME_FORMAT)
-                    )
-                )
+                title = gettext(
+                    '%(structure_type)s in %(solar_system)s '
+                    'has entered reinforced mode'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system.name
+                }
+                description = gettext(
+                    'The %(structure_type)s in %(solar_system)s belonging '
+                    'to %(owner)s has been reinforced by '
+                    'hostile forces and command nodes '
+                    'will begin decloaking at %(date)s'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system_link,
+                    'owner': sov_owner_link,
+                    'date': timer_starts.strftime(DATETIME_FORMAT)
+                }
                 color = self.EMBED_COLOR_DANGER
 
             elif self.notification_type == NTYPE_SOV_STRUCTURE_DESTROYED:
-                title = '{} in {} has been destroyed'.format(
-                    structure_type_name,
-                    solar_system.name
-                )
-                description = (
-                    'The command nodes for **{}** in {} belonging '
-                    'to {} have been destroyed by hostile forces.'.format(
-                        structure_type_name,
-                        solar_system_link,
-                        sov_owner_link
-                    )
-                )
+                title = gettext(
+                    '%(structure_type)s in %(solar_system)s has been destroyed'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system.name
+                }
+                description = gettext(
+                    'The command nodes for %(structure_type)s '
+                    'in %(solar_system)s belonging to %(owner)s have been '
+                    'destroyed by hostile forces.'
+                ) % {
+                    'structure_type': '**%s**' % structure_type_name,
+                    'solar_system': solar_system_link,
+                    'owner': sov_owner_link
+                }
                 color = self.EMBED_COLOR_DANGER
 
         else:
@@ -1680,11 +1716,14 @@ class Notification(models.Model):
                     parsed_text['solarSystemID'],
                     esi_client
                 )
-                description = 'The {} **{}** in {} '.format(
-                    structure_type.name,
-                    parsed_text['structureName'],
-                    gen_solar_system_text(solar_system)
-                )
+                description = gettext(
+                    'The %(structure_type)s %(structure_name)s '
+                    'in %(solar_system)s '
+                ) % {
+                    'structure_type': structure_type.name,
+                    'structure_name': '**%s**' % parsed_text['structureName'],
+                    'solar_system': gen_solar_system_text(solar_system)
+                }
                 from_corporation, _ = \
                     EveEntity.objects.get_or_create_esi(
                         parsed_text['oldOwnerCorpID'],
@@ -1700,14 +1739,15 @@ class Notification(models.Model):
                         parsed_text['charID'],
                         esi_client
                     )
-                description += (
-                    'has been transferred from {} to {} by {}.'.format(
-                        gen_corporation_link(from_corporation.name),
-                        gen_corporation_link(to_corporation.name),
-                        character.name
-                    )
-                )
-                title = 'Ownership transferred'
+                description += gettext(
+                    'has been transferred from %(from_corporation)s '
+                    'to %(to_corporation)s by %(character)s.'
+                ) % {
+                    'from_corporation': gen_corporation_link(from_corporation.name),
+                    'to_corporation': gen_corporation_link(to_corporation.name),
+                    'character': character.name
+                }
+                title = gettext('Ownership transferred')
                 color = self.EMBED_COLOR_INFO
 
             elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
@@ -1720,16 +1760,19 @@ class Notification(models.Model):
                     parsed_text['solarsystemID'],
                     esi_client
                 )
-                description = '**{}** has started anchoring in {}. '.format(
-                    structure_type.name,
-                    gen_solar_system_text(solar_system)
-                )
+                description = gettext(
+                    '%(structure_type)s has started anchoring '
+                    'in %(solar_system)s. '
+                ) % {
+                    'structure_type': structure_type.name,
+                    'solar_system': gen_solar_system_text(solar_system)
+                }
                 unanchored_at = self.timestamp \
                     + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
                 description += 'The anchoring timer ends at: {}'.format(
                     unanchored_at.strftime(DATETIME_FORMAT)
                 )
-                title = 'Structure anchoring'
+                title = gettext('Structure anchoring')
                 color = self.EMBED_COLOR_INFO
 
             else:
@@ -1751,7 +1794,8 @@ class Notification(models.Model):
             footer=footer
         )
 
-    def send_to_webhook(
+    @translation.override(settings.LANGUAGE_CODE)
+    def send_to_webhook(        
         self,
         webhook: Webhook,
         esi_client: object = None
@@ -1770,7 +1814,7 @@ class Notification(models.Model):
             avatar_url = self.owner.corporation.logo_url()
             ticker = self.owner.corporation.corporation_ticker
 
-        username = '{} Notification'.format(ticker)
+        username = gettext('%(ticker)s Notification') % {'ticker': ticker}
         hook = dhooks_lite.Webhook(
             webhook.url,
             username=username,
@@ -1848,6 +1892,7 @@ class Notification(models.Model):
                         break
         return success
 
+    @translation.override(settings.LANGUAGE_CODE)
     def _gen_timer_structure_reinforcement(self, parsed_text, esi_client):
         """generate timer for structure reinforcements"""
         structure_obj, _ = Structure.objects.get_or_create_esi(
@@ -1859,9 +1904,9 @@ class Notification(models.Model):
                 parsed_text['timeLeft']
             )
         if self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
-            details = "Armor timer"
+            details = gettext('Armor timer')
         elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
-            details = "Final timer"
+            details = gettext('Final timer')
 
         return Timer(
             details=details,
@@ -1874,6 +1919,7 @@ class Notification(models.Model):
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
 
+    @translation.override(settings.LANGUAGE_CODE)
     def _gen_timer_structure_anchoring(self, parsed_text, esi_client):
         """generate timer for structure anchoring"""
         structure_type, _ = EveType.objects.get_or_create_esi(
@@ -1889,7 +1935,7 @@ class Notification(models.Model):
                 parsed_text['timeLeft']
             )
         return Timer(
-            details='Anchor timer',
+            details=gettext('Anchor timer'),
             system=solar_system.name,
             planet_moon='',
             structure=structure_type.name,
@@ -1899,6 +1945,7 @@ class Notification(models.Model):
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
 
+    @translation.override(settings.LANGUAGE_CODE)
     def _gen_timer_sov_reinforcements(self, parsed_text, esi_client):
         """generate timer for sov reinforcements"""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -1916,7 +1963,7 @@ class Notification(models.Model):
 
         eve_time = self._ldap_datetime_2_dt(parsed_text['decloakTime'])
         return Timer(
-            details='Sov timer',
+            details=gettext('Sov timer'),
             system=solar_system.name,
             planet_moon='',
             structure=structure_type_name,
@@ -1926,6 +1973,7 @@ class Notification(models.Model):
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
 
+    @translation.override(settings.LANGUAGE_CODE)
     def _gen_timer_orbital_reinforcements(self, parsed_text, esi_client):
         """generate timer for orbital reinforcements"""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -1940,7 +1988,7 @@ class Notification(models.Model):
             parsed_text['reinforceExitTime']
         )
         return Timer(
-            details='Final timer',
+            details=gettext('Final timer'),
             system=solar_system.name,
             planet_moon=planet.name,
             structure='POCO',
@@ -1950,6 +1998,7 @@ class Notification(models.Model):
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
 
+    @translation.override(settings.LANGUAGE_CODE)
     def _gen_timer_moon_extraction(self, parsed_text, esi_client):
         """generate timer for moon mining extractions"""
         solar_system, _ = \
@@ -1967,7 +2016,7 @@ class Notification(models.Model):
             )
         else:
             eve_time = None
-        details = 'Extraction ready'
+        details = gettext('Extraction ready')
         system = solar_system.name
         planet_moon = moon.name
         structure_type_name = 'Moon Mining Cycle'
@@ -2013,8 +2062,7 @@ class Notification(models.Model):
                         )
                     deleted_count, _ = timer_query.delete()
                     logger.info(
-                        '{}: removed {} timer related '
-                        'to notification'.format(
+                        '{}: removed {} timer related to notification'.format(
                             deleted_count,
                             self.notification_id
                         )
