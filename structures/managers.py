@@ -38,12 +38,24 @@ class EveUniverseManager(models.Manager):
                 esi_client = provider.client
             args = {self.model.esi_pk(): eve_id}
             operation = getattr(esi_client.Universe, self.model.esi_method())(**args)
-            eve_data_obj = operation.result()                        
+            eve_data_obj = operation.result()            
+            fk_mappings = self.model.fk_mappings()
+            defaults = dict()
+            for key, value in eve_data_obj.items():
+                if key in fk_mappings:
+                    key_new, ParentClass = fk_mappings[key]
+                    value_new, _ = ParentClass.objects.get_or_create_esi(
+                        value, esi_client
+                    )                    
+                else:
+                    key_new = key
+                    value_new = value
+                
+                defaults[key_new] = value_new
+
             obj, created = self.update_or_create(
                 id=eve_id,
-                defaults={
-                    'name': eve_data_obj['name']
-                }
+                defaults=defaults
             )
         except Exception as ex:
             logger.warn(addPrefix('Failed to update or create: %s' % ex))

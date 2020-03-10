@@ -38,8 +38,7 @@ from .app_settings import (
 from . import __title__
 from .managers import (
     EveUniverseManager,
-    # EveCategoryManager,
-    EveEntityManager,
+    # EveCategoryManager,    
     EveGroupManager,
     EveMoonManager,
     EvePlanetManager,
@@ -47,6 +46,7 @@ from .managers import (
     EveConstellationManager,
     EveSolarSystemManager,
     EveTypeManager,
+    EveEntityManager,
     StructureManager
 )
 from .utils import \
@@ -476,8 +476,26 @@ class EveUniverse(models.Model):
 
     @classmethod
     def esi_pk(cls):
+        """returns the name of the pk column on ESI"""
         return cls._eve_universe_meta_attr('esi_pk')
 
+    @classmethod
+    def fk_mappings(cls) -> dict:
+        """returns the foreign key mappings for this class
+        
+        'Foreign Key name on ESI': ('model field name', 'related model class')
+        """
+        
+        def convert_name(name: str) -> str:
+            return name.replace('eve_', '') + '_id'
+        
+        mappings = {
+            convert_name(x.name): (x.name, x.related_model)
+            for x in cls._meta.get_fields() 
+            if isinstance(x, models.ForeignKey)
+        }
+        return mappings
+        
     @classmethod
     def esi_method(cls):        
         return cls._eve_universe_meta_attr('esi_method')
@@ -527,7 +545,11 @@ class EveGroup(EveUniverse):
         blank=True
     )
 
-    objects = EveGroupManager()
+    # objects = EveGroupManager()
+
+    class EveUniverseMeta:
+        esi_pk = 'group_id'
+        esi_method = 'get_universe_groups_group_id'
 
 
 class EveType(EveUniverse):
