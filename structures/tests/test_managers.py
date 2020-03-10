@@ -31,11 +31,8 @@ class TestEveCategoryManager(TestCase):
     def setUp(self):
         EveCategory.objects.all().delete()
 
-    @patch('structures.tasks.esi_client_factory', autospec=True)
-    def test_eve_category_get(
-        self, 
-        mock_esi_client_factory
-    ):
+    @patch('esi.clients.SwaggerClient', autospec=True)
+    def test_eve_category_get(self, mock_client):        
         load_entity(EveCategory)
         
         obj, created = EveCategory.objects.get_or_create_esi(65)
@@ -43,27 +40,22 @@ class TestEveCategoryManager(TestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 65)
 
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_eve_category_create_wo_client(
-        self, 
-        mock_esi_client_factory
-    ):                
-        mock_client = Mock()        
-        mock_client.Universe.get_universe_categories_category_id\
-            .return_value.result.return_value = {
+    @patch('esi.clients.SwaggerClient', autospec=True)
+    def test_eve_category_create_wo_client(self, mock_client):        
+        mock_client.from_spec.return_value.Universe\
+            .get_universe_categories_category_id.return_value\
+            .result.return_value = {
                 "id": 65,
                 "name": "Structure"
-            }       
-        mock_esi_client_factory.return_value = mock_client
-        
+            }        
         obj, created = EveCategory.objects.get_or_create_esi(65)
         
         self.assertTrue(created)
         self.assertEqual(obj.id, 65)
         self.assertIsInstance(EveCategory.objects.get(id=65), EveCategory)
     
-    def test_eve_category_create_w_client(self):                
-        mock_client = Mock()        
+    def test_eve_category_create_w_client(self):
+        mock_client = Mock()
         mock_client.Universe.get_universe_categories_category_id\
             .return_value.result.return_value = {
                 "id": 65,
@@ -78,19 +70,14 @@ class TestEveCategoryManager(TestCase):
         self.assertTrue(created)
         self.assertEqual(obj.id, 65)
         self.assertIsInstance(EveCategory.objects.get(id=65), EveCategory)
-
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_eve_category_create_failed(
-        self, 
-        mock_esi_client_factory
-    ):                
-        mock_client = Mock()        
-        mock_client.Universe.get_universe_categories_category_id\
-            .return_value.result.side_effect = RuntimeError()
-        mock_esi_client_factory.return_value = mock_client
+    
+    def test_eve_category_create_failed(self):
+        mock_client = Mock()
+        mock_client.Universe.get_universe_categories_category_id.return_value\
+            .result.side_effect = TypeError()
                 
-        with self.assertRaises(RuntimeError):
-            EveCategory.objects.get_or_create_esi(65)
+        with self.assertRaises(TypeError):
+            EveCategory.objects.get_or_create_esi(65, mock_client)
 
 
 class TestEveGroupManager(TestCase):

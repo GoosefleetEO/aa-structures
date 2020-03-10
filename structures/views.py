@@ -6,13 +6,15 @@ from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect, reverse
 from django.utils.html import format_html, mark_safe, escape
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from allianceauth.eveonline.evelinks import dotlan
 from esi.decorators import token_required
 
-from . import evelinks, tasks, __title__
+from . import tasks, __title__
 from .app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
@@ -154,14 +156,9 @@ def structure_list_data(request):
         else:
             alliance_name = ""
 
-        corporation_url = evelinks.get_entity_profile_url_by_name(
-            evelinks.ESI_CATEGORY_CORPORATION,
-            corporation.corporation_name
-        )
-
         row['owner'] = format_html(
             '<a href="{}">{}</a><br>{}',
-            corporation_url,
+            dotlan.corporation_url(corporation.corporation_name),
             corporation.corporation_name,
             alliance_name
         )
@@ -180,8 +177,7 @@ def structure_list_data(request):
         row['region_name'] = \
             structure.eve_solar_system.eve_constellation.eve_region.name
         row['solar_system_name'] = structure.eve_solar_system.name
-        solar_system_url = evelinks.get_entity_profile_url_by_name(
-            evelinks.ESI_CATEGORY_SOLARSYSTEM,
+        solar_system_url = dotlan.solar_system_url(
             structure.eve_solar_system.name
         )
         if structure.eve_moon:
@@ -279,7 +275,9 @@ def structure_list_data(request):
             elif structure.fuel_expires:
                 fuel_expires_timestamp = structure.fuel_expires.isoformat()
                 if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
-                    fuel_expires_display = timeuntil_str(structure.fuel_expires)
+                    fuel_expires_display = timeuntil_str(
+                        structure.fuel_expires - now()
+                    )
                 else:
                     fuel_expires_display = \
                         structure.fuel_expires.strftime(DATETIME_FORMAT)

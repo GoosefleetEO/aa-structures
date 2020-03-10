@@ -38,7 +38,7 @@ from .app_settings import (
 from . import __title__
 from .managers import (
     EveUniverseManager,
-    EveCategoryManager,
+    # EveCategoryManager,
     EveEntityManager,
     EveGroupManager,
     EveMoonManager,
@@ -459,29 +459,32 @@ class EveUniverse(models.Model):
     )
     """
 
-    # objects = EveUniverseManager()
+    objects = EveUniverseManager()
 
     class Meta:
         abstract = True
 
     @classmethod
+    def _eve_universe_meta_attr(cls, param):
+        if hasattr(cls, 'EveUniverseMeta') and hasattr(cls.EveUniverseMeta, param):
+            return getattr(cls.EveUniverseMeta, param)
+        else:
+            raise ValueError(
+                'Mandatory attribute EveUniverseMeta.%s not defined '
+                'for class %s' % (param, cls.__name__)
+            )
+
+    @classmethod
     def esi_pk(cls):
-        return cls.EveUniverseMeta.esi_pk
+        return cls._eve_universe_meta_attr('esi_pk')
 
     @classmethod
-    def esi_method(cls):
-        return cls.EveUniverseMeta.esi_method
-
-    @classmethod
-    def fetch_object_from_esi(cls, eve_id: int, esi_client: object):
-        return esi_client.Universe\
-            .get_universe_categories_category_id(
-                category_id=eve_id
-            ).result()
-
+    def esi_method(cls):        
+        return cls._eve_universe_meta_attr('esi_method')
+        
     def __repr__(self):
-        return '{}:{}-{}'.format(
-            self.__name,
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
             self.id,
             self.name
         )
@@ -498,7 +501,7 @@ class EveCategory(EveUniverse):
     EVE_CATEGORY_ID_STARBASE = 23
     EVE_CATEGORY_ID_STRUCTURE = 65
 
-    objects = EveCategoryManager()
+    # objects = EveCategoryManager()
 
     @property
     def is_starbase(self):
