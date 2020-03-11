@@ -18,7 +18,8 @@ from .testdata import (
     create_structures,
     set_owner_character
 )
-from ..models import (
+from ..models import (    
+    EveUniverse,
     EveCategory,
     EveGroup,
     EveType,
@@ -288,6 +289,58 @@ class TestOwner(TestCase):
                 'esi-assets.read_corporation_assets.v1'
             }
         )
+
+
+class TestEveUniverse(TestCase):
+
+    def test_field_names_1(self):
+        expected = {'name'}
+        self.assertEqual(EveCategory.field_names_not_pk(), expected)
+
+    def test_field_names_2(self):
+        expected = {'name', 'eve_category'}
+        self.assertEqual(EveGroup.field_names_not_pk(), expected)
+
+    def test_field_names_3(self):
+        expected = {'name', 'eve_constellation', 'security_status'}
+        self.assertEqual(EveSolarSystem.field_names_not_pk(), expected)
+
+    def test_fk_mappings(self):
+        expected = {
+            'eve_category': ('category_id', EveCategory)
+        }
+        self.assertEqual(EveGroup.fk_mappings(), expected)
+
+    def test_eve_universe_meta_attr_normal(self):
+        class MyEveModel(EveUniverse):
+            class EveUniverseMeta:
+                esi_pk = 'my_id' 
+
+        expected = 'my_id'
+        self.assertEqual(
+            MyEveModel._eve_universe_meta_attr('esi_pk'), expected
+        )
+    
+    def test_eve_universe_meta_attr_key_not_defined(self):
+        class MyEveModel(EveUniverse):
+            class EveUniverseMeta:
+                not_pk = 'my_id'
+                
+        self.assertIsNone(MyEveModel._eve_universe_meta_attr('esi_pk'))
+
+    def test_eve_universe_meta_attr_key_not_defined_but_mandatory(self):
+        class MyEveModel(EveUniverse):
+            pass
+        
+        with self.assertRaises(ValueError):
+            MyEveModel._eve_universe_meta_attr('esi_pk', is_mandatory=True)
+
+    def test_eve_universe_meta_attr_class_not_defined(self):
+        class MyEveModel(EveUniverse):
+            pass
+        
+        with self.assertRaises(ValueError):
+            MyEveModel._eve_universe_meta_attr('esi_pk')
 
 
 class TestEveType(TestCase):

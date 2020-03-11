@@ -39,13 +39,13 @@ from . import __title__
 from .managers import (
     EveUniverseManager,
     # EveCategoryManager,    
-    EveGroupManager,
-    EveMoonManager,
-    EvePlanetManager,
-    EveRegionManager,
-    EveConstellationManager,
-    EveSolarSystemManager,
-    EveTypeManager,
+    # EveGroupManager,
+    # EveMoonManager,
+    # EvePlanetManager,
+    # EveRegionManager,
+    # EveConstellationManager,
+    # EveSolarSystemManager,
+    # EveTypeManager,
     EveEntityManager,
     StructureManager
 )
@@ -465,40 +465,89 @@ class EveUniverse(models.Model):
         abstract = True
 
     @classmethod
-    def _eve_universe_meta_attr(cls, param):
-        if hasattr(cls, 'EveUniverseMeta') and hasattr(cls.EveUniverseMeta, param):
-            return getattr(cls.EveUniverseMeta, param)
-        else:
+    def _eve_universe_meta_attr(
+        cls, attr_name: str, is_mandatory: bool = False
+    ):
+        """returns value of an attribute from EveUniverseMeta or None"""
+        if not hasattr(cls, 'EveUniverseMeta'):
             raise ValueError(
-                'Mandatory attribute EveUniverseMeta.%s not defined '
-                'for class %s' % (param, cls.__name__)
+                'EveUniverseMeta not defined for class %s' % cls.__name__
             )
+    
+        if hasattr(cls.EveUniverseMeta, attr_name):
+            value = getattr(cls.EveUniverseMeta, attr_name)
+        else:
+            value = None
+            if is_mandatory:
+                raise ValueError(
+                    'Mandatory attribute EveUniverseMeta.%s not defined '
+                    'for class %s' % (attr_name, cls.__name__)
+                )
+        return value
 
     @classmethod
     def esi_pk(cls):
-        """returns the name of the pk column on ESI"""
-        return cls._eve_universe_meta_attr('esi_pk')
+        """returns the name of the pk column on ESI that must exist"""
+        return cls._eve_universe_meta_attr('esi_pk', is_mandatory=True)
+       
+    @classmethod
+    def esi_method(cls):        
+        return cls._eve_universe_meta_attr('esi_method', is_mandatory=True)
+                    
+    @classmethod
+    def field_names_not_pk(cls) -> set:
+        """returns field names excluding PK and auto created fields"""
+        return {
+            x.name for x in cls._meta.get_fields()
+            if not x.auto_created and (
+                not hasattr(x, 'primary_key') or x.primary_key is False
+            )
+        }
+
+    @classmethod
+    def child_mappings(cls) -> dict:
+        """returns the mapping of children for this class"""
+        mappings = cls._eve_universe_meta_attr('children')
+        if mappings is None:
+            return dict()
+        else:
+            return mappings
+
+    @classmethod
+    def field_mappings(cls) -> dict:
+        """returns the mappings for model fields vs. esi fields"""        
+        mappings = cls._eve_universe_meta_attr('field_mappings')
+        if mappings is None:
+            return dict()
+        else:
+            return mappings
 
     @classmethod
     def fk_mappings(cls) -> dict:
         """returns the foreign key mappings for this class
         
-        'Foreign Key name on ESI': ('model field name', 'related model class')
+        'model field name': ('Foreign Key name on ESI', 'related model class')
         """
         
-        def convert_name(name: str) -> str:
-            return name.replace('eve_', '') + '_id'
+        def convert_to_esi_name(name: str, extra_fk_mappings: dict) -> str:
+            if name in extra_fk_mappings:
+                return extra_fk_mappings[name]
+            else:
+                return name.replace('eve_', '') + '_id'
         
+        extra_fk_mappings = cls._eve_universe_meta_attr('fk_mappings')
+        if not extra_fk_mappings:
+            extra_fk_mappings = {}
+
         mappings = {
-            convert_name(x.name): (x.name, x.related_model)
+            x.name: (
+                convert_to_esi_name(x.name, extra_fk_mappings), 
+                x.related_model
+            )
             for x in cls._meta.get_fields() 
             if isinstance(x, models.ForeignKey)
         }
         return mappings
-        
-    @classmethod
-    def esi_method(cls):        
-        return cls._eve_universe_meta_attr('esi_method')
         
     def __repr__(self):
         return '{}(id={}, name=\'{}\')'.format(
@@ -518,8 +567,6 @@ class EveCategory(EveUniverse):
     EVE_CATEGORY_ID_ORBITAL = 46
     EVE_CATEGORY_ID_STARBASE = 23
     EVE_CATEGORY_ID_STRUCTURE = 65
-
-    # objects = EveCategoryManager()
 
     @property
     def is_starbase(self):
@@ -545,8 +592,6 @@ class EveGroup(EveUniverse):
         blank=True
     )
 
-    # objects = EveGroupManager()
-
     class EveUniverseMeta:
         esi_pk = 'group_id'
         esi_method = 'get_universe_groups_group_id'
@@ -564,8 +609,10 @@ class EveType(EveUniverse):
     
     eve_group = models.ForeignKey(EveGroup, on_delete=models.CASCADE)
 
-    objects = EveTypeManager()
-
+    class EveUniverseMeta:
+        esi_pk = 'type_id'
+        esi_method = 'get_universe_types_type_id'
+    
     @property
     def is_poco(self):
         return self.id == self.EVE_TYPE_ID_POCO
@@ -600,18 +647,19 @@ class EveType(EveUniverse):
 class EveRegion(EveUniverse):
     """region in Eve Online"""
     
-    objects = EveRegionManager()
-
-    def __str__(self):
-        return self.name
-
+    class EveUniverseMeta:
+        esi_pk = 'region_id'
+        esi_method = 'get_universe_regions_region_id'
+    
 
 class EveConstellation(EveUniverse):
     """constellation in Eve Online"""
 
     eve_region = models.ForeignKey(EveRegion, on_delete=models.CASCADE)
 
-    objects = EveConstellationManager()
+    class EveUniverseMeta:
+        esi_pk = 'constellation_id'
+        esi_method = 'get_universe_constellations_constellation_id'
 
 
 class EveSolarSystem(EveUniverse):
@@ -623,7 +671,12 @@ class EveSolarSystem(EveUniverse):
     )
     security_status = models.FloatField()
 
-    objects = EveSolarSystemManager()
+    class EveUniverseMeta:
+        esi_pk = 'system_id'
+        esi_method = 'get_universe_systems_system_id'
+        children = {
+            'planets': 'EvePlanet'
+        }
 
 
 class EveMoon(EveUniverse):  
@@ -652,7 +705,17 @@ class EveMoon(EveUniverse):
         on_delete=models.CASCADE
     )
 
-    objects = EveMoonManager()
+    class EveUniverseMeta:
+        esi_pk = 'moon_id'
+        esi_method = 'get_universe_moons_moon_id'
+        fk_mappings = {
+            'eve_solar_system': 'system_id'
+        }
+        field_mappings = {            
+            'position_x': ('position', 'x'),
+            'position_y': ('position', 'y'),
+            'position_z': ('position', 'z')
+        }
 
 
 class EvePlanet(EveUniverse):
@@ -685,7 +748,17 @@ class EvePlanet(EveUniverse):
         on_delete=models.CASCADE
     )
 
-    objects = EvePlanetManager()
+    class EveUniverseMeta:
+        esi_pk = 'planet_id'
+        esi_method = 'get_universe_planets_planet_id'
+        fk_mappings = {
+            'eve_solar_system': 'system_id'
+        }
+        field_mappings = {            
+            'position_x': ('position', 'x'),
+            'position_y': ('position', 'y'),
+            'position_z': ('position', 'z')
+        }
 
 
 class StructureTag(models.Model):

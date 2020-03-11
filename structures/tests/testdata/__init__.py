@@ -120,9 +120,9 @@ def esi_get_universe_planets_planet_id(planet_id):
     entity['system_id'] = entity.pop('eve_solar_system_id')
     entity['type_id'] = entity.pop('eve_type_id')    
     entity['position'] = {
-        'x': 0,
-        'y': 0,
-        'z': 0
+        'x': 1,
+        'y': 2,
+        'z': 3
     }
     mock_operation = Mock()
     mock_operation.result.return_value = entity
