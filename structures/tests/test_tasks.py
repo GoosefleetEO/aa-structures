@@ -3,14 +3,13 @@ from unittest.mock import Mock, patch
 from bravado.exception import HTTPBadGateway
 
 from django.contrib.auth.models import User, Permission 
-from django.test import TestCase
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.timerboard.models import Timer
 from esi.errors import TokenExpiredError, TokenInvalidError
 
-from . import set_logger
+from ..utils import set_test_logger, NoSocketsTestCase
 from .. import tasks
 from ..models import (
     EveCategory,
@@ -64,7 +63,7 @@ from .testdata import \
 
 
 MODULE_PATH = 'structures.tasks'
-logger = set_logger(MODULE_PATH, __file__)
+logger = set_test_logger(MODULE_PATH, __file__)
 
 
 def _get_invalid_owner_pk():
@@ -75,11 +74,8 @@ def _get_invalid_owner_pk():
         return 99
 
 
-class TestSyncStructures(TestCase):
+class TestSyncStructures(NoSocketsTestCase):
     
-    # note: setup is making calls to ESI to get full info for entities
-    # all ESI calls in the tested module are mocked though
-
     def setUp(self):            
         # reset data that might be overridden
         esi_get_corporations_corporation_id_structures.override_data = None
@@ -141,10 +137,7 @@ class TestSyncStructures(TestCase):
 
     # test expired token    
     @patch(MODULE_PATH + '.Token')    
-    def test_check_expired_token(
-            self,             
-            mock_Token
-    ):                        
+    def test_check_expired_token(self, mock_Token):                        
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
                         
         # create test data
@@ -171,10 +164,7 @@ class TestSyncStructures(TestCase):
     
     # test invalid token    
     @patch(MODULE_PATH + '.Token')
-    def test_check_invalid_token(
-            self,             
-            mock_Token
-    ):
+    def test_check_invalid_token(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
                         
         # create test data
@@ -206,10 +196,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_structures_for_owner_normal(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token,
-        mock_notify
+        self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
         mock_client.Corporation\
@@ -300,9 +287,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_structures_for_owner_remove_olds(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token
+        self, mock_esi_client_factory, mock_Token
     ):                       
         mock_client = Mock()        
         mock_client.Corporation\
@@ -354,9 +339,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_structures_for_owner_keep_tags(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token
+        self, mock_esi_client_factory, mock_Token
     ):                       
         mock_client = Mock()        
         mock_client.Corporation\
@@ -413,9 +396,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_structures_for_owner_empty_and_no_user_report(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token
+        self, mock_esi_client_factory, mock_Token
     ):                               
         mock_client = Mock()        
         mock_client.Corporation\
@@ -472,10 +453,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_structures_for_owner_user_report_error(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token,
-        mock_notify
+        self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
         mock_client.Corporation\
@@ -525,9 +503,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_structures_for_owner_remove_services(
-        self, 
-        mock_esi_client_factory,             
-        mock_Token
+        self, mock_esi_client_factory, mock_Token
     ):                       
         mock_client = Mock()        
         mock_client.Corporation\
@@ -588,10 +564,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_pocos_no_planet_match(
-        self,         
-        mock_esi_client_factory,
-        mock_Token,
-        mock_notify
+        self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
         mock_client.Corporation\
@@ -645,10 +618,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_pocos_no_asset_name_match(
-        self,
-        mock_esi_client_factory,
-        mock_Token,
-        mock_notify
+        self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
         mock_client.Corporation\
@@ -703,7 +673,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_storing_structures_error(
         self, 
-        mock_esi_client_factory,             
+        mock_esi_client_factory,
         mock_Token,
         mock_update_or_create_from_dict
     ):                       
@@ -772,7 +742,7 @@ class TestSyncStructures(TestCase):
         self.assertEqual(args[0], owner_2001.pk)        
 
 
-class TestSyncNotifications(TestCase):    
+class TestSyncNotifications(NoSocketsTestCase):    
 
     def setUp(self): 
         create_structures()
@@ -798,10 +768,7 @@ class TestSyncNotifications(TestCase):
     
     # test expired token    
     @patch(MODULE_PATH + '.Token')    
-    def test_check_expired_token(
-        self,             
-        mock_Token
-    ):                        
+    def test_check_expired_token(self, mock_Token):                        
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
                         
         # create test data
@@ -824,10 +791,7 @@ class TestSyncNotifications(TestCase):
     
     # test invalid token    
     @patch(MODULE_PATH + '.Token')
-    def test_check_invalid_token(
-        self,             
-        mock_Token
-    ):                        
+    def test_check_invalid_token(self, mock_Token):                        
         mock_Token.objects.filter.side_effect = TokenInvalidError()
          
         # create test data
@@ -858,10 +822,7 @@ class TestSyncNotifications(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_normal(
-            self, 
-            mock_esi_client_factory,             
-            mock_Token,
-            mock_notify
+        self, mock_esi_client_factory, mock_Token, mock_notify
     ):        
         mock_client = Mock()       
         mock_client.Character\
@@ -918,9 +879,7 @@ class TestSyncNotifications(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_esi_error(
-            self, 
-            mock_esi_client_factory,             
-            mock_Token
+        self, mock_esi_client_factory, mock_Token
     ):
         # create mocks        
         def get_characters_character_id_notifications_error(*args, **kwargs):
@@ -954,10 +913,7 @@ class TestSyncNotifications(TestCase):
 
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', False)
     @patch(MODULE_PATH + '.fetch_notifications_for_owner')
-    def test_fetch_all_notifications(
-        self, 
-        mock_fetch_notifications_owner
-    ):
+    def test_fetch_all_notifications(self, mock_fetch_notifications_owner):
         Owner.objects.all().delete()
         owner_2001 = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
@@ -998,7 +954,7 @@ class TestSyncNotifications(TestCase):
         self.assertEqual(args[0], owner_2001.pk)        
 
 
-class TestForwardNotifications(TestCase):    
+class TestForwardNotifications(NoSocketsTestCase):    
 
     def setUp(self):         
         create_structures()
@@ -1018,10 +974,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
     def test_run_no_sync_char(
-        self,         
-        mock_esi_client_factory,
-        mock_send_to_webhook,
-        mock_token
+        self, mock_esi_client_factory, mock_send_to_webhook, mock_token
     ):    
         self.owner.character = None
         self.owner.save()
@@ -1049,10 +1002,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
     def test_check_expired_token(
-        self,         
-        mock_esi_client_factory,
-        mock_send_to_webhook,
-        mock_token
+        self, mock_esi_client_factory, mock_send_to_webhook, mock_token
     ):  
         mock_token.objects.filter.side_effect = TokenExpiredError()        
                         
@@ -1080,10 +1030,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
     def test_check_invalid_token(
-        self,         
-        mock_esi_client_factory,
-        mock_send_to_webhook,
-        mock_token
+        self, mock_esi_client_factory, mock_send_to_webhook, mock_token
     ):   
         mock_token.objects.filter.side_effect = TokenInvalidError()
                         
@@ -1112,10 +1059,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
     def test_send_new_notifications_normal_with_NPCs(
-        self, 
-        mock_send_to_webhook, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         logger.debug('test_send_new_notifications_normal')
         # create test data
@@ -1142,10 +1086,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
     def test_send_new_notifications_normal_wo_NPCs(
-        self, 
-        mock_send_to_webhook, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         logger.debug('test_send_new_notifications_normal')
         # create test data
@@ -1174,10 +1115,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch('structures.models.Notification.send_to_webhook', autospec=True)    
     def test_send_new_notifications_to_multiple_webhooks(
-        self, 
-        mock_send_to_webhook, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         # create test data
         p = Permission.objects.filter(            
@@ -1268,10 +1206,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch('structures.models.Notification.send_to_webhook', autospec=True)    
     def test_send_new_notifications_to_multiple_webhooks_2(
-        self, 
-        mock_send_to_webhook, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         # create test data
         p = Permission.objects.filter(            
@@ -1371,10 +1306,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_new_notifications_no_structures_preloaded(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_execute, mock_esi_client_factory, mock_token
     ):        
         logger.debug('test_send_new_notifications_no_structures_preloaded')
         mock_client = Mock()        
@@ -1414,10 +1346,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_notifications(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_execute, mock_esi_client_factory, mock_token
     ):
         logger.debug('test_send_notifications')
         ids = {1000000401, 1000000402, 1000000403}
@@ -1433,10 +1362,7 @@ class TestForwardNotifications(TestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_test_notification(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory,
-        mock_token
+        self, mock_execute, mock_esi_client_factory, mock_token
     ):        
         logger.debug('test_send_test_notification')
         mock_response = Mock()
@@ -1471,8 +1397,7 @@ class TestForwardNotifications(TestCase):
 
     @patch(MODULE_PATH + '.send_new_notifications_for_owner')
     def test_send_all_new_notifications_not_active(
-        self, 
-        mock_send_new_notifications_for_owner
+        self, mock_send_new_notifications_for_owner
     ):
         """no notifications are sent for non active owners"""
         Owner.objects.all().delete()

@@ -20,6 +20,7 @@ from esi.models import Token
 
 from . import __title__
 from .app_settings import (
+    STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
     STRUCTURES_FEATURE_STARBASES,
@@ -236,7 +237,7 @@ def _fetch_upwell_structures(
             structure['name'] = name
             structure['position'] = structure_info['position']
 
-    if settings.DEBUG:
+    if STRUCTURES_DEVELOPER_MODE:
         _store_raw_data('structures', structures, corporation_id)
 
     return structures
@@ -368,7 +369,7 @@ def _fetch_custom_offices(
 
             structures.append(structure)
 
-    if settings.DEBUG:
+    if STRUCTURES_DEVELOPER_MODE:
         _store_raw_data('customs_offices', structures, corporation_id)
 
     return structures
@@ -449,7 +450,7 @@ def _fetch_starbases(
 
             structures.append(structure)
 
-    if settings.DEBUG:
+    if STRUCTURES_DEVELOPER_MODE:
         _store_raw_data('starbases', structures, corporation_id)
 
     return structures
@@ -614,7 +615,7 @@ def fetch_notifications_for_owner(
                     character_id=token.character_id
                 ).result()
 
-            if settings.DEBUG:
+            if STRUCTURES_DEVELOPER_MODE:
                 _store_raw_data(
                     'notifications',
                     notifications,

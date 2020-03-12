@@ -15,7 +15,8 @@ STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED = \
 STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED = \
     clean_setting('STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', False)
 
-# Enables features for developers, e.g. write access to all models in admin
+# Enables features for developers
+# e.g. write access to all models in admin and writing raw data received from ESI
 # UNDOCUMENTED SETTING
 STRUCTURES_DEVELOPER_MODE = \
     clean_setting('STRUCTURES_DEVELOPER_MODE', False)

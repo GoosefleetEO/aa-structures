@@ -1,12 +1,12 @@
 from django.test import TestCase
 
-from . import set_logger
+from ..utils import set_test_logger
 from ..models import Structure
 from .testdata import create_structures
 
 
 MODULE_PATH = 'structures.signals'
-logger = set_logger(MODULE_PATH, __file__)
+logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestSignals(TestCase):

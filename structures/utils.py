@@ -1,3 +1,4 @@
+import socket
 from datetime import timedelta
 import logging
 import os
@@ -8,6 +9,7 @@ from django.contrib.messages.constants  \
     import DEBUG, ERROR, SUCCESS, WARNING, INFO
 from django.contrib import messages
 from django.db.models import Q
+from django.test import TestCase
 from django.utils.functional import lazy
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
@@ -285,3 +287,26 @@ def timeuntil_str(duration: timedelta) -> str:
             strings.append('{}{}'.format(period_value, period_name))
 
     return ' '.join(strings)
+
+
+class SocketAccessError(Exception):
+    pass
+
+
+class NoSocketsTestCase(TestCase):
+    """Variation of TestCase class that prevents any use of sockets"""
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.socket_original = socket.socket
+        socket.socket = cls.guard
+        return super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        socket.socket = cls.socket_original
+        return super().tearDownClass()
+
+    @staticmethod
+    def guard(*args, **kwargs):
+        raise SocketAccessError('Attempted to access network')

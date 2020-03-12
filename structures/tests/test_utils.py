@@ -1,14 +1,23 @@
 from datetime import timedelta
 from unittest.mock import Mock, patch
 
+import requests
+
 from django.test import TestCase
 
-from ..utils import clean_setting, messages_plus, chunks, timeuntil_str
-from . import set_logger
+from ..utils import (
+    clean_setting, 
+    messages_plus, 
+    chunks, 
+    timeuntil_str, 
+    NoSocketsTestCase, 
+    SocketAccessError
+)
+from ..utils import set_test_logger
 
 
 MODULE_PATH = 'structures.utils'
-logger = set_logger(MODULE_PATH, __file__)
+logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestMessagePlus(TestCase):
@@ -185,3 +194,12 @@ class TestTimeUntil(TestCase):
         )
         expected = '0h 0m 10s'
         self.assertEqual(timeuntil_str(duration), expected)
+
+
+class TestNoSocketsTestCase(NoSocketsTestCase):
+
+    def test_raises_exception_on_attempted_network_access(self):
+        
+        with self.assertRaises(SocketAccessError):
+            requests.get('https://www.google.com')
+

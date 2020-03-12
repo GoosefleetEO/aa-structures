@@ -13,21 +13,45 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 class EveUniverseManager(models.Manager):
 
-    def get_or_create_esi(self, eve_id: int) -> tuple:
-        """gets or creates eve universe object with data fetched from ESI"""        
+    def get_or_create_esi(
+        self, eve_id: int, include_children: bool = False
+    ) -> tuple:
+        """gets or creates eve universe object fetched from ESI if needed
+        
+        eve_id: Eve Online ID of object
+
+        include_children: When true will also get/create
+            all child objects if any (e.g. planets for solar systems)
+        
+        Returns: object, created        
+        """
         try:
             obj = self.get(id=eve_id)
             created = False        
         except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(eve_id)
+            obj, created = self.update_or_create_esi(
+                eve_id, include_children=include_children, update_related=False
+            )
 
         return obj, created
 
-    def update_or_create_esi(self, eve_id: int) -> tuple:
-        """updates or creates eve object with data fetched from ESI"""        
-        addPrefix = make_logger_prefix('{}:{}'.format(
-            self.model.__name__, eve_id
-        ))
+    def update_or_create_esi(
+        self, eve_id: int,         
+        include_children: bool = False,
+        update_related: bool = False,
+    ) -> tuple:
+        """updates or creates Eve Universe object with data fetched from ESI
+        
+        eve_id: Eve Online ID of object
+
+        include_children: When true will also get/create
+            all child objects if any (e.g. planets for solar systems)
+
+        update_related: When true will update/create parent and child objects
+        
+        Returns: object, created
+        """
+        addPrefix = make_logger_prefix('%s:%d' % (self.model.__name__, eve_id))
         logger.info(addPrefix('Fetching data from ESI'))
         try:            
             esi_client = provider.client
@@ -40,9 +64,14 @@ class EveUniverseManager(models.Manager):
             for key in self.model.field_names_not_pk():
                 if key in fk_mappings:
                     esi_key, ParentClass = fk_mappings[key]
-                    value, _ = ParentClass.objects.get_or_create_esi(
-                        eve_data_obj[esi_key]
-                    )
+                    if not update_related:
+                        value, _ = ParentClass.objects.get_or_create_esi(
+                            eve_data_obj[esi_key]
+                        )
+                    else:
+                        value, _ = ParentClass.objects.update_or_create_esi(
+                            eve_data_obj[esi_key]
+                        )
                 else:
                     if key in field_mappings:
                         mapping = field_mappings[key]
@@ -61,11 +90,11 @@ class EveUniverseManager(models.Manager):
                 id=eve_id,
                 defaults=defaults
             )            
-            for key, child_class in self.model.child_mappings().items():
-                ChildClass = locate(__package__ + '.models.' + child_class)
-                for eve_data_obj_2 in eve_data_obj[key]:
-                    eve_id = eve_data_obj_2[ChildClass.esi_pk()]
-                    ChildClass.objects.get_or_create_esi(eve_id)
+            if include_children:
+                for key, child_class in self.model.child_mappings().items():
+                    self._get_or_create_children(
+                        child_class, eve_data_obj, key, update_related
+                    )
             
         except Exception as ex:
             logger.warn(addPrefix('Failed to update or create: %s' % ex))
@@ -73,11 +102,27 @@ class EveUniverseManager(models.Manager):
 
         return obj, created
 
+    def _get_or_create_children(
+        self, child_class, eve_data_obj, key, update_related
+    ):
+        ChildClass = locate(__package__ + '.models.' + child_class)
+        for eve_data_obj_2 in eve_data_obj[key]:
+            eve_id = eve_data_obj_2[ChildClass.esi_pk()]
+            if not update_related:
+                ChildClass.objects.get_or_create_esi(eve_id)
+            else:
+                ChildClass.objects.update_or_create_esi(eve_id)
+
 
 class EveEntityManager(models.Manager):
 
     def get_or_create_esi(self, eve_entity_id: int) -> tuple:
-        """gets or creates EveEntity obj with data fetched from ESI"""
+        """gets or creates EveEntity obj with data fetched from ESI if needed
+        
+        eve_id: Eve Online ID of object
+        
+        Returns: object, created        
+        """
         from .models import EveEntity
         try:
             obj = self.get(id=eve_entity_id)
@@ -88,13 +133,18 @@ class EveEntityManager(models.Manager):
         return obj, created
 
     def update_or_create_esi(self, eve_entity_id: int) -> tuple:
-        """updates or creates eve_group object with data fetched from ESI"""
+        """updates or creates EveEntity object with data fetched from ESI
+        
+        eve_id: Eve Online ID of object
+        
+        Returns: object, created        
+        """
         from .models import EveEntity
 
-        addPrefix = make_logger_prefix(eve_entity_id)
+        addPrefix = make_logger_prefix('EveEntity:%d' % eve_entity_id)
         logger.info(addPrefix('Trying to fetch eve entity from ESI'))
         esi_client = provider.client
-        try:            
+        try:
             response = esi_client.Universe.post_universe_names(
                 ids=[eve_entity_id]
             ).result()
@@ -128,17 +178,43 @@ class StructureManager(models.Manager):
     def get_or_create_esi(
         self, structure_id: int, esi_client: object
     ) -> tuple:
-        """get or create a structure from ESI for given structure ID"""
-        from .models import Structure, Owner
+        """get or create a structure with data from ESI if needed
+        
+        structure_id: Structure ID of object in Eve Online
+
+        esi_client: ESI client with scope: esi-universe.read_structures.v1
+        
+        Returns: object, created
+        """
+        from .models import Structure
 
         try:
             obj = Structure.objects.get(id=structure_id)
             created = False
         except Structure.DoesNotExist:            
+            obj, created = self.update_or_create_esi(structure_id, esi_client)
+        return obj, created
+
+    def update_or_create_esi(
+        self, structure_id: int, esi_client: object
+    ) -> tuple:
+        """update or create a structure from ESI for given structure ID
+        
+        structure_id: Structure ID of object in Eve Online
+
+        esi_client: ESI client with scope: esi-universe.read_structures.v1
+        
+        Returns: object, created
+        """
+        from .models import Owner
+
+        addPrefix = make_logger_prefix(structure_id)
+        logger.info(addPrefix('Trying to fetch structure from ESI'))
+        
+        try:
             if esi_client is None:
                 raise ValueError(
-                    'Can not fetch structure with id %d '
-                    'without an esi client' % structure_id
+                    'Can not fetch structure without an esi client'
                 )
             structure_info = \
                 esi_client.Universe.get_universe_structures_structure_id(
@@ -157,6 +233,11 @@ class StructureManager(models.Manager):
             obj, created = self.update_or_create_from_dict(
                 structure=structure, owner=owner
             )
+        
+        except Exception as ex:
+            logger.warn(addPrefix('Failed to load structure: '.format(ex)))
+            raise ex
+
         return obj, created
 
     def update_or_create_from_dict(

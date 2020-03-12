@@ -11,7 +11,7 @@ from allianceauth.eveonline.models \
     import EveCharacter, EveCorporationInfo, EveAllianceInfo
 from allianceauth.timerboard.models import Timer
 
-from . import set_logger
+from ..utils import set_test_logger, NoSocketsTestCase
 from .testdata import (
     load_entities,
     load_notification_entities,
@@ -38,10 +38,10 @@ from ..models import (
 )
 
 MODULE_PATH = 'structures.models'
-logger = set_logger(MODULE_PATH, __file__)
+logger = set_test_logger(MODULE_PATH, __file__)
 
 
-class TestWebhook(TestCase):
+class TestWebhook(NoSocketsTestCase):
 
     def setUp(self):
         self.my_webhook = Webhook(
@@ -293,6 +293,24 @@ class TestOwner(TestCase):
 
 class TestEveUniverse(TestCase):
 
+    class MyEveModelNormal(EveUniverse):
+        class Meta:
+            managed = False
+
+        class EveUniverseMeta:
+            esi_pk = 'my_id'
+            
+    class MyEveModelNoPk(EveUniverse):
+        class Meta:
+            managed = False
+                
+        class EveUniverseMeta:
+            not_pk = 'my_id'
+        
+    class MyEveModelEmpty(EveUniverse):
+        class Meta:
+            managed = False
+                
     def test_field_names_1(self):
         expected = {'name'}
         self.assertEqual(EveCategory.field_names_not_pk(), expected)
@@ -305,42 +323,27 @@ class TestEveUniverse(TestCase):
         expected = {'name', 'eve_constellation', 'security_status'}
         self.assertEqual(EveSolarSystem.field_names_not_pk(), expected)
 
-    def test_fk_mappings(self):
+    def test_fk_mappings_1(self):
         expected = {
             'eve_category': ('category_id', EveCategory)
         }
         self.assertEqual(EveGroup.fk_mappings(), expected)
 
     def test_eve_universe_meta_attr_normal(self):
-        class MyEveModel(EveUniverse):
-            class EveUniverseMeta:
-                esi_pk = 'my_id' 
-
         expected = 'my_id'
         self.assertEqual(
-            MyEveModel._eve_universe_meta_attr('esi_pk'), expected
+            self.MyEveModelNormal._eve_universe_meta_attr('esi_pk'), expected
         )
     
-    def test_eve_universe_meta_attr_key_not_defined(self):
-        class MyEveModel(EveUniverse):
-            class EveUniverseMeta:
-                not_pk = 'my_id'
-                
-        self.assertIsNone(MyEveModel._eve_universe_meta_attr('esi_pk'))
+    def test_eve_universe_meta_attr_key_not_defined(self):                
+        self.assertIsNone(self.MyEveModelNoPk._eve_universe_meta_attr('esi_pk'))
 
-    def test_eve_universe_meta_attr_key_not_defined_but_mandatory(self):
-        class MyEveModel(EveUniverse):
-            pass
-        
+    def test_eve_universe_meta_attr_key_not_defined_but_mandatory(self):        
         with self.assertRaises(ValueError):
-            MyEveModel._eve_universe_meta_attr('esi_pk', is_mandatory=True)
+            self.MyEveModelEmpty._eve_universe_meta_attr('esi_pk', is_mandatory=True)
 
-    def test_eve_universe_meta_attr_class_not_defined(self):
-        class MyEveModel(EveUniverse):
-            pass
-        
-        with self.assertRaises(ValueError):
-            MyEveModel._eve_universe_meta_attr('esi_pk')
+    def test_eve_universe_meta_attr_class_not_defined(self):                
+        self.assertIsNone(self.MyEveModelNoPk._eve_universe_meta_attr('esi_pk'))
 
 
 class TestEveType(TestCase):
@@ -626,7 +629,7 @@ class TestStructureNoSetup(TestCase):
         )
   
 
-class TestNotification(TestCase):
+class TestNotification(NoSocketsTestCase):
     
     def setUp(self):         
         create_structures()
@@ -635,7 +638,7 @@ class TestNotification(TestCase):
         
         self.webhook = Webhook.objects.create(
             name='Test',
-            url='dummy-url'
+            url='http://www.example.com/dummy/'
         )
         self.owner.webhooks.add(self.webhook)
         self.owner.save()
@@ -717,7 +720,7 @@ class TestNotification(TestCase):
     @patch(MODULE_PATH + '.provider')
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_all_notification_types(
-        self, mock_execute, mock_provider
+        self, mock_execute, mock_provider        
     ):                                
         logger.debug('test_send_to_webhook_normal')
         mock_provider.client = Mock(side_effect=RuntimeError)  # noqa        

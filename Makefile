@@ -10,3 +10,7 @@ tx_upload:
 compilemessages:
 	rm -rf .tox
 	django-admin compilemessages
+
+coverage:
+	coverage run ../myauth/manage.py test structures --keepdb --failfast --debug-mode && coverage html && coverage report
+	

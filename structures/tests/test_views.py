@@ -3,47 +3,43 @@ import json
 from unittest.mock import patch, Mock
 from urllib.parse import urlparse, parse_qs
 
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.models \
-    import EveCharacter, EveCorporationInfo, EveAllianceInfo
+from allianceauth.eveonline.models import (
+    EveCharacter, EveCorporationInfo, EveAllianceInfo
+)
 from esi.models import Token
 
-from . import set_logger
+from .auth_utils_2 import AuthUtils2
 from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
 )
+from ..models import Owner, StructureTag, Webhook
 from .testdata import \
     create_structures, set_owner_character, load_entities, create_user
-from ..models import Owner, StructureTag, Webhook
+from ..utils import set_test_logger, NoSocketsTestCase
 from .. import views
 
 
 MODULE_PATH = 'structures.views'
-logger = set_logger(MODULE_PATH, __file__)
+logger = set_test_logger(MODULE_PATH, __file__)
 
 
-class TestStructureList(TestCase):
+class TestStructureList(NoSocketsTestCase):
     
     def setUp(self):                
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
-               
-        # user needs basic permission to access the app
-        p = Permission.objects.get(
-            codename='basic_access', 
-            content_type__app_label='structures'
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.basic_access', self.user
         )
-        self.user.user_permissions.add(p)
-        self.user.save()
-
         self.factory = RequestFactory()
     
     def test_basic_access_main_view(self):
@@ -88,15 +84,10 @@ class TestStructureList(TestCase):
             }
         )
         
-    def test_perm_view_alliance_structures_normal(self):
-        # user needs permission to access view
-        p = Permission.objects.get(
-            codename='view_alliance_structures', 
-            content_type__app_label='structures'
+    def test_perm_view_alliance_structures_normal(self):        
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.view_alliance_structures', self.user
         )
-        self.user.user_permissions.add(p)
-        self.user.save()
-
         request = self.factory.get(reverse('structures:structure_list_data'))
         request.user = self.user
         response = views.structure_list_data(request)
@@ -130,20 +121,13 @@ class TestStructureList(TestCase):
             owner_hash='x2',
             user=user
         )
-        user.profile.main_character = character
-        
-        # user needs permission to access view
-        p = Permission.objects.get(
-            codename='basic_access', 
-            content_type__app_label='structures'
+        user.profile.main_character = character        
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.basic_access', user
         )
-        user.user_permissions.add(p)
-        p = Permission.objects.get(
-            codename='view_alliance_structures', 
-            content_type__app_label='structures'
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.view_alliance_structures', user
         )
-        user.user_permissions.add(p)
-        user.save()
 
         request = self.factory.get(reverse('structures:structure_list_data'))
         request.user = user
@@ -157,15 +141,10 @@ class TestStructureList(TestCase):
             {1000000000003}
         )
             
-    def test_perm_view_all_structures(self):
-        # user needs permission to access view
-        p = Permission.objects.get(
-            codename='view_all_structures', 
-            content_type__app_label='structures'
+    def test_perm_view_all_structures(self):        
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.view_all_structures', self.user
         )
-        self.user.user_permissions.add(p)
-        self.user.save()
-
         request = self.factory.get(reverse('structures:structure_list_data'))
         request.user = self.user
         response = views.structure_list_data(request)
@@ -190,15 +169,10 @@ class TestStructureList(TestCase):
     def test_list_filter_by_tag_1(self):               
         StructureTag.objects.get(name='tag_a')
         StructureTag.objects.get(name='tag_b')
-        StructureTag.objects.get(name='tag_c')
-       
-        # user needs permission to access view
-        p = Permission.objects.get(
-            codename='view_all_structures', 
-            content_type__app_label='structures'
+        StructureTag.objects.get(name='tag_c')       
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.view_all_structures', self.user
         )
-        self.user.user_permissions.add(p)
-        self.user.save()
 
         # no filter
         request = self.factory.get('{}'.format(
@@ -295,22 +269,17 @@ class TestStructureList(TestCase):
         self.assertSetEqual(set(params), {'tag_c', 'tag_b'})
         
 
-class TestAddStructureOwner(TestCase):
+class TestAddStructureOwner(NoSocketsTestCase):
     
     def _create_test_user(self, character_id) -> User:
         """create test user with all permission from character ID"""
-        my_user = create_user(character_id)        
-        p = Permission.objects.get(
-            codename='basic_access', 
-            content_type__app_label='structures'
+        my_user = create_user(character_id)       
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.basic_access', my_user
         )
-        my_user.user_permissions.add(p)
-        p = Permission.objects.get(
-            codename='add_structure_owner', 
-            content_type__app_label='structures'
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', my_user
         )
-        my_user.user_permissions.add(p)
-        my_user.save()
         return my_user
 
     def setUp(self):
@@ -323,10 +292,14 @@ class TestAddStructureOwner(TestCase):
         Owner.objects.all().delete()
     
     @patch(MODULE_PATH + '.STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED', True)
+    @patch(MODULE_PATH + '.tasks.update_structures_for_owner')
     @patch(MODULE_PATH + '.notify_admins')
     @patch(MODULE_PATH + '.messages_plus')
     def test_view_add_structure_owner_normal(
-        self, mock_messages, mock_notify_admins
+        self, 
+        mock_messages, 
+        mock_notify_admins, 
+        mock_update_structures_for_owner
     ):        
         token = Mock(spec=Token)                
         token.character_id = self.character.character_id
@@ -347,12 +320,17 @@ class TestAddStructureOwner(TestCase):
         )
         my_owner = Owner.objects.get(character=my_ownership)
         self.assertEqual(my_owner.webhooks.first().name, 'Test Webhook 1')
+        self.assertTrue(mock_update_structures_for_owner.delay.called)
 
     @patch(MODULE_PATH + '.STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED', False)
+    @patch(MODULE_PATH + '.tasks.update_structures_for_owner')
     @patch(MODULE_PATH + '.notify_admins')
     @patch(MODULE_PATH + '.messages_plus')
     def test_view_add_structure_owner_normal_no_admins_notify(
-        self, mock_messages, mock_notify_admins
+        self, 
+        mock_messages, 
+        mock_notify_admins, 
+        mock_update_structures_for_owner
     ):
         token = Mock(spec=Token)        
         token.character_id = self.user.profile.main_character.character_id
@@ -368,12 +346,17 @@ class TestAddStructureOwner(TestCase):
         self.assertEqual(response.url, reverse('structures:index'))
         self.assertTrue(mock_messages.info.called)
         self.assertFalse(mock_notify_admins.called)
+        self.assertTrue(mock_update_structures_for_owner.delay.called)
 
     @patch(MODULE_PATH + '.STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED', False)
+    @patch(MODULE_PATH + '.tasks.update_structures_for_owner')
     @patch(MODULE_PATH + '.notify_admins')
     @patch(MODULE_PATH + '.messages_plus')
     def test_view_add_structure_owner_normal_no_default_webhook(
-        self, mock_messages, mock_notify_admins
+        self, 
+        mock_messages, 
+        mock_notify_admins, 
+        mock_update_structures_for_owner
     ):
         Webhook.objects.filter(name='Test Webhook 1').delete()
         token = Mock(spec=Token)
@@ -395,6 +378,7 @@ class TestAddStructureOwner(TestCase):
         )
         my_owner = Owner.objects.get(character=my_ownership)
         self.assertIsNone(my_owner.webhooks.first())
+        self.assertTrue(mock_update_structures_for_owner.delay.called)
 
     @patch(MODULE_PATH + '.messages_plus')
     def test_view_add_structure_owner_wrong_ownership(self, mock_messages):
@@ -413,20 +397,14 @@ class TestAddStructureOwner(TestCase):
         self.assertTrue(mock_messages.error.called)
 
 
-class TestStatus(TestCase):
+class TestStatus(NoSocketsTestCase):
     
     def setUp(self):                
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
-               
-        # user needs basic permission to access the app
-        p = Permission.objects.get(
-            codename='basic_access', 
-            content_type__app_label='structures'
-        )
-        self.user.user_permissions.add(p)
-        self.user.save()
-
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.basic_access', self.user
+        )        
         self.factory = RequestFactory()   
 
     def test_view_service_status_ok(self):
