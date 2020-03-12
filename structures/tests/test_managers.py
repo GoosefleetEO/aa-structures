@@ -5,8 +5,12 @@ from unittest.mock import Mock, patch
 from allianceauth.eveonline.models import EveCorporationInfo
 
 from ..utils import set_test_logger
-from .testdata import load_entity, load_entities,\
-    create_structures, esi_get_universe_planets_planet_id
+from .testdata import (
+    load_entity, 
+    load_entities,
+    create_structures,     
+    esi_mock_client
+)
 from ..models import (
     EveEntity,
     EveCategory,
@@ -25,94 +29,9 @@ from ..utils import NoSocketsTestCase
 MODULE_PATH = 'structures.managers'
 logger = set_test_logger(MODULE_PATH, __file__)
 
+DEFAULT_LANGUAGE_CODE = 'en-us'
 
-def esi_mock_client():
-    """provides a mocked ESI client"""
-    mock_client = Mock()
-    
-    # EveUniverseManager
-    mock_client.Universe\
-        .get_universe_categories_category_id.return_value\
-        .result.return_value = {
-            "id": 65,
-            "name": "Structure"
-        }
-    mock_client.Universe\
-        .get_universe_groups_group_id.return_value\
-        .result.return_value = {
-            "id": 1657,
-            "name": "Citadel",
-            "category_id": 65
-        } 
-    mock_client.Universe\
-        .get_universe_types_type_id\
-        .return_value.result.return_value = {
-            "id": 35832,
-            "name": "Astrahus",
-            "group_id": 1657
-        }            
-    mock_client.Universe\
-        .get_universe_regions_region_id\
-        .return_value.result.return_value = {
-            "id": 10000005,
-            "name": "Detorid"
-        }
-    mock_client.Universe\
-        .get_universe_constellations_constellation_id\
-        .return_value.result.return_value = {
-            "id": 20000069,
-            "name": "1RG-GU",
-            "region_id": 10000005
-        }
-    mock_client.Universe\
-        .get_universe_systems_system_id\
-        .return_value.result.return_value = {
-            "id": 30000474,
-            "name": "1-PGSG",
-            "security_status": -0.496552765369415,
-            "constellation_id": 20000069,
-            "star_id": 99,
-            "planets":
-            [
-                {
-                    "planet_id": 40029526
-                },
-                {
-                    "planet_id": 40029528
-                },
-                {
-                    "planet_id": 40029529
-                }
-            ]
-        }
-    mock_client.Universe.get_universe_planets_planet_id\
-        .side_effect = esi_get_universe_planets_planet_id
 
-    mock_client.Universe.get_universe_moons_moon_id\
-        .return_value.result.return_value = {
-            "id": 40161465,
-            "name": "Amamake II - Moon 1",
-            "system_id": 30002537,
-            "position": {
-                "x": 1,
-                "y": 2,
-                "z": 3
-            }
-        }
-    
-    # EveEntityManager
-    mock_client.Universe.post_universe_names\
-        .return_value.result.return_value = [
-            {
-                "id": 3011,
-                "category": "alliance",
-                "name": "Big Bad Alliance"
-            }                
-        ]
-    
-    return mock_client
-
-    
 class TestEveCategoryManager(NoSocketsTestCase):
     
     def setUp(self):
@@ -130,6 +49,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
 
+    @patch(MODULE_PATH + '.settings.LANGUAGE_CODE', DEFAULT_LANGUAGE_CODE)
     @patch(MODULE_PATH + '.provider')
     def test_can_create_object_from_esi(self, mock_provider):        
         mock_provider.client = esi_mock_client()
@@ -139,6 +59,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertIsInstance(obj, EveCategory)
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
+        # self.assertEqual(obj.language_code, DEFAULT_LANGUAGE_CODE)
 
     @patch(MODULE_PATH + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):        
@@ -206,7 +127,7 @@ class TestEveGroupManager(NoSocketsTestCase):
         self.assertEqual(obj.eve_category_id, 65)
 
     @patch(MODULE_PATH + '.provider')
-    def test_can_create_object_from_esi_if_not_found_w_parent(
+    def test_can_create_object_from_esi_if_not_found_including_parent(
         self, mock_provider
     ):
         EveCategory.objects.get(id=65).delete()
@@ -248,33 +169,6 @@ class TestEveGroupManager(NoSocketsTestCase):
         obj_parent.refresh_from_db()
         self.assertEqual(obj_parent.name, 'Superheros')
 
-    @patch(MODULE_PATH + '.provider')
-    def test_can_update_from_esi_including_related(self, mock_provider):
-        mock_provider.client = esi_mock_client()
-        load_entity(EveGroup)
-        obj = EveGroup.objects.get(id=1657)
-        obj.name = 'Fantastic Four'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Fantastic Four')
-        
-        obj_parent = EveCategory.objects.get(id=65)
-        obj_parent.name = 'Superheros'
-        obj_parent.save()
-        obj_parent.refresh_from_db()
-        self.assertEqual(obj_parent.name, 'Superheros')
-        
-        obj, created = EveGroup.objects.update_or_create_esi(
-            1657, update_related=True
-        )        
-        self.assertFalse(created)
-        self.assertIsInstance(obj, EveGroup)
-        self.assertEqual(obj.id, 1657)
-        self.assertEqual(obj.name, 'Citadel')
-        self.assertEqual(obj.eve_category_id, 65)
-        obj_parent.refresh_from_db()
-        self.assertEqual(obj_parent.name, 'Structure')
-
 
 class TestEveTypeManager(NoSocketsTestCase):
 
@@ -300,22 +194,21 @@ class TestEveTypeManager(NoSocketsTestCase):
         self.assertIsInstance(EveType.objects.get(id=35832), EveType)
 
     @patch(MODULE_PATH + '.provider')
-    def test_can_create_object_from_esi_if_not_found_w_parent(
+    def test_can_create_object_from_esi_if_not_found_including_related(
         self, mock_provider
     ):
         mock_provider.client = esi_mock_client()
         EveGroup.objects.get(id=1657).delete()
         
-        obj, created = EveGroup.objects.get_or_create_esi(1657)        
+        obj, created = EveType.objects.get_or_create_esi(35832)
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveGroup)
-        self.assertEqual(obj.id, 1657)
-        self.assertEqual(obj.name, 'Citadel')
+        self.assertIsInstance(obj, EveType)
+        self.assertEqual(obj.id, 35832)
+        self.assertEqual(obj.name, 'Astrahus')
         
-        obj_parent = obj.eve_category        
-        self.assertIsInstance(obj_parent, EveCategory)
-        self.assertEqual(obj_parent.id, 65)
-        self.assertEqual(obj_parent.name, 'Structure')
+        obj_parent = obj.eve_group        
+        self.assertEqual(obj_parent.id, 1657)
+        self.assertEqual(obj_parent.name, 'Citadel')
 
 
 class TestEveRegionManager(NoSocketsTestCase):
@@ -490,12 +383,6 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         obj.refresh_from_db()
         self.assertEqual(obj.name, 'Alpha')
 
-        obj_parent = EveConstellation.objects.get(id=20000069)
-        obj_parent.name = 'Dark'
-        obj_parent.save()
-        obj_parent.refresh_from_db()
-        self.assertEqual(obj_parent.name, 'Dark')
-
         load_entity(EvePlanet)
         obj_child = EvePlanet.objects.get(id=40029526)
         obj_child.name = 'Alpha I'
@@ -504,14 +391,12 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         self.assertEqual(obj_child.name, 'Alpha I')
 
         obj, created = EveSolarSystem.objects.update_or_create_esi(
-            30000474, update_related=True, include_children=True
+            30000474, update_children=True, include_children=True
         )
         
         self.assertFalse(created)
         self.assertEqual(obj.id, 30000474)
-        self.assertEqual(obj.name, '1-PGSG')
-        obj_parent.refresh_from_db()
-        self.assertEqual(obj_parent.name, '1RG-GU')
+        self.assertEqual(obj.name, '1-PGSG')        
         obj_child.refresh_from_db()
         self.assertEqual(obj_child.name, '1-PGSG I')
         

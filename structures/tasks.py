@@ -5,7 +5,7 @@ import json
 import re
 from time import sleep
 
-from celery import shared_task
+from celery import shared_task, chain
 
 from django.db import transaction
 from django.conf import settings
@@ -50,7 +50,6 @@ from .models import (
     Notification,
     Structure
 )
-
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
@@ -927,21 +926,48 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
 
 
 @shared_task
+def run_sde_update_for_model(model_name):
+    """Update one SDE models from ESI"""
+    from . import models as models_module
+    
+    if not hasattr(models_module, model_name):
+        raise ValueError('Unknown model class: %s' % model_name)
+
+    EveModel = getattr(models_module, model_name)
+    logger.info(
+        '%s: Updating %d objects from from ESI...' 
+        % (EveModel.__name__, EveModel.objects.count())
+    )
+    for eve_obj in EveModel.objects.all():
+        EveModel.objects.update_or_create_esi(eve_obj.id)
+
+
+@shared_task
 def run_sde_update():
-    """update selected SDE models from ESI"""
-    logger.info('Starting ESI client...')
-
-    for EveModel in [EveGroup, EveSolarSystem]:
-        obj_count = EveModel.objects.count()
-        if obj_count > 0:
-            logger.info(
-                'Started updating {} {} objects and related objects '
-                'from from ESI'.format(obj_count, EveModel.__name__)
+    """Update all SDE models from ESI"""
+    logger.info(
+        'Updating all Eve SDE objects with language "{}" ...'.format(
+            settings.LANGUAGE_CODE
+        ) 
+    )
+    models = [
+        EveCategory,
+        EveGroup,
+        EveType,
+        EveRegion,
+        EveConstellation,
+        EveSolarSystem,
+        EveMoon,
+        EvePlanet,
+    ]    
+    model_tasks = list()
+    for EveModel in models:        
+        if EveModel.objects.count() > 0:
+            model_tasks.append(
+                run_sde_update_for_model.si(EveModel.__name__)
             )
-            for eve_obj in EveModel.objects.all():
-                EveModel.objects.update_or_create_esi(eve_obj.id)
-
-    logger.info('SDE update complete')
+    chain(model_tasks).delay()            
+    logger.info('SDE model updates started')
 
 
 @shared_task

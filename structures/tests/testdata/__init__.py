@@ -506,7 +506,7 @@ def create_user(character_id, load_data=False) -> User:
     if load_data:
         load_entity(EveCharacter)
     
-    my_character = EveCharacter.objects.get(character_id=1001)                        
+    my_character = EveCharacter.objects.get(character_id=character_id)
     my_user = User.objects.create_user(
         my_character.character_name,
         'abc@example.com',
@@ -514,7 +514,7 @@ def create_user(character_id, load_data=False) -> User:
     )
     CharacterOwnership.objects.create(
         character=my_character,
-        owner_hash='x1',
+        owner_hash='x1' + my_character.character_name,
         user=my_user
     )
     my_user.profile.main_character = my_character    
@@ -573,3 +573,90 @@ def get_all_notification_ids() -> set:
         if x['type'] in Notification.get_all_type_names():
             ids.add(x['notification_id'])
     return ids
+
+
+def esi_mock_client():
+    """provides a mocked ESI client"""
+    mock_client = Mock()
+    
+    # EveUniverseManager
+    mock_client.Universe\
+        .get_universe_categories_category_id.return_value\
+        .result.return_value = {
+            "id": 65,
+            "name": "Structure"
+        }
+    mock_client.Universe\
+        .get_universe_groups_group_id.return_value\
+        .result.return_value = {
+            "id": 1657,
+            "name": "Citadel",
+            "category_id": 65
+        } 
+    mock_client.Universe\
+        .get_universe_types_type_id\
+        .return_value.result.return_value = {
+            "id": 35832,
+            "name": "Astrahus",
+            "group_id": 1657
+        }            
+    mock_client.Universe\
+        .get_universe_regions_region_id\
+        .return_value.result.return_value = {
+            "id": 10000005,
+            "name": "Detorid"
+        }
+    mock_client.Universe\
+        .get_universe_constellations_constellation_id\
+        .return_value.result.return_value = {
+            "id": 20000069,
+            "name": "1RG-GU",
+            "region_id": 10000005
+        }
+    mock_client.Universe\
+        .get_universe_systems_system_id\
+        .return_value.result.return_value = {
+            "id": 30000474,
+            "name": "1-PGSG",
+            "security_status": -0.496552765369415,
+            "constellation_id": 20000069,
+            "star_id": 99,
+            "planets":
+            [
+                {
+                    "planet_id": 40029526
+                },
+                {
+                    "planet_id": 40029528
+                },
+                {
+                    "planet_id": 40029529
+                }
+            ]
+        }
+    mock_client.Universe.get_universe_planets_planet_id\
+        .side_effect = esi_get_universe_planets_planet_id
+
+    mock_client.Universe.get_universe_moons_moon_id\
+        .return_value.result.return_value = {
+            "id": 40161465,
+            "name": "Amamake II - Moon 1",
+            "system_id": 30002537,
+            "position": {
+                "x": 1,
+                "y": 2,
+                "z": 3
+            }
+        }
+    
+    # EveEntityManager
+    mock_client.Universe.post_universe_names\
+        .return_value.result.return_value = [
+            {
+                "id": 3011,
+                "category": "alliance",
+                "name": "Big Bad Alliance"
+            }                
+        ]
+    
+    return mock_client

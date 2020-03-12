@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 
 from bravado.exception import HTTPBadGateway
+from celery import Celery
 
 from django.contrib.auth.models import User, Permission 
 
@@ -20,6 +21,7 @@ from ..models import (
     EveSolarSystem,
     EveMoon,
     EvePlanet,
+    EveEntity,
     StructureTag,
     StructureService,
     Webhook,    
@@ -45,25 +47,28 @@ from ..models import (
     NTYPE_MOONS_LASER_FIRED
 )
 
-from .testdata import \
-    esi_get_corporations_corporation_id_structures, \
-    esi_get_corporations_corporation_id_starbases, \
-    esi_get_universe_structures_structure_id, \
-    esi_get_characters_character_id_notifications, \
-    esi_get_corporations_corporation_id_customs_offices, \
-    esi_post_corporations_corporation_id_assets_locations, \
-    esi_post_corporations_corporation_id_assets_names, \
-    entities_testdata,\
-    esi_corp_structures_data,\
-    load_entities,\
-    load_notification_entities,\
-    get_all_notification_ids,\
-    create_structures,\
-    set_owner_character
+from .testdata import (
+    esi_get_corporations_corporation_id_structures, 
+    esi_get_corporations_corporation_id_starbases, 
+    esi_get_universe_structures_structure_id, 
+    esi_get_characters_character_id_notifications, 
+    esi_get_corporations_corporation_id_customs_offices, 
+    esi_post_corporations_corporation_id_assets_locations, 
+    esi_post_corporations_corporation_id_assets_names, 
+    entities_testdata,
+    esi_corp_structures_data,
+    load_entities,
+    load_notification_entities,
+    get_all_notification_ids,
+    create_structures,
+    set_owner_character,
+    esi_mock_client
+)
 
 
 MODULE_PATH = 'structures.tasks'
 logger = set_test_logger(MODULE_PATH, __file__)
+app = Celery('myauth')
 
 
 def _get_invalid_owner_pk():
@@ -961,7 +966,6 @@ class TestForwardNotifications(NoSocketsTestCase):
         self.user, self.owner = set_owner_character(character_id=1001)
         self.owner.is_alliance_main = True
         self.owner.save()
-
         load_notification_entities(self.owner)
     
     def test_run_unknown_owner(self):      
@@ -1414,3 +1418,102 @@ class TestForwardNotifications(NoSocketsTestCase):
         call_args_list = mock_send_new_notifications_for_owner.call_args_list
         args, kwargs = call_args_list[0]
         self.assertEqual(args[0], owner_2001.pk)
+
+
+class TestAdminTasks(NoSocketsTestCase):
+
+    @patch('structures.managers.provider')
+    def test_run_sde_update(self, mock_provider):        
+        mock_provider.client = esi_mock_client()
+        load_entities()
+        
+        eve_category = EveCategory.objects.get(id=65)
+        eve_category.name = 'Superheros'
+        eve_category.save()
+
+        eve_group = EveGroup.objects.get(id=1657)
+        eve_group.name = 'Fantastic Four'
+        eve_group.save()
+
+        eve_type = EveType.objects.get(id=35832)
+        eve_type.name = 'Batcave'
+        eve_type.save()
+
+        eve_region = EveRegion.objects.get(id=10000005)
+        eve_region.name = 'Toscana'
+        eve_region.save()
+
+        eve_constellation = EveConstellation.objects.get(id=20000069)
+        eve_constellation.name = 'Dark'
+        eve_constellation.save()
+
+        eve_moon = EveMoon.objects.get(id=40161465)
+        eve_moon.name = 'Alpha II - Moon 1'
+        eve_moon.save()
+        
+        eve_planet = EvePlanet.objects.get(id=40029526)
+        eve_planet.name = 'Alpha I'
+        eve_planet.save()
+        
+        eve_solar_system = EveSolarSystem.objects.get(id=30000474)
+        eve_solar_system.name = 'Alpha'
+        eve_solar_system.save()
+         
+        app.conf.task_always_eager = True
+        tasks.run_sde_update()
+        app.conf.task_always_eager = False
+
+        eve_category.refresh_from_db()
+        self.assertEqual(eve_category.name, 'Structure')
+
+        eve_group.refresh_from_db()
+        self.assertEqual(eve_group.name, 'Citadel')
+
+        eve_type.refresh_from_db()
+        self.assertEqual(eve_type.name, 'Astrahus')
+
+        eve_region.refresh_from_db()
+        self.assertEqual(eve_region.name, 'Detorid')
+
+        eve_constellation.refresh_from_db()
+        self.assertEqual(eve_constellation.name, '1RG-GU')
+
+        eve_moon.refresh_from_db()
+        self.assertEqual(eve_moon.name, 'Amamake II - Moon 1')
+
+        eve_planet.refresh_from_db()
+        self.assertEqual(eve_planet.name, '1-PGSG I')
+
+        eve_solar_system.refresh_from_db()
+        self.assertEqual(eve_solar_system.name, '1-PGSG')
+
+    def test_purge_all_data(self):
+        create_structures()
+        self.user, self.owner = set_owner_character(character_id=1001)
+        self.owner.is_alliance_main = True
+        self.owner.save()
+        load_notification_entities(self.owner)
+        models = [
+            EveCategory,
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon,
+            EvePlanet,
+            StructureTag,
+            StructureService,
+            Webhook,
+            EveEntity,
+            Owner,
+            Notification,
+            Structure
+        ]
+        for MyModel in models:            
+            self.assertGreater(MyModel.objects.count(), 0)
+
+        tasks.purge_all_data(i_am_sure=True)
+
+        for MyModel in models:
+            self.assertEqual(MyModel.objects.count(), 0)

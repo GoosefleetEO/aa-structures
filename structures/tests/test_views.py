@@ -3,16 +3,15 @@ import json
 from unittest.mock import patch, Mock
 from urllib.parse import urlparse, parse_qs
 
-from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 
-from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import (
     EveCharacter, EveCorporationInfo, EveAllianceInfo
 )
+
 from esi.models import Token
 
 from .auth_utils_2 import AuthUtils2
@@ -111,17 +110,7 @@ class TestStructureList(NoSocketsTestCase):
     def test_perm_view_alliance_structures_no_alliance(self):
         # run with a user that is not a member of an alliance        
         character = EveCharacter.objects.get(character_id=1002)        
-        user = User.objects.create_user(
-            character.character_name,
-            'abc@example.com',
-            'password'
-        )
-        CharacterOwnership.objects.create(
-            character=character,
-            owner_hash='x2',
-            user=user
-        )
-        user.profile.main_character = character        
+        user = create_user(character.character_id)        
         AuthUtils2.add_permission_to_user_by_name(
             'structures.basic_access', user
         )
@@ -271,7 +260,7 @@ class TestStructureList(NoSocketsTestCase):
 
 class TestAddStructureOwner(NoSocketsTestCase):
     
-    def _create_test_user(self, character_id) -> User:
+    def _create_test_user(self, character_id):
         """create test user with all permission from character ID"""
         my_user = create_user(character_id)       
         AuthUtils2.add_permission_to_user_by_name(

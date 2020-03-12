@@ -222,6 +222,13 @@ class Webhook(models.Model):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.name
+        )
+
     def send_test_notification(self) -> str:
         """Sends a test notification to this webhook and returns send report"""
         hook = dhooks_lite.Webhook(
@@ -372,6 +379,13 @@ class Owner(models.Model):
     def __str__(self) -> str:
         return str(self.corporation.corporation_name)
 
+    def __repr__(self):
+        return '{}(id={}, corporation=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.__str__
+        )
+
     def is_structure_sync_ok(self) -> bool:
         """returns true if they have been no errors
         and last syncing occurred within alloted time
@@ -465,27 +479,6 @@ class EveUniverse(models.Model):
         abstract = True
 
     @classmethod
-    def _eve_universe_meta_attr(
-        cls, attr_name: str, is_mandatory: bool = False
-    ):
-        """returns value of an attribute from EveUniverseMeta or None"""
-        if not hasattr(cls, 'EveUniverseMeta'):
-            raise ValueError(
-                'EveUniverseMeta not defined for class %s' % cls.__name__
-            )
-    
-        if hasattr(cls.EveUniverseMeta, attr_name):
-            value = getattr(cls.EveUniverseMeta, attr_name)
-        else:
-            value = None
-            if is_mandatory:
-                raise ValueError(
-                    'Mandatory attribute EveUniverseMeta.%s not defined '
-                    'for class %s' % (attr_name, cls.__name__)
-                )
-        return value
-
-    @classmethod
     def esi_pk(cls):
         """returns the name of the pk column on ESI that must exist"""
         return cls._eve_universe_meta_attr('esi_pk', is_mandatory=True)
@@ -548,7 +541,36 @@ class EveUniverse(models.Model):
             if isinstance(x, models.ForeignKey)
         }
         return mappings
-        
+    
+    @classmethod
+    def has_localization(cls) -> bool:
+        has_localization = cls._eve_universe_meta_attr('has_localization')
+        if has_localization is None:
+            return True
+        else:
+            return has_localization
+
+    @classmethod
+    def _eve_universe_meta_attr(
+        cls, attr_name: str, is_mandatory: bool = False
+    ):
+        """returns value of an attribute from EveUniverseMeta or None"""
+        if not hasattr(cls, 'EveUniverseMeta'):
+            raise ValueError(
+                'EveUniverseMeta not defined for class %s' % cls.__name__
+            )
+    
+        if hasattr(cls.EveUniverseMeta, attr_name):
+            value = getattr(cls.EveUniverseMeta, attr_name)
+        else:
+            value = None
+            if is_mandatory:
+                raise ValueError(
+                    'Mandatory attribute EveUniverseMeta.%s not defined '
+                    'for class %s' % (attr_name, cls.__name__)
+                )
+        return value
+
     def __repr__(self):
         return '{}(id={}, name=\'{}\')'.format(
             self.__class__.__name__,
@@ -716,6 +738,7 @@ class EveMoon(EveUniverse):
             'position_y': ('position', 'y'),
             'position_z': ('position', 'z')
         }
+        has_localization = False
 
 
 class EvePlanet(EveUniverse):
@@ -759,6 +782,7 @@ class EvePlanet(EveUniverse):
             'position_y': ('position', 'y'),
             'position_z': ('position', 'z')
         }
+        has_localization = False
 
 
 class StructureTag(models.Model):
@@ -801,6 +825,13 @@ class StructureTag(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def __repr__(self):
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.name
+        )
 
     @property
     def html(self) -> str:
@@ -1041,6 +1072,13 @@ class Structure(models.Model):
     def __str__(self):
         return '{} - {}'.format(self.eve_solar_system, self.name)
 
+    def __repr__(self):
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.name
+        )
+
     @classmethod
     def get_matching_state(cls, state_name) -> int:
         """returns matching state for given state name for Upwell structures"""
@@ -1083,6 +1121,13 @@ class StructureService(models.Model):
 
     def __str__(self):
         return '{} - {}'.format(str(self.structure), self.name)
+
+    def __repr__(self):
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.name
+        )
 
     @classmethod
     def get_matching_state(cls, state_name) -> int:
@@ -1131,6 +1176,14 @@ class EveEntity(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    def __repr__(self):
+        return '{}(id={}, category=\'{}\', name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.get_category_display(),
+            self.name
+        )
 
     @property
     def esi_category_name(self):
@@ -1251,6 +1304,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return str(self.notification_id)
+
+    def __repr__(self):
+        return '{}(id={}, owner=\'{}\', type=\'{}\')'.format(
+            self.__class__.__name__,            
+            self.notification_id,
+            self.owner,
+            self.get_notification_type_display(),
+        )
 
     @translation.override(settings.LANGUAGE_CODE)
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:

@@ -1,6 +1,7 @@
 import logging
 from pydoc import locate
 
+from django.conf import settings
 from django.db import models
 
 from allianceauth.eveonline.providers import provider
@@ -16,7 +17,8 @@ class EveUniverseManager(models.Manager):
     def get_or_create_esi(
         self, eve_id: int, include_children: bool = False
     ) -> tuple:
-        """gets or creates eve universe object fetched from ESI if needed
+        """gets or creates eve universe object fetched from ESI if needed. 
+        Will always get/create parent objects.
         
         eve_id: Eve Online ID of object
 
@@ -30,7 +32,7 @@ class EveUniverseManager(models.Manager):
             created = False        
         except self.model.DoesNotExist:
             obj, created = self.update_or_create_esi(
-                eve_id, include_children=include_children, update_related=False
+                eve_id, include_children=include_children, update_children=False
             )
 
         return obj, created
@@ -38,24 +40,32 @@ class EveUniverseManager(models.Manager):
     def update_or_create_esi(
         self, eve_id: int,         
         include_children: bool = False,
-        update_related: bool = False,
+        update_children: bool = False,
     ) -> tuple:
-        """updates or creates Eve Universe object with data fetched from ESI
-        
+        """updates or creates Eve Universe object with data fetched from ESI. 
+        Will always get/create parent objects.
+
         eve_id: Eve Online ID of object
 
         include_children: When true will also get/create
             all child objects if any (e.g. planets for solar systems)
 
-        update_related: When true will update/create parent and child objects
+        update_children: When true will update/create child objects
         
         Returns: object, created
         """
-        addPrefix = make_logger_prefix('%s:%d' % (self.model.__name__, eve_id))
+        addPrefix = make_logger_prefix(
+            '%s(id=%d)' % (self.model.__name__, eve_id)
+        )
         logger.info(addPrefix('Fetching data from ESI'))
-        try:            
+        try:                        
             esi_client = provider.client
-            args = {self.model.esi_pk(): eve_id}
+            language_code = settings.LANGUAGE_CODE
+            args = {
+                self.model.esi_pk(): eve_id
+            }
+            if self.model.has_localization():
+                args['language'] = language_code
             operation = getattr(esi_client.Universe, self.model.esi_method())(**args)
             eve_data_obj = operation.result()            
             fk_mappings = self.model.fk_mappings()
@@ -63,15 +73,10 @@ class EveUniverseManager(models.Manager):
             defaults = dict()
             for key in self.model.field_names_not_pk():
                 if key in fk_mappings:
-                    esi_key, ParentClass = fk_mappings[key]
-                    if not update_related:
-                        value, _ = ParentClass.objects.get_or_create_esi(
-                            eve_data_obj[esi_key]
-                        )
-                    else:
-                        value, _ = ParentClass.objects.update_or_create_esi(
-                            eve_data_obj[esi_key]
-                        )
+                    esi_key, ParentClass = fk_mappings[key]                    
+                    value, _ = ParentClass.objects.get_or_create_esi(
+                        eve_data_obj[esi_key]
+                    )                
                 else:
                     if key in field_mappings:
                         mapping = field_mappings[key]
@@ -93,7 +98,7 @@ class EveUniverseManager(models.Manager):
             if include_children:
                 for key, child_class in self.model.child_mappings().items():
                     self._get_or_create_children(
-                        child_class, eve_data_obj, key, update_related
+                        child_class, eve_data_obj, key, update_children
                     )
             
         except Exception as ex:
@@ -103,12 +108,12 @@ class EveUniverseManager(models.Manager):
         return obj, created
 
     def _get_or_create_children(
-        self, child_class, eve_data_obj, key, update_related
+        self, child_class, eve_data_obj, key, update_children
     ):
         ChildClass = locate(__package__ + '.models.' + child_class)
         for eve_data_obj_2 in eve_data_obj[key]:
             eve_id = eve_data_obj_2[ChildClass.esi_pk()]
-            if not update_related:
+            if not update_children:
                 ChildClass.objects.get_or_create_esi(eve_id)
             else:
                 ChildClass.objects.update_or_create_esi(eve_id)
@@ -141,7 +146,9 @@ class EveEntityManager(models.Manager):
         """
         from .models import EveEntity
 
-        addPrefix = make_logger_prefix('EveEntity:%d' % eve_entity_id)
+        addPrefix = make_logger_prefix(
+            '%s(id=%d)' % (self.model.__name__, eve_entity_id)
+        )
         logger.info(addPrefix('Trying to fetch eve entity from ESI'))
         esi_client = provider.client
         try:
@@ -208,7 +215,9 @@ class StructureManager(models.Manager):
         """
         from .models import Owner
 
-        addPrefix = make_logger_prefix(structure_id)
+        addPrefix = make_logger_prefix(
+            '%s(id=%d)' % (self.model.__name__, structure_id)
+        )
         logger.info(addPrefix('Trying to fetch structure from ESI'))
         
         try:

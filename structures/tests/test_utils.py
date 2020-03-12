@@ -202,4 +202,3 @@ class TestNoSocketsTestCase(NoSocketsTestCase):
         
         with self.assertRaises(SocketAccessError):
             requests.get('https://www.google.com')
-

@@ -306,6 +306,7 @@ class TestEveUniverse(TestCase):
                 
         class EveUniverseMeta:
             not_pk = 'my_id'
+            has_localization = False
         
     class MyEveModelEmpty(EveUniverse):
         class Meta:
@@ -344,6 +345,12 @@ class TestEveUniverse(TestCase):
 
     def test_eve_universe_meta_attr_class_not_defined(self):                
         self.assertIsNone(self.MyEveModelNoPk._eve_universe_meta_attr('esi_pk'))
+
+    def test_has_location_true_for_normal_models(self):
+        self.assertTrue(self.MyEveModelNormal.has_localization())
+
+    def test_has_localization_false_if_set_false(self):
+        self.assertFalse(self.MyEveModelNoPk.has_localization())
 
 
 class TestEveType(TestCase):
