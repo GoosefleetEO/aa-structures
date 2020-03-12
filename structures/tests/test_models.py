@@ -714,14 +714,13 @@ class TestNotification(TestCase):
         x1 = Notification.objects.get(notification_id=1000000509)
         self.assertFalse(x1.filter_for_alliance_level())
 
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(MODULE_PATH + '.provider')
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_all_notification_types(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
+        self, mock_execute, mock_provider
     ):                                
         logger.debug('test_send_to_webhook_normal')
+        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa        
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.status_ok = True
@@ -732,7 +731,7 @@ class TestNotification(TestCase):
         for x in Notification.objects.all():
             self.assertFalse(x.is_sent)
             self.assertTrue(
-                x.send_to_webhook(self.webhook, mock_esi_client_factory)
+                x.send_to_webhook(self.webhook, mock_provider.client)
             )
             self.assertTrue(x.is_sent)
             types_tested.add(x.notification_type)
@@ -745,14 +744,13 @@ class TestNotification(TestCase):
 
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(MODULE_PATH + '.provider')
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_http_error(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
+        self, mock_execute, mock_provider
     ):                                
         logger.debug('test_send_to_webhook_http_error')
+        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.status_ok = False
@@ -761,18 +759,17 @@ class TestNotification(TestCase):
         
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+            x.send_to_webhook(self.webhook, mock_provider.client)
         )
 
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(MODULE_PATH + '.provider')
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_too_many_requests(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
+        self, mock_execute, mock_provider
     ):                                
         logger.debug('test_send_to_webhook_too_many_requests')
+        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa
         mock_response = Mock()
         mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
         mock_response.status_ok = False
@@ -781,23 +778,22 @@ class TestNotification(TestCase):
 
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+            x.send_to_webhook(self.webhook, mock_provider.client)
         )
         
     @patch(MODULE_PATH + '.settings.DEBUG', False)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(MODULE_PATH + '.provider')
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_exception(
-        self, 
-        mock_execute, 
-        mock_esi_client_factory
+        self, mock_execute, mock_provider
     ):                                        
         logger.debug('test_send_to_webhook_exception')
+        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa
         mock_execute.side_effect = RuntimeError('Dummy exception')
 
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_esi_client_factory)
+            x.send_to_webhook(self.webhook, mock_provider.client)
         )
 
     @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)

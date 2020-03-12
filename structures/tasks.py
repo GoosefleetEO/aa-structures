@@ -184,9 +184,7 @@ def _store_raw_data(name: str, data: list, corporation_id: int):
 
 
 def _fetch_upwell_structures(
-    owner: Owner,
-    esi_client: object,
-    add_prefix: make_logger_prefix
+    owner: Owner, esi_client: object, add_prefix: make_logger_prefix
 ) -> list:
     """fetch Upwell structures from ESI for owner"""
 
@@ -245,9 +243,7 @@ def _fetch_upwell_structures(
 
 
 def _fetch_custom_offices(
-    owner: Owner,
-    esi_client: object,
-    add_prefix: make_logger_prefix
+    owner: Owner, esi_client: object, add_prefix: make_logger_prefix
 ) -> list:
     """fetch custom offices from ESI for owner"""
 
@@ -330,10 +326,7 @@ def _fetch_custom_offices(
         # making sure we have all solar systems loaded
         # incl. their planets for later name matching
         for solar_system_id in {int(x['system_id']) for x in pocos}:
-            EveSolarSystem.objects.get_or_create_esi(
-                solar_system_id,
-                esi_client
-            )
+            EveSolarSystem.objects.get_or_create_esi(solar_system_id)
 
         # compile pocos into structures list
         for poco in pocos:
@@ -382,9 +375,7 @@ def _fetch_custom_offices(
 
 
 def _fetch_starbases(
-    owner: Owner,
-    esi_client: object,
-    add_prefix: make_logger_prefix
+    owner: Owner, esi_client: object, add_prefix: make_logger_prefix
 ) -> list:
     """fetch starbases from ESI for owner"""
 
@@ -466,9 +457,7 @@ def _fetch_starbases(
 
 @shared_task
 def update_structures_for_owner(
-    owner_pk,
-    force_sync: bool = False,
-    user_pk=None
+    owner_pk, force_sync: bool = False, user_pk=None
 ):
     """fetches structures from one owner"""
 
@@ -541,9 +530,7 @@ def update_structures_for_owner(
                 # update structures
                 for structure in structures:
                     Structure.objects.update_or_create_from_dict(
-                        structure,
-                        owner,
-                        esi_client
+                        structure, owner
                     )
 
                 owner.structures_last_error = Owner.ERROR_NONE
@@ -687,11 +674,9 @@ def fetch_notifications_for_owner(
                                 notification['sender_type']
                             )
                         if sender_type != EveEntity.CATEGORY_OTHER:
-                            sender, _ = EveEntity\
-                                .objects.get_or_create_esi(
-                                    notification['sender_id'],
-                                    esi_client
-                                )
+                            sender, _ = EveEntity.objects.get_or_create_esi(
+                                notification['sender_id']
+                            )
                         else:
                             sender, _ = EveEntity\
                                 .objects.get_or_create(
@@ -944,20 +929,16 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
 def run_sde_update():
     """update selected SDE models from ESI"""
     logger.info('Starting ESI client...')
-    esi_client = esi_client_factory(spec_file=get_swagger_spec_path())
 
     for EveModel in [EveGroup, EveSolarSystem]:
         obj_count = EveModel.objects.count()
         if obj_count > 0:
             logger.info(
                 'Started updating {} {} objects and related objects '
-                'from from ESI'.format(
-                    obj_count,
-                    EveModel.__name__,
-                )
+                'from from ESI'.format(obj_count, EveModel.__name__)
             )
             for eve_obj in EveModel.objects.all():
-                EveModel.objects.update_or_create_esi(eve_obj.id, esi_client)
+                EveModel.objects.update_or_create_esi(eve_obj.id)
 
     logger.info('SDE update complete')
 

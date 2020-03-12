@@ -20,7 +20,7 @@ from django.utils import translation
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.eveonline.evelinks import dotlan
-from esi.clients import esi_client_factory
+from allianceauth.eveonline.providers import provider
 
 from .app_settings import (
     STRUCTURES_DEVELOPER_MODE,
@@ -50,7 +50,7 @@ from .managers import (
     StructureManager
 )
 from .utils import \
-    LoggerAddTag, DATETIME_FORMAT, make_logger_prefix, get_swagger_spec_path
+    LoggerAddTag, DATETIME_FORMAT, make_logger_prefix
 
 if 'allianceauth.timerboard' in settings.INSTALLED_APPS:
     from allianceauth.timerboard.models import Timer
@@ -1287,7 +1287,7 @@ class Notification(models.Model):
 
             return name
 
-        def get_aggressor_link(parsed_text: dict, esi_client: object) -> str:
+        def get_aggressor_link(parsed_text: dict) -> str:
             """returns the aggressor link from a parsed_text
             for POS and POCOs only
             """
@@ -1300,10 +1300,7 @@ class Notification(models.Model):
             else:
                 return '(Unknown aggressor)'
 
-            entity, _ = EveEntity.objects.get_or_create_esi(
-                parsed_text[key],
-                esi_client
-            )
+            entity, _ = EveEntity.objects.get_or_create_esi(parsed_text[key])
             return '[{}]({})'.format(entity.name, entity.profile_url())
 
         def get_type_id_from_event_type(event_type: int) -> int:
@@ -1426,8 +1423,7 @@ class Notification(models.Model):
                 esi_client
             )
             moon, _ = EveMoon.objects.get_or_create_esi(
-                parsed_text['moonID'],
-                esi_client
+                parsed_text['moonID']
             )
             thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
             solar_system_link = gen_solar_system_text(
@@ -1532,29 +1528,24 @@ class Notification(models.Model):
             NTYPE_ORBITAL_REINFORCED,
         ]:
             if not esi_client:
-                esi_client = esi_client_factory(
-                    spec_file=get_swagger_spec_path()
-                )
+                esi_client = provider.client
 
             planet, _ = EvePlanet.objects.get_or_create_esi(
-                parsed_text['planetID'],
-                esi_client
+                parsed_text['planetID']
             )
             structure_type, _ = EveType.objects.get_or_create_esi(
-                EveType.EVE_TYPE_ID_POCO,
-                esi_client
+                EveType.EVE_TYPE_ID_POCO
             )
             thumbnail = dhooks_lite.Thumbnail(
                 structure_type.icon_url()
             )
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                parsed_text['solarSystemID'],
-                esi_client
+                parsed_text['solarSystemID']
             )
             solar_system_link = gen_solar_system_text(
                 solar_system
             )
-            aggressor_link = get_aggressor_link(parsed_text, esi_client)
+            aggressor_link = get_aggressor_link(parsed_text)
 
             if self.notification_type == NTYPE_ORBITAL_ATTACKED:
                 title = gettext('Orbital under attack')
@@ -1591,17 +1582,13 @@ class Notification(models.Model):
             NTYPE_TOWER_RESOURCE_ALERT_MSG,
         ]:
             if not esi_client:
-                esi_client = esi_client_factory(
-                    spec_file=get_swagger_spec_path()
-                )
+                esi_client = provider.client
 
             eve_moon, _ = EveMoon.objects.get_or_create_esi(
-                parsed_text['moonID'],
-                esi_client
+                parsed_text['moonID']
             )
             structure_type, _ = EveType.objects.get_or_create_esi(
-                parsed_text['typeID'],
-                esi_client
+                parsed_text['typeID']
             )
             thumbnail = dhooks_lite.Thumbnail(
                 structure_type.icon_url()
@@ -1616,7 +1603,7 @@ class Notification(models.Model):
                 structure_name = structure_type.name
 
             if self.notification_type == NTYPE_TOWER_ALERT_MSG:
-                aggressor_link = get_aggressor_link(parsed_text, esi_client)
+                aggressor_link = get_aggressor_link(parsed_text)
                 damage_labels = [
                     ('shield', gettext('shield')), 
                     ('armor', gettext('armor')), 
@@ -1670,13 +1657,10 @@ class Notification(models.Model):
             NTYPE_SOV_STRUCTURE_DESTROYED
         ]:
             if not esi_client:
-                esi_client = esi_client_factory(
-                    spec_file=get_swagger_spec_path()
-                )
+                esi_client = provider.client
 
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                parsed_text['solarSystemID'],
-                esi_client
+                parsed_text['solarSystemID']
             )
             solar_system_link = gen_solar_system_text(solar_system)
 
@@ -1690,8 +1674,7 @@ class Notification(models.Model):
                 structure_type_id = EveType.EVE_TYPE_ID_TCU
 
             structure_type, _ = EveType.objects.get_or_create_esi(
-                structure_type_id,
-                esi_client
+                structure_type_id
             )
             structure_type_name = structure_type.name
             thumbnail = dhooks_lite.Thumbnail(
@@ -1806,13 +1789,11 @@ class Notification(models.Model):
         else:
             if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:
                 structure_type, _ = EveType.objects.get_or_create_esi(
-                    parsed_text['structureTypeID'],
-                    esi_client
+                    parsed_text['structureTypeID']
                 )
                 thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
                 solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    parsed_text['solarSystemID'],
-                    esi_client
+                    parsed_text['solarSystemID']
                 )
                 description = gettext(
                     'The %(structure_type)s %(structure_name)s '
@@ -1824,18 +1805,15 @@ class Notification(models.Model):
                 }
                 from_corporation, _ = \
                     EveEntity.objects.get_or_create_esi(
-                        parsed_text['oldOwnerCorpID'],
-                        esi_client
+                        parsed_text['oldOwnerCorpID']
                     )
                 to_corporation, _ = \
                     EveEntity.objects.get_or_create_esi(
-                        parsed_text['newOwnerCorpID'],
-                        esi_client
+                        parsed_text['newOwnerCorpID']
                     )
                 character, _ = \
                     EveEntity.objects.get_or_create_esi(
-                        parsed_text['charID'],
-                        esi_client
+                        parsed_text['charID']
                     )
                 description += gettext(
                     'has been transferred from %(from_corporation)s '
@@ -1850,13 +1828,11 @@ class Notification(models.Model):
 
             elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
                 structure_type, _ = EveType.objects.get_or_create_esi(
-                    parsed_text['structureTypeID'],
-                    esi_client
+                    parsed_text['structureTypeID']
                 )
                 thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
                 solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    parsed_text['solarsystemID'],
-                    esi_client
+                    parsed_text['solarsystemID']
                 )
                 description = gettext(
                     '%(structure_type)s has started anchoring '
@@ -1893,10 +1869,8 @@ class Notification(models.Model):
         )
 
     @translation.override(settings.LANGUAGE_CODE)
-    def send_to_webhook(        
-        self,
-        webhook: Webhook,
-        esi_client: object = None
+    def send_to_webhook(    
+        self, webhook: Webhook, esi_client: object = None
     ) -> bool:
         """sends this notification to the configured webhook
         returns True if successful, else False
@@ -1947,9 +1921,7 @@ class Notification(models.Model):
                     )))
                 try:
                     res = hook.execute(
-                        content=content,
-                        embeds=[embed],
-                        wait_for_response=True
+                        content=content, embeds=[embed], wait_for_response=True
                     )
                     if res.status_ok:
                         self.is_sent = True
@@ -1994,8 +1966,7 @@ class Notification(models.Model):
     def _gen_timer_structure_reinforcement(self, parsed_text, esi_client):
         """generate timer for structure reinforcements"""
         structure_obj, _ = Structure.objects.get_or_create_esi(
-            parsed_text['structureID'],
-            esi_client
+            parsed_text['structureID'], esi_client
         )
         eve_time = self.timestamp \
             + self._ldap_timedelta_2_timedelta(
@@ -2018,20 +1989,16 @@ class Notification(models.Model):
         )
 
     @translation.override(settings.LANGUAGE_CODE)
-    def _gen_timer_structure_anchoring(self, parsed_text, esi_client):
+    def _gen_timer_structure_anchoring(self, parsed_text):
         """generate timer for structure anchoring"""
         structure_type, _ = EveType.objects.get_or_create_esi(
-            parsed_text['structureTypeID'],
-            esi_client
+            parsed_text['structureTypeID']
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text['solarsystemID'],
-            esi_client
+            parsed_text['solarsystemID']
         )
         eve_time = self.timestamp \
-            + self._ldap_timedelta_2_timedelta(
-                parsed_text['timeLeft']
-            )
+            + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
         return Timer(
             details=gettext('Anchor timer'),
             system=solar_system.name,
@@ -2044,11 +2011,10 @@ class Notification(models.Model):
         )
 
     @translation.override(settings.LANGUAGE_CODE)
-    def _gen_timer_sov_reinforcements(self, parsed_text, esi_client):
+    def _gen_timer_sov_reinforcements(self, parsed_text):
         """generate timer for sov reinforcements"""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text['solarSystemID'],
-            esi_client
+            parsed_text['solarSystemID']
         )
         event_type = parsed_text['campaignEventType']
         if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
@@ -2072,15 +2038,13 @@ class Notification(models.Model):
         )
 
     @translation.override(settings.LANGUAGE_CODE)
-    def _gen_timer_orbital_reinforcements(self, parsed_text, esi_client):
+    def _gen_timer_orbital_reinforcements(self, parsed_text):
         """generate timer for orbital reinforcements"""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text['solarSystemID'],
-            esi_client
+            parsed_text['solarSystemID']
         )
         planet, _ = EvePlanet.objects.get_or_create_esi(
-            parsed_text['planetID'],
-            esi_client
+            parsed_text['planetID']
         )
         eve_time = self._ldap_datetime_2_dt(
             parsed_text['reinforceExitTime']
@@ -2097,16 +2061,14 @@ class Notification(models.Model):
         )
 
     @translation.override(settings.LANGUAGE_CODE)
-    def _gen_timer_moon_extraction(self, parsed_text, esi_client):
+    def _gen_timer_moon_extraction(self, parsed_text):
         """generate timer for moon mining extractions"""
         solar_system, _ = \
             EveSolarSystem.objects.get_or_create_esi(
-                parsed_text['solarSystemID'],
-                esi_client
+                parsed_text['solarSystemID']
             )
         moon, _ = EveMoon.objects.get_or_create_esi(
-            parsed_text['moonID'],
-            esi_client
+            parsed_text['moonID']
         )
         if 'readyTime' in parsed_text:
             eve_time = self._ldap_datetime_2_dt(
@@ -2186,17 +2148,11 @@ class Notification(models.Model):
                         parsed_text, esi_client
                     )
                 elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
-                    timer = self._gen_timer_structure_anchoring(
-                        parsed_text, esi_client
-                    )
+                    timer = self._gen_timer_structure_anchoring(parsed_text)
                 elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
-                    timer = self._gen_timer_sov_reinforcements(
-                        parsed_text, esi_client
-                    )
+                    timer = self._gen_timer_sov_reinforcements(parsed_text)
                 elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
-                    timer = self._gen_timer_orbital_reinforcements(
-                        parsed_text, esi_client
-                    )
+                    timer = self._gen_timer_orbital_reinforcements(parsed_text)
                 elif self.notification_type in [
                     NTYPE_MOONS_EXTRACTION_STARTED,
                     NTYPE_MOONS_EXTRACTION_CANCELED
@@ -2204,9 +2160,7 @@ class Notification(models.Model):
                     if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
                         timer = None
                     else:
-                        timer = self._gen_timer_moon_extraction(
-                            parsed_text, esi_client
-                        )
+                        timer = self._gen_timer_moon_extraction(parsed_text)
                 else:
                     raise NotImplementedError()
 

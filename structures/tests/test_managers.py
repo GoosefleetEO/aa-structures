@@ -26,8 +26,11 @@ MODULE_PATH = 'structures.managers'
 logger = set_logger(MODULE_PATH, __file__)
 
 
-def my_client():
+def esi_mock_client():
+    """provides a mocked ESI client"""
     mock_client = Mock()
+    
+    # EveUniverseManager
     mock_client.Universe\
         .get_universe_categories_category_id.return_value\
         .result.return_value = {
@@ -97,6 +100,24 @@ def my_client():
             }
         }
     
+    # EveEntityManager
+    mock_client.Universe.post_universe_names\
+        .return_value.result.return_value = [
+            {
+                "id": 3011,
+                "category": "alliance",
+                "name": "Big Bad Alliance"
+            }                
+        ]
+    mock_client.Universe.post_universe_names\
+        .return_value.result.return_value = [
+            {
+                "id": 6666,
+                "category": "XXX",
+                "name": "Unclear entity"
+            }                
+        ] 
+
     return mock_client
 
 
@@ -119,7 +140,7 @@ class TestEveCategoryManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):        
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
 
         obj, created = EveCategory.objects.get_or_create_esi(65)        
         self.assertTrue(created)
@@ -156,7 +177,7 @@ class TestEveGroupManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):        
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         
         obj, created = EveGroup.objects.get_or_create_esi(1657)        
         self.assertTrue(created)
@@ -168,7 +189,7 @@ class TestEveGroupManager(TestCase):
     @patch(MODULE_PATH + '.provider')
     def test_create_w_parent(self, mock_provider):
         EveCategory.objects.get(id=65).delete()
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         
         obj, created = EveGroup.objects.get_or_create_esi(1657)        
         self.assertTrue(created)
@@ -198,7 +219,7 @@ class TestEveTypeManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         
         obj, created = EveType.objects.get_or_create_esi(35832)        
         self.assertTrue(created)
@@ -207,7 +228,7 @@ class TestEveTypeManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create_w_parent(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         EveGroup.objects.get(id=1657).delete()
         
         obj, created = EveGroup.objects.get_or_create_esi(1657)        
@@ -235,7 +256,7 @@ class TestEveRegionManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):        
-        mock_provider.client = my_client()                
+        mock_provider.client = esi_mock_client()                
         
         obj, created = EveRegion.objects.get_or_create_esi(10000005)        
         self.assertTrue(created)
@@ -261,7 +282,7 @@ class TestEveConstellationManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         load_entity(EveRegion)
 
         obj, created = EveConstellation.objects.get_or_create_esi(20000069)
@@ -271,7 +292,7 @@ class TestEveConstellationManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create_w_parent(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         EveRegion.objects.get(id=10000005).delete()
 
         obj, created = EveConstellation.objects.get_or_create_esi(20000069)
@@ -312,7 +333,7 @@ class TestEveSolarSystemManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         
         obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)        
         self.assertTrue(created)
@@ -328,7 +349,7 @@ class TestEveSolarSystemManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create_w_parent(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         EveConstellation.objects.get(id=20000069).delete()
 
         obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
@@ -374,7 +395,7 @@ class TestEveMoonManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
        
         obj, created = EveMoon.objects.get_or_create_esi(40161465)
         self.assertTrue(created)
@@ -387,7 +408,7 @@ class TestEveMoonManager(TestCase):
         
     @patch(MODULE_PATH + '.provider')
     def test_create_w_parent(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         EveSolarSystem.objects.get(id=30000474).delete()
         
         obj, created = EveMoon.objects.get_or_create_esi(40161465)
@@ -422,7 +443,7 @@ class TestEvePlanetManager(TestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_create(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         
         obj, created = EvePlanet.objects.get_or_create_esi(40161469)        
         self.assertTrue(created)
@@ -436,7 +457,7 @@ class TestEvePlanetManager(TestCase):
                 
     @patch(MODULE_PATH + '.provider')
     def test_create_w_parent(self, mock_provider):
-        mock_provider.client = my_client()
+        mock_provider.client = esi_mock_client()
         EveSolarSystem.objects.get(id=30000474).delete()
         EveType.objects.get(id=2016).delete()
 
@@ -453,8 +474,9 @@ class TestEvePlanetManager(TestCase):
 
 class TestEveEntityManager(TestCase):
 
-    @patch('structures.tasks.esi_client_factory', autospec=True)
-    def test_get(self, mock_esi_client_factory):        
+    @patch(MODULE_PATH + '.provider')
+    def test_get(self, mock_provider):
+        mock_provider = Mock(side_effect=RuntimeError)  # noqa     
         load_entity(EveEntity)
 
         obj, created = EveEntity.objects.get_or_create_esi(3011)
@@ -462,57 +484,27 @@ class TestEveEntityManager(TestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 3011)
 
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_create_wo_client(self, mock_esi_client_factory):
-        mock_client = Mock()        
-        mock_client.Universe.post_universe_names\
-            .return_value.result.return_value = [
-                {
-                    "id": 3011,
-                    "category": "alliance",
-                    "name": "Big Bad Alliance"
-                }                
-            ]      
-        mock_esi_client_factory.return_value = mock_client
+    @patch(MODULE_PATH + '.provider')
+    def test_create(self, mock_provider):
+        mock_provider.client = esi_mock_client()
         
         obj, created = EveEntity.objects.get_or_create_esi(3011)
         
         self.assertTrue(created)
-        self.assertEqual(obj.id, 3011)
-        self.assertIsInstance(
-            EveEntity.objects.get(id=3011), 
-            EveEntity
-        )        
+        self.assertEqual(obj.id, 3011)              
 
-    def test_create_w_client(self):                        
-        mock_client = Mock()        
+    @patch(MODULE_PATH + '.provider')
+    def test_create_no_match(self, mock_provider):
+        mock_client = Mock()    
         mock_client.Universe.post_universe_names\
-            .return_value.result.return_value = [
-                {
-                    "id": 3011,
-                    "category": "alliance",
-                    "name": "Big Bad Alliance"
-                }                
-            ]      
-        
-        obj, created = EveEntity.objects.get_or_create_esi(3011, mock_client)
-        
-        self.assertTrue(created)
-        self.assertEqual(obj.id, 3011)
-        self.assertIsInstance(
-            EveEntity.objects.get(id=3011), 
-            EveEntity
-        )  
-
-    def test_create_w_client_no_match(self):                        
-        mock_client = Mock()        
-        mock_client.Universe.post_universe_names\
-            .return_value.result.return_value = []      
+            .return_value.result.return_value = []
+        mock_provider.client = mock_client
         
         with self.assertRaises(ValueError):
-            EveEntity.objects.get_or_create_esi(3011, mock_client)
+            EveEntity.objects.get_or_create_esi(3011)
         
-    def test_create_w_client_wrong_type(self):                        
+    @patch(MODULE_PATH + '.provider')
+    def test_create_wrong_type(self, mock_provider):
         mock_client = Mock()        
         mock_client.Universe.post_universe_names\
             .return_value.result.return_value = [
@@ -521,46 +513,41 @@ class TestEveEntityManager(TestCase):
                     "category": "XXX",
                     "name": "Unclear entity"
                 }                
-            ]      
+            ]
+        mock_provider.client = mock_client
         
-        obj, created = EveEntity.objects.get_or_create_esi(6666, mock_client)
+        obj, created = EveEntity.objects.get_or_create_esi(6666)
         
         self.assertTrue(created)
         self.assertEqual(obj.id, 6666)
-        self.assertIsInstance(
-            EveEntity.objects.get(id=6666), 
-            EveEntity
-        )  
         
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_create_failed(self, mock_esi_client_factory):                
+    @patch(MODULE_PATH + '.provider')
+    def test_create_failed(self, mock_provider):
         mock_client = Mock()        
         mock_client.Universe.post_universe_names\
             .return_value.result.side_effect = RuntimeError()
-        mock_esi_client_factory.return_value = mock_client
+        mock_provider.client = mock_client
         
         with self.assertRaises(RuntimeError):
             EveEntity.objects.get_or_create_esi(3011)
 
 
 class TestStructureManager(TestCase):
-            
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_get(self, mock_esi_client_factory):                   
-        mock_client = Mock()
-        
-        create_structures()        
+                
+    def test_get(self):
+        mock_client = Mock(side_effect=RuntimeError)        
+        create_structures()
+
         obj, created = Structure.objects.get_or_create_esi(
-            1000000000001,
-            mock_client
-        )
-        
+            1000000000001, mock_client
+        )        
         self.assertFalse(created)
         self.assertEqual(obj.id, 1000000000001)
 
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_create(self, mock_esi_client_factory):                        
-        mock_client = Mock()        
+    @patch(MODULE_PATH + '.provider')
+    def test_create(self, mock_provider):
+        mock_provider.client = esi_mock_client()            
+        mock_client = Mock()
         mock_client.Universe.get_universe_structures_structure_id\
             .return_value.result.return_value = {
                 'id': 1000000000001,            
@@ -573,8 +560,7 @@ class TestStructureManager(TestCase):
                     "y": 2,
                     "z": 3
                 }
-            }   
-
+            }
         load_entities([
             EveCategory,
             EveGroup,
@@ -590,25 +576,30 @@ class TestStructureManager(TestCase):
         )
 
         obj, created = Structure.objects.get_or_create_esi(
-            1000000000001,
-            mock_client
-        )
-        
+            1000000000001, mock_client
+        )        
         self.assertTrue(created)
         self.assertEqual(obj.id, 1000000000001)
-        self.assertIsInstance(
-            Structure.objects.get(id=1000000000001), 
-            Structure
-        )        
-
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    def test_create_failed(self, mock_esi_client_factory):        
-        x = Mock()
-        x.result.side_effect = RuntimeError()
+        self.assertEqual(obj.name, 'Test Structure Alpha')
+        self.assertEqual(obj.eve_type_id, 35832)
+        self.assertEqual(obj.eve_solar_system_id, 30002537)
+        self.assertEqual(int(obj.owner.corporation.corporation_id), 2001)
+        self.assertEqual(obj.position_x, 1)
+        self.assertEqual(obj.position_y, 2)
+        self.assertEqual(obj.position_z, 3)
+        
+    @patch(MODULE_PATH + '.provider')
+    def test_create_failed(self, mock_provider):        
+        mock_provider = Mock(side_effect=RuntimeError)  # noqa        
         mock_client = Mock()        
         mock_client.Universe.get_universe_structures_structure_id\
-            .return_value = x        
-        mock_esi_client_factory.return_value = mock_client
-        
+            .return_value.result.side_effect = RuntimeError()
+                
         with self.assertRaises(RuntimeError):
-            Structure.objects.get_or_create_esi(1000000000001, mock_client)
+            Structure.objects.get_or_create_esi(
+                1000000000001, mock_client
+            )
+
+    def test_get_fails_no_client(self):
+        with self.assertRaises(ValueError):
+            obj, created = Structure.objects.get_or_create_esi(987, None)

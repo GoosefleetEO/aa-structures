@@ -645,7 +645,7 @@ class TestSyncStructures(TestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_pocos_no_asset_name_match(
-        self,         
+        self,
         mock_esi_client_factory,
         mock_Token,
         mock_notify
@@ -679,8 +679,7 @@ class TestSyncStructures(TestCase):
         self.user.user_permissions.add(p)
         self.user.save()
         owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership
+            corporation=self.corporation, character=self.main_ownership
         )
 
         EvePlanet.objects.all().delete()
@@ -688,16 +687,12 @@ class TestSyncStructures(TestCase):
         # run update task
         self.assertTrue(
             tasks.update_structures_for_owner(
-                owner_pk=owner.pk, 
-                user_pk=self.user.pk
+                owner_pk=owner.pk, user_pk=self.user.pk
             )
         )
         # check name for POCO
         structure = Structure.objects.get(id=1200000000003)
-        self.assertEqual(
-            structure.name,
-            ''
-        )
+        self.assertEqual(structure.name, '')
         esi_post_corporations_corporation_id_assets_names.override_data = None
 
     # catch exception during storing of structures
