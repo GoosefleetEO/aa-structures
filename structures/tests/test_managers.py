@@ -1,6 +1,7 @@
+from datetime import datetime
 from unittest.mock import Mock, patch
 
-# from django.test import TestCase
+from bravado.exception import HTTPBadRequest
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
@@ -12,7 +13,7 @@ from .testdata import (
     esi_mock_client
 )
 from ..models import (
-    EveEntity,
+    EveEntity,    
     EveCategory,
     EveGroup,
     EveType,
@@ -59,7 +60,8 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertIsInstance(obj, EveCategory)
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
-        # self.assertEqual(obj.language_code, DEFAULT_LANGUAGE_CODE)
+        self.assertEqual(obj.language_code, DEFAULT_LANGUAGE_CODE)
+        self.assertIsInstance(obj.last_updated, datetime)
 
     @patch(MODULE_PATH + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):        
@@ -92,11 +94,52 @@ class TestEveCategoryManager(NoSocketsTestCase):
     def test_raises_exception_when_create_fails(self, mock_provider):
         mock_provider.client.Universe\
             .get_universe_categories_category_id.return_value\
-            .result.side_effect = RuntimeError()
+            .result.side_effect = RuntimeError
                 
         with self.assertRaises(RuntimeError):
             EveCategory.objects.update_or_create_esi(65)
 
+    @patch(MODULE_PATH + '.EveUniverseManager.ESI_SLEEP_SECONDS_ON_RETRY', 0)
+    @patch(MODULE_PATH + '.provider')
+    def test_can_retry_create_on_bad_request(self, mock_provider):        
+        
+        def my_side_effect():
+            """special mock client for testing retry ability"""
+            nonlocal retry_counter, max_retries
+            
+            if retry_counter < max_retries:                
+                retry_counter += 1
+                raise HTTPBadRequest(
+                    response=Mock(), 
+                    message='retry_counter=%d' % retry_counter
+                )
+            else:
+                my_mock_client = esi_mock_client()
+                return my_mock_client.Universe\
+                    .get_universe_categories_category_id.return_value\
+                    .result()
+            
+        mock_provider.client.Universe\
+            .get_universe_categories_category_id.return_value\
+            .result.side_effect = my_side_effect
+
+        # can retry 3 times and then proceed normally
+        retry_counter = 0
+        max_retries = 3        
+        obj, created = EveCategory.objects.update_or_create_esi(65)        
+        self.assertTrue(created)
+        self.assertIsInstance(obj, EveCategory)
+        self.assertEqual(obj.id, 65)
+        self.assertEqual(obj.name, 'Structure')
+        self.assertEqual(retry_counter, 3)
+
+        # will abort on the 4th retry and pass on exception if needed
+        retry_counter = 0
+        max_retries = 4
+        with self.assertRaises(HTTPBadRequest):
+            EveCategory.objects.update_or_create_esi(65)        
+        self.assertEqual(retry_counter, 4)
+        
 
 class TestEveGroupManager(NoSocketsTestCase):
     
@@ -320,9 +363,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         mock_provider.client = esi_mock_client()
         EveConstellation.objects.get(id=20000069).delete()
 
-        obj, created = EveSolarSystem.objects.get_or_create_esi(
-            30000474, include_children=True
-        )
+        obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
         self.assertTrue(created)
         self.assertEqual(obj.id, 30000474)
@@ -341,39 +382,6 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         self.assertEqual(obj_parent.eve_region_id, 10000005)
 
     @patch(MODULE_PATH + '.provider')
-    def test_can_update_object_from_esi_excluding_related(self, mock_provider):
-        mock_provider.client = esi_mock_client()
-        load_entity(EveSolarSystem)        
-        obj = EveSolarSystem.objects.get(id=30000474)
-        obj.name = 'Alpha'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Alpha')
-
-        obj_parent = EveConstellation.objects.get(id=20000069)
-        obj_parent.name = 'Dark'
-        obj_parent.save()
-        obj_parent.refresh_from_db()
-        self.assertEqual(obj_parent.name, 'Dark')
-
-        load_entity(EvePlanet)
-        obj_child = EvePlanet.objects.get(id=40029526)
-        obj_child.name = 'Alpha I'
-        obj_child.save()
-        obj_child.refresh_from_db()
-        self.assertEqual(obj_child.name, 'Alpha I')
-
-        obj, created = EveSolarSystem.objects.update_or_create_esi(30000474)
-        
-        self.assertFalse(created)
-        self.assertEqual(obj.id, 30000474)
-        self.assertEqual(obj.name, '1-PGSG')
-        obj_parent.refresh_from_db()
-        self.assertEqual(obj_parent.name, 'Dark')
-        obj_child.refresh_from_db()
-        self.assertEqual(obj_child.name, 'Alpha I')
-
-    @patch(MODULE_PATH + '.provider')
     def test_can_update_object_from_esi_including_related(self, mock_provider):
         mock_provider.client = esi_mock_client()
         load_entity(EveSolarSystem)
@@ -390,9 +398,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         obj_child.refresh_from_db()
         self.assertEqual(obj_child.name, 'Alpha I')
 
-        obj, created = EveSolarSystem.objects.update_or_create_esi(
-            30000474, update_children=True, include_children=True
-        )
+        obj, created = EveSolarSystem.objects.update_or_create_esi(30000474)
         
         self.assertFalse(created)
         self.assertEqual(obj.id, 30000474)

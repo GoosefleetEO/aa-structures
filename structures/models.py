@@ -37,15 +37,7 @@ from .app_settings import (
 )
 from . import __title__
 from .managers import (
-    EveUniverseManager,
-    # EveCategoryManager,    
-    # EveGroupManager,
-    # EveMoonManager,
-    # EvePlanetManager,
-    # EveRegionManager,
-    # EveConstellationManager,
-    # EveSolarSystemManager,
-    # EveTypeManager,
+    EveUniverseManager,    
     EveEntityManager,
     StructureManager
 )
@@ -456,22 +448,21 @@ class EveUniverse(models.Model):
     )
     name = models.CharField(
         max_length=100, help_text=_('Eve Online name')
-    )
-    """
+    )    
     language_code = models.CharField(
-        max_length=32, 
+        max_length=8, 
         default=None,
         null=True,
         blank=True,
         help_text=_('language code of this data received from ESI')
     )
-    last_modified = models.DateTimeField(
+    last_updated = models.DateTimeField(
         default=None,
         null=True,
         blank=True,
-        help_text=_('Last-Modified from ESI')
-    )
-    """
+        help_text=_('When this object was last updated from ESI'),
+        db_index=True
+    )    
 
     objects = EveUniverseManager()
 
@@ -494,7 +485,7 @@ class EveUniverse(models.Model):
             x.name for x in cls._meta.get_fields()
             if not x.auto_created and (
                 not hasattr(x, 'primary_key') or x.primary_key is False
-            )
+            ) and x.name not in {'language_code', 'last_updated'}
         }
 
     @classmethod
@@ -959,21 +950,21 @@ class Structure(models.Model):
         blank=True,
         help_text=_('Date on which the structure will run out of fuel')
     )
-    next_reinforce_hour = models.IntegerField(
+    next_reinforce_hour = models.PositiveIntegerField(
         null=True,
         default=None,
         blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(23)],
+        validators=[MaxValueValidator(23)],
         help_text=_(
             'The requested change to reinforce_hour that will take '
             'effect at the time shown by next_reinforce_apply'
         )
     )
-    next_reinforce_weekday = models.IntegerField(
+    next_reinforce_weekday = models.PositiveIntegerField(
         null=True,
         default=None,
         blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(6)],
+        validators=[MaxValueValidator(6)],
         help_text=_(
             'The date and time when the structure’s newly requested '
             'reinforcement times (e.g. next_reinforce_hour and '
@@ -989,8 +980,8 @@ class Structure(models.Model):
             'effect at the time shown by next_reinforce_apply'
         )
     )
-    reinforce_hour = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(23)],
+    reinforce_hour = models.PositiveIntegerField(
+        validators=[MaxValueValidator(23)],
         null=True,
         default=None,
         blank=True,
@@ -1002,11 +993,11 @@ class Structure(models.Model):
             'is +/- 2 hours centered on the value of this property'
         )
     )
-    reinforce_weekday = models.IntegerField(
+    reinforce_weekday = models.PositiveIntegerField(
         null=True,
         default=None,
         blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(6)],
+        validators=[MaxValueValidator(6)],
         help_text='(no longer used)'
     )
     state = models.IntegerField(
@@ -1158,13 +1149,11 @@ class EveEntity(models.Model):
         (CATEGORY_OTHER, 'other'),
     ]
 
-    id = models.IntegerField(
+    id = models.PositiveIntegerField(
         primary_key=True,
-        validators=[MinValueValidator(0)]
+        help_text='Eve Online ID'
     )
-    category = models.IntegerField(
-        choices=CATEGORY_CHOICES
-    )
+    category = models.IntegerField(choices=CATEGORY_CHOICES)
     name = models.CharField(
         max_length=255,
         null=True,
@@ -1238,7 +1227,7 @@ class Notification(models.Model):
         32458: 'I-HUB'
     }
 
-    notification_id = models.BigIntegerField(
+    notification_id = models.BigIntegerField( 
         validators=[MinValueValidator(0)]
     )
     owner = models.ForeignKey(
@@ -2005,9 +1994,8 @@ class Notification(models.Model):
 
                     else:
                         logger.warn(add_prefix(
-                            'HTTP error {} while trying '.format(
-                                res.status_code
-                            ) + 'to send notifications'
+                            'HTTP error {} while trying '
+                            'to send notifications'.format(res.status_code) 
                         ))
                         if retry_count < max_retries + 1:
                             sleep(STRUCTURES_NOTIFICATION_WAIT_SEC)

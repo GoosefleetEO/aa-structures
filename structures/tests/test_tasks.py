@@ -3,13 +3,14 @@ from unittest.mock import Mock, patch
 from bravado.exception import HTTPBadGateway
 from celery import Celery
 
-from django.contrib.auth.models import User, Permission 
-
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.timerboard.models import Timer
+from allianceauth.tests.auth_utils import AuthUtils
+
 from esi.errors import TokenExpiredError, TokenInvalidError
 
+from .auth_utils_2 import AuthUtils2
 from ..utils import set_test_logger, NoSocketsTestCase
 from .. import tasks
 from ..models import (
@@ -55,6 +56,7 @@ from .testdata import (
     esi_get_corporations_corporation_id_customs_offices, 
     esi_post_corporations_corporation_id_assets_locations, 
     esi_post_corporations_corporation_id_assets_names, 
+    esi_get_universe_planets_planet_id,
     entities_testdata,
     esi_corp_structures_data,
     load_entities,
@@ -79,14 +81,15 @@ def _get_invalid_owner_pk():
         return 99
 
 
-class TestSyncStructures(NoSocketsTestCase):
+class TestUpdateStructuresForOwner(NoSocketsTestCase):
     
-    def setUp(self):            
-        # reset data that might be overridden
+    def setUp(self):        
+        # reset data that might be overridden        
         esi_get_corporations_corporation_id_structures.override_data = None
         esi_get_corporations_corporation_id_customs_offices.override_data = \
             None
         
+        # test data
         load_entities([
             EveCategory,
             EveGroup,
@@ -99,17 +102,12 @@ class TestSyncStructures(NoSocketsTestCase):
             EveCorporationInfo,
             EveCharacter,            
         ])
-            
         # 1 user
         self.character = EveCharacter.objects.get(character_id=1001)
                 
         self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        self.user = User.objects.create_user(
-            self.character.character_name,
-            'abc@example.com',
-            'password'
-        )
-
+        self.user = AuthUtils.create_user(self.character.character_name)
+        
         self.main_ownership = CharacterOwnership.objects.create(
             character=self.character,
             owner_hash='x1',
@@ -122,12 +120,11 @@ class TestSyncStructures(NoSocketsTestCase):
         for x in entities_testdata['StructureTag']:
             StructureTag.objects.create(**x)
     
-    def test_run_unknown_owner(self):                                
+    def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
             tasks.update_structures_for_owner(owner_pk=_get_invalid_owner_pk())
 
-    # run without char        
-    def test_run_no_sync_char(self):
+    def test_returns_error_when_no_sync_char_defined(self):
         owner = Owner.objects.create(
             corporation=self.corporation            
         )
@@ -142,15 +139,11 @@ class TestSyncStructures(NoSocketsTestCase):
 
     # test expired token    
     @patch(MODULE_PATH + '.Token')    
-    def test_check_expired_token(self, mock_Token):                        
-        mock_Token.objects.filter.side_effect = TokenExpiredError()        
-                        
-        # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+    def test_returns_error_when_token_is_expired(self, mock_Token):
+        mock_Token.objects.filter.side_effect = TokenExpiredError()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -166,18 +159,13 @@ class TestSyncStructures(NoSocketsTestCase):
             owner.structures_last_error, 
             Owner.ERROR_TOKEN_EXPIRED            
         )
-    
-    # test invalid token    
+        
     @patch(MODULE_PATH + '.Token')
-    def test_check_invalid_token(self, mock_Token):
+    def test_returns_error_when_token_is_invalid(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
-                        
-        # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )        
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -193,14 +181,13 @@ class TestSyncStructures(NoSocketsTestCase):
             owner.structures_last_error, 
             Owner.ERROR_TOKEN_INVALID            
         )
-        
-    # normal synch of new structures, mode my_alliance
+    
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', autospec=True)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_structures_for_owner_normal(
+    def test_can_sync_all_structures(
         self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
@@ -225,11 +212,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -286,12 +271,11 @@ class TestSyncStructures(NoSocketsTestCase):
         # user report has been sent
         self.assertTrue(mock_notify.called)
     
-    # synch of structures, ensure old structures are removed
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_structures_for_owner_remove_olds(
+    def test_removes_old_structures(
         self, mock_esi_client_factory, mock_Token
     ):                       
         mock_client = Mock()        
@@ -304,11 +288,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -329,23 +311,21 @@ class TestSyncStructures(NoSocketsTestCase):
         del(my_corp_structures_data["2001"][1])
         esi_get_corporations_corporation_id_structures.override_data = \
             my_corp_structures_data
-        tasks.update_structures_for_owner(
-            owner_pk=owner.pk
-        )        
+        tasks.update_structures_for_owner(owner_pk=owner.pk)        
         # should contain only the remaining structure
         self.assertSetEqual(
             {x['id'] for x in Structure.objects.values('id')},
             {1000000000002, 1000000000003}
         )
     
-    # synch of structures, ensure tags are not removed
+    """
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_structures_for_owner_keep_tags(
+    def test_tags_are_not_modified_by_update(
         self, mock_esi_client_factory, mock_Token
-    ):                       
+    ):                               
         mock_client = Mock()        
         mock_client.Corporation\
             .get_corporations_corporation_id_structures.side_effect = \
@@ -356,11 +336,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -394,13 +372,13 @@ class TestSyncStructures(NoSocketsTestCase):
         # should still contain the tag
         s_new = Structure.objects.get(id=1000000000001)
         self.assertEqual(s_new.tags.get(name='tag_a'), tag_a)
-    
-    # no structures retrieved from ESI during sync
+    """
+
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_structures_for_owner_empty_and_no_user_report(
+    def test_remove_current_structures_when_esi_returns_none(
         self, mock_esi_client_factory, mock_Token
     ):                               
         mock_client = Mock()        
@@ -426,11 +404,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -450,14 +426,13 @@ class TestSyncStructures(NoSocketsTestCase):
         # must be empty
         self.assertEqual(Structure.objects.count(), 0)
 
-    # error during user report
     @patch(MODULE_PATH + '.settings.DEBUG', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.notify')
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_structures_for_owner_user_report_error(
+    def test_reports_error_to_user_when_update_fails(
         self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
@@ -484,11 +459,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_notify.side_effect = RuntimeError    
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -501,13 +474,12 @@ class TestSyncStructures(NoSocketsTestCase):
                 user_pk=self.user.pk
             )
         )       
-
-    # synch of structures, ensure services are removed correctly
+    
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_structures_for_owner_remove_services(
+    def test_removes_outdated_services(
         self, mock_esi_client_factory, mock_Token
     ):                       
         mock_client = Mock()        
@@ -520,11 +492,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -568,7 +538,7 @@ class TestSyncStructures(NoSocketsTestCase):
     @patch(MODULE_PATH + '.notify', autospec=True)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory')
-    def test_update_pocos_no_planet_match(
+    def test_define_poco_name_from_assets_if_not_match_with_planets(
         self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
         mock_client = Mock()        
@@ -587,35 +557,77 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_client.Assets\
             .post_corporations_corporation_id_assets_names = \
             esi_post_corporations_corporation_id_assets_names
+        mock_client.Universe.get_universe_planets_planet_id\
+            .side_effect = esi_get_universe_planets_planet_id
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
-        owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
         )
-
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )
         EvePlanet.objects.all().delete()
         
         # run update task
         self.assertTrue(
             tasks.update_structures_for_owner(
-                owner_pk=owner.pk, 
-                user_pk=self.user.pk
+                owner_pk=owner.pk, user_pk=self.user.pk
             )
         )
 
         # check name for POCO
         structure = Structure.objects.get(id=1200000000003)
-        self.assertEqual(
-            structure.name,
-            'Amamake V'
+        self.assertEqual(structure.name, 'Amamake V')
+
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch(MODULE_PATH + '.notify', autospec=True)
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory')
+    def test_define_poco_name_from_planet_type_if_found(
+        self, mock_esi_client_factory, mock_Token, mock_notify
+    ):                               
+        mock_client = Mock()        
+        mock_client.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+            esi_get_corporations_corporation_id_structures
+        mock_client.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+            esi_get_universe_structures_structure_id        
+        mock_client.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+            esi_get_corporations_corporation_id_customs_offices
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+            esi_post_corporations_corporation_id_assets_locations
+        mock_client.Assets\
+            .post_corporations_corporation_id_assets_names = \
+            esi_post_corporations_corporation_id_assets_names
+        mock_client.Universe.get_universe_planets_planet_id\
+            .side_effect = esi_get_universe_planets_planet_id
+        mock_esi_client_factory.return_value = mock_client
+
+        # create test data
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
         )
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )
+                
+        # run update task
+        self.assertTrue(
+            tasks.update_structures_for_owner(
+                owner_pk=owner.pk, user_pk=self.user.pk
+            )
+        )
+
+        # check name for POCO
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(structure.eve_planet_id, 40161472)
+        self.assertEqual(structure.name, 'Planet (Barren)')
 
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
@@ -648,11 +660,9 @@ class TestSyncStructures(NoSocketsTestCase):
         }
         
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
         )
@@ -694,11 +704,9 @@ class TestSyncStructures(NoSocketsTestCase):
         mock_update_or_create_from_dict.side_effect = RuntimeError
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=self.main_ownership
@@ -777,11 +785,9 @@ class TestSyncNotifications(NoSocketsTestCase):
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
                         
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
                 
         # run update task
         self.assertFalse(
@@ -800,11 +806,9 @@ class TestSyncNotifications(NoSocketsTestCase):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
          
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
                 
         # run update task
         self.assertFalse(
@@ -837,11 +841,9 @@ class TestSyncNotifications(NoSocketsTestCase):
 
         # create test data
         Timer.objects.all().delete()
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
                 
         # run update task
         self.assertTrue(
@@ -899,11 +901,9 @@ class TestSyncNotifications(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
                 
         # run update task
         self.assertFalse(
@@ -984,11 +984,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         self.owner.save()
 
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         
         self.assertFalse(
             tasks.send_new_notifications_for_owner(
@@ -1011,11 +1009,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         mock_token.objects.filter.side_effect = TokenExpiredError()        
                         
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
                 
         # run update task
         self.assertFalse(
@@ -1039,11 +1035,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         mock_token.objects.filter.side_effect = TokenInvalidError()
                         
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
                 
         # run update task
         self.assertFalse(
@@ -1067,11 +1061,9 @@ class TestForwardNotifications(NoSocketsTestCase):
     ):
         logger.debug('test_send_new_notifications_normal')
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         
         tasks.send_all_new_notifications(rate_limited=False)
         
@@ -1094,11 +1086,9 @@ class TestForwardNotifications(NoSocketsTestCase):
     ):
         logger.debug('test_send_new_notifications_normal')
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
         
         tasks.send_all_new_notifications(rate_limited=False)
         
@@ -1122,11 +1112,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
 
         notification_types = ','.join([str(x) for x in [
             NTYPE_OWNERSHIP_TRANSFERRED,
@@ -1213,11 +1201,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         # create test data
-        p = Permission.objects.filter(            
-            codename='add_structure_owner'
-        ).first()
-        self.user.user_permissions.add(p)
-        self.user.save()
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
 
         notification_types_1 = ','.join([str(x) for x in sorted([            
             NTYPE_MOONS_EXTRACTION_CANCELED,
@@ -1322,12 +1308,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         Structure.objects.all().delete()
         
         # user needs permission to run tasks
-        p = Permission.objects.get(
-            codename='add_structure_owner', 
-            content_type__app_label='structures'
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
         )
-        self.user.user_permissions.add(p)
-        self.user.save()
         
         tasks.send_all_new_notifications(rate_limited=False)
         

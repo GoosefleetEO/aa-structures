@@ -957,8 +957,7 @@ def run_sde_update():
         EveRegion,
         EveConstellation,
         EveSolarSystem,
-        EveMoon,
-        EvePlanet,
+        EveMoon,        
     ]    
     model_tasks = list()
     for EveModel in models:        
