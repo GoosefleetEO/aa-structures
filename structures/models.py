@@ -1306,59 +1306,6 @@ class Notification(models.Model):
     def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
 
-        def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
-            text = '[{}]({}) ({})'.format(
-                solar_system.name,
-                dotlan.solar_system_url(solar_system.name),
-                solar_system.eve_constellation.eve_region.name
-            )
-            return text
-
-        def gen_alliance_link(alliance_name):
-            return '[{}]({})'.format(
-                alliance_name, dotlan.alliance_url(alliance_name)
-            )
-
-        def gen_corporation_link(corporation_name):
-            return '[{}]({})'.format(
-                corporation_name, dotlan.corporation_url(corporation_name)
-            )
-
-        def get_attacker_link(parsed_text):
-            """returns the attacker link from a parsed_text
-            For Upwell structures only
-            """
-            if "allianceName" in parsed_text:
-                name = gen_alliance_link(parsed_text['allianceName'])
-            elif "corpName" in parsed_text:
-                name = gen_corporation_link(parsed_text['corpName'])
-            else:
-                name = "(unknown)"
-
-            return name
-
-        def get_aggressor_link(parsed_text: dict) -> str:
-            """returns the aggressor link from a parsed_text
-            for POS and POCOs only
-            """
-            if 'aggressorAllianceID' in parsed_text:
-                key = 'aggressorAllianceID'
-            elif 'aggressorCorpID' in parsed_text:
-                key = 'aggressorCorpID'
-            elif 'aggressorID' in parsed_text:
-                key = 'aggressorID'
-            else:
-                return '(Unknown aggressor)'
-
-            entity, _ = EveEntity.objects.get_or_create_esi(parsed_text[key])
-            return '[{}]({})'.format(entity.name, entity.profile_url())
-
-        def get_type_id_from_event_type(event_type: int) -> int:
-            if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
-                return self.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
-            else:
-                return None
-
         logger.info(
             'Creating embed with language = %s' % translation.get_language()
         )        
@@ -1376,90 +1323,17 @@ class Notification(models.Model):
             NTYPE_STRUCTURE_DESTROYED,
             NTYPE_STRUCTURE_ONLINE
         ]:
-            structure, _ = Structure.objects.get_or_create_esi(
-                parsed_text['structureID'],
-                esi_client
+            title, description, color, thumbnail = self._gen_embed_structures_1(
+                parsed_text, esi_client
             )
-            thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
 
-            description = gettext(
-                'The %(structure_type)s %(structure_name)s in %(solar_system)s '
-            ) % {
-                'structure_type': structure.eve_type.name,
-                'structure_name': '**%s**' % structure.name,
-                'solar_system': gen_solar_system_text(structure.eve_solar_system)
-            }
-
-            if self.notification_type == NTYPE_STRUCTURE_ONLINE:
-                title = gettext('Structure online')
-                description += gettext('is now online.')
-                color = self.EMBED_COLOR_SUCCESS
-
-            if self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
-                title = gettext('Structure fuel alert')
-                description += gettext('has less then 24hrs fuel left.')
-                color = self.EMBED_COLOR_WARNING
-
-            elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:
-                title = gettext('Structure services off-line')
-                description += gettext('has all services off-lined.')
-                if structure.structureservice_set.count() > 0:
-                    qs = structure.structureservice_set.all().order_by('name')
-                    services_list = '\n'.join([x.name for x in qs])
-                    description += '\n*{}*'.format(
-                        services_list
-                    )
-
-                color = self.EMBED_COLOR_DANGER
-
-            elif self.notification_type == NTYPE_STRUCTURE_WENT_LOW_POWER:
-                title = gettext('Structure low power')
-                description += gettext('went to low power mode.')
-                color = self.EMBED_COLOR_WARNING
-
-            elif self.notification_type == NTYPE_STRUCTURE_WENT_HIGH_POWER:
-                title = gettext('Structure full power')
-                description += gettext('went to full power mode.')
-                color = self.EMBED_COLOR_SUCCESS
-
-            elif self.notification_type == NTYPE_STRUCTURE_UNANCHORING:
-                title = gettext('Structure un-anchoring')
-                unanchored_at = self.timestamp \
-                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += gettext(
-                    'has started un-anchoring. '
-                    'It will be fully un-anchored at: %s'
-                ) % unanchored_at.strftime(DATETIME_FORMAT)
-                color = self.EMBED_COLOR_INFO
-
-            elif self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
-                title = gettext('Structure under attack')
-                description += gettext('is under attack by %s') \
-                    % get_attacker_link(parsed_text)
-                color = self.EMBED_COLOR_DANGER
-
-            elif self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
-                title = gettext('Structure lost shield')
-                timer_ends_at = self.timestamp \
-                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += gettext(
-                    'has lost its shields. Armor timer end at: %s'
-                ) % timer_ends_at.strftime(DATETIME_FORMAT)
-                color = self.EMBED_COLOR_DANGER
-
-            elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
-                title = gettext('Structure lost armor')
-                timer_ends_at = self.timestamp \
-                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += gettext(
-                    'has lost its armor. Hull timer end at: %s'
-                ) % timer_ends_at.strftime(DATETIME_FORMAT)
-                color = self.EMBED_COLOR_DANGER
-
-            elif self.notification_type == NTYPE_STRUCTURE_DESTROYED:
-                title = gettext('Structure destroyed')
-                description += gettext('has been destroyed.')
-                color = self.EMBED_COLOR_DANGER
+        elif self.notification_type in [
+            NTYPE_OWNERSHIP_TRANSFERRED,
+            NTYPE_STRUCTURE_ANCHORING
+        ]:
+            title, description, color, thumbnail = self._gen_embed_structures_2(
+                parsed_text, esi_client
+            )
 
         elif self.notification_type in [
             NTYPE_MOONS_AUTOMATIC_FRACTURE,
@@ -1468,236 +1342,25 @@ class Notification(models.Model):
             NTYPE_MOONS_EXTRACTION_STARTED,
             NTYPE_MOONS_LASER_FIRED
         ]:
-            structure, _ = Structure.objects.get_or_create_esi(
-                parsed_text['structureID'],
-                esi_client
+            title, description, color, thumbnail = self._gen_embed_moon_mining(
+                parsed_text, esi_client
             )
-            moon, _ = EveMoon.objects.get_or_create_esi(
-                parsed_text['moonID']
-            )
-            thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
-            solar_system_link = gen_solar_system_text(
-                structure.eve_solar_system
-            )
-
-            if self.notification_type == NTYPE_MOONS_EXTRACTION_STARTED:
-                started_by, _ = EveEntity.objects.get_or_create_esi(
-                    parsed_text['startedBy']
-                )
-                ready_time = self._ldap_datetime_2_dt(parsed_text['readyTime'])
-                auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
-                title = gettext('Moon mining extraction started')
-                description = gettext(
-                    'A moon mining extraction has been started '
-                    'for %(structure_name)s at %(moon)s in %(solar_system)s. '
-                    'Extraction was started by %(character)s.\n'
-                    'The chunk will be ready on location at %(ready_time)s, '
-                    'and will autofracture on %(auto_time)s.\n'
-                ) % {
-                    'structure_name': '**%s**' % structure.name,
-                    'moon': moon.name,
-                    'solar_system': solar_system_link,
-                    'character': started_by,
-                    'ready_time': ready_time.strftime(DATETIME_FORMAT),
-                    'auto_time': auto_time.strftime(DATETIME_FORMAT)
-                }                
-                color = self.EMBED_COLOR_INFO
-
-            elif (
-                self.notification_type == NTYPE_MOONS_EXTRACTION_FINISHED
-            ):
-                auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
-                title = gettext('Extraction finished')
-                description = gettext(
-                    'The extraction for %(structure_name)s at %(moon)s '
-                    'in %(solar_system)s is finished and the chunk is ready '
-                    'to be shot at.\n'
-                    'The chunk will automatically fracture on %(auto_time)s.'
-                ) % {
-                    'structure_name': '**%s**' % structure.name,
-                    'moon': moon.name,
-                    'solar_system': solar_system_link,
-                    'auto_time': auto_time.strftime(DATETIME_FORMAT)
-                }                
-                color = self.EMBED_COLOR_INFO
-
-            elif self.notification_type == NTYPE_MOONS_AUTOMATIC_FRACTURE:
-                title = gettext('Automatic Fracture')
-                description = gettext(
-                    'The moondrill fitted to %(structure_name)s at %(moon)s'
-                    ' in %(solar_system)s has automatically been fired '
-                    'and the moon products are ready to be harvested.\n'
-                ) % {
-                    'structure_name': '**%s**' % structure.name,
-                    'moon': moon.name,
-                    'solar_system': solar_system_link
-                }                
-                color = self.EMBED_COLOR_SUCCESS
-
-            elif (
-                self.notification_type == NTYPE_MOONS_EXTRACTION_CANCELED
-            ):
-                if parsed_text['cancelledBy']:
-                    cancelled_by, _ = EveEntity.objects.get_or_create_esi(
-                        parsed_text['cancelledBy']
-                    )
-                else:
-                    cancelled_by = gettext('(unknown)')
-                title = gettext('Extraction cancelled')
-                description = gettext(
-                    'An ongoing extraction for %(structure_name)s at %(moon)s '
-                    'in %(solar_system)s has been cancelled by %(character)s.'
-                ) % {
-                    'structure_name': '**%s**' % structure.name,
-                    'moon': moon.name,
-                    'solar_system': solar_system_link,
-                    'character': cancelled_by
-                }
-            
-                color = self.EMBED_COLOR_WARNING
-
-            elif self.notification_type == NTYPE_MOONS_LASER_FIRED:
-                fired_by, _ = EveEntity.objects.get_or_create_esi(
-                    parsed_text['firedBy']
-                )
-                title = gettext('Moondrill fired')
-                description = gettext(
-                    'The moondrill fitted to %(structure_name)s at %(moon)s '
-                    'in %(solar_system)s has been fired by %(character)s '
-                    'and the moon products are ready to be harvested.'
-                ) % {
-                    'structure_name': '**%s**' % structure.name,
-                    'moon': moon.name,
-                    'solar_system': solar_system_link,
-                    'character': fired_by
-                }
-                color = self.EMBED_COLOR_SUCCESS
 
         elif self.notification_type in [
             NTYPE_ORBITAL_ATTACKED,
             NTYPE_ORBITAL_REINFORCED,
         ]:
-            if not esi_client:
-                esi_client = provider.client
-
-            planet, _ = EvePlanet.objects.get_or_create_esi(
-                parsed_text['planetID']
+            title, description, color, thumbnail = self._gen_embed_pocos(
+                parsed_text, esi_client
             )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                EveType.EVE_TYPE_ID_POCO
-            )
-            thumbnail = dhooks_lite.Thumbnail(
-                structure_type.icon_url()
-            )
-            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                parsed_text['solarSystemID']
-            )
-            solar_system_link = gen_solar_system_text(
-                solar_system
-            )
-            aggressor_link = get_aggressor_link(parsed_text)
-
-            if self.notification_type == NTYPE_ORBITAL_ATTACKED:
-                title = gettext('Orbital under attack')
-                description = gettext(
-                    'The %(structure_type)s at %(planet)s in %(solar_system)s '
-                    'is under attack by %(aggressor)s.'
-                ) % {
-                    'structure_type': structure_type.name,
-                    'planet': planet.name,
-                    'solar_system': solar_system_link,
-                    'aggressor': aggressor_link
-                }
-                color = self.EMBED_COLOR_WARNING
-
-            elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
-                reinforce_exit_time = \
-                    self._ldap_datetime_2_dt(parsed_text['reinforceExitTime'])
-                title = gettext('Orbital reinforced')
-                description = gettext(
-                    'The %(structure_type)s at %(planet)s in %(solar_system)s '
-                    'has been reinforced by %(aggressor)s '
-                    'and will come out at: %(date)s.'
-                ) % {
-                    'structure_type': structure_type.name,
-                    'planet': planet.name,
-                    'solar_system': solar_system_link,
-                    'aggressor': aggressor_link,
-                    'date': reinforce_exit_time.strftime(DATETIME_FORMAT)
-                }
-                color = self.EMBED_COLOR_DANGER
 
         elif self.notification_type in [
             NTYPE_TOWER_ALERT_MSG,
             NTYPE_TOWER_RESOURCE_ALERT_MSG,
         ]:
-            if not esi_client:
-                esi_client = provider.client
-
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(
-                parsed_text['moonID']
+            title, description, color, thumbnail = self._gen_embed_poses(
+                parsed_text, esi_client
             )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                parsed_text['typeID']
-            )
-            thumbnail = dhooks_lite.Thumbnail(
-                structure_type.icon_url()
-            )
-            solar_system_link = gen_solar_system_text(
-                eve_moon.eve_solar_system
-            )
-            qs_structures = Structure.objects.filter(eve_moon=eve_moon)
-            if qs_structures.exists():
-                structure_name = qs_structures.first().name
-            else:
-                structure_name = structure_type.name
-
-            if self.notification_type == NTYPE_TOWER_ALERT_MSG:
-                aggressor_link = get_aggressor_link(parsed_text)
-                damage_labels = [
-                    ('shield', gettext('shield')), 
-                    ('armor', gettext('armor')), 
-                    ('hull', gettext('hull')),                    
-                ]
-                damage_parts = list()
-                for prop in damage_labels:
-                    prop_yaml = prop[0] + 'Value'
-                    if prop_yaml in parsed_text:
-                        damage_parts.append(
-                            '{}: {:.0f}%'.format(
-                                prop[1],
-                                parsed_text[prop_yaml] * 100
-                            )
-                        )
-                damage_text = ' | '.join(damage_parts)
-                title = gettext('Starbase under attack')
-                description = gettext(
-                    'The starbase %(structure_name)s at %(moon)s '
-                    'in %(solar_system)s is under attack by %(aggressor)s.\n'
-                    '%(damage_text)s'
-                ) % {
-                    'structure_name': '**%s**' % structure_name,
-                    'moon': eve_moon.name,
-                    'solar_system': solar_system_link,
-                    'aggressor': aggressor_link,
-                    'damage_text': damage_text,
-                }
-                color = self.EMBED_COLOR_WARNING
-
-            elif self.notification_type == NTYPE_TOWER_RESOURCE_ALERT_MSG:
-                quantity = parsed_text['wants'][0]['quantity']
-                title = gettext('Starbase low on fuel')
-                description = gettext(
-                    'The starbase %(structure_name)s at %(moon)s '
-                    'in %(solar_system)s is low on fuel. '
-                    'It has %(quantity)d fuel blocks left.'
-                ) % {
-                    'structure_name': '**%s**' % structure_name,
-                    'moon': eve_moon.name,
-                    'solar_system': solar_system_link,
-                    'quantity': quantity
-                }
-                color = self.EMBED_COLOR_WARNING
 
         elif self.notification_type in [
             NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
@@ -1706,203 +1369,14 @@ class Notification(models.Model):
             NTYPE_SOV_STRUCTURE_REINFORCED,
             NTYPE_SOV_STRUCTURE_DESTROYED
         ]:
-            if not esi_client:
-                esi_client = provider.client
-
-            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                parsed_text['solarSystemID']
+            title, description, color, thumbnail = self._gen_embed_sovereignty(
+                parsed_text, esi_client
             )
-            solar_system_link = gen_solar_system_text(solar_system)
-
-            if 'structureTypeID' in parsed_text:
-                structure_type_id = parsed_text['structureTypeID']
-            elif 'campaignEventType' in parsed_text:
-                structure_type_id = get_type_id_from_event_type(
-                    parsed_text['campaignEventType']
-                )
-            else:
-                structure_type_id = EveType.EVE_TYPE_ID_TCU
-
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                structure_type_id
-            )
-            structure_type_name = structure_type.name
-            thumbnail = dhooks_lite.Thumbnail(
-                structure_type.icon_url()
-            )
-            sov_owner_link = gen_alliance_link(
-                self.owner.corporation.alliance.alliance_name
-            )
-            if self.notification_type == NTYPE_SOV_ENTOSIS_CAPTURE_STARTED:
-                title = gettext(
-                    '%(structure_type)s in %(solar_system)s is being captured'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system.name
-                }
-                description = gettext(
-                    'A capsuleer has started to influence the %(type)s '
-                    'in %(solar_system)s belonging to %(owner)s '
-                    'with an Entosis Link.'
-                ) % {
-                    'type': structure_type_name,
-                    'solar_system': solar_system_link,
-                    'owner': sov_owner_link
-                }
-                color = self.EMBED_COLOR_WARNING
-
-            elif (
-                self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED
-            ):
-                title = gettext(
-                    'Command nodes for %(structure_type)s in %(solar_system)s '
-                    'have begun to decloak'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system.name
-                }
-                description = gettext(
-                    'Command nodes for %(structure_type)s in %(solar_system)s '
-                    'can now be found throughout '
-                    'the %(constellation)s constellation'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system_link,
-                    'constellation': solar_system.eve_constellation.name
-                }
-                color = self.EMBED_COLOR_WARNING
-
-            elif self.notification_type == NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG:
-                alliance, _ = EveEntity.objects.get_or_create_esi(
-                    parsed_text['allianceID']
-                )
-                corporation, _ = EveEntity.objects.get_or_create_esi(
-                    parsed_text['corpID']
-                )
-                title = gettext(
-                    'DED Sovereignty claim acknowledgment: %s'
-                ) % solar_system.name
-                
-                description = gettext(
-                    'DED now officially acknowledges that your '
-                    'member corporation %(corporation)s has claimed '
-                    'sovereignty on behalf of %(alliance)s in %(solar_system)s.'
-                ) % {
-                    'corporation': gen_corporation_link(corporation.name),
-                    'alliance': gen_alliance_link(alliance.name),
-                    'solar_system': solar_system_link
-                }
-                color = self.EMBED_COLOR_SUCCESS
-
-            elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
-                timer_starts = self._ldap_datetime_2_dt(
-                    parsed_text['decloakTime']
-                )
-                title = gettext(
-                    '%(structure_type)s in %(solar_system)s '
-                    'has entered reinforced mode'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system.name
-                }
-                description = gettext(
-                    'The %(structure_type)s in %(solar_system)s belonging '
-                    'to %(owner)s has been reinforced by '
-                    'hostile forces and command nodes '
-                    'will begin decloaking at %(date)s'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system_link,
-                    'owner': sov_owner_link,
-                    'date': timer_starts.strftime(DATETIME_FORMAT)
-                }
-                color = self.EMBED_COLOR_DANGER
-
-            elif self.notification_type == NTYPE_SOV_STRUCTURE_DESTROYED:
-                title = gettext(
-                    '%(structure_type)s in %(solar_system)s has been destroyed'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system.name
-                }
-                description = gettext(
-                    'The command nodes for %(structure_type)s '
-                    'in %(solar_system)s belonging to %(owner)s have been '
-                    'destroyed by hostile forces.'
-                ) % {
-                    'structure_type': '**%s**' % structure_type_name,
-                    'solar_system': solar_system_link,
-                    'owner': sov_owner_link
-                }
-                color = self.EMBED_COLOR_DANGER
 
         else:
-            if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:
-                structure_type, _ = EveType.objects.get_or_create_esi(
-                    parsed_text['structureTypeID']
-                )
-                thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    parsed_text['solarSystemID']
-                )
-                description = gettext(
-                    'The %(structure_type)s %(structure_name)s '
-                    'in %(solar_system)s '
-                ) % {
-                    'structure_type': structure_type.name,
-                    'structure_name': '**%s**' % parsed_text['structureName'],
-                    'solar_system': gen_solar_system_text(solar_system)
-                }
-                from_corporation, _ = \
-                    EveEntity.objects.get_or_create_esi(
-                        parsed_text['oldOwnerCorpID']
-                    )
-                to_corporation, _ = \
-                    EveEntity.objects.get_or_create_esi(
-                        parsed_text['newOwnerCorpID']
-                    )
-                character, _ = \
-                    EveEntity.objects.get_or_create_esi(
-                        parsed_text['charID']
-                    )
-                description += gettext(
-                    'has been transferred from %(from_corporation)s '
-                    'to %(to_corporation)s by %(character)s.'
-                ) % {
-                    'from_corporation': gen_corporation_link(from_corporation.name),
-                    'to_corporation': gen_corporation_link(to_corporation.name),
-                    'character': character.name
-                }
-                title = gettext('Ownership transferred')
-                color = self.EMBED_COLOR_INFO
-
-            elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
-                structure_type, _ = EveType.objects.get_or_create_esi(
-                    parsed_text['structureTypeID']
-                )
-                thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    parsed_text['solarsystemID']
-                )
-                description = gettext(
-                    '%(structure_type)s has started anchoring '
-                    'in %(solar_system)s. '
-                ) % {
-                    'structure_type': structure_type.name,
-                    'solar_system': gen_solar_system_text(solar_system)
-                }
-                unanchored_at = self.timestamp \
-                    + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
-                description += 'The anchoring timer ends at: {}'.format(
-                    unanchored_at.strftime(DATETIME_FORMAT)
-                )
-                title = gettext('Structure anchoring')
-                color = self.EMBED_COLOR_INFO
-
-            else:
-                raise NotImplementedError('type: {}'.format(
-                    self.notification_type
-                ))
+            raise NotImplementedError('type: {}'.format(
+                self.notification_type
+            ))
 
         if STRUCTURES_DEVELOPER_MODE:
             footer = dhooks_lite.Footer(self.notification_id)
@@ -1917,6 +1391,585 @@ class Notification(models.Model):
             timestamp=self.timestamp,
             footer=footer
         )
+
+    @translation.override(settings.LANGUAGE_CODE)
+    def _gen_embed_structures_1(self, parsed_text, esi_client) -> tuple:
+        structure, _ = Structure.objects.get_or_create_esi(
+            parsed_text['structureID'],
+            esi_client
+        )        
+        description = gettext(
+            'The %(structure_type)s %(structure_name)s in %(solar_system)s '
+        ) % {
+            'structure_type': structure.eve_type.name,
+            'structure_name': '**%s**' % structure.name,
+            'solar_system': self._gen_solar_system_text(structure.eve_solar_system)
+        }
+
+        if self.notification_type == NTYPE_STRUCTURE_ONLINE:
+            title = gettext('Structure online')
+            description += gettext('is now online.')
+            color = self.EMBED_COLOR_SUCCESS
+
+        if self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
+            title = gettext('Structure fuel alert')
+            description += gettext('has less then 24hrs fuel left.')
+            color = self.EMBED_COLOR_WARNING
+
+        elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:
+            title = gettext('Structure services off-line')
+            description += gettext('has all services off-lined.')
+            if structure.structureservice_set.count() > 0:
+                qs = structure.structureservice_set.all().order_by('name')
+                services_list = '\n'.join([x.name for x in qs])
+                description += '\n*{}*'.format(
+                    services_list
+                )
+
+            color = self.EMBED_COLOR_DANGER
+
+        elif self.notification_type == NTYPE_STRUCTURE_WENT_LOW_POWER:
+            title = gettext('Structure low power')
+            description += gettext('went to low power mode.')
+            color = self.EMBED_COLOR_WARNING
+
+        elif self.notification_type == NTYPE_STRUCTURE_WENT_HIGH_POWER:
+            title = gettext('Structure full power')
+            description += gettext('went to full power mode.')
+            color = self.EMBED_COLOR_SUCCESS
+
+        elif self.notification_type == NTYPE_STRUCTURE_UNANCHORING:
+            title = gettext('Structure un-anchoring')
+            unanchored_at = self.timestamp \
+                + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+            description += gettext(
+                'has started un-anchoring. '
+                'It will be fully un-anchored at: %s'
+            ) % unanchored_at.strftime(DATETIME_FORMAT)
+            color = self.EMBED_COLOR_INFO
+
+        elif self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
+            title = gettext('Structure under attack')
+            description += gettext('is under attack by %s') \
+                % self._get_attacker_link(parsed_text)
+            color = self.EMBED_COLOR_DANGER
+
+        elif self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
+            title = gettext('Structure lost shield')
+            timer_ends_at = self.timestamp \
+                + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+            description += gettext(
+                'has lost its shields. Armor timer end at: %s'
+            ) % timer_ends_at.strftime(DATETIME_FORMAT)
+            color = self.EMBED_COLOR_DANGER
+
+        elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
+            title = gettext('Structure lost armor')
+            timer_ends_at = self.timestamp \
+                + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+            description += gettext(
+                'has lost its armor. Hull timer end at: %s'
+            ) % timer_ends_at.strftime(DATETIME_FORMAT)
+            color = self.EMBED_COLOR_DANGER
+
+        elif self.notification_type == NTYPE_STRUCTURE_DESTROYED:
+            title = gettext('Structure destroyed')
+            description += gettext('has been destroyed.')
+            color = self.EMBED_COLOR_DANGER
+        
+        thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
+        return title, description, color, thumbnail
+
+    @translation.override(settings.LANGUAGE_CODE)
+    def _gen_embed_structures_2(self, parsed_text, esi_client) -> tuple:
+        structure_type, _ = EveType.objects.get_or_create_esi(
+            parsed_text['structureTypeID']
+        )        
+        if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:            
+            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                parsed_text['solarSystemID']
+            )
+            description = gettext(
+                'The %(structure_type)s %(structure_name)s '
+                'in %(solar_system)s '
+            ) % {
+                'structure_type': structure_type.name,
+                'structure_name': '**%s**' % parsed_text['structureName'],
+                'solar_system': self._gen_solar_system_text(solar_system)
+            }
+            from_corporation, _ = \
+                EveEntity.objects.get_or_create_esi(
+                    parsed_text['oldOwnerCorpID']
+                )
+            to_corporation, _ = \
+                EveEntity.objects.get_or_create_esi(
+                    parsed_text['newOwnerCorpID']
+                )
+            character, _ = \
+                EveEntity.objects.get_or_create_esi(
+                    parsed_text['charID']
+                )
+            description += gettext(
+                'has been transferred from %(from_corporation)s '
+                'to %(to_corporation)s by %(character)s.'
+            ) % {
+                'from_corporation': self._gen_corporation_link(
+                    from_corporation.name
+                ),
+                'to_corporation': self._gen_corporation_link(
+                    to_corporation.name
+                ),
+                'character': character.name
+            }
+            title = gettext('Ownership transferred')
+            color = self.EMBED_COLOR_INFO
+
+        elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:            
+            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                parsed_text['solarsystemID']
+            )
+            description = gettext(
+                '%(structure_type)s has started anchoring '
+                'in %(solar_system)s. '
+            ) % {
+                'structure_type': structure_type.name,
+                'solar_system': self._gen_solar_system_text(solar_system)
+            }
+            unanchored_at = self.timestamp \
+                + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+            description += 'The anchoring timer ends at: {}'.format(
+                unanchored_at.strftime(DATETIME_FORMAT)
+            )
+            title = gettext('Structure anchoring')
+            color = self.EMBED_COLOR_INFO
+
+        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        return title, description, color, thumbnail
+
+    @translation.override(settings.LANGUAGE_CODE)
+    def _gen_embed_moon_mining(self, parsed_text, esi_client) -> tuple:
+        structure, _ = Structure.objects.get_or_create_esi(
+            parsed_text['structureID'],
+            esi_client
+        )
+        moon, _ = EveMoon.objects.get_or_create_esi(
+            parsed_text['moonID']
+        )        
+        solar_system_link = self._gen_solar_system_text(
+            structure.eve_solar_system
+        )
+
+        if self.notification_type == NTYPE_MOONS_EXTRACTION_STARTED:
+            started_by, _ = EveEntity.objects.get_or_create_esi(
+                parsed_text['startedBy']
+            )
+            ready_time = self._ldap_datetime_2_dt(parsed_text['readyTime'])
+            auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
+            title = gettext('Moon mining extraction started')
+            description = gettext(
+                'A moon mining extraction has been started '
+                'for %(structure_name)s at %(moon)s in %(solar_system)s. '
+                'Extraction was started by %(character)s.\n'
+                'The chunk will be ready on location at %(ready_time)s, '
+                'and will autofracture on %(auto_time)s.\n'
+            ) % {
+                'structure_name': '**%s**' % structure.name,
+                'moon': moon.name,
+                'solar_system': solar_system_link,
+                'character': started_by,
+                'ready_time': ready_time.strftime(DATETIME_FORMAT),
+                'auto_time': auto_time.strftime(DATETIME_FORMAT)
+            }                
+            color = self.EMBED_COLOR_INFO
+
+        elif (
+            self.notification_type == NTYPE_MOONS_EXTRACTION_FINISHED
+        ):
+            auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
+            title = gettext('Extraction finished')
+            description = gettext(
+                'The extraction for %(structure_name)s at %(moon)s '
+                'in %(solar_system)s is finished and the chunk is ready '
+                'to be shot at.\n'
+                'The chunk will automatically fracture on %(auto_time)s.'
+            ) % {
+                'structure_name': '**%s**' % structure.name,
+                'moon': moon.name,
+                'solar_system': solar_system_link,
+                'auto_time': auto_time.strftime(DATETIME_FORMAT)
+            }                
+            color = self.EMBED_COLOR_INFO
+
+        elif self.notification_type == NTYPE_MOONS_AUTOMATIC_FRACTURE:
+            title = gettext('Automatic Fracture')
+            description = gettext(
+                'The moondrill fitted to %(structure_name)s at %(moon)s'
+                ' in %(solar_system)s has automatically been fired '
+                'and the moon products are ready to be harvested.\n'
+            ) % {
+                'structure_name': '**%s**' % structure.name,
+                'moon': moon.name,
+                'solar_system': solar_system_link
+            }                
+            color = self.EMBED_COLOR_SUCCESS
+
+        elif (
+            self.notification_type == NTYPE_MOONS_EXTRACTION_CANCELED
+        ):
+            if parsed_text['cancelledBy']:
+                cancelled_by, _ = EveEntity.objects.get_or_create_esi(
+                    parsed_text['cancelledBy']
+                )
+            else:
+                cancelled_by = gettext('(unknown)')
+            title = gettext('Extraction cancelled')
+            description = gettext(
+                'An ongoing extraction for %(structure_name)s at %(moon)s '
+                'in %(solar_system)s has been cancelled by %(character)s.'
+            ) % {
+                'structure_name': '**%s**' % structure.name,
+                'moon': moon.name,
+                'solar_system': solar_system_link,
+                'character': cancelled_by
+            }
+        
+            color = self.EMBED_COLOR_WARNING
+
+        elif self.notification_type == NTYPE_MOONS_LASER_FIRED:
+            fired_by, _ = EveEntity.objects.get_or_create_esi(
+                parsed_text['firedBy']
+            )
+            title = gettext('Moondrill fired')
+            description = gettext(
+                'The moondrill fitted to %(structure_name)s at %(moon)s '
+                'in %(solar_system)s has been fired by %(character)s '
+                'and the moon products are ready to be harvested.'
+            ) % {
+                'structure_name': '**%s**' % structure.name,
+                'moon': moon.name,
+                'solar_system': solar_system_link,
+                'character': fired_by
+            }
+            color = self.EMBED_COLOR_SUCCESS
+
+        thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
+        return title, description, color, thumbnail
+
+    @translation.override(settings.LANGUAGE_CODE)
+    def _gen_embed_pocos(self, parsed_text, esi_client) -> tuple:
+        if not esi_client:
+            esi_client = provider.client
+
+        planet, _ = EvePlanet.objects.get_or_create_esi(
+            parsed_text['planetID']
+        )
+        structure_type, _ = EveType.objects.get_or_create_esi(
+            EveType.EVE_TYPE_ID_POCO
+        )
+        thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url()
+        )
+        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+            parsed_text['solarSystemID']
+        )
+        solar_system_link = self._gen_solar_system_text(
+            solar_system
+        )
+        aggressor_link = self._get_aggressor_link(parsed_text)
+
+        if self.notification_type == NTYPE_ORBITAL_ATTACKED:
+            title = gettext('Orbital under attack')
+            description = gettext(
+                'The %(structure_type)s at %(planet)s in %(solar_system)s '
+                'is under attack by %(aggressor)s.'
+            ) % {
+                'structure_type': structure_type.name,
+                'planet': planet.name,
+                'solar_system': solar_system_link,
+                'aggressor': aggressor_link
+            }
+            color = self.EMBED_COLOR_WARNING
+
+        elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
+            reinforce_exit_time = \
+                self._ldap_datetime_2_dt(parsed_text['reinforceExitTime'])
+            title = gettext('Orbital reinforced')
+            description = gettext(
+                'The %(structure_type)s at %(planet)s in %(solar_system)s '
+                'has been reinforced by %(aggressor)s '
+                'and will come out at: %(date)s.'
+            ) % {
+                'structure_type': structure_type.name,
+                'planet': planet.name,
+                'solar_system': solar_system_link,
+                'aggressor': aggressor_link,
+                'date': reinforce_exit_time.strftime(DATETIME_FORMAT)
+            }
+            color = self.EMBED_COLOR_DANGER
+        return title, description, color, thumbnail
+
+    @translation.override(settings.LANGUAGE_CODE)
+    def _gen_embed_poses(self, parsed_text, esi_client) -> tuple:
+        if not esi_client:
+            esi_client = provider.client
+
+        eve_moon, _ = EveMoon.objects.get_or_create_esi(
+            parsed_text['moonID']
+        )
+        structure_type, _ = EveType.objects.get_or_create_esi(
+            parsed_text['typeID']
+        )        
+        solar_system_link = self._gen_solar_system_text(
+            eve_moon.eve_solar_system
+        )
+        qs_structures = Structure.objects.filter(eve_moon=eve_moon)
+        if qs_structures.exists():
+            structure_name = qs_structures.first().name
+        else:
+            structure_name = structure_type.name
+
+        if self.notification_type == NTYPE_TOWER_ALERT_MSG:
+            aggressor_link = self._get_aggressor_link(parsed_text)
+            damage_labels = [
+                ('shield', gettext('shield')), 
+                ('armor', gettext('armor')), 
+                ('hull', gettext('hull')),                    
+            ]
+            damage_parts = list()
+            for prop in damage_labels:
+                prop_yaml = prop[0] + 'Value'
+                if prop_yaml in parsed_text:
+                    damage_parts.append(
+                        '{}: {:.0f}%'.format(
+                            prop[1],
+                            parsed_text[prop_yaml] * 100
+                        )
+                    )
+            damage_text = ' | '.join(damage_parts)
+            title = gettext('Starbase under attack')
+            description = gettext(
+                'The starbase %(structure_name)s at %(moon)s '
+                'in %(solar_system)s is under attack by %(aggressor)s.\n'
+                '%(damage_text)s'
+            ) % {
+                'structure_name': '**%s**' % structure_name,
+                'moon': eve_moon.name,
+                'solar_system': solar_system_link,
+                'aggressor': aggressor_link,
+                'damage_text': damage_text,
+            }
+            color = self.EMBED_COLOR_WARNING
+
+        elif self.notification_type == NTYPE_TOWER_RESOURCE_ALERT_MSG:
+            quantity = parsed_text['wants'][0]['quantity']
+            title = gettext('Starbase low on fuel')
+            description = gettext(
+                'The starbase %(structure_name)s at %(moon)s '
+                'in %(solar_system)s is low on fuel. '
+                'It has %(quantity)d fuel blocks left.'
+            ) % {
+                'structure_name': '**%s**' % structure_name,
+                'moon': eve_moon.name,
+                'solar_system': solar_system_link,
+                'quantity': quantity
+            }
+            color = self.EMBED_COLOR_WARNING
+        
+        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        return title, description, color, thumbnail
+
+    @translation.override(settings.LANGUAGE_CODE)
+    def _gen_embed_sovereignty(self, parsed_text, esi_client) -> tuple:
+        if not esi_client:
+            esi_client = provider.client
+
+        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+            parsed_text['solarSystemID']
+        )
+        solar_system_link = self._gen_solar_system_text(solar_system)
+
+        if 'structureTypeID' in parsed_text:
+            structure_type_id = parsed_text['structureTypeID']
+        elif 'campaignEventType' in parsed_text:
+            structure_type_id = self._get_type_id_from_event_type(
+                parsed_text['campaignEventType']
+            )
+        else:
+            structure_type_id = EveType.EVE_TYPE_ID_TCU
+
+        structure_type, _ = EveType.objects.get_or_create_esi(
+            structure_type_id
+        )
+        structure_type_name = structure_type.name        
+        sov_owner_link = self._gen_alliance_link(
+            self.owner.corporation.alliance.alliance_name
+        )
+        if self.notification_type == NTYPE_SOV_ENTOSIS_CAPTURE_STARTED:
+            title = gettext(
+                '%(structure_type)s in %(solar_system)s is being captured'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system.name
+            }
+            description = gettext(
+                'A capsuleer has started to influence the %(type)s '
+                'in %(solar_system)s belonging to %(owner)s '
+                'with an Entosis Link.'
+            ) % {
+                'type': structure_type_name,
+                'solar_system': solar_system_link,
+                'owner': sov_owner_link
+            }
+            color = self.EMBED_COLOR_WARNING
+
+        elif (
+            self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED
+        ):
+            title = gettext(
+                'Command nodes for %(structure_type)s in %(solar_system)s '
+                'have begun to decloak'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system.name
+            }
+            description = gettext(
+                'Command nodes for %(structure_type)s in %(solar_system)s '
+                'can now be found throughout '
+                'the %(constellation)s constellation'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system_link,
+                'constellation': solar_system.eve_constellation.name
+            }
+            color = self.EMBED_COLOR_WARNING
+
+        elif self.notification_type == NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG:
+            alliance, _ = EveEntity.objects.get_or_create_esi(
+                parsed_text['allianceID']
+            )
+            corporation, _ = EveEntity.objects.get_or_create_esi(
+                parsed_text['corpID']
+            )
+            title = gettext(
+                'DED Sovereignty claim acknowledgment: %s'
+            ) % solar_system.name
+            
+            description = gettext(
+                'DED now officially acknowledges that your '
+                'member corporation %(corporation)s has claimed '
+                'sovereignty on behalf of %(alliance)s in %(solar_system)s.'
+            ) % {
+                'corporation': self._gen_corporation_link(corporation.name),
+                'alliance': self._gen_alliance_link(alliance.name),
+                'solar_system': solar_system_link
+            }
+            color = self.EMBED_COLOR_SUCCESS
+
+        elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
+            timer_starts = self._ldap_datetime_2_dt(
+                parsed_text['decloakTime']
+            )
+            title = gettext(
+                '%(structure_type)s in %(solar_system)s '
+                'has entered reinforced mode'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system.name
+            }
+            description = gettext(
+                'The %(structure_type)s in %(solar_system)s belonging '
+                'to %(owner)s has been reinforced by '
+                'hostile forces and command nodes '
+                'will begin decloaking at %(date)s'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system_link,
+                'owner': sov_owner_link,
+                'date': timer_starts.strftime(DATETIME_FORMAT)
+            }
+            color = self.EMBED_COLOR_DANGER
+
+        elif self.notification_type == NTYPE_SOV_STRUCTURE_DESTROYED:
+            title = gettext(
+                '%(structure_type)s in %(solar_system)s has been destroyed'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system.name
+            }
+            description = gettext(
+                'The command nodes for %(structure_type)s '
+                'in %(solar_system)s belonging to %(owner)s have been '
+                'destroyed by hostile forces.'
+            ) % {
+                'structure_type': '**%s**' % structure_type_name,
+                'solar_system': solar_system_link,
+                'owner': sov_owner_link
+            }
+            color = self.EMBED_COLOR_DANGER
+        
+        thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url()
+        )
+        return title, description, color, thumbnail
+
+    @classmethod
+    def _gen_solar_system_text(cls, solar_system: EveSolarSystem) -> str:
+        text = '[{}]({}) ({})'.format(
+            solar_system.name,
+            dotlan.solar_system_url(solar_system.name),
+            solar_system.eve_constellation.eve_region.name
+        )
+        return text
+
+    @classmethod
+    def _gen_alliance_link(cls, alliance_name):
+        return '[{}]({})'.format(
+            alliance_name, dotlan.alliance_url(alliance_name)
+        )
+
+    @classmethod
+    def _gen_corporation_link(cls, corporation_name):
+        return '[{}]({})'.format(
+            corporation_name, dotlan.corporation_url(corporation_name)
+        )
+
+    @classmethod
+    def _get_attacker_link(cls, parsed_text):
+        """returns the attacker link from a parsed_text
+        For Upwell structures only
+        """
+        if "allianceName" in parsed_text:
+            name = cls._gen_alliance_link(parsed_text['allianceName'])
+        elif "corpName" in parsed_text:
+            name = cls._gen_corporation_link(parsed_text['corpName'])
+        else:
+            name = "(unknown)"
+
+        return name
+
+    @classmethod
+    def _get_aggressor_link(cls, parsed_text: dict) -> str:
+        """returns the aggressor link from a parsed_text
+        for POS and POCOs only
+        """
+        if 'aggressorAllianceID' in parsed_text:
+            key = 'aggressorAllianceID'
+        elif 'aggressorCorpID' in parsed_text:
+            key = 'aggressorCorpID'
+        elif 'aggressorID' in parsed_text:
+            key = 'aggressorID'
+        else:
+            return '(Unknown aggressor)'
+
+        entity, _ = EveEntity.objects.get_or_create_esi(parsed_text[key])
+        return '[{}]({})'.format(entity.name, entity.profile_url())
+
+    @classmethod
+    def _get_type_id_from_event_type(cls, event_type: int) -> int:
+        if event_type in cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
+            return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
+        else:
+            return None
 
     @translation.override(settings.LANGUAGE_CODE)
     def send_to_webhook(    
