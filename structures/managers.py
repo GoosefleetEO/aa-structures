@@ -119,7 +119,8 @@ class EveUniverseManager(models.Manager):
 
         return obj, created
 
-    def _update_or_create_children(self, child_class, eve_data_obj, key):
+    @staticmethod
+    def _update_or_create_children(child_class, eve_data_obj, key):
         ChildClass = locate(__package__ + '.models.' + child_class)
         for eve_data_obj_2 in eve_data_obj[key]:
             eve_id = eve_data_obj_2[ChildClass.esi_pk()]
@@ -164,13 +165,13 @@ class EveEntityManager(models.Manager):
             ).result()
             if len(response) > 0:
                 first = response[0]
-                type = EveEntity.get_matching_entity_category(
+                category = EveEntity.get_matching_entity_category(
                     first['category']
                 )
                 obj, created = self.update_or_create(
                     id=eve_entity_id,
                     defaults={
-                        'category': type,
+                        'category': category,
                         'name': first['name']
                     }
                 )
@@ -251,7 +252,7 @@ class StructureManager(models.Manager):
             )
         
         except Exception as ex:
-            logger.warn(add_prefix('Failed to load structure: '.format(ex)))
+            logger.warn(add_prefix('Failed to load structure: {}'.format(ex)))
             raise ex
 
         return obj, created
@@ -331,7 +332,7 @@ class StructureManager(models.Manager):
         else:
             eve_moon = None
 
-        obj, created = Structure.objects.update_or_create(
+        obj, created = self.update_or_create(
             id=structure['structure_id'],
             defaults={
                 'owner': owner,

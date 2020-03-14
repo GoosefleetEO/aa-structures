@@ -1,9 +1,9 @@
-import logging
-from time import sleep
-import yaml
 import datetime
 import json
+import logging
+from time import sleep
 import urllib
+import yaml
 
 import pytz
 import dhooks_lite
@@ -491,20 +491,14 @@ class EveUniverse(models.Model):
     @classmethod
     def child_mappings(cls) -> dict:
         """returns the mapping of children for this class"""
-        mappings = cls._eve_universe_meta_attr('children')
-        if mappings is None:
-            return dict()
-        else:
-            return mappings
+        mappings = cls._eve_universe_meta_attr('children')        
+        return mappings if mappings else dict()
 
     @classmethod
     def field_mappings(cls) -> dict:
         """returns the mappings for model fields vs. esi fields"""        
         mappings = cls._eve_universe_meta_attr('field_mappings')
-        if mappings is None:
-            return dict()
-        else:
-            return mappings
+        return mappings if mappings else dict()
 
     @classmethod
     def fk_mappings(cls) -> dict:
@@ -513,11 +507,12 @@ class EveUniverse(models.Model):
         'model field name': ('Foreign Key name on ESI', 'related model class')
         """
         
-        def convert_to_esi_name(name: str, extra_fk_mappings: dict) -> str:
+        def convert_to_esi_name(name: str, extra_fk_mappings: dict) -> str:            
             if name in extra_fk_mappings:
-                return extra_fk_mappings[name]
+                esi_name = extra_fk_mappings[name]
             else:
-                return name.replace('eve_', '') + '_id'
+                esi_name = name.replace('eve_', '') + '_id'
+            return esi_name
         
         extra_fk_mappings = cls._eve_universe_meta_attr('fk_mappings')
         if not extra_fk_mappings:
@@ -536,11 +531,8 @@ class EveUniverse(models.Model):
     @classmethod
     def has_localization(cls) -> bool:
         has_localization = cls._eve_universe_meta_attr('has_localization')
-        if has_localization is None:
-            return True
-        else:
-            return has_localization
-
+        return True if has_localization is None else has_localization
+        
     @classmethod
     def _eve_universe_meta_attr(
         cls, attr_name: str, is_mandatory: bool = False
@@ -1046,10 +1038,7 @@ class Structure(models.Model):
 
     @property
     def is_low_power(self):
-        if self.eve_type.is_poco:
-            return False
-        else:
-            return not self.fuel_expires
+        return False if self.eve_type.is_poco else not self.fuel_expires
 
     @property
     def is_reinforced(self):
@@ -1179,16 +1168,14 @@ class EveEntity(models.Model):
         return self.get_matching_entity_category(self.category)
 
     def profile_url(self) -> str:
-        """returns link to website with profile info about this entity"""
-        
+        """returns link to website with profile info about this entity"""        
         if self.category == self.CATEGORY_CORPORATION:
-            return dotlan.corporation_url(self.name)
-
+            url = dotlan.corporation_url(self.name)
         elif self.category == self.CATEGORY_ALLIANCE:
-            return dotlan.alliance_url(self.name)
-        
+            url = dotlan.alliance_url(self.name)        
         else:
-            return ''
+            url = ''
+        return url
 
     @classmethod
     def get_matching_entity_category(cls, type_name) -> int:
@@ -1198,11 +1185,8 @@ class EveEntity(models.Model):
             if type_name == x[1]:
                 match = x
                 break
-        if match:
-            return match[0]
-        else:
-            return cls.CATEGORY_OTHER
-
+        return match[0] if match else cls.CATEGORY_OTHER
+        
 
 class Notification(models.Model):
     """An EVE Online notification about structures"""
@@ -1332,7 +1316,7 @@ class Notification(models.Model):
             NTYPE_STRUCTURE_ANCHORING
         ]:
             title, description, color, thumbnail = self._gen_embed_structures_2(
-                parsed_text, esi_client
+                parsed_text
             )
 
         elif self.notification_type in [
@@ -1481,7 +1465,7 @@ class Notification(models.Model):
         return title, description, color, thumbnail
 
     @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_structures_2(self, parsed_text, esi_client) -> tuple:
+    def _gen_embed_structures_2(self, parsed_text) -> tuple:
         structure_type, _ = EveType.objects.get_or_create_esi(
             parsed_text['structureTypeID']
         )        
@@ -2308,7 +2292,7 @@ class Notification(models.Model):
                 if 'aggressorCorpID' in parsed_text:
                     corporation_id = int(parsed_text['aggressorCorpID'])
 
-            if corporation_id >= 1000000 and corporation_id <= 2000000:
+            if 1000000 <= corporation_id <= 2000000:
                 result = True
 
         return result
@@ -2344,7 +2328,5 @@ class Notification(models.Model):
             if type_name == x[1]:
                 match = x
                 break
-        if match:
-            return match[0]
-        else:
-            return None
+        
+        return match[0] if match else None

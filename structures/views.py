@@ -7,7 +7,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect, reverse
 from django.utils.html import format_html, mark_safe, escape
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
@@ -85,7 +85,7 @@ def structure_list(request):
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
-        'page_title': _(__title__),
+        'page_title': gettext_lazy(__title__),
         'active_tags': active_tags,
         'tags_filter_form': form,
         'tags_exist': StructureTag.objects.exists()
@@ -263,13 +263,13 @@ def structure_list_data(request):
 
         # add low power label or date when fuel runs out
         if row['is_poco'] or row['is_starbase']:
-            fuel_expires_display = _('N/A')
+            fuel_expires_display = gettext_lazy('N/A')
             fuel_expires_timestamp = None
         else:
             if row['is_low_power']:
                 fuel_expires_display = format_html_lazy(
                     '<span class="label label-default">{}</span>',
-                    _('Low Power')
+                    gettext_lazy('Low Power')
                 )                    
                 fuel_expires_timestamp = None
             elif structure.fuel_expires:
@@ -319,7 +319,7 @@ def add_structure_owner(request, token):
         messages_plus.error(
             request,            
             format_html(
-                _(
+                gettext_lazy(
                     'You can only use your main or alt characters '
                     'to add corporations. '
                     'However, character %s is neither. '
@@ -341,7 +341,7 @@ def add_structure_owner(request, token):
             )
 
         with transaction.atomic():
-            owner, created = Owner.objects.update_or_create(
+            owner, _ = Owner.objects.update_or_create(
                 corporation=corporation,
                 defaults={
                     'character': owned_char
@@ -354,14 +354,12 @@ def add_structure_owner(request, token):
                 owner.save()
 
         tasks.update_structures_for_owner.delay(
-            owner_pk=owner.pk,
-            force_sync=True,
-            user_pk=request.user.pk
+            owner_pk=owner.pk, force_sync=True, user_pk=request.user.pk
         )
         messages_plus.info(
             request,            
             format_html(                
-                _(
+                gettext_lazy(
                     '%(corporation)s has been added with %(character)s '
                     'as sync character. We have started fetching structures '
                     'for this corporation. You will receive a report once '
@@ -379,7 +377,7 @@ def add_structure_owner(request, token):
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
             notify_admins(                
-                message=_(
+                message=gettext_lazy(
                     '%(corporation)s was added as new '
                     'structure owner by %(user)s.') % {                    
                         'corporation': owner.corporation.corporation_name,
@@ -400,11 +398,11 @@ def service_status(request):
     of this services. Service will be reported as down if any of the
     configured structure or notifications syncs fails or is delayed
     """
-    ok = True
+    status_ok = True
     for owner in Owner.objects.filter(is_included_in_service_status=True):
-        ok = ok and owner.is_all_syncs_ok()
+        status_ok = status_ok and owner.is_all_syncs_ok()
 
-    if ok:
-        return HttpResponse(_('service is up'))
+    if status_ok:
+        return HttpResponse(gettext_lazy('service is up'))
     else:
-        return HttpResponseServerError(_('service is down'))
+        return HttpResponseServerError(gettext_lazy('service is down'))

@@ -250,12 +250,9 @@ def _fetch_custom_offices(
     def extract_planet_name(text: str) -> str:
         """extract name of planet from assert name for a customs office"""
         r = re.compile(r'Customs Office \((.+)\)')
-        m = r.match(text)
-        if m:
-            return m.group(1)
-        else:
-            return text
-
+        matches = r.match(text)
+        return matches.group(1) if matches else text
+        
     logger.info(add_prefix('Fetching custom offices from ESI - page 1'))
     corporation_id = owner.corporation.corporation_id
 
@@ -418,7 +415,7 @@ def _fetch_starbases(
             names_data_chunk = esi_client.Assets\
                 .post_corporations_corporation_id_assets_names(
                     corporation_id=corporation_id,
-                    item_ids=item_ids
+                    item_ids=item_ids_chunk
                 )\
                 .result()
             names_data += names_data_chunk
@@ -575,9 +572,7 @@ def update_all_structures(force_sync=False):
 
 @shared_task
 def fetch_notifications_for_owner(
-    owner_pk,
-    force_sync: bool = False,
-    user_pk=None
+    owner_pk, force_sync: bool = False, user_pk=None
 ):
     """fetches notification for owner and proceses them"""
 
@@ -606,8 +601,7 @@ def fetch_notifications_for_owner(
             # fetching data from ESI
             logger.info(add_prefix('Fetching notifications from ESI'))
             esi_client = esi_client_factory(
-                token=token,
-                spec_file=get_swagger_spec_path()
+                token=token, spec_file=get_swagger_spec_path()
             )
             notifications = \
                 esi_client.Character.get_characters_character_id_notifications(
@@ -635,11 +629,7 @@ def fetch_notifications_for_owner(
                         filename
                     )
                 ))
-                with open(
-                    file=filename,
-                    mode='a',
-                    encoding='utf-8'
-                ) as f:
+                with open(file=filename, mode='a', encoding='utf-8') as f:
                     f.write('[{}] {}:\n'.format(
                         now().strftime(DATETIME_FORMAT),
                         owner.corporation.corporation_ticker
@@ -775,8 +765,7 @@ def fetch_all_notifications(force_sync=False):
     for owner in Owner.objects.all():
         if owner.is_active:
             fetch_notifications_for_owner.delay(
-                owner.pk,
-                force_sync=force_sync
+                owner.pk, force_sync=force_sync
             )
 
 
