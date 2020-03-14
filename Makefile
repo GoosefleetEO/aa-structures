@@ -7,7 +7,7 @@ makemessages:
 	django-admin makemessages -l es --ignore 'build/*' && \
 	django-admin makemessages -l zh_Hans --ignore 'build/*'
 
-tx_upload:
+tx_push:
 	tx push --source
 
 compilemessages:	

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-14 15:28+0100\n"
+"POT-Creation-Date: 2020-03-14 19:48+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -32,6 +32,10 @@ msgstr ""
 
 #: models.py:157
 msgid "Can add new structure owner"
+msgstr ""
+
+#: models.py:167
+msgid "Discord Webhook"
 msgstr ""
 
 #: models.py:173
@@ -339,7 +343,7 @@ msgstr ""
 #: models.py:1386 models.py:1849
 #, python-format
 msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
-msgstr "Die %(structure_type)s %(structure_name)s in %(solar_system)s "
+msgstr ""
 
 #: models.py:1394
 msgid "Structure online"
@@ -419,11 +423,11 @@ msgstr ""
 
 #: models.py:1460
 msgid "Structure destroyed"
-msgstr "Struktur zerstört"
+msgstr ""
 
 #: models.py:1461
 msgid "has been destroyed."
-msgstr "wurde zerstört."
+msgstr ""
 
 #: models.py:1489
 msgid "Moon mining extraction started"
@@ -656,11 +660,11 @@ msgstr ""
 
 #: templates/structures/base.html:4
 msgid "Alliance Structures"
-msgstr "Allianz Strukturen"
+msgstr ""
 
 #: templates/structures/structure_list.html:11
 msgid "Structure List"
-msgstr "Strukturenliste"
+msgstr ""
 
 #: templates/structures/structure_list.html:21
 msgid "Tags Filter (Active)"
@@ -752,35 +756,35 @@ msgstr ""
 
 #: templates/structures/structure_list.html:117
 msgid "Alliance"
-msgstr "Allianz"
+msgstr ""
 
 #: templates/structures/structure_list.html:118
 msgid "Corporation"
-msgstr "Corporation"
+msgstr ""
 
 #: templates/structures/structure_list.html:119
 msgid "Region"
-msgstr "Region"
+msgstr ""
 
 #: templates/structures/structure_list.html:120
 msgid "Solar System"
-msgstr "Sonnensystem"
+msgstr ""
 
 #: templates/structures/structure_list.html:121
 msgid "Category"
-msgstr "Kategorie"
+msgstr ""
 
 #: templates/structures/structure_list.html:122
 msgid "Group"
-msgstr "Gruppe"
+msgstr ""
 
 #: templates/structures/structure_list.html:124
 msgid "Reinforced?"
-msgstr "Verwundet?"
+msgstr ""
 
 #: templates/structures/structure_list.html:126
 msgid "Low Power?"
-msgstr "Niedrigenergiemodus?"
+msgstr ""
 
 #. Translators: Abbreviation for years
 #: utils.py:266

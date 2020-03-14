@@ -2,9 +2,9 @@
 host = https://www.transifex.com
 
 [aa-structures.django-po]
-file_filter = locale/<lang>/LC_MESSAGES/django.po
+file_filter = structures/locale/<lang>/LC_MESSAGES/django.po
 minimum_perc = 0
-source_file = locale/de/LC_MESSAGES/django.po
+source_file = structures/locale/de/LC_MESSAGES/django.po
 source_lang = en_US
 type = PO
 

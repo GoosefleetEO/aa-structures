@@ -164,7 +164,7 @@ class Webhook(models.Model):
     TYPE_DISCORD = 1
 
     TYPE_CHOICES = [
-        (TYPE_DISCORD, 'Discord Webhook'),
+        (TYPE_DISCORD, _('Discord Webhook')),
     ]
 
     name = models.CharField(
