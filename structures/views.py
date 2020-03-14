@@ -85,7 +85,7 @@ def structure_list(request):
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
-        'page_title': 'Alliance Structures',
+        'page_title': _(__title__),
         'active_tags': active_tags,
         'tags_filter_form': form,
         'tags_exist': StructureTag.objects.exists()

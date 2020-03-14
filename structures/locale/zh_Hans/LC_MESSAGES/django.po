@@ -1,0 +1,845 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-14 15:28+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: models.py:154
+msgid "Can access this app and view"
+msgstr ""
+
+#: models.py:155
+msgid "Can view alliance structures"
+msgstr ""
+
+#: models.py:156
+msgid "Can view all structures"
+msgstr ""
+
+#: models.py:157
+msgid "Can add new structure owner"
+msgstr ""
+
+#: models.py:173
+msgid "short name to identify this webhook"
+msgstr ""
+
+#: models.py:178
+msgid "type of this webhook"
+msgstr ""
+
+#: models.py:184
+msgid ""
+"URL of this webhook, e.g. https://discordapp.com/api/webhooks/123456/abcdef"
+msgstr ""
+
+#: models.py:192
+msgid "you can add notes about this webhook here if you want"
+msgstr ""
+
+#: models.py:198
+msgid "only notifications which selected types are sent to this webhook"
+msgstr ""
+
+#: models.py:204
+msgid "whether notifications are currently sent to this webhook"
+msgstr ""
+
+#: models.py:209
+msgid "whether newly added owners have this automatically webhook preset"
+msgstr ""
+
+#: models.py:231
+#, python-format
+msgid ""
+"This is a test notification from %s.\n"
+"The webhook appears to be correctly configured."
+msgstr ""
+
+#: models.py:265
+msgid "No error"
+msgstr ""
+
+#: models.py:269
+msgid "Invalid token"
+msgstr ""
+
+#: models.py:273
+msgid "Expired token"
+msgstr ""
+
+#: models.py:277
+msgid "Insufficient permissions"
+msgstr ""
+
+#: models.py:281
+msgid "No character set for fetching data from ESI"
+msgstr ""
+
+#: models.py:285
+msgid "ESI API is currently unavailable"
+msgstr ""
+
+#: models.py:289
+msgid "Operaton mode does not match with current setting"
+msgstr ""
+
+#: models.py:293
+msgid "Unknown error"
+msgstr ""
+
+#: models.py:301
+msgid "Corporation owning structures"
+msgstr ""
+
+#: models.py:309
+msgid "character used for syncing structures"
+msgstr ""
+
+#: models.py:315 models.py:326 models.py:337
+msgid "when the last sync happened"
+msgstr ""
+
+#: models.py:320 models.py:331 models.py:342
+msgid "error that occurred at the last sync atttempt (if any)"
+msgstr ""
+
+#: models.py:348
+msgid "notifications are sent to these webhooks. "
+msgstr ""
+
+#: models.py:353
+msgid "whether this owner is currently included in the sync process"
+msgstr ""
+
+#: models.py:359
+msgid ""
+"whether alliance wide notifications are forwarded for this owner (e.g. sov "
+"notifications)"
+msgstr ""
+
+#: models.py:366
+msgid ""
+"whether the sync status of this owner is included in the overall status of "
+"this services"
+msgstr ""
+
+#: models.py:447
+msgid "Eve Online ID"
+msgstr ""
+
+#: models.py:450
+msgid "Eve Online name"
+msgstr ""
+
+#: models.py:457
+msgid "language code of this data received from ESI"
+msgstr ""
+
+#: models.py:463
+msgid "When this object was last updated from ESI"
+msgstr ""
+
+#: models.py:702 models.py:742 models.py:933
+msgid "x position in the solar system"
+msgstr ""
+
+#: models.py:708 models.py:748 models.py:939
+msgid "y position in the solar system"
+msgstr ""
+
+#: models.py:714 models.py:754 models.py:945
+msgid "z position in the solar system"
+msgstr ""
+
+#: models.py:783
+msgid "grey"
+msgstr ""
+
+#: models.py:784
+msgid "dark blue"
+msgstr ""
+
+#: models.py:785
+msgid "green"
+msgstr ""
+
+#: models.py:786
+msgid "light blue"
+msgstr ""
+
+#: models.py:787
+msgid "yellow"
+msgstr ""
+
+#: models.py:788
+msgid "red"
+msgstr ""
+
+#: models.py:794
+msgid "name of the tag - must be unique"
+msgstr ""
+
+#: models.py:800
+msgid "description for this tag"
+msgstr ""
+
+#: models.py:807
+msgid "color style of tag"
+msgstr ""
+
+#: models.py:812
+msgid "if true this tag will automatically be added to new structures"
+msgstr ""
+
+#: models.py:887 views.py:266
+msgid "N/A"
+msgstr ""
+
+#: models.py:888
+msgid "unknown"
+msgstr ""
+
+#: models.py:893
+msgid "The Item ID of the structure"
+msgstr ""
+
+#: models.py:898
+msgid "Corporation that owns the structure"
+msgstr ""
+
+#: models.py:903
+msgid "type of the structure"
+msgstr ""
+
+#: models.py:907
+msgid "The full name of the structure"
+msgstr ""
+
+#: models.py:919
+msgid "Planet next to this structure - if any"
+msgstr ""
+
+#: models.py:927
+msgid "Moon next to this structure - if any"
+msgstr ""
+
+#: models.py:951
+msgid "Date on which the structure will run out of fuel"
+msgstr ""
+
+#: models.py:959
+msgid ""
+"The requested change to reinforce_hour that will take effect at the time "
+"shown by next_reinforce_apply"
+msgstr ""
+
+#: models.py:969
+msgid ""
+"The date and time when the structure’s newly requested reinforcement times "
+"(e.g. next_reinforce_hour and next_reinforce_day) will take effect"
+msgstr ""
+
+#: models.py:979
+msgid ""
+"The requested change to reinforce_weekday that will take effect at the time "
+"shown by next_reinforce_apply"
+msgstr ""
+
+#: models.py:989
+msgid ""
+"The hour of day that determines the four hour window when the structure will "
+"randomly exit its reinforcement periods and become vulnerable to attack "
+"against its armor and/or hull. The structure will become vulnerable at a "
+"random time that is +/- 2 hours centered on the value of this property"
+msgstr ""
+
+#: models.py:1007
+msgid "Current state of the structure"
+msgstr ""
+
+#: models.py:1013
+msgid "Date at which the structure will move to it’s next state"
+msgstr ""
+
+#: models.py:1019
+msgid "Date at which the structure entered it’s current state"
+msgstr ""
+
+#: models.py:1025
+msgid "Date at which the structure will unanchor"
+msgstr ""
+
+#: models.py:1031
+msgid "date this structure was last updated from the EVE server"
+msgstr ""
+
+#: models.py:1037
+msgid "list of tags for this structure"
+msgstr ""
+
+#: models.py:1045
+msgid "undefined"
+msgstr ""
+
+#: models.py:1099
+msgid "Structure this service is installed to"
+msgstr ""
+
+#: models.py:1103
+msgid "Name of the service"
+msgstr ""
+
+#: models.py:1107
+msgid "Current state of this service"
+msgstr ""
+
+#: models.py:1236
+msgid "Corporation that received this notification"
+msgstr ""
+
+#: models.py:1245
+msgid "Notification details in YAML"
+msgstr ""
+
+#: models.py:1251
+msgid "True when this notification has read in the eve client"
+msgstr ""
+
+#: models.py:1256
+msgid "True when this notification has been forwarded to Discord"
+msgstr ""
+
+#: models.py:1262
+msgid "True when a timer has been added for this notification"
+msgstr ""
+
+#: models.py:1265
+msgid "Date when this notification has last been updated from ESI"
+msgstr ""
+
+#: models.py:1271
+msgid "Date when this notification was first received from ESI"
+msgstr ""
+
+#: models.py:1386 models.py:1849
+#, python-format
+msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
+msgstr ""
+
+#: models.py:1394
+msgid "Structure online"
+msgstr ""
+
+#: models.py:1395
+msgid "is now online."
+msgstr ""
+
+#: models.py:1399
+msgid "Structure fuel alert"
+msgstr ""
+
+#: models.py:1400
+msgid "has less then 24hrs fuel left."
+msgstr ""
+
+#: models.py:1404
+msgid "Structure services off-line"
+msgstr ""
+
+#: models.py:1405
+msgid "has all services off-lined."
+msgstr ""
+
+#: models.py:1416
+msgid "Structure low power"
+msgstr ""
+
+#: models.py:1417
+msgid "went to low power mode."
+msgstr ""
+
+#: models.py:1421
+msgid "Structure full power"
+msgstr ""
+
+#: models.py:1422
+msgid "went to full power mode."
+msgstr ""
+
+#: models.py:1426
+msgid "Structure un-anchoring"
+msgstr ""
+
+#: models.py:1430
+#, python-format
+msgid "has started un-anchoring. It will be fully un-anchored at: %s"
+msgstr ""
+
+#: models.py:1436
+msgid "Structure under attack"
+msgstr ""
+
+#: models.py:1437
+#, python-format
+msgid "is under attack by %s"
+msgstr ""
+
+#: models.py:1442
+msgid "Structure lost shield"
+msgstr ""
+
+#: models.py:1446
+#, python-format
+msgid "has lost its shields. Armor timer end at: %s"
+msgstr ""
+
+#: models.py:1451
+msgid "Structure lost armor"
+msgstr ""
+
+#: models.py:1455
+#, python-format
+msgid "has lost its armor. Hull timer end at: %s"
+msgstr ""
+
+#: models.py:1460
+msgid "Structure destroyed"
+msgstr ""
+
+#: models.py:1461
+msgid "has been destroyed."
+msgstr ""
+
+#: models.py:1489
+msgid "Moon mining extraction started"
+msgstr ""
+
+#: models.py:1491
+#, python-format
+msgid ""
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s "
+"in %(solar_system)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will autofracture "
+"on %(auto_time)s.\n"
+msgstr ""
+
+#: models.py:1510
+msgid "Extraction finished"
+msgstr ""
+
+#: models.py:1512
+#, python-format
+msgid ""
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s is "
+"finished and the chunk is ready to be shot at.\n"
+"The chunk will automatically fracture on %(auto_time)s."
+msgstr ""
+
+#: models.py:1525
+msgid "Automatic Fracture"
+msgstr ""
+
+#: models.py:1527
+#, python-format
+msgid ""
+"The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
+"has automatically been fired and the moon products are ready to be "
+"harvested.\n"
+msgstr ""
+
+#: models.py:1545
+msgid "(unknown)"
+msgstr ""
+
+#: models.py:1546
+msgid "Extraction cancelled"
+msgstr ""
+
+#: models.py:1548
+#, python-format
+msgid ""
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
+"has been cancelled by %(character)s."
+msgstr ""
+
+#: models.py:1563
+msgid "Moondrill fired"
+msgstr ""
+
+#: models.py:1565
+#, python-format
+msgid ""
+"The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
+"has been fired by %(character)s and the moon products are ready to be "
+"harvested."
+msgstr ""
+
+#: models.py:1601
+msgid "Orbital under attack"
+msgstr ""
+
+#: models.py:1603
+#, python-format
+msgid ""
+"The %(structure_type)s at %(planet)s in %(solar_system)s is under attack by "
+"%(aggressor)s."
+msgstr ""
+
+#: models.py:1616
+msgid "Orbital reinforced"
+msgstr ""
+
+#: models.py:1618
+#, python-format
+msgid ""
+"The %(structure_type)s at %(planet)s in %(solar_system)s has been reinforced "
+"by %(aggressor)s and will come out at: %(date)s."
+msgstr ""
+
+#: models.py:1658
+msgid "shield"
+msgstr ""
+
+#: models.py:1659
+msgid "armor"
+msgstr ""
+
+#: models.py:1660
+msgid "hull"
+msgstr ""
+
+#: models.py:1673
+msgid "Starbase under attack"
+msgstr ""
+
+#: models.py:1675
+#, python-format
+msgid ""
+"The starbase %(structure_name)s at %(moon)s in %(solar_system)s is under "
+"attack by %(aggressor)s.\n"
+"%(damage_text)s"
+msgstr ""
+
+#: models.py:1689
+msgid "Starbase low on fuel"
+msgstr ""
+
+#: models.py:1691
+#, python-format
+msgid ""
+"The starbase %(structure_name)s at %(moon)s in %(solar_system)s is low on "
+"fuel. It has %(quantity)d fuel blocks left."
+msgstr ""
+
+#: models.py:1738
+#, python-format
+msgid "%(structure_type)s in %(solar_system)s is being captured"
+msgstr ""
+
+#: models.py:1744
+#, python-format
+msgid ""
+"A capsuleer has started to influence the %(type)s in %(solar_system)s "
+"belonging to %(owner)s with an Entosis Link."
+msgstr ""
+
+#: models.py:1758
+#, python-format
+msgid ""
+"Command nodes for %(structure_type)s in %(solar_system)s have begun to "
+"decloak"
+msgstr ""
+
+#: models.py:1765
+#, python-format
+msgid ""
+"Command nodes for %(structure_type)s in %(solar_system)s can now be found "
+"throughout the %(constellation)s constellation"
+msgstr ""
+
+#: models.py:1783
+#, python-format
+msgid "DED Sovereignty claim acknowledgment: %s"
+msgstr ""
+
+#: models.py:1787
+#, python-format
+msgid ""
+"DED now officially acknowledges that your member corporation %(corporation)s "
+"has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
+msgstr ""
+
+#: models.py:1802
+#, python-format
+msgid "%(structure_type)s in %(solar_system)s has entered reinforced mode"
+msgstr ""
+
+#: models.py:1809
+#, python-format
+msgid ""
+"The %(structure_type)s in %(solar_system)s belonging to %(owner)s has been "
+"reinforced by hostile forces and command nodes will begin decloaking at "
+"%(date)s"
+msgstr ""
+
+#: models.py:1823
+#, python-format
+msgid "%(structure_type)s in %(solar_system)s has been destroyed"
+msgstr ""
+
+#: models.py:1829
+#, python-format
+msgid ""
+"The command nodes for %(structure_type)s in %(solar_system)s belonging to "
+"%(owner)s have been destroyed by hostile forces."
+msgstr ""
+
+#: models.py:1869
+#, python-format
+msgid ""
+"has been transferred from %(from_corporation)s to %(to_corporation)s by "
+"%(character)s."
+msgstr ""
+
+#: models.py:1876
+msgid "Ownership transferred"
+msgstr ""
+
+#: models.py:1888
+#, python-format
+msgid "%(structure_type)s has started anchoring in %(solar_system)s. "
+msgstr ""
+
+#: models.py:1899
+msgid "Structure anchoring"
+msgstr ""
+
+#: models.py:1939
+#, python-format
+msgid "%(ticker)s Notification"
+msgstr ""
+
+#: models.py:2025
+msgid "Armor timer"
+msgstr ""
+
+#: models.py:2027 models.py:2102
+msgid "Final timer"
+msgstr ""
+
+#: models.py:2052
+msgid "Anchor timer"
+msgstr ""
+
+#: models.py:2079
+msgid "Sov timer"
+msgstr ""
+
+#: models.py:2128
+msgid "Extraction ready"
+msgstr ""
+
+#: templates/structures/base.html:4
+msgid "Alliance Structures"
+msgstr ""
+
+#: templates/structures/structure_list.html:11
+msgid "Structure List"
+msgstr ""
+
+#: templates/structures/structure_list.html:21
+msgid "Tags Filter (Active)"
+msgstr ""
+
+#: templates/structures/structure_list.html:25
+#: templates/structures/structure_list.html:30
+#: templates/structures/structure_list.html:44
+msgid "Tags Filter"
+msgstr ""
+
+#: templates/structures/structure_list.html:52
+msgid "Reset Filter"
+msgstr ""
+
+#: templates/structures/structure_list.html:55
+msgid "Clear Filter"
+msgstr ""
+
+#: templates/structures/structure_list.html:58
+msgid "Cancel"
+msgstr ""
+
+#: templates/structures/structure_list.html:61
+msgid "Apply Filter"
+msgstr ""
+
+#: templates/structures/structure_list.html:74
+msgid "Owner"
+msgstr ""
+
+#: templates/structures/structure_list.html:75
+msgid "Location"
+msgstr ""
+
+#: templates/structures/structure_list.html:77
+#: templates/structures/structure_list.html:123
+msgid "Type"
+msgstr ""
+
+#: templates/structures/structure_list.html:78
+msgid "Name & Tags"
+msgstr ""
+
+#: templates/structures/structure_list.html:79
+msgid "Services"
+msgstr ""
+
+#: templates/structures/structure_list.html:80
+msgid "R-Hour"
+msgstr ""
+
+#: templates/structures/structure_list.html:81
+msgid "Fuel Expires"
+msgstr ""
+
+#: templates/structures/structure_list.html:82
+#: templates/structures/structure_list.html:125
+msgid "State"
+msgstr ""
+
+#: templates/structures/structure_list.html:89
+msgid "Active Tags Filter"
+msgstr ""
+
+#: templates/structures/structure_list.html:101
+msgid "Add Structure Owner"
+msgstr ""
+
+#: templates/structures/structure_list.html:107
+msgid "All dates are EVE time"
+msgstr ""
+
+#: templates/structures/structure_list.html:108
+msgid "Offlined services are shown as"
+msgstr ""
+
+#: templates/structures/structure_list.html:108
+msgid "service"
+msgstr ""
+
+#: templates/structures/structure_list.html:109
+msgid "Reinforced structures (except POCOs) are highlighted in red"
+msgstr ""
+
+#: templates/structures/structure_list.html:110
+msgid "Data can be outdated by up to 1 hour due to API caching."
+msgstr ""
+
+#: templates/structures/structure_list.html:117
+msgid "Alliance"
+msgstr ""
+
+#: templates/structures/structure_list.html:118
+msgid "Corporation"
+msgstr ""
+
+#: templates/structures/structure_list.html:119
+msgid "Region"
+msgstr ""
+
+#: templates/structures/structure_list.html:120
+msgid "Solar System"
+msgstr ""
+
+#: templates/structures/structure_list.html:121
+msgid "Category"
+msgstr ""
+
+#: templates/structures/structure_list.html:122
+msgid "Group"
+msgstr ""
+
+#: templates/structures/structure_list.html:124
+msgid "Reinforced?"
+msgstr ""
+
+#: templates/structures/structure_list.html:126
+msgid "Low Power?"
+msgstr ""
+
+#. Translators: Abbreviation for years
+#: utils.py:266
+msgid "y"
+msgstr ""
+
+#. Translators: Abbreviation for months
+#: utils.py:269
+msgid "mt"
+msgstr ""
+
+#. Translators: Abbreviation for days
+#: utils.py:272
+msgid "d"
+msgstr ""
+
+#. Translators: Abbreviation for hours
+#: utils.py:275
+msgid "h"
+msgstr ""
+
+#. Translators: Abbreviation for months
+#: utils.py:278
+msgid "m"
+msgstr ""
+
+#. Translators: Abbreviation for seconds
+#: utils.py:281
+msgid "s"
+msgstr ""
+
+#: views.py:272
+msgid "Low Power"
+msgstr ""
+
+#: views.py:323
+#, python-format
+msgid ""
+"You can only use your main or alt characters to add corporations. However, "
+"character %s is neither. "
+msgstr ""
+
+#: views.py:365
+#, python-format
+msgid ""
+"%(corporation)s has been added with %(character)s as sync character. We have "
+"started fetching structures for this corporation. You will receive a report "
+"once the process is finished."
+msgstr ""
+
+#: views.py:383
+#, python-format
+msgid "%(corporation)s was added as new structure owner by %(user)s."
+msgstr ""
+
+#: views.py:408
+msgid "service is up"
+msgstr ""
+
+#: views.py:410
+msgid "service is down"
+msgstr ""
