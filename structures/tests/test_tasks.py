@@ -28,7 +28,9 @@ from ..models import (
     Webhook,    
     Owner,
     Notification,
-    Structure,
+    Structure    
+)
+from ..models.notifications import (
     NTYPE_OWNERSHIP_TRANSFERRED,
     NTYPE_STRUCTURE_ANCHORING,
     NTYPE_STRUCTURE_DESTROYED,
@@ -823,7 +825,7 @@ class TestSyncNotifications(NoSocketsTestCase):
         
     # normal synch of new structures, mode my_alliance                    
     @patch(
-        'structures.models.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
+        'structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
         False
     )
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', True)    
@@ -1052,7 +1054,7 @@ class TestForwardNotifications(NoSocketsTestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
 
-    @patch('structures.models.STRUCTURES_REPORT_NPC_ATTACKS', True)
+    @patch('structures.models.notifications.STRUCTURES_REPORT_NPC_ATTACKS', True)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
@@ -1077,7 +1079,7 @@ class TestForwardNotifications(NoSocketsTestCase):
             tested_notification_ids
         )
 
-    @patch('structures.models.STRUCTURES_REPORT_NPC_ATTACKS', False)
+    @patch('structures.models.notifications.STRUCTURES_REPORT_NPC_ATTACKS', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
@@ -1107,7 +1109,10 @@ class TestForwardNotifications(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch('structures.models.Notification.send_to_webhook', autospec=True)    
+    @patch(
+        'structures.models.notifications.Notification.send_to_webhook', 
+        autospec=True
+    )
     def test_send_new_notifications_to_multiple_webhooks(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
@@ -1196,7 +1201,10 @@ class TestForwardNotifications(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch('structures.models.Notification.send_to_webhook', autospec=True)    
+    @patch(
+        'structures.models.notifications.Notification.send_to_webhook', 
+        autospec=True
+    )    
     def test_send_new_notifications_to_multiple_webhooks_2(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
@@ -1294,7 +1302,7 @@ class TestForwardNotifications(NoSocketsTestCase):
       
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    @patch('structures.models.notifications.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_new_notifications_no_structures_preloaded(
         self, mock_execute, mock_esi_client_factory, mock_token
     ):        
@@ -1331,7 +1339,7 @@ class TestForwardNotifications(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    @patch('structures.models.notifications.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_notifications(
         self, mock_execute, mock_esi_client_factory, mock_token
     ):
@@ -1347,7 +1355,7 @@ class TestForwardNotifications(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch('structures.models.dhooks_lite.Webhook.execute', autospec=True)
+    @patch('structures.models.notifications.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_test_notification(
         self, mock_execute, mock_esi_client_factory, mock_token
     ):        

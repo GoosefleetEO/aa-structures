@@ -171,16 +171,10 @@ class NotificationAdmin(admin.ModelAdmin):
         "Process selected notifications for timerboard"
 
     def has_add_permission(self, request):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
     def has_change_permission(self, request, obj=None):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
 
 class OwnerSyncStatusFilter(admin.SimpleListFilter):
@@ -346,10 +340,7 @@ class OwnerAdmin(admin.ModelAdmin):
     send_notifications.short_description = "Send new notifications to Discord"
 
     def has_add_permission(self, request):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
 
 @admin.register(StructureTag)
@@ -371,22 +362,13 @@ class StructureAdminInline(admin.TabularInline):
     model = StructureService
 
     def has_add_permission(self, request):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
     def has_change_permission(self, request, obj=None):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
     def has_delete_permission(self, request, obj=None):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
 
 class OwnerCorporationsFilter(admin.SimpleListFilter):
@@ -507,10 +489,7 @@ class StructureAdmin(admin.ModelAdmin):
     _tags.short_description = 'Tags'
 
     def has_add_permission(self, request):
-        if STRUCTURES_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
     def add_default_tags(self, request, queryset):
         structure_count = 0

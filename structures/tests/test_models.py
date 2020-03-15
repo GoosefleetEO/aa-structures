@@ -18,8 +18,8 @@ from .testdata import (
     create_structures,
     set_owner_character
 )
-from ..models import (    
-    EveUniverse,
+from ..models.eveuniverse import EveUniverse
+from ..models import (        
     EveCategory,
     EveGroup,
     EveType,
@@ -37,8 +37,9 @@ from ..models import (
     Structure
 )
 
-MODULE_PATH = 'structures.models'
-logger = set_test_logger(MODULE_PATH, __file__)
+MODULE_PATH_NOTIFICATIONS = 'structures.models.notifications'
+MODULE_PATH_OWNER = 'structures.models.owner'
+logger = set_test_logger('structures.models', __file__)
 
 
 class TestWebhook(NoSocketsTestCase):
@@ -52,7 +53,7 @@ class TestWebhook(NoSocketsTestCase):
     def test_str(self):
         self.assertEqual(str(self.my_webhook), 'Dummy Webhook')
 
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute')
+    @patch(MODULE_PATH_NOTIFICATIONS + '.dhooks_lite.Webhook.execute')
     def test_send_test_notification_ok(self, mock_execute):        
         mock_response = Mock()
         mock_response.status_ok = True
@@ -63,7 +64,7 @@ class TestWebhook(NoSocketsTestCase):
         response = self.my_webhook.send_test_notification()
         self.assertDictEqual(json.loads(response), expected_send_report)
 
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute')
+    @patch(MODULE_PATH_NOTIFICATIONS + '.dhooks_lite.Webhook.execute')
     def test_send_test_notification_failed(self, mock_execute):        
         mock_response = Mock()
         mock_response.status_ok = False
@@ -124,7 +125,7 @@ class TestOwner(TestCase):
         )
         self.assertEqual(str(x), 'Wayne Technologies')
     
-    @patch(MODULE_PATH + '.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 30)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 30)
     def test_is_structure_sync_ok(self):
         x = Owner.objects.get(
             corporation__corporation_id=2001
@@ -149,7 +150,7 @@ class TestOwner(TestCase):
         x.structures_last_sync = now() - timedelta(minutes=31)
         self.assertFalse(x.is_structure_sync_ok())
     
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 30)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 30)
     def test_is_notification_sync_ok(self):
         x = Owner.objects.get(
             corporation__corporation_id=2001
@@ -174,7 +175,7 @@ class TestOwner(TestCase):
         x.notifications_last_sync = now() - timedelta(minutes=31)
         self.assertFalse(x.is_notification_sync_ok())
 
-    @patch(MODULE_PATH + '.STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES', 30)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES', 30)
     def test_is_forwarding_sync_ok(self):
         x = Owner.objects.get(
             corporation__corporation_id=2001
@@ -199,9 +200,9 @@ class TestOwner(TestCase):
         x.forwarding_last_sync = now() - timedelta(minutes=31)
         self.assertFalse(x.is_forwarding_sync_ok())
 
-    @patch(MODULE_PATH + '.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 30)
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 30)
-    @patch(MODULE_PATH + '.STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES', 30)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 30)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 30)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES', 30)
     def test_is_all_syncs_ok(self):
         x = Owner.objects.get(
             corporation__corporation_id=2001
@@ -236,8 +237,8 @@ class TestOwner(TestCase):
             'Undefined error'
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_STARBASES', False)
     def test_get_esi_scopes_pocos_off(self):
         self.assertSetEqual(
             set(Owner.get_esi_scopes()),
@@ -248,8 +249,8 @@ class TestOwner(TestCase):
             }
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_STARBASES', False)
     def test_get_esi_scopes_pocos_on(self):
         self.assertSetEqual(
             set(Owner.get_esi_scopes()),
@@ -262,8 +263,8 @@ class TestOwner(TestCase):
             }
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_STARBASES', True)
     def test_get_esi_scopes_starbases_on(self):
         self.assertSetEqual(
             set(Owner.get_esi_scopes()),
@@ -275,8 +276,8 @@ class TestOwner(TestCase):
             }
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
-    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch(MODULE_PATH_OWNER + '.STRUCTURES_FEATURE_STARBASES', True)
     def test_get_esi_scopes_starbases_and_custom_offices(self):
         self.assertSetEqual(
             set(Owner.get_esi_scopes()),
@@ -679,7 +680,7 @@ class TestNotification(NoSocketsTestCase):
         x3 = Notification.objects.get(notification_id=1000010601)
         self.assertTrue(x3.is_npc_attacking())
         
-    @patch(MODULE_PATH + '.STRUCTURES_REPORT_NPC_ATTACKS', True)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_REPORT_NPC_ATTACKS', True)
     def test_filter_npc_attacks_1(self):
         # NPC reporting allowed and not a NPC attacker                    
         x1 = Notification.objects.get(notification_id=1000000509)
@@ -689,7 +690,7 @@ class TestNotification(NoSocketsTestCase):
         x1 = Notification.objects.get(notification_id=1000010509)
         self.assertFalse(x1.filter_for_npc_attacks())
        
-    @patch(MODULE_PATH + '.STRUCTURES_REPORT_NPC_ATTACKS', False)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_REPORT_NPC_ATTACKS', False)
     def test_filter_npc_attacks_2(self):      
         # NPC reporting not allowed and not a NPC attacker        
         x1 = Notification.objects.get(notification_id=1000000509)
@@ -724,8 +725,8 @@ class TestNotification(NoSocketsTestCase):
         x1 = Notification.objects.get(notification_id=1000000509)
         self.assertFalse(x1.filter_for_alliance_level())
 
-    @patch(MODULE_PATH + '.provider')
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.provider')
+    @patch(MODULE_PATH_NOTIFICATIONS + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_all_notification_types(
         self, mock_execute, mock_provider        
     ):                                
@@ -752,10 +753,10 @@ class TestNotification(NoSocketsTestCase):
             types_tested
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch(MODULE_PATH + '.provider')
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.provider')
+    @patch(MODULE_PATH_NOTIFICATIONS + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_http_error(
         self, mock_execute, mock_provider
     ):                                
@@ -772,9 +773,9 @@ class TestNotification(NoSocketsTestCase):
             x.send_to_webhook(self.webhook, mock_provider.client)
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch(MODULE_PATH + '.provider')
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.provider')
+    @patch(MODULE_PATH_NOTIFICATIONS + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_too_many_requests(
         self, mock_execute, mock_provider
     ):                                
@@ -791,9 +792,9 @@ class TestNotification(NoSocketsTestCase):
             x.send_to_webhook(self.webhook, mock_provider.client)
         )
         
-    @patch(MODULE_PATH + '.settings.DEBUG', False)
-    @patch(MODULE_PATH + '.provider')
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.settings.DEBUG', False)
+    @patch(MODULE_PATH_NOTIFICATIONS + '.provider')
+    @patch(MODULE_PATH_NOTIFICATIONS + '.dhooks_lite.Webhook.execute', autospec=True)
     def test_send_to_webhook_exception(
         self, mock_execute, mock_provider
     ):                                        
@@ -806,7 +807,10 @@ class TestNotification(NoSocketsTestCase):
             x.send_to_webhook(self.webhook, mock_provider.client)
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
+    @patch(
+        MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
+        False
+    )
     @patch('allianceauth.timerboard.models.Timer', autospec=True)
     def test_add_to_timerboard_setting_disabled(self, mock_Timer):
         x = Notification.objects.get(notification_id=1000000404)
@@ -817,7 +821,10 @@ class TestNotification(NoSocketsTestCase):
         self.assertFalse(x.process_for_timerboard())
         self.assertFalse(mock_Timer.delete.called)
     
-    @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
+    @patch(
+        MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
+        True
+    )
     def test_add_to_timerboard_normal(self):
         Timer.objects.all().delete()        
         notification_without_timer_query = Notification.objects\
@@ -872,12 +879,18 @@ class TestNotification(NoSocketsTestCase):
         ids_set_2 = {x.id for x in Timer.objects.all()}
         self.assertSetEqual(ids_set_1, ids_set_2)
 
-    @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
+    @patch(
+        MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
+        True
+    )
     def test_add_to_timerboard_run_all(self):        
         for x in Notification.objects.all():
             x.process_for_timerboard()
 
-    @patch(MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', False)
+    @patch(
+        MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', 
+        False
+    )
     def test_add_to_timerboard_corp_restriction_1(self):
         Timer.objects.all().delete()  
 
@@ -886,7 +899,10 @@ class TestNotification(NoSocketsTestCase):
         t = Timer.objects.first()
         self.assertFalse(t.corp_timer)
         
-    @patch(MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', True)
+    @patch(
+        MODULE_PATH_NOTIFICATIONS + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', 
+        True
+    )
     def test_add_to_timerboard_corp_restriction_2(self):
         Timer.objects.all().delete()  
 

@@ -3,6 +3,7 @@ from datetime import timedelta
 import logging
 import os
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.contrib.messages.constants  \
@@ -175,10 +176,10 @@ def notify_admins(message: str, title: str, level='info') -> None:
         pass
 
 
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+def chunks(lst, size):
+    """Yield successive sized chunks from lst."""
+    for i in range(0, len(lst), size):
+        yield lst[i:i + size]
 
 
 def clean_setting(
@@ -310,3 +311,8 @@ class NoSocketsTestCase(TestCase):
     @staticmethod
     def guard(*args, **kwargs):
         raise SocketAccessError('Attempted to access network')
+
+
+def app_labels() -> set:
+    """returns set of all current app labels"""
+    return {x for x in apps.app_configs.keys()}

@@ -249,8 +249,8 @@ def _fetch_custom_offices(
 
     def extract_planet_name(text: str) -> str:
         """extract name of planet from assert name for a customs office"""
-        r = re.compile(r'Customs Office \((.+)\)')
-        matches = r.match(text)
+        reg_ex = re.compile(r'Customs Office \((.+)\)')
+        matches = reg_ex.match(text)
         return matches.group(1) if matches else text
         
     logger.info(add_prefix('Fetching custom offices from ESI - page 1'))
@@ -794,25 +794,25 @@ def send_new_notifications_for_owner(owner_pk, rate_limited=True):
         esi_client = None
         for webhook in owner.webhooks.filter(is_active=True):
             active_webhooks_count += 1
-            q = Notification.objects\
+            notifications_qs = Notification.objects\
                 .filter(owner=owner)\
                 .filter(is_sent=False)\
                 .filter(timestamp__gte=cutoff_dt_for_stale) \
                 .filter(notification_type__in=webhook.notification_types)\
                 .select_related().order_by('timestamp')
 
-            if q.count() > 0:
-                new_notifications_count += q.count()
+            if notifications_qs.count() > 0:
+                new_notifications_count += notifications_qs.count()
                 logger.info(add_prefix(
                     'Found {} new notifications for webhook {}'.format(
-                        q.count(),
+                        notifications_qs.count(),
                         webhook
                     )
                 ))
                 if not esi_client:
                     esi_client = _get_esi_client(owner, add_prefix)
 
-                for notification in q:
+                for notification in notifications_qs:
                     if (not notification.filter_for_npc_attacks()
                         and not notification.filter_for_alliance_level()
                     ):

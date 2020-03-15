@@ -11,7 +11,8 @@ from ..utils import (
     chunks, 
     timeuntil_str, 
     NoSocketsTestCase, 
-    SocketAccessError
+    SocketAccessError,
+    app_labels
 )
 from ..utils import set_test_logger
 
@@ -202,3 +203,11 @@ class TestNoSocketsTestCase(NoSocketsTestCase):
         
         with self.assertRaises(SocketAccessError):
             requests.get('https://www.google.com')
+
+
+class TestAppLabel(TestCase):
+
+    def test_returns_set_of_app_labels(self):
+        labels = app_labels()
+        for label in ['authentication', 'groupmanagement', 'eveonline']:
+            self.assertIn(label, labels)

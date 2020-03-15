@@ -182,7 +182,7 @@ class EveEntityManager(models.Manager):
                     )
                 )
         except Exception as ex:
-            logger.warn(add_prefix('Failed to load eve entity: '.format(ex)))
+            logger.warn(add_prefix('Failed to load eve entity: {}'.format(ex)))
             raise ex
 
         return obj, created
