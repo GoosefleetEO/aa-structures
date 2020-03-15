@@ -19,6 +19,16 @@ from ..app_settings import (
 )
 from ..utils import LoggerAddTag
 
+# Supported languages
+LANGUAGES = (
+    ('en', _('English')),
+    ('de', _('German')),
+    ('es', _('Spanish')),
+    ('zh-hans', _('Chinese Simplified')),
+    ('ru', _('Russian')),
+    ('ko', _('Korean')),
+)
+
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 

@@ -83,9 +83,7 @@ class EveUniverseManager(models.Manager):
 
             fk_mappings = self.model.fk_mappings()
             field_mappings = self.model.field_mappings()
-            defaults = {'last_updated': now()}
-            if self.model.has_localization():
-                defaults['language_code'] = language_code
+            defaults = {'last_updated': now()}            
             for key in self.model.field_names_not_pk():
                 if key in fk_mappings:
                     esi_key, ParentClass = fk_mappings[key]                    

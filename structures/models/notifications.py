@@ -34,7 +34,7 @@ from ..utils import (
     LoggerAddTag, DATETIME_FORMAT, make_logger_prefix, app_labels
 )
 from .eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
-from .owner import Owner
+from .owners import Owner, LANGUAGES
 from .structures import Structure
 
 if 'timerboard' in app_labels():
@@ -179,6 +179,15 @@ class Webhook(models.Model):
             'are sent to this webhook'
         )
     )
+    language_code = models.CharField(
+        max_length=8, 
+        choices=LANGUAGES,
+        default=None,
+        null=True,
+        blank=True,
+        verbose_name='language',
+        help_text=_('language of notifications send to this webhook')
+    )
     is_active = models.BooleanField(
         default=True,
         help_text=_('whether notifications are currently sent to this webhook')
@@ -186,8 +195,8 @@ class Webhook(models.Model):
     is_default = models.BooleanField(
         default=False,
         help_text=_(
-            'whether newly added owners have this automatically '
-            'webhook preset'
+            'whether owners have this webhook automatically '
+            'pre-set when created'
         )
     )
 

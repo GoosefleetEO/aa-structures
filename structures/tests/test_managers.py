@@ -59,8 +59,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertTrue(created)
         self.assertIsInstance(obj, EveCategory)
         self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
-        self.assertEqual(obj.language_code, DEFAULT_LANGUAGE_CODE)
+        self.assertEqual(obj.name, 'Structure')        
         self.assertIsInstance(obj.last_updated, datetime)
 
     @patch(MODULE_PATH + '.provider')

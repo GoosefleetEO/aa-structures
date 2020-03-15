@@ -11,7 +11,7 @@ from ..managers import StructureManager
 
 from ..utils import LoggerAddTag
 from .eveuniverse import EveType, EveSolarSystem, EvePlanet, EveMoon
-from .owner import Owner
+from .owners import Owner
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 

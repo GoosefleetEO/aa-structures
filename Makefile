@@ -19,5 +19,9 @@ compilemessages:
 coverage:
 	coverage run ../myauth/manage.py test structures --keepdb --failfast --debug-mode && coverage html && coverage report
 	
+test:
+	# runs a full test incl. re-creating of the test DB
+	python ../myauth/manage.py test structures --failfast --debug-mode -v 2
+
 pylint:
 	pylint --load-plugins pylint_django structures

@@ -15,19 +15,53 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 class EveUniverse(models.Model):
     """Base class for all EveUniverse models"""
 
+    # language code translations
+    # AA settings, field name extension, ESI
+    LANGUAGE_CODES = (
+        ('en', 'en', 'en-us'),
+        ('de', 'de', 'de'),
+        ('es', 'es', 'es'),
+        ('zh-hans', 'zh', 'zh'),
+        ('ru', 'ru', 'ru'),
+        ('ko', 'ko', 'ko'),
+    )
+
     id = models.PositiveIntegerField(
         primary_key=True, help_text=_('Eve Online ID')
     )
     name = models.CharField(
         max_length=100, help_text=_('Eve Online name')
     )    
-    language_code = models.CharField(
-        max_length=8, 
-        default=None,
-        null=True,
+    name_de = models.CharField(
+        max_length=100,        
         blank=True,
-        help_text=_('language code of this data received from ESI')
+        help_text=_('Eve Online name localized for German')
     )
+    name_en = models.CharField(
+        max_length=100,        
+        blank=True,
+        help_text=_('Eve Online name localized for English')
+    )
+    name_es = models.CharField(
+        max_length=100,        
+        blank=True,
+        help_text=_('Eve Online name localized for Spanish')
+    )
+    name_ko = models.CharField(
+        max_length=100,        
+        blank=True,
+        help_text=_('Eve Online name localized for Korean')
+    )    
+    name_ru = models.CharField(
+        max_length=100,        
+        blank=True,
+        help_text=_('Eve Online name localized for Russian')
+    )    
+    name_zh = models.CharField(
+        max_length=100,        
+        blank=True,
+        help_text=_('Eve Online name localized for Chinese')
+    )    
     last_updated = models.DateTimeField(
         default=None,
         null=True,
@@ -52,12 +86,13 @@ class EveUniverse(models.Model):
                     
     @classmethod
     def field_names_not_pk(cls) -> set:
-        """returns field names excluding PK and auto created fields"""
+        """returns field names excl. PK, localization and auto created fields"""
         return {
             x.name for x in cls._meta.get_fields()
             if not x.auto_created and (
                 not hasattr(x, 'primary_key') or x.primary_key is False
             ) and x.name not in {'language_code', 'last_updated'}
+            and 'name_' not in x.name
         }
 
     @classmethod

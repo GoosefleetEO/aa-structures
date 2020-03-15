@@ -10,7 +10,7 @@ from .eveuniverse import (
     EvePlanet, 
     EveMoon  
 )
-from .owner import Owner
+from .owners import Owner
 from .structures import (
     Structure, StructureService, StructureTag
 )  
