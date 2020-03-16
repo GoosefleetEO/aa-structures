@@ -28,7 +28,9 @@ from .utils import (
     DATETIME_FORMAT, 
     notify_admins, 
     LoggerAddTag,
-    timeuntil_str
+    timeuntil_str,
+    add_no_wrap_html,
+    yesno_str
 )
 
 
@@ -97,15 +99,6 @@ def structure_list(request):
 @permission_required('structures.basic_access')
 def structure_list_data(request):
     """returns structure list in JSON for AJAX call in structure_list view"""
-
-    def add_no_wrap_html(text: str) -> str:
-        """add no-wrap HTML to text"""
-        return format_html(
-            '<span style="white-space: nowrap;">{}</span>', mark_safe(text)
-        )
-
-    def yesno_str(value: bool) -> str:
-        return gettext_lazy('yes') if value is True else gettext_lazy('no')
 
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:

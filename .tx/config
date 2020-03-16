@@ -7,4 +7,5 @@ minimum_perc = 0
 source_file = structures/locale/de/LC_MESSAGES/django.po
 source_lang = en_US
 type = PO
+lang_map = zh_CN: zh_Hans, es_ES: es
 

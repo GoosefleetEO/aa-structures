@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 import requests
 
 from django.test import TestCase
+from django.utils import translation
 
 from ..utils import (
     clean_setting, 
@@ -12,7 +13,9 @@ from ..utils import (
     timeuntil_str, 
     NoSocketsTestCase, 
     SocketAccessError,
-    app_labels
+    app_labels,
+    add_no_wrap_html,
+    yesno_str
 )
 from ..utils import set_test_logger
 
@@ -211,3 +214,18 @@ class TestAppLabel(TestCase):
         labels = app_labels()
         for label in ['authentication', 'groupmanagement', 'eveonline']:
             self.assertIn(label, labels)
+
+
+class TestHtmlHelper(TestCase):
+
+    def test_add_no_wrap_html(self):
+        expected = '<span style="white-space: nowrap;">Dummy</span>'
+        self.assertEqual(add_no_wrap_html('Dummy'), expected)
+
+    def test_yesno_str(self):
+        with translation.override('en'):
+            self.assertEqual(yesno_str(True), 'yes')
+            self.assertEqual(yesno_str(False), 'no')
+            self.assertEqual(yesno_str(None), 'no')
+            self.assertEqual(yesno_str(123), 'no')
+            self.assertEqual(yesno_str('xxxx'), 'no')

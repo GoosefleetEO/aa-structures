@@ -1,6 +1,15 @@
 from django.utils import translation
 
-from ...models import EveCategory, EveGroup, EveType, EveSolarSystem
+from ...models import (
+    EveCategory, 
+    EveGroup, 
+    EveType, 
+    EveRegion, 
+    EveConstellation, 
+    EveSolarSystem, 
+    EvePlanet,
+    EveMoon
+)
 from ...models.eveuniverse import EveUniverse
 from ..testdata import load_entities
 from ...utils import set_test_logger, NoSocketsTestCase
@@ -32,21 +41,21 @@ class TestEveUniverse(NoSocketsTestCase):
                 
     def test_field_names_1(self):
         expected = {'name'}
-        self.assertEqual(EveCategory.field_names_not_pk(), expected)
+        self.assertEqual(EveCategory._field_names_not_pk(), expected)
 
     def test_field_names_2(self):
         expected = {'name', 'eve_category'}
-        self.assertEqual(EveGroup.field_names_not_pk(), expected)
+        self.assertEqual(EveGroup._field_names_not_pk(), expected)
 
     def test_field_names_3(self):
         expected = {'name', 'eve_constellation', 'security_status'}
-        self.assertEqual(EveSolarSystem.field_names_not_pk(), expected)
+        self.assertEqual(EveSolarSystem._field_names_not_pk(), expected)
 
     def test_fk_mappings_1(self):
         expected = {
             'eve_category': ('category_id', EveCategory)
         }
-        self.assertEqual(EveGroup.fk_mappings(), expected)
+        self.assertEqual(EveGroup._fk_mappings(), expected)
 
     def test_eve_universe_meta_attr_normal(self):
         expected = 'my_id'
@@ -113,6 +122,28 @@ class TestEveUniverseLocalization(NoSocketsTestCase):
             expected = 'Name'
             self.assertEqual(self.obj.name_localized, expected)
 
+    def test_set_generated_translations(self):
+        load_entities([
+            EveCategory,
+            EveGroup,
+            EveType,  
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EvePlanet
+        ])
+        obj = EvePlanet.objects.get(id=40161463)
+        self.assertEqual(obj.name, 'Amamake I')
+        self.assertEqual(obj.name_de, '')
+        self.assertEqual(obj.name_ko, '')
+        self.assertEqual(obj.name_ru, '')
+        self.assertEqual(obj.name_zh, '')
+        obj._set_generated_translations()
+        self.assertEqual(obj.name_de, 'Amamake_de I')
+        self.assertEqual(obj.name_ko, 'Amamake_ko I')
+        self.assertEqual(obj.name_ru, 'Amamake_ru I')
+        self.assertEqual(obj.name_zh, 'Amamake_zh I')
+    
 
 class TestEveType(NoSocketsTestCase):
 
@@ -165,3 +196,55 @@ class TestEveType(NoSocketsTestCase):
             EveType.generic_icon_url(self.type_astrahus.id),
             self.type_astrahus.icon_url()
         )
+
+
+class TestEvePlanet(NoSocketsTestCase):
+    
+    def setUp(self):                          
+        load_entities([
+            EveCategory,
+            EveGroup,
+            EveType,  
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EvePlanet
+        ])
+
+    def test_get(self):        
+        obj = EvePlanet.objects.get(id=40161463)
+        self.assertEqual(obj.name, 'Amamake I')
+        self.assertEqual(obj.eve_solar_system_id, 30002537)
+        self.assertEqual(obj.eve_type_id, 2016)
+
+    def test_name_localized_generated(self):
+        obj = EvePlanet.objects.get(id=40161463)
+        
+        expected = 'Amamake_de I'
+        self.assertEqual(obj._name_localized_generated('de'), expected)
+
+
+class TestEveMoon(NoSocketsTestCase):
+    
+    def setUp(self):                          
+        load_entities([
+            EveCategory,
+            EveGroup,
+            EveType,  
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EvePlanet,
+            EveMoon
+        ])
+
+    def test_get(self):        
+        obj = EveMoon.objects.get(id=40161465)
+        self.assertEqual(obj.name, 'Amamake II - Moon 1')
+        self.assertEqual(obj.eve_solar_system_id, 30002537)        
+
+    def test_name_localized_generated(self):
+        obj = EveMoon.objects.get(id=40161465)
+        
+        expected = 'Amamake_de II - Mond 1'
+        self.assertEqual(obj._name_localized_generated('de'), expected)

@@ -32,7 +32,7 @@ from ...models import (
     Notification,
     Structure,    
 )
-
+from ...models.eveuniverse import EveUniverse
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
 
@@ -99,7 +99,10 @@ entities_testdata = _load_testdata_entities()
 ##############################
 # functions for mocking calls to ESI with test data
 
-def esi_get_universe_planets_planet_id(planet_id):
+ESI_LANGUAGES = {'de', 'en-us', 'fr', 'ja', 'ru', 'zh', 'ko'}
+
+
+def esi_get_universe_planets_planet_id(planet_id, language=None):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
     unless the function property override_data is set
@@ -124,6 +127,10 @@ def esi_get_universe_planets_planet_id(planet_id):
         'y': 2,
         'z': 3
     }
+
+    if language in ESI_LANGUAGES.difference({'en-us'}):
+        entity['name'] += '_' + language
+
     mock_operation = Mock()
     mock_operation.result.return_value = entity
     return mock_operation
@@ -378,14 +385,31 @@ def esi_post_corporations_corporation_id_assets_names(
 
 esi_post_corporations_corporation_id_assets_names.override_data = None
 
-ESI_LANGUAGES = {'de', 'en-us', 'fr', 'ja', 'ru', 'zh', 'ko'}
-
 
 def esi_get_universe_categories_category_id(category_id, language=None):
     mock_operation = Mock()
     obj_data = {
         "id": 65,
         "name": "Structure"
+    }    
+    if language in ESI_LANGUAGES.difference({'en-us'}):
+        obj_data['name'] += '_' + language
+
+    mock_operation.result.return_value = obj_data
+    return mock_operation
+
+
+def esi_get_universe_moons_moon_id(moon_id, language=None):
+    mock_operation = Mock()
+    obj_data = {
+        "id": 40161465,
+        "name": "Amamake II - Moon 1",
+        "system_id": 30002537,
+        "position": {
+            "x": 1,
+            "y": 2,
+            "z": 3
+        }
     }    
     if language in ESI_LANGUAGES.difference({'en-us'}):
         obj_data['name'] += '_' + language
@@ -455,16 +479,7 @@ def esi_mock_client():
         .side_effect = esi_get_universe_planets_planet_id
 
     mock_client.Universe.get_universe_moons_moon_id\
-        .return_value.result.return_value = {
-            "id": 40161465,
-            "name": "Amamake II - Moon 1",
-            "system_id": 30002537,
-            "position": {
-                "x": 1,
-                "y": 2,
-                "z": 3
-            }
-        }
+        .side_effect = esi_get_universe_moons_moon_id
     
     # EveEntityManager
     mock_client.Universe.post_universe_names\
@@ -487,8 +502,12 @@ def load_entity(EntityClass):
     """loads testdata for given entity class"""
     entity_name = EntityClass.__name__
     EntityClass.objects.all().delete()
-    for x in entities_testdata[entity_name]:
-        EntityClass.objects.create(**x)
+    for obj in entities_testdata[entity_name]:
+        if issubclass(EntityClass, EveUniverse) and EntityClass.has_localization():            
+            for _, lc_model, lc_esi in EveUniverse.LANG_CODES_MAPPING:
+                if lc_esi != EveUniverse.ESI_DEFAULT_LANGUAGE:
+                    obj['name_' + lc_model] = obj['name'] + '_' + lc_model
+        EntityClass.objects.create(**obj)
     assert(len(entities_testdata[entity_name]) == EntityClass.objects.count()) 
 
 

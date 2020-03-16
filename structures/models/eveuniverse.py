@@ -4,8 +4,9 @@ import logging
 import urllib
 
 from django.db import models
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from django.utils import translation
+from django.utils.timezone import now
 
 from ..managers import EveUniverseManager
 from ..utils import LoggerAddTag
@@ -83,7 +84,7 @@ class EveUniverse(models.Model):
         """returns the localized version of name for the current language
         will return the default if a translation does not exist
         """        
-        lang_mapping = self.language_code_translation(
+        lang_mapping = self._language_code_translation(
             translation.get_language(), self.LANG_CODES_DJANGO
         )
         if lang_mapping and (
@@ -102,11 +103,31 @@ class EveUniverse(models.Model):
         name_translation = getattr(self, field_name)
         return name_translation if name_translation else self.name
 
+    def _set_generated_translations(self):
+        """updates localization fields with generated values if defined
+        
+        Purpose is to provide localized names for models where ESI does
+        not provide localizations and where those names can be generated
+        e.g. planets, moons
+        
+        Will look for _name_localized_generated() defined in the model
+        and run it to set all localized names
+        Does nothing if that method is not defined
+        """
+        if hasattr(self, '_name_localized_generated'):
+            for django_lc, field_ext, esi_lc in self.LANG_CODES_MAPPING:
+                if esi_lc != self.ESI_DEFAULT_LANGUAGE:
+                    field_name = 'name_' + field_ext
+                    setattr(
+                        self, field_name, 
+                        self._name_localized_generated(django_lc)
+                    )
+
     class Meta:
         abstract = True
 
     @classmethod
-    def language_code_translation(cls, code: str, category_from: int) -> tuple:
+    def _language_code_translation(cls, code: str, category_from: int) -> tuple:
         """translates language codes between systems"""
         result = None
         for mapping in cls.LANG_CODES_MAPPING:
@@ -115,16 +136,27 @@ class EveUniverse(models.Model):
         return result
     
     @classmethod
-    def esi_pk(cls):
+    def _esi_pk(cls):
         """returns the name of the pk column on ESI that must exist"""
         return cls._eve_universe_meta_attr('esi_pk', is_mandatory=True)
        
     @classmethod
-    def esi_method(cls):        
+    def _esi_method(cls):        
         return cls._eve_universe_meta_attr('esi_method', is_mandatory=True)
-                    
+
     @classmethod
-    def field_names_not_pk(cls) -> set:
+    def has_localization(cls) -> bool:
+        has_localization = cls._eve_universe_meta_attr('has_localization')
+        return True if has_localization is None else has_localization
+    
+    @classmethod
+    def _child_mappings(cls) -> dict:
+        """returns the mapping of children for this class"""
+        mappings = cls._eve_universe_meta_attr('children')        
+        return mappings if mappings else dict()
+
+    @classmethod
+    def _field_names_not_pk(cls) -> set:
         """returns field names excl. PK, localization and auto created fields"""
         return {
             x.name for x in cls._meta.get_fields()
@@ -133,21 +165,15 @@ class EveUniverse(models.Model):
             ) and x.name not in {'language_code', 'last_updated'}
             and 'name_' not in x.name
         }
-
+    
     @classmethod
-    def child_mappings(cls) -> dict:
-        """returns the mapping of children for this class"""
-        mappings = cls._eve_universe_meta_attr('children')        
-        return mappings if mappings else dict()
-
-    @classmethod
-    def field_mappings(cls) -> dict:
+    def _field_mappings(cls) -> dict:
         """returns the mappings for model fields vs. esi fields"""        
         mappings = cls._eve_universe_meta_attr('field_mappings')
         return mappings if mappings else dict()
 
     @classmethod
-    def fk_mappings(cls) -> dict:
+    def _fk_mappings(cls) -> dict:
         """returns the foreign key mappings for this class
         
         'model field name': ('Foreign Key name on ESI', 'related model class')
@@ -173,12 +199,46 @@ class EveUniverse(models.Model):
             if isinstance(x, models.ForeignKey)
         }
         return mappings
-    
-    @classmethod
-    def has_localization(cls) -> bool:
-        has_localization = cls._eve_universe_meta_attr('has_localization')
-        return True if has_localization is None else has_localization
         
+    @classmethod
+    def _map_esi_fields_to_model(cls, eve_data_objects: dict) -> dict:
+        """maps ESi fields to model fields incl. translations if any
+        returns the result as defaults dict
+        """
+        fk_mappings = cls._fk_mappings()
+        field_mappings = cls._field_mappings()                        
+        defaults = {'last_updated': now()}
+        eve_data_obj = eve_data_objects[cls.ESI_DEFAULT_LANGUAGE]
+        for key in cls._field_names_not_pk():
+            if key in fk_mappings:
+                esi_key, ParentClass = fk_mappings[key]                    
+                value, _ = ParentClass.objects.get_or_create_esi(
+                    eve_data_obj[esi_key]
+                )                
+            else:
+                if key in field_mappings:
+                    mapping = field_mappings[key]
+                    if len(mapping) != 2:
+                        raise ValueError(
+                            'Currently only supports mapping to 1-level '
+                            'nested dicts'
+                        )
+                    value = eve_data_obj[mapping[0]][mapping[1]]
+                else:
+                    value = eve_data_obj[key]
+
+            defaults[key] = value
+
+        # add translations if any
+        if cls.has_localization():
+            for _, field_ext, esi_lc in cls.LANG_CODES_MAPPING:
+                if esi_lc != cls.ESI_DEFAULT_LANGUAGE:
+                    field_name = 'name_' + field_ext
+                    defaults[field_name] = \
+                        eve_data_objects[esi_lc]['name']
+        
+        return defaults
+
     @classmethod
     def _eve_universe_meta_attr(
         cls, attr_name: str, is_mandatory: bool = False
@@ -320,46 +380,6 @@ class EveSolarSystem(EveUniverse):
         }
 
 
-class EveMoon(EveUniverse):  
-    """"moon in Eve Online"""
-
-    position_x = models.FloatField(
-        null=True,
-        default=None,
-        blank=True,
-        help_text=_('x position in the solar system')
-    )
-    position_y = models.FloatField(
-        null=True,
-        default=None,
-        blank=True,
-        help_text=_('y position in the solar system')
-    )
-    position_z = models.FloatField(
-        null=True,
-        default=None,
-        blank=True,
-        help_text=_('z position in the solar system')
-    )
-    eve_solar_system = models.ForeignKey(
-        EveSolarSystem,
-        on_delete=models.CASCADE
-    )
-
-    class EveUniverseMeta:
-        esi_pk = 'moon_id'
-        esi_method = 'get_universe_moons_moon_id'
-        fk_mappings = {
-            'eve_solar_system': 'system_id'
-        }
-        field_mappings = {            
-            'position_x': ('position', 'x'),
-            'position_y': ('position', 'y'),
-            'position_z': ('position', 'z')
-        }
-        has_localization = False
-
-
 class EvePlanet(EveUniverse):
     """"planet in Eve Online"""
     
@@ -390,9 +410,67 @@ class EvePlanet(EveUniverse):
         on_delete=models.CASCADE
     )
 
+    def _name_localized_generated(self, lang_code: str):
+        """returns a generated localized planet name for the given language"""
+        with translation.override(lang_code):        
+            name_localized = self.name.replace(
+                self.eve_solar_system.name, 
+                self.eve_solar_system.name_localized
+            )
+        return name_localized
+
     class EveUniverseMeta:
         esi_pk = 'planet_id'
         esi_method = 'get_universe_planets_planet_id'
+        fk_mappings = {
+            'eve_solar_system': 'system_id'
+        }
+        field_mappings = {            
+            'position_x': ('position', 'x'),
+            'position_y': ('position', 'y'),
+            'position_z': ('position', 'z')
+        }
+        has_localization = False
+
+
+class EveMoon(EveUniverse):  
+    """"moon in Eve Online"""
+
+    position_x = models.FloatField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text=_('x position in the solar system')
+    )
+    position_y = models.FloatField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text=_('y position in the solar system')
+    )
+    position_z = models.FloatField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text=_('z position in the solar system')
+    )
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem,
+        on_delete=models.CASCADE
+    )
+
+    def _name_localized_generated(self, lang_code: str):
+        """returns a generated localized moon name for the given language"""
+        with translation.override(lang_code):        
+            name_localized = self.name.replace(
+                self.eve_solar_system.name, 
+                self.eve_solar_system.name_localized
+            ).replace('Moon', gettext('Moon'))
+        return name_localized
+
+    class EveUniverseMeta:
+        esi_pk = 'moon_id'
+        esi_method = 'get_universe_moons_moon_id'
         fk_mappings = {
             'eve_solar_system': 'system_id'
         }

@@ -5,7 +5,6 @@ from time import sleep
 from bravado.exception import HTTPBadRequest
 
 from django.db import models
-from django.utils.timezone import now
 
 from allianceauth.eveonline.providers import provider
 
@@ -49,10 +48,12 @@ class EveUniverseManager(models.Manager):
         )        
         try:            
             eve_data_objects = self._fetch_eve_data_objects(eve_id, add_prefix)
-            defaults = self._map_esi_fields_to_model(eve_data_objects)
+            defaults = self.model._map_esi_fields_to_model(eve_data_objects)
             obj, created = self.update_or_create(
                 id=eve_id, defaults=defaults
             )
+            obj._set_generated_translations()
+            obj.save()
             self._update_or_create_children(eve_data_objects)
         
         except Exception as ex:
@@ -75,13 +76,13 @@ class EveUniverseManager(models.Manager):
         eve_data_objects = dict()
         for language in languages:
             args = {
-                self.model.esi_pk(): eve_id,                    
+                self.model._esi_pk(): eve_id,                    
             }
             if self.model.has_localization():
                 args['language'] = language
 
             logger.info(add_prefix(
-                'Fetching object from ESI for "%s"' % language
+                'Fetching object from ESI for language %s' % language
             ))
             for retry_count in range(self.ESI_MAX_RETRIES + 1):
                 if retry_count > 0:
@@ -92,7 +93,7 @@ class EveUniverseManager(models.Manager):
                     ))
                 try:
                     eve_data_objects[language] = getattr(
-                        provider.client.Universe, self.model.esi_method()
+                        provider.client.Universe, self.model._esi_method()
                     )(**args).result()
                     break
 
@@ -108,51 +109,13 @@ class EveUniverseManager(models.Manager):
 
         return eve_data_objects
     
-    def _map_esi_fields_to_model(self, eve_data_objects: dict) -> dict:
-        """maps ESi fields to model fields incl. translations if any
-        returns the result as defaults dict
-        """
-        fk_mappings = self.model.fk_mappings()
-        field_mappings = self.model.field_mappings()                        
-        defaults = {'last_updated': now()}
-        eve_data_obj = eve_data_objects[self.model.ESI_DEFAULT_LANGUAGE]
-        for key in self.model.field_names_not_pk():
-            if key in fk_mappings:
-                esi_key, ParentClass = fk_mappings[key]                    
-                value, _ = ParentClass.objects.get_or_create_esi(
-                    eve_data_obj[esi_key]
-                )                
-            else:
-                if key in field_mappings:
-                    mapping = field_mappings[key]
-                    if len(mapping) != 2:
-                        raise ValueError(
-                            'Currently only supports mapping to 1-level '
-                            'nested dicts'
-                        )
-                    value = eve_data_obj[mapping[0]][mapping[1]]
-                else:
-                    value = eve_data_obj[key]
-
-            defaults[key] = value
-
-        # add translations if any
-        if self.model.has_localization():
-            for _, field_ext, esi_lang_code in self.model.LANG_CODES_MAPPING:
-                if esi_lang_code != self.model.ESI_DEFAULT_LANGUAGE:
-                    field_name = 'name_' + field_ext
-                    defaults[field_name] = \
-                        eve_data_objects[esi_lang_code]['name']
-        
-        return defaults
-
     def _update_or_create_children(self, eve_data_objects: dict) -> None:
         """updates or creates child objects if specified"""
         eve_data_obj = eve_data_objects[self.model.ESI_DEFAULT_LANGUAGE]
-        for key, child_class in self.model.child_mappings().items():
+        for key, child_class in self.model._child_mappings().items():
             ChildClass = locate(__package__ + '.models.' + child_class)
             for eve_data_obj_2 in eve_data_obj[key]:
-                eve_id = eve_data_obj_2[ChildClass.esi_pk()]
+                eve_id = eve_data_obj_2[ChildClass._esi_pk()]
                 ChildClass.objects.update_or_create_esi(eve_id)                
                 
 

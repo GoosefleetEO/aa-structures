@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.test import TestCase
 from django.utils.functional import lazy
-from django.utils.html import format_html
+from django.utils.html import format_html, mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from allianceauth.notifications import notify
@@ -316,3 +316,15 @@ class NoSocketsTestCase(TestCase):
 def app_labels() -> set:
     """returns set of all current app labels"""
     return {x for x in apps.app_configs.keys()}
+
+
+def add_no_wrap_html(text: str) -> str:
+    """add no-wrap HTML to text"""
+    return format_html(
+        '<span style="white-space: nowrap;">{}</span>', mark_safe(text)
+    )
+
+
+def yesno_str(value: bool) -> str:
+    """returns yes/no for boolean as string and with localization"""
+    return _('yes') if value is True else _('no')

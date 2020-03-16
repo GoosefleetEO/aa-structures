@@ -489,7 +489,13 @@ class TestEvePlanetManager(NoSocketsTestCase):
         self.assertEqual(obj.position_x, 1)
         self.assertEqual(obj.position_y, 2)
         self.assertEqual(obj.position_z, 3)
-                
+
+        # localizations
+        self.assertEqual(obj.name_de, 'Amamake_de IV')
+        self.assertEqual(obj.name_ko, 'Amamake_ko IV')
+        self.assertEqual(obj.name_ru, 'Amamake_ru IV')
+        self.assertEqual(obj.name_zh, 'Amamake_zh IV')
+        
     @patch(MODULE_PATH + '.provider')
     def test_can_create_object_from_esi_if_not_found_w_parent(self, mock_provider):
         mock_provider.client = esi_mock_client()
