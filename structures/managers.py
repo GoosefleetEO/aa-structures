@@ -14,11 +14,94 @@ from .utils import LoggerAddTag, make_logger_prefix
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
-class EveUniverseManager(models.Manager):
+class EsiRequestMixin:
+    """Mixin class for adding ESI request ability with retries"""
 
     ESI_MAX_RETRIES = 3
     ESI_SLEEP_SECONDS_ON_RETRY = 1
 
+    @classmethod
+    def _perform_esi_request(
+        cls, 
+        esi_category_name: str, 
+        esi_method_name: str, 
+        args: dict,         
+        add_prefix: object,
+        esi_client: object = None
+    ) -> dict:
+        """Performs ESI request, returns response, retries on bad requests"""
+        if not esi_client:
+            esi_client = provider.client
+        logger.info(add_prefix('Fetching object from ESI'))
+        for retry_count in range(cls.ESI_MAX_RETRIES + 1):
+            if retry_count > 0:
+                logger.warn(add_prefix(
+                    'Fetching data from ESI - Retry {} / {}'.format(
+                        retry_count, cls.ESI_MAX_RETRIES
+                    )
+                ))
+            try:
+                if not hasattr(esi_client, esi_category_name):
+                    raise ValueError(
+                        'Invalid ESI category: %s' % esi_category_name
+                    )
+                esi_category = getattr(esi_client, esi_category_name)
+                if not hasattr(esi_category, esi_method_name):
+                    raise ValueError(
+                        'Invalid ESI method for %s category: %s'
+                        % (esi_category_name, esi_method_name)
+                    )                
+                response = \
+                    getattr(esi_category, esi_method_name)(**args).result()
+                break
+
+            except HTTPBadRequest as ex:                    
+                logger.warn(add_prefix(
+                    'HTTP error while trying to '
+                    'fetch data from ESI: {}'.format(ex)
+                ))
+                if retry_count < cls.ESI_MAX_RETRIES:
+                    sleep(cls.ESI_SLEEP_SECONDS_ON_RETRY)
+                else:
+                    raise ex
+
+        return response
+
+    @classmethod
+    def _fetch_eve_objects_from_esi(
+        cls, 
+        esi_category_name: str, 
+        esi_method_name: str, 
+        args: dict,         
+        add_prefix: object,
+        has_esi_localization: bool,
+        esi_client: object = None
+    ) -> dict:
+        """returns dict of eve data objects from ESI
+        will contain one full object items for each language if supported or just one
+        will retry on bad request responses from ESI
+        """
+        from .models.eveuniverse import EsiNameLocalization
+
+        if has_esi_localization:
+            languages = EsiNameLocalization.ESI_LANGUAGES
+        else:
+            languages = {EsiNameLocalization.ESI_DEFAULT_LANGUAGE}
+
+        eve_data_objects = dict()
+        for language in languages:            
+            if has_esi_localization:
+                args['language'] = language
+
+            eve_data_objects[language] = cls._perform_esi_request(
+                esi_category_name, esi_method_name, args, add_prefix, esi_client
+            )
+            
+        return eve_data_objects
+
+
+class EveUniverseManager(EsiRequestMixin, models.Manager):
+    
     def get_or_create_esi(self, eve_id: int) -> tuple:
         """gets or creates eve universe object fetched from ESI if needed. 
         Will always get/create parent objects.
@@ -46,8 +129,14 @@ class EveUniverseManager(models.Manager):
         add_prefix = make_logger_prefix(
             '%s(id=%d)' % (self.model.__name__, eve_id)
         )        
-        try:            
-            eve_data_objects = self._fetch_eve_data_objects(eve_id, add_prefix)
+        try:
+            eve_data_objects = self._fetch_eve_objects_from_esi(
+                'Universe', 
+                self.model._esi_method(), 
+                {self.model._esi_pk(): eve_id}, 
+                add_prefix,
+                self.model.has_esi_localization()
+            )
             defaults = self.model._map_esi_fields_to_model(eve_data_objects)
             obj, created = self.update_or_create(
                 id=eve_id, defaults=defaults
@@ -61,54 +150,7 @@ class EveUniverseManager(models.Manager):
             raise ex
 
         return obj, created
-    
-    def _fetch_eve_data_objects(self, eve_id: int, add_prefix: object) -> dict:
-        """returns dict of eve data objects from ESI
-        will contain one full object items for each language if supported or just one
-        will retry on bad request responses from ESI
-        """
         
-        if self.model.has_localization():
-            languages = self.model.ESI_LANGUAGES
-        else:
-            languages = {self.model.ESI_DEFAULT_LANGUAGE}
-
-        eve_data_objects = dict()
-        for language in languages:
-            args = {
-                self.model._esi_pk(): eve_id,                    
-            }
-            if self.model.has_localization():
-                args['language'] = language
-
-            logger.info(add_prefix(
-                'Fetching object from ESI for language %s' % language
-            ))
-            for retry_count in range(self.ESI_MAX_RETRIES + 1):
-                if retry_count > 0:
-                    logger.warn(add_prefix(
-                        'Fetching data from ESI - Retry {} / {}'.format(
-                            retry_count, self.ESI_MAX_RETRIES
-                        )
-                    ))
-                try:
-                    eve_data_objects[language] = getattr(
-                        provider.client.Universe, self.model._esi_method()
-                    )(**args).result()
-                    break
-
-                except HTTPBadRequest as ex:                    
-                    logger.warn(add_prefix(
-                        'HTTP error while trying to '
-                        'fetch data from ESI: {}'.format(ex)
-                    ))
-                    if retry_count < self.ESI_MAX_RETRIES:
-                        sleep(self.ESI_SLEEP_SECONDS_ON_RETRY)
-                    else:
-                        raise ex
-
-        return eve_data_objects
-    
     def _update_or_create_children(self, eve_data_objects: dict) -> None:
         """updates or creates child objects if specified"""
         eve_data_obj = eve_data_objects[self.model.ESI_DEFAULT_LANGUAGE]
@@ -119,7 +161,7 @@ class EveUniverseManager(models.Manager):
                 ChildClass.objects.update_or_create_esi(eve_id)                
                 
 
-class EveEntityManager(models.Manager):
+class EveEntityManager(EsiRequestMixin, models.Manager):
 
     def get_or_create_esi(self, eve_entity_id: int) -> tuple:
         """gets or creates EveEntity obj with data fetched from ESI if needed
@@ -143,21 +185,21 @@ class EveEntityManager(models.Manager):
         eve_id: Eve Online ID of object
         
         Returns: object, created        
-        """
-        from .models import EveEntity
-
+        """        
         add_prefix = make_logger_prefix(
             '%s(id=%d)' % (self.model.__name__, eve_entity_id)
         )
-        logger.info(add_prefix('Trying to fetch eve entity from ESI'))
-        esi_client = provider.client
-        try:
-            response = esi_client.Universe.post_universe_names(
-                ids=[eve_entity_id]
-            ).result()
+        logger.info(add_prefix('Trying to fetch eve entity from ESI'))        
+        try:            
+            response = self._perform_esi_request(
+                'Universe', 
+                'post_universe_names', 
+                {'ids': [eve_entity_id]}, 
+                add_prefix
+            )
             if len(response) > 0:
                 first = response[0]
-                category = EveEntity.get_matching_entity_category(
+                category = self.model.get_matching_entity_category(
                     first['category']
                 )
                 obj, created = self.update_or_create(
@@ -168,19 +210,16 @@ class EveEntityManager(models.Manager):
                     }
                 )
             else:
-                raise ValueError(
-                    'Did not find a matching entity for ID {}'.format(
-                        eve_entity_id
-                    )
-                )
+                raise ValueError(add_prefix('Did not find a match'))
+
         except Exception as ex:
-            logger.warn(add_prefix('Failed to load eve entity: {}'.format(ex)))
+            logger.warn(add_prefix('Failed to load eve entity: %s' % ex))
             raise ex
 
         return obj, created
 
 
-class StructureManager(models.Manager):
+class StructureManager(EsiRequestMixin, models.Manager):
 
     def get_or_create_esi(
         self, structure_id: int, esi_client: object
@@ -222,13 +261,15 @@ class StructureManager(models.Manager):
         
         try:
             if esi_client is None:
-                raise ValueError(
-                    'Can not fetch structure without an esi client'
-                )
-            structure_info = \
-                esi_client.Universe.get_universe_structures_structure_id(
-                    structure_id=structure_id
-                ).result()
+                raise ValueError('Can not fetch structure without esi client')
+            
+            structure_info = self._perform_esi_request(
+                'Universe', 
+                'get_universe_structures_structure_id', 
+                {'structure_id': structure_id}, 
+                add_prefix,
+                esi_client
+            )            
             structure = {
                 'structure_id': structure_id,
                 'name': structure_info['name'],

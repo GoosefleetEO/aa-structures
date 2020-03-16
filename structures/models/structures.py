@@ -10,7 +10,9 @@ from django.utils.translation import gettext_lazy as _
 from ..managers import StructureManager
 
 from ..utils import LoggerAddTag
-from .eveuniverse import EveType, EveSolarSystem, EvePlanet, EveMoon
+from .eveuniverse import (
+    EsiNameLocalization, EveType, EveSolarSystem, EvePlanet, EveMoon
+)
 from .owners import Owner
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
@@ -331,7 +333,7 @@ class Structure(models.Model):
         )
         
         
-class StructureService(models.Model):
+class StructureService(EsiNameLocalization, models.Model):
     """service of a structure"""
 
     STATE_OFFLINE = 1
@@ -353,7 +355,7 @@ class StructureService(models.Model):
         help_text=_('Structure this service is installed to')
     )
     name = models.CharField(
-        max_length=64,
+        max_length=100,
         help_text=_('Name of the service')
     )
     state = models.IntegerField(

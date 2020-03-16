@@ -33,7 +33,7 @@ class TestEveUniverse(NoSocketsTestCase):
                 
         class EveUniverseMeta:
             not_pk = 'my_id'
-            has_localization = False
+            has_esi_localization = False
         
     class MyEveModelEmpty(EveUniverse):
         class Meta:
@@ -74,10 +74,10 @@ class TestEveUniverse(NoSocketsTestCase):
         self.assertIsNone(self.MyEveModelNoPk._eve_universe_meta_attr('esi_pk'))
 
     def test_has_location_true_for_normal_models(self):
-        self.assertTrue(self.MyEveModelNormal.has_localization())
+        self.assertTrue(self.MyEveModelNormal.has_esi_localization())
 
     def test_has_localization_false_if_set_false(self):
-        self.assertFalse(self.MyEveModelNoPk.has_localization())
+        self.assertFalse(self.MyEveModelNoPk.has_esi_localization())
 
 
 class TestEveUniverseLocalization(NoSocketsTestCase):

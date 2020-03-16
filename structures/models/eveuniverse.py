@@ -14,33 +14,8 @@ from ..utils import LoggerAddTag
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
-class EveUniverse(models.Model):
-    """Base class for all EveUniverse models
-    
-    Eve Universe classes need to have a meta class defined: `EveUniverseMeta`
-
-    Properties are:
-
-    esi_pk: Name of the ESI property for the primary key, e.g. 'category_id'
-
-    esi_method: name of the ESI method to be called for fetching objects
-
-    children: dict of mapping between ESI dict and model class for 
-    children objects (e.g. planets for solar system), default is None
-    
-    fk_mappings: mapping of field names from model to ESI for FKs, 
-    default is None
-    
-    field_mappings: mapping of field names from model to ESI for non FKs,
-    default is None
-    
-    has_localization: True/False, whether this model gets translations from ESI, 
-    Default is True
-
-    generate_localization: (optional) True/False, whether this model will 
-    generate localizations by itself, default is false
-    
-    """
+class EsiNameLocalization(models.Model):
+    """Base class for adding localization support for name field"""
 
     # language code mappings
     # Django, Eve Universe models, ESI
@@ -58,12 +33,6 @@ class EveUniverse(models.Model):
     ESI_LANGUAGES = {x[2] for x in LANG_CODES_MAPPING}
     ESI_DEFAULT_LANGUAGE = 'en-us'
 
-    id = models.PositiveIntegerField(
-        primary_key=True, help_text=_('Eve Online ID')
-    )
-    name = models.CharField(
-        max_length=100, help_text=_('Eve Online name')
-    )    
     name_de = models.CharField(
         max_length=100,        
         blank=True,
@@ -83,26 +52,7 @@ class EveUniverse(models.Model):
         max_length=100,        
         blank=True,
         help_text=_('Eve Online name localized for Chinese')
-    )    
-    last_updated = models.DateTimeField(
-        default=None,
-        null=True,
-        blank=True,
-        help_text=_('When this object was last updated from ESI'),
-        db_index=True
-    )    
-
-    objects = EveUniverseManager()
-
-    def __repr__(self):
-        return '{}(id={}, name=\'{}\')'.format(
-            self.__class__.__name__,
-            self.id,
-            self.name
-        )
-
-    def __str__(self):
-        return self.name
+    )
 
     @property
     def name_localized(self):
@@ -135,6 +85,76 @@ class EveUniverse(models.Model):
             )
         name_translation = getattr(self, field_name)
         return name_translation if name_translation else self.name
+
+    def _name_localized_generated(self, lang_code: str) -> str:
+        raise NotImplementedError()
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def _language_code_translation(cls, code: str, category_from: int) -> tuple:
+        """translates language codes between systems"""
+        result = None
+        for mapping in cls.LANG_CODES_MAPPING:
+            if mapping[category_from] == code:
+                result = mapping
+        return result
+
+
+class EveUniverse(EsiNameLocalization, models.Model):
+    """Base class for all EveUniverse models
+    
+    Eve Universe classes need to have a meta class defined: `EveUniverseMeta`
+
+    Properties are:
+
+    esi_pk: Name of the ESI property for the primary key, e.g. 'category_id'
+
+    esi_method: name of the ESI method to be called for fetching objects
+
+    children: dict of mapping between ESI dict and model class for 
+    children objects (e.g. planets for solar system), default is None
+    
+    fk_mappings: mapping of field names from model to ESI for FKs, 
+    default is None
+    
+    field_mappings: mapping of field names from model to ESI for non FKs,
+    default is None
+    
+    has_esi_localization: True/False, whether this model gets translations from ESI, 
+    Default is True
+
+    generate_localization: (optional) True/False, whether this model will 
+    generate localizations by itself, default is false
+    
+    """
+
+    id = models.PositiveIntegerField(
+        primary_key=True, help_text=_('Eve Online ID')
+    )
+    name = models.CharField(
+        max_length=100, help_text=_('Eve Online name')
+    )    
+    last_updated = models.DateTimeField(
+        default=None,
+        null=True,
+        blank=True,
+        help_text=_('When this object was last updated from ESI'),
+        db_index=True
+    )    
+
+    objects = EveUniverseManager()
+
+    def __repr__(self):
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.name
+        )
+
+    def __str__(self):
+        return self.name
     
     def _set_generated_translations(self):
         """updates localization fields with generated values if defined
@@ -156,34 +176,22 @@ class EveUniverse(models.Model):
                         self._name_localized_generated(django_lc)
                     )
     
-    def _name_localized_generated(self, lang_code: str) -> str:
-        raise NotImplementedError()
-
     class Meta:
         abstract = True
-
-    @classmethod
-    def _language_code_translation(cls, code: str, category_from: int) -> tuple:
-        """translates language codes between systems"""
-        result = None
-        for mapping in cls.LANG_CODES_MAPPING:
-            if mapping[category_from] == code:
-                result = mapping
-        return result
     
     @classmethod
-    def _esi_pk(cls):
+    def _esi_pk(cls) -> str:
         """returns the name of the pk column on ESI that must exist"""
         return cls._eve_universe_meta_attr('esi_pk', is_mandatory=True)
        
     @classmethod
-    def _esi_method(cls):        
+    def _esi_method(cls) -> str:        
         return cls._eve_universe_meta_attr('esi_method', is_mandatory=True)
 
     @classmethod
-    def has_localization(cls) -> bool:
-        has_localization = cls._eve_universe_meta_attr('has_localization')
-        return True if has_localization is None else has_localization
+    def has_esi_localization(cls) -> bool:
+        has_esi_localization = cls._eve_universe_meta_attr('has_esi_localization')
+        return True if has_esi_localization is None else has_esi_localization
     
     @classmethod
     def _child_mappings(cls) -> dict:
@@ -266,7 +274,7 @@ class EveUniverse(models.Model):
             defaults[key] = value
 
         # add translations if any
-        if cls.has_localization():
+        if cls.has_esi_localization():
             for _, field_ext, esi_lc in cls.LANG_CODES_MAPPING:
                 if esi_lc != cls.ESI_DEFAULT_LANGUAGE:
                     field_name = 'name_' + field_ext
@@ -465,7 +473,7 @@ class EvePlanet(EveUniverse):
             'position_y': ('position', 'y'),
             'position_z': ('position', 'z')
         }
-        has_localization = False
+        has_esi_localization = False
         generate_localization = True
 
 
@@ -515,5 +523,5 @@ class EveMoon(EveUniverse):
             'position_y': ('position', 'y'),
             'position_z': ('position', 'z')
         }
-        has_localization = False
+        has_esi_localization = False
         generate_localization = True

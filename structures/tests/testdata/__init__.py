@@ -503,7 +503,7 @@ def load_entity(EntityClass):
     entity_name = EntityClass.__name__
     EntityClass.objects.all().delete()
     for obj in entities_testdata[entity_name]:
-        if issubclass(EntityClass, EveUniverse) and EntityClass.has_localization():            
+        if issubclass(EntityClass, EveUniverse) and EntityClass.has_esi_localization():            
             for _, lc_model, lc_esi in EveUniverse.LANG_CODES_MAPPING:
                 if lc_esi != EveUniverse.ESI_DEFAULT_LANGUAGE:
                     obj['name_' + lc_model] = obj['name'] + '_' + lc_model

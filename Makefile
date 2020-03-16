@@ -37,3 +37,8 @@ pylint:
 
 check_complexity:
 	flake8 structures --max-complexity=10
+
+nuke_testdb:
+	# This will delete the current test database
+	# very userful after large changes to the models
+	mysql -u root -p -e "drop database test_aa_dev_2;"

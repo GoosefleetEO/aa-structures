@@ -5,14 +5,7 @@ from bravado.exception import HTTPBadRequest
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from ..utils import set_test_logger
-from .testdata import (
-    load_entity, 
-    load_entities,
-    create_structures,     
-    esi_mock_client,
-    esi_get_universe_categories_category_id
-)
+from ..managers import EsiRequestMixin  # noqa
 from ..models import (
     EveEntity,    
     EveCategory,
@@ -26,20 +19,50 @@ from ..models import (
     Owner,    
     Structure
 )
-from ..utils import NoSocketsTestCase
+from .testdata import (
+    load_entity, 
+    load_entities,
+    create_structures,     
+    esi_mock_client,
+    esi_get_universe_categories_category_id
+)
+from ..utils import NoSocketsTestCase, set_test_logger
 
 MODULE_PATH = 'structures.managers'
 logger = set_test_logger(MODULE_PATH, __file__)
+
+
+class TestFetchFromEsi(NoSocketsTestCase):
+    
+    """
+    def test_fetch_eve_object_from_esi_raises_on_wrong_esi_category(
+        self
+    ):                
+        with self.assertRaises(ValueError):
+            EsiRequestMixin._perform_esi_request(
+                'invalid', 
+                'get_universe_groups_group_id', 
+                Mock(),                
+                Mock()
+            )
+
+    def test_fetch_eve_object_from_esi_raises_on_wrong_esi_method(self):
+        with self.assertRaises(ValueError):
+            EsiRequestMixin._perform_esi_request(
+                'Universe', 
+                'invalid', 
+                Mock(),                
+                Mock()
+            )
+    """
 
 
 class TestEveCategoryManager(NoSocketsTestCase):
     
     def setUp(self):
         EveCategory.objects.all().delete()
-
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+    
+    def test_can_get_stored_object(self):        
         load_entity(EveCategory)
         
         obj, created = EveCategory.objects.get_or_create_esi(65)
@@ -50,7 +73,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.name, 'Structure')
     
     @patch(MODULE_PATH + '.provider')
-    def test_can_create_object_from_esi(self, mock_provider):        
+    def test_can_create_object_from_esi(self, mock_provider):
         mock_provider.client = esi_mock_client()
 
         obj, created = EveCategory.objects.update_or_create_esi(65)
@@ -144,10 +167,8 @@ class TestEveGroupManager(NoSocketsTestCase):
     
     def setUp(self):
         load_entity(EveCategory)
-    
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+        
+    def test_can_get_stored_object(self):        
         load_entity(EveGroup)
         
         obj, created = EveGroup.objects.get_or_create_esi(1657)                
@@ -216,10 +237,8 @@ class TestEveTypeManager(NoSocketsTestCase):
 
     def setUp(self):
         load_entities([EveCategory, EveGroup])
-
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+    
+    def test_can_get_stored_object(self):        
         load_entity(EveType)
         
         obj, created = EveType.objects.get_or_create_esi(35832)                
@@ -255,9 +274,7 @@ class TestEveTypeManager(NoSocketsTestCase):
 
 class TestEveRegionManager(NoSocketsTestCase):
 
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+    def test_can_get_stored_object(self):        
         load_entity(EveRegion)
 
         obj, created = EveRegion.objects.get_or_create_esi(10000005)        
@@ -278,10 +295,8 @@ class TestEveConstellationManager(NoSocketsTestCase):
 
     def setUp(self):
         load_entity(EveRegion)
-
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+    
+    def test_can_get_stored_object(self):        
         load_entity(EveConstellation)
 
         obj, created = EveConstellation.objects.get_or_create_esi(20000069)
@@ -327,10 +342,8 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
             EveRegion,
             EveConstellation
         ])
-    
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+        
+    def test_can_get_stored_object(self):        
         load_entity(EveSolarSystem)
         load_entity(EvePlanet)
         
@@ -419,9 +432,7 @@ class TestEveMoonManager(NoSocketsTestCase):
             EvePlanet
         ])
 
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+    def test_can_get_stored_object(self):        
         load_entity(EveMoon)
 
         obj, created = EveMoon.objects.get_or_create_esi(40161465)        
@@ -465,10 +476,8 @@ class TestEvePlanetManager(NoSocketsTestCase):
             EveConstellation,
             EveSolarSystem
         ])
-
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa
+    
+    def test_can_get_stored_object(self):
         load_entity(EvePlanet)
 
         obj, created = EvePlanet.objects.get_or_create_esi(40161469)
@@ -514,10 +523,8 @@ class TestEvePlanetManager(NoSocketsTestCase):
 
 
 class TestEveEntityManager(NoSocketsTestCase):
-
-    @patch(MODULE_PATH + '.provider')
-    def test_can_get_stored_object(self, mock_provider):
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa     
+    
+    def test_can_get_stored_object(self):
         load_entity(EveEntity)
 
         obj, created = EveEntity.objects.get_or_create_esi(3011)

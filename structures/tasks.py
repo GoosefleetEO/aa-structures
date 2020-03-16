@@ -11,7 +11,6 @@ from django.db import transaction
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
-from django.utils import translation
 from django.utils.timezone import now
 
 from allianceauth.notifications import notify
