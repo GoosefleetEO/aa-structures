@@ -1,6 +1,4 @@
-from django.test import TestCase
-
-from ..utils import set_test_logger
+from ..utils import set_test_logger, NoSocketsTestCase
 from ..models import Structure
 from .testdata import create_structures
 
@@ -9,7 +7,7 @@ MODULE_PATH = 'structures.signals'
 logger = set_test_logger(MODULE_PATH, __file__)
 
 
-class TestSignals(TestCase):
+class TestSignals(NoSocketsTestCase):
 
     def setUp(self):        
         create_structures()

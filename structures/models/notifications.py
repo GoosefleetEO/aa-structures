@@ -14,7 +14,6 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _, gettext
 from django.utils import translation
 
-from allianceauth.eveonline.providers import provider
 from allianceauth.eveonline.evelinks import dotlan
 
 import dhooks_lite
@@ -400,81 +399,81 @@ class Notification(models.Model):
             self.get_notification_type_display(),
         )
 
-    @translation.override(settings.LANGUAGE_CODE)
-    def _generate_embed(self, esi_client: object) -> dhooks_lite.Embed:
+    def _generate_embed(
+        self, esi_client: object, language_code: str
+    ) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
 
-        logger.info(
-            'Creating embed with language = %s' % translation.get_language()
-        )        
+        logger.info('Creating embed with language = %s' % language_code)
         parsed_text = yaml.safe_load(self.text)
+        
+        with translation.override(language_code):
+            if self.notification_type in [
+                NTYPE_STRUCTURE_FUEL_ALERT,
+                NTYPE_STRUCTURE_SERVICES_OFFLINE,
+                NTYPE_STRUCTURE_WENT_LOW_POWER,
+                NTYPE_STRUCTURE_WENT_HIGH_POWER,
+                NTYPE_STRUCTURE_UNANCHORING,
+                NTYPE_STRUCTURE_UNDER_ATTACK,
+                NTYPE_STRUCTURE_LOST_SHIELD,
+                NTYPE_STRUCTURE_LOST_ARMOR,
+                NTYPE_STRUCTURE_DESTROYED,
+                NTYPE_STRUCTURE_ONLINE
+            ]:
+                title, description, color, thumbnail = self._gen_embed_structures_1(
+                    parsed_text, esi_client
+                )
 
-        if self.notification_type in [
-            NTYPE_STRUCTURE_FUEL_ALERT,
-            NTYPE_STRUCTURE_SERVICES_OFFLINE,
-            NTYPE_STRUCTURE_WENT_LOW_POWER,
-            NTYPE_STRUCTURE_WENT_HIGH_POWER,
-            NTYPE_STRUCTURE_UNANCHORING,
-            NTYPE_STRUCTURE_UNDER_ATTACK,
-            NTYPE_STRUCTURE_LOST_SHIELD,
-            NTYPE_STRUCTURE_LOST_ARMOR,
-            NTYPE_STRUCTURE_DESTROYED,
-            NTYPE_STRUCTURE_ONLINE
-        ]:
-            title, description, color, thumbnail = self._gen_embed_structures_1(
-                parsed_text, esi_client
-            )
+            elif self.notification_type in [
+                NTYPE_OWNERSHIP_TRANSFERRED,
+                NTYPE_STRUCTURE_ANCHORING
+            ]:
+                title, description, color, thumbnail = self._gen_embed_structures_2(
+                    parsed_text
+                )
 
-        elif self.notification_type in [
-            NTYPE_OWNERSHIP_TRANSFERRED,
-            NTYPE_STRUCTURE_ANCHORING
-        ]:
-            title, description, color, thumbnail = self._gen_embed_structures_2(
-                parsed_text
-            )
+            elif self.notification_type in [
+                NTYPE_MOONS_AUTOMATIC_FRACTURE,
+                NTYPE_MOONS_EXTRACTION_CANCELED,
+                NTYPE_MOONS_EXTRACTION_FINISHED,
+                NTYPE_MOONS_EXTRACTION_STARTED,
+                NTYPE_MOONS_LASER_FIRED
+            ]:
+                title, description, color, thumbnail = self._gen_embed_moons(
+                    parsed_text, esi_client
+                )
 
-        elif self.notification_type in [
-            NTYPE_MOONS_AUTOMATIC_FRACTURE,
-            NTYPE_MOONS_EXTRACTION_CANCELED,
-            NTYPE_MOONS_EXTRACTION_FINISHED,
-            NTYPE_MOONS_EXTRACTION_STARTED,
-            NTYPE_MOONS_LASER_FIRED
-        ]:
-            title, description, color, thumbnail = self._gen_embed_moon_mining(
-                parsed_text, esi_client
-            )
+            elif self.notification_type in [
+                NTYPE_ORBITAL_ATTACKED,
+                NTYPE_ORBITAL_REINFORCED,
+            ]:
+                title, description, color, thumbnail = self._gen_embed_pocos(
+                    parsed_text
+                )
 
-        elif self.notification_type in [
-            NTYPE_ORBITAL_ATTACKED,
-            NTYPE_ORBITAL_REINFORCED,
-        ]:
-            title, description, color, thumbnail = self._gen_embed_pocos(
-                parsed_text, esi_client
-            )
+            elif self.notification_type in [
+                NTYPE_TOWER_ALERT_MSG,
+                NTYPE_TOWER_RESOURCE_ALERT_MSG,
+            ]:
+                title, description, color, thumbnail = self._gen_embed_poses(
+                    parsed_text
+                )
 
-        elif self.notification_type in [
-            NTYPE_TOWER_ALERT_MSG,
-            NTYPE_TOWER_RESOURCE_ALERT_MSG,
-        ]:
-            title, description, color, thumbnail = self._gen_embed_poses(
-                parsed_text, esi_client
-            )
+            elif self.notification_type in [
+                NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
+                NTYPE_SOV_COMMAND_NODE_EVENT_STARTED,
+                NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG,
+                NTYPE_SOV_STRUCTURE_REINFORCED,
+                NTYPE_SOV_STRUCTURE_DESTROYED
+            ]:
+                title, description, color, thumbnail = self._gen_embed_sov(
+                    parsed_text
+                )
 
-        elif self.notification_type in [
-            NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
-            NTYPE_SOV_COMMAND_NODE_EVENT_STARTED,
-            NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG,
-            NTYPE_SOV_STRUCTURE_REINFORCED,
-            NTYPE_SOV_STRUCTURE_DESTROYED
-        ]:
-            title, description, color, thumbnail = self._gen_embed_sovereignty(
-                parsed_text, esi_client
-            )
-
-        else:
-            raise NotImplementedError('type: {}'.format(
-                self.notification_type
-            ))
+            else:
+                raise NotImplementedError('type: {}'.format(
+                    self.notification_type
+                ))
 
         if STRUCTURES_DEVELOPER_MODE:
             footer = dhooks_lite.Footer(self.notification_id)
@@ -489,21 +488,22 @@ class Notification(models.Model):
             timestamp=self.timestamp,
             footer=footer
         )
-
-    @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_structures_1(self, parsed_text, esi_client) -> tuple:
+    
+    def _gen_embed_structures_1(
+        self, parsed_text: dict, esi_client: object
+    ) -> tuple:
         structure, _ = Structure.objects.get_or_create_esi(
-            parsed_text['structureID'],
-            esi_client
+            parsed_text['structureID'], esi_client
         )        
         description = gettext(
             'The %(structure_type)s %(structure_name)s in %(solar_system)s '
         ) % {
-            'structure_type': structure.eve_type.name,
+            'structure_type': structure.eve_type.name_localized,
             'structure_name': '**%s**' % structure.name,
-            'solar_system': self._gen_solar_system_text(structure.eve_solar_system)
+            'solar_system': self._gen_solar_system_text(
+                structure.eve_solar_system
+            )
         }
-
         if self.notification_type == NTYPE_STRUCTURE_ONLINE:
             title = gettext('Structure online')
             description += gettext('is now online.')
@@ -577,9 +577,8 @@ class Notification(models.Model):
         
         thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
         return title, description, color, thumbnail
-
-    @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_structures_2(self, parsed_text) -> tuple:
+    
+    def _gen_embed_structures_2(self, parsed_text: dict) -> tuple:
         structure_type, _ = EveType.objects.get_or_create_esi(
             parsed_text['structureTypeID']
         )        
@@ -630,7 +629,7 @@ class Notification(models.Model):
                 '%(structure_type)s has started anchoring '
                 'in %(solar_system)s. '
             ) % {
-                'structure_type': structure_type.name,
+                'structure_type': structure_type.name_localized,
                 'solar_system': self._gen_solar_system_text(solar_system)
             }
             unanchored_at = self.timestamp \
@@ -643,20 +642,15 @@ class Notification(models.Model):
 
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
-
-    @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_moon_mining(self, parsed_text, esi_client) -> tuple:
+    
+    def _gen_embed_moons(self, parsed_text: dict, esi_client: object) -> tuple:
         structure, _ = Structure.objects.get_or_create_esi(
-            parsed_text['structureID'],
-            esi_client
+            parsed_text['structureID'], esi_client
         )
-        moon, _ = EveMoon.objects.get_or_create_esi(
-            parsed_text['moonID']
-        )        
+        moon, _ = EveMoon.objects.get_or_create_esi(parsed_text['moonID'])        
         solar_system_link = self._gen_solar_system_text(
             structure.eve_solar_system
         )
-
         if self.notification_type == NTYPE_MOONS_EXTRACTION_STARTED:
             started_by, _ = EveEntity.objects.get_or_create_esi(
                 parsed_text['startedBy']
@@ -672,7 +666,7 @@ class Notification(models.Model):
                 'and will autofracture on %(auto_time)s.\n'
             ) % {
                 'structure_name': '**%s**' % structure.name,
-                'moon': moon.name,
+                'moon': moon.name_localized,
                 'solar_system': solar_system_link,
                 'character': started_by,
                 'ready_time': ready_time.strftime(DATETIME_FORMAT),
@@ -680,9 +674,7 @@ class Notification(models.Model):
             }                
             color = self.EMBED_COLOR_INFO
 
-        elif (
-            self.notification_type == NTYPE_MOONS_EXTRACTION_FINISHED
-        ):
+        elif (self.notification_type == NTYPE_MOONS_EXTRACTION_FINISHED):
             auto_time = self._ldap_datetime_2_dt(parsed_text['autoTime'])
             title = gettext('Extraction finished')
             description = gettext(
@@ -692,7 +684,7 @@ class Notification(models.Model):
                 'The chunk will automatically fracture on %(auto_time)s.'
             ) % {
                 'structure_name': '**%s**' % structure.name,
-                'moon': moon.name,
+                'moon': moon.name_localized,
                 'solar_system': solar_system_link,
                 'auto_time': auto_time.strftime(DATETIME_FORMAT)
             }                
@@ -706,14 +698,12 @@ class Notification(models.Model):
                 'and the moon products are ready to be harvested.\n'
             ) % {
                 'structure_name': '**%s**' % structure.name,
-                'moon': moon.name,
+                'moon': moon.name_localized,
                 'solar_system': solar_system_link
             }                
             color = self.EMBED_COLOR_SUCCESS
 
-        elif (
-            self.notification_type == NTYPE_MOONS_EXTRACTION_CANCELED
-        ):
+        elif (self.notification_type == NTYPE_MOONS_EXTRACTION_CANCELED):
             if parsed_text['cancelledBy']:
                 cancelled_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text['cancelledBy']
@@ -726,7 +716,7 @@ class Notification(models.Model):
                 'in %(solar_system)s has been cancelled by %(character)s.'
             ) % {
                 'structure_name': '**%s**' % structure.name,
-                'moon': moon.name,
+                'moon': moon.name_localized,
                 'solar_system': solar_system_link,
                 'character': cancelled_by
             }
@@ -744,7 +734,7 @@ class Notification(models.Model):
                 'and the moon products are ready to be harvested.'
             ) % {
                 'structure_name': '**%s**' % structure.name,
-                'moon': moon.name,
+                'moon': moon.name_localized,
                 'solar_system': solar_system_link,
                 'character': fired_by
             }
@@ -753,26 +743,17 @@ class Notification(models.Model):
         thumbnail = dhooks_lite.Thumbnail(structure.eve_type.icon_url())
         return title, description, color, thumbnail
 
-    @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_pocos(self, parsed_text, esi_client) -> tuple:
-        if not esi_client:
-            esi_client = provider.client
-
+    def _gen_embed_pocos(self, parsed_text: dict) -> tuple:        
         planet, _ = EvePlanet.objects.get_or_create_esi(
             parsed_text['planetID']
         )
         structure_type, _ = EveType.objects.get_or_create_esi(
             EveType.EVE_TYPE_ID_POCO
-        )
-        thumbnail = dhooks_lite.Thumbnail(
-            structure_type.icon_url()
-        )
+        )        
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text['solarSystemID']
         )
-        solar_system_link = self._gen_solar_system_text(
-            solar_system
-        )
+        solar_system_link = self._gen_solar_system_text(solar_system)
         aggressor_link = self._get_aggressor_link(parsed_text)
 
         if self.notification_type == NTYPE_ORBITAL_ATTACKED:
@@ -781,8 +762,8 @@ class Notification(models.Model):
                 'The %(structure_type)s at %(planet)s in %(solar_system)s '
                 'is under attack by %(aggressor)s.'
             ) % {
-                'structure_type': structure_type.name,
-                'planet': planet.name,
+                'structure_type': structure_type.name_localized,
+                'planet': planet.name_localized,
                 'solar_system': solar_system_link,
                 'aggressor': aggressor_link
             }
@@ -797,20 +778,18 @@ class Notification(models.Model):
                 'has been reinforced by %(aggressor)s '
                 'and will come out at: %(date)s.'
             ) % {
-                'structure_type': structure_type.name,
-                'planet': planet.name,
+                'structure_type': structure_type.name_localized,
+                'planet': planet.name_localized,
                 'solar_system': solar_system_link,
                 'aggressor': aggressor_link,
                 'date': reinforce_exit_time.strftime(DATETIME_FORMAT)
             }
             color = self.EMBED_COLOR_DANGER
+        
+        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
-
-    @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_poses(self, parsed_text, esi_client) -> tuple:
-        if not esi_client:
-            esi_client = provider.client
-
+    
+    def _gen_embed_poses(self, parsed_text: dict) -> tuple:        
         eve_moon, _ = EveMoon.objects.get_or_create_esi(
             parsed_text['moonID']
         )
@@ -824,7 +803,7 @@ class Notification(models.Model):
         if qs_structures.exists():
             structure_name = qs_structures.first().name
         else:
-            structure_name = structure_type.name
+            structure_name = structure_type.name_localized
 
         if self.notification_type == NTYPE_TOWER_ALERT_MSG:
             aggressor_link = self._get_aggressor_link(parsed_text)
@@ -851,7 +830,7 @@ class Notification(models.Model):
                 '%(damage_text)s'
             ) % {
                 'structure_name': '**%s**' % structure_name,
-                'moon': eve_moon.name,
+                'moon': eve_moon.name_localized,
                 'solar_system': solar_system_link,
                 'aggressor': aggressor_link,
                 'damage_text': damage_text,
@@ -867,7 +846,7 @@ class Notification(models.Model):
                 'It has %(quantity)d fuel blocks left.'
             ) % {
                 'structure_name': '**%s**' % structure_name,
-                'moon': eve_moon.name,
+                'moon': eve_moon.name_localized,
                 'solar_system': solar_system_link,
                 'quantity': quantity
             }
@@ -875,12 +854,8 @@ class Notification(models.Model):
         
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
-
-    @translation.override(settings.LANGUAGE_CODE)
-    def _gen_embed_sovereignty(self, parsed_text, esi_client) -> tuple:
-        if not esi_client:
-            esi_client = provider.client
-
+    
+    def _gen_embed_sov(self, parsed_text: dict) -> tuple:        
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text['solarSystemID']
         )
@@ -898,7 +873,7 @@ class Notification(models.Model):
         structure_type, _ = EveType.objects.get_or_create_esi(
             structure_type_id
         )
-        structure_type_name = structure_type.name        
+        structure_type_name = structure_type.name_localized        
         sov_owner_link = self._gen_alliance_link(
             self.owner.corporation.alliance.alliance_name
         )
@@ -907,7 +882,7 @@ class Notification(models.Model):
                 '%(structure_type)s in %(solar_system)s is being captured'
             ) % {
                 'structure_type': '**%s**' % structure_type_name,
-                'solar_system': solar_system.name
+                'solar_system': solar_system.name_localized
             }
             description = gettext(
                 'A capsuleer has started to influence the %(type)s '
@@ -920,15 +895,13 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_WARNING
 
-        elif (
-            self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED
-        ):
+        elif (self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED):
             title = gettext(
                 'Command nodes for %(structure_type)s in %(solar_system)s '
                 'have begun to decloak'
             ) % {
                 'structure_type': '**%s**' % structure_type_name,
-                'solar_system': solar_system.name
+                'solar_system': solar_system.name_localized
             }
             description = gettext(
                 'Command nodes for %(structure_type)s in %(solar_system)s '
@@ -937,7 +910,7 @@ class Notification(models.Model):
             ) % {
                 'structure_type': '**%s**' % structure_type_name,
                 'solar_system': solar_system_link,
-                'constellation': solar_system.eve_constellation.name
+                'constellation': solar_system.eve_constellation.name_localized
             }
             color = self.EMBED_COLOR_WARNING
 
@@ -950,7 +923,7 @@ class Notification(models.Model):
             )
             title = gettext(
                 'DED Sovereignty claim acknowledgment: %s'
-            ) % solar_system.name
+            ) % solar_system.name_localized
             
             description = gettext(
                 'DED now officially acknowledges that your '
@@ -972,7 +945,7 @@ class Notification(models.Model):
                 'has entered reinforced mode'
             ) % {
                 'structure_type': '**%s**' % structure_type_name,
-                'solar_system': solar_system.name
+                'solar_system': solar_system.name_localized
             }
             description = gettext(
                 'The %(structure_type)s in %(solar_system)s belonging '
@@ -992,7 +965,7 @@ class Notification(models.Model):
                 '%(structure_type)s in %(solar_system)s has been destroyed'
             ) % {
                 'structure_type': '**%s**' % structure_type_name,
-                'solar_system': solar_system.name
+                'solar_system': solar_system.name_localized
             }
             description = gettext(
                 'The command nodes for %(structure_type)s '
@@ -1005,17 +978,15 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_DANGER
         
-        thumbnail = dhooks_lite.Thumbnail(
-            structure_type.icon_url()
-        )
+        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
 
     @classmethod
     def _gen_solar_system_text(cls, solar_system: EveSolarSystem) -> str:
         text = '[{}]({}) ({})'.format(
-            solar_system.name,
+            solar_system.name_localized,
             dotlan.solar_system_url(solar_system.name),
-            solar_system.eve_constellation.eve_region.name
+            solar_system.eve_constellation.eve_region.name_localized
         )
         return text
 
@@ -1068,8 +1039,7 @@ class Notification(models.Model):
             return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
         else:
             return None
-
-    @translation.override(settings.LANGUAGE_CODE)
+    
     def send_to_webhook(    
         self, webhook: Webhook, esi_client: object = None
     ) -> bool:
@@ -1089,9 +1059,7 @@ class Notification(models.Model):
 
         username = gettext('%(ticker)s Notification') % {'ticker': ticker}
         hook = dhooks_lite.Webhook(
-            webhook.url,
-            username=username,
-            avatar_url=avatar_url
+            webhook.url, username=username, avatar_url=avatar_url
         )
 
         logger.info(add_prefix(
@@ -1100,7 +1068,7 @@ class Notification(models.Model):
             )
         ))
         try:
-            embed = self._generate_embed(esi_client)
+            embed = self._generate_embed(esi_client, webhook.language_code)
         except Exception as ex:
             logger.warning(add_prefix(
                 'Failed to generate embed: {}'.format(ex)
@@ -1122,7 +1090,9 @@ class Notification(models.Model):
                     )))
                 try:
                     res = hook.execute(
-                        content=content, embeds=[embed], wait_for_response=True
+                        content=content, 
+                        embeds=[embed], 
+                        wait_for_response=True
                     )
                     if res.status_ok:
                         self.is_sent = True

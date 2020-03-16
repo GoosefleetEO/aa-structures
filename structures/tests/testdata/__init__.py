@@ -268,8 +268,7 @@ def esi_get_characters_character_id_notifications(character_id):
 
 
 def esi_get_corporations_corporation_id_customs_offices(
-    corporation_id, 
-    page=None
+    corporation_id, page=None
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -353,8 +352,7 @@ def _esi_post_corporations_corporation_id_assets(
 
 
 def esi_post_corporations_corporation_id_assets_locations(
-    corporation_id: int, 
-    item_ids: list
+    corporation_id: int, item_ids: list
 ) -> list:
     return _esi_post_corporations_corporation_id_assets(
         'post_corporations_corporation_id_assets_locations', 
@@ -368,8 +366,7 @@ esi_post_corporations_corporation_id_assets_locations.override_data = None
 
 
 def esi_post_corporations_corporation_id_assets_names(
-    corporation_id: int, 
-    item_ids: list
+    corporation_id: int, item_ids: list
 ) -> list:
     return _esi_post_corporations_corporation_id_assets(
         'post_corporations_corporation_id_assets_names', 
@@ -380,6 +377,106 @@ def esi_post_corporations_corporation_id_assets_names(
     
 
 esi_post_corporations_corporation_id_assets_names.override_data = None
+
+ESI_LANGUAGES = {'de', 'en-us', 'fr', 'ja', 'ru', 'zh', 'ko'}
+
+
+def esi_get_universe_categories_category_id(category_id, language=None):
+    mock_operation = Mock()
+    obj_data = {
+        "id": 65,
+        "name": "Structure"
+    }    
+    if language in ESI_LANGUAGES.difference({'en-us'}):
+        obj_data['name'] += '_' + language
+
+    mock_operation.result.return_value = obj_data
+    return mock_operation
+
+
+def esi_mock_client():
+    """provides a mocked ESI client"""
+    mock_client = Mock()
+    
+    # EveUniverseManager
+    mock_client.Universe\
+        .get_universe_categories_category_id\
+        .side_effect = esi_get_universe_categories_category_id
+        
+    mock_client.Universe\
+        .get_universe_groups_group_id.return_value\
+        .result.return_value = {
+            "id": 1657,
+            "name": "Citadel",
+            "category_id": 65
+        } 
+    mock_client.Universe\
+        .get_universe_types_type_id\
+        .return_value.result.return_value = {
+            "id": 35832,
+            "name": "Astrahus",
+            "group_id": 1657
+        }            
+    mock_client.Universe\
+        .get_universe_regions_region_id\
+        .return_value.result.return_value = {
+            "id": 10000005,
+            "name": "Detorid"
+        }
+    mock_client.Universe\
+        .get_universe_constellations_constellation_id\
+        .return_value.result.return_value = {
+            "id": 20000069,
+            "name": "1RG-GU",
+            "region_id": 10000005
+        }
+    mock_client.Universe\
+        .get_universe_systems_system_id\
+        .return_value.result.return_value = {
+            "id": 30000474,
+            "name": "1-PGSG",
+            "security_status": -0.496552765369415,
+            "constellation_id": 20000069,
+            "star_id": 99,
+            "planets":
+            [
+                {
+                    "planet_id": 40029526
+                },
+                {
+                    "planet_id": 40029528
+                },
+                {
+                    "planet_id": 40029529
+                }
+            ]
+        }
+    mock_client.Universe.get_universe_planets_planet_id\
+        .side_effect = esi_get_universe_planets_planet_id
+
+    mock_client.Universe.get_universe_moons_moon_id\
+        .return_value.result.return_value = {
+            "id": 40161465,
+            "name": "Amamake II - Moon 1",
+            "system_id": 30002537,
+            "position": {
+                "x": 1,
+                "y": 2,
+                "z": 3
+            }
+        }
+    
+    # EveEntityManager
+    mock_client.Universe.post_universe_names\
+        .return_value.result.return_value = [
+            {
+                "id": 3011,
+                "category": "alliance",
+                "name": "Big Bad Alliance"
+            }                
+        ]
+    
+    return mock_client
 
 
 ###################################
@@ -573,90 +670,3 @@ def get_all_notification_ids() -> set:
         if x['type'] in Notification.get_all_type_names():
             ids.add(x['notification_id'])
     return ids
-
-
-def esi_mock_client():
-    """provides a mocked ESI client"""
-    mock_client = Mock()
-    
-    # EveUniverseManager
-    mock_client.Universe\
-        .get_universe_categories_category_id.return_value\
-        .result.return_value = {
-            "id": 65,
-            "name": "Structure"
-        }
-    mock_client.Universe\
-        .get_universe_groups_group_id.return_value\
-        .result.return_value = {
-            "id": 1657,
-            "name": "Citadel",
-            "category_id": 65
-        } 
-    mock_client.Universe\
-        .get_universe_types_type_id\
-        .return_value.result.return_value = {
-            "id": 35832,
-            "name": "Astrahus",
-            "group_id": 1657
-        }            
-    mock_client.Universe\
-        .get_universe_regions_region_id\
-        .return_value.result.return_value = {
-            "id": 10000005,
-            "name": "Detorid"
-        }
-    mock_client.Universe\
-        .get_universe_constellations_constellation_id\
-        .return_value.result.return_value = {
-            "id": 20000069,
-            "name": "1RG-GU",
-            "region_id": 10000005
-        }
-    mock_client.Universe\
-        .get_universe_systems_system_id\
-        .return_value.result.return_value = {
-            "id": 30000474,
-            "name": "1-PGSG",
-            "security_status": -0.496552765369415,
-            "constellation_id": 20000069,
-            "star_id": 99,
-            "planets":
-            [
-                {
-                    "planet_id": 40029526
-                },
-                {
-                    "planet_id": 40029528
-                },
-                {
-                    "planet_id": 40029529
-                }
-            ]
-        }
-    mock_client.Universe.get_universe_planets_planet_id\
-        .side_effect = esi_get_universe_planets_planet_id
-
-    mock_client.Universe.get_universe_moons_moon_id\
-        .return_value.result.return_value = {
-            "id": 40161465,
-            "name": "Amamake II - Moon 1",
-            "system_id": 30002537,
-            "position": {
-                "x": 1,
-                "y": 2,
-                "z": 3
-            }
-        }
-    
-    # EveEntityManager
-    mock_client.Universe.post_universe_names\
-        .return_value.result.return_value = [
-            {
-                "id": 3011,
-                "category": "alliance",
-                "name": "Big Bad Alliance"
-            }                
-        ]
-    
-    return mock_client

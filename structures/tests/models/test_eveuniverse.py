@@ -1,3 +1,5 @@
+from django.utils import translation
+
 from ...models import EveCategory, EveGroup, EveType, EveSolarSystem
 from ...models.eveuniverse import EveUniverse
 from ..testdata import load_entities
@@ -67,6 +69,49 @@ class TestEveUniverse(NoSocketsTestCase):
 
     def test_has_localization_false_if_set_false(self):
         self.assertFalse(self.MyEveModelNoPk.has_localization())
+
+
+class TestEveUniverseLocalization(NoSocketsTestCase):
+
+    def setUp(self):
+        self.obj = EveCategory(
+            id=99,
+            name='Name',
+            name_de='Name_de',            
+            name_ko='Name_ko',
+            name_ru='',
+            name_zh='Name_zh',
+        )
+
+    def test_can_localized_name_de(self):
+        with translation.override('de'):
+            expected = 'Name_de'        
+            self.assertEqual(self.obj.name_localized, expected)
+
+    def test_can_localized_name_en(self):
+        with translation.override('en'):
+            expected = 'Name'        
+            self.assertEqual(self.obj.name_localized, expected)
+
+    def test_can_localized_name_ko(self):
+        with translation.override('ko'):
+            expected = 'Name_ko'
+            self.assertEqual(self.obj.name_localized, expected)
+
+    def test_can_localized_name_zh(self):
+        with translation.override('zh-hans'):
+            expected = 'Name_zh'
+            self.assertEqual(self.obj.name_localized, expected)
+
+    def test_falls_back_to_en_for_missing_translation(self):
+        with translation.override('ru'):
+            expected = 'Name'
+            self.assertEqual(self.obj.name_localized, expected)
+
+    def test_falls_back_to_en_for_unknown_codes(self):
+        with translation.override('xx'):
+            expected = 'Name'
+            self.assertEqual(self.obj.name_localized, expected)
 
 
 class TestEveType(NoSocketsTestCase):

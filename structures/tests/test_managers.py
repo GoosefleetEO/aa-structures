@@ -10,7 +10,8 @@ from .testdata import (
     load_entity, 
     load_entities,
     create_structures,     
-    esi_mock_client
+    esi_mock_client,
+    esi_get_universe_categories_category_id
 )
 from ..models import (
     EveEntity,    
@@ -30,8 +31,6 @@ from ..utils import NoSocketsTestCase
 MODULE_PATH = 'structures.managers'
 logger = set_test_logger(MODULE_PATH, __file__)
 
-DEFAULT_LANGUAGE_CODE = 'en-us'
-
 
 class TestEveCategoryManager(NoSocketsTestCase):
     
@@ -49,8 +48,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertIsInstance(obj, EveCategory)
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
-
-    @patch(MODULE_PATH + '.settings.LANGUAGE_CODE', DEFAULT_LANGUAGE_CODE)
+    
     @patch(MODULE_PATH + '.provider')
     def test_can_create_object_from_esi(self, mock_provider):        
         mock_provider.client = esi_mock_client()
@@ -59,7 +57,11 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertTrue(created)
         self.assertIsInstance(obj, EveCategory)
         self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')        
+        self.assertEqual(obj.name, 'Structure')
+        self.assertEqual(obj.name_de, 'Structure_de')        
+        self.assertEqual(obj.name_ko, 'Structure_ko')
+        self.assertEqual(obj.name_ru, 'Structure_ru')
+        self.assertEqual(obj.name_zh, 'Structure_zh')
         self.assertIsInstance(obj.last_updated, datetime)
 
     @patch(MODULE_PATH + '.provider')
@@ -112,10 +114,8 @@ class TestEveCategoryManager(NoSocketsTestCase):
                     response=Mock(), 
                     message='retry_counter=%d' % retry_counter
                 )
-            else:
-                my_mock_client = esi_mock_client()
-                return my_mock_client.Universe\
-                    .get_universe_categories_category_id.return_value\
+            else:                
+                return esi_get_universe_categories_category_id(category_id=65)\
                     .result()
             
         mock_provider.client.Universe\

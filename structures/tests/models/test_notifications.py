@@ -265,13 +265,10 @@ class TestNotification(NoSocketsTestCase):
         x1 = Notification.objects.get(notification_id=1000000509)
         self.assertFalse(x1.filter_for_alliance_level())
 
-    @patch(MODULE_PATH + '.provider')
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_all_notification_types(
-        self, mock_execute, mock_provider        
-    ):                                
+    def test_send_to_webhook_all_notification_types(self, mock_execute):                                
         logger.debug('test_send_to_webhook_normal')
-        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa        
+        
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.status_ok = True
@@ -282,7 +279,7 @@ class TestNotification(NoSocketsTestCase):
         for x in Notification.objects.all():
             self.assertFalse(x.is_sent)
             self.assertTrue(
-                x.send_to_webhook(self.webhook, mock_provider.client)
+                x.send_to_webhook(self.webhook, Mock())
             )
             self.assertTrue(x.is_sent)
             types_tested.add(x.notification_type)
@@ -294,14 +291,10 @@ class TestNotification(NoSocketsTestCase):
         )
 
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch(MODULE_PATH + '.provider')
+    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_http_error(
-        self, mock_execute, mock_provider
-    ):                                
-        logger.debug('test_send_to_webhook_http_error')
-        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa
+    def test_send_to_webhook_http_error(self, mock_execute):                                
+        logger.debug('test_send_to_webhook_http_error')        
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.status_ok = False
@@ -310,17 +303,13 @@ class TestNotification(NoSocketsTestCase):
         
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_provider.client)
+            x.send_to_webhook(self.webhook, Mock())
         )
 
-    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)
-    @patch(MODULE_PATH + '.provider')
+    @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_too_many_requests(
-        self, mock_execute, mock_provider
-    ):                                
-        logger.debug('test_send_to_webhook_too_many_requests')
-        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa
+    def test_send_to_webhook_too_many_requests(self, mock_execute):                                
+        logger.debug('test_send_to_webhook_too_many_requests')        
         mock_response = Mock()
         mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
         mock_response.status_ok = False
@@ -329,28 +318,21 @@ class TestNotification(NoSocketsTestCase):
 
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_provider.client)
+            x.send_to_webhook(self.webhook, Mock())
         )
         
-    @patch(MODULE_PATH + '.settings.DEBUG', False)
-    @patch(MODULE_PATH + '.provider')
+    @patch(MODULE_PATH + '.settings.DEBUG', False)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_exception(
-        self, mock_execute, mock_provider
-    ):                                        
-        logger.debug('test_send_to_webhook_exception')
-        mock_provider.client = Mock(side_effect=RuntimeError)  # noqa
+    def test_send_to_webhook_exception(self, mock_execute):                                        
+        logger.debug('test_send_to_webhook_exception')        
         mock_execute.side_effect = RuntimeError('Dummy exception')
 
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(
-            x.send_to_webhook(self.webhook, mock_provider.client)
+            x.send_to_webhook(self.webhook, Mock())
         )
 
-    @patch(
-        MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
-        False
-    )
+    @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
     @patch('allianceauth.timerboard.models.Timer', autospec=True)
     def test_add_to_timerboard_setting_disabled(self, mock_Timer):
         x = Notification.objects.get(notification_id=1000000404)
@@ -361,10 +343,7 @@ class TestNotification(NoSocketsTestCase):
         self.assertFalse(x.process_for_timerboard())
         self.assertFalse(mock_Timer.delete.called)
     
-    @patch(
-        MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
-        True
-    )
+    @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
     def test_add_to_timerboard_normal(self):
         Timer.objects.all().delete()        
         notification_without_timer_query = Notification.objects\
@@ -419,18 +398,12 @@ class TestNotification(NoSocketsTestCase):
         ids_set_2 = {x.id for x in Timer.objects.all()}
         self.assertSetEqual(ids_set_1, ids_set_2)
 
-    @patch(
-        MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', 
-        True
-    )
+    @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
     def test_add_to_timerboard_run_all(self):        
         for x in Notification.objects.all():
             x.process_for_timerboard()
 
-    @patch(
-        MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', 
-        False
-    )
+    @patch(MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', False)
     def test_add_to_timerboard_corp_restriction_1(self):
         Timer.objects.all().delete()  
 
@@ -439,10 +412,7 @@ class TestNotification(NoSocketsTestCase):
         t = Timer.objects.first()
         self.assertFalse(t.corp_timer)
         
-    @patch(
-        MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', 
-        True
-    )
+    @patch(MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', True)
     def test_add_to_timerboard_corp_restriction_2(self):
         Timer.objects.all().delete()  
 

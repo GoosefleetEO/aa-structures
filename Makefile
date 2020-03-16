@@ -25,3 +25,6 @@ test:
 
 pylint:
 	pylint --load-plugins pylint_django structures
+
+complexity:
+	flake8 structures --max-complexity=10

@@ -5,6 +5,7 @@ import urllib
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils import translation
 
 from ..managers import EveUniverseManager
 from ..utils import LoggerAddTag
@@ -15,16 +16,21 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 class EveUniverse(models.Model):
     """Base class for all EveUniverse models"""
 
-    # language code translations
-    # AA settings, field name extension, ESI
-    LANGUAGE_CODES = (
+    # language code mappings
+    # Django, Eve Universe models, ESI
+    LANG_CODES_MAPPING = (
         ('en', 'en', 'en-us'),
         ('de', 'de', 'de'),
-        ('es', 'es', 'es'),
-        ('zh-hans', 'zh', 'zh'),
-        ('ru', 'ru', 'ru'),
         ('ko', 'ko', 'ko'),
+        ('ru', 'ru', 'ru'),
+        ('zh-hans', 'zh', 'zh'),
     )
+    LANG_CODES_DJANGO = 0
+    LANG_CODES_MODEL = 1
+    LANG_CODES_ESI = 2
+
+    ESI_LANGUAGES = {x[2] for x in LANG_CODES_MAPPING}
+    ESI_DEFAULT_LANGUAGE = 'en-us'
 
     id = models.PositiveIntegerField(
         primary_key=True, help_text=_('Eve Online ID')
@@ -36,17 +42,7 @@ class EveUniverse(models.Model):
         max_length=100,        
         blank=True,
         help_text=_('Eve Online name localized for German')
-    )
-    name_en = models.CharField(
-        max_length=100,        
-        blank=True,
-        help_text=_('Eve Online name localized for English')
-    )
-    name_es = models.CharField(
-        max_length=100,        
-        blank=True,
-        help_text=_('Eve Online name localized for Spanish')
-    )
+    )   
     name_ko = models.CharField(
         max_length=100,        
         blank=True,
@@ -72,9 +68,52 @@ class EveUniverse(models.Model):
 
     objects = EveUniverseManager()
 
+    def __repr__(self):
+        return '{}(id={}, name=\'{}\')'.format(
+            self.__class__.__name__,
+            self.id,
+            self.name
+        )
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def name_localized(self):
+        """returns the localized version of name for the current language
+        will return the default if a translation does not exist
+        """        
+        lang_mapping = self.language_code_translation(
+            translation.get_language(), self.LANG_CODES_DJANGO
+        )
+        if lang_mapping and (
+            lang_mapping[self.LANG_CODES_ESI] != self.ESI_DEFAULT_LANGUAGE
+        ):
+            field_ext = lang_mapping[self.LANG_CODES_MODEL]        
+            field_name = ('name_%s' % field_ext) if field_ext else 'name'
+        else:
+            field_name = 'name'
+        if not hasattr(self, field_name):
+            raise NotImplementedError(
+                'field name "%s" not found in %s' % (
+                    field_name, type(self).__name__
+                )
+            )
+        name_translation = getattr(self, field_name)
+        return name_translation if name_translation else self.name
+
     class Meta:
         abstract = True
 
+    @classmethod
+    def language_code_translation(cls, code: str, category_from: int) -> tuple:
+        """translates language codes between systems"""
+        result = None
+        for mapping in cls.LANG_CODES_MAPPING:
+            if mapping[category_from] == code:
+                result = mapping
+        return result
+    
     @classmethod
     def esi_pk(cls):
         """returns the name of the pk column on ESI that must exist"""
@@ -160,16 +199,6 @@ class EveUniverse(models.Model):
                     'for class %s' % (attr_name, cls.__name__)
                 )
         return value
-
-    def __repr__(self):
-        return '{}(id={}, name=\'{}\')'.format(
-            self.__class__.__name__,
-            self.id,
-            self.name
-        )
-
-    def __str__(self):
-        return self.name
 
 
 class EveCategory(EveUniverse):

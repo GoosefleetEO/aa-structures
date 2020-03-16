@@ -101,9 +101,11 @@ def structure_list_data(request):
     def add_no_wrap_html(text: str) -> str:
         """add no-wrap HTML to text"""
         return format_html(
-            '<span style="white-space: nowrap;">{}</span>',
-            mark_safe(text)
+            '<span style="white-space: nowrap;">{}</span>', mark_safe(text)
         )
+
+    def yesno_str(value: bool) -> str:
+        return gettext_lazy('yes') if value is True else gettext_lazy('no')
 
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:
@@ -175,17 +177,17 @@ def structure_list_data(request):
 
         # location
         row['region_name'] = \
-            structure.eve_solar_system.eve_constellation.eve_region.name
-        row['solar_system_name'] = structure.eve_solar_system.name
+            structure.eve_solar_system.eve_constellation.eve_region.name_localized
+        row['solar_system_name'] = structure.eve_solar_system.name_localized
         solar_system_url = dotlan.solar_system_url(
             structure.eve_solar_system.name
         )
         if structure.eve_moon:
-            location_name = structure.eve_moon.name
+            location_name = structure.eve_moon.name_localized
         elif structure.eve_planet:
-            location_name = structure.eve_planet.name
+            location_name = structure.eve_planet.name_localized
         else:
-            location_name = structure.eve_solar_system.name
+            location_name = row['solar_system_name']
 
         row['location'] = format_html(
             '<a href="{}">{}</a><br>{}',
@@ -196,10 +198,10 @@ def structure_list_data(request):
 
         # category
         my_group = structure.eve_type.eve_group
-        row['group_name'] = my_group.name
+        row['group_name'] = my_group.name_localized
         if my_group.eve_category:
             my_category = my_group.eve_category
-            row['category_name'] = my_category.name
+            row['category_name'] = my_category.name_localized
             row['is_starbase'] = my_category.is_starbase
         else:
             row['category_name'] = ''
@@ -214,7 +216,7 @@ def structure_list_data(request):
         )
 
         # type name
-        row['type_name'] = structure.eve_type.name
+        row['type_name'] = structure.eve_type.name_localized
         row['type'] = format_html(
             '{}<br>{}',
             add_no_wrap_html(row['type_name']),
@@ -248,7 +250,7 @@ def structure_list_data(request):
 
         # add reinforcement infos
         row['is_reinforced'] = structure.is_reinforced
-        row['is_reinforced_str'] = 'yes' if structure.is_reinforced else 'no'
+        row['is_reinforced_str'] = yesno_str(structure.is_reinforced)
 
         if structure.reinforce_hour:
             row['reinforcement'] = '{:02d}:00'.format(
@@ -259,7 +261,7 @@ def structure_list_data(request):
 
         # low power state
         row['is_low_power'] = structure.is_low_power
-        row['is_low_power_str'] = 'yes' if structure.is_low_power else 'no'
+        row['is_low_power_str'] = yesno_str(structure.is_low_power)
 
         # add low power label or date when fuel runs out
         if row['is_poco'] or row['is_starbase']:
