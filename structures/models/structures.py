@@ -103,30 +103,49 @@ class Structure(models.Model):
 
     STATE_CHOICES = [
         # states Upwell structures
-        (STATE_ANCHOR_VULNERABLE, 'anchor_vulnerable'),
-        (STATE_ANCHORING, 'anchoring'),
-        (STATE_ARMOR_REINFORCE, 'armor_reinforce'),
-        (STATE_ARMOR_VULNERABLE, 'armor_vulnerable'),
-        (STATE_DEPLOY_VULNERABLE, 'deploy_vulnerable'),
-        (STATE_FITTING_INVULNERABLE, 'fitting_invulnerable'),
-        (STATE_HULL_REINFORCE, 'hull_reinforce'),
-        (STATE_HULL_VULNERABLE, 'hull_vulnerable'),
-        (STATE_ONLINE_DEPRECATED, 'online_deprecated'),
-        (STATE_ONLINING_VULNERABLE, 'onlining_vulnerable'),
-        (STATE_SHIELD_VULNERABLE, 'shield_vulnerable'),
-        (STATE_UNANCHORED, 'unanchored'),
+        (STATE_ANCHOR_VULNERABLE, _('anchor vulnerable')),
+        (STATE_ANCHORING, _('anchoring')),
+        (STATE_ARMOR_REINFORCE, _('armor reinforce')),
+        (STATE_ARMOR_VULNERABLE, _('armor vulnerable')),
+        (STATE_DEPLOY_VULNERABLE, _('deploy vulnerable')),
+        (STATE_FITTING_INVULNERABLE, _('fitting invulnerable')),
+        (STATE_HULL_REINFORCE, _('hull reinforce')),
+        (STATE_HULL_VULNERABLE, _('hull vulnerable')),
+        (STATE_ONLINE_DEPRECATED, _('online deprecated')),
+        (STATE_ONLINING_VULNERABLE, _('onlining vulnerable')),
+        (STATE_SHIELD_VULNERABLE, _('shield vulnerable')),
+        (STATE_UNANCHORED, _('unanchored')),
 
         # starbases
-        (STATE_POS_OFFLINE, 'offline'),
-        (STATE_POS_ONLINE, 'online'),
-        (STATE_POS_ONLINING, 'onlining'),
-        (STATE_POS_REINFORCED, 'reinforced'),
-        (STATE_POS_UNANCHORING, 'unanchoring '),
+        (STATE_POS_OFFLINE, _('offline')),
+        (STATE_POS_ONLINE, _('online')),
+        (STATE_POS_ONLINING, _('onlining')),
+        (STATE_POS_REINFORCED, _('reinforced')),
+        (STATE_POS_UNANCHORING, _('unanchoring ')),
 
         # other
         (STATE_NA, _('N/A')),
         (STATE_UNKNOWN, _('unknown')),
     ]
+    _STATES_ESI_MAP = {        
+        'anchor_vulnerable': STATE_ANCHOR_VULNERABLE,
+        'anchoring': STATE_ANCHORING,
+        'armor_reinforce': STATE_ARMOR_REINFORCE,
+        'armor_vulnerable': STATE_ARMOR_VULNERABLE,
+        'deploy_vulnerable': STATE_DEPLOY_VULNERABLE,
+        'fitting_invulnerable': STATE_FITTING_INVULNERABLE,
+        'hull_reinforce': STATE_HULL_REINFORCE,
+        'hull_vulnerable': STATE_HULL_VULNERABLE,
+        'online_deprecated': STATE_ONLINE_DEPRECATED,
+        'onlining_vulnerable': STATE_ONLINING_VULNERABLE,
+        'shield_vulnerable': STATE_SHIELD_VULNERABLE,
+        'unanchored': STATE_UNANCHORED,
+        'offline': STATE_POS_OFFLINE,
+        'online': STATE_POS_ONLINE,
+        'onlining': STATE_POS_ONLINING,
+        'reinforced': STATE_POS_REINFORCED,
+        'unanchoring ': STATE_POS_UNANCHORING,
+    }
 
     id = models.BigIntegerField(
         primary_key=True,
@@ -280,11 +299,6 @@ class Structure(models.Model):
     objects = StructureManager()
 
     @property
-    def state_str(self):
-        msg = [(x, y) for x, y in self.STATE_CHOICES if x == self.state]
-        return msg[0][1].replace('_', ' ') if len(msg) > 0 else _('undefined')
-
-    @property
     def is_low_power(self):
         return False if self.eve_type.is_poco else not self.fuel_expires
 
@@ -308,17 +322,15 @@ class Structure(models.Model):
         )
 
     @classmethod
-    def get_matching_state(cls, state_name) -> int:
-        """returns matching state for given state name for Upwell structures"""
-        match = [cls.STATE_UNKNOWN]
-        for x in cls.STATE_CHOICES:
-            if state_name == x[1]:
-                match = x
-                break
-
-        return match[0]
-
-
+    def get_matching_state_for_esi_state(cls, esi_state_name) -> int:
+        """returns matching state for esi state name of Upwell structures"""
+        return (
+            cls._STATES_ESI_MAP[esi_state_name]
+            if esi_state_name in cls._STATES_ESI_MAP
+            else cls.STATE_UNKNOWN
+        )
+        
+        
 class StructureService(models.Model):
     """service of a structure"""
 
@@ -326,9 +338,14 @@ class StructureService(models.Model):
     STATE_ONLINE = 2
 
     STATE_CHOICES = [
-        (STATE_OFFLINE, 'offline'),
-        (STATE_ONLINE, 'online'),
+        (STATE_OFFLINE, _('offline')),
+        (STATE_ONLINE, _('online')),
     ]
+
+    _STATES_ESI_MAP = {
+        'offline': STATE_OFFLINE,
+        'online': STATE_ONLINE,
+    }
 
     structure = models.ForeignKey(
         Structure,
@@ -358,12 +375,10 @@ class StructureService(models.Model):
         )
 
     @classmethod
-    def get_matching_state(cls, state_name) -> int:
+    def get_matching_state_for_esi_state(cls, esi_state_name) -> int:
         """returns matching state for given state name"""
-        match = [cls.STATE_OFFLINE]
-        for x in cls.STATE_CHOICES:
-            if state_name == x[1]:
-                match = x
-                break
-
-        return match[0]
+        return (
+            cls._STATES_ESI_MAP[esi_state_name]
+            if esi_state_name in cls._STATES_ESI_MAP
+            else cls.STATE_OFFLINE
+        )

@@ -2,20 +2,21 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-03-16 16:40+0100\n"
-"PO-Revision-Date: 2020-03-09 19:25+0000\n"
-"Language-Team: Russian (Russia) (https://www.transifex.com/kalkoken-apps/teams/107978/ru_RU/)\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: ru_RU\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: models/eveuniverse.py:37
 msgid "Eve Online ID"
@@ -45,18 +46,15 @@ msgstr ""
 msgid "When this object was last updated from ESI"
 msgstr ""
 
-#: models/eveuniverse.py:390 models/eveuniverse.py:443
-#: models/structures.py:192
+#: models/eveuniverse.py:390 models/eveuniverse.py:443 models/structures.py:192
 msgid "x position in the solar system"
 msgstr ""
 
-#: models/eveuniverse.py:396 models/eveuniverse.py:449
-#: models/structures.py:198
+#: models/eveuniverse.py:396 models/eveuniverse.py:449 models/structures.py:198
 msgid "y position in the solar system"
 msgstr ""
 
-#: models/eveuniverse.py:402 models/eveuniverse.py:455
-#: models/structures.py:204
+#: models/eveuniverse.py:402 models/eveuniverse.py:455 models/structures.py:204
 msgid "z position in the solar system"
 msgstr ""
 
@@ -252,8 +250,10 @@ msgstr ""
 #: models/notifications.py:662
 #, python-format
 msgid ""
-"A moon mining extraction has been started for %(structure_name)s at %(moon)s in %(solar_system)s. Extraction was started by %(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will autofracture on %(auto_time)s.\n"
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s "
+"in %(solar_system)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will autofracture "
+"on %(auto_time)s.\n"
 msgstr ""
 
 #: models/notifications.py:679
@@ -263,7 +263,8 @@ msgstr ""
 #: models/notifications.py:681
 #, python-format
 msgid ""
-"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s is finished and the chunk is ready to be shot at.\n"
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s is "
+"finished and the chunk is ready to be shot at.\n"
 "The chunk will automatically fracture on %(auto_time)s."
 msgstr ""
 
@@ -290,8 +291,8 @@ msgstr ""
 #: models/notifications.py:715
 #, python-format
 msgid ""
-"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s"
-" has been cancelled by %(character)s."
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
+"has been cancelled by %(character)s."
 msgstr ""
 
 #: models/notifications.py:730
@@ -324,8 +325,8 @@ msgstr ""
 #: models/notifications.py:777
 #, python-format
 msgid ""
-"The %(structure_type)s at %(planet)s in %(solar_system)s has been reinforced"
-" by %(aggressor)s and will come out at: %(date)s."
+"The %(structure_type)s at %(planet)s in %(solar_system)s has been reinforced "
+"by %(aggressor)s and will come out at: %(date)s."
 msgstr ""
 
 #: models/notifications.py:811
@@ -347,7 +348,8 @@ msgstr ""
 #: models/notifications.py:828
 #, python-format
 msgid ""
-"The starbase %(structure_name)s at %(moon)s in %(solar_system)s is under attack by %(aggressor)s.\n"
+"The starbase %(structure_name)s at %(moon)s in %(solar_system)s is under "
+"attack by %(aggressor)s.\n"
 "%(damage_text)s"
 msgstr ""
 
@@ -396,8 +398,8 @@ msgstr ""
 #: models/notifications.py:929
 #, python-format
 msgid ""
-"DED now officially acknowledges that your member corporation %(corporation)s"
-" has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
+"DED now officially acknowledges that your member corporation %(corporation)s "
+"has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
 msgstr ""
 
 #: models/notifications.py:944
@@ -722,8 +724,8 @@ msgstr ""
 
 #: models/structures.py:248
 msgid ""
-"The hour of day that determines the four hour window when the structure will"
-" randomly exit its reinforcement periods and become vulnerable to attack "
+"The hour of day that determines the four hour window when the structure will "
+"randomly exit its reinforcement periods and become vulnerable to attack "
 "against its armor and/or hull. The structure will become vulnerable at a "
 "random time that is +/- 2 hours centered on the value of this property"
 msgstr ""
@@ -944,9 +946,9 @@ msgstr ""
 #: views.py:358
 #, python-format
 msgid ""
-"%(corporation)s has been added with %(character)s as sync character. We have"
-" started fetching structures for this corporation. You will receive a report"
-" once the process is finished."
+"%(corporation)s has been added with %(character)s as sync character. We have "
+"started fetching structures for this corporation. You will receive a report "
+"once the process is finished."
 msgstr ""
 
 #: views.py:376

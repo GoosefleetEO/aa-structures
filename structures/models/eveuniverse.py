@@ -15,7 +15,32 @@ logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
 
 class EveUniverse(models.Model):
-    """Base class for all EveUniverse models"""
+    """Base class for all EveUniverse models
+    
+    Eve Universe classes need to have a meta class defined: `EveUniverseMeta`
+
+    Properties are:
+
+    esi_pk: Name of the ESI property for the primary key, e.g. 'category_id'
+
+    esi_method: name of the ESI method to be called for fetching objects
+
+    children: dict of mapping between ESI dict and model class for 
+    children objects (e.g. planets for solar system), default is None
+    
+    fk_mappings: mapping of field names from model to ESI for FKs, 
+    default is None
+    
+    field_mappings: mapping of field names from model to ESI for non FKs,
+    default is None
+    
+    has_localization: True/False, whether this model gets translations from ESI, 
+    Default is True
+
+    generate_localization: (optional) True/False, whether this model will 
+    generate localizations by itself, default is false
+    
+    """
 
     # language code mappings
     # Django, Eve Universe models, ESI
@@ -82,10 +107,18 @@ class EveUniverse(models.Model):
     @property
     def name_localized(self):
         """returns the localized version of name for the current language
+
         will return the default if a translation does not exist
-        """        
+        """
+        return self.name_localized_for_language(translation.get_language())
+        
+    def name_localized_for_language(self, language: str):
+        """returns the localized version of name for the given language
+        
+        will return the default if a translation does not exist
+        """
         lang_mapping = self._language_code_translation(
-            translation.get_language(), self.LANG_CODES_DJANGO
+            language, self.LANG_CODES_DJANGO
         )
         if lang_mapping and (
             lang_mapping[self.LANG_CODES_ESI] != self.ESI_DEFAULT_LANGUAGE
@@ -102,7 +135,7 @@ class EveUniverse(models.Model):
             )
         name_translation = getattr(self, field_name)
         return name_translation if name_translation else self.name
-
+    
     def _set_generated_translations(self):
         """updates localization fields with generated values if defined
         
@@ -114,7 +147,7 @@ class EveUniverse(models.Model):
         and run it to set all localized names
         Does nothing if that method is not defined
         """
-        if hasattr(self, '_name_localized_generated'):
+        if self._eve_universe_meta_attr('generate_localization'):            
             for django_lc, field_ext, esi_lc in self.LANG_CODES_MAPPING:
                 if esi_lc != self.ESI_DEFAULT_LANGUAGE:
                     field_name = 'name_' + field_ext
@@ -122,6 +155,9 @@ class EveUniverse(models.Model):
                         self, field_name, 
                         self._name_localized_generated(django_lc)
                     )
+    
+    def _name_localized_generated(self, lang_code: str) -> str:
+        raise NotImplementedError()
 
     class Meta:
         abstract = True
@@ -410,13 +446,12 @@ class EvePlanet(EveUniverse):
         on_delete=models.CASCADE
     )
 
-    def _name_localized_generated(self, lang_code: str):
+    def _name_localized_generated(self, language: str) -> str:
         """returns a generated localized planet name for the given language"""
-        with translation.override(lang_code):        
-            name_localized = self.name.replace(
-                self.eve_solar_system.name, 
-                self.eve_solar_system.name_localized
-            )
+        name_localized = self.name.replace(
+            self.eve_solar_system.name, 
+            self.eve_solar_system.name_localized_for_language(language)
+        )
         return name_localized
 
     class EveUniverseMeta:
@@ -431,6 +466,7 @@ class EvePlanet(EveUniverse):
             'position_z': ('position', 'z')
         }
         has_localization = False
+        generate_localization = True
 
 
 class EveMoon(EveUniverse):  
@@ -459,9 +495,9 @@ class EveMoon(EveUniverse):
         on_delete=models.CASCADE
     )
 
-    def _name_localized_generated(self, lang_code: str):
+    def _name_localized_generated(self, language: str):
         """returns a generated localized moon name for the given language"""
-        with translation.override(lang_code):        
+        with translation.override(language):        
             name_localized = self.name.replace(
                 self.eve_solar_system.name, 
                 self.eve_solar_system.name_localized
@@ -480,3 +516,4 @@ class EveMoon(EveUniverse):
             'position_z': ('position', 'z')
         }
         has_localization = False
+        generate_localization = True

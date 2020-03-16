@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-16 14:02+0100\n"
+"POT-Creation-Date: 2020-03-16 16:40+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Language-Team: Spanish (Spain) (https://www.transifex.com/kalkoken-apps/teams/107978/es_ES/)\n"
 "MIME-Version: 1.0\n"
@@ -17,50 +17,50 @@ msgstr ""
 "Language: es_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: models/eveuniverse.py:36
+#: models/eveuniverse.py:37
 msgid "Eve Online ID"
 msgstr ""
 
-#: models/eveuniverse.py:39
+#: models/eveuniverse.py:40
 msgid "Eve Online name"
 msgstr ""
 
-#: models/eveuniverse.py:44
+#: models/eveuniverse.py:45
 msgid "Eve Online name localized for German"
 msgstr ""
 
-#: models/eveuniverse.py:49
+#: models/eveuniverse.py:50
 msgid "Eve Online name localized for Korean"
 msgstr ""
 
-#: models/eveuniverse.py:54
+#: models/eveuniverse.py:55
 msgid "Eve Online name localized for Russian"
 msgstr ""
 
-#: models/eveuniverse.py:59
+#: models/eveuniverse.py:60
 msgid "Eve Online name localized for Chinese"
 msgstr ""
 
-#: models/eveuniverse.py:65
+#: models/eveuniverse.py:66
 msgid "When this object was last updated from ESI"
 msgstr ""
 
-#: models/eveuniverse.py:330 models/eveuniverse.py:383
-#: models/structures.py:173
+#: models/eveuniverse.py:390 models/eveuniverse.py:443
+#: models/structures.py:192
 msgid "x position in the solar system"
 msgstr ""
 
-#: models/eveuniverse.py:336 models/eveuniverse.py:389
-#: models/structures.py:179
+#: models/eveuniverse.py:396 models/eveuniverse.py:449
+#: models/structures.py:198
 msgid "y position in the solar system"
 msgstr ""
 
-#: models/eveuniverse.py:342 models/eveuniverse.py:395
-#: models/structures.py:185
+#: models/eveuniverse.py:402 models/eveuniverse.py:455
+#: models/structures.py:204
 msgid "z position in the solar system"
 msgstr ""
 
-#: models/eveuniverse.py:408
+#: models/eveuniverse.py:468
 msgid "Moon"
 msgstr ""
 
@@ -598,7 +598,75 @@ msgstr ""
 msgid "if true this tag will automatically be added to new structures"
 msgstr ""
 
-#: models/structures.py:127 views.py:268
+#: models/structures.py:106
+msgid "anchor vulnerable"
+msgstr ""
+
+#: models/structures.py:107
+msgid "anchoring"
+msgstr ""
+
+#: models/structures.py:108
+msgid "armor reinforce"
+msgstr ""
+
+#: models/structures.py:109
+msgid "armor vulnerable"
+msgstr ""
+
+#: models/structures.py:110
+msgid "deploy vulnerable"
+msgstr ""
+
+#: models/structures.py:111
+msgid "fitting invulnerable"
+msgstr ""
+
+#: models/structures.py:112
+msgid "hull reinforce"
+msgstr ""
+
+#: models/structures.py:113
+msgid "hull vulnerable"
+msgstr ""
+
+#: models/structures.py:114
+msgid "online deprecated"
+msgstr ""
+
+#: models/structures.py:115
+msgid "onlining vulnerable"
+msgstr ""
+
+#: models/structures.py:116
+msgid "shield vulnerable"
+msgstr ""
+
+#: models/structures.py:117
+msgid "unanchored"
+msgstr ""
+
+#: models/structures.py:120 models/structures.py:341
+msgid "offline"
+msgstr ""
+
+#: models/structures.py:121 models/structures.py:342
+msgid "online"
+msgstr ""
+
+#: models/structures.py:122
+msgid "onlining"
+msgstr ""
+
+#: models/structures.py:123
+msgid "reinforced"
+msgstr ""
+
+#: models/structures.py:124
+msgid "unanchoring "
+msgstr ""
+
+#: models/structures.py:127 views.py:261
 msgid "N/A"
 msgstr ""
 
@@ -606,53 +674,53 @@ msgstr ""
 msgid "unknown"
 msgstr ""
 
-#: models/structures.py:133
+#: models/structures.py:152
 msgid "The Item ID of the structure"
 msgstr ""
 
-#: models/structures.py:138
+#: models/structures.py:157
 msgid "Corporation that owns the structure"
 msgstr ""
 
-#: models/structures.py:143
+#: models/structures.py:162
 msgid "type of the structure"
 msgstr ""
 
-#: models/structures.py:147
+#: models/structures.py:166
 msgid "The full name of the structure"
 msgstr ""
 
-#: models/structures.py:159
+#: models/structures.py:178
 msgid "Planet next to this structure - if any"
 msgstr ""
 
-#: models/structures.py:167
+#: models/structures.py:186
 msgid "Moon next to this structure - if any"
 msgstr ""
 
-#: models/structures.py:191
+#: models/structures.py:210
 msgid "Date on which the structure will run out of fuel"
 msgstr ""
 
-#: models/structures.py:199
+#: models/structures.py:218
 msgid ""
 "The requested change to reinforce_hour that will take effect at the time "
 "shown by next_reinforce_apply"
 msgstr ""
 
-#: models/structures.py:209
+#: models/structures.py:228
 msgid ""
 "The date and time when the structure’s newly requested reinforcement times "
 "(e.g. next_reinforce_hour and next_reinforce_day) will take effect"
 msgstr ""
 
-#: models/structures.py:219
+#: models/structures.py:238
 msgid ""
 "The requested change to reinforce_weekday that will take effect at the time "
 "shown by next_reinforce_apply"
 msgstr ""
 
-#: models/structures.py:229
+#: models/structures.py:248
 msgid ""
 "The hour of day that determines the four hour window when the structure will"
 " randomly exit its reinforcement periods and become vulnerable to attack "
@@ -660,43 +728,39 @@ msgid ""
 "random time that is +/- 2 hours centered on the value of this property"
 msgstr ""
 
-#: models/structures.py:247
+#: models/structures.py:266
 msgid "Current state of the structure"
 msgstr ""
 
-#: models/structures.py:253
+#: models/structures.py:272
 msgid "Date at which the structure will move to it’s next state"
 msgstr ""
 
-#: models/structures.py:259
+#: models/structures.py:278
 msgid "Date at which the structure entered it’s current state"
 msgstr ""
 
-#: models/structures.py:265
+#: models/structures.py:284
 msgid "Date at which the structure will unanchor"
 msgstr ""
 
-#: models/structures.py:271
+#: models/structures.py:290
 msgid "date this structure was last updated from the EVE server"
 msgstr ""
 
-#: models/structures.py:277
+#: models/structures.py:296
 msgid "list of tags for this structure"
 msgstr ""
 
-#: models/structures.py:285
-msgid "undefined"
-msgstr ""
-
-#: models/structures.py:336
+#: models/structures.py:353
 msgid "Structure this service is installed to"
 msgstr ""
 
-#: models/structures.py:340
+#: models/structures.py:357
 msgid "Name of the service"
 msgstr ""
 
-#: models/structures.py:344
+#: models/structures.py:361
 msgid "Current state of this service"
 msgstr ""
 
@@ -858,26 +922,26 @@ msgstr ""
 msgid "s"
 msgstr ""
 
-#: views.py:108
+#: utils.py:330
 msgid "yes"
 msgstr ""
 
-#: views.py:108
+#: utils.py:330
 msgid "no"
 msgstr ""
 
-#: views.py:274
+#: views.py:267
 msgid "Low Power"
 msgstr ""
 
-#: views.py:325
+#: views.py:318
 #, python-format
 msgid ""
 "You can only use your main or alt characters to add corporations. However, "
 "character %s is neither. "
 msgstr ""
 
-#: views.py:365
+#: views.py:358
 #, python-format
 msgid ""
 "%(corporation)s has been added with %(character)s as sync character. We have"
@@ -885,15 +949,15 @@ msgid ""
 " once the process is finished."
 msgstr ""
 
-#: views.py:383
+#: views.py:376
 #, python-format
 msgid "%(corporation)s was added as new structure owner by %(user)s."
 msgstr ""
 
-#: views.py:408
+#: views.py:401
 msgid "service is up"
 msgstr ""
 
-#: views.py:410
+#: views.py:403
 msgid "service is down"
 msgstr ""

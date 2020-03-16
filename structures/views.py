@@ -285,7 +285,7 @@ def structure_list_data(request):
             'timestamp': fuel_expires_timestamp
         }
         # state
-        row['state_str'] = structure.state_str
+        row['state_str'] = structure.get_state_display()
         row['state_details'] = row['state_str']
         if structure.state_timer_end:
             row['state_details'] += format_html(
@@ -349,7 +349,7 @@ def add_structure_owner(request, token):
                 owner.save()
 
         tasks.update_structures_for_owner.delay(
-            owner_pk=owner.pk, force_sync=True, user_pk=request.user.pk
+            owner_pk=owner.pk, user_pk=request.user.pk
         )
         messages_plus.info(
             request,            

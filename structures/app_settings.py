@@ -1,6 +1,12 @@
 
 from .utils import clean_setting
 
+# Sets the default language to be used in case no language can be determined
+# e.g. this language will be used when creating timers
+# Please use the language codes as defined in the base.py settings file
+STRUCTURES_DEFAULT_LANGUAGE = \
+    clean_setting('STRUCTURES_DEFAULT_LANGUAGE', 'en')
+
 # Whether to automatically add timers for certain notifications
 # on the timerboard (will have no effect if aa-timerboard app is not installed)
 STRUCTURES_ADD_TIMERS = \

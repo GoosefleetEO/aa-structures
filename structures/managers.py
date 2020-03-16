@@ -283,7 +283,7 @@ class StructureManager(models.Manager):
             if 'reinforce_hour' in structure else None
 
         state = \
-            Structure.get_matching_state(structure['state']) \
+            Structure.get_matching_state_for_esi_state(structure['state']) \
             if 'state' in structure else Structure.STATE_UNKNOWN
 
         state_timer_start = \
@@ -351,7 +351,7 @@ class StructureManager(models.Manager):
         StructureService.objects.filter(structure=obj).delete()
         if 'services' in structure and structure['services']:
             for service in structure['services']:
-                state = StructureService.get_matching_state(
+                state = StructureService.get_matching_state_for_esi_state(
                     service['state']
                 )
                 StructureService.objects.create(

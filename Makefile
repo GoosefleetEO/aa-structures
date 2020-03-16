@@ -3,6 +3,7 @@ help:
 
 makemessages:
 	cd structures && \
+	django-admin makemessages -l en --ignore 'build/*' && \
 	django-admin makemessages -l de --ignore 'build/*' && \
 	django-admin makemessages -l es --ignore 'build/*' && \
 	django-admin makemessages -l ko --ignore 'build/*' && \
@@ -17,6 +18,7 @@ tx_pull:
 
 compilemessages:	
 	cd structures && \
+	django-admin compilemessages -l en  && \
 	django-admin compilemessages -l de  && \
 	django-admin compilemessages -l es  && \
 	django-admin compilemessages -l ko  && \

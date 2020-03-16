@@ -57,12 +57,7 @@ class TestStructure(NoSocketsTestCase):
     def setUp(self):                  
         create_structures()        
         set_owner_character(character_id=1001)
-        
-    def test_state_str(self):
-        x = Structure.objects.get(id=1000000000001)
-        x.state = Structure.STATE_ANCHORING
-        self.assertEqual(x.state_str, 'anchoring')
-
+    
     def test_is_low_power(self):
         x = Structure.objects.get(id=1000000000001)
         
@@ -105,24 +100,24 @@ class TestStructureNoSetup(NoSocketsTestCase):
     
     def test_structure_get_matching_state(self):
         self.assertEqual(
-            Structure.get_matching_state('anchoring'), 
+            Structure.get_matching_state_for_esi_state('anchoring'), 
             Structure.STATE_ANCHORING
         )
         self.assertEqual(
-            Structure.get_matching_state('not matching name'), 
+            Structure.get_matching_state_for_esi_state('not matching name'), 
             Structure.STATE_UNKNOWN
         )
     
     def test_structure_service_get_matching_state(self):
         self.assertEqual(
-            StructureService.get_matching_state('online'), 
+            StructureService.get_matching_state_for_esi_state('online'), 
             StructureService.STATE_ONLINE
         )
         self.assertEqual(
-            StructureService.get_matching_state('offline'), 
+            StructureService.get_matching_state_for_esi_state('offline'), 
             StructureService.STATE_OFFLINE
         )
         self.assertEqual(
-            StructureService.get_matching_state('not matching'), 
+            StructureService.get_matching_state_for_esi_state('not matching'), 
             StructureService.STATE_OFFLINE
         )

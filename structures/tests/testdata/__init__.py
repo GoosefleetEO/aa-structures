@@ -608,7 +608,7 @@ def create_structures():
                 StructureService.objects.create(
                     structure=obj,
                     name=service['name'],
-                    state=StructureService.get_matching_state(
+                    state=StructureService.get_matching_state_for_esi_state(
                         service['state']
                     )
                 )

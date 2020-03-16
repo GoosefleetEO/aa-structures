@@ -11,6 +11,7 @@ from django.db import transaction
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
+from django.utils import translation
 from django.utils.timezone import now
 
 from allianceauth.notifications import notify
@@ -20,6 +21,7 @@ from esi.models import Token
 
 from . import __title__
 from .app_settings import (
+    STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
@@ -331,8 +333,10 @@ def _fetch_custom_offices(
             if office_id in names:
                 try:
                     eve_planet = EvePlanet.objects.get(name=names[office_id])
-                    planet_id = eve_planet.id
-                    name = eve_planet.eve_type.name
+                    planet_id = eve_planet.id                    
+                    name = eve_planet.eve_type.name_localized_for_language(
+                        STRUCTURES_DEFAULT_LANGUAGE
+                    )
 
                 except EvePlanet.DoesNotExist:
                     name = names[office_id]
@@ -453,9 +457,7 @@ def _fetch_starbases(
 
 
 @shared_task
-def update_structures_for_owner(
-    owner_pk, force_sync: bool = False, user_pk=None
-):
+def update_structures_for_owner(owner_pk, user_pk=None):
     """fetches structures from one owner"""
 
     try:
@@ -563,17 +565,15 @@ def update_structures_for_owner(
 
 
 @shared_task
-def update_all_structures(force_sync=False):
+def update_all_structures():
     """fetches structures from all known owners"""
     for owner in Owner.objects.all():
         if owner.is_active:
-            update_structures_for_owner.delay(owner.pk, force_sync=force_sync)
+            update_structures_for_owner.delay(owner.pk)
 
 
 @shared_task
-def fetch_notifications_for_owner(
-    owner_pk, force_sync: bool = False, user_pk=None
-):
+def fetch_notifications_for_owner(owner_pk, user_pk=None):
     """fetches notification for owner and proceses them"""
 
     try:
@@ -760,13 +760,11 @@ def fetch_notifications_for_owner(
 
 
 @shared_task
-def fetch_all_notifications(force_sync=False):
+def fetch_all_notifications():
     """fetch notifications for all owners"""
     for owner in Owner.objects.all():
         if owner.is_active:
-            fetch_notifications_for_owner.delay(
-                owner.pk, force_sync=force_sync
-            )
+            fetch_notifications_for_owner.delay(owner.pk)
 
 
 @shared_task

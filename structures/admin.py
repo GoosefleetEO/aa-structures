@@ -295,9 +295,7 @@ class OwnerAdmin(admin.ModelAdmin):
     def update_structures(self, request, queryset):
         for obj in queryset:
             tasks.update_structures_for_owner.delay(
-                obj.pk,
-                force_sync=True,
-                user_pk=request.user.pk
+                obj.pk, user_pk=request.user.pk
             )
             text = 'Started updating structures for: {}. '.format(obj)
             text += 'You will receive a notification once it is completed.'
@@ -312,9 +310,7 @@ class OwnerAdmin(admin.ModelAdmin):
     def fetch_notifications(self, request, queryset):
         for obj in queryset:
             tasks.fetch_notifications_for_owner.delay(
-                obj.pk,
-                force_sync=True,
-                user_pk=request.user.pk
+                obj.pk, user_pk=request.user.pk
             )
             text = 'Started fetching notifications for: {}. '.format(obj)
             text += 'You will receive a notification once it is completed.'

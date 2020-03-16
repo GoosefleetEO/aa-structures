@@ -20,10 +20,11 @@ import dhooks_lite
 from multiselectfield import MultiSelectField
 
 from ..app_settings import (
-    STRUCTURES_DEVELOPER_MODE,        
-    STRUCTURES_NOTIFICATION_MAX_RETRIES,    
-    STRUCTURES_NOTIFICATION_WAIT_SEC,
+    STRUCTURES_DEFAULT_LANGUAGE,
+    STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
+    STRUCTURES_NOTIFICATION_MAX_RETRIES,    
+    STRUCTURES_NOTIFICATION_WAIT_SEC,    
     STRUCTURES_REPORT_NPC_ATTACKS,    
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
@@ -1131,8 +1132,63 @@ class Notification(models.Model):
                     else:
                         break
         return success
+    
+    def process_for_timerboard(self, esi_client: object = None) -> bool:
+        """add/removes a timer related to this notification for some types
+        returns True when a timer was processed, else False
+        """
+        success = False
+        if self.notification_type in _NTYPE_RELEVANT_FOR_TIMERBOARD:
+            parsed_text = yaml.safe_load(self.text)
+            try:
+                with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                    if self.notification_type in [
+                        NTYPE_STRUCTURE_LOST_ARMOR,
+                        NTYPE_STRUCTURE_LOST_SHIELD,
+                    ]:
+                        timer = self._gen_timer_structure_reinforcement(
+                            parsed_text, esi_client
+                        )
+                    elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
+                        timer = self._gen_timer_structure_anchoring(parsed_text)
+                    elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
+                        timer = self._gen_timer_sov_reinforcements(parsed_text)
+                    elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
+                        timer = self._gen_timer_orbital_reinforcements(parsed_text)
+                    elif self.notification_type in [
+                        NTYPE_MOONS_EXTRACTION_STARTED,
+                        NTYPE_MOONS_EXTRACTION_CANCELED
+                    ]:
+                        if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
+                            timer = None
+                        else:
+                            timer = self._gen_timer_moon_extraction(parsed_text)
+                    else:
+                        raise NotImplementedError()
 
-    @translation.override(settings.LANGUAGE_CODE)
+                if timer:
+                    timer.save()
+                    logger.info(
+                        '{}: added timer related notification'.format(
+                            self.notification_id
+                        )
+                    )
+                    self.is_timer_added = True
+                    self.save()
+                    success = True
+
+            except Exception as ex:
+                logger.exception(
+                    '{}: Failed to add timer from notification: {}'.format(
+                        self.notification_id,
+                        ex
+                    )
+                )
+                if settings.DEBUG:
+                    raise ex
+
+        return success
+    
     def _gen_timer_structure_reinforcement(self, parsed_text, esi_client):
         """generate timer for structure reinforcements"""
         structure_obj, _ = Structure.objects.get_or_create_esi(
@@ -1157,8 +1213,7 @@ class Notification(models.Model):
             eve_corp=self.owner.corporation,
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
-
-    @translation.override(settings.LANGUAGE_CODE)
+    
     def _gen_timer_structure_anchoring(self, parsed_text):
         """generate timer for structure anchoring"""
         structure_type, _ = EveType.objects.get_or_create_esi(
@@ -1179,8 +1234,7 @@ class Notification(models.Model):
             eve_corp=self.owner.corporation,
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
-
-    @translation.override(settings.LANGUAGE_CODE)
+    
     def _gen_timer_sov_reinforcements(self, parsed_text):
         """generate timer for sov reinforcements"""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -1206,8 +1260,7 @@ class Notification(models.Model):
             eve_corp=self.owner.corporation,
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
-
-    @translation.override(settings.LANGUAGE_CODE)
+    
     def _gen_timer_orbital_reinforcements(self, parsed_text):
         """generate timer for orbital reinforcements"""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -1229,8 +1282,7 @@ class Notification(models.Model):
             eve_corp=self.owner.corporation,
             corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
         )
-
-    @translation.override(settings.LANGUAGE_CODE)
+    
     def _gen_timer_moon_extraction(self, parsed_text):
         """generate timer for moon mining extractions"""
         solar_system, _ = \
@@ -1301,61 +1353,6 @@ class Notification(models.Model):
                     self.save()
 
         return timer
-
-    def process_for_timerboard(self, esi_client: object = None) -> bool:
-        """add/removes a timer related to this notification for some types
-        returns True when a timer was processed, else False
-        """
-        success = False
-        if self.notification_type in _NTYPE_RELEVANT_FOR_TIMERBOARD:
-            parsed_text = yaml.safe_load(self.text)
-            try:
-                if self.notification_type in [
-                    NTYPE_STRUCTURE_LOST_ARMOR,
-                    NTYPE_STRUCTURE_LOST_SHIELD,
-                ]:
-                    timer = self._gen_timer_structure_reinforcement(
-                        parsed_text, esi_client
-                    )
-                elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
-                    timer = self._gen_timer_structure_anchoring(parsed_text)
-                elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
-                    timer = self._gen_timer_sov_reinforcements(parsed_text)
-                elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
-                    timer = self._gen_timer_orbital_reinforcements(parsed_text)
-                elif self.notification_type in [
-                    NTYPE_MOONS_EXTRACTION_STARTED,
-                    NTYPE_MOONS_EXTRACTION_CANCELED
-                ]:
-                    if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
-                        timer = None
-                    else:
-                        timer = self._gen_timer_moon_extraction(parsed_text)
-                else:
-                    raise NotImplementedError()
-
-                if timer:
-                    timer.save()
-                    logger.info(
-                        '{}: added timer related notification'.format(
-                            self.notification_id
-                        )
-                    )
-                    self.is_timer_added = True
-                    self.save()
-                    success = True
-
-            except Exception as ex:
-                logger.exception(
-                    '{}: Failed to add timer from notification: {}'.format(
-                        self.notification_id,
-                        ex
-                    )
-                )
-                if settings.DEBUG:
-                    raise ex
-
-        return success
 
     def is_npc_attacking(self):
         """ whether this notification is about a NPC attacking"""
