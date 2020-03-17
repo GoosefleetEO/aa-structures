@@ -593,21 +593,8 @@ class TestStructureManager(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
-        mock_provider.client = esi_mock_client()            
-        mock_client = Mock()
-        mock_client.Universe.get_universe_structures_structure_id\
-            .return_value.result.return_value = {
-                'id': 1000000000001,            
-                'name': 'Test Structure Alpha',
-                'type_id': 35832,
-                'solar_system_id': 30002537,
-                'owner_id': 2001,
-                "position": {
-                    "x": 1,
-                    "y": 2,
-                    "z": 3
-                }
-            }
+        mock_provider.client = esi_mock_client()
+        mock_client = esi_mock_client()
         load_entities([
             EveCategory,
             EveGroup,
@@ -631,27 +618,14 @@ class TestStructureManager(NoSocketsTestCase):
         self.assertEqual(obj.eve_type_id, 35832)
         self.assertEqual(obj.eve_solar_system_id, 30002537)
         self.assertEqual(int(obj.owner.corporation.corporation_id), 2001)
-        self.assertEqual(obj.position_x, 1)
-        self.assertEqual(obj.position_y, 2)
-        self.assertEqual(obj.position_z, 3)
+        self.assertEqual(obj.position_x, 55028384780.0)
+        self.assertEqual(obj.position_y, 7310316270.0)
+        self.assertEqual(obj.position_z, -163686684205.0)
 
     @patch(MODULE_PATH + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):
         mock_provider.client = esi_mock_client()            
-        mock_client = Mock()
-        mock_client.Universe.get_universe_structures_structure_id\
-            .return_value.result.return_value = {
-                'id': 1000000000001,            
-                'name': 'Test Structure Alpha',
-                'type_id': 35832,
-                'solar_system_id': 30002537,
-                'owner_id': 2001,
-                "position": {
-                    "x": 1,
-                    "y": 2,
-                    "z": 3
-                }
-            }
+        mock_client = esi_mock_client()
         create_structures()
         obj = Structure.objects.get(id=1000000000001)
         obj.name = 'Batcave'

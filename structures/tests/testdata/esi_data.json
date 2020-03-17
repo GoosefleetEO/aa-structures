@@ -222,7 +222,7 @@
         {
             "1000000000001": 
             {
-                "owner_id": 2001,
+                "corporation_id": 2001,
                 "name": "Test Structure Alpha",
                 "position": {
                     "x": 55028384780.0,
@@ -234,7 +234,7 @@
             },
             "1000000000002":
             {
-                "owner_id": 2001,
+                "corporation_id": 2001,
                 "name": "Test Structure Bravo",
                 "position": {
                     "x": -2518743930339.066,
@@ -246,7 +246,7 @@
             },
             "1000000000003":
             {
-                "owner_id": 2001,
+                "corporation_id": 2001,
                 "name": "Test Structure Charlie",
                 "position": {
                     "x": -2518743930339.066,

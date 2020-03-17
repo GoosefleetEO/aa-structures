@@ -51,14 +51,9 @@ from ..models.notifications import (
 )
 
 from .testdata import (
-    esi_get_corporations_corporation_id_structures, 
-    esi_get_corporations_corporation_id_starbases, 
-    esi_get_universe_structures_structure_id, 
-    esi_get_characters_character_id_notifications, 
-    esi_get_corporations_corporation_id_customs_offices, 
-    esi_post_corporations_corporation_id_assets_locations, 
-    esi_post_corporations_corporation_id_assets_names, 
-    esi_get_universe_planets_planet_id,
+    esi_get_corporations_corporation_id_structures,     
+    esi_get_corporations_corporation_id_customs_offices,
+    esi_post_corporations_corporation_id_assets_names,
     entities_testdata,
     esi_corp_structures_data,
     load_entities,
@@ -77,10 +72,7 @@ app = Celery('myauth')
 
 def _get_invalid_owner_pk():
     owner_pks = [x.pk for x in Owner.objects.all()]
-    if owner_pks:
-        return max(owner_pks) + 1
-    else:
-        return 99
+    return (max(owner_pks) + 1) if owner_pks else 99
 
 
 class TestUpdateStructuresForOwner(NoSocketsTestCase):
@@ -191,55 +183,27 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_can_sync_all_structures(
         self, mock_esi_client_factory, mock_Token, mock_notify
-    ):                               
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Corporation\
-            .get_corporations_corporation_id_starbases.side_effect = \
-            esi_get_corporations_corporation_id_starbases
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id
-        mock_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices = \
-            esi_get_corporations_corporation_id_customs_offices
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_locations = \
-            esi_post_corporations_corporation_id_assets_locations
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_names = \
-            esi_post_corporations_corporation_id_assets_names
-        mock_esi_client_factory.return_value = mock_client
+    ):                                       
+        mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
         owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership
+            corporation=self.corporation, character=self.main_ownership
         )
         
         # run update task
         self.assertTrue(
             tasks.update_structures_for_owner(
-                owner_pk=owner.pk, 
-                user_pk=self.user.pk
+                owner_pk=owner.pk, user_pk=self.user.pk
             )
         )
         owner.refresh_from_db()
         self.assertEqual(
-            owner.structures_last_error, 
-            Owner.ERROR_NONE            
-        )        
-        # should have tried to fetch structures
-        self.assertEqual(
-            mock_client.Corporation
-                .get_corporations_corporation_id_structures.call_count,  # noqa: E502, E501
-            2
-        )                
+            owner.structures_last_error, Owner.ERROR_NONE            
+        )                          
         # must contain all expected structures
         self.assertSetEqual(
             {x['id'] for x in Structure.objects.values('id')},
@@ -266,8 +230,7 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
         # check name for POCO
         structure = Structure.objects.get(id=1200000000003)
         self.assertEqual(
-            structure.name,
-            'Planet (Barren)'
+            structure.name, 'Planet (Barren)'
         )
         
         # user report has been sent
@@ -280,14 +243,7 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     def test_removes_old_structures(
         self, mock_esi_client_factory, mock_Token
     ):                       
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
+        mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
@@ -383,35 +339,18 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     def test_remove_current_structures_when_esi_returns_none(
         self, mock_esi_client_factory, mock_Token
     ):                               
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
         esi_get_corporations_corporation_id_structures.override_data = \
             {'2001': []}
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id        
-        mock_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices = \
-            esi_get_corporations_corporation_id_customs_offices
         esi_get_corporations_corporation_id_customs_offices.override_data = \
-            {'2001': []}
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_locations = \
-            esi_post_corporations_corporation_id_assets_locations
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_names = \
-            esi_post_corporations_corporation_id_assets_names
-        mock_esi_client_factory.return_value = mock_client
+            {'2001': []}        
+        mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
         owner = Owner.objects.create(
-            corporation=self.corporation,
-            character=self.main_ownership
+            corporation=self.corporation, character=self.main_ownership
         )
         
         # run update task
@@ -422,8 +361,7 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
         )
         owner.refresh_from_db()
         self.assertEqual(
-            owner.structures_last_error, 
-            Owner.ERROR_NONE            
+            owner.structures_last_error, Owner.ERROR_NONE            
         )                
         # must be empty
         self.assertEqual(Structure.objects.count(), 0)
@@ -437,27 +375,11 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     def test_reports_error_to_user_when_update_fails(
         self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
         esi_get_corporations_corporation_id_structures.override_data = \
             {'2001': []}
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id        
-        mock_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices = \
-            esi_get_corporations_corporation_id_customs_offices
         esi_get_corporations_corporation_id_customs_offices.override_data = \
-            {'2001': []}
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_locations = \
-            esi_post_corporations_corporation_id_assets_locations
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_names = \
-            esi_post_corporations_corporation_id_assets_names
-        mock_esi_client_factory.return_value = mock_client
+            {'2001': []}        
+        mock_esi_client_factory.return_value = esi_mock_client()
         mock_notify.side_effect = RuntimeError    
 
         # create test data
@@ -484,14 +406,7 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     def test_removes_outdated_services(
         self, mock_esi_client_factory, mock_Token
     ):                       
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
+        mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
@@ -543,25 +458,7 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     def test_define_poco_name_from_assets_if_not_match_with_planets(
         self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id        
-        mock_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices = \
-            esi_get_corporations_corporation_id_customs_offices
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_locations = \
-            esi_post_corporations_corporation_id_assets_locations
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_names = \
-            esi_post_corporations_corporation_id_assets_names
-        mock_client.Universe.get_universe_planets_planet_id\
-            .side_effect = esi_get_universe_planets_planet_id
-        mock_esi_client_factory.return_value = mock_client
+        mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
@@ -591,26 +488,8 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     def test_define_poco_name_from_planet_type_if_found(
         self, mock_esi_client_factory, mock_Token, mock_notify
     ):                               
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id        
-        mock_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices = \
-            esi_get_corporations_corporation_id_customs_offices
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_locations = \
-            esi_post_corporations_corporation_id_assets_locations
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_names = \
-            esi_post_corporations_corporation_id_assets_names
-        mock_client.Universe.get_universe_planets_planet_id\
-            .side_effect = esi_get_universe_planets_planet_id
-        mock_esi_client_factory.return_value = mock_client
-
+        mock_esi_client_factory.return_value = esi_mock_client()
+        
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
@@ -638,28 +517,11 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
     @patch(MODULE_PATH + '.esi_client_factory')
     def test_update_pocos_no_asset_name_match(
         self, mock_esi_client_factory, mock_Token, mock_notify
-    ):                               
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id        
-        mock_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices = \
-            esi_get_corporations_corporation_id_customs_offices
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_locations = \
-            esi_post_corporations_corporation_id_assets_locations
-        mock_client.Assets\
-            .post_corporations_corporation_id_assets_names = \
-            esi_post_corporations_corporation_id_assets_names
-        mock_esi_client_factory.return_value = mock_client
-
+    ):
         esi_post_corporations_corporation_id_assets_names.override_data = {
             "2001": []
         }
+        mock_esi_client_factory.return_value = esi_mock_client()
         
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
@@ -694,15 +556,7 @@ class TestUpdateStructuresForOwner(NoSocketsTestCase):
         mock_Token,
         mock_update_or_create_from_dict
     ):                       
-        mock_client = Mock()        
-        mock_client.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_client.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
-
+        mock_esi_client_factory.return_value = esi_mock_client()
         mock_update_or_create_from_dict.side_effect = RuntimeError
 
         # create test data
@@ -777,8 +631,7 @@ class TestSyncNotifications(NoSocketsTestCase):
         )
         my_owner.refresh_from_db()
         self.assertEqual(
-            my_owner.notifications_last_error, 
-            Owner.ERROR_NO_CHARACTER
+            my_owner.notifications_last_error, Owner.ERROR_NO_CHARACTER
         )
     
     # test expired token    
@@ -798,8 +651,7 @@ class TestSyncNotifications(NoSocketsTestCase):
 
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.notifications_last_error, 
-            Owner.ERROR_TOKEN_EXPIRED            
+            self.owner.notifications_last_error, Owner.ERROR_TOKEN_EXPIRED
         )
     
     # test invalid token    
@@ -819,8 +671,7 @@ class TestSyncNotifications(NoSocketsTestCase):
 
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.notifications_last_error, 
-            Owner.ERROR_TOKEN_INVALID            
+            self.owner.notifications_last_error, Owner.ERROR_TOKEN_INVALID
         )
         
     # normal synch of new structures, mode my_alliance                    
@@ -834,12 +685,8 @@ class TestSyncNotifications(NoSocketsTestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     def test_fetch_notifications_for_owner_normal(
         self, mock_esi_client_factory, mock_Token, mock_notify
-    ):        
-        mock_client = Mock()       
-        mock_client.Character\
-            .get_characters_character_id_notifications.side_effect =\
-            esi_get_characters_character_id_notifications
-        mock_esi_client_factory.return_value = mock_client
+    ):                
+        mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
         Timer.objects.all().delete()
@@ -850,14 +697,12 @@ class TestSyncNotifications(NoSocketsTestCase):
         # run update task
         self.assertTrue(
             tasks.fetch_notifications_for_owner(
-                owner_pk=self.owner.pk,
-                user_pk=self.user.pk
+                owner_pk=self.owner.pk, user_pk=self.user.pk
             )
         )
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.notifications_last_error, 
-            Owner.ERROR_NONE            
+            self.owner.notifications_last_error, Owner.ERROR_NONE
         )                
         # should only contain the right notifications
         notification_ids = {
@@ -876,9 +721,7 @@ class TestSyncNotifications(NoSocketsTestCase):
 
         # run sync again
         self.assertTrue(
-            tasks.fetch_notifications_for_owner(
-                owner_pk=self.owner.pk
-            )
+            tasks.fetch_notifications_for_owner(owner_pk=self.owner.pk)
         )
 
         # should not have more timers
@@ -914,8 +757,7 @@ class TestSyncNotifications(NoSocketsTestCase):
 
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.notifications_last_error, 
-            Owner.ERROR_UNKNOWN
+            self.owner.notifications_last_error, Owner.ERROR_UNKNOWN
         )
 
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', False)
@@ -975,111 +817,80 @@ class TestForwardNotifications(NoSocketsTestCase):
             tasks.send_new_notifications_for_owner(
                 owner_pk=_get_invalid_owner_pk()
             )
-
-    @patch(MODULE_PATH + '.Token', autospec=True)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
-    def test_run_no_sync_char(
-        self, mock_esi_client_factory, mock_send_to_webhook, mock_token
-    ):    
+    
+    def test_run_no_sync_char(self):    
         self.owner.character = None
         self.owner.save()
-
-        # create test data
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
-        )
-        
+        )        
         self.assertFalse(
             tasks.send_new_notifications_for_owner(
-                self.owner.pk, 
-                rate_limited=False
+                self.owner.pk, rate_limited=False
             )
         )
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.forwarding_last_error, 
-            Owner.ERROR_NO_CHARACTER
+            self.owner.forwarding_last_error, Owner.ERROR_NO_CHARACTER
         )
 
-    @patch(MODULE_PATH + '.Token', autospec=True)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
-    def test_check_expired_token(
-        self, mock_esi_client_factory, mock_send_to_webhook, mock_token
-    ):  
-        mock_token.objects.filter.side_effect = TokenExpiredError()        
-                        
-        # create test data
+    @patch(MODULE_PATH + '.Token', autospec=True)    
+    def test_check_expired_token(self, mock_token):  
+        mock_token.objects.filter.side_effect = TokenExpiredError()
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
-                
-        # run update task
         self.assertFalse(
             tasks.send_new_notifications_for_owner(
-                self.owner.pk, 
-                rate_limited=False
+                self.owner.pk, rate_limited=False
             )
         )
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.forwarding_last_error, 
-            Owner.ERROR_TOKEN_EXPIRED            
+            self.owner.forwarding_last_error, Owner.ERROR_TOKEN_EXPIRED
         )
 
-    @patch(MODULE_PATH + '.Token', autospec=True)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
-    def test_check_invalid_token(
-        self, mock_esi_client_factory, mock_send_to_webhook, mock_token
-    ):   
+    @patch(MODULE_PATH + '.Token', autospec=True)    
+    def test_check_invalid_token(self, mock_token):   
         mock_token.objects.filter.side_effect = TokenInvalidError()
-                        
-        # create test data
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
-                
-        # run update task
         self.assertFalse(
             tasks.send_new_notifications_for_owner(
-                self.owner.pk, 
-                rate_limited=False
+                self.owner.pk, rate_limited=False
             )
         )
         self.owner.refresh_from_db()
         self.assertEqual(
-            self.owner.forwarding_last_error, 
-            Owner.ERROR_TOKEN_INVALID            
+            self.owner.forwarding_last_error, Owner.ERROR_TOKEN_INVALID
         )
 
-    @patch('structures.models.notifications.STRUCTURES_REPORT_NPC_ATTACKS', True)
+    @patch(
+        'structures.models.notifications.STRUCTURES_REPORT_NPC_ATTACKS', True
+    )
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
     def test_send_new_notifications_normal_with_NPCs(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
-        logger.debug('test_send_new_notifications_normal')
-        # create test data
+        logger.debug('test_send_new_notifications_normal')        
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
-        )
-        
+        )        
         tasks.send_all_new_notifications(rate_limited=False)
         
+        expected = get_all_notification_ids()
         tested_notification_ids = set()
         for x in mock_send_to_webhook.call_args_list:
             args, kwargs = x
             tested_notification_ids.add(args[0].notification_id)
+        self.assertSetEqual(tested_notification_ids, expected)
 
-        self.assertSetEqual(
-            get_all_notification_ids(),
-            tested_notification_ids
-        )
-
-    @patch('structures.models.notifications.STRUCTURES_REPORT_NPC_ATTACKS', False)
+    @patch(
+        'structures.models.notifications.STRUCTURES_REPORT_NPC_ATTACKS', False
+    )
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(MODULE_PATH + '.Notification.send_to_webhook', autospec=True)
@@ -1090,8 +901,7 @@ class TestForwardNotifications(NoSocketsTestCase):
         # create test data
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
-        )
-        
+        )        
         tasks.send_all_new_notifications(rate_limited=False)
         
         tested_notification_ids = set()
@@ -1099,13 +909,10 @@ class TestForwardNotifications(NoSocketsTestCase):
             args, kwargs = x
             tested_notification_ids.add(args[0].notification_id)
 
-        all_notification_ids_wo_npcs = get_all_notification_ids()
-        all_notification_ids_wo_npcs.remove(1000010601)
-        all_notification_ids_wo_npcs.remove(1000010509)
-        self.assertSetEqual(
-            all_notification_ids_wo_npcs,
-            tested_notification_ids
-        )
+        expected = get_all_notification_ids()
+        expected.remove(1000010601)
+        expected.remove(1000010509)
+        self.assertSetEqual(tested_notification_ids, expected)
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
@@ -1120,7 +927,6 @@ class TestForwardNotifications(NoSocketsTestCase):
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
-
         notification_types = ','.join([str(x) for x in [
             NTYPE_OWNERSHIP_TRANSFERRED,
             NTYPE_STRUCTURE_ANCHORING,
@@ -1179,7 +985,6 @@ class TestForwardNotifications(NoSocketsTestCase):
                 1000000405
             }
         )
-
         self.assertSetEqual(
             results[wh_structures.pk],
             {
@@ -1226,7 +1031,6 @@ class TestForwardNotifications(NoSocketsTestCase):
             notification_types=notification_types_1,
             is_active=True
         )
-
         notification_types_2 = ','.join([str(x) for x in sorted([
             NTYPE_MOONS_EXTRACTION_CANCELED,
             NTYPE_MOONS_AUTOMATIC_FRACTURE,            
@@ -1302,15 +1106,15 @@ class TestForwardNotifications(NoSocketsTestCase):
       
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
-    @patch('structures.models.notifications.dhooks_lite.Webhook.execute', autospec=True)
+    @patch(
+        'structures.models.notifications.dhooks_lite.Webhook.execute',
+        autospec=True
+    )
     def test_send_new_notifications_no_structures_preloaded(
         self, mock_execute, mock_esi_client_factory, mock_token
     ):        
         logger.debug('test_send_new_notifications_no_structures_preloaded')
-        mock_client = Mock()        
-        mock_client.Universe.get_universe_structures_structure_id.side_effect \
-            = esi_get_universe_structures_structure_id
-        mock_esi_client_factory.return_value = mock_client
+        mock_esi_client_factory.return_value = esi_mock_client()
         
         # remove structures from setup so we can start from scratch
         Structure.objects.all().delete()
@@ -1324,18 +1128,14 @@ class TestForwardNotifications(NoSocketsTestCase):
         
         # should have sent all notifications
         self.assertEqual(
-            mock_execute.call_count, 
-            len(get_all_notification_ids())
+            mock_execute.call_count, len(get_all_notification_ids())
         )
 
         # should have created structures on the fly        
         structure_ids = {
             x['id'] for x in Structure.objects.values('id')
         }
-        self.assertSetEqual(
-            structure_ids,
-            {1000000000002, 1000000000001}
-        )
+        self.assertSetEqual(structure_ids, {1000000000002, 1000000000001})
 
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)

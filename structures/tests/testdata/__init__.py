@@ -421,8 +421,34 @@ def esi_get_universe_moons_moon_id(moon_id, language=None):
 def esi_mock_client():
     """provides a mocked ESI client"""
     mock_client = Mock()
+        
+    # Assets
+    mock_client.Assets\
+        .post_corporations_corporation_id_assets_locations = \
+        esi_post_corporations_corporation_id_assets_locations
+    mock_client.Assets\
+        .post_corporations_corporation_id_assets_names = \
+        esi_post_corporations_corporation_id_assets_names
     
-    # EveUniverseManager
+    # Character
+    mock_client.Character\
+        .get_characters_character_id_notifications.side_effect =\
+        esi_get_characters_character_id_notifications
+
+    # Corporation
+    mock_client.Corporation\
+        .get_corporations_corporation_id_structures.side_effect = \
+        esi_get_corporations_corporation_id_structures
+    mock_client.Corporation\
+        .get_corporations_corporation_id_starbases.side_effect = \
+        esi_get_corporations_corporation_id_starbases    
+    
+    # Planetary Interaction
+    mock_client.Planetary_Interaction\
+        .get_corporations_corporation_id_customs_offices = \
+        esi_get_corporations_corporation_id_customs_offices
+    
+    # Universe
     mock_client.Universe\
         .get_universe_categories_category_id\
         .side_effect = esi_get_universe_categories_category_id
@@ -480,8 +506,7 @@ def esi_mock_client():
 
     mock_client.Universe.get_universe_moons_moon_id\
         .side_effect = esi_get_universe_moons_moon_id
-    
-    # EveEntityManager
+        
     mock_client.Universe.post_universe_names\
         .return_value.result.return_value = [
             {
@@ -490,7 +515,11 @@ def esi_mock_client():
                 "name": "Big Bad Alliance"
             }                
         ]
-    
+
+    mock_client.Universe\
+        .get_universe_structures_structure_id.side_effect =\
+        esi_get_universe_structures_structure_id
+  
     return mock_client
 
 

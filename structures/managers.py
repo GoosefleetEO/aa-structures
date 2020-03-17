@@ -278,7 +278,7 @@ class StructureManager(EsiRequestMixin, models.Manager):
                 'system_id': structure_info['solar_system_id']
             }
             owner = Owner.objects.get(
-                corporation__corporation_id=structure_info['owner_id']
+                corporation__corporation_id=structure_info['corporation_id']
             )
             obj, created = self.update_or_create_from_dict(
                 structure=structure, owner=owner

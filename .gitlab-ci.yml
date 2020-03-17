@@ -28,3 +28,8 @@ test-3.8:
   script:  
   - tox -e py38
 
+test-flake8:
+  image: python:3.8-buster
+  script:  
+  - tox -e flake8
+

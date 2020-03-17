@@ -171,17 +171,9 @@ def _send_report_to_user(
 def _store_raw_data(name: str, data: list, corporation_id: int):
     """store raw data for debug purposes"""
     with open(
-        '{}_raw_{}.json'.format(name, corporation_id),
-        'w',
-        encoding='utf-8'
+        '{}_raw_{}.json'.format(name, corporation_id), 'w', encoding='utf-8'
     ) as f:
-        json.dump(
-            data,
-            f,
-            cls=DjangoJSONEncoder,
-            sort_keys=True,
-            indent=4
-        )
+        json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
 
 def _fetch_upwell_structures(
@@ -813,10 +805,7 @@ def send_new_notifications_for_owner(owner_pk, rate_limited=True):
                     if (not notification.filter_for_npc_attacks()
                         and not notification.filter_for_alliance_level()
                     ):
-                        notification.send_to_webhook(
-                            webhook,
-                            esi_client
-                        )
+                        notification.send_to_webhook(webhook, esi_client)
                         if rate_limited:
                             sleep(1)
 
