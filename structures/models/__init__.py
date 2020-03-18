@@ -1,5 +1,6 @@
 # flake8: noqa
 
+from .owners import Owner
 from .eveuniverse import (
     EveCategory, 
     EveGroup, 
@@ -10,7 +11,6 @@ from .eveuniverse import (
     EvePlanet, 
     EveMoon  
 )
-from .owners import Owner
 from .structures import (
     Structure, StructureService, StructureTag
 )  

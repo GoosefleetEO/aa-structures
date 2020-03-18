@@ -10,10 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from ..managers import StructureManager
 
 from ..utils import LoggerAddTag
-from .eveuniverse import (
-    EsiNameLocalization, EveType, EveSolarSystem, EvePlanet, EveMoon
-)
-from .owners import Owner
+from .eveuniverse import EsiNameLocalization
 
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
 
@@ -154,12 +151,12 @@ class Structure(models.Model):
         help_text=_('The Item ID of the structure')
     )
     owner = models.ForeignKey(
-        Owner,
+        'Owner',
         on_delete=models.CASCADE,
         help_text=_('Corporation that owns the structure')
     )
     eve_type = models.ForeignKey(
-        EveType,
+        'EveType',
         on_delete=models.CASCADE,
         help_text=_('type of the structure')
     )
@@ -168,11 +165,11 @@ class Structure(models.Model):
         help_text=_('The full name of the structure')
     )
     eve_solar_system = models.ForeignKey(
-        EveSolarSystem,
+        'EveSolarSystem',
         on_delete=models.CASCADE
     )
     eve_planet = models.ForeignKey(
-        EvePlanet,
+        'EvePlanet',
         on_delete=models.SET_DEFAULT,
         null=True,
         default=None,
@@ -180,7 +177,7 @@ class Structure(models.Model):
         help_text=_('Planet next to this structure - if any')
     )
     eve_moon = models.ForeignKey(
-        EveMoon,
+        'EveMoon',
         on_delete=models.SET_DEFAULT,
         null=True,
         default=None,

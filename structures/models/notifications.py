@@ -34,14 +34,22 @@ from ..utils import (
     LoggerAddTag, DATETIME_FORMAT, make_logger_prefix, app_labels
 )
 from .eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
-from .owners import Owner, LANGUAGES
 from .structures import Structure
 
 if 'timerboard' in app_labels():
     from allianceauth.timerboard.models import Timer
 
-
 logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+
+# Supported languages
+LANGUAGES = (
+    ('en', _('English')),
+    ('de', _('German')),
+    ('es', _('Spanish')),
+    ('zh-hans', _('Chinese Simplified')),
+    ('ru', _('Russian')),
+    ('ko', _('Korean')),
+)
 
 # Notification types
 NTYPE_MOONS_AUTOMATIC_FRACTURE = 401
@@ -212,9 +220,7 @@ class Webhook(models.Model):
 
     def send_test_notification(self) -> str:
         """Sends a test notification to this webhook and returns send report"""
-        hook = dhooks_lite.Webhook(
-            self.url
-        )
+        hook = dhooks_lite.Webhook(self.url)
         response = hook.execute(
             _(
                 'This is a test notification from %s.\n'
@@ -224,9 +230,7 @@ class Webhook(models.Model):
         )
         if response.status_ok:
             send_report_json = json.dumps(
-                response.content,
-                indent=4,
-                sort_keys=True
+                response.content, indent=4, sort_keys=True
             )
         else:
             send_report_json = 'HTTP status code {}'.format(
@@ -329,7 +333,7 @@ class Notification(models.Model):
         validators=[MinValueValidator(0)]
     )
     owner = models.ForeignKey(
-        Owner,
+        'Owner',
         on_delete=models.CASCADE,
         help_text=_('Corporation that received this notification')
     )
