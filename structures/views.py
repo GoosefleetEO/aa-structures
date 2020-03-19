@@ -34,7 +34,7 @@ from .utils import (
 )
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 QUERY_PARAM_TAGS = 'tags'

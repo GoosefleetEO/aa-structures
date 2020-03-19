@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from ..managers import EsiSmartRequester  # noqa
+from ..managers import EsiHelper  # noqa
 from ..models import (
     EveEntity,    
     EveCategory,

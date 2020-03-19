@@ -7,12 +7,12 @@ from django.core.validators import MaxValueValidator
 from django.utils.html import escape, format_html
 from django.utils.translation import gettext_lazy as _
 
+from .. import __title__
 from ..managers import StructureManager
-
 from ..utils import LoggerAddTag
 from .eveuniverse import EsiNameLocalization
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
 class StructureTag(models.Model):

@@ -3,11 +3,12 @@ from pydoc import locate
 
 from django.db import models
 
-from .helpers import EsiSmartRequester
+from . import __title__
+from .helpers import EsiHelper
 from .utils import LoggerAddTag, make_logger_prefix
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
 class EveUniverseManager(models.Manager):
@@ -41,17 +42,17 @@ class EveUniverseManager(models.Manager):
         )        
         try:
             eve_data_objects = \
-                EsiSmartRequester.fetch_esi_objects_with_localization(
-                    'Universe.' + self.model._esi_method(),
-                    {self.model._esi_pk(): eve_id}, 
-                    add_prefix,
-                    self.model.has_esi_localization()
+                EsiHelper.fetch_esi_objects_smart(
+                    'Universe.' + self.model.esi_method(),
+                    args={self.model.esi_pk(): eve_id}, 
+                    add_prefix=add_prefix,
+                    has_localization=self.model.has_esi_localization()
                 )
-            defaults = self.model._map_esi_fields_to_model(eve_data_objects)
+            defaults = self.model.map_esi_fields_to_model(eve_data_objects)
             obj, created = self.update_or_create(
                 id=eve_id, defaults=defaults
             )
-            obj._set_generated_translations()
+            obj.set_generated_translations()
             obj.save()
             self._update_or_create_children(eve_data_objects)
         
@@ -64,10 +65,10 @@ class EveUniverseManager(models.Manager):
     def _update_or_create_children(self, eve_data_objects: dict) -> None:
         """updates or creates child objects if specified"""
         eve_data_obj = eve_data_objects[self.model.ESI_DEFAULT_LANGUAGE]
-        for key, child_class in self.model._child_mappings().items():
+        for key, child_class in self.model.child_mappings().items():
             ChildClass = locate(__package__ + '.models.' + child_class)
             for eve_data_obj_2 in eve_data_obj[key]:
-                eve_id = eve_data_obj_2[ChildClass._esi_pk()]
+                eve_id = eve_data_obj_2[ChildClass.esi_pk()]
                 ChildClass.objects.update_or_create_esi(eve_id)                
                 
     def update_all_esi(self):
@@ -107,10 +108,9 @@ class EveEntityManager(models.Manager):
         """        
         add_prefix = make_logger_prefix(
             '%s(id=%d)' % (self.model.__name__, eve_entity_id)
-        )
-        logger.info(add_prefix('Trying to fetch eve entity from ESI'))        
+        )        
         try:            
-            response = EsiSmartRequester.fetch_esi_object_with_retries(
+            response = EsiHelper.fetch_esi_object(
                 'Universe.post_universe_names', 
                 {'ids': [eve_entity_id]}, 
                 add_prefix
@@ -181,7 +181,7 @@ class StructureManager(models.Manager):
             if esi_client is None:
                 raise ValueError('Can not fetch structure without esi client')
             
-            structure_info = EsiSmartRequester.fetch_esi_object_with_retries(
+            structure_info = EsiHelper.fetch_esi_object(
                 'Universe.get_universe_structures_structure_id', 
                 {'structure_id': structure_id}, 
                 add_prefix,

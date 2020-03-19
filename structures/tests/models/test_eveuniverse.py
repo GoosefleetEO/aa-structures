@@ -142,7 +142,7 @@ class TestEveUniverseLocalization(NoSocketsTestCase):
         self.assertEqual(obj.name_ko, '')
         self.assertEqual(obj.name_ru, '')
         self.assertEqual(obj.name_zh, '')
-        obj._set_generated_translations()
+        obj.set_generated_translations()
         self.assertEqual(obj.name_de, 'Amamake_de I')
         self.assertEqual(obj.name_ko, 'Amamake_ko I')
         self.assertEqual(obj.name_ru, 'Amamake_ru I')

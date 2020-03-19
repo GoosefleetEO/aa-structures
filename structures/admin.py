@@ -7,6 +7,7 @@ from django.utils.html import format_html
 
 from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
 
+from . import __title__
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import (
     EveCategory,
@@ -29,7 +30,7 @@ from . import tasks
 from .utils import LoggerAddTag
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
 if STRUCTURES_DEVELOPER_MODE:

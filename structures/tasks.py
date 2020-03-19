@@ -29,7 +29,7 @@ from .models import (
     Structure
 )
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
 def _get_owner(owner_pk) -> Owner:
@@ -87,7 +87,7 @@ def fetch_all_notifications():
 @shared_task
 def send_new_notifications_for_owner(owner_pk, rate_limited=True, user_pk=None):
     """forwards new notification for this owner to Discord"""
-    _get_owner(owner_pk).send_new_notifications(_get_user(user_pk))
+    _get_owner(owner_pk).send_new_notifications(rate_limited, _get_user(user_pk))
 
 
 @shared_task

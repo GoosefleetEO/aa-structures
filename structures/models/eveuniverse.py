@@ -8,10 +8,11 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.utils import translation
 from django.utils.timezone import now
 
+from .. import __title__
 from ..managers import EveUniverseManager
 from ..utils import LoggerAddTag
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
 class EsiNameLocalization(models.Model):
@@ -156,7 +157,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
     def __str__(self):
         return self.name
     
-    def _set_generated_translations(self):
+    def set_generated_translations(self):
         """updates localization fields with generated values if defined
         
         Purpose is to provide localized names for models where ESI does
@@ -180,12 +181,12 @@ class EveUniverse(EsiNameLocalization, models.Model):
         abstract = True
     
     @classmethod
-    def _esi_pk(cls) -> str:
+    def esi_pk(cls) -> str:
         """returns the name of the pk column on ESI that must exist"""
         return cls._eve_universe_meta_attr('esi_pk', is_mandatory=True)
        
     @classmethod
-    def _esi_method(cls) -> str:        
+    def esi_method(cls) -> str:        
         return cls._eve_universe_meta_attr('esi_method', is_mandatory=True)
 
     @classmethod
@@ -194,7 +195,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
         return True if has_esi_localization is None else has_esi_localization
     
     @classmethod
-    def _child_mappings(cls) -> dict:
+    def child_mappings(cls) -> dict:
         """returns the mapping of children for this class"""
         mappings = cls._eve_universe_meta_attr('children')        
         return mappings if mappings else dict()
@@ -245,7 +246,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
         return mappings
         
     @classmethod
-    def _map_esi_fields_to_model(cls, eve_data_objects: dict) -> dict:
+    def map_esi_fields_to_model(cls, eve_data_objects: dict) -> dict:
         """maps ESi fields to model fields incl. translations if any
         returns the result as defaults dict
         """

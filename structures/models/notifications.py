@@ -39,7 +39,7 @@ from .structures import Structure
 if 'timerboard' in app_labels():
     from allianceauth.timerboard.models import Timer
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 # Supported languages
 LANGUAGES = (

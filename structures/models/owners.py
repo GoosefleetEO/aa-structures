@@ -36,7 +36,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,    
 )
 from .eveuniverse import EvePlanet, EveSolarSystem, EveType
-from ..helpers import EsiSmartRequester
+from ..helpers import EsiHelper
 from .structures import Structure
 from .notifications import EveEntity, Notification
                 
@@ -48,7 +48,7 @@ from ..utils import (
     get_swagger_spec_path
 )
 
-logger = LoggerAddTag(logging.getLogger(__name__), __package__)
+logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
 class General(models.Model):
@@ -265,8 +265,7 @@ class Owner(models.Model):
         try:
             self.structures_last_error = Owner.ERROR_NONE
             self.structures_last_sync = now()
-            self.save()
-            logger.info(add_prefix('Starting ESI client...'))
+            self.save()            
             esi_client, error = self.esi_client()
             if error:
                 self.structures_last_error = error
@@ -341,29 +340,16 @@ class Owner(models.Model):
     def _fetch_upwell_structures(self, esi_client: object) -> list:
         """fetch Upwell structures from ESI for self"""
 
-        add_prefix = self._logger_prefix()
-        logger.info(add_prefix('Fetching Upwell structures from ESI - page 1'))
-
+        add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
-        # get structures from first page
-        operation = \
-            esi_client.Corporation.get_corporations_corporation_id_structures(
-                corporation_id=corporation_id
-            )
-        operation.also_return_response = True
-        structures, response = operation.result()
-        pages = int(response.headers['x-pages'])
-
-        # add structures from additional pages if any
-        for page in range(2, pages + 1):
-            logger.info(add_prefix(
-                'Fetching Upwell structures from ESI - page {}'.format(page)
-            ))            
-            structures += \
-                esi_client.Corporation.get_corporations_corporation_id_structures(
-                    corporation_id=corporation_id,
-                    page=page
-                ).result()
+        
+        structures = EsiHelper.fetch_esi_objects_with_pages(
+            'Corporation.get_corporations_corporation_id_structures',
+            args={'corporation_id': corporation_id},
+            add_prefix=add_prefix,
+            has_pages=True,
+            esi_client=esi_client
+        )
             
         # fetch additional information for structures
         if not structures:
@@ -377,11 +363,13 @@ class Owner(models.Model):
                     len(structures)
                 )
             ))
-            for structure in structures:
-                structure_info = \
-                    esi_client.Universe.get_universe_structures_structure_id(
-                        structure_id=structure['structure_id']
-                    ).result()
+            for structure in structures:                
+                structure_info = EsiHelper.fetch_esi_object(
+                    'Universe.get_universe_structures_structure_id',
+                    args={'structure_id': structure['structure_id']},
+                    add_prefix=add_prefix,
+                    esi_client=esi_client
+                )
                 matches = re.search(r'^\S+ - (.+)', structure_info['name'])
                 if matches:
                     name = matches.group(1)
@@ -404,31 +392,16 @@ class Owner(models.Model):
             matches = reg_ex.match(text)
             return matches.group(1) if matches else text
         
-        add_prefix = self._logger_prefix()
-        logger.info(add_prefix('Fetching custom offices from ESI - page 1'))
+        add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
 
-        # get pocos from first page
-        operation = \
-            esi_client.Planetary_Interaction\
-            .get_corporations_corporation_id_customs_offices(
-                corporation_id=corporation_id
-            )
-        operation.also_return_response = True
-        pocos, response = operation.result()
-        pages = int(response.headers['x-pages'])
-
-        # add pocos from additional pages if any
-        for page in range(2, pages + 1):
-            logger.info(add_prefix(
-                'Fetching custom offices from ESI - page {}'.format(page)
-            ))
-            pocos += esi_client.Planetary_Interaction\
-                .get_corporations_corporation_id_customs_offices(
-                    corporation_id=corporation_id,
-                    page=page
-                ).result()
-
+        pocos = EsiHelper.fetch_esi_objects_with_pages(
+            'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
+            args={'corporation_id': corporation_id},
+            add_prefix=add_prefix,
+            has_pages=True,
+            esi_client=esi_client
+        )       
         structures = list()
         if not pocos:
             logger.info(add_prefix(
@@ -443,13 +416,16 @@ class Owner(models.Model):
             ))
             item_ids = [x['office_id'] for x in pocos]
             locations_data = list()
-            for item_ids_chunk in chunks(item_ids, 999):
-                locations_data_chunk = esi_client.Assets\
-                    .post_corporations_corporation_id_assets_locations(
-                        corporation_id=corporation_id,
-                        item_ids=item_ids_chunk
-                    )\
-                    .result()
+            for item_ids_chunk in chunks(item_ids, 999):               
+                locations_data_chunk = EsiHelper.fetch_esi_object(
+                    'Assets.post_corporations_corporation_id_assets_locations',
+                    args={
+                        'corporation_id': corporation_id, 
+                        'item_ids': item_ids_chunk
+                    },
+                    add_prefix=add_prefix,
+                    esi_client=esi_client
+                )
                 locations_data += locations_data_chunk
             positions = {x['item_id']: x['position'] for x in locations_data}
 
@@ -460,13 +436,16 @@ class Owner(models.Model):
                 )
             ))
             names_data = list()
-            for item_ids_chunk in chunks(item_ids, 999):
-                names_data_chunk = esi_client.Assets\
-                    .post_corporations_corporation_id_assets_names(
-                        corporation_id=corporation_id,
-                        item_ids=item_ids
-                    )\
-                    .result()
+            for item_ids_chunk in chunks(item_ids, 999):                
+                names_data_chunk = EsiHelper.fetch_esi_object(
+                    'Assets.post_corporations_corporation_id_assets_names',
+                    args={
+                        'corporation_id': corporation_id, 
+                        'item_ids': item_ids
+                    },
+                    add_prefix=add_prefix,
+                    esi_client=esi_client
+                )
                 names_data += names_data_chunk
             names = {
                 x['item_id']: extract_planet_name(x['name']) for x in names_data
@@ -527,36 +506,19 @@ class Owner(models.Model):
     def _fetch_starbases(self, esi_client: object) -> list:
         """fetch starbases from ESI for self"""
 
-        add_prefix = self._logger_prefix()
-        logger.info(add_prefix('Fetching starbases from ESI - page 1'))
+        add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
-
-        # get starbases from first page
-        operation = \
-            esi_client.Corporation.get_corporations_corporation_id_starbases(
-                corporation_id=corporation_id
-            )
-        operation.also_return_response = True
-        starbases, response = operation.result()
-        pages = int(response.headers['x-pages'])
-
-        # add starbases from additional pages if any
-        for page in range(2, pages + 1):
-            logger.info(add_prefix(
-                'Fetching starbases from ESI - page {}'.format(page)
-            ))
-            starbases += \
-                esi_client.Corporation.get_corporations_corporation_id_starbases(
-                    corporation_id=corporation_id,
-                    page=page
-                ).result()
-
+        starbases = EsiHelper.fetch_esi_objects_with_pages(
+            'Corporation.get_corporations_corporation_id_starbases',
+            args={'corporation_id': corporation_id},
+            add_prefix=add_prefix,
+            has_pages=True,
+            esi_client=esi_client
+        )
         # convert into structures data format
         structures = list()
         if not starbases:
-            logger.info(add_prefix(
-                'No starbases retrieved from ESI'
-            ))
+            logger.info(add_prefix('No starbases retrieved from ESI'))
         else:
             logger.info(add_prefix(
                 'Fetching names for {} starbases from ESI'.format(len(starbases))
@@ -564,12 +526,15 @@ class Owner(models.Model):
             item_ids = [x['starbase_id'] for x in starbases]
             names_data = list()
             for item_ids_chunk in chunks(item_ids, 999):
-                names_data_chunk = esi_client.Assets\
-                    .post_corporations_corporation_id_assets_names(
-                        corporation_id=corporation_id,
-                        item_ids=item_ids_chunk
-                    )\
-                    .result()
+                names_data_chunk = EsiHelper.fetch_esi_object(
+                    'Assets.post_corporations_corporation_id_assets_names',
+                    args={
+                        'corporation_id': corporation_id, 
+                        'item_ids': item_ids_chunk
+                    },
+                    add_prefix=add_prefix,
+                    esi_client=esi_client
+                )
                 names_data += names_data_chunk
             names = {x['item_id']: x['name'] for x in names_data}
             for starbase in starbases:
@@ -611,8 +576,7 @@ class Owner(models.Model):
         try:
             self.notifications_last_error = Owner.ERROR_NONE
             self.notifications_last_sync = now()
-            self.save()
-            logger.info(add_prefix('Starting ESI client...'))
+            self.save()            
             esi_client, error = self.esi_client()
             if error:
                 self.notifications_last_error = error
@@ -622,11 +586,14 @@ class Owner(models.Model):
             # fetch notifications from ESI
             try:
                 # fetching data from ESI                
-                notifications = \
-                    esi_client.Character.get_characters_character_id_notifications(
-                        character_id=self.character.character.character_id
-                    ).result()
-
+                notifications = EsiHelper.fetch_esi_object(
+                    'Character.get_characters_character_id_notifications',
+                    args={
+                        'character_id': self.character.character.character_id
+                    },
+                    add_prefix=add_prefix,
+                    esi_client=esi_client
+                )                
                 if STRUCTURES_DEVELOPER_MODE:
                     self._store_raw_data(
                         'notifications',
@@ -918,6 +885,7 @@ class Owner(models.Model):
                     error = self.ERROR_TOKEN_INVALID
 
         if token:
+            logger.info(add_prefix('Starting ESI client...'))
             logger.debug('Using token: {}'.format(token))                
             client = esi_client_factory(
                 token=token, spec_file=get_swagger_spec_path()

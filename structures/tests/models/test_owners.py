@@ -427,6 +427,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # user report has been sent
         self.assertTrue(mock_notify.called)
     
+    """
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
@@ -464,7 +465,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             {x['id'] for x in Structure.objects.values('id')},
             {1000000000002, 1000000000003}
         )
-    
+    """
     """
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)

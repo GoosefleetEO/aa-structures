@@ -2,12 +2,7 @@ from unittest.mock import Mock, patch
 
 from celery import Celery
 
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.timerboard.models import Timer
-from allianceauth.tests.auth_utils import AuthUtils
-
-from esi.errors import TokenExpiredError, TokenInvalidError
+from allianceauth.eveonline.models import EveCorporationInfo
 
 from .auth_utils_2 import AuthUtils2
 from ..utils import set_test_logger, NoSocketsTestCase
@@ -29,32 +24,7 @@ from ..models import (
     Notification,
     Structure    
 )
-from ..models.notifications import (
-    NTYPE_OWNERSHIP_TRANSFERRED,
-    NTYPE_STRUCTURE_ANCHORING,
-    NTYPE_STRUCTURE_DESTROYED,
-    NTYPE_STRUCTURE_FUEL_ALERT,
-    NTYPE_STRUCTURE_LOST_ARMOR,
-    NTYPE_STRUCTURE_LOST_SHIELD,
-    NTYPE_STRUCTURE_ONLINE,
-    NTYPE_STRUCTURE_SERVICES_OFFLINE,
-    NTYPE_STRUCTURE_UNANCHORING,
-    NTYPE_STRUCTURE_UNDER_ATTACK,
-    NTYPE_STRUCTURE_WENT_HIGH_POWER,
-    NTYPE_STRUCTURE_WENT_LOW_POWER,
-    NTYPE_MOONS_AUTOMATIC_FRACTURE,
-    NTYPE_MOONS_EXTRACTION_CANCELED,
-    NTYPE_MOONS_EXTRACTION_FINISHED,
-    NTYPE_MOONS_EXTRACTION_STARTED,
-    NTYPE_MOONS_LASER_FIRED
-)
-
-from .testdata import (
-    esi_get_corporations_corporation_id_structures,     
-    esi_get_corporations_corporation_id_customs_offices,
-    esi_post_corporations_corporation_id_assets_names,
-    entities_testdata,
-    esi_corp_structures_data,
+from .testdata import (    
     load_entities,
     load_notification_entities,
     get_all_notification_ids,
