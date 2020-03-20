@@ -13,30 +13,129 @@ from .utils import LoggerAddTag
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 
-class EsiHelper:
-    """Helper class providing smarter ESI requests with django-esi"""
+class EsiSmartRequest:
+    """Helper class providing smarter ESI requests with django-esi
+    
+    Adds these features to all request to ESI:
+    - Automatic retry on "bad request" up to max retries
+    - Automatic retrieval of all pages
+    - Automatic retrieval of variants for all requested languages
+    """
 
     _ESI_MAX_RETRIES = 3
     _ESI_SLEEP_SECONDS_ON_RETRY = 1
 
     @classmethod
-    def fetch_esi_object(
+    def fetch(
+        cls, 
+        esi_path: str,         
+        args: dict,         
+        add_prefix: object,        
+        has_pages: bool = False,        
+        esi_client: object = None
+    ) -> dict:
+        """returns an response object from ESI, will retry on bad requests"""
+        _, request_object = cls._fetch_with_localization(
+            esi_path=esi_path, 
+            args=args, 
+            add_prefix=add_prefix,
+            has_localization=False,
+            has_pages=has_pages,                
+            esi_client=esi_client
+        ).popitem()
+        return request_object
+
+    @classmethod
+    def fetch_with_localization(
         cls, 
         esi_path: str,         
         args: dict,         
         add_prefix: object,
+        has_localization: bool = False,
+        has_pages: bool = False,        
         esi_client: object = None
     ) -> dict:
-        response, _ = cls._fetch_esi_object_with_retries(
+        """returns dict of response objects from ESI
+        will contain one full object items for each language if supported or just one
+        will retry on bad request responses from ESI
+        will automatically return all pages if requested
+        """
+        return cls._fetch_with_localization(
             esi_path=esi_path,
             args=args,
-            add_prefix=add_prefix,
+            add_prefix=add_prefix,            
+            has_localization=has_localization,
+            has_pages=has_pages,                
             esi_client=esi_client
         )
-        return response
+    
+    @classmethod
+    def _fetch_with_localization(
+        cls, 
+        esi_path: str,         
+        args: dict,         
+        add_prefix: object,
+        has_localization: bool = False,
+        has_pages: bool = False,        
+        esi_client: object = None
+    ) -> dict:
+        """returns dict of response objects from ESI with localization"""
+        from .models.eveuniverse import EsiNameLocalization
+
+        if has_localization:
+            languages = EsiNameLocalization.ESI_LANGUAGES
+        else:
+            languages = {EsiNameLocalization.ESI_DEFAULT_LANGUAGE}
+
+        response_objects = dict()
+        for language in languages:            
+            if has_localization:
+                args['language'] = language
+
+            response_objects[language] = cls._fetch_with_paging(
+                esi_path=esi_path, 
+                args=args, 
+                add_prefix=add_prefix,
+                has_pages=has_pages,                
+                esi_client=esi_client
+            )
+            
+        return response_objects
 
     @classmethod
-    def _fetch_esi_object_with_retries(
+    def _fetch_with_paging(
+        cls, 
+        esi_path: str,         
+        args: dict,         
+        add_prefix: object,        
+        has_pages: bool = False,        
+        esi_client: object = None
+    ) -> dict:
+        """fetches esi objects incl. all pages if requested and returns them""" 
+        response_object, pages = cls._fetch_with_retries(
+            esi_path=esi_path, 
+            args=args, 
+            add_prefix=add_prefix,
+            has_pages=has_pages, 
+            esi_client=esi_client
+        )        
+        if has_pages:
+            for page in range(2, pages + 1):                        
+                response_object_page, _ = cls._fetch_with_retries(
+                    esi_path=esi_path, 
+                    args=args, 
+                    add_prefix=add_prefix,                
+                    has_pages=has_pages,
+                    page=page,
+                    pages=pages,
+                    esi_client=esi_client
+                )  
+                response_object += response_object_page
+
+        return response_object
+
+    @classmethod
+    def _fetch_with_retries(
         cls, 
         esi_path: str,         
         args: dict,         
@@ -46,7 +145,7 @@ class EsiHelper:
         pages: int = None,        
         esi_client: object = None
     ) -> tuple:
-        """Returns object from ESI, retries on bad requests"""
+        """Returns response object and pages from ESI, retries on bad requests"""
         esi_path_parts = esi_path.split('.')
         if len(esi_path_parts) != 2:
             raise ValueError('Invalid esi_path')
@@ -69,8 +168,12 @@ class EsiHelper:
             log_message_base += '({})'.format(
                 ', '.join([str(k) + '=' + str(v) for k, v in args.items()])
             )
-        if page and pages:
-            log_message_base += ' - Page {}/{}'.format(page, pages)
+        if has_pages:
+            args['page'] = page if page else 1
+            log_message_base += ' - Page {}/{}'.format(
+                page, pages if pages else '?'
+            )
+            
         logger.info(add_prefix(log_message_base))
         for retry_count in range(cls._ESI_MAX_RETRIES + 1):
             if retry_count > 0:
@@ -85,88 +188,24 @@ class EsiHelper:
                 operation = getattr(esi_category, esi_method_name)(**args)
                 if has_pages:
                     operation.also_return_response = True
-                    data, response = operation.result()
+                    response_object, response = operation.result()
                     if 'x-pages' in response.headers:
                         pages = int(response.headers['x-pages'])
                     else:
                         pages = 0
                 else:
-                    data = operation.result()
+                    response_object = operation.result()
                     pages = 0
                 break
 
             except HTTPBadRequest as ex:                    
                 logger.warn(add_prefix(
                     'HTTP error while trying to '
-                    'fetch data from ESI: {}'.format(ex)
+                    'fetch response_object from ESI: {}'.format(ex)
                 ))
                 if retry_count < cls._ESI_MAX_RETRIES:
                     sleep(cls._ESI_SLEEP_SECONDS_ON_RETRY)
                 else:
                     raise ex
 
-        return data, pages
-
-    @classmethod
-    def fetch_esi_objects_smart(
-        cls, 
-        esi_path: str,         
-        args: dict,         
-        add_prefix: object,
-        has_localization: bool = False,        
-        esi_client: object = None
-    ) -> dict:
-        """returns dict of eve data objects from ESI
-        will contain one full object items for each language if supported or just one
-        will retry on bad request responses from ESI
-        """
-        from .models.eveuniverse import EsiNameLocalization
-
-        if has_localization:
-            languages = EsiNameLocalization.ESI_LANGUAGES
-        else:
-            languages = {EsiNameLocalization.ESI_DEFAULT_LANGUAGE}
-
-        eve_data_objects = dict()
-        for language in languages:            
-            if has_localization:
-                args['language'] = language
-
-            eve_data_objects[language] = cls.fetch_esi_object(
-                esi_path, args, add_prefix, esi_client
-            )
-            
-        return eve_data_objects
-
-    @classmethod
-    def fetch_esi_objects_with_pages(
-        cls, 
-        esi_path: str,         
-        args: dict,         
-        add_prefix: object,        
-        has_pages: bool = False,
-        esi_client: object = None
-    ) -> dict:
-        """fetches esi objects incl. all pages"""
-        
-        data, pages = cls._fetch_esi_object_with_retries(
-            esi_path=esi_path, 
-            args=args, 
-            add_prefix=add_prefix,
-            has_pages=has_pages, 
-            esi_client=esi_client
-        )        
-        for page in range(2, pages + 1):            
-            args['page'] = page
-            data_page, _ = cls._fetch_esi_object_with_retries(
-                esi_path=esi_path, 
-                args=args, 
-                add_prefix=add_prefix,                
-                has_pages=has_pages,
-                page=page,
-                pages=pages,
-                esi_client=esi_client
-            )  
-            data += data_page
-
-        return data
+        return response_object, pages

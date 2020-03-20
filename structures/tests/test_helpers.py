@@ -2,8 +2,7 @@ from unittest.mock import Mock, patch
 
 from bravado.exception import HTTPBadRequest
 
-from ..models import EveCategory
-from ..helpers import EsiHelper
+from ..helpers import EsiSmartRequest
 from .testdata import (
     esi_get_universe_categories_category_id, 
     esi_mock_client,
@@ -27,17 +26,15 @@ dummy_provider.client.Universe = Dummy()
 dummy_provider.client.Universe.get_universe_categories_category_id = Dummy()
 
 
-class TestEsiHelper(NoSocketsTestCase):
+class TestEsiSmartRequest(NoSocketsTestCase):
     
     def setUp(self):
         self.add_prefix = make_logger_prefix('Test')
         esi_get_corporations_corporation_id_structures.override_data = None
 
     @patch(MODULE_PATH + '.provider')
-    def test_can_fetch_object_from_esi(
-        self, mock_provider
-    ):                    
-        EsiHelper.fetch_esi_object(
+    def test_can_fetch_object_from_esi(self, mock_provider):                    
+        EsiSmartRequest.fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
             add_prefix=self.add_prefix
@@ -53,41 +50,35 @@ class TestEsiHelper(NoSocketsTestCase):
         )        
 
     @patch(MODULE_PATH + '.provider')
-    def test_raises_exception_on_invalid_esi_path(
-        self, mock_provider
-    ):                        
+    def test_raises_exception_on_invalid_esi_path(self, mock_provider):                        
         with self.assertRaises(ValueError):
-            EsiHelper.fetch_esi_object(
+            EsiSmartRequest.fetch(
                 'invalid', 
-                Mock(),
+                {'group_id': 65},
                 self.add_prefix
             )
     
     @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
-    def test_raises_exception_on_wrong_esi_category(
-        self, mock_provider
-    ):                        
+    def test_raises_exception_on_wrong_esi_category(self, mock_provider):                        
         with self.assertRaises(ValueError):
-            EsiHelper.fetch_esi_object(
+            EsiSmartRequest.fetch(
                 'invalid.get_universe_groups_group_id',               
-                Mock(),
+                {'group_id': 65},
                 self.add_prefix
             )
     
     @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
-    def test_raises_exception_on_wrong_esi_method(
-        self, mock_provider
-    ):                
+    def test_raises_exception_on_wrong_esi_method(self, mock_provider):                
         with self.assertRaises(ValueError):
-            EsiHelper.fetch_esi_object(
+            EsiSmartRequest.fetch(
                 'Universe.invalid',                 
-                Mock(),
+                {'group_id': 65},
                 self.add_prefix
             )
     
-    @patch(MODULE_PATH + '.EsiHelper._ESI_SLEEP_SECONDS_ON_RETRY', 0)
+    @patch(MODULE_PATH + '.EsiSmartRequest._ESI_SLEEP_SECONDS_ON_RETRY', 0)
     @patch(MODULE_PATH + '.provider')
-    def test_can_retry_create_on_bad_request(self, mock_provider):        
+    def test_can_retry_on_bad_request(self, mock_provider):        
         
         def my_side_effect():
             """special mock client for testing retry ability"""
@@ -110,32 +101,75 @@ class TestEsiHelper(NoSocketsTestCase):
         # can retry 3 times and then proceed normally
         retry_counter = 0
         max_retries = 3        
-        obj, created = EveCategory.objects.update_or_create_esi(65)        
-        self.assertTrue(created)
-        self.assertIsInstance(obj, EveCategory)
-        self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
+        response_object = EsiSmartRequest.fetch(
+            'Universe.get_universe_categories_category_id',
+            {'category_id': 65},
+            self.add_prefix
+        )        
+        self.assertEqual(response_object['id'], 65)
+        self.assertEqual(response_object['name'], 'Structure')
         self.assertEqual(retry_counter, 3)
 
         # will abort on the 4th retry and pass on exception if needed
         retry_counter = 0
         max_retries = 4
         with self.assertRaises(HTTPBadRequest):
-            EveCategory.objects.update_or_create_esi(65)        
+            response_object = EsiSmartRequest.fetch(
+                'Universe.get_universe_categories_category_id',
+                {'category_id': 65},
+                Mock()
+            )
         self.assertEqual(retry_counter, 4)
 
     def test_can_fetch_multiple_pages(self):
         mock_client = esi_mock_client()
 
-        structures = EsiHelper.fetch_esi_objects_with_pages(
+        structures = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': 2001},
             add_prefix=self.add_prefix,
             esi_client=mock_client,
             has_pages=True
         )        
+        
+        # has all structures
+        structure_ids = {x['structure_id'] for x in structures}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(
-            {x['structure_id'] for x in structures}, 
-            expected
-        )
+        self.assertSetEqual(structure_ids, expected)
+        
+        # has services                
+        service_names = list()
+        for obj in structures:
+            if obj['structure_id'] == 1000000000001:                        
+                service_names = {x['name'] for x in obj['services']}
+        expected = {'Clone Bay', 'Market Hub'}
+        self.assertEqual(service_names, expected)
+
+    def test_can_fetch_multiple_pages_and_languages(self):
+        mock_client = esi_mock_client()
+
+        structures_list = EsiSmartRequest.fetch_with_localization(
+            'Corporation.get_corporations_corporation_id_structures',
+            args={'corporation_id': 2001},
+            add_prefix=self.add_prefix,
+            esi_client=mock_client,
+            has_pages=True,
+            has_localization=True
+        )        
+        
+        for language, structures in structures_list.items():
+            # has all structures                
+            structure_ids = {x['structure_id'] for x in structures}
+            expected = {1000000000001, 1000000000002, 1000000000003}
+            self.assertSetEqual(structure_ids, expected)
+            
+            # has services in all languages
+            service_names = list()
+            for obj in structures:
+                if obj['structure_id'] == 1000000000001:                        
+                    service_names = {x['name'] for x in obj['services']}
+            if language == 'en-us':
+                expected = {'Clone Bay', 'Market Hub'}
+            else:
+                expected = {'Clone Bay_' + language, 'Market Hub_' + language}
+            self.assertEqual(service_names, expected)

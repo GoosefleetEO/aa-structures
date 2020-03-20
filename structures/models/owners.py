@@ -36,7 +36,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,    
 )
 from .eveuniverse import EvePlanet, EveSolarSystem, EveType
-from ..helpers import EsiHelper
+from ..helpers import EsiSmartRequest
 from .structures import Structure
 from .notifications import EveEntity, Notification
                 
@@ -343,7 +343,7 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
         
-        structures = EsiHelper.fetch_esi_objects_with_pages(
+        structures = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': corporation_id},
             add_prefix=add_prefix,
@@ -364,7 +364,7 @@ class Owner(models.Model):
                 )
             ))
             for structure in structures:                
-                structure_info = EsiHelper.fetch_esi_object(
+                structure_info = EsiSmartRequest.fetch(
                     'Universe.get_universe_structures_structure_id',
                     args={'structure_id': structure['structure_id']},
                     add_prefix=add_prefix,
@@ -395,7 +395,7 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
 
-        pocos = EsiHelper.fetch_esi_objects_with_pages(
+        pocos = EsiSmartRequest.fetch(
             'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
             args={'corporation_id': corporation_id},
             add_prefix=add_prefix,
@@ -417,7 +417,7 @@ class Owner(models.Model):
             item_ids = [x['office_id'] for x in pocos]
             locations_data = list()
             for item_ids_chunk in chunks(item_ids, 999):               
-                locations_data_chunk = EsiHelper.fetch_esi_object(
+                locations_data_chunk = EsiSmartRequest.fetch(
                     'Assets.post_corporations_corporation_id_assets_locations',
                     args={
                         'corporation_id': corporation_id, 
@@ -437,7 +437,7 @@ class Owner(models.Model):
             ))
             names_data = list()
             for item_ids_chunk in chunks(item_ids, 999):                
-                names_data_chunk = EsiHelper.fetch_esi_object(
+                names_data_chunk = EsiSmartRequest.fetch(
                     'Assets.post_corporations_corporation_id_assets_names',
                     args={
                         'corporation_id': corporation_id, 
@@ -508,7 +508,7 @@ class Owner(models.Model):
 
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
-        starbases = EsiHelper.fetch_esi_objects_with_pages(
+        starbases = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_starbases',
             args={'corporation_id': corporation_id},
             add_prefix=add_prefix,
@@ -526,7 +526,7 @@ class Owner(models.Model):
             item_ids = [x['starbase_id'] for x in starbases]
             names_data = list()
             for item_ids_chunk in chunks(item_ids, 999):
-                names_data_chunk = EsiHelper.fetch_esi_object(
+                names_data_chunk = EsiSmartRequest.fetch(
                     'Assets.post_corporations_corporation_id_assets_names',
                     args={
                         'corporation_id': corporation_id, 
@@ -586,7 +586,7 @@ class Owner(models.Model):
             # fetch notifications from ESI
             try:
                 # fetching data from ESI                
-                notifications = EsiHelper.fetch_esi_object(
+                notifications = EsiSmartRequest.fetch(
                     'Character.get_characters_character_id_notifications',
                     args={
                         'character_id': self.character.character.character_id

@@ -1,5 +1,6 @@
 """functions for loading test data and for building mocks"""
 
+from copy import deepcopy
 from datetime import timedelta
 import inspect
 import json
@@ -136,7 +137,9 @@ def esi_get_universe_planets_planet_id(planet_id, language=None):
     return mock_operation
 
 
-def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
+def esi_get_corporations_corporation_id_structures(
+    corporation_id, page=None, language=None
+):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
     unless the function property override_data is set
@@ -174,7 +177,15 @@ def esi_get_corporations_corporation_id_structures(corporation_id, page=None):
             'No test data for corporation ID: {}'. format(corporation_id)
         )
     
-    corp_data = my_corp_structures_data[str(corporation_id)]
+    corp_data = deepcopy(my_corp_structures_data[str(corporation_id)])
+
+    # add pseudo localization
+    if language:
+        for obj in corp_data:
+            if 'services' in obj:
+                for service in obj['services']:
+                    if language != 'en-us':
+                        service['name'] += '_%s' % language
 
     start = (page - 1) * page_size
     stop = start + page_size
@@ -232,7 +243,7 @@ def esi_get_corporations_corporation_id_starbases(corporation_id, page=None):
             'No test data for corporation ID: {}'. format(corporation_id)
         )
     
-    corp_data = my_corp_starbases_data[str(corporation_id)]
+    corp_data = deepcopy(my_corp_starbases_data[str(corporation_id)])
 
     start = (page - 1) * page_size
     stop = start + page_size
@@ -316,7 +327,7 @@ def esi_get_corporations_corporation_id_customs_offices(
             'No test data for corporation ID: {}'. format(corporation_id)
         )
     
-    corp_data = my_corp_customs_offices_data[str(corporation_id)]
+    corp_data = deepcopy(my_corp_customs_offices_data[str(corporation_id)])
 
     start = (page - 1) * page_size
     stop = start + page_size
@@ -353,8 +364,7 @@ def _esi_post_corporations_corporation_id_assets(
         )
     else:        
         mock_operation = Mock()
-        mock_operation.result.return_value = \
-            my_esi_data[str(corporation_id)]
+        mock_operation.result.return_value = my_esi_data[str(corporation_id)]
         return mock_operation
 
 

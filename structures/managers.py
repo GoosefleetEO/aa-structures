@@ -4,7 +4,7 @@ from pydoc import locate
 from django.db import models
 
 from . import __title__
-from .helpers import EsiHelper
+from .helpers import EsiSmartRequest
 from .utils import LoggerAddTag, make_logger_prefix
 
 
@@ -42,7 +42,7 @@ class EveUniverseManager(models.Manager):
         )        
         try:
             eve_data_objects = \
-                EsiHelper.fetch_esi_objects_smart(
+                EsiSmartRequest.fetch_with_localization(
                     'Universe.' + self.model.esi_method(),
                     args={self.model.esi_pk(): eve_id}, 
                     add_prefix=add_prefix,
@@ -110,10 +110,10 @@ class EveEntityManager(models.Manager):
             '%s(id=%d)' % (self.model.__name__, eve_entity_id)
         )        
         try:            
-            response = EsiHelper.fetch_esi_object(
+            response = EsiSmartRequest.fetch(
                 'Universe.post_universe_names', 
-                {'ids': [eve_entity_id]}, 
-                add_prefix
+                args={'ids': [eve_entity_id]}, 
+                add_prefix=add_prefix
             )
             if len(response) > 0:
                 first = response[0]
@@ -163,6 +163,7 @@ class StructureManager(models.Manager):
         self, structure_id: int, esi_client: object
     ) -> tuple:
         """update or create a structure from ESI for given structure ID
+        This will only fetch basic info about a structure
         
         structure_id: Structure ID of object in Eve Online
 
@@ -181,11 +182,11 @@ class StructureManager(models.Manager):
             if esi_client is None:
                 raise ValueError('Can not fetch structure without esi client')
             
-            structure_info = EsiHelper.fetch_esi_object(
+            structure_info = EsiSmartRequest.fetch(
                 'Universe.get_universe_structures_structure_id', 
-                {'structure_id': structure_id}, 
-                add_prefix,
-                esi_client
+                args={'structure_id': structure_id}, 
+                add_prefix=add_prefix,
+                esi_client=esi_client
             )            
             structure = {
                 'structure_id': structure_id,
