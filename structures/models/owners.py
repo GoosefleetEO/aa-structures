@@ -35,7 +35,7 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,            
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,    
 )
-from .eveuniverse import EvePlanet, EveSolarSystem, EveType
+from .eveuniverse import EvePlanet, EveSolarSystem, EveType, EveUniverse
 from ..helpers import EsiSmartRequest
 from .structures import Structure
 from .notifications import EveEntity, Notification
@@ -343,14 +343,21 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
         
-        structures = EsiSmartRequest.fetch(
+        # fetch all structures incl. localizations for services
+        structures_w_lang = EsiSmartRequest.fetch_with_localization(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': corporation_id},
             add_prefix=add_prefix,
             has_pages=True,
+            has_localization=True,
             esi_client=esi_client
         )
-            
+        
+        # reduce data        
+        structures = self._compress_services_localization(
+            structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
+        )
+        
         # fetch additional information for structures
         if not structures:
             logger.info(add_prefix(
@@ -381,6 +388,45 @@ class Owner(models.Model):
         if STRUCTURES_DEVELOPER_MODE:
             self._store_raw_data('structures', structures, corporation_id)
 
+        return structures
+
+    @staticmethod
+    def _compress_services_localization(
+        structures_w_lang: dict, default_lang: str
+    ) -> list:
+        """compress service names localizations for each structure
+        We are assuming that services are returned from ESI in the same order 
+        for each language.
+        """
+        
+        # collect services with name localizations for all structures
+        structures_services = dict()
+        for lang, objects in structures_w_lang.items():            
+            if lang != default_lang:
+                for structure in objects:
+                    if 'services' in structure and structure['services']:
+                        structure_id = structure['structure_id']
+                        if structure_id not in structures_services:
+                            structures_services[structure_id] = dict()
+                        structures_services[structure_id][lang] = list()
+                        for service in structure['services']:
+                            structures_services[structure_id][lang].append(
+                                service['name']
+                            )
+
+        # add corresponding service name localizations to structure's services
+        structures = structures_w_lang[default_lang]
+        for structure in structures:
+            if 'services' in structure and structure['services']:
+                structure_id = structure['structure_id']
+                for lang in structures_w_lang.keys():
+                    if lang != default_lang:
+                        for service, name_loc in zip(
+                            structure['services'], 
+                            structures_services[structure_id][lang]
+                        ):
+                            service['name_' + lang] = name_loc
+        
         return structures
 
     def _fetch_custom_offices(self, esi_client: object) -> list:

@@ -235,9 +235,11 @@ def structure_list_data(request):
             services_qs = structure.structureservice_set.all().order_by('name')
             for service in services_qs:
                 if service.state == StructureService.STATE_OFFLINE:
-                    service_name = format_html('<del>{}</del>', service.name)
+                    service_name = format_html(
+                        '<del>{}</del>', service.name_localized
+                    )
                 else:
-                    service_name = service.name
+                    service_name = service.name_localized
                 services.append(service_name)
             row['services'] = '<br>'.join(services)
 

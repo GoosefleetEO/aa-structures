@@ -33,7 +33,7 @@ class EsiNameLocalization(models.Model):
 
     ESI_LANGUAGES = {x[2] for x in LANG_CODES_MAPPING}
     ESI_DEFAULT_LANGUAGE = 'en-us'
-
+    
     name_de = models.CharField(
         max_length=100,        
         blank=True,
@@ -179,7 +179,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
     
     class Meta:
         abstract = True
-    
+
     @classmethod
     def esi_pk(cls) -> str:
         """returns the name of the pk column on ESI that must exist"""

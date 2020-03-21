@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -15,7 +16,8 @@ from ..models import (
     EveMoon,
     EvePlanet,    
     Owner,    
-    Structure
+    Structure,
+    StructureService
 )
 from .testdata import (
     load_entity, 
@@ -28,6 +30,10 @@ from ..utils import NoSocketsTestCase, set_test_logger
 MODULE_PATH = 'structures.managers'
 MODULE_PATH_HELPERS = 'structures.helpers'
 logger = set_test_logger(MODULE_PATH, __file__)
+
+
+def to_json(obj):
+    return json.dumps(obj, sort_keys=True)
 
 
 class TestEveCategoryManager(NoSocketsTestCase):
@@ -589,3 +595,98 @@ class TestStructureManager(NoSocketsTestCase):
     def test_raises_exception_when_create_without_esi_client(self):
         with self.assertRaises(ValueError):
             obj, created = Structure.objects.update_or_create_esi(987, None)
+
+    def test_can_create_object_from_dict(self):
+        load_entities([
+            EveCategory,
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveCorporationInfo            
+        ])        
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2001)
+        )
+        structure = {     
+            "corporation_id": 2001,
+            "fuel_expires": None,        
+            "name": "Test Structure Alpha",
+            "next_reinforce_apply": None,
+            "next_reinforce_hour": None,
+            "next_reinforce_weekday": None,
+            "position": {
+                "x": 55028384780.0,
+                "y": 7310316270.0,
+                "z": -163686684205.0
+            },
+            "profile_id": 101853,
+            "reinforce_hour": 18,
+            "reinforce_weekday": 5,
+            "services": [
+                {
+                    "name": "Clone Bay",
+                    "name_de": "Clone Bay_de",
+                    "name_ko": "Clone Bay_ko",
+                    "state": "online"
+                },
+                {
+                    "name": "Market Hub",
+                    "name_de": "Market Hub_de",
+                    "name_ko": "Market Hub_ko",
+                    "state": "offline"
+                }
+            ],
+            "state": "shield_vulnerable",
+            "state_timer_end": None,
+            "state_timer_start": None,
+            "structure_id": 1000000000001,
+            "system_id": 30002537,
+            "type_id": 35832,
+            "unanchors_at": None
+        }
+        obj, created = Structure.objects.update_or_create_from_dict(
+            structure, owner
+        )
+        self.assertEqual(obj.id, 1000000000001)
+        self.assertEqual(obj.name, 'Test Structure Alpha')
+        self.assertEqual(obj.eve_type_id, 35832)
+        self.assertEqual(obj.eve_solar_system_id, 30002537)
+        self.assertEqual(int(obj.owner.corporation.corporation_id), 2001)
+        self.assertEqual(obj.position_x, 55028384780.0)
+        self.assertEqual(obj.position_y, 7310316270.0)
+        self.assertEqual(obj.position_z, -163686684205.0)
+        self.assertEqual(obj.reinforce_hour, 18)
+        self.assertEqual(obj.state, Structure.STATE_SHIELD_VULNERABLE)
+        # todo: add more content tests
+        services = {
+            to_json(
+                {
+                    'name': x.name,
+                    'name_de': x.name_de,
+                    'name_ko': x.name_ko,
+                    'state': x.state
+                }
+            )
+            for x in obj.structureservice_set.all()
+        }
+        expected = {
+            to_json(
+                {
+                    'name': 'Clone Bay', 
+                    'name_de': 'Clone Bay_de', 
+                    'name_ko': 'Clone Bay_ko', 
+                    'state': StructureService.STATE_ONLINE
+                }
+            ),
+            to_json(
+                {
+                    'name': 'Market Hub', 
+                    'name_de': 'Market Hub_de', 
+                    'name_ko': 'Market Hub_ko', 
+                    'state': StructureService.STATE_OFFLINE
+                }
+            ),
+        }
+        self.assertEqual(services, expected)

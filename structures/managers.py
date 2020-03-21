@@ -214,6 +214,7 @@ class StructureManager(models.Manager):
         """update or create structure from given dict"""
         from .models import EveType, EveSolarSystem, Structure,\
             StructureService, EvePlanet, EveMoon
+        from .models.eveuniverse import EveUniverse
         eve_type, _ = EveType.objects.get_or_create_esi(
             structure['type_id']
         )
@@ -313,9 +314,16 @@ class StructureManager(models.Manager):
                 state = StructureService.get_matching_state_for_esi_state(
                     service['state']
                 )
-                StructureService.objects.create(
-                    structure=obj,
-                    name=service['name'],
-                    state=state
-                )
+                args = {
+                    'structure': obj,
+                    'name': service['name'],
+                    'state': state
+                }
+                for lang in EveUniverse.ESI_LANGUAGES:
+                    if lang != EveUniverse.ESI_DEFAULT_LANGUAGE:
+                        field_name = 'name_%s' % lang
+                        if field_name in service:
+                            args[field_name] = service[field_name]
+
+                StructureService.objects.create(**args)
         return obj, created

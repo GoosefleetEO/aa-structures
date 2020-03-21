@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-19 01:52+0100\n"
+"POT-Creation-Date: 2020-03-21 01:21+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Last-Translator: rainbow ck <kaijiant@gmail.com>, 2020\n"
 "Language-Team: Chinese (China) (https://www.transifex.com/kalkoken-apps/"
@@ -592,36 +592,36 @@ msgid ""
 "this services"
 msgstr ""
 
-#: models/owners.py:914
+#: models/owners.py:960
 #, python-format
 msgid "Error: %s"
 msgstr ""
 
-#: models/owners.py:917
+#: models/owners.py:963
 #, python-format
 msgid ""
 "Syncing of %(topic)s for \"%(owner)s\" %(result)s.\n"
 "%(message_details)s"
 msgstr ""
 
-#: models/owners.py:922
+#: models/owners.py:968
 msgid "completed successfully"
 msgstr ""
 
-#: models/owners.py:922
+#: models/owners.py:968
 msgid "has failed"
 msgstr ""
 
-#: models/owners.py:929
+#: models/owners.py:975
 #, python-format
 msgid "%(title)s: %(topic)s updated for %(owner)s: %(result)s"
 msgstr ""
 
-#: models/owners.py:934
+#: models/owners.py:980
 msgid "OK"
 msgstr ""
 
-#: models/owners.py:934
+#: models/owners.py:980
 msgid "FAILED"
 msgstr ""
 
@@ -733,7 +733,7 @@ msgstr ""
 msgid "unanchoring "
 msgstr ""
 
-#: models/structures.py:126 views.py:261
+#: models/structures.py:126 views.py:263
 msgid "N/A"
 msgstr "N/A"
 
@@ -999,18 +999,18 @@ msgstr ""
 msgid "no"
 msgstr ""
 
-#: views.py:267
+#: views.py:269
 msgid "Low Power"
 msgstr "低能量"
 
-#: views.py:318
+#: views.py:320
 #, python-format
 msgid ""
 "You can only use your main or alt characters to add corporations. However, "
 "character %s is neither. "
 msgstr "你只能用你的大号或小号注册公司，但是%s不属于以上两种。"
 
-#: views.py:358
+#: views.py:360
 #, python-format
 msgid ""
 "%(corporation)s has been added with %(character)s as sync character. We have "
@@ -1020,15 +1020,15 @@ msgstr ""
 "%(corporation)s已将%(character)s添加为同步人物。我们正在获取这个公司的建筑"
 "物。你将在这个过程结束后收到一份报告"
 
-#: views.py:376
+#: views.py:378
 #, python-format
 msgid "%(corporation)s was added as new structure owner by %(user)s."
 msgstr "%(corporation)s已被%(user)s添加为新建筑持有者"
 
-#: views.py:401
+#: views.py:403
 msgid "service is up"
 msgstr "服务已上线"
 
-#: views.py:403
+#: views.py:405
 msgid "service is down"
 msgstr "服务已离线"

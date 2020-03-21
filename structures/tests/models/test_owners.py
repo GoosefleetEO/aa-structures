@@ -668,6 +668,146 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # run update task with all structures        
         self.assertFalse(owner.update_structures_esi())
 
+    def test_can_compress_services_localization(self):
+        data = {
+            'en-us': [
+                {
+                    'structure_id': 1,
+                    'name': 'Alpha',
+                    'services': [
+                        {
+                            'name': 'Service 1',
+                            'status': 'online'
+                        },
+                        {
+                            'name': 'Service 2',
+                            'status': 'offline'
+                        }
+                    ]
+                },
+                {
+                    'structure_id': 2,
+                    'name': 'Bravo',
+                    'services': [
+                        {
+                            'name': 'Service 1',
+                            'status': 'online'
+                        }
+                    ]
+                },
+                {
+                    'structure_id': 3,
+                    'name': 'Charlie',
+                    'services': None
+                }
+            ],
+
+            'de': [
+                {
+                    'structure_id': 1,
+                    'name': 'Alpha',
+                    'services': [
+                        {
+                            'name': 'Service 1_de',
+                            'status': 'online'
+                        },
+                        {
+                            'name': 'Service 2_de',
+                            'status': 'offline'
+                        }
+                    ]
+                },
+                {
+                    'structure_id': 2,
+                    'name': 'Bravo',
+                    'services': [
+                        {
+                            'name': 'Service 1_de',
+                            'status': 'online'
+                        }
+                    ]
+                },
+                {
+                    'structure_id': 3,
+                    'name': 'Charlie',
+                    'services': None
+                }
+            ],
+
+            'ko': [
+                {
+                    'structure_id': 1,
+                    'name': 'Alpha',
+                    'services': [
+                        {
+                            'name': 'Service 1_ko',
+                            'status': 'online'
+                        },
+                        {
+                            'name': 'Service 2_ko',
+                            'status': 'offline'
+                        }
+                    ]
+                },
+                {
+                    'structure_id': 2,
+                    'name': 'Bravo',
+                    'services': [
+                        {
+                            'name': 'Service 1_ko',
+                            'status': 'online'
+                        }
+                    ]
+                },
+                {
+                    'structure_id': 3,
+                    'name': 'Charlie',
+                    'services': None
+                }
+            ],
+        }
+        expected = [
+            {
+                'structure_id': 1,
+                'name': 'Alpha',
+                'services': [
+                    {
+                        'name': 'Service 1',
+                        'name_de': 'Service 1_de',
+                        'name_ko': 'Service 1_ko',
+                        'status': 'online'
+                    },
+                    {
+                        'name': 'Service 2',
+                        'name_de': 'Service 2_de',
+                        'name_ko': 'Service 2_ko',
+                        'status': 'offline'
+                    }
+                ]
+            },
+            {
+                'structure_id': 2,
+                'name': 'Bravo',
+                'services': [
+                    {
+                        'name': 'Service 1',
+                        'name_de': 'Service 1_de',
+                        'name_ko': 'Service 1_ko',
+                        'status': 'online'
+                    }
+                ]
+            },
+            {
+                'structure_id': 3,
+                'name': 'Charlie',
+                'services': None                
+            }
+        ]
+        self.maxDiff = None
+        self.assertEqual(
+            Owner._compress_services_localization(data, 'en-us'), expected
+        )
+        
 
 class TestFetchNotificationsEsi(NoSocketsTestCase):
 

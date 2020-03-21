@@ -68,6 +68,7 @@
                     "profile_id": 101853,
                     "reinforce_hour": 18,
                     "reinforce_weekday": 5,           
+                    "services": null,
                     "state": "shield_vulnerable",
                     "state_timer_end": null,
                     "state_timer_start": null,
@@ -230,17 +231,7 @@
                     "z": -163686684205.0
                 },            
                 "solar_system_id": 30002537,
-                "type_id": 35832,
-                "services": [
-                    {
-                        "name": "Clone Bay",
-                        "state": "offline"
-                    },
-                    {
-                        "name": "Market Hub",
-                        "state": "offline"
-                    }
-                ]
+                "type_id": 35832
             },
             "1000000000002":
             {
@@ -252,13 +243,7 @@
                     "z": -442026427345.6355
                 },            
                 "solar_system_id": 30002537,
-                "type_id": 35835,                
-                "services": [
-                    {
-                        "name": "Clone Bay",
-                        "state": "online"
-                    }
-                ]
+                "type_id": 35835
             },
             "1000000000003":
             {

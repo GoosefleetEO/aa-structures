@@ -182,7 +182,7 @@ def esi_get_corporations_corporation_id_structures(
     # add pseudo localization
     if language:
         for obj in corp_data:
-            if 'services' in obj:
+            if 'services' in obj and obj['services']:
                 for service in obj['services']:
                     if language != 'en-us':
                         service['name'] += '_%s' % language
