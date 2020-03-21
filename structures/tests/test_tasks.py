@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 
 from celery import Celery
 
+from django.contrib.auth.models import User
 from allianceauth.eveonline.models import EveCorporationInfo
 
 from .auth_utils_2 import AuthUtils2
@@ -45,11 +46,33 @@ def _get_invalid_owner_pk():
     return (max(owner_pks) + 1) if owner_pks else 99
 
 
+def _get_invalid_user_pk():
+    pks = [x.pk for x in User.objects.all()]
+    return (max(pks) + 1) if pks else 99
+
+
 class TestUpdateStructures(NoSocketsTestCase):
     
     def setUp(self):
         create_structures()
+        self.user, self.owner = set_owner_character(character_id=1001)
     
+    @patch(MODULE_PATH + '.Owner.update_structures_esi')
+    def test_call_structure_update_with_owner_and_user(
+        self, mock_update_structures_esi
+    ):        
+        tasks.update_structures_for_owner(self.owner.pk, self.user.pk)
+        first, second = mock_update_structures_esi.call_args
+        self.assertEqual(first[0], self.user)
+
+    @patch(MODULE_PATH + '.Owner.update_structures_esi')
+    def test_call_structure_update_with_owner_and_ignores_invalid_user(
+        self, mock_update_structures_esi
+    ):        
+        tasks.update_structures_for_owner(self.owner.pk, _get_invalid_user_pk())
+        first, second = mock_update_structures_esi.call_args
+        self.assertIsNone(first[0])
+        
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
             tasks.update_structures_for_owner(owner_pk=_get_invalid_owner_pk())

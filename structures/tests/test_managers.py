@@ -1,9 +1,9 @@
-import json
 from datetime import datetime
 from unittest.mock import Mock, patch
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
+from . import to_json
 from ..managers import EsiSmartRequest  # noqa
 from ..models import (
     EveEntity,    
@@ -30,10 +30,6 @@ from ..utils import NoSocketsTestCase, set_test_logger
 MODULE_PATH = 'structures.managers'
 MODULE_PATH_HELPERS = 'structures.helpers'
 logger = set_test_logger(MODULE_PATH, __file__)
-
-
-def to_json(obj):
-    return json.dumps(obj, sort_keys=True)
 
 
 class TestEveCategoryManager(NoSocketsTestCase):

@@ -1,10 +1,10 @@
 from copy import deepcopy
-from datetime import timedelta
+from datetime import timedelta, datetime
 from unittest.mock import patch, Mock
 
 from bravado.exception import HTTPBadGateway
 
-from django.utils.timezone import now
+from django.utils.timezone import now, utc
 
 from allianceauth.eveonline.models import (
     EveCharacter, EveCorporationInfo, EveAllianceInfo
@@ -15,6 +15,7 @@ from allianceauth.tests.auth_utils import AuthUtils
 
 from esi.errors import TokenExpiredError, TokenInvalidError
 
+from .. import to_json
 from ..auth_utils_2 import AuthUtils2
 from ...models import (
     EveCategory,
@@ -370,6 +371,197 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             Owner.ERROR_TOKEN_INVALID            
         )
     
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)    
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory')
+    def test_can_sync_upwell_structures(
+        self, mock_esi_client_factory, mock_Token
+    ):
+        mock_esi_client_factory.return_value = esi_mock_client()
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )        
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(structure_ids, expected)
+
+        # verify attributes for structure
+        structure = Structure.objects.get(id=1000000000001)
+        self.assertEqual(structure.name, 'Test Structure Alpha')
+        self.assertEqual(structure.position_x, 55028384780.0)
+        self.assertEqual(structure.position_y, 7310316270.0)
+        self.assertEqual(structure.position_z, -163686684205.0)
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.eve_type_id, 35832)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)
+        self.assertEqual(structure.reinforce_hour, 18)
+        self.assertEqual(structure.fuel_expires, datetime(
+            2020, 3, 5, 5, 0, 0, tzinfo=utc
+        ))
+        self.assertEqual(structure.state_timer_start, datetime(
+            2020, 4, 5, 6, 30, 0, tzinfo=utc
+        ))
+        self.assertEqual(structure.state_timer_end, datetime(
+            2020, 4, 5, 7, 0, 0, tzinfo=utc
+        ))
+        self.assertEqual(structure.unanchors_at, datetime(
+            2020, 5, 5, 6, 30, 0, tzinfo=utc
+        ))
+        
+        # must have created services with localizations
+        # structure 1000000000001        
+        expected = {
+            to_json({
+                'name': 'Clone Bay', 
+                'name_de': 'Clone Bay_de',
+                'name_ko': 'Clone Bay_ko',
+                'name_ru': 'Clone Bay_ru',
+                'name_zh': 'Clone Bay_zh',
+                'state': StructureService.STATE_ONLINE 
+            }),
+            to_json({
+                'name': 'Market Hub', 
+                'name_de': 'Market Hub_de',
+                'name_ko': 'Market Hub_ko',
+                'name_ru': 'Market Hub_ru',
+                'name_zh': 'Market Hub_zh',
+                'state': StructureService.STATE_OFFLINE, 
+            }) 
+        }
+        structure = Structure.objects.get(id=1000000000001)
+        services = {
+            to_json({
+                'name': x.name,
+                'name_de': x.name_de,
+                'name_ko': x.name_ko,
+                'name_ru': x.name_ru,
+                'name_zh': x.name_zh,
+                'state': x.state
+            }) 
+            for x in structure.structureservice_set.all()
+        }
+        self.assertEqual(services, expected)
+
+        # must have created services with localizations
+        # structure 1000000000002       
+        expected = {
+            to_json({
+                'name': 'Reprocessing', 
+                'name_de': 'Reprocessing_de',
+                'name_ko': 'Reprocessing_ko',
+                'name_ru': 'Reprocessing_ru',
+                'name_zh': 'Reprocessing_zh',
+                'state': StructureService.STATE_ONLINE 
+            }),
+            to_json({
+                'name': 'Moon Drilling', 
+                'name_de': 'Moon Drilling_de',
+                'name_ko': 'Moon Drilling_ko',
+                'name_ru': 'Moon Drilling_ru',
+                'name_zh': 'Moon Drilling_zh',
+                'state': StructureService.STATE_ONLINE, 
+            }) 
+        }
+        structure = Structure.objects.get(id=1000000000002)
+        services = {
+            to_json({
+                'name': x.name,
+                'name_de': x.name_de,
+                'name_ko': x.name_ko,
+                'name_ru': x.name_ru,
+                'name_zh': x.name_zh,
+                'state': x.state
+            }) 
+            for x in structure.structureservice_set.all()
+        }
+        self.assertEqual(services, expected)
+
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)    
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory')
+    def test_can_sync_pocos(self, mock_esi_client_factory, mock_Token):
+        mock_esi_client_factory.return_value = esi_mock_client()
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )        
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = {
+            1000000000001, 
+            1000000000002, 
+            1000000000003, 
+            1200000000003, 
+            1200000000004, 
+            1200000000005
+        }
+        self.assertSetEqual(structure_ids, expected)
+
+        # verify attributes for POCO
+        structure = Structure.objects.get(id=1200000000003)        
+        self.assertEqual(structure.name, 'Planet (Barren)')
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, EveType.EVE_TYPE_ID_POCO)
+        self.assertEqual(structure.reinforce_hour, 20)
+        self.assertEqual(structure.state, Structure.STATE_UNKNOWN)
+        self.assertEqual(structure.eve_planet_id, 40161472)
+
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)    
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory')
+    def test_can_sync_starbases(self, mock_esi_client_factory, mock_Token):
+        mock_esi_client_factory.return_value = esi_mock_client()
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )        
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = {
+            1000000000001, 
+            1000000000002, 
+            1000000000003, 
+            1300000000001, 
+            1300000000002
+        }
+        self.assertSetEqual(structure_ids, expected)
+
+        # verify attributes for POS
+        structure = Structure.objects.get(id=1300000000001)        
+        self.assertEqual(structure.name, 'Home Sweat Home')
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 16213)        
+        self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
+        self.assertEqual(structure.eve_moon_id, 40161465)
+
+        structure = Structure.objects.get(id=1300000000002)        
+        self.assertEqual(structure.name, 'Bat cave')
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 16214)        
+        self.assertEqual(structure.state, Structure.STATE_POS_OFFLINE)
+        self.assertEqual(structure.eve_moon_id, 40161466)
+    
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', autospec=True)
@@ -385,7 +577,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # run update task
         self.assertTrue(owner.update_structures_esi(user=self.user))
         owner.refresh_from_db()
-        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)                          
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
         
         # must contain all expected structures
         structure_ids = {x['id'] for x in Structure.objects.values('id')}
@@ -400,23 +592,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1300000000002,
         }
         self.assertSetEqual(structure_ids, expected)
-        
-        # must have created services
-        structure = Structure.objects.get(id=1000000000001)
-        service_names = {
-            x.name for x in StructureService.objects.filter(structure=structure)
-        }
-        expected = {'Clone Bay', 'Market Hub'}
-        self.assertEqual(service_names, expected)
-
-        # check name for POCO
-        structure = Structure.objects.get(id=1200000000003)
-        expected = 'Planet (Barren)'
-        self.assertEqual(structure.name, expected)
-        
+                
         # user report has been sent
         self.assertTrue(mock_notify.called)
-        
+
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', autospec=True)
@@ -611,8 +790,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client_factory.return_value = esi_mock_client()        
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
-        )
-                
+        )                
         # run update task
         self.assertTrue(owner.update_structures_esi(user=self.user))
 
@@ -620,6 +798,27 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure = Structure.objects.get(id=1200000000003)
         self.assertEqual(structure.eve_planet_id, 40161472)
         self.assertEqual(structure.name, 'Planet (Barren)')
+
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_LANGUAGE', 'de')
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch(MODULE_PATH + '.notify', autospec=True)
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory')
+    def test_define_poco_name_from_planet_type_localized(
+        self, mock_esi_client_factory, mock_Token, mock_notify
+    ):                               
+        mock_esi_client_factory.return_value = esi_mock_client()        
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )                
+        # run update task        
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+
+        # check name for POCO
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(structure.eve_planet_id, 40161472)
+        self.assertEqual(structure.name, 'Planet (Barren)_de')
 
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
@@ -668,146 +867,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # run update task with all structures        
         self.assertFalse(owner.update_structures_esi())
 
-    def test_can_compress_services_localization(self):
-        data = {
-            'en-us': [
-                {
-                    'structure_id': 1,
-                    'name': 'Alpha',
-                    'services': [
-                        {
-                            'name': 'Service 1',
-                            'status': 'online'
-                        },
-                        {
-                            'name': 'Service 2',
-                            'status': 'offline'
-                        }
-                    ]
-                },
-                {
-                    'structure_id': 2,
-                    'name': 'Bravo',
-                    'services': [
-                        {
-                            'name': 'Service 1',
-                            'status': 'online'
-                        }
-                    ]
-                },
-                {
-                    'structure_id': 3,
-                    'name': 'Charlie',
-                    'services': None
-                }
-            ],
-
-            'de': [
-                {
-                    'structure_id': 1,
-                    'name': 'Alpha',
-                    'services': [
-                        {
-                            'name': 'Service 1_de',
-                            'status': 'online'
-                        },
-                        {
-                            'name': 'Service 2_de',
-                            'status': 'offline'
-                        }
-                    ]
-                },
-                {
-                    'structure_id': 2,
-                    'name': 'Bravo',
-                    'services': [
-                        {
-                            'name': 'Service 1_de',
-                            'status': 'online'
-                        }
-                    ]
-                },
-                {
-                    'structure_id': 3,
-                    'name': 'Charlie',
-                    'services': None
-                }
-            ],
-
-            'ko': [
-                {
-                    'structure_id': 1,
-                    'name': 'Alpha',
-                    'services': [
-                        {
-                            'name': 'Service 1_ko',
-                            'status': 'online'
-                        },
-                        {
-                            'name': 'Service 2_ko',
-                            'status': 'offline'
-                        }
-                    ]
-                },
-                {
-                    'structure_id': 2,
-                    'name': 'Bravo',
-                    'services': [
-                        {
-                            'name': 'Service 1_ko',
-                            'status': 'online'
-                        }
-                    ]
-                },
-                {
-                    'structure_id': 3,
-                    'name': 'Charlie',
-                    'services': None
-                }
-            ],
-        }
-        expected = [
-            {
-                'structure_id': 1,
-                'name': 'Alpha',
-                'services': [
-                    {
-                        'name': 'Service 1',
-                        'name_de': 'Service 1_de',
-                        'name_ko': 'Service 1_ko',
-                        'status': 'online'
-                    },
-                    {
-                        'name': 'Service 2',
-                        'name_de': 'Service 2_de',
-                        'name_ko': 'Service 2_ko',
-                        'status': 'offline'
-                    }
-                ]
-            },
-            {
-                'structure_id': 2,
-                'name': 'Bravo',
-                'services': [
-                    {
-                        'name': 'Service 1',
-                        'name_de': 'Service 1_de',
-                        'name_ko': 'Service 1_ko',
-                        'status': 'online'
-                    }
-                ]
-            },
-            {
-                'structure_id': 3,
-                'name': 'Charlie',
-                'services': None                
-            }
-        ]
-        self.maxDiff = None
-        self.assertEqual(
-            Owner._compress_services_localization(data, 'en-us'), expected
-        )
-        
 
 class TestFetchNotificationsEsi(NoSocketsTestCase):
 

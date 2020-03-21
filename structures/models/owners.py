@@ -191,10 +191,9 @@ class Owner(models.Model):
         return str(self.corporation.corporation_name)
 
     def __repr__(self):
-        return '{}(id={}, corporation=\'{}\')'.format(
-            self.__class__.__name__,
-            self.id,
-            self.__str__
+        return '{}(corporation=\'{}\')'.format(
+            self.__class__.__name__,            
+            self.corporation
         )
 
     def is_structure_sync_ok(self) -> bool:

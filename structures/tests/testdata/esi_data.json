@@ -33,18 +33,17 @@
                 },
                 {
                     "corporation_id": 2001,
-                    "fuel_expires": null,        
+                    "fuel_expires": "2020-03-05T05:00:00Z",        
                     "next_reinforce_apply": null,
                     "next_reinforce_hour": null,
-                    "next_reinforce_weekday": null,
-                
+                    "next_reinforce_weekday": null,                
                     "profile_id": 101853,
                     "reinforce_hour": 18,
                     "reinforce_weekday": 5,
                     "services": [
                         {
                             "name": "Clone Bay",
-                            "state": "offline"
+                            "state": "online"
                         },
                         {
                             "name": "Market Hub",
@@ -52,12 +51,12 @@
                         }
                     ],
                     "state": "shield_vulnerable",
-                    "state_timer_end": null,
-                    "state_timer_start": null,
+                    "state_timer_end": "2020-04-05T07:00:00Z",
+                    "state_timer_start": "2020-04-05T06:30:00Z",
                     "structure_id": 1000000000001,
                     "system_id": 30002537,
                     "type_id": 35832,
-                    "unanchors_at": null
+                    "unanchors_at": "2020-05-05T06:30:00Z"
                 },
                 {
                     "corporation_id": 2001,
