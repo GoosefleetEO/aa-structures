@@ -7,19 +7,7 @@ import pytz
 
 from allianceauth.timerboard.models import Timer
 
-from ...models import (        
-    EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
-    EveConstellation,
-    EveSolarSystem,
-    EveMoon,
-    EvePlanet,    
-    Webhook,
-    EveEntity,    
-    Notification
-)
+from ...models import EveEntity, Notification, Webhook
 from ..testdata import (
     load_entities,
     load_notification_entities,
@@ -42,6 +30,10 @@ class TestWebhook(NoSocketsTestCase):
 
     def test_str(self):
         self.assertEqual(str(self.my_webhook), 'Dummy Webhook')
+
+    def test_repr(self):
+        expected = 'Webhook(id=%s, name=\'Dummy Webhook\')' % self.my_webhook.id
+        self.assertEqual(repr(self.my_webhook), expected)
 
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute')
     def test_send_test_notification_ok(self, mock_execute):        
@@ -70,69 +62,22 @@ class TestEveEntities(NoSocketsTestCase):
 
     def setUp(self):
                           
-        load_entities([
-            EveCategory,
-            EveGroup,
-            EveType,
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,            
-            EvePlanet,            
+        load_entities([            
             EveEntity    
         ])
 
-    def test_region_str(self):
-        x = EveRegion.objects.get(id=10000005)
-        self.assertEqual(str(x), 'Detorid')
+    def test_str(self):
+        obj = EveEntity.objects.get(id=3011)
+        self.assertEqual(str(obj), 'Big Bad Alliance')
 
-    def test_constellation_str(self):
-        x = EveConstellation.objects.get(id=20000069)
-        self.assertEqual(str(x), '1RG-GU')
-
-    def test_solar_system_str(self):
-        x = EveSolarSystem.objects.get(id=30002537)
-        self.assertEqual(str(x), 'Amamake')
-
-    def test_moon_str(self):
-        x = EveMoon.objects.get(id=40161465)
-        self.assertEqual(str(x), 'Amamake II - Moon 1')
-
-    def test_planet_str(self):
-        x = EvePlanet.objects.get(id=40161469)
-        self.assertEqual(str(x), 'Amamake IV')
-
-    def test_group_str(self):
-        x = EveGroup.objects.get(id=1406)
-        self.assertEqual(str(x), 'Refinery')
-
-    def test_type_str(self):
-        x = EveType.objects.get(id=35835)
-        self.assertEqual(str(x), 'Athanor')
-
-    def test_type_icon_url(self):
-        x = EveType.objects.get(id=35835)
-        self.assertEqual(
-            x.icon_url(), 
-            'https://images.evetech.net/types/35835/icon?size=64'
+    def test_repr(self):
+        obj = EveEntity.objects.get(id=3011)
+        expected = (
+            'EveEntity(id=3011, category=\'alliance\', name=\'Big Bad Alliance\')'
         )
-        self.assertEqual(
-            x.icon_url(size=128), 
-            'https://images.evetech.net/types/35835/icon?size=128'
-        )
-
-    def test_is_poco(self):
-        x = EveType.objects.get(id=2233) 
-        self.assertTrue(x.is_poco)
-
-        x = EveType.objects.get(id=35835) 
-        self.assertFalse(x.is_poco)
-
-    def test_eveentity_str(self):
-        x = EveEntity.objects.get(id=3011)
-        self.assertEqual(str(x), 'Big Bad Alliance')
+        self.assertEqual(repr(obj), expected)
     
-    def test_eveentity_get_matching_entity_type(self):
+    def test_get_matching_entity_type(self):
         self.assertEqual(
             EveEntity.get_matching_entity_category('character'),
             EveEntity.CATEGORY_CHARACTER
@@ -192,8 +137,17 @@ class TestNotification(NoSocketsTestCase):
         self.owner.save()
       
     def test_str(self):
-        x = Notification.objects.get(notification_id=1000000403)
-        self.assertEqual(str(x), '1000000403')
+        obj = Notification.objects.get(notification_id=1000000403)
+        self.assertEqual(str(obj), '1000000403')
+
+    def test_repr(self):
+        obj = Notification.objects.get(notification_id=1000000403)
+        expected = (
+            'Notification(notification_id=1000000403, '
+            'owner=\'Wayne Technologies\', '
+            'notification_type=\'MoonminingExtractionFinished\')'
+        )
+        self.assertEqual(repr(obj), expected)
 
     def test_ldap_datetime_2_dt(self):
         self.assertEqual(

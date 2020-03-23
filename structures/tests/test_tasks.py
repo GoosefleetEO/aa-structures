@@ -219,7 +219,10 @@ class TestForwardNotifications(NoSocketsTestCase):
         }
         self.assertSetEqual(structure_ids, {1000000000002, 1000000000001})
         
-    @patch('structures.models.notifications.dhooks_lite.Webhook.execute', autospec=True)
+    @patch(
+        'structures.models.notifications.dhooks_lite.Webhook.execute',
+        autospec=True
+    )
     def test_send_notifications(self, mock_execute):
         logger.debug('test_send_notifications')
         ids = {1000000401, 1000000402, 1000000403}
@@ -230,20 +233,7 @@ class TestForwardNotifications(NoSocketsTestCase):
 
         # should have sent notification
         self.assertEqual(mock_execute.call_count, 3)
-    
-    @patch('structures.models.notifications.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_test_notification(self, mock_execute):        
-        logger.debug('test_send_test_notification')
-        mock_response = Mock()
-        mock_response.status_ok = True
-        mock_response.content = {"dummy_response": True}
-        mock_execute.return_value = mock_response
-        my_webhook = self.owner.webhooks.first()
-        tasks.send_test_notifications_to_webhook(my_webhook.pk, self.user.pk)
-
-        # should have sent notification
-        self.assertEqual(mock_execute.call_count, 1)
-    
+        
     @patch(MODULE_PATH + '.send_new_notifications_for_owner')
     def test_send_all_new_notifications(
         self, 
@@ -382,3 +372,49 @@ class TestAdminTasks(NoSocketsTestCase):
 
         for MyModel in models:
             self.assertEqual(MyModel.objects.count(), 0)
+
+
+class TestSendTestNotification(NoSocketsTestCase):
+
+    def setUp(self):         
+        create_structures()
+        self.user, self.owner = set_owner_character(character_id=1001)
+        self.owner.is_alliance_main = True
+        self.owner.save()
+        load_notification_entities(self.owner)
+
+    @patch(MODULE_PATH + '.notify', autospec=True)
+    @patch(
+        'structures.models.notifications.dhooks_lite.Webhook.execute',
+        autospec=True
+    )
+    def test_send_test_notification(self, mock_execute, mock_notify):
+        logger.debug('test_send_test_notification')
+        mock_response = Mock()
+        mock_response.status_ok = True
+        mock_response.content = {"dummy_response": True}
+        mock_execute.return_value = mock_response
+        my_webhook = self.owner.webhooks.first()
+        tasks.send_test_notifications_to_webhook(my_webhook.pk, self.user.pk)
+        
+        # should have sent notification
+        self.assertEqual(mock_execute.call_count, 1)
+
+        # should have sent user report
+        self.assertTrue(mock_notify.called)
+        args = mock_notify.call_args[1]
+        self.assertEqual(args['level'], 'success')
+
+    @patch(MODULE_PATH + '.notify', autospec=True)
+    @patch(MODULE_PATH + '.Webhook.send_test_notification')
+    def test_send_test_notification_error(
+        self, mock_send_test_notification, mock_notify
+    ):
+        mock_send_test_notification.side_effect = RuntimeError
+        my_webhook = self.owner.webhooks.first()        
+        tasks.send_test_notifications_to_webhook(my_webhook.pk, self.user.pk)
+
+        # should have sent user report
+        self.assertTrue(mock_notify.called)
+        args = mock_notify.call_args[1]
+        self.assertEqual(args['level'], 'danger')

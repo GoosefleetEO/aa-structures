@@ -191,8 +191,9 @@ class Owner(models.Model):
         return str(self.corporation.corporation_name)
 
     def __repr__(self):
-        return '{}(corporation=\'{}\')'.format(
-            self.__class__.__name__,            
+        return '{}(pk={}, corporation=\'{}\')'.format(
+            self.__class__.__name__,
+            self.pk,
             self.corporation
         )
 
@@ -375,13 +376,10 @@ class Owner(models.Model):
                     args={'structure_id': structure['structure_id']},
                     add_prefix=add_prefix,
                     esi_client=esi_client
+                )                
+                structure['name'] = Structure.extract_name_from_esi_respose(
+                    structure_info['name']
                 )
-                matches = re.search(r'^\S+ - (.+)', structure_info['name'])
-                if matches:
-                    name = matches.group(1)
-                else:
-                    name = structure_info['name']
-                structure['name'] = name
                 structure['position'] = structure_info['position']
 
         if STRUCTURES_DEVELOPER_MODE:
@@ -836,8 +834,11 @@ class Owner(models.Model):
                             if (not notification.filter_for_npc_attacks()
                                 and not notification.filter_for_alliance_level()
                             ):
-                                notification.send_to_webhook(webhook, esi_client)
-                                notifications_count += 1
+                                if notification.send_to_webhook(
+                                    webhook, esi_client
+                                ):
+                                    notifications_count += 1
+                                    
                                 if rate_limited:
                                     sleep(1)
 

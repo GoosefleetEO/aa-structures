@@ -656,6 +656,7 @@ def create_structures():
 
 def create_user(character_id, load_data=False) -> User:
     """create a user from the given character id and returns it
+    
     Needs: EveCharacter
     """
     if load_data:

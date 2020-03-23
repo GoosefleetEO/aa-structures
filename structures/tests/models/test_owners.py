@@ -57,7 +57,8 @@ from ..testdata import (
     get_all_notification_ids,
     create_structures,
     set_owner_character,
-    esi_mock_client
+    esi_mock_client,
+    create_user
 )
 from ...utils import set_test_logger, NoSocketsTestCase
 
@@ -109,10 +110,13 @@ class TestOwner(NoSocketsTestCase):
         set_owner_character(character_id=1001)
 
     def test_str(self):
-        x = Owner.objects.get(
-            corporation__corporation_id=2001
-        )
-        self.assertEqual(str(x), 'Wayne Technologies')
+        obj = Owner.objects.get(corporation__corporation_id=2001)
+        self.assertEqual(str(obj), 'Wayne Technologies')
+    
+    def test_repr(self):
+        obj = Owner.objects.get(corporation__corporation_id=2001)
+        expected = 'Owner(pk=%d, corporation=\'Wayne Technologies\')' % obj.pk
+        self.assertEqual(repr(obj), expected)
     
     @patch(MODULE_PATH + '.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 30)
     def test_is_structure_sync_ok(self):
@@ -336,7 +340,21 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             Owner.ERROR_NO_CHARACTER
         )
 
-    # test expired token    
+    def test_returns_error_when_char_has_no_permission(self):
+        user_2 = create_user(1002)        
+        owner = Owner.objects.create(
+            corporation=self.corporation,
+            character=user_2.character_ownerships.first()
+        )        
+        self.assertFalse(
+            owner.update_structures_esi()
+        )
+        owner.refresh_from_db()
+        self.assertEqual(
+            owner.structures_last_error, 
+            Owner.ERROR_INSUFFICIENT_PERMISSIONS
+        )    
+
     @patch(MODULE_PATH + '.Token')    
     def test_returns_error_when_token_is_expired(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
@@ -553,6 +571,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_type_id, 16213)        
         self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
         self.assertEqual(structure.eve_moon_id, 40161465)
+        self.assertEqual(structure.state_timer_end, datetime(
+            2020, 4, 5, 7, 0, 0, tzinfo=utc
+        ))
+        self.assertEqual(structure.unanchors_at, datetime(
+            2020, 5, 5, 7, 0, 0, tzinfo=utc
+        ))
 
         structure = Structure.objects.get(id=1300000000002)        
         self.assertEqual(structure.name, 'Bat cave')
@@ -1007,20 +1031,49 @@ class TestSendNewNotifications(NoSocketsTestCase):
         self.owner.save()
         load_notification_entities(self.owner)
 
+        my_webhook = Webhook.objects.create(
+            name='Dummy',
+            url='dummy-url',            
+            is_active=True
+        )
+        self.owner.webhooks.add(my_webhook)
+
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(
-        'structures.models.notifications.Notification.send_to_webhook', 
-        autospec=True
-    )    
-    def test_send_new_notifications_to_multiple_webhooks_2(
+        'structures.models.notifications.Notification.send_to_webhook', autospec=True
+    )
+    def test_can_send_all_notifications(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
-        # create test data
+        AuthUtils2.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )        
+        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
+
+        notification_ids = set()
+        for x in mock_send_to_webhook.call_args_list:
+            first = x[0]
+            notification = first[0]
+            notification_ids.add(notification.notification_id)
+        
+        expected = {
+            x.notification_id 
+            for x in Notification.objects.filter(owner=self.owner)
+        }
+        self.assertSetEqual(notification_ids, expected)
+
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(
+        'structures.models.notifications.Notification.send_to_webhook', autospec=True
+    )
+    def test_can_send_notifications_to_multiple_webhooks(
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
+    ):        
         AuthUtils2.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
-
         notification_types_1 = ','.join([str(x) for x in sorted([            
             NTYPE_MOONS_EXTRACTION_CANCELED,
             NTYPE_STRUCTURE_DESTROYED,            
@@ -1073,7 +1126,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
             x.save()
         
         # send notifications for 1st owner only
-        self.owner.send_new_notifications(rate_limited=False)
+        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
         results = {            
             wh_mining.pk: set(),
             wh_structures.pk: set()
@@ -1102,4 +1155,22 @@ class TestSendNewNotifications(NoSocketsTestCase):
             {
                 1000000402
             }
+        )
+    
+    def test_reports_error_for_missing_user_permission(self):        
+        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.forwarding_last_error, 
+            Owner.ERROR_INSUFFICIENT_PERMISSIONS
+        )
+
+    @patch(MODULE_PATH + '.Owner.esi_client', autospec=True)
+    def test_reports_unexpected_error(self, mock_esi_client):
+        mock_esi_client.side_effect = RuntimeError()
+        self.assertFalse(self.owner.send_new_notifications(rate_limited=False))
+        self.owner.refresh_from_db()
+        self.assertEqual(
+            self.owner.forwarding_last_error, 
+            Owner.ERROR_UNKNOWN
         )

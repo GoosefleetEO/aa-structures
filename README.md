@@ -12,6 +12,7 @@ Alliance Auth.
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Updating](#updating)
+- [Localization](#localization)
 - [Settings](#settings)
 - [Permissions](#permissions)
 - [Service monitoring](#service-monitoring)
@@ -34,6 +35,7 @@ Alliance Structures adds the following main features to Alliance Auth:
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status
+- Localization for Chinese, English, German
 
 ## Screenshots
 
@@ -153,6 +155,27 @@ python manage.py collectstatic
 ```
 
 Finally restart your AA supervisor services.
+
+## Localization
+
+Alliance Structures has full localization for languages support by Alliance Auth. This chapter describes how to set the language for different parts of the app:
+
+## UI
+
+To switch the UI to your preferred language simply use the language switcher from Auth.
+
+## Notifications
+
+The language for notifications on Discord can be chosen by configuring the language property for the respective Webhook. The default language will be used if no language is configured for a Webhook.
+
+## Default language
+
+The default language will be used when no specific language have been configured or no language can be determined. The default language can be defined with the setting `STRUCTURES_DEFAULT_LANGUAGE`.
+
+The following parts of the app will use localization with the default language:
+
+- Timers
+- Name of Custom Offices
 
 ## Settings
 

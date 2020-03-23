@@ -1,6 +1,6 @@
 from unittest.mock import Mock, patch
 
-from bravado.exception import HTTPBadRequest
+from bravado.exception import HTTPBadGateway
 
 from ..helpers import EsiSmartRequest
 from .testdata import (
@@ -86,7 +86,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
             
             if retry_counter < max_retries:                
                 retry_counter += 1
-                raise HTTPBadRequest(
+                raise HTTPBadGateway(
                     response=Mock(), 
                     message='retry_counter=%d' % retry_counter
                 )
@@ -113,7 +113,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         # will abort on the 4th retry and pass on exception if needed
         retry_counter = 0
         max_retries = 4
-        with self.assertRaises(HTTPBadRequest):
+        with self.assertRaises(HTTPBadGateway):
             response_object = EsiSmartRequest.fetch(
                 'Universe.get_universe_categories_category_id',
                 {'category_id': 65},

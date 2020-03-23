@@ -88,7 +88,9 @@
                     "starbase_id": 1300000000001,
                     "state": "online",
                     "system_id": 30002537,
-                    "type_id": 16213
+                    "type_id": 16213,
+                    "reinforced_until": "2020-04-05T07:00:00Z",
+                    "unanchors_at": "2020-05-05T07:00:00Z"
                 },
                 {
                     "moon_id": 40161466,
@@ -223,7 +225,7 @@
             "1000000000001": 
             {
                 "corporation_id": 2001,
-                "name": "Test Structure Alpha",
+                "name": "Amamake - Test Structure Alpha",
                 "position": {
                     "x": 55028384780.0,
                     "y": 7310316270.0,
@@ -235,7 +237,7 @@
             "1000000000002":
             {
                 "corporation_id": 2001,
-                "name": "Test Structure Bravo",
+                "name": "Amamake - Test Structure Bravo",
                 "position": {
                     "x": -2518743930339.066,
                     "y": -130157937025.56424,
@@ -247,7 +249,7 @@
             "1000000000003":
             {
                 "corporation_id": 2001,
-                "name": "Test Structure Charlie",
+                "name": "Amamake - Test Structure Charlie",
                 "position": {
                     "x": -2518743930339.066,
                     "y": -130157937025.56424,

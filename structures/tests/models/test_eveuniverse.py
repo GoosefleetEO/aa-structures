@@ -19,25 +19,6 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestEveUniverse(NoSocketsTestCase):
-
-    class MyEveModelNormal(EveUniverse):
-        class Meta:
-            managed = False
-
-        class EveUniverseMeta:
-            esi_pk = 'my_id'
-            
-    class MyEveModelNoPk(EveUniverse):
-        class Meta:
-            managed = False
-                
-        class EveUniverseMeta:
-            not_pk = 'my_id'
-            has_esi_localization = False
-        
-    class MyEveModelEmpty(EveUniverse):
-        class Meta:
-            managed = False
                 
     def test_field_names_1(self):
         expected = {'name'}
@@ -58,26 +39,29 @@ class TestEveUniverse(NoSocketsTestCase):
         self.assertEqual(EveGroup._fk_mappings(), expected)
 
     def test_eve_universe_meta_attr_normal(self):
-        expected = 'my_id'
+        expected = 'type_id'
         self.assertEqual(
-            self.MyEveModelNormal._eve_universe_meta_attr('esi_pk'), expected
+            EveType._eve_universe_meta_attr('esi_pk'), expected
         )
     
     def test_eve_universe_meta_attr_key_not_defined(self):                
-        self.assertIsNone(self.MyEveModelNoPk._eve_universe_meta_attr('esi_pk'))
+        self.assertIsNone(EveType._eve_universe_meta_attr('not_defined'))
 
     def test_eve_universe_meta_attr_key_not_defined_but_mandatory(self):        
         with self.assertRaises(ValueError):
-            self.MyEveModelEmpty._eve_universe_meta_attr('esi_pk', is_mandatory=True)
-
+            EveType._eve_universe_meta_attr(
+                'not_defined', is_mandatory=True
+            )
+    
     def test_eve_universe_meta_attr_class_not_defined(self):                
-        self.assertIsNone(self.MyEveModelNoPk._eve_universe_meta_attr('esi_pk'))
+        with self.assertRaises(ValueError):
+            EveUniverse._eve_universe_meta_attr('esi_pk')
 
     def test_has_location_true_for_normal_models(self):
-        self.assertTrue(self.MyEveModelNormal.has_esi_localization())
+        self.assertTrue(EveType.has_esi_localization())
 
     def test_has_localization_false_if_set_false(self):
-        self.assertFalse(self.MyEveModelNoPk.has_esi_localization())
+        self.assertFalse(EvePlanet.has_esi_localization())
 
 
 class TestEveUniverseLocalization(NoSocketsTestCase):
@@ -162,7 +146,12 @@ class TestEveType(NoSocketsTestCase):
         self.type_starbase = EveType.objects.get(id=16213)
 
     def test_str(self):
-        self.assertEqual(str(self.type_astrahus), self.type_astrahus.name)
+        expected = 'Astrahus'
+        self.assertEqual(str(self.type_astrahus), expected)
+
+    def test_repr(self):
+        expected = 'EveType(id=35832, name=\'Astrahus\')'
+        self.assertEqual(repr(self.type_astrahus), expected)
 
     def test_is_poco(self):
         self.assertFalse(self.type_astrahus.is_poco)

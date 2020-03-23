@@ -281,10 +281,6 @@ class EveEntity(models.Model):
             self.name
         )
 
-    @property
-    def esi_category_name(self):
-        return self.get_matching_entity_category(self.category)
-
     def profile_url(self) -> str:
         """returns link to website with profile info about this entity"""        
         if self.category == self.CATEGORY_CORPORATION:
@@ -376,6 +372,17 @@ class Notification(models.Model):
     class Meta:
         unique_together = (('notification_id', 'owner'),)
 
+    def __str__(self):
+        return str(self.notification_id)
+
+    def __repr__(self):
+        return '%s(notification_id=%d, owner=\'%s\', notification_type=\'%s\')' % (
+            self.__class__.__name__,            
+            self.notification_id,
+            self.owner,
+            self.get_notification_type_display(),
+        )
+
     @property
     def is_alliance_level(self):
         """whether this is an alliance level notification"""
@@ -392,17 +399,6 @@ class Notification(models.Model):
     def _ldap_timedelta_2_timedelta(cls, ldap_td: int) -> datetime.timedelta:
         """converts a ldap timedelta into a dt timedelta"""
         return datetime.timedelta(microseconds=ldap_td / 10)
-
-    def __str__(self):
-        return str(self.notification_id)
-
-    def __repr__(self):
-        return '{}(id={}, owner=\'{}\', type=\'{}\')'.format(
-            self.__class__.__name__,            
-            self.notification_id,
-            self.owner,
-            self.get_notification_type_display(),
-        )
 
     def _generate_embed(
         self, esi_client: object, language_code: str

@@ -1,5 +1,6 @@
 """Structure related models"""
 
+import re
 import logging
 
 from django.db import models
@@ -57,9 +58,8 @@ class StructureTag(models.Model):
         return self.name
 
     def __repr__(self):
-        return '{}(id={}, name=\'{}\')'.format(
-            self.__class__.__name__,
-            self.id,
+        return '{}(name=\'{}\')'.format(
+            self.__class__.__name__,            
             self.name
         )
 
@@ -328,6 +328,12 @@ class Structure(models.Model):
             if esi_state_name in cls._STATES_ESI_MAP
             else cls.STATE_UNKNOWN
         )
+
+    @classmethod
+    def extract_name_from_esi_respose(cls, esi_name):
+        """extracts the structure's name from the name in an ESI response"""
+        matches = re.search(r'^\S+ - (.+)', esi_name)
+        return matches.group(1) if matches else esi_name
         
         
 class StructureService(EsiNameLocalization, models.Model):
@@ -367,9 +373,9 @@ class StructureService(EsiNameLocalization, models.Model):
         return '{} - {}'.format(str(self.structure), self.name)
 
     def __repr__(self):
-        return '{}(id={}, name=\'{}\')'.format(
+        return '{}(structure_id={}, name=\'{}\')'.format(
             self.__class__.__name__,
-            self.id,
+            self.structure.id,
             self.name
         )
 

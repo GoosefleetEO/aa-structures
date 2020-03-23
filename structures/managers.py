@@ -190,7 +190,9 @@ class StructureManager(models.Manager):
             )            
             structure = {
                 'structure_id': structure_id,
-                'name': structure_info['name'],
+                'name': self.model.extract_name_from_esi_respose(
+                    structure_info['name']
+                ),
                 'position': structure_info['position'],
                 'type_id': structure_info['type_id'],
                 'system_id': structure_info['solar_system_id']

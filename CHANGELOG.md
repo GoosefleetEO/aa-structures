@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.1.0] - 2020-03-23
+
+**Localization**
+
+### Important notes for upgrading
+
+If you are upgrading you need to run migrations, restart your supervisors and then update your current SDE data to get all localizations.
+
+You can start the SDE data update with the following command (assuming the name of your AA project is "myauth"). Please make sure to run this command from the folder where `manage.py` is located in.
+
+```bash
+celery -A myauth call structures.tasks.run_sde_update
+```
+
+### Added
+
+- Localization for Chinese, English and German
+
 ## [1.0.0] - 2020-02-12
 
 **Starbases and Sovereignty**

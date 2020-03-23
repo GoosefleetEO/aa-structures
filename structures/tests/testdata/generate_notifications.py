@@ -34,7 +34,7 @@ from structures.models import Owner, Structure, Notification, EveEntity  # noqa:
 
 # corporation / structure the notifications will be added to
 CORPORATION_ID = 98612071   # SODIC
-STRUCTURE_ID = 1030681055667    # Alpha
+STRUCTURE_ID = 1024796015529    # Alpha
 
 print(
     'load_test_notifications - '
@@ -93,8 +93,7 @@ with transaction.atomic():
             if sender_type != EveEntity.CATEGORY_OTHER:
                 sender, _ = EveEntity\
                     .objects.get_or_create_esi(
-                        notification['sender_id'],
-                        client
+                        notification['sender_id']
                     )
             else:
                 sender, _ = EveEntity\

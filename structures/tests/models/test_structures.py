@@ -12,11 +12,14 @@ logger = set_test_logger(MODULE_PATH, __file__)
 class TestStructureTag(NoSocketsTestCase):
     
     def test_str(self):        
-        x = StructureTag(
-            name='Super cool tag'
-        )
-        self.assertEqual(str(x), 'Super cool tag')
+        obj = StructureTag(name='Super cool tag')
+        self.assertEqual(str(obj), 'Super cool tag')
 
+    def test_repr(self):
+        obj = StructureTag.objects.create(name='Super cool tag')
+        expected = 'StructureTag(name=\'Super cool tag\')'
+        self.assertEqual(repr(obj), expected)
+    
     def test_list_sorted(self):                
         x1 = StructureTag(name='Alpha')
         x2 = StructureTag(name='charlie')
@@ -58,6 +61,19 @@ class TestStructure(NoSocketsTestCase):
         create_structures()        
         set_owner_character(character_id=1001)
     
+    def test_str(self):
+        x = Structure.objects.get(id=1000000000001)
+        expected = 'Amamake - Test Structure Alpha'
+        self.assertEqual(str(x), expected)
+
+    def test_repr(self):
+        x = Structure.objects.get(id=1000000000001)
+        expected = (
+            'Structure(id=1000000000001, '
+            'name=\'Test Structure Alpha\')'
+        )
+        self.assertEqual(repr(x), expected)
+
     def test_is_low_power(self):
         x = Structure.objects.get(id=1000000000001)
         
@@ -82,10 +98,6 @@ class TestStructure(NoSocketsTestCase):
             x.state = state
             self.assertTrue(x.is_reinforced)
 
-    def test_str(self):
-        x = Structure.objects.get(id=1000000000001)
-        self.assertEqual(str(x), 'Amamake - Test Structure Alpha')
-
     def test_structure_service_str(self):
         structure = Structure.objects.get(id=1000000000001)
         x = StructureService(
@@ -94,6 +106,15 @@ class TestStructure(NoSocketsTestCase):
             state=StructureService.STATE_ONLINE
         )
         self.assertEqual(str(x), 'Amamake - Test Structure Alpha - Dummy')
+
+    def test_extract_name_from_esi_respose(self):
+        expected = 'Alpha'
+        self.assertEqual(
+            Structure.extract_name_from_esi_respose('Super - Alpha'), expected
+        )        
+        self.assertEqual(
+            Structure.extract_name_from_esi_respose('Alpha'), expected
+        )
 
 
 class TestStructureNoSetup(NoSocketsTestCase):
@@ -121,3 +142,28 @@ class TestStructureNoSetup(NoSocketsTestCase):
             StructureService.get_matching_state_for_esi_state('not matching'), 
             StructureService.STATE_OFFLINE
         )
+
+
+class TestStructureService(NoSocketsTestCase):
+
+    def setUp(self):                  
+        create_structures()        
+        set_owner_character(character_id=1001)
+
+    def test_str(self):
+        structure = Structure.objects.get(id=1000000000001)
+        obj = StructureService.objects.get(
+            structure=structure, name='Clone Bay'
+        )
+        expected = 'Amamake - Test Structure Alpha - Clone Bay'
+        self.assertEqual(str(obj), expected)
+
+    def test_repr(self):
+        structure = Structure.objects.get(id=1000000000001)
+        obj = StructureService.objects.get(
+            structure=structure, name='Clone Bay'
+        )
+        expected = (
+            'StructureService(structure_id=1000000000001, name=\'Clone Bay\')'
+        )
+        self.assertEqual(repr(obj), expected)

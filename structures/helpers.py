@@ -1,7 +1,7 @@
 import logging
 from time import sleep
 
-from bravado.exception import HTTPBadRequest
+from bravado.exception import HTTPBadGateway
 
 from django.conf import settings
 from allianceauth.eveonline.providers import provider
@@ -17,7 +17,7 @@ class EsiSmartRequest:
     """Helper class providing smarter ESI requests with django-esi
     
     Adds these features to all request to ESI:
-    - Automatic retry on "bad request" up to max retries
+    - Automatic retry on 502 up to max retries
     - Automatic retrieval of all pages
     - Automatic retrieval of variants for all requested languages
     """
@@ -145,7 +145,7 @@ class EsiSmartRequest:
         pages: int = None,        
         esi_client: object = None
     ) -> tuple:
-        """Returns response object and pages from ESI, retries on bad requests"""
+        """Returns response object and pages from ESI, retries on 502"""
         esi_path_parts = esi_path.split('.')
         if len(esi_path_parts) != 2:
             raise ValueError('Invalid esi_path')
@@ -198,7 +198,7 @@ class EsiSmartRequest:
                     pages = 0
                 break
 
-            except HTTPBadRequest as ex:                    
+            except HTTPBadGateway as ex:                    
                 logger.warn(add_prefix(
                     'HTTP error while trying to '
                     'fetch response_object from ESI: {}'.format(ex)
