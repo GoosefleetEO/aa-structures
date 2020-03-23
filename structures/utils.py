@@ -257,37 +257,43 @@ def set_test_logger(logger_name: str, name: str) -> object:
 
 
 def timeuntil_str(duration: timedelta) -> str:
-    """return the duration as nicely formatted string: 
+    """return the duration as nicely formatted string. 
+    Or empty string if duration is negative. 
     
     Format: '[[[999y] [99m]] 99d] 99h 99m 99s'
     """
     seconds = int(duration.total_seconds())
-    periods = [
-        # Translators: Abbreviation for years
-        (_('y'), 60 * 60 * 24 * 365, False),
-        
-        # Translators: Abbreviation for months
-        (_('mt'), 60 * 60 * 24 * 30, False),
-        
-        # Translators: Abbreviation for days
-        (_('d'), 60 * 60 * 24, False),
-        
-        # Translators: Abbreviation for hours
-        (_('h'), 60 * 60, True),
-        
-        # Translators: Abbreviation for months
-        (_('m'), 60, True),
-        
-        # Translators: Abbreviation for seconds
-        (_('s'), 1, True)
-    ]
-    strings = list()
-    for period_name, period_seconds, period_static in periods:
-        if seconds >= period_seconds or period_static:
-            period_value, seconds = divmod(seconds, period_seconds)            
-            strings.append('{}{}'.format(period_value, period_name))
+    if seconds > 0:
+        periods = [
+            # Translators: Abbreviation for years
+            (_('y'), 60 * 60 * 24 * 365, False),
+            
+            # Translators: Abbreviation for months
+            (_('mt'), 60 * 60 * 24 * 30, False),
+            
+            # Translators: Abbreviation for days
+            (_('d'), 60 * 60 * 24, False),
+            
+            # Translators: Abbreviation for hours
+            (_('h'), 60 * 60, True),
+            
+            # Translators: Abbreviation for months
+            (_('m'), 60, True),
+            
+            # Translators: Abbreviation for seconds
+            (_('s'), 1, True)
+        ]
+        strings = list()
+        for period_name, period_seconds, period_static in periods:
+            if seconds >= period_seconds or period_static:
+                period_value, seconds = divmod(seconds, period_seconds)            
+                strings.append('{}{}'.format(period_value, period_name))
 
-    return ' '.join(strings)
+        result = ' '.join(strings)
+    else:
+        result = ''
+
+    return result
 
 
 class SocketAccessError(Exception):

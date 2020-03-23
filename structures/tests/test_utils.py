@@ -199,6 +199,12 @@ class TestTimeUntil(TestCase):
         expected = '0h 0m 10s'
         self.assertEqual(timeuntil_str(duration), expected)
 
+        duration = timedelta(
+            days=-10, seconds=-20
+        )
+        expected = ''
+        self.assertEqual(timeuntil_str(duration), expected)
+
 
 class TestNoSocketsTestCase(NoSocketsTestCase):
 

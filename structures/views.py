@@ -275,6 +275,9 @@ def structure_list_data(request):
                     fuel_expires_display = timeuntil_str(
                         structure.fuel_expires - now()
                     )
+                    if not fuel_expires_display:
+                        fuel_expires_display = '?'
+                        fuel_expires_timestamp = None
                 else:
                     fuel_expires_display = \
                         structure.fuel_expires.strftime(DATETIME_FORMAT)
@@ -283,7 +286,7 @@ def structure_list_data(request):
                 fuel_expires_timestamp = None
 
         row['fuel_expires'] = {
-            'display': fuel_expires_display,
+            'display': add_no_wrap_html(fuel_expires_display),
             'timestamp': fuel_expires_timestamp
         }
         # state
@@ -292,7 +295,7 @@ def structure_list_data(request):
         if structure.state_timer_end:
             row['state_details'] += format_html(
                 '<br>{}',
-                structure.state_timer_end.strftime(DATETIME_FORMAT)
+                add_no_wrap_html(structure.state_timer_end.strftime(DATETIME_FORMAT))
             )
 
         structures_data.append(row)

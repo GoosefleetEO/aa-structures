@@ -7,11 +7,6 @@ before_script:
 - redis-server --daemonize yes
 - python -V
 - pip install tox
-    
-test-3.5:
-  image: python:3.5-buster
-  script:  
-  - tox -e py35
 
 test-3.6:
   image: python:3.6-buster

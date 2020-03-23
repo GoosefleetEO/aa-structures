@@ -148,13 +148,13 @@ for corporation_id in corporation_ids:
 
 eve_types = list()
 for type_id in structure_type_ids:
-    eve_type, _ = EveType.objects.get_or_create_esi(type_id, client)
+    eve_type, _ = EveType.objects.get_or_create_esi(type_id)
     eve_types.append(eve_type)
     
 eve_solar_systems = list()
 for system_id in solar_system_ids:
     eve_solar_system, _ = \
-        EveSolarSystem.objects.get_or_create_esi(system_id, client)
+        EveSolarSystem.objects.get_or_create_esi(system_id)
     eve_solar_systems.append(eve_solar_system)
 
 tags = list()

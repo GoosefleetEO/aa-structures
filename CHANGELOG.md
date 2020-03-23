@@ -13,9 +13,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Important notes for upgrading
 
-If you are upgrading you need to run migrations, restart your supervisors and then update your current SDE data to get all localizations.
+If you are upgrading you need to run migrations, copy static files, restart your supervisors and then update your current SDE data to get all localizations.
 
-You can start the SDE data update with the following command (assuming the name of your AA project is "myauth"). Please make sure to run this command from the folder where `manage.py` is located in.
+Please make sure to be in your venv and run the commands from the folder where `manage.py` is located in:
+
+```bash
+python manage.py migrate
+```
+
+```bash
+python manage.py collectstatic
+```
+
+```bash
+supervisorctl restart myauth:
+```
 
 ```bash
 celery -A myauth call structures.tasks.run_sde_update
