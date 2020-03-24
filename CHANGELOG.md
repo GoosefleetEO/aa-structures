@@ -30,12 +30,16 @@ supervisorctl restart myauth:
 ```
 
 ```bash
-celery -A myauth call structures.tasks.run_sde_update
+python manage.py structures_updatesde
 ```
 
 ### Added
 
 - Localization for Chinese, English and German
+
+### Changed
+
+- Changed admin functions from celery tasks to commands: update_sde, purge_all
 
 ## [1.0.0] - 2020-02-12
 

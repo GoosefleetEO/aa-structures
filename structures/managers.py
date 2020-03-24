@@ -1,6 +1,8 @@
 import logging
 from pydoc import locate
 
+from bravado.exception import HTTPError
+
 from django.db import models
 
 from . import __title__
@@ -71,14 +73,21 @@ class EveUniverseManager(models.Manager):
                 eve_id = eve_data_obj_2[ChildClass.esi_pk()]
                 ChildClass.objects.update_or_create_esi(eve_id)                
                 
-    def update_all_esi(self):
-        """update all objects from ESI"""
+    def update_all_esi(self) -> int:
+        """update all objects from ESI. Returns count of updated  objects"""
         logger.info(
             '%s: Updating %d objects from from ESI...' 
             % (self.model.__name__, self.count())
         )
-        for eve_obj in self.all():
-            self.update_or_create_esi(eve_obj.id)
+        count_updated = 0
+        for eve_obj in self.all().order_by('last_updated'):
+            try:
+                self.update_or_create_esi(eve_obj.id)
+                count_updated += 1
+            except HTTPError as ex:
+                logger.exception('Update interrupted by exception: %s' % ex)
+
+        return count_updated
 
 
 class EveEntityManager(models.Manager):

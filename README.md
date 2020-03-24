@@ -236,8 +236,9 @@ Most admin tools are accessible on the admin site through actions. e.g. you can 
 
 See the respective actions list on the admin site for details.
 
-### Celery tasks
+### Management commands
 
-Heres are some additional admin tool available only as celery task.
+Some admin tools are available only as Django management command:
 
-- **purge_all_data**: This task will purge ALL data of the structures app. Run this command before trying to reverse migrations (e.g. `migrate structures zero` for de-installation) or you will run into foreign key constraints. <br>`celery -A myauth call structures.tasks.purge_all_data --args=[true] `
+- **structures_purge_all**: This task will purge ALL data of the structures app. Run this command before trying to reverse migrations (e.g. `migrate structures zero` for de-installation) or you will run into foreign key constraints.
+- **structures_updatesde**: This command will reload all locally stored Eve Online data from the Eve Online server.

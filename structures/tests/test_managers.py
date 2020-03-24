@@ -1,6 +1,8 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
+from bravado.exception import HTTPError
+
 from allianceauth.eveonline.models import EveCorporationInfo
 
 from . import to_json
@@ -97,7 +99,40 @@ class TestEveCategoryManager(NoSocketsTestCase):
                 
         with self.assertRaises(RuntimeError):
             EveCategory.objects.update_or_create_esi(65)
-   
+
+    @patch(MODULE_PATH_HELPERS + '.provider')
+    def test_can_update_all_objects_from_esi(self, mock_provider):        
+        mock_provider.client = esi_mock_client()
+
+        load_entity(EveCategory)
+        obj = EveCategory.objects.get(id=65)
+        obj.name = 'Superheroes'
+        obj.save()
+        obj.refresh_from_db()
+        self.assertEqual(obj.name, 'Superheroes')
+        total_count = EveCategory.objects.count()
+        
+        count_updated = EveCategory.objects.update_all_esi()
+        
+        obj.refresh_from_db()
+        self.assertEqual(obj.id, 65)
+        self.assertEqual(obj.name, 'Structure')
+        self.assertEqual(count_updated, total_count)
+
+    @patch(MODULE_PATH_HELPERS + '.provider')
+    def test_can_recover_from_errors_during_update_all_objects_from_esi(
+        self, mock_provider
+    ):
+        mock_provider.client.Universe\
+            .get_universe_categories_category_id.return_value\
+            .result.side_effect = HTTPError(
+                response=Mock(), message='Test'
+            )
+
+        load_entity(EveCategory)        
+        total_count = EveCategory.objects.update_all_esi()
+        self.assertEqual(total_count, 0)
+        
 
 class TestEveGroupManager(NoSocketsTestCase):
     

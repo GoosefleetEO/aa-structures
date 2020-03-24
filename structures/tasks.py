@@ -4,30 +4,14 @@ from time import sleep
 
 from celery import shared_task, chain
 
-from django.db import transaction
 from django.contrib.auth.models import User
 
 from allianceauth.notifications import notify
 
 from . import __title__
 from .utils import LoggerAddTag, make_logger_prefix
-from .models import (
-    EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
-    EveConstellation,
-    EveSolarSystem,
-    EveMoon,
-    EvePlanet,
-    StructureTag,
-    StructureService,
-    Webhook,
-    EveEntity,
-    Owner,
-    Notification,
-    Structure
-)
+from .models import Owner, Notification, Webhook
+
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
@@ -58,13 +42,13 @@ def _get_user(user_pk) -> User:
 
 @shared_task
 def update_structures_for_owner(owner_pk, user_pk=None):
-    """fetches structures from one owner"""    
+    """fetches all structures for owner from ESI"""
     _get_owner(owner_pk).update_structures_esi(_get_user(user_pk))
 
 
 @shared_task
 def update_all_structures():
-    """fetches structures from all known owners"""
+    """fetches all structures for all active owner from ESI"""
     for owner in Owner.objects.all():
         if owner.is_active:
             update_structures_for_owner.delay(owner.pk)
@@ -72,7 +56,7 @@ def update_all_structures():
 
 @shared_task
 def fetch_notifications_for_owner(owner_pk, user_pk=None):
-    """fetches notification for owner and proceses them"""
+    """fetches all notification for owner from ESI and proceses them"""
     _get_owner(owner_pk).fetch_notifications_esi(_get_user(user_pk))
     
 
@@ -86,18 +70,21 @@ def fetch_all_notifications():
 
 @shared_task
 def send_new_notifications_for_owner(owner_pk, rate_limited=True, user_pk=None):
-    """forwards new notification for this owner to Discord"""
+    """forwards new notification for this owner to configured webhooks"""
     _get_owner(owner_pk).send_new_notifications(rate_limited, _get_user(user_pk))
 
 
 @shared_task
 def send_all_new_notifications(rate_limited=True):
-    """sends all unsent notifications to active webhooks and add timers"""
+    """sends all unsent notifications to active webhooks and adds timers"""
+    send_tasks = list()
     for owner in Owner.objects.all():
         if owner.is_active:
-            send_new_notifications_for_owner(
+            send_tasks.append(send_new_notifications_for_owner.si(
                 owner.pk, rate_limited=rate_limited
-            )
+            ))
+
+    chain(send_tasks).delay()
 
 
 @shared_task
@@ -162,9 +149,10 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
             ))
 
 
+"""
 @shared_task
 def run_sde_update_for_model(model_name):
-    """Update one SDE models from ESI"""
+    #Updates one SDE models from ESI
     from . import models as models_module
     
     if not hasattr(models_module, model_name):
@@ -176,7 +164,7 @@ def run_sde_update_for_model(model_name):
 
 @shared_task
 def run_sde_update():
-    """Update all SDE models from ESI"""
+    #Update all SDE models from ESI
     logger.info('Updating all Eve SDE objects')
     models = [
         EveCategory,
@@ -195,14 +183,13 @@ def run_sde_update():
             )
     chain(model_tasks).delay()            
     logger.info('SDE model updates started')
+"""
 
-
+"""
 @shared_task
 def purge_all_data(i_am_sure: bool = False):
-    """removes all app-related data from the database
-    This tool is required to allow zero migrations, which would otherwise
-    fail to do FK constraints
-    """
+    #removes all app-related data from the database
+    
 
     if not i_am_sure:
         logger.info('No data deleted')
@@ -234,3 +221,4 @@ def purge_all_data(i_am_sure: bool = False):
                 MyModel.objects.all().delete()
 
         logger.info('Completed deleting all app-related data')
+"""
