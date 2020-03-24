@@ -95,11 +95,207 @@ def structure_list(request):
     return render(request, 'structures/structure_list.html', context)
 
 
+class StructuresRowConverter:
+    """This class converts structure objects into rows for an HTML table"""
+    def __init__(self):
+        self._row = None
+        self._structure = None
+    
+    def convert(self, structure) -> dict:
+        self._row = {
+            'structure_id': structure.id,
+            'is_poco': structure.eve_type.is_poco
+        }
+        self._structure = structure
+        self._convert_owner()
+        self._convert_location()
+        self._convert_type()
+        self._convert_name()
+        self._convert_services()
+        self._convert_reinforcement_infos()
+        self._convert_fuel_infos()
+        self._convert_state()
+        return self._row
+
+    def _convert_owner(self):
+        corporation = self._structure.owner.corporation
+        if corporation.alliance:
+            alliance_name = corporation.alliance.alliance_name
+        else:
+            alliance_name = ""
+
+        self._row['owner'] = format_html(
+            '<a href="{}">{}</a><br>{}',
+            dotlan.corporation_url(corporation.corporation_name),
+            corporation.corporation_name,
+            alliance_name
+        )
+        self._row['corporation_icon'] = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
+        self._row['alliance_name'] = alliance_name
+        self._row['corporation_name'] = corporation.corporation_name
+        
+    def _convert_location(self):
+        self._row['region_name'] = \
+            self._structure.eve_solar_system.eve_constellation\
+            .eve_region.name_localized
+        self._row['solar_system_name'] = \
+            self._structure.eve_solar_system.name_localized
+        solar_system_url = dotlan.solar_system_url(
+            self._structure.eve_solar_system.name
+        )
+        if self._structure.eve_moon:
+            location_name = self._structure.eve_moon.name_localized
+        elif self._structure.eve_planet:
+            location_name = self._structure.eve_planet.name_localized
+        else:
+            location_name = self._row['solar_system_name']
+
+        self._row['location'] = format_html(
+            '<a href="{}">{}</a><br>{}',
+            solar_system_url,
+            add_no_wrap_html(location_name),
+            add_no_wrap_html(self._row['region_name'])
+        )
+
+    def _convert_type(self):
+        # category
+        my_group = self._structure.eve_type.eve_group
+        self._row['group_name'] = my_group.name_localized
+        if my_group.eve_category:
+            my_category = my_group.eve_category
+            self._row['category_name'] = my_category.name_localized
+            self._row['is_starbase'] = my_category.is_starbase
+        else:
+            self._row['category_name'] = ''
+            self._row['is_starbase'] = None
+
+        # type icon
+        self._row['type_icon'] = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            self._structure.eve_type.icon_url(
+                size=STRUCTURE_LIST_ICON_RENDER_SIZE
+            ),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
+
+        # type name
+        self._row['type_name'] = self._structure.eve_type.name_localized
+        self._row['type'] = format_html(
+            '{}<br>{}',
+            add_no_wrap_html(self._row['type_name']),
+            add_no_wrap_html(self._row['group_name'])
+        )
+
+    def _convert_name(self):
+        self._row['structure_name'] = escape(self._structure.name)
+        if self._structure.tags:
+            self._row['structure_name'] += format_html(
+                '<br>{}',
+                mark_safe(' '.join([
+                    x.html for x in self._structure.tags.all().order_by('name')
+                ]))
+            )
+
+    def _convert_services(self):
+        if self._row['is_poco'] or self._row['is_starbase']:
+            self._row['services'] = gettext_lazy('N/A')
+        else:
+            services = list()
+            services_qs = \
+                self._structure.structureservice_set.all().order_by('name')
+            for service in services_qs:
+                service_name = add_no_wrap_html(format_html(
+                    '<small>{}</small>', service.name_localized
+                ))
+                if service.state == StructureService.STATE_OFFLINE:
+                    service_name = format_html('<del>{}</del>', service_name)
+                
+                services.append(service_name)
+            self._row['services'] = '<br>'.join(services)
+
+    def _convert_reinforcement_infos(self):
+        self._row['is_reinforced'] = self._structure.is_reinforced
+        self._row['is_reinforced_str'] = \
+            yesno_str(self._structure.is_reinforced)
+
+        if self._row['is_starbase']:
+            self._row['reinforcement'] = gettext_lazy('N/A')
+        else:
+            if self._structure.reinforce_hour:
+                self._row['reinforcement'] = '{:02d}:00'.format(
+                    self._structure.reinforce_hour
+                )
+            else:
+                self._row['reinforcement'] = ''
+
+    def _convert_fuel_infos(self):
+        self._row['is_low_power'] = self._structure.is_low_power
+        self._row['is_low_power_str'] = yesno_str(self._structure.is_low_power)
+
+        if self._row['is_poco'] or self._row['is_starbase']:
+            fuel_expires_display = gettext_lazy('N/A')
+            fuel_expires_timestamp = None
+        else:
+            if self._row['is_low_power']:
+                fuel_expires_display = format_html_lazy(
+                    '<span class="label label-default">{}</span>',
+                    gettext_lazy('Low Power')
+                )                    
+                fuel_expires_timestamp = None
+            elif self._structure.fuel_expires:
+                fuel_expires_timestamp = self._structure.fuel_expires.isoformat()
+                if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
+                    fuel_expires_display = timeuntil_str(
+                        self._structure.fuel_expires - now()
+                    )
+                    if not fuel_expires_display:
+                        fuel_expires_display = '?'
+                        fuel_expires_timestamp = None
+                else:
+                    fuel_expires_display = \
+                        self._structure.fuel_expires.strftime(DATETIME_FORMAT)
+            else:
+                fuel_expires_display = '?'
+                fuel_expires_timestamp = None
+
+        self._row['fuel_expires'] = {
+            'display': add_no_wrap_html(fuel_expires_display),
+            'timestamp': fuel_expires_timestamp
+        }
+
+    def _convert_state(self):
+        self._row['state_str'] = self._structure.get_state_display()
+        self._row['state_details'] = self._row['state_str']
+        if self._structure.state_timer_end:
+            self._row['state_details'] += format_html(
+                '<br>{}',
+                add_no_wrap_html(
+                    self._structure.state_timer_end.strftime(DATETIME_FORMAT)
+                )
+            )
+
+
 @login_required
 @permission_required('structures.basic_access')
 def structure_list_data(request):
     """returns structure list in JSON for AJAX call in structure_list view"""
 
+    structure_rows = list()
+    row_converter = StructuresRowConverter()
+    for structure in _structures_query_for_user(request):        
+        structure_rows.append(row_converter.convert(structure))
+
+    return JsonResponse(structure_rows, safe=False)
+
+
+def _structures_query_for_user(request):
+    """returns query according to users permissions and current tags"""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:
         tags = tags_raw.split(',')
@@ -137,170 +333,7 @@ def structure_list_data(request):
             .filter(owner__corporation__in=corporations) \
             .select_related()
 
-    structures_data = list()
-    for structure in structures_query:
-        row = {
-            'structure_id': structure.id,
-            'is_poco': structure.eve_type.is_poco
-        }
-
-        # owner
-        corporation = structure.owner.corporation
-        if corporation.alliance:
-            alliance_name = corporation.alliance.alliance_name
-        else:
-            alliance_name = ""
-
-        row['owner'] = format_html(
-            '<a href="{}">{}</a><br>{}',
-            dotlan.corporation_url(corporation.corporation_name),
-            corporation.corporation_name,
-            alliance_name
-        )
-        row['alliance_name'] = alliance_name
-        row['corporation_name'] = corporation.corporation_name
-
-        # corporation icon
-        row['corporation_icon'] = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-        )
-
-        # location
-        row['region_name'] = \
-            structure.eve_solar_system.eve_constellation.eve_region.name_localized
-        row['solar_system_name'] = structure.eve_solar_system.name_localized
-        solar_system_url = dotlan.solar_system_url(
-            structure.eve_solar_system.name
-        )
-        if structure.eve_moon:
-            location_name = structure.eve_moon.name_localized
-        elif structure.eve_planet:
-            location_name = structure.eve_planet.name_localized
-        else:
-            location_name = row['solar_system_name']
-
-        row['location'] = format_html(
-            '<a href="{}">{}</a><br>{}',
-            solar_system_url,
-            add_no_wrap_html(location_name),
-            add_no_wrap_html(row['region_name'])
-        )
-
-        # category
-        my_group = structure.eve_type.eve_group
-        row['group_name'] = my_group.name_localized
-        if my_group.eve_category:
-            my_category = my_group.eve_category
-            row['category_name'] = my_category.name_localized
-            row['is_starbase'] = my_category.is_starbase
-        else:
-            row['category_name'] = ''
-            row['is_starbase'] = None
-
-        # type icon
-        row['type_icon'] = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            structure.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-        )
-
-        # type name
-        row['type_name'] = structure.eve_type.name_localized
-        row['type'] = format_html(
-            '{}<br>{}',
-            add_no_wrap_html(row['type_name']),
-            add_no_wrap_html(row['group_name'])
-        )
-
-        # structure name
-        row['structure_name'] = escape(structure.name)
-        if structure.tags:
-            row['structure_name'] += format_html(
-                '<br>{}',
-                mark_safe(' '.join([
-                    x.html
-                    for x in structure.tags.all().order_by('name')
-                ]))
-            )
-
-        # services
-        if row['is_poco'] or row['is_starbase']:
-            row['services'] = 'N/A'
-        else:
-            services = list()
-            services_qs = structure.structureservice_set.all().order_by('name')
-            for service in services_qs:
-                if service.state == StructureService.STATE_OFFLINE:
-                    service_name = format_html(
-                        '<del>{}</del>', service.name_localized
-                    )
-                else:
-                    service_name = service.name_localized
-                services.append(service_name)
-            row['services'] = '<br>'.join(services)
-
-        # add reinforcement infos
-        row['is_reinforced'] = structure.is_reinforced
-        row['is_reinforced_str'] = yesno_str(structure.is_reinforced)
-
-        if structure.reinforce_hour:
-            row['reinforcement'] = '{:02d}:00'.format(
-                structure.reinforce_hour
-            )
-        else:
-            row['reinforcement'] = ''
-
-        # low power state
-        row['is_low_power'] = structure.is_low_power
-        row['is_low_power_str'] = yesno_str(structure.is_low_power)
-
-        # add low power label or date when fuel runs out
-        if row['is_poco'] or row['is_starbase']:
-            fuel_expires_display = gettext_lazy('N/A')
-            fuel_expires_timestamp = None
-        else:
-            if row['is_low_power']:
-                fuel_expires_display = format_html_lazy(
-                    '<span class="label label-default">{}</span>',
-                    gettext_lazy('Low Power')
-                )                    
-                fuel_expires_timestamp = None
-            elif structure.fuel_expires:
-                fuel_expires_timestamp = structure.fuel_expires.isoformat()
-                if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
-                    fuel_expires_display = timeuntil_str(
-                        structure.fuel_expires - now()
-                    )
-                    if not fuel_expires_display:
-                        fuel_expires_display = '?'
-                        fuel_expires_timestamp = None
-                else:
-                    fuel_expires_display = \
-                        structure.fuel_expires.strftime(DATETIME_FORMAT)
-            else:
-                fuel_expires_display = '?'
-                fuel_expires_timestamp = None
-
-        row['fuel_expires'] = {
-            'display': add_no_wrap_html(fuel_expires_display),
-            'timestamp': fuel_expires_timestamp
-        }
-        # state
-        row['state_str'] = structure.get_state_display()
-        row['state_details'] = row['state_str']
-        if structure.state_timer_end:
-            row['state_details'] += format_html(
-                '<br>{}',
-                add_no_wrap_html(structure.state_timer_end.strftime(DATETIME_FORMAT))
-            )
-
-        structures_data.append(row)
-
-    return JsonResponse(structures_data, safe=False)
+    return structures_query
 
 
 @login_required

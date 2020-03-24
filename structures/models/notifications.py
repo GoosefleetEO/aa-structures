@@ -1046,11 +1046,11 @@ class Notification(models.Model):
     ) -> bool:
         """sends this notification to the configured webhook
         returns True if successful, else False
-        """
-        success = False
+        """        
         add_prefix = make_logger_prefix(
             'notification:{}'.format(self.notification_id)
         )
+        logger.info(add_prefix('Trying to sent to webhook: %s' % webhook))
         if self.is_alliance_level:
             avatar_url = self.owner.corporation.alliance.logo_url()
             ticker = self.owner.corporation.alliance.alliance_ticker
@@ -1061,19 +1061,12 @@ class Notification(models.Model):
         username = gettext('%(ticker)s Notification') % {'ticker': ticker}
         hook = dhooks_lite.Webhook(
             webhook.url, username=username, avatar_url=avatar_url
-        )
-
-        logger.info(add_prefix(
-            'Trying to sent to webhook: {}'.format(
-                webhook
-            )
-        ))
+        )        
+        success = False
         try:
             embed = self._generate_embed(esi_client, webhook.language_code)
         except Exception as ex:
-            logger.warning(add_prefix(
-                'Failed to generate embed: {}'.format(ex)
-            ))
+            logger.warning(add_prefix('Failed to generate embed: %s' % ex))
             raise ex
         else:
             if embed.color == self.EMBED_COLOR_DANGER:
@@ -1083,56 +1076,66 @@ class Notification(models.Model):
             else:
                 content = None
 
-            max_retries = STRUCTURES_NOTIFICATION_MAX_RETRIES
-            for retry_count in range(max_retries + 1):
-                if retry_count > 0:
-                    logger.warn(add_prefix('Retry {} / {}'.format(
-                        retry_count, max_retries
-                    )))
-                try:
-                    res = hook.execute(
-                        content=content, 
-                        embeds=[embed], 
-                        wait_for_response=True
-                    )
-                    if res.status_ok:
-                        self.is_sent = True
-                        self.save()
-                        success = True
-                        break
-
-                    elif res.status_code == self.HTTP_CODE_TOO_MANY_REQUESTS:
-                        if 'retry_after' in res.content:
-                            retry_after = \
-                                res.content['retry_after'] / 1000
-                        else:
-                            retry_after = STRUCTURES_NOTIFICATION_WAIT_SEC
-                        logger.warn(add_prefix(
-                            'rate limited - retry after {} secs'.format(
-                                retry_after
-                            )
-                        ))
-                        sleep(retry_after)
-
-                    else:
-                        logger.warn(add_prefix(
-                            'HTTP error {} while trying '
-                            'to send notifications'.format(res.status_code) 
-                        ))
-                        if retry_count < max_retries + 1:
-                            sleep(STRUCTURES_NOTIFICATION_WAIT_SEC)
-
-                except Exception as ex:
-                    logger.warn(add_prefix(
-                        'Unexpected issue when trying to'
-                        ' send message: {}'.format(ex)
-                    ))
-                    if settings.DEBUG:
-                        raise ex
-                    else:
-                        break
+            success = self._execute_webhook(
+                hook, content, embed, add_prefix
+            )
         return success
     
+    def _execute_webhook(
+        self, hook, content, embed, add_prefix
+    ) -> bool:
+        """executes webhook for sending the message, will retry on errors
+        
+        Sets this notification as "sent" if successful
+        
+        returns True/False on success
+        """
+        success = False
+        max_retries = STRUCTURES_NOTIFICATION_MAX_RETRIES
+        for retry_count in range(max_retries + 1):
+            if retry_count > 0:
+                logger.warn(add_prefix('Retry {} / {}'.format(
+                    retry_count, max_retries
+                )))
+            try:
+                res = hook.execute(
+                    content=content, embeds=[embed], wait_for_response=True
+                )
+                if res.status_ok:
+                    self.is_sent = True
+                    self.save()
+                    success = True
+                    break
+
+                elif res.status_code == self.HTTP_CODE_TOO_MANY_REQUESTS:
+                    if 'retry_after' in res.content:
+                        retry_after = res.content['retry_after'] / 1000
+                    else:
+                        retry_after = STRUCTURES_NOTIFICATION_WAIT_SEC
+                    logger.warn(add_prefix(
+                        'rate limited - retry after %d secs' % retry_after
+                    ))
+                    sleep(retry_after)
+
+                else:
+                    logger.warn(add_prefix(
+                        'HTTP error {} while trying '
+                        'to send notifications'.format(res.status_code) 
+                    ))
+                    if retry_count < max_retries + 1:
+                        sleep(STRUCTURES_NOTIFICATION_WAIT_SEC)
+
+            except Exception as ex:
+                logger.warn(add_prefix(
+                    'Unexpected issue when trying to send message: %s' % ex
+                ))
+                if settings.DEBUG:
+                    raise ex
+                else:
+                    break
+
+        return success
+
     def process_for_timerboard(self, esi_client: object = None) -> bool:
         """add/removes a timer related to this notification for some types
         returns True when a timer was processed, else False

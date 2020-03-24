@@ -612,7 +612,7 @@ class Owner(models.Model):
         return structures
     
     def fetch_notifications_esi(self, user: User = None):
-        """fetches notification for self and proceses them"""
+        """fetches notification for the current owners and proceses them"""
         
         add_prefix = self._logger_prefix()
         notifications_count = 0
@@ -628,131 +628,18 @@ class Owner(models.Model):
            
             # fetch notifications from ESI
             try:
-                # fetching data from ESI                
-                notifications = EsiSmartRequest.fetch(
-                    'Character.get_characters_character_id_notifications',
-                    args={
-                        'character_id': self.character.character.character_id
-                    },
-                    add_prefix=add_prefix,
-                    esi_client=esi_client
-                )                
-                if STRUCTURES_DEVELOPER_MODE:
-                    self._store_raw_data(
-                        'notifications',
-                        notifications,
-                        self.corporation.corporation_id
+                notifications = self._fetch_notifications_from_esi(esi_client)
+                new_notifications_count, notifications_count = \
+                    self._store_notifications(
+                        notifications, notifications_count
                     )
-
-                if STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED:
-                    # store notifications to disk in continuous file per corp
-                    folder_name = 'structures_notifications_archive'
-                    os.makedirs(folder_name, exist_ok=True)
-                    filename = '{}/notifications_{}_{}.txt'.format(
-                        folder_name,
-                        self.corporation.corporation_id,
-                        now().date().isoformat()
-                    )
-                    logger.info(add_prefix(
-                        'Storing notifications into archive file: {}'.format(
-                            filename
-                        )
-                    ))
-                    with open(file=filename, mode='a', encoding='utf-8') as f:
-                        f.write('[{}] {}:\n'.format(
-                            now().strftime(DATETIME_FORMAT),
-                            self.corporation.corporation_ticker
-                        ))
-                        json.dump(
-                            notifications,
-                            f,
-                            cls=DjangoJSONEncoder,
-                            sort_keys=True,
-                            indent=4
-                        )
-                        f.write('\n')
-
-                logger.debug(add_prefix(
-                    'Processing {:,} notifications received from ESI'.format(
-                        len(notifications)
-                    )
-                ))
-
-                # update notifications in local DB
-                new_notifications_count = 0
-                with transaction.atomic():
-                    for notification in notifications:
-                        notification_type = \
-                            Notification.get_matching_notification_type(
-                                notification['type']
-                            )
-                        if notification_type:
-                            notifications_count += 1
-                            sender_type = \
-                                EveEntity.get_matching_entity_category(
-                                    notification['sender_type']
-                                )
-                            if sender_type != EveEntity.CATEGORY_OTHER:
-                                sender, _ = EveEntity.objects.get_or_create_esi(
-                                    notification['sender_id']
-                                )
-                            else:
-                                sender, _ = EveEntity\
-                                    .objects.get_or_create(
-                                        id=notification['sender_id'],
-                                        defaults={
-                                            'category': sender_type
-                                        }
-                                    )
-                            text = notification['text'] \
-                                if 'text' in notification else None
-                            is_read = notification['is_read'] \
-                                if 'is_read' in notification else None
-                            obj, created = Notification.objects.update_or_create(
-                                notification_id=notification['notification_id'],
-                                owner=self,
-                                defaults={
-                                    'sender': sender,
-                                    'timestamp': notification['timestamp'],
-                                    'notification_type': notification_type,
-                                    'text': text,
-                                    'is_read': is_read,
-                                    'last_updated': self.notifications_last_sync,
-                                }
-                            )
-                            if created:
-                                obj.created = now()
-                                obj.save()
-                                new_notifications_count += 1
-
-                    self.notifications_last_error = self.ERROR_NONE
-                    self.save()
-
                 if new_notifications_count > 0:
                     logger.info(add_prefix(
                         'Received {} new notifications from ESI'.format(
                             new_notifications_count
                         )
                     ))
-
-                    if STRUCTURES_ADD_TIMERS:
-                        cutoff_dt_for_stale = now() - timedelta(
-                            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-                        )
-                        my_types = Notification.get_types_for_timerboard()
-                        notifications = Notification.objects\
-                            .filter(owner=self)\
-                            .filter(notification_type__in=my_types)\
-                            .exclude(is_timer_added=True) \
-                            .filter(timestamp__gte=cutoff_dt_for_stale) \
-                            .select_related().order_by('timestamp')
-
-                        if len(notifications) > 0:
-                            if not esi_client:
-                                esi_client = self.esi_client()
-
-                            for notification in notifications:
-                                notification.process_for_timerboard(esi_client)
+                    self._process_timers_for_notifications(esi_client)
 
                 else:
                     logger.info(add_prefix(
@@ -784,7 +671,134 @@ class Owner(models.Model):
             )
 
         return success
+
+    def _fetch_notifications_from_esi(self, esi_client):
+        """ fetching all notifications from ESI for current owner"""
+        add_prefix = self._logger_prefix()
+        notifications = EsiSmartRequest.fetch(
+            'Character.get_characters_character_id_notifications',
+            args={
+                'character_id': self.character.character.character_id
+            },
+            add_prefix=add_prefix,
+            esi_client=esi_client
+        )                
+        if STRUCTURES_DEVELOPER_MODE:
+            self._store_raw_data(
+                'notifications',
+                notifications,
+                self.corporation.corporation_id
+            )
+
+        if STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED:
+            # store notifications to disk in continuous file per corp
+            folder_name = 'structures_notifications_archive'
+            os.makedirs(folder_name, exist_ok=True)
+            filename = '{}/notifications_{}_{}.txt'.format(
+                folder_name,
+                self.corporation.corporation_id,
+                now().date().isoformat()
+            )
+            logger.info(add_prefix(
+                'Storing notifications into archive file: {}'.format(
+                    filename
+                )
+            ))
+            with open(file=filename, mode='a', encoding='utf-8') as f:
+                f.write('[{}] {}:\n'.format(
+                    now().strftime(DATETIME_FORMAT),
+                    self.corporation.corporation_ticker
+                ))
+                json.dump(
+                    notifications,
+                    f,
+                    cls=DjangoJSONEncoder,
+                    sort_keys=True,
+                    indent=4
+                )
+                f.write('\n')
+
+        logger.debug(add_prefix(
+            'Processing {:,} notifications received from ESI'.format(
+                len(notifications)
+            )
+        ))
+        return notifications
     
+    def _store_notifications(self, notifications, notifications_count):
+        """stores all notifications in database"""
+        new_notifications_count = 0
+        with transaction.atomic():
+            for notification in notifications:
+                notification_type = \
+                    Notification.get_matching_notification_type(
+                        notification['type']
+                    )
+                if notification_type:
+                    notifications_count += 1
+                    sender_type = \
+                        EveEntity.get_matching_entity_category(
+                            notification['sender_type']
+                        )
+                    if sender_type != EveEntity.CATEGORY_OTHER:
+                        sender, _ = EveEntity.objects.get_or_create_esi(
+                            notification['sender_id']
+                        )
+                    else:
+                        sender, _ = EveEntity\
+                            .objects.get_or_create(
+                                id=notification['sender_id'],
+                                defaults={
+                                    'category': sender_type
+                                }
+                            )
+                    text = notification['text'] \
+                        if 'text' in notification else None
+                    is_read = notification['is_read'] \
+                        if 'is_read' in notification else None
+                    obj, created = Notification.objects.update_or_create(
+                        notification_id=notification['notification_id'],
+                        owner=self,
+                        defaults={
+                            'sender': sender,
+                            'timestamp': notification['timestamp'],
+                            'notification_type': notification_type,
+                            'text': text,
+                            'is_read': is_read,
+                            'last_updated': self.notifications_last_sync,
+                        }
+                    )
+                    if created:
+                        obj.created = now()
+                        obj.save()
+                        new_notifications_count += 1
+
+            self.notifications_last_error = self.ERROR_NONE
+            self.save()
+            
+        return new_notifications_count, notifications_count
+
+    def _process_timers_for_notifications(self, esi_client):
+        """processes notifications for timers if any"""
+        if STRUCTURES_ADD_TIMERS:
+            cutoff_dt_for_stale = now() - timedelta(
+                hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+            )
+            my_types = Notification.get_types_for_timerboard()
+            notifications = Notification.objects\
+                .filter(owner=self)\
+                .filter(notification_type__in=my_types)\
+                .exclude(is_timer_added=True) \
+                .filter(timestamp__gte=cutoff_dt_for_stale) \
+                .select_related().order_by('timestamp')
+
+            if len(notifications) > 0:
+                if not esi_client:
+                    esi_client = self.esi_client()
+
+                for notification in notifications:
+                    notification.process_for_timerboard(esi_client)
+
     def send_new_notifications(
         self, rate_limited: bool = True, user: User = None
     ) -> bool:
@@ -798,21 +812,14 @@ class Owner(models.Model):
                 self.forwarding_last_sync = now()
                 self.save()
 
-                cutoff_dt_for_stale = now() - timedelta(
-                    hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-                )
                 new_notifications_count = 0
                 active_webhooks_count = 0
                 esi_client = None
                 for webhook in self.webhooks.filter(is_active=True):
                     active_webhooks_count += 1
-                    notifications_qs = Notification.objects\
-                        .filter(owner=self)\
-                        .filter(is_sent=False)\
-                        .filter(timestamp__gte=cutoff_dt_for_stale) \
-                        .filter(notification_type__in=webhook.notification_types)\
-                        .select_related().order_by('timestamp')
-
+                    notifications_qs = self._notifications_for_webhook_qs(
+                        webhook
+                    )
                     if notifications_qs.count() > 0:
                         new_notifications_count += notifications_qs.count()
                         logger.info(add_prefix(
@@ -830,17 +837,13 @@ class Owner(models.Model):
                                     add_prefix('Failed to get a valid token')
                                 )
 
-                        for notification in notifications_qs:
-                            if (not notification.filter_for_npc_attacks()
-                                and not notification.filter_for_alliance_level()
-                            ):
-                                if notification.send_to_webhook(
-                                    webhook, esi_client
-                                ):
-                                    notifications_count += 1
-                                    
-                                if rate_limited:
-                                    sleep(1)
+                        notifications_count += \
+                            self._send_notifications_to_webhook(
+                                notifications_qs, 
+                                webhook, 
+                                esi_client, 
+                                rate_limited
+                            )
 
                 if active_webhooks_count == 0:
                     logger.info(add_prefix('No active webhooks'))
@@ -879,6 +882,36 @@ class Owner(models.Model):
             )
 
         return success
+
+    def _notifications_for_webhook_qs(self, webhook: object):
+        cutoff_dt_for_stale = now() - timedelta(
+            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+        )
+        notifications_qs = Notification.objects\
+            .filter(owner=self)\
+            .filter(is_sent=False)\
+            .filter(timestamp__gte=cutoff_dt_for_stale) \
+            .filter(notification_type__in=webhook.notification_types)\
+            .select_related().order_by('timestamp')
+        
+        return notifications_qs
+
+    def _send_notifications_to_webhook(
+        self, notifications_qs, webhook, esi_client, rate_limited
+    ):
+        """sends all notifications to given webhook"""
+        sent_count = 0
+        for notification in notifications_qs:
+            if (not notification.filter_for_npc_attacks()
+                and not notification.filter_for_alliance_level()
+            ):
+                if notification.send_to_webhook(webhook, esi_client):
+                    sent_count += 1
+
+                if rate_limited:
+                    sleep(1)
+        
+        return sent_count
 
     def _logger_prefix(self):
         """returns standard logger prefix function"""
