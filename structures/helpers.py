@@ -169,7 +169,9 @@ class EsiSmartRequest:
                 ', '.join([str(k) + '=' + str(v) for k, v in args.items()])
             )
         if has_pages:
-            args['page'] = page if page else 1
+            if not page:
+                page = 1
+            args['page'] = page
             log_message_base += ' - Page {}/{}'.format(
                 page, pages if pages else '?'
             )
