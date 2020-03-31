@@ -58,10 +58,10 @@ class General(models.Model):
         managed = False
         default_permissions = ()
         permissions = (
-            ('basic_access', _('Can access this app and view')),
-            ('view_alliance_structures', _('Can view alliance structures')),
-            ('view_all_structures', _('Can view all structures')),
-            ('add_structure_owner', _('Can add new structure owner')),
+            ('basic_access', 'Can access this app and view'),
+            ('view_alliance_structures', 'Can view alliance structures'),
+            ('view_all_structures', 'Can view all structures'),
+            ('add_structure_owner', 'Can add new structure owner'),
         )
 
 
@@ -81,35 +81,35 @@ class Owner(models.Model):
     ERRORS_LIST = [
         (
             ERROR_NONE,
-            _('No error')
+            'No error'
         ),
         (
             ERROR_TOKEN_INVALID,
-            _('Invalid token')
+            'Invalid token'
         ),
         (
             ERROR_TOKEN_EXPIRED,
-            _('Expired token')
+            'Expired token'
         ),
         (
             ERROR_INSUFFICIENT_PERMISSIONS,
-            _('Insufficient permissions')
+            'Insufficient permissions'
         ),
         (
             ERROR_NO_CHARACTER,
-            _('No character set for fetching data from ESI')
+            'No character set for fetching data from ESI'
         ),
         (
             ERROR_ESI_UNAVAILABLE,
-            _('ESI API is currently unavailable')
+            'ESI API is currently unavailable'
         ),
         (
             ERROR_OPERATION_MODE_MISMATCH,
-            _('Operaton mode does not match with current setting')
+            'Operaton mode does not match with current setting'
         ),
         (
             ERROR_UNKNOWN,
-            _('Unknown error')
+            'Unknown error'
         ),
     ]
 
@@ -117,7 +117,7 @@ class Owner(models.Model):
         EveCorporationInfo,
         primary_key=True,
         on_delete=models.CASCADE,
-        help_text=_('Corporation owning structures')
+        help_text='Corporation owning structures'
     )
     character = models.ForeignKey(
         CharacterOwnership,
@@ -125,63 +125,63 @@ class Owner(models.Model):
         default=None,
         null=True,
         blank=True,
-        help_text=_('character used for syncing structures')
+        help_text='character used for syncing structures'
     )
     structures_last_sync = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('when the last sync happened')
+        help_text='when the last sync happened'
     )
     structures_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text=_('error that occurred at the last sync atttempt (if any)')
+        help_text='error that occurred at the last sync atttempt (if any)'
     )
     notifications_last_sync = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('when the last sync happened')
+        help_text='when the last sync happened'
     )
     notifications_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text=_('error that occurred at the last sync atttempt (if any)')
+        help_text='error that occurred at the last sync atttempt (if any)'
     )
     forwarding_last_sync = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('when the last sync happened')
+        help_text='when the last sync happened'
     )
     forwarding_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text=_('error that occurred at the last sync atttempt (if any)')
+        help_text='error that occurred at the last sync atttempt (if any)'
     )
     webhooks = models.ManyToManyField(
         'Webhook',
         default=None,
         blank=True,
-        help_text=_('notifications are sent to these webhooks. ')
+        help_text='notifications are sent to these webhooks. '
     )
     is_active = models.BooleanField(
         default=True,
-        help_text=_(
+        help_text=(
             'whether this owner is currently included in the sync process'
         )
     )
     is_alliance_main = models.BooleanField(
         default=False,
-        help_text=_(
+        help_text=(
             'whether alliance wide notifications '
             'are forwarded for this owner (e.g. sov notifications)'
         )
     )
     is_included_in_service_status = models.BooleanField(
         default=True,
-        help_text=_(
+        help_text=(
             'whether the sync status of this owner is included in '
             'the overall status of this services'
         )
@@ -339,18 +339,19 @@ class Owner(models.Model):
 
     def _fetch_upwell_structures(self, esi_client: object) -> list:
         """fetch Upwell structures from ESI for self"""
+        from .eveuniverse import EsiNameLocalization
 
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
         
         # fetch all structures incl. localizations for services
         structures_w_lang = EsiSmartRequest.fetch_with_localization(
-            'Corporation.get_corporations_corporation_id_structures',
-            args={'corporation_id': corporation_id},
-            add_prefix=add_prefix,
-            has_pages=True,
-            has_localization=True,
-            esi_client=esi_client
+            esi_path='Corporation.get_corporations_corporation_id_structures',
+            args={'corporation_id': corporation_id},            
+            languages=EsiNameLocalization.ESI_LANGUAGES,
+            has_pages=True,            
+            esi_client=esi_client,
+            logger_tag=add_prefix()
         )
         
         # reduce data        
@@ -373,9 +374,9 @@ class Owner(models.Model):
             for structure in structures:                
                 structure_info = EsiSmartRequest.fetch(
                     'Universe.get_universe_structures_structure_id',
-                    args={'structure_id': structure['structure_id']},
-                    add_prefix=add_prefix,
-                    esi_client=esi_client
+                    args={'structure_id': structure['structure_id']},                    
+                    esi_client=esi_client,
+                    logger_tag=add_prefix()
                 )                
                 structure['name'] = Structure.extract_name_from_esi_respose(
                     structure_info['name']
@@ -440,10 +441,10 @@ class Owner(models.Model):
 
         pocos = EsiSmartRequest.fetch(
             'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
-            args={'corporation_id': corporation_id},
-            add_prefix=add_prefix,
+            args={'corporation_id': corporation_id},            
             has_pages=True,
-            esi_client=esi_client
+            esi_client=esi_client,
+            logger_tag=add_prefix()
         )       
         structures = list()
         if not pocos:
@@ -465,9 +466,9 @@ class Owner(models.Model):
                     args={
                         'corporation_id': corporation_id, 
                         'item_ids': item_ids_chunk
-                    },
-                    add_prefix=add_prefix,
-                    esi_client=esi_client
+                    },                    
+                    esi_client=esi_client,
+                    logger_tag=add_prefix()
                 )
                 locations_data += locations_data_chunk
             positions = {x['item_id']: x['position'] for x in locations_data}
@@ -485,9 +486,9 @@ class Owner(models.Model):
                     args={
                         'corporation_id': corporation_id, 
                         'item_ids': item_ids
-                    },
-                    add_prefix=add_prefix,
-                    esi_client=esi_client
+                    },                    
+                    esi_client=esi_client,
+                    logger_tag=add_prefix()
                 )
                 names_data += names_data_chunk
             names = {
@@ -553,10 +554,10 @@ class Owner(models.Model):
         corporation_id = self.corporation.corporation_id
         starbases = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_starbases',
-            args={'corporation_id': corporation_id},
-            add_prefix=add_prefix,
+            args={'corporation_id': corporation_id},            
             has_pages=True,
-            esi_client=esi_client
+            esi_client=esi_client,
+            logger_tag=add_prefix()
         )
         # convert into structures data format
         structures = list()
@@ -574,9 +575,9 @@ class Owner(models.Model):
                     args={
                         'corporation_id': corporation_id, 
                         'item_ids': item_ids_chunk
-                    },
-                    add_prefix=add_prefix,
-                    esi_client=esi_client
+                    },                    
+                    esi_client=esi_client,
+                    logger_tag=add_prefix()
                 )
                 names_data += names_data_chunk
             names = {x['item_id']: x['name'] for x in names_data}
@@ -679,9 +680,9 @@ class Owner(models.Model):
             'Character.get_characters_character_id_notifications',
             args={
                 'character_id': self.character.character.character_id
-            },
-            add_prefix=add_prefix,
-            esi_client=esi_client
+            },            
+            esi_client=esi_client,
+            logger_tag=add_prefix()
         )                
         if STRUCTURES_DEVELOPER_MODE:
             self._store_raw_data(

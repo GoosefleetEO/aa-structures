@@ -1,7 +1,8 @@
 # flake8: noqa
 
 from .owners import Owner
-from .eveuniverse import (
+from .eveuniverse import (        
+    EsiNameLocalization,
     EveCategory, 
     EveGroup, 
     EveType, 

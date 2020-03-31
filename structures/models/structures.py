@@ -20,37 +20,36 @@ class StructureTag(models.Model):
     """tag for organizing structures"""
 
     STYLE_CHOICES = [
-        ('default', _('grey')),
-        ('primary', _('dark blue')),
-        ('success', _('green')),
-        ('info', _('light blue')),
-        ('warning', _('yellow')),
-        ('danger', _('red')),
+        ('default', 'grey'),
+        ('primary', 'dark blue'),
+        ('success', 'green'),
+        ('info', 'light blue'),
+        ('warning', 'yellow'),
+        ('danger', 'red'),
     ]
 
     name = models.CharField(
         max_length=255,
         unique=True,
-        help_text=_('name of the tag - must be unique')
+        help_text='name of the tag - must be unique'
     )
     description = models.TextField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('description for this tag')
+        help_text='description for this tag'
     )
     style = models.CharField(
         max_length=16,
         choices=STYLE_CHOICES,
         default='default',
         blank=True,
-        help_text=_('color style of tag')
+        help_text='color style of tag'
     )
     is_default = models.BooleanField(
         default=False,
-        help_text=_(
-            'if true this tag will automatically be ' 
-            'added to new structures'
+        help_text=(
+            'if true this tag will automatically be added to new structures'
         )
     )
 
@@ -148,21 +147,21 @@ class Structure(models.Model):
 
     id = models.BigIntegerField(
         primary_key=True,
-        help_text=_('The Item ID of the structure')
+        help_text='The Item ID of the structure'
     )
     owner = models.ForeignKey(
         'Owner',
         on_delete=models.CASCADE,
-        help_text=_('Corporation that owns the structure')
+        help_text='Corporation that owns the structure'
     )
     eve_type = models.ForeignKey(
         'EveType',
         on_delete=models.CASCADE,
-        help_text=_('type of the structure')
+        help_text='type of the structure'
     )
     name = models.CharField(
         max_length=255,
-        help_text=_('The full name of the structure')
+        help_text='The full name of the structure'
     )
     eve_solar_system = models.ForeignKey(
         'EveSolarSystem',
@@ -174,7 +173,7 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=_('Planet next to this structure - if any')
+        help_text='Planet next to this structure - if any'
     )
     eve_moon = models.ForeignKey(
         'EveMoon',
@@ -182,38 +181,38 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=_('Moon next to this structure - if any')
+        help_text='Moon next to this structure - if any'
     )
     position_x = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('x position in the solar system')
+        help_text='x position in the solar system'
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('y position in the solar system')
+        help_text='y position in the solar system'
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('z position in the solar system')
+        help_text='z position in the solar system'
     )
     fuel_expires = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('Date on which the structure will run out of fuel')
+        help_text='Date on which the structure will run out of fuel'
     )
     next_reinforce_hour = models.PositiveIntegerField(
         null=True,
         default=None,
         blank=True,
         validators=[MaxValueValidator(23)],
-        help_text=_(
+        help_text=(
             'The requested change to reinforce_hour that will take '
             'effect at the time shown by next_reinforce_apply'
         )
@@ -223,7 +222,7 @@ class Structure(models.Model):
         default=None,
         blank=True,
         validators=[MaxValueValidator(6)],
-        help_text=_(
+        help_text=(
             'The date and time when the structure’s newly requested '
             'reinforcement times (e.g. next_reinforce_hour and '
             'next_reinforce_day) will take effect'
@@ -233,7 +232,7 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=_(
+        help_text=(
             'The requested change to reinforce_weekday that will take '
             'effect at the time shown by next_reinforce_apply'
         )
@@ -243,7 +242,7 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=_(
+        help_text=(
             'The hour of day that determines the four hour window '
             'when the structure will randomly exit its reinforcement periods '
             'and become vulnerable to attack against its armor and/or hull. '
@@ -262,37 +261,37 @@ class Structure(models.Model):
         choices=STATE_CHOICES,
         default=STATE_UNKNOWN,
         blank=True,
-        help_text=_('Current state of the structure')
+        help_text='Current state of the structure'
     )
     state_timer_start = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('Date at which the structure will move to it’s next state')
+        help_text='Date at which the structure will move to it’s next state'
     )
     state_timer_end = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('Date at which the structure entered it’s current state')
+        help_text='Date at which the structure entered it’s current state'
     )
     unanchors_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('Date at which the structure will unanchor')
+        help_text='Date at which the structure will unanchor'
     )
     last_updated = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('date this structure was last updated from the EVE server')
+        help_text='date this structure was last updated from the EVE server'
     )
     tags = models.ManyToManyField(
         StructureTag,
         default=None,
         blank=True,
-        help_text=_('list of tags for this structure')
+        help_text='list of tags for this structure'
     )
 
     objects = StructureManager()
@@ -355,15 +354,15 @@ class StructureService(EsiNameLocalization, models.Model):
     structure = models.ForeignKey(
         Structure,
         on_delete=models.CASCADE,
-        help_text=_('Structure this service is installed to')
+        help_text='Structure this service is installed to'
     )
     name = models.CharField(
         max_length=100,
-        help_text=_('Name of the service')
+        help_text='Name of the service'
     )
     state = models.IntegerField(
         choices=STATE_CHOICES,
-        help_text=_('Current state of this service')
+        help_text='Current state of this service'
     )
 
     class Meta:

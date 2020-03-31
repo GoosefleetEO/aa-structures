@@ -4,7 +4,7 @@ import logging
 import urllib
 
 from django.db import models
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext
 from django.utils import translation
 from django.utils.timezone import now
 
@@ -37,22 +37,22 @@ class EsiNameLocalization(models.Model):
     name_de = models.CharField(
         max_length=100,        
         blank=True,
-        help_text=_('Eve Online name localized for German')
+        help_text='Eve Online name localized for German'
     )   
     name_ko = models.CharField(
         max_length=100,        
         blank=True,
-        help_text=_('Eve Online name localized for Korean')
+        help_text='Eve Online name localized for Korean'
     )    
     name_ru = models.CharField(
         max_length=100,        
         blank=True,
-        help_text=_('Eve Online name localized for Russian')
+        help_text='Eve Online name localized for Russian'
     )    
     name_zh = models.CharField(
         max_length=100,        
         blank=True,
-        help_text=_('Eve Online name localized for Chinese')
+        help_text='Eve Online name localized for Chinese'
     )
 
     @property
@@ -132,16 +132,16 @@ class EveUniverse(EsiNameLocalization, models.Model):
     """
 
     id = models.PositiveIntegerField(
-        primary_key=True, help_text=_('Eve Online ID')
+        primary_key=True, help_text='Eve Online ID'
     )
     name = models.CharField(
-        max_length=100, help_text=_('Eve Online name')
+        max_length=100, help_text='Eve Online name'
     )    
     last_updated = models.DateTimeField(
         default=None,
         null=True,
         blank=True,
-        help_text=_('When this object was last updated from ESI'),
+        help_text='When this object was last updated from ESI',
         db_index=True
     )    
 
@@ -432,19 +432,19 @@ class EvePlanet(EveUniverse):
         null=True,
         default=None,
         blank=True,
-        help_text=_('x position in the solar system')
+        help_text='x position in the solar system'
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('y position in the solar system')
+        help_text='y position in the solar system'
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('z position in the solar system')
+        help_text='z position in the solar system'
     )
     eve_solar_system = models.ForeignKey(
         EveSolarSystem,
@@ -485,19 +485,19 @@ class EveMoon(EveUniverse):
         null=True,
         default=None,
         blank=True,
-        help_text=_('x position in the solar system')
+        help_text='x position in the solar system'
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('y position in the solar system')
+        help_text='y position in the solar system'
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('z position in the solar system')
+        help_text='z position in the solar system'
     )
     eve_solar_system = models.ForeignKey(
         EveSolarSystem,

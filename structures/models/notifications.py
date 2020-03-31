@@ -158,17 +158,17 @@ class Webhook(models.Model):
     name = models.CharField(
         max_length=64,
         unique=True,
-        help_text=_('short name to identify this webhook')
+        help_text='short name to identify this webhook'
     )
     webhook_type = models.IntegerField(
         choices=TYPE_CHOICES,
         default=TYPE_DISCORD,
-        help_text=_('type of this webhook')
+        help_text='type of this webhook'
     )
     url = models.CharField(
         max_length=255,
         unique=True,
-        help_text=_(
+        help_text=(
             'URL of this webhook, e.g. '
             'https://discordapp.com/api/webhooks/123456/abcdef'
         )
@@ -177,14 +177,13 @@ class Webhook(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=_('you can add notes about this webhook here if you want')
+        help_text='you can add notes about this webhook here if you want'
     )
     notification_types = MultiSelectField(
         choices=NTYPE_CHOICES,
         default=get_default_notification_types,
-        help_text=_(
-            'only notifications which selected types '
-            'are sent to this webhook'
+        help_text=(
+            'only notifications which selected types are sent to this webhook'
         )
     )
     language_code = models.CharField(
@@ -194,15 +193,15 @@ class Webhook(models.Model):
         null=True,
         blank=True,
         verbose_name='language',
-        help_text=_('language of notifications send to this webhook')
+        help_text='language of notifications send to this webhook'
     )
     is_active = models.BooleanField(
         default=True,
-        help_text=_('whether notifications are currently sent to this webhook')
+        help_text='whether notifications are currently sent to this webhook'
     )
     is_default = models.BooleanField(
         default=False,
-        help_text=_(
+        help_text=(
             'whether owners have this webhook automatically '
             'pre-set when created'
         )
@@ -257,8 +256,7 @@ class EveEntity(models.Model):
     ]
 
     id = models.PositiveIntegerField(
-        primary_key=True,
-        help_text='Eve Online ID'
+        primary_key=True, help_text='Eve Online ID'
     )
     category = models.IntegerField(choices=CATEGORY_CHOICES)
     name = models.CharField(
@@ -331,7 +329,7 @@ class Notification(models.Model):
     owner = models.ForeignKey(
         'Owner',
         on_delete=models.CASCADE,
-        help_text=_('Corporation that received this notification')
+        help_text='Corporation that received this notification'
     )
     sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
     timestamp = models.DateTimeField()
@@ -340,33 +338,33 @@ class Notification(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=_('Notification details in YAML')
+        help_text='Notification details in YAML'
     )
     is_read = models.BooleanField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('True when this notification has read in the eve client')
+        help_text='True when this notification has read in the eve client'
     )
     is_sent = models.BooleanField(
         default=False,
         blank=True,
-        help_text=_('True when this notification has been forwarded to Discord')
+        help_text='True when this notification has been forwarded to Discord'
     )
     is_timer_added = models.BooleanField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('True when a timer has been added for this notification')
+        help_text='True when a timer has been added for this notification'
     )
     last_updated = models.DateTimeField(
-        help_text=_('Date when this notification has last been updated from ESI')
+        help_text='Date when this notification has last been updated from ESI'
     )
     created = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text=_('Date when this notification was first received from ESI')
+        help_text='Date when this notification was first received from ESI'
     )
 
     class Meta:

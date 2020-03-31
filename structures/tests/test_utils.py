@@ -9,6 +9,7 @@ from django.utils import translation
 from ..utils import (
     clean_setting, 
     messages_plus, 
+    make_logger_prefix,
     chunks, 
     timeuntil_str, 
     NoSocketsTestCase, 
@@ -235,3 +236,16 @@ class TestHtmlHelper(TestCase):
             self.assertEqual(yesno_str(None), 'no')
             self.assertEqual(yesno_str(123), 'no')
             self.assertEqual(yesno_str('xxxx'), 'no')
+
+
+class TestMakeLoggerPrefix(TestCase):
+
+    def test_make_logger_prefix_with_content(self):
+        add_prefix = make_logger_prefix('tag')
+        expected = 'tag: dummy'
+        self.assertEqual(add_prefix('dummy'), expected)
+
+    def test_make_logger_prefix_empty(self):
+        add_prefix = make_logger_prefix('tag')
+        expected = 'tag'
+        self.assertEqual(add_prefix(), expected)

@@ -1,8 +1,11 @@
 from unittest.mock import Mock, patch
 
-from bravado.exception import HTTPBadGateway
+from bravado.exception import (
+    HTTPBadGateway, HTTPServiceUnavailable, HTTPGatewayTimeout, HTTPForbidden
+)
 
 from ..helpers import EsiSmartRequest
+from ..models.eveuniverse import EsiNameLocalization
 from .testdata import (
     esi_get_universe_categories_category_id, 
     esi_mock_client,
@@ -37,7 +40,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         EsiSmartRequest.fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
-            add_prefix=self.add_prefix
+            logger_tag='dummy'
         )                
         self.assertEqual(len(mock_provider.mock_calls), 2)        
         args = mock_provider.mock_calls[0]
@@ -54,8 +57,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             EsiSmartRequest.fetch(
                 'invalid', 
-                {'group_id': 65},
-                self.add_prefix
+                {'group_id': 65}
             )
     
     @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
@@ -63,8 +65,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             EsiSmartRequest.fetch(
                 'invalid.get_universe_groups_group_id',               
-                {'group_id': 65},
-                self.add_prefix
+                {'group_id': 65}
             )
     
     @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
@@ -72,13 +73,12 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             EsiSmartRequest.fetch(
                 'Universe.invalid',                 
-                {'group_id': 65},
-                self.add_prefix
+                {'group_id': 65}
             )
     
-    @patch(MODULE_PATH + '.EsiSmartRequest._ESI_SLEEP_SECONDS_ON_RETRY', 0)
+    @patch(MODULE_PATH + '.EsiSmartRequest._ESI_RETRY_SLEEP_SECS', 0)
     @patch(MODULE_PATH + '.provider')
-    def test_can_retry_on_bad_request(self, mock_provider):        
+    def test_can_retry_on_exceptions(self, mock_provider):        
         
         def my_side_effect():
             """special mock client for testing retry ability"""
@@ -86,7 +86,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
             
             if retry_counter < max_retries:                
                 retry_counter += 1
-                raise HTTPBadGateway(
+                raise MyException(
                     response=Mock(), 
                     message='retry_counter=%d' % retry_counter
                 )
@@ -98,13 +98,13 @@ class TestEsiSmartRequest(NoSocketsTestCase):
             .get_universe_categories_category_id.return_value\
             .result.side_effect = my_side_effect
 
-        # can retry 3 times and then proceed normally
+        # can retry 3 times and then proceed normally on 502s
+        MyException = HTTPBadGateway
         retry_counter = 0
         max_retries = 3        
         response_object = EsiSmartRequest.fetch(
             'Universe.get_universe_categories_category_id',
-            {'category_id': 65},
-            self.add_prefix
+            {'category_id': 65}
         )        
         self.assertEqual(response_object['id'], 65)
         self.assertEqual(response_object['name'], 'Structure')
@@ -113,7 +113,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         # will abort on the 4th retry and pass on exception if needed
         retry_counter = 0
         max_retries = 4
-        with self.assertRaises(HTTPBadGateway):
+        with self.assertRaises(MyException):
             response_object = EsiSmartRequest.fetch(
                 'Universe.get_universe_categories_category_id',
                 {'category_id': 65},
@@ -121,13 +121,48 @@ class TestEsiSmartRequest(NoSocketsTestCase):
             )
         self.assertEqual(retry_counter, 4)
 
+        # will retry on 503s
+        MyException = HTTPServiceUnavailable
+        retry_counter = 0
+        max_retries = 3
+        response_object = EsiSmartRequest.fetch(
+            'Universe.get_universe_categories_category_id',
+            {'category_id': 65}
+        )        
+        self.assertEqual(response_object['id'], 65)
+        self.assertEqual(response_object['name'], 'Structure')
+        self.assertEqual(retry_counter, 3)
+
+        # will retry on 504s
+        MyException = HTTPGatewayTimeout
+        retry_counter = 0
+        max_retries = 3
+        response_object = EsiSmartRequest.fetch(
+            'Universe.get_universe_categories_category_id',
+            {'category_id': 65}
+        )        
+        self.assertEqual(response_object['id'], 65)
+        self.assertEqual(response_object['name'], 'Structure')
+        self.assertEqual(retry_counter, 3)
+
+        # will not retry on other HTTP exceptions
+        MyException = HTTPForbidden
+        retry_counter = 0
+        max_retries = 3
+        with self.assertRaises(MyException):
+            response_object = EsiSmartRequest.fetch(
+                'Universe.get_universe_categories_category_id',
+                {'category_id': 65},
+                Mock()
+            )
+        self.assertEqual(retry_counter, 1)
+
     def test_can_fetch_multiple_pages(self):
         mock_client = esi_mock_client()
 
         structures = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': 2001},
-            add_prefix=self.add_prefix,
             esi_client=mock_client,
             has_pages=True
         )        
@@ -151,10 +186,10 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         structures_list = EsiSmartRequest.fetch_with_localization(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': 2001},
-            add_prefix=self.add_prefix,
             esi_client=mock_client,
-            has_pages=True,
-            has_localization=True
+            has_pages=True,            
+            languages=EsiNameLocalization.ESI_LANGUAGES,
+            logger_tag='dummy'
         )        
         
         for language, structures in structures_list.items():

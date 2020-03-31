@@ -39,21 +39,31 @@ class EveUniverseManager(models.Manager):
 
         Returns: object, created
         """
+        from .models import EsiNameLocalization
         add_prefix = make_logger_prefix(
             '%s(id=%d)' % (self.model.__name__, eve_id)
         )        
-        try:
-            eve_data_objects = \
-                EsiSmartRequest.fetch_with_localization(
-                    'Universe.' + self.model.esi_method(),
-                    args={self.model.esi_pk(): eve_id}, 
-                    add_prefix=add_prefix,
-                    has_localization=self.model.has_esi_localization()
-                )
+        try:            
+            esi_path = 'Universe.' + self.model.esi_method()
+            args = {self.model.esi_pk(): eve_id}
+            if self.model.has_esi_localization():
+                eve_data_objects = \
+                    EsiSmartRequest.fetch_with_localization(
+                        esi_path=esi_path,
+                        args=args,                        
+                        languages=EsiNameLocalization.ESI_LANGUAGES,
+                        logger_tag=add_prefix()
+                    )
+            else:
+                eve_data_objects = dict()
+                eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = \
+                    EsiSmartRequest.fetch(
+                        esi_path=esi_path,
+                        args=args,
+                        logger_tag=add_prefix()
+                    )   # noqa E123
             defaults = self.model.map_esi_fields_to_model(eve_data_objects)
-            obj, created = self.update_or_create(
-                id=eve_id, defaults=defaults
-            )
+            obj, created = self.update_or_create(id=eve_id, defaults=defaults)
             obj.set_generated_translations()
             obj.save()
             self._update_or_create_children(eve_data_objects)
@@ -120,9 +130,9 @@ class EveEntityManager(models.Manager):
         )        
         try:            
             response = EsiSmartRequest.fetch(
-                'Universe.post_universe_names', 
-                args={'ids': [eve_entity_id]}, 
-                add_prefix=add_prefix
+                esi_path='Universe.post_universe_names', 
+                args={'ids': [eve_entity_id]},
+                logger_tag=add_prefix()
             )
             if len(response) > 0:
                 first = response[0]
@@ -192,10 +202,10 @@ class StructureManager(models.Manager):
                 raise ValueError('Can not fetch structure without esi client')
             
             structure_info = EsiSmartRequest.fetch(
-                'Universe.get_universe_structures_structure_id', 
-                args={'structure_id': structure_id}, 
-                add_prefix=add_prefix,
-                esi_client=esi_client
+                esi_path='Universe.get_universe_structures_structure_id', 
+                args={'structure_id': structure_id},                 
+                esi_client=esi_client,
+                logger_tag=add_prefix()
             )            
             structure = {
                 'structure_id': structure_id,
