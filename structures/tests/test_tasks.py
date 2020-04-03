@@ -123,13 +123,13 @@ class TestSyncNotifications(NoSocketsTestCase):
         )
         tasks.fetch_all_notifications()
         self.assertEqual(
-            mock_fetch_notifications_owner.delay.call_count, 2
+            mock_fetch_notifications_owner.apply_async.call_count, 2
         )
-        call_args_list = mock_fetch_notifications_owner.delay.call_args_list
+        call_args_list = mock_fetch_notifications_owner.apply_async.call_args_list
         args, kwargs = call_args_list[0]
-        self.assertEqual(args[0], owner_2001.pk)
+        self.assertEqual(kwargs['kwargs']['owner_pk'], owner_2001.pk)
         args, kwargs = call_args_list[1]
-        self.assertEqual(args[0], owner_2002.pk)
+        self.assertEqual(kwargs['kwargs']['owner_pk'], owner_2002.pk)
 
     @patch(MODULE_PATH_MODELS_OWNERS + '.STRUCTURES_ADD_TIMERS', False)
     @patch(MODULE_PATH + '.fetch_notifications_for_owner')
@@ -148,10 +148,10 @@ class TestSyncNotifications(NoSocketsTestCase):
             is_active=False
         )
         tasks.fetch_all_notifications()
-        self.assertEqual(mock_fetch_notifications_owner.delay.call_count, 1)
-        call_args_list = mock_fetch_notifications_owner.delay.call_args_list
+        self.assertEqual(mock_fetch_notifications_owner.apply_async.call_count, 1)
+        call_args_list = mock_fetch_notifications_owner.apply_async.call_args_list
         args, kwargs = call_args_list[0]
-        self.assertEqual(args[0], owner_2001.pk)     
+        self.assertEqual(kwargs['kwargs']['owner_pk'], owner_2001.pk)     
 
 
 class TestForwardNotifications(NoSocketsTestCase):
@@ -236,9 +236,9 @@ class TestForwardNotifications(NoSocketsTestCase):
         self.assertEqual(mock_send_new_notifications_for_owner.si.call_count, 2)
         call_args_list = mock_send_new_notifications_for_owner.si.call_args_list
         args, kwargs = call_args_list[0]
-        self.assertEqual(args[0], owner_2001.pk)
+        self.assertEqual(kwargs['owner_pk'], owner_2001.pk)
         args, kwargs = call_args_list[1]
-        self.assertEqual(args[0], owner_2002.pk)
+        self.assertEqual(kwargs['owner_pk'], owner_2002.pk)
 
     @patch(MODULE_PATH + '.send_new_notifications_for_owner')
     def test_send_all_new_notifications_not_active(
@@ -260,7 +260,7 @@ class TestForwardNotifications(NoSocketsTestCase):
         self.assertEqual(mock_send_new_notifications_for_owner.si.call_count, 1)
         call_args_list = mock_send_new_notifications_for_owner.si.call_args_list
         args, kwargs = call_args_list[0]
-        self.assertEqual(args[0], owner_2001.pk)
+        self.assertEqual(kwargs['owner_pk'], owner_2001.pk)
 
 
 class TestAdminTasks(NoSocketsTestCase):

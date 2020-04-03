@@ -65,8 +65,10 @@ def fetch_all_notifications():
     """fetch notifications for all owners"""
     for owner in Owner.objects.all():
         if owner.is_active:
-            fetch_notifications_for_owner.delay(owner.pk)
-
+            fetch_notifications_for_owner.apply_async(
+                kwargs={'owner_pk': owner.pk}, priority=2
+            )
+            
 
 @shared_task
 def send_new_notifications_for_owner(owner_pk, rate_limited=True, user_pk=None):
@@ -81,10 +83,10 @@ def send_all_new_notifications(rate_limited=True):
     for owner in Owner.objects.all():
         if owner.is_active:
             send_tasks.append(send_new_notifications_for_owner.si(
-                owner.pk, rate_limited=rate_limited
+                owner_pk=owner.pk, rate_limited=rate_limited
             ))
 
-    chain(send_tasks).delay()
+    chain(send_tasks).apply_async(priority=2)
 
 
 @shared_task
@@ -147,78 +149,3 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
                 'An unexpected error ocurred while trying to '
                 + 'report to user: {}'. format(ex)
             ))
-
-
-"""
-@shared_task
-def run_sde_update_for_model(model_name):
-    #Updates one SDE models from ESI
-    from . import models as models_module
-    
-    if not hasattr(models_module, model_name):
-        raise ValueError('Unknown model class: %s' % model_name)
-
-    EveModel = getattr(models_module, model_name)
-    EveModel.objects.update_all_esi()
-
-
-@shared_task
-def run_sde_update():
-    #Update all SDE models from ESI
-    logger.info('Updating all Eve SDE objects')
-    models = [
-        EveCategory,
-        EveGroup,
-        EveType,
-        EveRegion,
-        EveConstellation,
-        EveSolarSystem,
-        EveMoon,        
-    ]    
-    model_tasks = list()
-    for EveModel in models:        
-        if EveModel.objects.count() > 0:
-            model_tasks.append(
-                run_sde_update_for_model.si(EveModel.__name__)
-            )
-    chain(model_tasks).delay()            
-    logger.info('SDE model updates started')
-"""
-
-"""
-@shared_task
-def purge_all_data(i_am_sure: bool = False):
-    #removes all app-related data from the database
-    
-
-    if not i_am_sure:
-        logger.info('No data deleted')
-    else:
-        logger.info('Started deleting all app-related data')
-
-        models = [
-            EveCategory,
-            EveGroup,
-            EveType,
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EvePlanet,
-            StructureTag,
-            StructureService,
-            Webhook,
-            EveEntity,
-            Owner,
-            Notification,
-            Structure
-        ]
-        with transaction.atomic():
-            for MyModel in models:
-                logger.info(
-                    'Deleting data in model: {}'.format(MyModel.__name__)
-                )
-                MyModel.objects.all().delete()
-
-        logger.info('Completed deleting all app-related data')
-"""
