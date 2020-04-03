@@ -36,9 +36,12 @@ python manage.py structures_updatesde
 ### Added
 
 - Localization for Chinese, English and German
+- Notification related tasks now use priorities to ensure faster delivery ([#17](https://gitlab.com/ErikKalkoken/aa-structures/issues/17))
+- List of supported notifications added to README
 
 ### Changed
 
+- Attempt to reduce the current memory leak in celery workers ([#18](https://gitlab.com/ErikKalkoken/aa-structures/issues/18))
 - Changed admin functions from celery tasks to commands: update_sde, purge_all
 
 ## [1.0.0] - 2020-02-12

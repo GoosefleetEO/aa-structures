@@ -7,7 +7,7 @@ import pytz
 
 from allianceauth.timerboard.models import Timer
 
-from ...models import EveEntity, Notification, Webhook
+from ...models import EveEntity, Notification, Webhook, Structure
 from ..testdata import (
     load_entities,
     load_notification_entities,
@@ -220,7 +220,7 @@ class TestNotification(NoSocketsTestCase):
         self.assertFalse(x1.filter_for_alliance_level())
 
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_all_notification_types(self, mock_execute):                                
+    def test_send_to_webhook_all_notification_types(self, mock_execute):
         logger.debug('test_send_to_webhook_normal')
         
         mock_response = Mock()
@@ -232,22 +232,19 @@ class TestNotification(NoSocketsTestCase):
         types_tested = set()
         for x in Notification.objects.all():
             self.assertFalse(x.is_sent)
-            self.assertTrue(
-                x.send_to_webhook(self.webhook, Mock())
-            )
+            self.assertTrue(x.send_to_webhook(self.webhook))
             self.assertTrue(x.is_sent)
             types_tested.add(x.notification_type)
 
         # make sure we have tested all existing notification types
         self.assertSetEqual(
-            Notification.get_all_types(),
-            types_tested
+            Notification.get_all_types(), types_tested
         )
 
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_http_error(self, mock_execute):                                
+    def test_send_to_webhook_http_error(self, mock_execute):
         logger.debug('test_send_to_webhook_http_error')        
         mock_response = Mock()
         mock_response.status_code = 400
@@ -256,9 +253,7 @@ class TestNotification(NoSocketsTestCase):
         mock_execute.return_value = mock_response
         
         x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(
-            x.send_to_webhook(self.webhook, Mock())
-        )
+        self.assertFalse(x.send_to_webhook(self.webhook))
 
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
@@ -271,20 +266,16 @@ class TestNotification(NoSocketsTestCase):
         mock_execute.return_value = mock_response
 
         x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(
-            x.send_to_webhook(self.webhook, Mock())
-        )
+        self.assertFalse(x.send_to_webhook(self.webhook))
         
     @patch(MODULE_PATH + '.settings.DEBUG', False)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_exception(self, mock_execute):                                        
+    def test_send_to_webhook_exception(self, mock_execute):
         logger.debug('test_send_to_webhook_exception')        
         mock_execute.side_effect = RuntimeError('Dummy exception')
 
         x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(
-            x.send_to_webhook(self.webhook, Mock())
-        )
+        self.assertFalse(x.send_to_webhook(self.webhook))
 
     @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
     @patch('allianceauth.timerboard.models.Timer', autospec=True)
@@ -374,3 +365,20 @@ class TestNotification(NoSocketsTestCase):
         self.assertTrue(x.process_for_timerboard())
         t = Timer.objects.first()
         self.assertTrue(t.corp_timer)
+
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_LANGUAGE', 'en')
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', spec=True)
+    def test_send_notification_without_existing_structure(self, mock_execute):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.status_ok = True
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+        
+        Structure.objects.all().delete()
+        obj = Notification.objects.get(notification_id=1000000505)
+        obj.send_to_webhook(self.webhook)
+        embed = mock_execute.call_args[1]['embeds'][0]
+        self.assertEqual(
+            embed.description[:39], 'The Astrahus **(unknown)** in [Amamake]'
+        )

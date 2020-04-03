@@ -1157,17 +1157,9 @@ class TestSendNewNotifications(NoSocketsTestCase):
             }
         )
     
-    def test_reports_error_for_missing_user_permission(self):        
-        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
-        self.owner.refresh_from_db()
-        self.assertEqual(
-            self.owner.forwarding_last_error, 
-            Owner.ERROR_INSUFFICIENT_PERMISSIONS
-        )
-
-    @patch(MODULE_PATH + '.Owner.esi_client', autospec=True)
-    def test_reports_unexpected_error(self, mock_esi_client):
-        mock_esi_client.side_effect = RuntimeError()
+    @patch(MODULE_PATH + '.Owner._send_notifications_to_webhook', autospec=True)
+    def test_reports_unexpected_error(self, mock_send):
+        mock_send.side_effect = RuntimeError()
         self.assertFalse(self.owner.send_new_notifications(rate_limited=False))
         self.owner.refresh_from_db()
         self.assertEqual(

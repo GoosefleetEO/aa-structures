@@ -815,7 +815,6 @@ class Owner(models.Model):
 
                 new_notifications_count = 0
                 active_webhooks_count = 0
-                esi_client = None
                 for webhook in self.webhooks.filter(is_active=True):
                     active_webhooks_count += 1
                     notifications_qs = self._notifications_for_webhook_qs(
@@ -825,25 +824,12 @@ class Owner(models.Model):
                         new_notifications_count += notifications_qs.count()
                         logger.info(add_prefix(
                             'Found {} new notifications for webhook {}'.format(
-                                notifications_qs.count(),
-                                webhook
+                                notifications_qs.count(), webhook
                             )
-                        ))
-                        if not esi_client:
-                            esi_client, error = self.esi_client()
-                            if error:
-                                self.forwarding_last_error = error
-                                self.save()
-                                raise TokenError(
-                                    add_prefix('Failed to get a valid token')
-                                )
-
+                        ))                        
                         notifications_count += \
                             self._send_notifications_to_webhook(
-                                notifications_qs, 
-                                webhook, 
-                                esi_client, 
-                                rate_limited
+                                notifications_qs, webhook, rate_limited
                             )
 
                 if active_webhooks_count == 0:
@@ -898,7 +884,7 @@ class Owner(models.Model):
         return notifications_qs
 
     def _send_notifications_to_webhook(
-        self, notifications_qs, webhook, esi_client, rate_limited
+        self, notifications_qs, webhook, rate_limited
     ):
         """sends all notifications to given webhook"""
         sent_count = 0
@@ -906,7 +892,7 @@ class Owner(models.Model):
             if (not notification.filter_for_npc_attacks()
                 and not notification.filter_for_alliance_level()
             ):
-                if notification.send_to_webhook(webhook, esi_client):
+                if notification.send_to_webhook(webhook):
                     sent_count += 1
 
                 if rate_limited:

@@ -197,12 +197,6 @@ class TestForwardNotifications(NoSocketsTestCase):
         self.assertEqual(
             mock_execute.call_count, len(get_all_notification_ids())
         )
-
-        # should have created structures on the fly        
-        structure_ids = {
-            x['id'] for x in Structure.objects.values('id')
-        }
-        self.assertSetEqual(structure_ids, {1000000000002, 1000000000001})
         
     @patch(
         'structures.models.notifications.dhooks_lite.Webhook.execute',

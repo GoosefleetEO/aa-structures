@@ -15,6 +15,7 @@ Alliance Auth.
 - [Localization](#localization)
 - [Settings](#settings)
 - [Permissions](#permissions)
+- [Notifications](#notifications)
 - [Service monitoring](#service-monitoring)
 - [Admin tool](#admin-tools)
 - [Change Log](CHANGELOG.md)
@@ -35,7 +36,7 @@ Alliance Structures adds the following main features to Alliance Auth:
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status
-- Localization for Chinese, English, German
+- Chinese :cn:, English :us: and German :de: localization
 
 ## Screenshots
 
@@ -96,7 +97,7 @@ CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
 
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
 
-> **Recommended celery setup**:<br>The Alliance Structures app uses celery to refresh data from ESI on a regular basis. We recommend to enable the following additional settings for celery workers to enable logging and to protect against potential memory leaks:<br>
+> **Recommended celery setup**:<br>The Alliance Structures app uses celery to refresh data from ESI on a regular basis. We strongly recommend to enable the following additional settings for celery workers to enable logging and to protect against memory leaks:<br>
 `-l info --max-memory-per-child 512000`
 <br><br>In many setups this config is part of your supervisor configuration.<br>On Ubuntu you can run `systemctl status supervisor` to see where that config file is located. <br><br>Note that you need to restart the supervisor service itself to activate those changes.<br>
 e.g. on Ubuntu:<br>`systemctl restart supervisor`
@@ -160,15 +161,15 @@ Finally restart your AA supervisor services.
 
 Alliance Structures has full localization for languages support by Alliance Auth. This chapter describes how to set the language for different parts of the app:
 
-## UI
+### UI
 
 To switch the UI to your preferred language simply use the language switcher from Auth.
 
-## Notifications
+### Notifications
 
 The language for notifications on Discord can be chosen by configuring the language property for the respective Webhook. The default language will be used if no language is configured for a Webhook.
 
-## Default language
+### Default language
 
 The default language will be used when no specific language have been configured or no language can be determined. The default language can be defined with the setting `STRUCTURES_DEFAULT_LANGUAGE`.
 
@@ -212,6 +213,51 @@ Can access this app and view | User can access the app and see the structure lis
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
 Can add new structure owner | User can add a corporation with it's structures |  `general.add_structure_owner`
+
+## Notifications
+
+The following notifications are currently supported (names are from the API):
+
+### Moon Mining
+
+- MoonminingAutomaticFracture
+- MoonminingExtractionCancelled
+- MoonminingExtractionFinished
+- MoonminingExtractionStarted
+- MoonminingLaserFired
+
+### Upwell Structures
+
+- OwnershipTransferred
+- StructureAnchoring
+- StructureDestroyed
+- StructureFuelAlert
+- StructureLostArmor
+- StructureLostShields
+- StructureOnline
+- StructureServicesOffline
+- StructureUnanchoring
+- StructureUnderAttack
+- StructureWentHighPower
+- StructureWentLowPower
+
+### POCOs
+
+- OrbitalAttacked
+- OrbitalReinforced
+
+### Starbases
+
+- TowerAlertMsg
+- TowerResourceAlertMsg
+
+## Sovereignty
+
+- EntosisCaptureStarted
+- SovAllClaimAquiredMsg
+- SovCommandNodeEventStarted
+- SovStructureReinforced
+- SovStructureDestroyed
 
 ## Service monitoring
 
