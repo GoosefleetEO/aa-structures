@@ -19,6 +19,12 @@ If you are upgrading you need to perform the following manual steps to get the n
 
 Please make sure to be in your venv and in the folder where `manage.py` is located (e.g. `/home/allianceserver/myauth`). Then run the following commands one by one:
 
+Upgrade to the new version:
+
+```bash
+pip install -U aa-structures
+```
+
 Run migrations:
 
 ```bash
