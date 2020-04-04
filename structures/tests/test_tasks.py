@@ -3,9 +3,10 @@ from unittest.mock import Mock, patch
 from celery import Celery
 
 from django.contrib.auth.models import User
+
+from allianceauth.tests.auth_utils import AuthUtils
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from .auth_utils_2 import AuthUtils2
 from ..utils import set_test_logger, NoSocketsTestCase
 from .. import tasks
 from ..models import Owner, Notification, Structure
@@ -185,7 +186,7 @@ class TestForwardNotifications(NoSocketsTestCase):
         Structure.objects.all().delete()
         
         # user needs permission to run tasks
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
                 

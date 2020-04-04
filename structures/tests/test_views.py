@@ -8,13 +8,13 @@ from django.test import RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 
+from allianceauth.tests.auth_utils import AuthUtils
 from allianceauth.eveonline.models import (
     EveCharacter, EveCorporationInfo, EveAllianceInfo
 )
 
 from esi.models import Token
 
-from .auth_utils_2 import AuthUtils2
 from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
@@ -36,7 +36,7 @@ class TestStructureList(NoSocketsTestCase):
     def setUp(self):                
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.basic_access', self.user
         )
         self.factory = RequestFactory()
@@ -84,7 +84,7 @@ class TestStructureList(NoSocketsTestCase):
         )
         
     def test_perm_view_alliance_structures_normal(self):        
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.view_alliance_structures', self.user
         )
         request = self.factory.get(reverse('structures:structure_list_data'))
@@ -111,10 +111,10 @@ class TestStructureList(NoSocketsTestCase):
         # run with a user that is not a member of an alliance        
         character = EveCharacter.objects.get(character_id=1002)        
         user = create_user(character.character_id)        
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.basic_access', user
         )
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.view_alliance_structures', user
         )
 
@@ -131,7 +131,7 @@ class TestStructureList(NoSocketsTestCase):
         )
             
     def test_perm_view_all_structures(self):        
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.view_all_structures', self.user
         )
         request = self.factory.get(reverse('structures:structure_list_data'))
@@ -159,7 +159,7 @@ class TestStructureList(NoSocketsTestCase):
         StructureTag.objects.get(name='tag_a')
         StructureTag.objects.get(name='tag_b')
         StructureTag.objects.get(name='tag_c')       
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.view_all_structures', self.user
         )
 
@@ -263,10 +263,10 @@ class TestAddStructureOwner(NoSocketsTestCase):
     def _create_test_user(self, character_id):
         """create test user with all permission from character ID"""
         my_user = create_user(character_id)       
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.basic_access', my_user
         )
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', my_user
         )
         return my_user
@@ -391,7 +391,7 @@ class TestStatus(NoSocketsTestCase):
     def setUp(self):                
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.basic_access', self.user
         )        
         self.factory = RequestFactory()   

@@ -16,7 +16,6 @@ from allianceauth.tests.auth_utils import AuthUtils
 from esi.errors import TokenExpiredError, TokenInvalidError
 
 from .. import to_json
-from ..auth_utils_2 import AuthUtils2
 from ...models import (
     EveCategory,
     EveGroup,
@@ -311,7 +310,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                 
         self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
         self.user = AuthUtils.create_user(self.character.character_name)
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
         
@@ -911,7 +910,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
                         
         # create test data
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
                 
@@ -929,7 +928,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
          
         # create test data
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
                 
@@ -957,7 +956,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
         # create test data
         Timer.objects.all().delete()
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
                 
@@ -1009,7 +1008,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi_client_factory.return_value = mock_client
 
         # create test data
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
                 
@@ -1046,7 +1045,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     def test_can_send_all_notifications(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )        
         self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
@@ -1071,7 +1070,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     def test_can_send_notifications_to_multiple_webhooks(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):        
-        AuthUtils2.add_permission_to_user_by_name(
+        AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )
         notification_types_1 = ','.join([str(x) for x in sorted([            
