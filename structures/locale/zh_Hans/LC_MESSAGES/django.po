@@ -5,6 +5,7 @@
 # 
 # Translators:
 # rainbow ck <kaijiant@gmail.com>, 2020
+# Erik Kalkoken <erik.kalkoken@gmail.com>, 2020
 # 
 #, fuzzy
 msgid ""
@@ -13,7 +14,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-04-03 22:01+0200\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
-"Last-Translator: rainbow ck <kaijiant@gmail.com>, 2020\n"
+"Last-Translator: Erik Kalkoken <erik.kalkoken@gmail.com>, 2020\n"
 "Language-Team: Chinese (China) (https://www.transifex.com/kalkoken-apps/teams/107978/zh_CN/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -23,31 +24,31 @@ msgstr ""
 
 #: models/eveuniverse.py:513
 msgid "Moon"
-msgstr ""
+msgstr "月亮"
 
 #: models/notifications.py:46
 msgid "English"
-msgstr ""
+msgstr "英语"
 
 #: models/notifications.py:47
 msgid "German"
-msgstr ""
+msgstr "德语"
 
 #: models/notifications.py:48
 msgid "Spanish"
-msgstr ""
+msgstr "西班牙文"
 
 #: models/notifications.py:49
 msgid "Chinese Simplified"
-msgstr ""
+msgstr "简体中文"
 
 #: models/notifications.py:50
 msgid "Russian"
-msgstr ""
+msgstr "俄语"
 
 #: models/notifications.py:51
 msgid "Korean"
-msgstr ""
+msgstr " 韩语"
 
 #: models/notifications.py:155
 msgid "Discord Webhook"
@@ -244,7 +245,7 @@ msgstr ""
 
 #: models/notifications.py:856
 msgid "Orbital under attack"
-msgstr ""
+msgstr "受攻击的轨道"
 
 #: models/notifications.py:858
 #, python-format
@@ -255,7 +256,7 @@ msgstr "%(structure_type)s在%(solar_system)s%(planet)s正遭受%(aggressor)s的
 
 #: models/notifications.py:871
 msgid "Orbital reinforced"
-msgstr ""
+msgstr "轨道 增强"
 
 #: models/notifications.py:873
 #, python-format
@@ -389,7 +390,7 @@ msgstr "准备采集"
 #: models/owners.py:980
 #, python-format
 msgid "Error: %s"
-msgstr ""
+msgstr "错误: %s"
 
 #: models/owners.py:983
 #, python-format
@@ -397,27 +398,29 @@ msgid ""
 "Syncing of %(topic)s for \"%(owner)s\" %(result)s.\n"
 "%(message_details)s"
 msgstr ""
+"正在同步 %(topic)s 对于 %(owner)s %(result)s.\n"
+"%(message_details)s"
 
 #: models/owners.py:988
 msgid "completed successfully"
-msgstr ""
+msgstr "成功完成"
 
 #: models/owners.py:988
 msgid "has failed"
-msgstr ""
+msgstr "失败了"
 
 #: models/owners.py:995
 #, python-format
 msgid "%(title)s: %(topic)s updated for %(owner)s: %(result)s"
-msgstr ""
+msgstr "%(title)s: %(topic)s 更新为 %(owner)s: %(result)s"
 
 #: models/owners.py:1000
 msgid "OK"
-msgstr ""
+msgstr "好"
 
 #: models/owners.py:1000
 msgid "FAILED"
-msgstr ""
+msgstr "失败"
 
 #: models/structures.py:104
 msgid "anchor vulnerable"
@@ -469,11 +472,11 @@ msgstr ""
 
 #: models/structures.py:118 models/structures.py:345
 msgid "offline"
-msgstr ""
+msgstr "离线"
 
 #: models/structures.py:119 models/structures.py:346
 msgid "online"
-msgstr ""
+msgstr "线上"
 
 #: models/structures.py:120
 msgid "onlining"
@@ -552,7 +555,7 @@ msgstr "服务"
 
 #: templates/structures/structure_list.html:80
 msgid "R-Hour"
-msgstr ""
+msgstr "小时"
 
 #: templates/structures/structure_list.html:81
 msgid "Fuel Expires"
@@ -655,11 +658,11 @@ msgstr "秒"
 
 #: utils.py:336
 msgid "yes"
-msgstr ""
+msgstr "是"
 
 #: utils.py:336
 msgid "no"
-msgstr ""
+msgstr "没有"
 
 #: views.py:248
 msgid "Low Power"

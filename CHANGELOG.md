@@ -13,25 +13,41 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Important notes for upgrading
 
-If you are upgrading you need to run migrations, copy static files, restart your supervisors and then update your current SDE data to get all localizations.
+#### Required manual steps
+
+If you are upgrading you need to perform the following manual steps to get the new localizations:
 
 Please make sure to be in your venv and in the folder where `manage.py` is located (e.g. `/home/allianceserver/myauth`). Then run the following commands one by one:
+
+Run migrations:
 
 ```bash
 python manage.py migrate
 ```
 
+Copy static files:
+
 ```bash
 python manage.py collectstatic
 ```
+
+Restart your supervisors:
 
 ```bash
 supervisorctl restart myauth:
 ```
 
+Update the local copy of your Eve Online universe data to get localizations:
+
 ```bash
 python manage.py structures_updatesde
 ```
+
+#### Task priorities
+
+This new version makes use of "task priorities" to ensure important tasks like the delivery of attack notifications are executed as quickly as possible. 
+
+For this to work please also make sure you have celery task priorities activated. This was a new feature introduced with Alliance Auth 2.6.3 and required some additional [manual configuration](https://gitlab.com/allianceauth/allianceauth/-/merge_requests/1181#note_317289062) of your local `celery.py` file.
 
 ### Added
 
@@ -43,6 +59,7 @@ python manage.py structures_updatesde
 
 - Changed admin functions from celery tasks to commands: update_sde, purge_all
 - Now shows separate status for structure sync, notification sync, forwarding sync on admin site for each owner
+- Removed official support for Python 3.5, but will technically still work
 
 ### Fixed
 
