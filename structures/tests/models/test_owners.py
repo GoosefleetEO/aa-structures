@@ -1037,6 +1037,13 @@ class TestSendNewNotifications(NoSocketsTestCase):
         )
         self.owner.webhooks.add(my_webhook)
 
+    @staticmethod
+    def my_send_to_webhook_success(self, webhook):
+        """simulates successful sending of a notification"""
+        self.is_sent = True
+        self.save()
+        return True
+
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(
@@ -1045,6 +1052,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     def test_can_send_all_notifications(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
+        mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
         AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )        
@@ -1065,11 +1073,92 @@ class TestSendNewNotifications(NoSocketsTestCase):
     @patch(MODULE_PATH + '.Token', autospec=True)
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     @patch(
-        'structures.models.notifications.Notification.send_to_webhook', autospec=True
+        'structures.models.notifications.Notification.send_to_webhook', 
+        autospec=True
     )
-    def test_can_send_notifications_to_multiple_webhooks(
+    def test_can_send_notifications_to_multiple_webhooks_but_same_owner(
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
+    ):               
+        mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
+        
+        AuthUtils.add_permission_to_user_by_name(
+            'structures.add_structure_owner', self.user
+        )
+        notification_types_1 = ','.join([str(x) for x in sorted([            
+            NTYPE_MOONS_EXTRACTION_CANCELED,
+            NTYPE_STRUCTURE_DESTROYED,            
+            NTYPE_STRUCTURE_LOST_ARMOR,
+            NTYPE_STRUCTURE_LOST_SHIELD,            
+            NTYPE_STRUCTURE_UNDER_ATTACK
+        ])])
+        wh_structures = Webhook.objects.create(
+            name='Structures',
+            url='dummy-url-1',
+            notification_types=notification_types_1,
+            is_active=True
+        )
+        notification_types_2 = ','.join([str(x) for x in sorted([
+            NTYPE_MOONS_EXTRACTION_CANCELED,
+            NTYPE_MOONS_AUTOMATIC_FRACTURE,            
+            NTYPE_MOONS_EXTRACTION_FINISHED,
+            NTYPE_MOONS_EXTRACTION_STARTED,
+            NTYPE_MOONS_LASER_FIRED
+        ])])
+        wh_mining = Webhook.objects.create(
+            name='Mining',
+            url='dummy-url-2',
+            notification_types=notification_types_2,
+            is_default=True,
+            is_active=True
+        )
+
+        self.owner.webhooks.clear()
+        self.owner.webhooks.add(wh_structures)
+        self.owner.webhooks.add(wh_mining)
+
+        # send notifications        
+        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
+        results = {            
+            wh_mining.pk: set(),
+            wh_structures.pk: set()
+        }
+        for x in mock_send_to_webhook.call_args_list:
+            first = x[0]
+            notification = first[0]
+            hook = first[1]
+            results[hook.pk].add(notification.notification_id)
+
+        # notifications for structures webhook
+        expected = {
+            1000000402,
+            1000000502,
+            1000000504,
+            1000000505,                
+            1000000509,
+            1000010509
+        }
+        self.assertSetEqual(results[wh_structures.pk], expected)
+        
+        # notifications for mining webhook
+        expected = {
+            1000000402,
+            1000000401,
+            1000000403,
+            1000000404,
+            1000000405
+        }
+        self.assertSetEqual(results[wh_mining.pk], expected)
+
+    @patch(MODULE_PATH + '.Token', autospec=True)
+    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(
+        'structures.models.notifications.Notification.send_to_webhook', 
+        autospec=True
+    )
+    def test_can_send_notifications_to_multiple_owners(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):        
+        mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
         AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
         )

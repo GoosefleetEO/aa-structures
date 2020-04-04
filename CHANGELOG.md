@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.1.0] - 2020-03-23
+## [1.1.0] - 2020-04-04
 
 **Localization**
 
@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 If you are upgrading you need to run migrations, copy static files, restart your supervisors and then update your current SDE data to get all localizations.
 
-Please make sure to be in your venv and run the commands from the folder where `manage.py` is located in:
+Please make sure to be in your venv and in the folder where `manage.py` is located (e.g. `/home/allianceserver/myauth`). Then run the following commands one by one:
 
 ```bash
 python manage.py migrate
@@ -43,6 +43,10 @@ python manage.py structures_updatesde
 
 - Attempt to reduce the current memory leak in celery workers ([#18](https://gitlab.com/ErikKalkoken/aa-structures/issues/18))
 - Changed admin functions from celery tasks to commands: update_sde, purge_all
+
+### Fixed
+
+- Notifications are now correctly send to multiple webhooks on the same owner ([#19](https://gitlab.com/ErikKalkoken/aa-structures/issues/19))
 
 ## [1.0.0] - 2020-02-12
 

@@ -38,6 +38,8 @@ Alliance Structures adds the following main features to Alliance Auth:
 - Interface for 3rd party monitoring of the services status
 - Chinese :cn:, English :us: and German :de: localization
 
+*We are looking for help with translating Alliance Structures for more languages incl. French, Korean, Russian, and Spanish. If you are interested please sign up on our [Transifex project](https://www.transifex.com/kalkoken-apps/aa-structures/).*
+
 ## Screenshots
 
 Here is an example for the structure browser:
@@ -98,8 +100,8 @@ CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
 
 > **Recommended celery setup**:<br>The Alliance Structures app uses celery to refresh data from ESI on a regular basis. We strongly recommend to enable the following additional settings for celery workers to enable logging and to protect against memory leaks:<br>
-`-l info --max-memory-per-child 512000`
-<br><br>In many setups this config is part of your supervisor configuration.<br>On Ubuntu you can run `systemctl status supervisor` to see where that config file is located. <br><br>Note that you need to restart the supervisor service itself to activate those changes.<br>
+`-l info --max-memory-per-child 262144`
+<br><br>In most setups this config is part of your supervisor configuration file which is located here: `myauth/supervisor.conf`. <br><br>Note that you need to restart the supervisor service itself to activate those changes.<br>
 e.g. on Ubuntu:<br>`systemctl restart supervisor`
 
 ### 4. Finalize installation into AA

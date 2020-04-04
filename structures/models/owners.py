@@ -813,23 +813,35 @@ class Owner(models.Model):
                 self.forwarding_last_sync = now()
                 self.save()
 
+                cutoff_dt_for_stale = now() - timedelta(
+                    hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+                )
+                all_new_notifications = list(
+                    Notification.objects
+                    .filter(owner=self)
+                    .filter(is_sent=False)
+                    .filter(timestamp__gte=cutoff_dt_for_stale)
+                    .select_related()
+                    .order_by('timestamp')
+                )                
                 new_notifications_count = 0
                 active_webhooks_count = 0
                 for webhook in self.webhooks.filter(is_active=True):
                     active_webhooks_count += 1
-                    notifications_qs = self._notifications_for_webhook_qs(
-                        webhook
-                    )
-                    if notifications_qs.count() > 0:
-                        new_notifications_count += notifications_qs.count()
+                    new_notifications = [
+                        x for x in all_new_notifications
+                        if str(x.notification_type) in webhook.notification_types
+                    ]                    
+                    if len(new_notifications) > 0:
+                        new_notifications_count += len(new_notifications)
                         logger.info(add_prefix(
                             'Found {} new notifications for webhook {}'.format(
-                                notifications_qs.count(), webhook
+                                len(new_notifications), webhook
                             )
                         ))                        
                         notifications_count += \
                             self._send_notifications_to_webhook(
-                                notifications_qs, webhook, rate_limited
+                                new_notifications, webhook, rate_limited
                             )
 
                 if active_webhooks_count == 0:
@@ -870,25 +882,12 @@ class Owner(models.Model):
 
         return success
 
-    def _notifications_for_webhook_qs(self, webhook: object):
-        cutoff_dt_for_stale = now() - timedelta(
-            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-        )
-        notifications_qs = Notification.objects\
-            .filter(owner=self)\
-            .filter(is_sent=False)\
-            .filter(timestamp__gte=cutoff_dt_for_stale) \
-            .filter(notification_type__in=webhook.notification_types)\
-            .select_related().order_by('timestamp')
-        
-        return notifications_qs
-
     def _send_notifications_to_webhook(
-        self, notifications_qs, webhook, rate_limited
-    ):
+        self, new_notifications, webhook, rate_limited
+    ) -> int:
         """sends all notifications to given webhook"""
         sent_count = 0
-        for notification in notifications_qs:
+        for notification in new_notifications:
             if (not notification.filter_for_npc_attacks()
                 and not notification.filter_for_alliance_level()
             ):
