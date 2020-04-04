@@ -125,22 +125,22 @@ class TestOwner(NoSocketsTestCase):
         # no errors and recent sync
         x.structures_last_error = Owner.ERROR_NONE
         x.structures_last_sync = now()
-        self.assertTrue(x.is_structure_sync_ok())
+        self.assertTrue(x.is_structure_sync_ok)
 
         # no errors and sync within grace period
         x.structures_last_error = Owner.ERROR_NONE
         x.structures_last_sync = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_structure_sync_ok())
+        self.assertTrue(x.is_structure_sync_ok)
 
         # recent sync error 
         x.structures_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
         x.structures_last_sync = now()
-        self.assertFalse(x.is_structure_sync_ok())
+        self.assertFalse(x.is_structure_sync_ok)
         
         # no error, but no sync within grace period
         x.structures_last_error = Owner.ERROR_NONE
         x.structures_last_sync = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_structure_sync_ok())
+        self.assertFalse(x.is_structure_sync_ok)
     
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 30)
     def test_is_notification_sync_ok(self):
@@ -150,22 +150,22 @@ class TestOwner(NoSocketsTestCase):
         # no errors and recent sync
         x.notifications_last_error = Owner.ERROR_NONE
         x.notifications_last_sync = now()
-        self.assertTrue(x.is_notification_sync_ok())
+        self.assertTrue(x.is_notification_sync_ok)
 
         # no errors and sync within grace period
         x.notifications_last_error = Owner.ERROR_NONE
         x.notifications_last_sync = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_notification_sync_ok())
+        self.assertTrue(x.is_notification_sync_ok)
 
         # recent sync error 
         x.notifications_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
         x.notifications_last_sync = now()
-        self.assertFalse(x.is_notification_sync_ok())
+        self.assertFalse(x.is_notification_sync_ok)
         
         # no error, but no sync within grace period
         x.notifications_last_error = Owner.ERROR_NONE
         x.notifications_last_sync = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_notification_sync_ok())
+        self.assertFalse(x.is_notification_sync_ok)
 
     @patch(MODULE_PATH + '.STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES', 30)
     def test_is_forwarding_sync_ok(self):
@@ -175,22 +175,22 @@ class TestOwner(NoSocketsTestCase):
         # no errors and recent sync
         x.forwarding_last_error = Owner.ERROR_NONE
         x.forwarding_last_sync = now()
-        self.assertTrue(x.is_forwarding_sync_ok())
+        self.assertTrue(x.is_forwarding_sync_ok)
 
         # no errors and sync within grace period
         x.forwarding_last_error = Owner.ERROR_NONE
         x.forwarding_last_sync = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_forwarding_sync_ok())
+        self.assertTrue(x.is_forwarding_sync_ok)
 
         # recent sync error 
         x.forwarding_last_error = Owner.ERROR_INSUFFICIENT_PERMISSIONS
         x.forwarding_last_sync = now()
-        self.assertFalse(x.is_forwarding_sync_ok())
+        self.assertFalse(x.is_forwarding_sync_ok)
         
         # no error, but no sync within grace period
         x.forwarding_last_error = Owner.ERROR_NONE
         x.forwarding_last_sync = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_forwarding_sync_ok())
+        self.assertFalse(x.is_forwarding_sync_ok)
 
     @patch(MODULE_PATH + '.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 30)
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES', 30)
@@ -205,7 +205,7 @@ class TestOwner(NoSocketsTestCase):
         x.notifications_last_sync = now()
         x.forwarding_last_error = Owner.ERROR_NONE
         x.forwarding_last_sync = now()
-        self.assertTrue(x.is_all_syncs_ok())
+        self.assertTrue(x.are_all_syncs_ok)
 
     def test_to_friendly_error_message(self):
         # normal error

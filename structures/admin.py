@@ -211,13 +211,16 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
     list_select_related = True
-    list_display = (
-        '_corporation',
+    list_display = (        
+        '_corporation',        
         '_alliance',
         'character',
         '_webhooks',
-        'is_active',
-        '_is_sync_ok',
+        '_is_active',
+        '_is_structure_sync_ok',
+        '_is_notification_sync_ok',
+        '_is_forwarding_sync_ok',
+        
     )
     list_filter = (
         ('corporation__alliance', admin.RelatedOnlyFieldListFilter),
@@ -268,12 +271,38 @@ class OwnerAdmin(admin.ModelAdmin):
 
     _webhooks.short_description = 'Webhooks'
 
-    def _is_sync_ok(self, obj):
-        return obj.notifications_last_error == Owner.ERROR_NONE \
-            and obj.structures_last_error == Owner.ERROR_NONE \
-            and obj.forwarding_last_error == Owner.ERROR_NONE
+    def _is_active(self, obj):
+        return obj.is_active
+    
+    _is_active.boolean = True
+    _is_active.short_description = 'active'
 
-    _is_sync_ok.boolean = True
+    def _is_structure_sync_ok(self, obj):
+        if not obj.is_active:
+            return None
+        else:
+            return obj.is_structure_sync_ok
+
+    _is_structure_sync_ok.boolean = True
+    _is_structure_sync_ok.short_description = 'structure sync'
+
+    def _is_notification_sync_ok(self, obj):
+        if not obj.is_active:
+            return None
+        else:
+            return obj.is_notification_sync_ok
+
+    _is_notification_sync_ok.boolean = True
+    _is_notification_sync_ok.short_description = 'notification sync'
+
+    def _is_forwarding_sync_ok(self, obj):
+        if not obj.is_active:
+            return None
+        else:
+            return obj.is_forwarding_sync_ok
+
+    _is_forwarding_sync_ok.boolean = True
+    _is_forwarding_sync_ok.short_description = 'forwarding'
 
     def get_readonly_fields(self, request, obj=None):
         if obj:    # editing an existing object

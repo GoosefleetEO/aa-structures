@@ -433,7 +433,7 @@ def service_status(request):
     """
     status_ok = True
     for owner in Owner.objects.filter(is_included_in_service_status=True):
-        status_ok = status_ok and owner.is_all_syncs_ok()
+        status_ok = status_ok and owner.are_all_syncs_ok
 
     if status_ok:
         return HttpResponse(gettext_lazy('service is up'))

@@ -197,6 +197,7 @@ class Owner(models.Model):
             self.corporation
         )
 
+    @property
     def is_structure_sync_ok(self) -> bool:
         """returns true if they have been no errors
         and last syncing occurred within alloted time
@@ -207,6 +208,7 @@ class Owner(models.Model):
                 minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES
             ))
 
+    @property
     def is_notification_sync_ok(self) -> bool:
         """returns true if they have been no errors
         and last syncing occurred within alloted time
@@ -217,6 +219,7 @@ class Owner(models.Model):
                 minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES
             ))
 
+    @property
     def is_forwarding_sync_ok(self) -> bool:
         """returns true if they have been no errors
         and last syncing occurred within alloted time
@@ -227,13 +230,14 @@ class Owner(models.Model):
                 minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
             ))
 
-    def is_all_syncs_ok(self) -> bool:
+    @property
+    def are_all_syncs_ok(self) -> bool:
         """returns true if they have been no errors
         and last syncing occurred within alloted time for all sync categories
         """
-        return self.is_structure_sync_ok() \
-            and self.is_notification_sync_ok() \
-            and self.is_forwarding_sync_ok()
+        return self.is_structure_sync_ok \
+            and self.is_notification_sync_ok \
+            and self.is_forwarding_sync_ok
 
     @classmethod
     def to_friendly_error_message(cls, error) -> str:
@@ -262,13 +266,11 @@ class Owner(models.Model):
         """updates all structures from ESI"""
         
         add_prefix = self._logger_prefix()
-        try:
-            self.structures_last_error = Owner.ERROR_NONE
-            self.structures_last_sync = now()
-            self.save()            
+        try:            
             esi_client, error = self.esi_client()
             if error:
                 self.structures_last_error = error
+                self.structures_last_sync = now()
                 self.save()
                 raise TokenError(self.to_friendly_error_message(error))
 
@@ -307,8 +309,9 @@ class Owner(models.Model):
                         Structure.objects.update_or_create_from_dict(
                             structure, self
                         )
-
+                                        
                     self.structures_last_error = self.ERROR_NONE
+                    self.structures_last_sync = now()
                     self.save()
 
             except Exception as ex:
@@ -316,6 +319,7 @@ class Owner(models.Model):
                     'An unexpected error ocurred {}'. format(ex)
                 ))
                 self.structures_last_error = self.ERROR_UNKNOWN
+                self.structures_last_sync = now()
                 self.save()
                 raise ex
 
@@ -617,13 +621,11 @@ class Owner(models.Model):
         
         add_prefix = self._logger_prefix()
         notifications_count = 0
-        try:
-            self.notifications_last_error = Owner.ERROR_NONE
-            self.notifications_last_sync = now()
-            self.save()            
+        try:            
             esi_client, error = self.esi_client()
             if error:
                 self.notifications_last_error = error
+                self.notifications_last_sync = now()
                 self.save()
                 raise TokenError(self.to_friendly_error_message(error))
            
@@ -646,12 +648,17 @@ class Owner(models.Model):
                     logger.info(add_prefix(
                         'No new notifications received from ESI'
                     ))
+                
+                self.notifications_last_error = self.ERROR_NONE
+                self.notifications_last_sync = now()
+                self.save()
 
             except Exception as ex:
                 logger.exception(add_prefix(
                     'An unexpected error ocurred {}'. format(ex)
                 ))
                 self.notifications_last_error = self.ERROR_UNKNOWN
+                self.notifications_last_sync = now()
                 self.save()
                 raise ex
 
@@ -661,7 +668,7 @@ class Owner(models.Model):
         else:
             success = True
             error_code = None
-
+        
         if user:
             self._send_report_to_user(                
                 'notifications',
@@ -731,28 +738,24 @@ class Owner(models.Model):
         new_notifications_count = 0
         with transaction.atomic():
             for notification in notifications:
-                notification_type = \
-                    Notification.get_matching_notification_type(
-                        notification['type']
+                notification_type = Notification.get_matching_notification_type(
+                    notification['type']
+                )
+                if notification_type:                    
+                    sender_type = EveEntity.get_matching_entity_category(
+                        notification['sender_type']
                     )
-                if notification_type:
-                    notifications_count += 1
-                    sender_type = \
-                        EveEntity.get_matching_entity_category(
-                            notification['sender_type']
-                        )
                     if sender_type != EveEntity.CATEGORY_OTHER:
                         sender, _ = EveEntity.objects.get_or_create_esi(
                             notification['sender_id']
                         )
                     else:
-                        sender, _ = EveEntity\
-                            .objects.get_or_create(
-                                id=notification['sender_id'],
-                                defaults={
-                                    'category': sender_type
-                                }
-                            )
+                        sender, _ = EveEntity.objects.get_or_create(
+                            id=notification['sender_id'],
+                            defaults={
+                                'category': sender_type
+                            }
+                        )
                     text = notification['text'] \
                         if 'text' in notification else None
                     is_read = notification['is_read'] \
@@ -766,9 +769,10 @@ class Owner(models.Model):
                             'notification_type': notification_type,
                             'text': text,
                             'is_read': is_read,
-                            'last_updated': self.notifications_last_sync,
+                            'last_updated': now(),
                         }
                     )
+                    notifications_count += 1
                     if created:
                         obj.created = now()
                         obj.save()
@@ -808,11 +812,7 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()
         notifications_count = 0
         try:
-            try:
-                self.forwarding_last_error = Owner.ERROR_NONE
-                self.forwarding_last_sync = now()
-                self.save()
-
+            try:                                
                 cutoff_dt_for_stale = now() - timedelta(
                     hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
                 )
@@ -851,6 +851,7 @@ class Owner(models.Model):
                     logger.info(add_prefix('No new notifications found'))
 
                 self.forwarding_last_error = self.ERROR_NONE
+                self.forwarding_last_sync = now()
                 self.save()
 
             except TokenError:
@@ -861,6 +862,7 @@ class Owner(models.Model):
                     'An unexpected error ocurred {}'. format(ex)
                 ))
                 self.forwarding_last_error = self.ERROR_UNKNOWN
+                self.forwarding_last_sync = now()
                 self.save()
                 raise ex
      

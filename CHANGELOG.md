@@ -41,12 +41,13 @@ python manage.py structures_updatesde
 
 ### Changed
 
-- Attempt to reduce the current memory leak in celery workers ([#18](https://gitlab.com/ErikKalkoken/aa-structures/issues/18))
 - Changed admin functions from celery tasks to commands: update_sde, purge_all
+- Now shows separate status for structure sync, notification sync, forwarding sync on admin site for each owner
 
 ### Fixed
 
 - Notifications are now correctly send to multiple webhooks on the same owner ([#19](https://gitlab.com/ErikKalkoken/aa-structures/issues/19))
+- Attempt to reduce the current memory leak in celery workers ([#18](https://gitlab.com/ErikKalkoken/aa-structures/issues/18))
 
 ## [1.0.0] - 2020-02-12
 
