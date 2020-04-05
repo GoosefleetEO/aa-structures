@@ -63,9 +63,9 @@ This new version makes use of "task priorities" to ensure important tasks like t
 
 For this to work please also make sure you have celery task priorities activated. This was a new feature introduced with Alliance Auth 2.6.3 and required some additional [manual configuration](https://gitlab.com/allianceauth/allianceauth/-/merge_requests/1181#note_317289062) of your local `celery.py` file.
 
-#### Default language
+#### Preferred language
 
-Finally you may want to set your preferred default language. Please see [Localization](https://gitlab.com/ErikKalkoken/aa-structures#localization) in the README for details.
+Finally you may want to set your preferred language. Please see [Localization](https://gitlab.com/ErikKalkoken/aa-structures#localization) in the README for details.
 
 ### Added
 
