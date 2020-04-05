@@ -4,4 +4,6 @@ include structures/swagger.json
 recursive-include structures *.py
 recursive-include structures/static *
 recursive-include structures/templates *
-
+recursive-include structures/locale *.mo
+recursive-exclude testauth *.*
+recursive-exclude structures/tests *.*

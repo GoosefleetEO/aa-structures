@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.1.1] - 2020-04-05
+
+If you are upgrading from a version prior to 1.1.0 please make sure to follow the instructions for 1.1.0.
+
+### Fixed
+
+- Added missing translations
+
 ## [1.1.0] - 2020-04-04
 
 **Localization**
@@ -40,7 +48,8 @@ python manage.py collectstatic
 Restart your supervisors:
 
 ```bash
-supervisorctl restart myauth:
+
+ restart myauth:
 ```
 
 Update the local copy of your Eve Online universe data to get localizations:
@@ -51,7 +60,7 @@ python manage.py structures_updatesde
 
 #### Task priorities
 
-This new version makes use of "task priorities" to ensure important tasks like the delivery of attack notifications are executed as quickly as possible. 
+This new version makes use of "task priorities" to ensure important tasks like the delivery of attack notifications are executed as quickly as possible.
 
 For this to work please also make sure you have celery task priorities activated. This was a new feature introduced with Alliance Auth 2.6.3 and required some additional [manual configuration](https://gitlab.com/allianceauth/allianceauth/-/merge_requests/1181#note_317289062) of your local `celery.py` file.
 
