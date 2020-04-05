@@ -48,8 +48,7 @@ python manage.py collectstatic
 Restart your supervisors:
 
 ```bash
-
- restart myauth:
+supervisorctl restart myauth:
 ```
 
 Update the local copy of your Eve Online universe data to get localizations:
