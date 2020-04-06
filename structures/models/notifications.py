@@ -1,6 +1,6 @@
 """Notification related models"""
 
-import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 from time import sleep
@@ -412,6 +412,10 @@ class Notification(models.Model):
         
         return match[0] if match else None
 
+    def get_parsed_text(self) -> dict:
+        """returns the notifications's text as dict"""
+        return yaml.safe_load(self.text)
+
     def is_npc_attacking(self):
         """ whether this notification is about a NPC attacking"""
         result = False
@@ -419,7 +423,7 @@ class Notification(models.Model):
             NTYPE_ORBITAL_ATTACKED,
             NTYPE_STRUCTURE_UNDER_ATTACK
         ]:
-            parsed_text = yaml.safe_load(self.text)
+            parsed_text = self.get_parsed_text()
             corporation_id = None
             if self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
                 if ('corpLinkData' in parsed_text
@@ -483,20 +487,20 @@ class Notification(models.Model):
     @classmethod
     def _ldap_datetime_2_dt(cls, ldap_dt: int) -> datetime:
         """converts ldap time to datatime"""
-        return pytz.utc.localize(datetime.datetime.utcfromtimestamp(
+        return pytz.utc.localize(datetime.utcfromtimestamp(
             (ldap_dt / 10000000) - 11644473600
         ))
 
     @classmethod
-    def _ldap_timedelta_2_timedelta(cls, ldap_td: int) -> datetime.timedelta:
+    def _ldap_timedelta_2_timedelta(cls, ldap_td: int) -> timedelta:
         """converts a ldap timedelta into a dt timedelta"""
-        return datetime.timedelta(microseconds=ldap_td / 10)
+        return timedelta(microseconds=ldap_td / 10)
 
     def _generate_embed(self, language_code: str) -> dhooks_lite.Embed:
         """generates a Discord embed for this notification"""
 
         logger.info('Creating embed with language = %s' % language_code)
-        parsed_text = yaml.safe_load(self.text)
+        parsed_text = self.get_parsed_text()
         
         with translation.override(language_code):
             if self.notification_type in [
@@ -726,8 +730,7 @@ class Notification(models.Model):
                 'structure_type': structure_type.name_localized,
                 'solar_system': self._gen_solar_system_text(solar_system)
             }
-            unanchored_at = self.timestamp \
-                + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+            unanchored_at = self.timestamp + timedelta(hours=24)
             description += 'The anchoring timer ends at: {}'.format(
                 unanchored_at.strftime(DATETIME_FORMAT)
             )
@@ -1197,7 +1200,7 @@ class Notification(models.Model):
         """
         success = False
         if self.notification_type in _NTYPE_RELEVANT_FOR_TIMERBOARD:
-            parsed_text = yaml.safe_load(self.text)
+            parsed_text = self.get_parsed_text()
             try:
                 with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
                     if self.notification_type in [
@@ -1280,8 +1283,7 @@ class Notification(models.Model):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text['solarsystemID']
         )
-        eve_time = self.timestamp \
-            + self._ldap_timedelta_2_timedelta(parsed_text['timeLeft'])
+        eve_time = self.timestamp + timedelta(hours=24)
         return Timer(
             details=gettext('Anchor timer'),
             system=solar_system.name,
@@ -1384,8 +1386,8 @@ class Notification(models.Model):
                 )\
                 .order_by('-timestamp')
 
-            for x in notifications_qs:
-                parsed_text_2 = yaml.safe_load(x.text)
+            for notification in notifications_qs:
+                parsed_text_2 = notification.get_parsed_text()
                 my_structure_type_id = parsed_text_2['structureTypeID']
                 if my_structure_type_id == parsed_text['structureTypeID']:
                     eve_time = self._ldap_datetime_2_dt(

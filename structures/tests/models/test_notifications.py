@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timedelta
 import json
 from unittest.mock import Mock, patch
 
@@ -22,10 +21,11 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 class TestWebhook(NoSocketsTestCase):
 
-    def setUp(self):
-        self.my_webhook = Webhook(
-            name='Dummy Webhook',
-            url='https://www.example.com'
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass() 
+        cls.my_webhook = Webhook(
+            name='Dummy Webhook', url='https://www.example.com'
         )
 
     def test_str(self):
@@ -60,11 +60,10 @@ class TestWebhook(NoSocketsTestCase):
 
 class TestEveEntities(NoSocketsTestCase):
 
-    def setUp(self):
-                          
-        load_entities([            
-            EveEntity    
-        ])
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()                      
+        load_entities([EveEntity])
 
     def test_str(self):
         obj = EveEntity.objects.get(id=3011)
@@ -124,17 +123,16 @@ class TestEveEntities(NoSocketsTestCase):
 
 class TestNotification(NoSocketsTestCase):
     
-    def setUp(self):         
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         create_structures()
-        my_user, self.owner = set_owner_character(character_id=1001)        
-        load_notification_entities(self.owner)
-        
-        self.webhook = Webhook.objects.create(
-            name='Test',
-            url='http://www.example.com/dummy/'
+        my_user, cls.owner = set_owner_character(character_id=1001)        
+        load_notification_entities(cls.owner)        
+        cls.webhook = Webhook.objects.create(
+            name='Test', url='http://www.example.com/dummy/'
         )
-        self.owner.webhooks.add(self.webhook)
-        self.owner.save()
+        cls.owner.webhooks.add(cls.webhook)
       
     def test_str(self):
         obj = Notification.objects.get(notification_id=1000000403)
@@ -163,9 +161,18 @@ class TestNotification(NoSocketsTestCase):
         )
 
     def test_ldap_timedelta_2_timedelta(self):
-        pass
-        # tbd
+        expected = timedelta(minutes=15)
+        self.assertEqual(
+            Notification._ldap_timedelta_2_timedelta(9000000000), expected
+        )
 
+    def test_get_parsed_text(self):
+        obj = Notification.objects.get(notification_id=1000000404)
+        parsed_text = obj.get_parsed_text()
+        self.assertEqual(parsed_text['autoTime'], 132186924601059151)
+        self.assertEqual(parsed_text['structureName'], 'Dummy')
+        self.assertEqual(parsed_text['solarSystemID'], 30002537)
+        
     def test_is_npc_attacking(self):
         x1 = Notification.objects.get(notification_id=1000000509)
         self.assertFalse(x1.is_npc_attacking())
@@ -277,9 +284,24 @@ class TestNotification(NoSocketsTestCase):
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(x.send_to_webhook(self.webhook))
 
+
+class TestNotificationAddToTimerboard(NoSocketsTestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        my_user, cls.owner = set_owner_character(character_id=1001)        
+        load_notification_entities(cls.owner)        
+        cls.webhook = Webhook.objects.create(
+            name='Test', url='http://www.example.com/dummy/'
+        )
+        cls.owner.webhooks.add(cls.webhook)
+        Timer.objects.all().delete()
+        
     @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
     @patch('allianceauth.timerboard.models.Timer', autospec=True)
-    def test_add_to_timerboard_setting_disabled(self, mock_Timer):
+    def test_setting_disabled(self, mock_Timer):
         x = Notification.objects.get(notification_id=1000000404)
         self.assertFalse(x.process_for_timerboard())
         self.assertFalse(mock_Timer.objects.create.called)
@@ -289,8 +311,7 @@ class TestNotification(NoSocketsTestCase):
         self.assertFalse(mock_Timer.delete.called)
     
     @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
-    def test_add_to_timerboard_normal(self):
-        Timer.objects.all().delete()        
+    def test_normal(self):        
         notification_without_timer_query = Notification.objects\
             .filter(notification_id__in=[
                 1000000401,
@@ -344,23 +365,19 @@ class TestNotification(NoSocketsTestCase):
         self.assertSetEqual(ids_set_1, ids_set_2)
 
     @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', True)
-    def test_add_to_timerboard_run_all(self):        
+    def test_run_all(self):        
         for x in Notification.objects.all():
             x.process_for_timerboard()
 
     @patch(MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', False)
-    def test_add_to_timerboard_corp_restriction_1(self):
-        Timer.objects.all().delete()  
-
+    def test_corp_restriction_1(self):        
         x = Notification.objects.get(notification_id=1000000504)
         self.assertTrue(x.process_for_timerboard())
         t = Timer.objects.first()
         self.assertFalse(t.corp_timer)
         
     @patch(MODULE_PATH + '.STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', True)
-    def test_add_to_timerboard_corp_restriction_2(self):
-        Timer.objects.all().delete()  
-
+    def test_corp_restriction_2(self):        
         x = Notification.objects.get(notification_id=1000000504)
         self.assertTrue(x.process_for_timerboard())
         t = Timer.objects.first()
@@ -382,3 +399,11 @@ class TestNotification(NoSocketsTestCase):
         self.assertEqual(
             embed.description[:39], 'The Astrahus **(unknown)** in [Amamake]'
         )
+        
+    def test_anchoring_time(self):        
+        obj = Notification.objects.get(notification_id=1000000501)        
+        self.assertTrue(obj.process_for_timerboard())
+        timer = Timer.objects.last()
+        self.assertEqual(
+            timer.eve_time, obj.timestamp + timedelta(hours=24)
+        )    

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.1.2] - 2020-04-06
+
+If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
+
+### Change
+
+- Now uses the 24h timer for structure anchoring in notifications and timers ([#21](https://gitlab.com/ErikKalkoken/aa-structures/issues/21))
+
 ## [1.1.1] - 2020-04-05
 
 If you are upgrading from a version prior to 1.1.0 please make sure to follow the instructions for 1.1.0.
