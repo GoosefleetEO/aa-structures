@@ -67,7 +67,9 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 class TestOwner(NoSocketsTestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveAllianceInfo,
             EveCorporationInfo,
@@ -286,12 +288,9 @@ class TestOwner(NoSocketsTestCase):
 
 class TestUpdateStructuresEsi(NoSocketsTestCase):
     
-    def setUp(self):        
-        # reset data that might be overridden        
-        esi_get_corporations_corporation_id_structures.override_data = None
-        esi_get_corporations_corporation_id_customs_offices.override_data = \
-            None
-        
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         # test data
         load_entities([
             EveCategory,
@@ -306,18 +305,18 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             EveCharacter,            
         ])
         # 1 user
-        self.character = EveCharacter.objects.get(character_id=1001)
+        cls.character = EveCharacter.objects.get(character_id=1001)
                 
-        self.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        self.user = AuthUtils.create_user(self.character.character_name)
+        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        cls.user = AuthUtils.create_user(cls.character.character_name)
         AuthUtils.add_permission_to_user_by_name(
-            'structures.add_structure_owner', self.user
+            'structures.add_structure_owner', cls.user
         )
         
-        self.main_ownership = CharacterOwnership.objects.create(
-            character=self.character,
+        cls.main_ownership = CharacterOwnership.objects.create(
+            character=cls.character,
             owner_hash='x1',
-            user=self.user
+            user=cls.user
         )        
         Structure.objects.all().delete()
         
@@ -325,6 +324,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         StructureTag.objects.all().delete()
         for x in entities_testdata['StructureTag']:
             StructureTag.objects.create(**x)
+    
+    def setUp(self):
+        # reset data that might be overridden        
+        esi_get_corporations_corporation_id_structures.override_data = None
+        esi_get_corporations_corporation_id_customs_offices.override_data = \
+            None
         
     def test_returns_error_when_no_sync_char_defined(self):
         owner = Owner.objects.create(
@@ -893,9 +898,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
 class TestFetchNotificationsEsi(NoSocketsTestCase):
 
-    def setUp(self): 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
+        cls.user, cls.owner = set_owner_character(character_id=1001)
        
     def test_report_error_when_run_without_char(self):        
         my_owner = Owner.objects.get(corporation__corporation_id=2002)
@@ -906,7 +913,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         )
         
     @patch(MODULE_PATH + '.Token')    
-    def test_report_error_when_run_with_expired_token(self, mock_Token):                        
+    def test_report_error_when_run_with_expired_token(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenExpiredError()        
                         
         # create test data
@@ -924,7 +931,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     
     # test invalid token    
     @patch(MODULE_PATH + '.Token')
-    def test_report_error_when_run_with_invalid_token(self, mock_Token):                        
+    def test_report_error_when_run_with_invalid_token(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
          
         # create test data
@@ -951,7 +958,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
     def test_can_fetch_notifications_correctly(
         self, mock_esi_client_factory, mock_Token, mock_notify
-    ):                
+    ):
         mock_esi_client_factory.return_value = esi_mock_client()
 
         # create test data
@@ -1023,19 +1030,21 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
 class TestSendNewNotifications(NoSocketsTestCase):    
 
-    def setUp(self):         
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
-        self.owner.is_alliance_main = True
-        self.owner.save()
-        load_notification_entities(self.owner)
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.owner.is_alliance_main = True
+        cls.owner.save()
+        load_notification_entities(cls.owner)
 
         my_webhook = Webhook.objects.create(
             name='Dummy',
             url='dummy-url',            
             is_active=True
         )
-        self.owner.webhooks.add(my_webhook)
+        cls.owner.webhooks.add(my_webhook)
 
     @staticmethod
     def my_send_to_webhook_success(self, webhook):

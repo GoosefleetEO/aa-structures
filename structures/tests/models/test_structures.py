@@ -57,7 +57,9 @@ class TestStructureTag(NoSocketsTestCase):
 
 class TestStructure(NoSocketsTestCase):
 
-    def setUp(self):                  
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         create_structures()        
         set_owner_character(character_id=1001)
     
@@ -146,7 +148,9 @@ class TestStructureNoSetup(NoSocketsTestCase):
 
 class TestStructureService(NoSocketsTestCase):
 
-    def setUp(self):                  
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()          
         create_structures()        
         set_owner_character(character_id=1001)
 

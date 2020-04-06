@@ -406,4 +406,4 @@ class TestNotificationAddToTimerboard(NoSocketsTestCase):
         timer = Timer.objects.last()
         self.assertEqual(
             timer.eve_time, obj.timestamp + timedelta(hours=24)
-        )    
+        )

@@ -135,15 +135,17 @@ class TestEveUniverseLocalization(NoSocketsTestCase):
 
 class TestEveType(NoSocketsTestCase):
 
-    def setUp(self):                          
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()    
         load_entities([
             EveCategory,
             EveGroup,
             EveType,          
         ])
-        self.type_astrahus = EveType.objects.get(id=35832)
-        self.type_poco = EveType.objects.get(id=2233)
-        self.type_starbase = EveType.objects.get(id=16213)
+        cls.type_astrahus = EveType.objects.get(id=35832)
+        cls.type_poco = EveType.objects.get(id=2233)
+        cls.type_starbase = EveType.objects.get(id=16213)
 
     def test_str(self):
         expected = 'Astrahus'
@@ -193,7 +195,9 @@ class TestEveType(NoSocketsTestCase):
 
 class TestEvePlanet(NoSocketsTestCase):
     
-    def setUp(self):                          
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveCategory,
             EveGroup,
@@ -211,15 +215,16 @@ class TestEvePlanet(NoSocketsTestCase):
         self.assertEqual(obj.eve_type_id, 2016)
 
     def test_name_localized_generated(self):
-        obj = EvePlanet.objects.get(id=40161463)
-        
+        obj = EvePlanet.objects.get(id=40161463)        
         expected = 'Amamake_de I'
         self.assertEqual(obj._name_localized_generated('de'), expected)
 
 
 class TestEveMoon(NoSocketsTestCase):
     
-    def setUp(self):                          
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveCategory,
             EveGroup,

@@ -33,7 +33,7 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 class TestStructureList(NoSocketsTestCase):
     
-    def setUp(self):                
+    def setUp(self):   
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
         AuthUtils.add_permission_to_user_by_name(
@@ -260,7 +260,8 @@ class TestStructureList(NoSocketsTestCase):
 
 class TestAddStructureOwner(NoSocketsTestCase):
     
-    def _create_test_user(self, character_id):
+    @staticmethod
+    def _create_test_user(character_id):
         """create test user with all permission from character ID"""
         my_user = create_user(character_id)       
         AuthUtils.add_permission_to_user_by_name(
@@ -271,13 +272,17 @@ class TestAddStructureOwner(NoSocketsTestCase):
         )
         return my_user
 
-    def setUp(self):
-        self.factory = RequestFactory()
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()        
         load_entities(
             [EveCorporationInfo, EveAllianceInfo, EveCharacter, Webhook]
         )        
-        self.user = self._create_test_user(1001)
-        self.character = self.user.profile.main_character
+        cls.user = cls._create_test_user(1001)
+        cls.character = cls.user.profile.main_character
+        cls.factory = RequestFactory()
+        
+    def setUp(self):        
         Owner.objects.all().delete()
     
     @patch(MODULE_PATH + '.STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED', True)
@@ -388,13 +393,15 @@ class TestAddStructureOwner(NoSocketsTestCase):
 
 class TestStatus(NoSocketsTestCase):
     
-    def setUp(self):                
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
+        my_user, _ = set_owner_character(character_id=1001)
         AuthUtils.add_permission_to_user_by_name(
-            'structures.basic_access', self.user
+            'structures.basic_access', my_user
         )        
-        self.factory = RequestFactory()   
+        cls.factory = RequestFactory()   
 
     def test_view_service_status_ok(self):
         for owner in Owner.objects.filter(

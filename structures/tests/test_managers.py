@@ -36,7 +36,9 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 class TestEveCategoryManager(NoSocketsTestCase):
     
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         EveCategory.objects.all().delete()
     
     def test_can_get_stored_object(self):        
@@ -136,7 +138,9 @@ class TestEveCategoryManager(NoSocketsTestCase):
 
 class TestEveGroupManager(NoSocketsTestCase):
     
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entity(EveCategory)
         
     def test_can_get_stored_object(self):        
@@ -206,7 +210,9 @@ class TestEveGroupManager(NoSocketsTestCase):
 
 class TestEveTypeManager(NoSocketsTestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([EveCategory, EveGroup])
     
     def test_can_get_stored_object(self):        
@@ -264,7 +270,9 @@ class TestEveRegionManager(NoSocketsTestCase):
 
 class TestEveConstellationManager(NoSocketsTestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entity(EveRegion)
     
     def test_can_get_stored_object(self):        
@@ -305,7 +313,9 @@ class TestEveConstellationManager(NoSocketsTestCase):
     
 class TestEveSolarSystemManager(NoSocketsTestCase):
     
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveCategory, 
             EveGroup,
@@ -392,7 +402,9 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
 
 class TestEveMoonManager(NoSocketsTestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveCategory, 
             EveGroup,
@@ -438,7 +450,9 @@ class TestEveMoonManager(NoSocketsTestCase):
 
 class TestEvePlanetManager(NoSocketsTestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveCategory, 
             EveGroup,
