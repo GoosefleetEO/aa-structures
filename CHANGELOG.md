@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.1.3] - 2020-04-06
+
+If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
+
+### Change
+
+- Will no longer show the anchoring time in notifications or create automatic timers for structure anchoring in null sec ([#21](https://gitlab.com/ErikKalkoken/aa-structures/issues/21))
+
 ## [1.1.2] - 2020-04-06
 
 If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.

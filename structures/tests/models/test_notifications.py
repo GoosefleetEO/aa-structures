@@ -284,6 +284,51 @@ class TestNotification(NoSocketsTestCase):
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(x.send_to_webhook(self.webhook))
 
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_LANGUAGE', 'en')
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', spec=True)
+    def test_send_notification_without_existing_structure(self, mock_execute):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.status_ok = True
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+        
+        Structure.objects.all().delete()
+        obj = Notification.objects.get(notification_id=1000000505)
+        obj.send_to_webhook(self.webhook)
+        embed = mock_execute.call_args[1]['embeds'][0]
+        self.assertEqual(
+            embed.description[:39], 'The Astrahus **(unknown)** in [Amamake]'
+        )
+
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_LANGUAGE', 'en')
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', spec=True)
+    def test_anchoring_in_low_sec_has_timer(self, mock_execute):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.status_ok = True
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+                
+        obj = Notification.objects.get(notification_id=1000000501)
+        obj.send_to_webhook(self.webhook)
+        embed = mock_execute.call_args[1]['embeds'][0]
+        self.assertIn('The anchoring timer ends at', embed.description)
+
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_LANGUAGE', 'en')
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', spec=True)
+    def test_anchoring_in_null_sec_no_timer(self, mock_execute):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.status_ok = True
+        mock_response.content = None        
+        mock_execute.return_value = mock_response
+                
+        obj = Notification.objects.get(notification_id=1000010501)
+        obj.send_to_webhook(self.webhook)
+        embed = mock_execute.call_args[1]['embeds'][0]
+        self.assertNotIn('The anchoring timer ends at', embed.description)
+        
 
 class TestNotificationAddToTimerboard(NoSocketsTestCase):
     
@@ -383,27 +428,15 @@ class TestNotificationAddToTimerboard(NoSocketsTestCase):
         t = Timer.objects.first()
         self.assertTrue(t.corp_timer)
 
-    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_LANGUAGE', 'en')
-    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', spec=True)
-    def test_send_notification_without_existing_structure(self, mock_execute):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.status_ok = True
-        mock_response.content = None        
-        mock_execute.return_value = mock_response
-        
-        Structure.objects.all().delete()
-        obj = Notification.objects.get(notification_id=1000000505)
-        obj.send_to_webhook(self.webhook)
-        embed = mock_execute.call_args[1]['embeds'][0]
-        self.assertEqual(
-            embed.description[:39], 'The Astrahus **(unknown)** in [Amamake]'
-        )
-        
-    def test_anchoring_time(self):        
+    def test_anchoring_timer_created_for_low_sec(self):        
         obj = Notification.objects.get(notification_id=1000000501)        
         self.assertTrue(obj.process_for_timerboard())
-        timer = Timer.objects.last()
+        timer = Timer.objects.first()
         self.assertEqual(
             timer.eve_time, obj.timestamp + timedelta(hours=24)
         )
+
+    def test_anchoring_timer_not_created_for_null_sec(self):        
+        obj = Notification.objects.get(notification_id=1000010501)        
+        self.assertFalse(obj.process_for_timerboard())
+        self.assertIsNone(Timer.objects.first())

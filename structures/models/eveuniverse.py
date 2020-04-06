@@ -423,6 +423,22 @@ class EveSolarSystem(EveUniverse):
         children = {
             'planets': 'EvePlanet'
         }
+    
+    @property
+    def is_high_sec(self):
+        return self.security_status > 0.5
+
+    @property
+    def is_low_sec(self):
+        return 0 < self.security_status <= 0.5
+
+    @property
+    def is_null_sec(self):
+        return self.security_status <= 0 and not self.is_wh_space
+
+    @property
+    def is_wh_space(self):
+        return 31000000 <= self.id < 32000000
 
 
 class EvePlanet(EveUniverse):

@@ -730,10 +730,11 @@ class Notification(models.Model):
                 'structure_type': structure_type.name_localized,
                 'solar_system': self._gen_solar_system_text(solar_system)
             }
-            unanchored_at = self.timestamp + timedelta(hours=24)
-            description += 'The anchoring timer ends at: {}'.format(
-                unanchored_at.strftime(DATETIME_FORMAT)
-            )
+            if not solar_system.is_null_sec:
+                unanchored_at = self.timestamp + timedelta(hours=24)
+                description += 'The anchoring timer ends at: {}'.format(
+                    unanchored_at.strftime(DATETIME_FORMAT)
+                )
             title = gettext('Structure anchoring')
             color = self.EMBED_COLOR_INFO
 
@@ -1283,17 +1284,22 @@ class Notification(models.Model):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text['solarsystemID']
         )
-        eve_time = self.timestamp + timedelta(hours=24)
-        return Timer(
-            details=gettext('Anchor timer'),
-            system=solar_system.name,
-            planet_moon='',
-            structure=structure_type.name,
-            objective='Friendly',
-            eve_time=eve_time,
-            eve_corp=self.owner.corporation,
-            corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-        )
+        if not solar_system.is_null_sec:
+            eve_time = self.timestamp + timedelta(hours=24)
+            timer = Timer(
+                details=gettext('Anchor timer'),
+                system=solar_system.name,
+                planet_moon='',
+                structure=structure_type.name,
+                objective='Friendly',
+                eve_time=eve_time,
+                eve_corp=self.owner.corporation,
+                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
+            )
+        else:
+            timer = None
+        
+        return timer
     
     def _gen_timer_sov_reinforcements(self, parsed_text):
         """generate timer for sov reinforcements"""

@@ -16,6 +16,7 @@ Alliance Auth.
 - [Settings](#settings)
 - [Permissions](#permissions)
 - [Notifications](#notifications)
+- [Timers](#timers)
 - [Service monitoring](#service-monitoring)
 - [Admin tool](#admin-tools)
 - [Change Log](CHANGELOG.md)
@@ -167,7 +168,7 @@ Alliance Structures has full localization for languages support by Alliance Auth
 
 To switch the UI to your preferred language simply use the language switcher from Auth.
 
-### Notifications
+### Notifications on Discord
 
 The language for notifications on Discord can be chosen by configuring the language property for the respective Webhook. The default language will be used if no language is configured for a Webhook.
 
@@ -260,6 +261,19 @@ The following notifications are currently supported (names are from the API):
 - SovCommandNodeEventStarted
 - SovStructureReinforced
 - SovStructureDestroyed
+
+## Timers
+
+**Alliance Structures** will automatically create friendly timers from  notifications for Alliance Auth's Structure Timers app. This feature can be configured via [Settings](#settings).
+
+Timers can be created from the following notification types:
+
+- OrbitalReinforced
+- MoonminingExtractionStarted
+- SovStructureReinforced
+- StructureAnchoring (excluding structures anchored in null sec)
+- StructureLostArmor
+- StructureLostShields
 
 ## Service monitoring
 
