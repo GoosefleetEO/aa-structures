@@ -6,6 +6,10 @@
             "name": "Celestial"
         },
         {
+            "id": 4,
+            "name": "Material"
+        },
+        {
             "id": 23,
             "name": "Starbase"
         },
@@ -41,8 +45,18 @@
             "eve_category_id": 23
         },
         {
+            "id": 423,
+            "name": "Ice Products",
+            "eve_category_id": 4
+        },
+        {
             "id": 1003,
             "name": "Territorial Claim Unit",
+            "eve_category_id": 40
+        },
+        {
+            "id": 1136,
+            "name": "Fuel Block",
             "eve_category_id": 40
         },
         {
@@ -115,13 +129,16 @@
             "name": "Planet (Shattered)",
             "eve_group_id": 7
         },
-
         {
             "id": 2233,
             "name": "Customs Office",
             "eve_group_id": 1025
         },
-        
+        {
+            "id": 4051,
+            "name": "Nitrogen Fuel Block",
+            "eve_group_id": 1136
+        },
         {
             "id": 16213,
             "name": "Caldari Control Tower",
@@ -130,6 +147,21 @@
         {
             "id": 16214,
             "name": "Minmatar Control Tower",
+            "eve_group_id": 365
+        },
+        {
+            "id": 16275,
+            "name": "Strontium Clathrates",
+            "eve_group_id": 423
+        },
+        {
+            "id": 20061,
+            "name": "Caldari Control Tower Medium",
+            "eve_group_id": 365
+        },
+        {
+            "id": 20062,
+            "name": "Caldari Control Tower Small",
             "eve_group_id": 365
         },
         {
@@ -335,6 +367,11 @@
         {
             "id": 40161466,
             "name": "Amamake II - Moon 2",
+            "eve_solar_system_id": 30002537
+        },
+        {
+            "id": 40161471,
+            "name": "Amamake IV - Moon 1",
             "eve_solar_system_id": 30002537
         }
     ], 

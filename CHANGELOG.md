@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.2.0] - 2020-04-12
+
+**POS fuel**
+
+If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
+
+### Added
+
+- Display "fuel expires" for starbases (w/o sof effects) ([#20](https://gitlab.com/ErikKalkoken/aa-structures/issues/20))
+
 ## [1.1.4] - 2020-04-14
 
 If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.

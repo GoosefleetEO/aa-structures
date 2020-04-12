@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import json
 import logging
+import math
 import os
 import re
 from time import sleep
@@ -579,8 +580,8 @@ class Owner(models.Model):
             esi_client=esi_client,
             logger_tag=add_prefix()
         )
-        # convert into structures data format
-        structures = list()
+       
+        # add starbase names        
         if not starbases:
             logger.info(add_prefix('No starbases retrieved from ESI'))
         else:
@@ -601,6 +602,43 @@ class Owner(models.Model):
                 )
                 names_data += names_data_chunk
             names = {x['item_id']: x['name'] for x in names_data}
+
+            for starbase in starbases:                
+                starbase_id = starbase['starbase_id']
+                starbase['name'] = \
+                    names[starbase_id] if starbase_id in names else 'Starbase'
+            
+            # add fuel expiration
+            for starbase in starbases:
+                starbase_details = EsiSmartRequest.fetch(
+                    'Corporation.get_corporations_corporation_id_starbases_starbase_id',
+                    args={
+                        'corporation_id': corporation_id, 
+                        'starbase_id': starbase['starbase_id'],
+                        'system_id': starbase['system_id'],
+                    },                    
+                    esi_client=esi_client,
+                    logger_tag=add_prefix()
+                )
+                fuel_quantity = None
+                if 'fuels' in starbase_details:
+                    for fuel in starbase_details['fuels']:
+                        fuel_type, _ = EveType.objects.get_or_create_esi(
+                            fuel['type_id']
+                        )
+                        if fuel_type.is_fuel_block:
+                            fuel_quantity = fuel['quantity']
+                if fuel_quantity:
+                    starbase_type, _ = EveType.objects.get_or_create_esi(
+                        starbase['type_id']
+                    )
+                    hours = math.floor(
+                        fuel_quantity / starbase_type.starbase_fuel_per_hour
+                    )
+                    starbase['fuel_expires'] = now() + timedelta(hours=hours)
+                
+            # convert starbases to structures
+            structures = list()
             for starbase in starbases:
                 if starbase['starbase_id'] in names:
                     name = names[starbase['starbase_id']]
@@ -618,6 +656,9 @@ class Owner(models.Model):
 
                 if 'moon_id' in starbase:
                     structure['moon_id'] = starbase['moon_id']
+
+                if 'fuel_expires' in starbase:
+                    structure['fuel_expires'] = starbase['fuel_expires']
 
                 if 'reinforced_until' in starbase:
                     structure['state_timer_end'] = starbase['reinforced_until']

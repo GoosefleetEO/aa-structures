@@ -298,7 +298,8 @@ class Structure(models.Model):
 
     @property
     def is_low_power(self):
-        return False if self.eve_type.is_poco else not self.fuel_expires
+        return False if not self.eve_type.is_upwell_structure \
+            else not self.fuel_expires
 
     @property
     def is_reinforced(self):

@@ -238,31 +238,27 @@ class StructuresRowConverter:
         self._row['is_low_power'] = self._structure.is_low_power
         self._row['is_low_power_str'] = yesno_str(self._structure.is_low_power)
 
-        if self._row['is_poco'] or self._row['is_starbase']:
+        if self._structure.is_low_power:
+            fuel_expires_display = format_html_lazy(
+                '<span class="label label-default">{}</span>',
+                gettext_lazy('Low Power')
+            )                    
+            fuel_expires_timestamp = None
+        elif self._structure.fuel_expires:
+            fuel_expires_timestamp = self._structure.fuel_expires.isoformat()
+            if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
+                fuel_expires_display = timeuntil_str(
+                    self._structure.fuel_expires - now()
+                )
+                if not fuel_expires_display:
+                    fuel_expires_display = '?'
+                    fuel_expires_timestamp = None
+            else:
+                fuel_expires_display = \
+                    self._structure.fuel_expires.strftime(DATETIME_FORMAT)
+        else:
             fuel_expires_display = gettext_lazy('N/A')
             fuel_expires_timestamp = None
-        else:
-            if self._row['is_low_power']:
-                fuel_expires_display = format_html_lazy(
-                    '<span class="label label-default">{}</span>',
-                    gettext_lazy('Low Power')
-                )                    
-                fuel_expires_timestamp = None
-            elif self._structure.fuel_expires:
-                fuel_expires_timestamp = self._structure.fuel_expires.isoformat()
-                if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
-                    fuel_expires_display = timeuntil_str(
-                        self._structure.fuel_expires - now()
-                    )
-                    if not fuel_expires_display:
-                        fuel_expires_display = '?'
-                        fuel_expires_timestamp = None
-                else:
-                    fuel_expires_display = \
-                        self._structure.fuel_expires.strftime(DATETIME_FORMAT)
-            else:
-                fuel_expires_display = '?'
-                fuel_expires_timestamp = None
 
         self._row['fuel_expires'] = {
             'display': add_no_wrap_html(fuel_expires_display),

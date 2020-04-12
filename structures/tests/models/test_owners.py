@@ -563,7 +563,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1000000000002, 
             1000000000003, 
             1300000000001, 
-            1300000000002
+            1300000000002,
+            1300000000003,
         }
         self.assertSetEqual(structure_ids, expected)
 
@@ -578,18 +579,43 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.state_timer_end, datetime(
             2020, 4, 5, 7, 0, 0, tzinfo=utc
         ))
-        self.assertEqual(structure.unanchors_at, datetime(
-            2020, 5, 5, 7, 0, 0, tzinfo=utc
-        ))
-
+        self.assertGreaterEqual(
+            structure.fuel_expires, 
+            now() + timedelta(hours=24) - timedelta(seconds=10)
+        )
+        self.assertLessEqual(
+            structure.fuel_expires, 
+            now() + timedelta(hours=24) + timedelta(seconds=10)
+        )
+       
         structure = Structure.objects.get(id=1300000000002)        
         self.assertEqual(structure.name, 'Bat cave')
         self.assertEqual(structure.eve_solar_system_id, 30002537)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
-        self.assertEqual(structure.eve_type_id, 16214)        
+        self.assertEqual(structure.eve_type_id, 20061)        
         self.assertEqual(structure.state, Structure.STATE_POS_OFFLINE)
         self.assertEqual(structure.eve_moon_id, 40161466)
-    
+        self.assertEqual(structure.unanchors_at, datetime(
+            2020, 5, 5, 7, 0, 0, tzinfo=utc
+        ))
+        self.assertIsNone(structure.fuel_expires)
+
+        structure = Structure.objects.get(id=1300000000003)        
+        self.assertEqual(structure.name, 'Panic Room')
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 20062)        
+        self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
+        self.assertEqual(structure.eve_moon_id, 40161471)
+        self.assertGreaterEqual(
+            structure.fuel_expires, 
+            now() + timedelta(hours=100) - timedelta(seconds=10)
+        )
+        self.assertLessEqual(
+            structure.fuel_expires, 
+            now() + timedelta(hours=100) + timedelta(seconds=10)
+        )
+        
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', autospec=True)
@@ -618,6 +644,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000005,
             1300000000001,
             1300000000002,
+            1300000000003,
         }
         self.assertSetEqual(structure_ids, expected)
                 

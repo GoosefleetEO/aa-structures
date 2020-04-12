@@ -260,6 +260,25 @@ def esi_get_corporations_corporation_id_starbases(corporation_id, page=None):
 esi_get_corporations_corporation_id_starbases.override_data = None
 
 
+def esi_get_corporations_corporation_id_starbases_starbase_id(
+    corporation_id, starbase_id, system_id
+):
+    """simulates ESI endpoint of same name for mock test"""
+
+    corporation_starbase_details = \
+        _esi_data['Corporation']['get_corporations_corporation_id_starbases_starbase_id']   # noqa
+    if str(starbase_id) in corporation_starbase_details:
+        mock_operation = Mock()
+        mock_operation.result.return_value = \
+            corporation_starbase_details[str(starbase_id)]
+        return mock_operation
+
+    else:
+        raise RuntimeError(
+            'Can not find data for starbase {}'.format(starbase_id)
+        )
+
+
 def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
 
@@ -451,7 +470,10 @@ def esi_mock_client():
         esi_get_corporations_corporation_id_structures
     mock_client.Corporation\
         .get_corporations_corporation_id_starbases.side_effect = \
-        esi_get_corporations_corporation_id_starbases    
+        esi_get_corporations_corporation_id_starbases
+    mock_client.Corporation\
+        .get_corporations_corporation_id_starbases_starbase_id.side_effect = \
+        esi_get_corporations_corporation_id_starbases_starbase_id
     
     # Planetary Interaction
     mock_client.Planetary_Interaction\

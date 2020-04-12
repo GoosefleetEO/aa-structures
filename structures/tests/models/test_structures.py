@@ -77,13 +77,22 @@ class TestStructure(NoSocketsTestCase):
         self.assertEqual(repr(x), expected)
 
     def test_is_low_power(self):
-        x = Structure.objects.get(id=1000000000001)
+        obj = Structure.objects.get(id=1000000000001)
         
-        x.fuel_expires = None
-        self.assertTrue(x.is_low_power)
+        # true if Upwell structure and has no fuel
+        obj.fuel_expires = None
+        self.assertTrue(obj.is_low_power)
         
-        x.fuel_expires = now() + timedelta(days=3)
-        self.assertFalse(x.is_low_power)
+        # false if Upwell structure and it has fuel
+        obj.fuel_expires = now() + timedelta(days=3)
+        self.assertFalse(obj.is_low_power)
+
+        # false for non structures
+        obj = Structure.objects.get(id=1300000000001)   # starbase
+        self.assertFalse(obj.is_low_power)
+
+        obj = Structure.objects.get(id=1200000000003)   # POS
+        self.assertFalse(obj.is_low_power)
 
     def test_is_reinforced(self):
         x = Structure.objects.get(id=1000000000001)

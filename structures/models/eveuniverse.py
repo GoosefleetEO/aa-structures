@@ -330,6 +330,9 @@ class EveCategory(EveUniverse):
 class EveGroup(EveUniverse):
     """group in Eve Online"""
     
+    EVE_GROUP_ID_CONTROL_TOWER = 365
+    EVE_GROUP_ID_FUEL_BLOCK = 1136
+
     eve_category = models.ForeignKey(
         EveCategory,
         on_delete=models.SET_DEFAULT,
@@ -350,6 +353,12 @@ class EveType(EveUniverse):
     EVE_TYPE_ID_POCO = 2233
     EVE_TYPE_ID_TCU = 32226
     EVE_TYPE_ID_IHUB = 32458
+    EVE_TYPE_ID_STRONTIUM = 16275
+
+    # starbase sizes
+    STARBASE_SMALL = 1
+    STARBASE_MEDIUM = 2
+    STARBASE_LARGE = 3
 
     EVE_IMAGESERVER_BASE_URL = 'https://images.evetech.net'
     
@@ -365,11 +374,42 @@ class EveType(EveUniverse):
 
     @property
     def is_starbase(self):
-        return self.eve_group.eve_category.is_starbase
+        return self.eve_group_id == EveGroup.EVE_GROUP_ID_CONTROL_TOWER
 
     @property
     def is_upwell_structure(self):
         return self.eve_group.eve_category.is_upwell_structure
+
+    @property
+    def is_fuel_block(self):
+        return self.eve_group_id == EveGroup.EVE_GROUP_ID_FUEL_BLOCK
+
+    @property
+    def starbase_size(self):
+        """return the size of a starbase or None if this type is not a starbase"""
+        if not self.is_starbase:
+            return None        
+        elif 'medium' in self.name.lower():
+            return self.STARBASE_MEDIUM
+        elif 'small' in self.name.lower():
+            return self.STARBASE_SMALL
+        else:
+            return self.STARBASE_LARGE
+
+    @property
+    def starbase_fuel_per_hour(self):
+        """returns the number of fuel blocks consumed per hour
+        or None if not a starbase
+        """
+        size = self.starbase_size
+        if size == self.STARBASE_LARGE:
+            return 40
+        elif size == self.STARBASE_MEDIUM:
+            return 20
+        elif size == self.STARBASE_SMALL:
+            return 10
+        else:
+            return None
 
     @classmethod
     def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
