@@ -572,7 +572,8 @@ class Owner(models.Model):
         """fetch starbases from ESI for self"""
 
         add_prefix = self._logger_prefix()        
-        corporation_id = self.corporation.corporation_id
+        structures = list()
+        corporation_id = self.corporation.corporation_id        
         starbases = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_starbases',
             args={'corporation_id': corporation_id},            
@@ -581,7 +582,7 @@ class Owner(models.Model):
             logger_tag=add_prefix()
         )
        
-        # add starbase names        
+        # add starbase names                
         if not starbases:
             logger.info(add_prefix('No starbases retrieved from ESI'))
         else:
@@ -637,8 +638,7 @@ class Owner(models.Model):
                     )
                     starbase['fuel_expires'] = now() + timedelta(hours=hours)
                 
-            # convert starbases to structures
-            structures = list()
+            # convert starbases to structures            
             for starbase in starbases:
                 if starbase['starbase_id'] in names:
                     name = names[starbase['starbase_id']]
