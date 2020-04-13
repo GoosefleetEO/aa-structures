@@ -9,9 +9,10 @@ from django.utils.html import escape, format_html
 from django.utils.translation import gettext_lazy as _
 
 from .. import __title__
-from ..managers import StructureManager
-from ..utils import LoggerAddTag
 from .eveuniverse import EsiNameLocalization
+from ..managers import StructureManager
+from ..utils import LoggerAddTag, create_bs_label_html
+
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
@@ -64,10 +65,7 @@ class StructureTag(models.Model):
 
     @property
     def html(self) -> str:
-        return format_html('<span class="label label-{}">{}</span>'.format(
-            self.style,
-            escape(self.name)
-        ))
+        return create_bs_label_html(escape(self.name), self.style)
 
     @classmethod
     def sorted(cls, tags: list, reverse: bool = False) -> list:

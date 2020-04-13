@@ -16,7 +16,8 @@ from ..utils import (
     SocketAccessError,
     app_labels,
     add_no_wrap_html,
-    yesno_str
+    yesno_str,
+    create_bs_label_html
 )
 from ..utils import set_test_logger
 
@@ -228,6 +229,10 @@ class TestHtmlHelper(TestCase):
     def test_add_no_wrap_html(self):
         expected = '<span style="white-space: nowrap;">Dummy</span>'
         self.assertEqual(add_no_wrap_html('Dummy'), expected)
+
+    def test_create_bs_label_html(self):
+        expected = '<span class="label label-danger">Dummy</span>'
+        self.assertEqual(create_bs_label_html('Dummy', 'danger'), expected)
 
     def test_yesno_str(self):
         with translation.override('en'):

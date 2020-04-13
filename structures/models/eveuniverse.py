@@ -453,6 +453,12 @@ class EveConstellation(EveUniverse):
 class EveSolarSystem(EveUniverse):
     """solar system in Eve Online"""
     
+    TYPE_HIGHSEC = 'highsec'
+    TYPE_LOWSEC = 'lowsec'
+    TYPE_NULLSEC = 'nullsec'
+    TYPE_W_SPACE = 'w-space'
+    TYPE_UNKNOWN = 'unknown'
+
     eve_constellation = models.ForeignKey(
         EveConstellation,
         on_delete=models.CASCADE
@@ -476,11 +482,25 @@ class EveSolarSystem(EveUniverse):
 
     @property
     def is_null_sec(self):
-        return self.security_status <= 0 and not self.is_wh_space
+        return self.security_status <= 0 and not self.is_w_space
 
     @property
-    def is_wh_space(self):
+    def is_w_space(self):
         return 31000000 <= self.id < 32000000
+
+    @property
+    def space_type(self):
+        """returns the space type"""
+        if self.is_null_sec:
+            return self.TYPE_NULLSEC
+        elif self.is_low_sec:
+            return self.TYPE_LOWSEC
+        elif self.is_high_sec:
+            return self.TYPE_HIGHSEC
+        elif self.is_w_space:
+            return self.TYPE_W_SPACE
+        else:
+            return self.TYPE_UNKNOWN
 
     @property
     def sov_alliance_id(self) -> int:

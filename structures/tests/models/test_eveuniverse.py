@@ -276,28 +276,48 @@ class TestEveSolarSystem(NoSocketsTestCase):
         self.assertTrue(obj.is_high_sec)
         self.assertFalse(obj.is_low_sec)
         self.assertFalse(obj.is_null_sec)
-        self.assertFalse(obj.is_wh_space)
+        self.assertFalse(obj.is_w_space)
 
     def test_low_sec_system(self):
         obj = EveSolarSystem.objects.get(id=30002537)
         self.assertFalse(obj.is_high_sec)
         self.assertTrue(obj.is_low_sec)
         self.assertFalse(obj.is_null_sec)
-        self.assertFalse(obj.is_wh_space)
+        self.assertFalse(obj.is_w_space)
 
     def test_null_sec_system(self):
         obj = EveSolarSystem.objects.get(id=30000474)
         self.assertFalse(obj.is_high_sec)
         self.assertFalse(obj.is_low_sec)
         self.assertTrue(obj.is_null_sec)
-        self.assertFalse(obj.is_wh_space)
+        self.assertFalse(obj.is_w_space)
 
     def test_wh_system(self):
         obj = EveSolarSystem.objects.get(id=31000005)
         self.assertFalse(obj.is_high_sec)
         self.assertFalse(obj.is_low_sec)
         self.assertFalse(obj.is_null_sec)
-        self.assertTrue(obj.is_wh_space)
+        self.assertTrue(obj.is_w_space)
+
+    def test_space_type_highsec(self):
+        obj = EveSolarSystem.objects.get(id=30002506)
+        expected = EveSolarSystem.TYPE_HIGHSEC
+        self.assertEqual(obj.space_type, expected)
+
+    def test_space_type_lowsec(self):
+        obj = EveSolarSystem.objects.get(id=30002537)
+        expected = EveSolarSystem.TYPE_LOWSEC
+        self.assertEqual(obj.space_type, expected)
+
+    def test_space_type_nullsec(self):
+        obj = EveSolarSystem.objects.get(id=30000474)
+        expected = EveSolarSystem.TYPE_NULLSEC
+        self.assertEqual(obj.space_type, expected)
+
+    def test_space_type_wh_space(self):
+        obj = EveSolarSystem.objects.get(id=31000005)
+        expected = EveSolarSystem.TYPE_W_SPACE
+        self.assertEqual(obj.space_type, expected)
 
     def test_sov_alliance_id(self):        
         # returns alliance ID for sov system in null

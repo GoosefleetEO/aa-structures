@@ -30,7 +30,8 @@ from .utils import (
     LoggerAddTag,
     timeuntil_str,
     add_no_wrap_html,
-    yesno_str
+    yesno_str,
+    create_bs_label_html
 )
 
 
@@ -95,29 +96,28 @@ def structure_list(request):
     return render(request, 'structures/structure_list.html', context)
 
 
-class StructuresRowConverter:
-    """This class converts structure objects into rows for an HTML table"""
+class StructuresRowBuilder:
+    """This class build the HTML table rows from structure objects"""
     def __init__(self):
         self._row = None
         self._structure = None
     
     def convert(self, structure) -> dict:
         self._row = {
-            'structure_id': structure.id,
-            'is_poco': structure.eve_type.is_poco
+            'structure_id': structure.id
         }
         self._structure = structure
-        self._convert_owner()
-        self._convert_location()
-        self._convert_type()
-        self._convert_name()
-        self._convert_services()
-        self._convert_reinforcement_infos()
-        self._convert_fuel_infos()
-        self._convert_state()
+        self._build_owner()
+        self._build_location()
+        self._build_type()
+        self._build_name()
+        self._build_services()
+        self._build_reinforcement_infos()
+        self._build_fuel_infos()
+        self._build_state()
         return self._row
 
-    def _convert_owner(self):
+    def _build_owner(self):
         corporation = self._structure.owner.corporation
         if corporation.alliance:
             alliance_name = corporation.alliance.alliance_name
@@ -139,8 +139,10 @@ class StructuresRowConverter:
         self._row['alliance_name'] = alliance_name
         self._row['corporation_name'] = corporation.corporation_name
         
-    def _convert_location(self):
+    def _build_location(self):        
         solar_system = self._structure.eve_solar_system
+        
+        # location
         self._row['region_name'] = \
             solar_system.eve_constellation\
             .eve_region.name_localized
@@ -163,9 +165,13 @@ class StructuresRowConverter:
             add_no_wrap_html(self._row['region_name'])
         )
 
-    def _convert_type(self):
+        # space type
+        self._row['space_type'] = solar_system.space_type
+
+    def _build_type(self):
+        structure_type = self._structure.eve_type
         # category
-        my_group = self._structure.eve_type.eve_group
+        my_group = structure_type.eve_group
         self._row['group_name'] = my_group.name_localized
         if my_group.eve_category:
             my_category = my_group.eve_category
@@ -178,7 +184,7 @@ class StructuresRowConverter:
         # type icon
         self._row['type_icon'] = format_html(
             '<img src="{}" width="{}" height="{}"/>',
-            self._structure.eve_type.icon_url(
+            structure_type.icon_url(
                 size=STRUCTURE_LIST_ICON_RENDER_SIZE
             ),
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
@@ -186,27 +192,53 @@ class StructuresRowConverter:
         )
 
         # type name
-        self._row['type_name'] = self._structure.eve_type.name_localized
+        self._row['type_name'] = structure_type.name_localized
         self._row['type'] = format_html(
             '{}<br>{}',
             add_no_wrap_html(self._row['type_name']),
             add_no_wrap_html(self._row['group_name'])
         )
 
-    def _convert_name(self):
+        # poco
+        self._row['is_poco'] = structure_type.is_poco
+
+    def _build_name(self):
         self._row['structure_name'] = escape(self._structure.name)
         self._row['has_sov'] = yesno_str(self._structure.owner_has_sov)
-        if self._structure.tags:            
-            tags = [
+        
+        tags = [self._create_space_type_tag()]
+        if self._structure.owner_has_sov:
+            tags.append(create_bs_label_html('sov', 'primary'))
+        
+        if self._structure.tags:
+            tags += [
                 x.html for x in self._structure.tags.all().order_by('name')
             ]
-            if self._structure.owner_has_sov:
-                tags.insert(0, '<span class="label label-primary">SOV</span>')
-            self._row['structure_name'] += format_html(
-                '<br>{}', mark_safe(' '.join(tags))
-            )
+        self._row['structure_name'] += format_html(
+            '<br>{}', mark_safe(' '.join(tags))
+        )
 
-    def _convert_services(self):
+    def _create_space_type_tag(self):
+        solar_system = self._structure.eve_solar_system
+        if solar_system.is_null_sec:
+            text = gettext_lazy('nullsec')
+            style = 'danger'
+        elif solar_system.is_low_sec:
+            text = gettext_lazy('lowsec')
+            style = 'warning'
+        elif solar_system.is_high_sec:
+            text = gettext_lazy('highsec')
+            style = 'success'
+        elif solar_system.is_w_space:
+            text = gettext_lazy('w-space')
+            style = 'info'
+        else:
+            text = 'unknown'
+            style = 'default'
+
+        return create_bs_label_html(text, style)
+
+    def _build_services(self):
         if self._row['is_poco'] or self._row['is_starbase']:
             self._row['services'] = gettext_lazy('N/A')
         else:
@@ -223,7 +255,7 @@ class StructuresRowConverter:
                 services.append(service_name)
             self._row['services'] = '<br>'.join(services)
 
-    def _convert_reinforcement_infos(self):
+    def _build_reinforcement_infos(self):
         self._row['is_reinforced'] = self._structure.is_reinforced
         self._row['is_reinforced_str'] = \
             yesno_str(self._structure.is_reinforced)
@@ -238,7 +270,7 @@ class StructuresRowConverter:
             else:
                 self._row['reinforcement'] = ''
 
-    def _convert_fuel_infos(self):
+    def _build_fuel_infos(self):
         self._row['is_low_power'] = self._structure.is_low_power
         self._row['is_low_power_str'] = yesno_str(self._structure.is_low_power)
 
@@ -269,7 +301,7 @@ class StructuresRowConverter:
             'timestamp': fuel_expires_timestamp
         }
 
-    def _convert_state(self):
+    def _build_state(self):
         self._row['state_str'] = self._structure.get_state_display()
         self._row['state_details'] = self._row['state_str']
         if self._structure.state_timer_end:
@@ -287,7 +319,7 @@ def structure_list_data(request):
     """returns structure list in JSON for AJAX call in structure_list view"""
 
     structure_rows = list()
-    row_converter = StructuresRowConverter()
+    row_converter = StructuresRowBuilder()
     for structure in _structures_query_for_user(request):        
         structure_rows.append(row_converter.convert(structure))
 

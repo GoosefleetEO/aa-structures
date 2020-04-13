@@ -331,6 +331,13 @@ def add_no_wrap_html(text: str) -> str:
     )
 
 
+def create_bs_label_html(text: str, style: str) -> str:
+    """create Bootstrap label and return HTML"""
+    return format_html(
+        '<span class="label label-{}">{}</span>', style, text
+    )
+
+
 def yesno_str(value: bool) -> str:
     """returns yes/no for boolean else empty string and with localization"""
     if value is True:
