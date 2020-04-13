@@ -383,6 +383,10 @@ class Structure(models.Model):
     def save(self, *args, **kwargs):
         """make sure related objects are saved whenever structure is saved"""
         super().save(*args, **kwargs)
+        self.update_generated_tags()
+        
+    def update_generated_tags(self):
+        """updates all generated tags for this structure"""
         space_type_tag, _ = StructureTag.objects.get_or_create_for_space_type(
             self.eve_solar_system
         )

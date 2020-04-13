@@ -397,8 +397,7 @@ class StructureTagAdmin(admin.ModelAdmin):
         'is_default',        
         'style',
         'is_user_managed',
-    )
-    ordering = ['name']
+    )    
     readonly_fields = ('is_user_managed',)
 
     def has_delete_permission(self, request, obj=None):
@@ -500,37 +499,37 @@ class StructureAdmin(admin.ModelAdmin):
         ('tags', admin.RelatedOnlyFieldListFilter),
     )
 
-    actions = ('add_default_tags', 'remove_user_tags', )
+    actions = ('add_default_tags', 'remove_user_tags', 'update_generated_tags')
 
-    def _owner(self, obj):
+    def _owner(self, structure):
         return format_html(
             '{}<br>{}',
-            obj.owner.corporation,
-            obj.owner.corporation.alliance
+            structure.owner.corporation,
+            structure.owner.corporation.alliance
         )
 
-    def _location(self, obj):
-        if obj.eve_moon:
-            location_name = obj.eve_moon.name
-        elif obj.eve_planet:
-            location_name = obj.eve_planet.name
+    def _location(self, structure):
+        if structure.eve_moon:
+            location_name = structure.eve_moon.name
+        elif structure.eve_planet:
+            location_name = structure.eve_planet.name
         else:
-            location_name = obj.eve_solar_system.name
+            location_name = structure.eve_solar_system.name
         return format_html(
             '{}<br>{}',
             location_name,
-            obj.eve_solar_system.eve_constellation.eve_region
+            structure.eve_solar_system.eve_constellation.eve_region
         )
 
-    def _type(self, obj):
+    def _type(self, structure):
         return format_html(
             '{}<br>{}',
-            obj.eve_type,
-            obj.eve_type.eve_group
+            structure.eve_type,
+            structure.eve_type.eve_group
         )
 
-    def _tags(self, obj):
-        tag_names = [x.name for x in obj.tags.all()]
+    def _tags(self, structure):
+        tag_names = [x.name for x in structure.tags.all()]
         if tag_names:
             return tag_names
         else:
@@ -544,9 +543,9 @@ class StructureAdmin(admin.ModelAdmin):
     def add_default_tags(self, request, queryset):
         structure_count = 0
         tags = StructureTag.objects.filter(is_default=True)
-        for obj in queryset:
+        for structure in queryset:
             for tag in tags:
-                obj.tags.add(tag)
+                structure.tags.add(tag)
             structure_count += 1
 
         self.message_user(
@@ -561,9 +560,9 @@ class StructureAdmin(admin.ModelAdmin):
 
     def remove_user_tags(self, request, queryset):
         structure_count = 0
-        for obj in queryset:
-            for tag in obj.tags.filter(is_user_managed=True):
-                obj.tags.remove(tag)
+        for structure in queryset:
+            for tag in structure.tags.filter(is_user_managed=True):
+                structure.tags.remove(tag)
             structure_count += 1
 
         self.message_user(
@@ -571,7 +570,20 @@ class StructureAdmin(admin.ModelAdmin):
             'Removed all user tags from {:,} structures'.format(structure_count))
 
     remove_user_tags.short_description = \
-        "Remove all user tags from selected structures"
+        "Remove user tags for selected structures"
+
+    def update_generated_tags(self, request, queryset):
+        structure_count = 0
+        for structure in queryset:
+            structure.update_generated_tags()
+            structure_count += 1
+
+        self.message_user(
+            request,
+            'Updated all generated tags for {:,} structures'.format(structure_count))
+
+    update_generated_tags.short_description = \
+        "Update generated tags for selected structures"
 
     if not STRUCTURES_DEVELOPER_MODE:
         readonly_fields = tuple([
