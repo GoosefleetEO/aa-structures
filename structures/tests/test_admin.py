@@ -259,7 +259,9 @@ class TestStructureAdmin(TestCase):
         )
 
     def test_tags_1(self):
-        self.assertListEqual(self.modeladmin._tags(self.obj), ['tag_a'])
+        self.assertSetEqual(
+            set(self.modeladmin._tags(self.obj)), {'lowsec', 'tag_a'}
+        )
 
     def test_tags_2(self):
         self.obj.tags.clear()
@@ -278,12 +280,12 @@ class TestStructureAdmin(TestCase):
         self.assertTrue(mock_message_user.called)
 
     @patch(MODULE_PATH + '.StructureAdmin.message_user', auto_spec=True)    
-    def test_action_remove_all_tags(self, mock_message_user):               
-        self.modeladmin.remove_all_tags(
+    def test_action_remove_user_tags(self, mock_message_user):               
+        self.modeladmin.remove_user_tags(
             MockRequest(self.user), self.obj_qs
         )
         for obj in self.obj_qs:
-            self.assertIsNone(obj.tags.first())
+            self.assertFalse(obj.tags.filter(is_user_managed=True).exists())
         self.assertTrue(mock_message_user.called)
 
     def test_owner_corporations_status_filter(self):

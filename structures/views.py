@@ -81,7 +81,7 @@ def structure_list(request):
         if tags_raw:
             tags_parsed = tags_raw.split(',')
             active_tags = [
-                x for x in StructureTag.objects.all().order_by('name')
+                x for x in StructureTag.objects.all()
                 if x.name in tags_parsed
             ]
 
@@ -165,9 +165,6 @@ class StructuresRowBuilder:
             add_no_wrap_html(self._row['region_name'])
         )
 
-        # space type
-        self._row['space_type'] = solar_system.space_type
-
     def _build_type(self):
         structure_type = self._structure.eve_type
         # category
@@ -203,40 +200,15 @@ class StructuresRowBuilder:
         self._row['is_poco'] = structure_type.is_poco
 
     def _build_name(self):
-        self._row['structure_name'] = escape(self._structure.name)
-        self._row['has_sov'] = yesno_str(self._structure.owner_has_sov)
-        
-        tags = [self._create_space_type_tag()]
-        if self._structure.owner_has_sov:
-            tags.append(create_bs_label_html('sov', 'primary'))
-        
+        self._row['structure_name'] = escape(self._structure.name)                
+        tags = []        
         if self._structure.tags:
             tags += [
-                x.html for x in self._structure.tags.all().order_by('name')
+                x.html for x in self._structure.tags.all()
             ]
-        self._row['structure_name'] += format_html(
-            '<br>{}', mark_safe(' '.join(tags))
-        )
-
-    def _create_space_type_tag(self):
-        solar_system = self._structure.eve_solar_system
-        if solar_system.is_null_sec:
-            text = gettext_lazy('nullsec')
-            style = 'danger'
-        elif solar_system.is_low_sec:
-            text = gettext_lazy('lowsec')
-            style = 'warning'
-        elif solar_system.is_high_sec:
-            text = gettext_lazy('highsec')
-            style = 'success'
-        elif solar_system.is_w_space:
-            text = gettext_lazy('w-space')
-            style = 'info'
-        else:
-            text = 'unknown'
-            style = 'default'
-
-        return create_bs_label_html(text, style)
+            self._row['structure_name'] += format_html(
+                '<br>{}', mark_safe(' '.join(tags))
+            )
 
     def _build_services(self):
         if self._row['is_poco'] or self._row['is_starbase']:
@@ -276,8 +248,7 @@ class StructuresRowBuilder:
 
         if self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
-                '<span class="label label-default">{}</span>',
-                gettext_lazy('Low Power')
+                create_bs_label_html(gettext_lazy('Low Power'), 'default')
             )                    
             fuel_expires_timestamp = None
         elif self._structure.fuel_expires:

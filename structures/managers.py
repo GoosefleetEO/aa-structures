@@ -264,7 +264,11 @@ class StructureManager(models.Manager):
     ) -> tuple:
         """update or create structure from given dict"""
         from .models import (
-            EveType, EveSolarSystem, StructureService, EvePlanet, EveMoon
+            EveType, 
+            EveSolarSystem, 
+            StructureService, 
+            EvePlanet, 
+            EveMoon
         )
         from .models.eveuniverse import EveUniverse
         eve_type, _ = EveType.objects.get_or_create_esi(
@@ -360,6 +364,7 @@ class StructureManager(models.Manager):
                 'last_updated': owner.structures_last_sync
             }
         )
+        # save related structure services
         StructureService.objects.filter(structure=obj).delete()
         if 'services' in structure and structure['services']:
             for service in structure['services']:
@@ -378,4 +383,55 @@ class StructureManager(models.Manager):
                             args[field_name] = service[field_name]
 
                 StructureService.objects.create(**args)
+                
+        return obj, created
+
+
+class StructureTagManager(models.Manager):
+             
+    def get_or_create_for_space_type(self, solar_system) -> tuple:
+        if solar_system.is_null_sec:
+            name = self.model.TAG_NULL_SEC
+            style = self.model.STYLE_RED
+        elif solar_system.is_low_sec:
+            name = self.model.TAG_LOW_SEC
+            style = self.model.STYLE_ORANGE
+        elif solar_system.is_high_sec:
+            name = self.model.TAG_HIGH_SEC
+            style = self.model.STYLE_GREEN
+        elif solar_system.is_w_space:
+            name = self.model.TAG_W_SPACE
+            style = self.model.STYLE_LIGHT_BLUE
+        else:
+            name = None
+            
+        if name:
+            return self.get_or_create(
+                name=name, 
+                defaults={
+                    'style': style,
+                    'description': (
+                        'this tag represents a space type. system generated.'
+                    ),                
+                    'order': 50,
+                    'is_user_managed': False,
+                    'is_default': False
+                }
+            )
+        else:
+            return None, None
+
+    def get_or_create_for_sov(self) -> tuple:
+        obj, created = self.get_or_create(
+            name='sov', 
+            defaults={
+                'style': self.model.STYLE_DARK_BLUE,
+                'description': (
+                    'Owner of this structure has sovereignty. system generated.'
+                ),
+                'order': 20,
+                'is_user_managed': False,
+                'is_default': False
+            }
+        )
         return obj, created

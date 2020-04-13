@@ -4,13 +4,16 @@ import re
 import logging
 
 from django.db import models
+from django.core.validators import MinValueValidator
 from django.core.validators import MaxValueValidator
-from django.utils.html import escape, format_html
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 
 from .. import __title__
 from .eveuniverse import EsiNameLocalization
 from ..managers import StructureManager
+from ..managers import StructureTagManager
 from ..utils import LoggerAddTag, create_bs_label_html
 
 
@@ -20,15 +23,29 @@ logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 class StructureTag(models.Model):
     """tag for organizing structures"""
 
+    # special tags
+    TAG_SOV = gettext_noop('sov')
+    TAG_HIGH_SEC = gettext_noop('highsec')
+    TAG_LOW_SEC = gettext_noop('lowsec')
+    TAG_NULL_SEC = gettext_noop('nullsec')
+    TAG_W_SPACE = gettext_noop('w_space')
+    
+    # styles
+    STYLE_GREY = 'default'
+    STYLE_DARK_BLUE = 'primary'
+    STYLE_GREEN = 'success'
+    STYLE_LIGHT_BLUE = 'info'
+    STYLE_ORANGE = 'warning'
+    STYLE_RED = 'danger'
     STYLE_CHOICES = [
-        ('default', 'grey'),
-        ('primary', 'dark blue'),
-        ('success', 'green'),
-        ('info', 'light blue'),
-        ('warning', 'yellow'),
-        ('danger', 'red'),
+        (STYLE_GREY, 'grey'),
+        (STYLE_DARK_BLUE, 'dark blue'),
+        (STYLE_GREEN, 'green'),
+        (STYLE_LIGHT_BLUE, 'light blue'),
+        (STYLE_ORANGE, 'orange'),
+        (STYLE_RED, 'red'),
     ]
-
+    
     name = models.CharField(
         max_length=255,
         unique=True,
@@ -47,12 +64,31 @@ class StructureTag(models.Model):
         blank=True,
         help_text='color style of tag'
     )
+    order = models.PositiveIntegerField(
+        default=100,
+        blank=True,
+        validators=[MinValueValidator(100)],
+        help_text=(
+            'number defining the order tags are shown. '
+            'custom tags can not have an order below 100'
+        )
+    )    
     is_default = models.BooleanField(
         default=False,
         help_text=(
-            'if true this tag will automatically be added to new structures'
+            'if true this custom tag will automatically be added '
+            'to new structures'
         )
     )
+    is_user_managed = models.BooleanField(
+        default=True,
+        help_text=(
+            'if False this tag is created and managed by the system '
+            'and can not be modified by users'
+        )
+    )
+
+    objects = StructureTagManager()
 
     def __str__(self) -> str:
         return self.name
@@ -63,9 +99,16 @@ class StructureTag(models.Model):
             self.name
         )
 
+    class Meta:
+        ordering = ordering = ['order', 'name']
+
     @property
     def html(self) -> str:
-        return create_bs_label_html(escape(self.name), self.style)
+        if self.is_user_managed:
+            name = escape(self.name)
+        else:
+            name = _(self.name)
+        return create_bs_label_html(name, self.style)
 
     @classmethod
     def sorted(cls, tags: list, reverse: bool = False) -> list:
@@ -336,6 +379,17 @@ class Structure(models.Model):
         """extracts the structure's name from the name in an ESI response"""
         matches = re.search(r'^\S+ - (.+)', esi_name)
         return matches.group(1) if matches else esi_name
+
+    def save(self, *args, **kwargs):
+        """make sure related objects are saved whenever structure is saved"""
+        super().save(*args, **kwargs)
+        space_type_tag, _ = StructureTag.objects.get_or_create_for_space_type(
+            self.eve_solar_system
+        )
+        self.tags.add(space_type_tag)
+        if self.owner_has_sov:
+            sov_tag, _ = StructureTag.objects.get_or_create_for_sov()
+            self.tags.add(sov_tag)
         
         
 class StructureService(EsiNameLocalization, models.Model):

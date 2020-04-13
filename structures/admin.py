@@ -387,16 +387,26 @@ class OwnerAdmin(admin.ModelAdmin):
 class StructureTagAdmin(admin.ModelAdmin):
     list_display = (
         'name',
-        'description',
+        'description',        
+        'order',        
         'style',
         'is_default',
+        'is_user_managed',
     )
-    list_filter = (
-        'is_default',
+    list_filter = (        
+        'is_default',        
         'style',
+        'is_user_managed',
     )
     ordering = ['name']
+    readonly_fields = ('is_user_managed',)
 
+    def has_delete_permission(self, request, obj=None):
+        return False if obj and not obj.is_user_managed else True
+
+    def has_change_permission(self, request, obj=None):
+        return False if obj and not obj.is_user_managed else True
+            
 
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
@@ -490,7 +500,7 @@ class StructureAdmin(admin.ModelAdmin):
         ('tags', admin.RelatedOnlyFieldListFilter),
     )
 
-    actions = ('add_default_tags', 'remove_all_tags', )
+    actions = ('add_default_tags', 'remove_user_tags', )
 
     def _owner(self, obj):
         return format_html(
@@ -520,7 +530,7 @@ class StructureAdmin(admin.ModelAdmin):
         )
 
     def _tags(self, obj):
-        tag_names = [x.name for x in obj.tags.all().order_by('name')]
+        tag_names = [x.name for x in obj.tags.all()]
         if tag_names:
             return tag_names
         else:
@@ -549,18 +559,19 @@ class StructureAdmin(admin.ModelAdmin):
     add_default_tags.short_description = \
         "Add default tags to selected structures"
 
-    def remove_all_tags(self, request, queryset):
+    def remove_user_tags(self, request, queryset):
         structure_count = 0
         for obj in queryset:
-            obj.tags.clear()
+            for tag in obj.tags.filter(is_user_managed=True):
+                obj.tags.remove(tag)
             structure_count += 1
 
         self.message_user(
             request,
-            'Removed all tags from {:,} structures'.format(structure_count))
+            'Removed all user tags from {:,} structures'.format(structure_count))
 
-    remove_all_tags.short_description = \
-        "Remove all tags from selected structures"
+    remove_user_tags.short_description = \
+        "Remove all user tags from selected structures"
 
     if not STRUCTURES_DEVELOPER_MODE:
         readonly_fields = tuple([

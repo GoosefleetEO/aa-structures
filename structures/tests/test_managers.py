@@ -20,7 +20,9 @@ from ..models import (
     EveSovereigntyMap,
     Owner,    
     Structure,
-    StructureService
+    StructureService,
+    StructureTag
+    
 )
 from .testdata import (
     load_entity, 
@@ -673,7 +675,12 @@ class TestStructureManager(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             obj, created = Structure.objects.update_or_create_esi(987, None)
 
-    def test_can_create_object_from_dict(self):
+
+class TestStructureManagerCreateFromDict(NoSocketsTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         load_entities([
             EveCategory,
             EveGroup,
@@ -681,11 +688,15 @@ class TestStructureManager(NoSocketsTestCase):
             EveRegion,
             EveConstellation,
             EveSolarSystem,
-            EveCharacter
-        ])        
-        owner = Owner.objects.create(
+            EveCharacter,
+            EveSovereigntyMap
+        ])
+        cls.owner = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
+    
+    def test_can_create_full(self):
+       
         structure = {     
             "corporation_id": 2001,
             "fuel_expires": None,        
@@ -724,8 +735,10 @@ class TestStructureManager(NoSocketsTestCase):
             "unanchors_at": None
         }
         obj, created = Structure.objects.update_or_create_from_dict(
-            structure, owner
+            structure, self.owner
         )
+        
+        # check structure
         self.assertEqual(obj.id, 1000000000001)
         self.assertEqual(obj.name, 'Test Structure Alpha')
         self.assertEqual(obj.eve_type_id, 35832)
@@ -737,6 +750,8 @@ class TestStructureManager(NoSocketsTestCase):
         self.assertEqual(obj.reinforce_hour, 18)
         self.assertEqual(obj.state, Structure.STATE_SHIELD_VULNERABLE)
         # todo: add more content tests
+        
+        # check services
         services = {
             to_json(
                 {
@@ -767,3 +782,98 @@ class TestStructureManager(NoSocketsTestCase):
             ),
         }
         self.assertEqual(services, expected)
+
+
+class TestStructureTagManager(NoSocketsTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities([
+            EveCategory, 
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem
+        ])
+    
+    def test_get_or_create_for_space_type_highsec(self):
+        solar_system = EveSolarSystem.objects.get(id=30002506)
+        obj, created = \
+            StructureTag.objects.get_or_create_for_space_type(solar_system)
+        self.assertTrue(created)
+        self.assertEqual(obj.name, StructureTag.TAG_HIGH_SEC)
+        self.assertEqual(obj.style, StructureTag.STYLE_GREEN)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+
+    def test_get_or_create_for_space_type_lowsec(self):
+        solar_system = EveSolarSystem.objects.get(id=30002537)
+        obj, created = \
+            StructureTag.objects.get_or_create_for_space_type(solar_system)
+        self.assertTrue(created)
+        self.assertEqual(obj.name, StructureTag.TAG_LOW_SEC)
+        self.assertEqual(obj.style, StructureTag.STYLE_ORANGE)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+
+    def test_get_or_create_for_space_type_nullsec(self):
+        solar_system = EveSolarSystem.objects.get(id=30000474)
+        obj, created = \
+            StructureTag.objects.get_or_create_for_space_type(solar_system)
+        self.assertTrue(created)
+        self.assertEqual(obj.name, StructureTag.TAG_NULL_SEC)
+        self.assertEqual(obj.style, StructureTag.STYLE_RED)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+
+    def test_get_or_create_for_space_type_w_space(self):
+        solar_system = EveSolarSystem.objects.get(id=31000005)
+        obj, created = \
+            StructureTag.objects.get_or_create_for_space_type(solar_system)
+        self.assertTrue(created)
+        self.assertEqual(obj.name, StructureTag.TAG_W_SPACE)
+        self.assertEqual(obj.style, StructureTag.STYLE_LIGHT_BLUE)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+
+    def test_get_or_create_sov(self):
+        obj, created = StructureTag.objects.get_or_create_for_sov()
+        self.assertTrue(created)
+        self.assertEqual(obj.name, 'sov')
+        self.assertEqual(obj.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 20)
+
+    """
+    def test_update_nullsec_tag(self):
+        solar_system = EveSolarSystem.objects.get(id=30000474)
+        obj, created = \
+            StructureTag.objects.get_or_create_for_space_type(solar_system)
+        self.assertEqual(obj.name, StructureTag.TAG_NULL_SEC)
+        self.assertEqual(obj.style, StructureTag.STYLE_RED)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+
+        obj.style = StructureTag.STYLE_GREEN
+        obj.is_user_managed = True
+        obj.order = 100
+        obj.save()
+
+        obj, created = \
+            StructureTag.objects.get_or_create_for_space_type(solar_system)
+
+        self.assertFalse(created)
+        self.assertEqual(obj.name, StructureTag.TAG_NULL_SEC)
+        self.assertEqual(obj.style, StructureTag.STYLE_RED)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+    """

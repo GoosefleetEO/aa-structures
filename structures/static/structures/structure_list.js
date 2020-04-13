@@ -6,8 +6,7 @@ $(document).ready(function(){
     var titleAlliance = elem.getAttribute('data-titleAlliance');
     var titleCorporation = elem.getAttribute('data-titleCorporation');
     var titleRegion = elem.getAttribute('data-titleRegion');
-    var titleSolarSystem = elem.getAttribute('data-titleSolarSystem');
-    var titleHasSov = elem.getAttribute('data-titleHasSov');
+    var titleSolarSystem = elem.getAttribute('data-titleSolarSystem');    
     var titleCategory = elem.getAttribute('data-titleCategory');
     var titleGroup = elem.getAttribute('data-titleGroup');
     var Reinforced = elem.getAttribute('data-Reinforced');
@@ -42,8 +41,7 @@ $(document).ready(function(){
             { data: 'alliance_name' },
             { data: 'corporation_name' },
             { data: 'region_name' },
-            { data: 'solar_system_name' },
-            { data: 'has_sov' },
+            { data: 'solar_system_name' },            
             { data: 'category_name' },
             { data: 'group_name' },            
             { data: 'is_reinforced_str' },
@@ -55,7 +53,7 @@ $(document).ready(function(){
         
         columnDefs: [
             { "sortable": false, "targets": [0, 3, 4, 6] },
-            { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19] }
+            { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18] }
         ],
         
         order: [ [ 1, "asc" ], [ 5, "asc" ] ],
@@ -78,29 +76,25 @@ $(document).ready(function(){
                 {
                     idx: 13,
                     title: titleSolarSystem
-                },
+                },              
                 {
                     idx: 14,
-                    title: titleHasSov
-                },
-                {
-                    idx: 15,
                     title: titleCategory
                 },  
                 {
-                    idx: 16,
+                    idx: 15,
                     title: titleGroup
                 },                    
                 {
-                    idx: 17,
+                    idx: 16,
                     title: Reinforced
                 },
                 {
-                    idx: 18,
+                    idx: 17,
                     title: State
                 },
                 {
-                    idx: 19,
+                    idx: 18,
                     title: LowPower
                 }
             ],

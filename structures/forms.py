@@ -8,5 +8,5 @@ class TagsFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(TagsFilterForm, self).__init__(*args, **kwargs)
 
-        for tag in StructureTag.objects.all().order_by('name'):
+        for tag in StructureTag.objects.all():
             self.fields[tag.name] = forms.BooleanField(required=False)

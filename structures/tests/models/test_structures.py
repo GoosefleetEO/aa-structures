@@ -141,6 +141,46 @@ class TestStructure(NoSocketsTestCase):
         self.assertFalse(obj.owner_has_sov)
 
 
+class TestStructureSave(NoSocketsTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()        
+        _, cls.owner = set_owner_character(character_id=1001)
+        Structure.objects.all().delete()
+        StructureTag.objects.all().delete()
+
+    def test_can_save_tags_low_sec(self):
+        obj = Structure.objects.create(
+            id=1300000000003,
+            owner=self.owner,
+            eve_solar_system_id=30002537,
+            name='Dummy',
+            state=Structure.STATE_SHIELD_VULNERABLE,
+            eve_type_id=35832,
+        )
+        lowsec_tag = StructureTag.objects.get(name=StructureTag.TAG_LOW_SEC)
+        self.assertIn(lowsec_tag, obj.tags.all())
+        self.assertIsNone(
+            StructureTag.objects.filter(name=StructureTag.TAG_SOV).first()
+        )
+        
+    def test_can_save_tags_null_sec_w_sov(self):
+        obj = Structure.objects.create(
+            id=1300000000003,
+            owner=self.owner,
+            eve_solar_system_id=30000474,
+            name='Dummy',
+            state=Structure.STATE_SHIELD_VULNERABLE,
+            eve_type_id=35832,
+        )
+        nullsec_tag = StructureTag.objects.get(name=StructureTag.TAG_NULL_SEC)
+        self.assertIn(nullsec_tag, obj.tags.all())
+        sov_tag = StructureTag.objects.get(name=StructureTag.TAG_SOV)
+        self.assertIn(sov_tag, obj.tags.all())
+
+
 class TestStructureNoSetup(NoSocketsTestCase):
     
     def test_structure_get_matching_state(self):

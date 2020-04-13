@@ -16,5 +16,5 @@ class TestSignals(NoSocketsTestCase):
         obj = Structure.objects.get(id=1000000000001)
         self.assertSetEqual(
             {x.name for x in obj.tags.all()},
-            {'tag_a'}
+            {'tag_a', 'lowsec'}
         )
