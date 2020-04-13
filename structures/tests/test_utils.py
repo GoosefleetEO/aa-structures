@@ -233,9 +233,9 @@ class TestHtmlHelper(TestCase):
         with translation.override('en'):
             self.assertEqual(yesno_str(True), 'yes')
             self.assertEqual(yesno_str(False), 'no')
-            self.assertEqual(yesno_str(None), 'no')
-            self.assertEqual(yesno_str(123), 'no')
-            self.assertEqual(yesno_str('xxxx'), 'no')
+            self.assertEqual(yesno_str(None), '')
+            self.assertEqual(yesno_str(123), '')
+            self.assertEqual(yesno_str('xxxx'), '')
 
 
 class TestMakeLoggerPrefix(TestCase):

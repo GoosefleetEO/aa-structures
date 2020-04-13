@@ -104,7 +104,7 @@ def send_all_new_notifications(rate_limited=True):
 
 
 @shared_task
-def send_notifications(notification_pks: list):
+def send_notifications(notification_pks: list, rate_limited=True):
     """send notifications defined by list of pks"""    
     notifications = Notification.objects.filter(pk__in=notification_pks)
     if notifications:
@@ -118,7 +118,8 @@ def send_notifications(notification_pks: list):
                     and not n.filter_for_alliance_level()
                 ):
                     n.send_to_webhook(webhook)
-            sleep(1)
+            if rate_limited:
+                sleep(1)
 
 
 @shared_task

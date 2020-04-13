@@ -500,13 +500,12 @@ class EveSolarSystem(EveUniverse):
         """returns true if given corporation has sov in this solar system
         else False
         """
-        alliance_id = \
-            int(corporation.alliance.alliance_id) if corporation.alliance else None
-        return (
-            self.is_null_sec 
-            and alliance_id 
-            and self.sov_alliance_id == alliance_id
-        )
+        if not self.is_null_sec:
+            return None
+        else:
+            alliance_id = \
+                int(corporation.alliance.alliance_id) if corporation.alliance else None
+            return alliance_id and (self.sov_alliance_id == alliance_id)
 
 
 class EvePlanet(EveUniverse):

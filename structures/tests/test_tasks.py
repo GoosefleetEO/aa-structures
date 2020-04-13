@@ -226,7 +226,7 @@ class TestForwardNotifications(NoSocketsTestCase):
         notification_pks = [
             x.pk for x in Notification.objects.filter(notification_id__in=ids)
         ]        
-        tasks.send_notifications(notification_pks)
+        tasks.send_notifications(notification_pks, rate_limited=False)
 
         # should have sent notification
         self.assertEqual(mock_execute.call_count, 3)

@@ -1222,6 +1222,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # should not have more timers
         self.assertEqual(Timer.objects.count(), 5)
         
+    @patch('structures.helpers.EsiSmartRequest._ESI_RETRY_SLEEP_SECS', 0)
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', False)        
     @patch(MODULE_PATH + '.Token', spec=True)
     @patch(MODULE_PATH + '.esi_client_factory')

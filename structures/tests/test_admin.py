@@ -40,15 +40,17 @@ class MockRequest(object):
 
 class TestNotificationAdmin(TestCase):
 
-    def setUp(self):
-        self.modeladmin = NotificationAdmin(
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()        
+        cls.modeladmin = NotificationAdmin(
             model=Notification, admin_site=AdminSite()
         )
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
-        load_notification_entities(self.owner)
-        self.obj = Notification.objects.get(notification_id=1000000404)
-        self.obj_qs = Notification.objects.filter(
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        load_notification_entities(cls.owner)
+        cls.obj = Notification.objects.get(notification_id=1000000404)
+        cls.obj_qs = Notification.objects.filter(
             notification_id__in=[1000000404, 1000000405]
         )
 
@@ -102,13 +104,15 @@ class TestNotificationAdmin(TestCase):
 
 class TestOwnerAdmin(TestCase):
 
-    def setUp(self):
-        self.factory = RequestFactory()
-        self.modeladmin = OwnerAdmin(
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        cls.modeladmin = OwnerAdmin(
             model=Owner, admin_site=AdminSite()
         )
         create_structures()
-        self.user, self.obj = set_owner_character(character_id=1001)        
+        cls.user, cls.obj = set_owner_character(character_id=1001)        
 
     def test_corporation(self):
         self.assertEqual(
@@ -163,7 +167,7 @@ class TestOwnerAdmin(TestCase):
         self.modeladmin.send_notifications(
             MockRequest(self.user), owner_qs
         )
-        self.assertEqual(mock_task.delay.call_count, 2)
+        self.assertEqual(mock_task.si.call_count, 2)
         self.assertTrue(mock_message_user.called)
 
     def test_owner_sync_status_filter(self):
@@ -213,15 +217,17 @@ class TestOwnerAdmin(TestCase):
 
 class TestStructureAdmin(TestCase):
 
-    def setUp(self):
-        self.factory = RequestFactory()
-        self.modeladmin = StructureAdmin(
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        cls.modeladmin = StructureAdmin(
             model=Structure, admin_site=AdminSite()
         )
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
-        self.obj = Structure.objects.get(id=1000000000001)
-        self.obj_qs = Structure.objects\
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.obj = Structure.objects.get(id=1000000000001)
+        cls.obj_qs = Structure.objects\
             .filter(id__in=[1000000000001, 1000000000002])
 
     def test_owner(self):
@@ -346,13 +352,15 @@ class TestStructureAdmin(TestCase):
 
 class TestWebhookAdmin(TestCase):
 
-    def setUp(self):
-        self.modeladmin = WebhookAdmin(
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.modeladmin = WebhookAdmin(
             model=Webhook, admin_site=AdminSite()
         )
         load_entities([Webhook])
-        self.user = create_user(character_id=1001, load_data=True)
-        self.obj_qs = Webhook.objects.all()
+        cls.user = create_user(character_id=1001, load_data=True)
+        cls.obj_qs = Webhook.objects.all()
 
     @patch(MODULE_PATH + '.WebhookAdmin.message_user', auto_spec=True)
     @patch(MODULE_PATH + '.tasks.send_test_notifications_to_webhook')    

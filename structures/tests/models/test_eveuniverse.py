@@ -323,9 +323,9 @@ class TestEveSolarSystem(NoSocketsTestCase):
         obj = EveSolarSystem.objects.get(id=30000476)
         self.assertFalse(obj.corporation_has_sov(corp))
 
-        # Wayne Tech has no sov in Amamake
+        # There can't be any sov outside nullsec
         obj = EveSolarSystem.objects.get(id=30002537)
-        self.assertFalse(obj.corporation_has_sov(corp))
+        self.assertIsNone(obj.corporation_has_sov(corp))
 
 
 class TestEvePlanet(NoSocketsTestCase):

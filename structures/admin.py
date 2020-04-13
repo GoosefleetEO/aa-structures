@@ -1,5 +1,7 @@
 import logging
 
+from celery import chain
+
 from django.contrib import admin
 from django.db import models
 from django.db.models.functions import Lower
@@ -364,14 +366,16 @@ class OwnerAdmin(admin.ModelAdmin):
         "Fetch notifications from EVE server"
 
     def send_notifications(self, request, queryset):
-        for obj in queryset:
-            tasks.send_new_notifications_for_owner.delay(
-                obj.pk
-            )
+        send_tasks = list()
+        for owner in queryset:            
+            send_tasks.append(tasks.send_new_notifications_for_owner.si(
+                owner_pk=owner.pk
+            ))
             self.message_user(
                 request,
-                'Started sending new notifications for: {}. '.format(obj)
+                'Started sending new notifications for: {}. '.format(owner)
             )
+        chain(send_tasks).delay()
 
     send_notifications.short_description = "Send new notifications to Discord"
 

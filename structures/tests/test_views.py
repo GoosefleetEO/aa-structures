@@ -20,7 +20,7 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
 )
-from ..models import Owner, StructureTag, Webhook
+from ..models import Owner, Webhook
 from .testdata import \
     create_structures, set_owner_character, load_entities, create_user
 from ..utils import set_test_logger, NoSocketsTestCase
@@ -32,8 +32,8 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestStructureList(NoSocketsTestCase):
-    
-    def setUp(self):   
+        
+    def setUp(self):    
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
         AuthUtils.add_permission_to_user_by_name(
@@ -46,22 +46,6 @@ class TestStructureList(NoSocketsTestCase):
         request.user = self.user
         response = views.structure_list(request)
         self.assertEqual(response.status_code, 200)
-
-    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', True)
-    def test_default_filter_enabled(self):
-        request = self.factory.get(reverse('structures:index'))
-        request.user = self.user
-        response = views.index(request)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, '/structures/list/?tags=tag_a')
-
-    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', False)
-    def test_default_filter_disabled(self):
-        request = self.factory.get(reverse('structures:index'))
-        request.user = self.user
-        response = views.index(request)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, '/structures/list/')
         
     def test_basic_access_own_structures_only(self):
         request = self.factory.get(reverse('structures:structure_list_data'))
@@ -109,6 +93,38 @@ class TestStructureList(NoSocketsTestCase):
             }
         )
 
+
+class TestStructureList2(NoSocketsTestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        AuthUtils.add_permission_to_user_by_name(
+            'structures.basic_access', cls.user
+        )
+        AuthUtils.add_permission_to_user_by_name(
+            'structures.view_all_structures', cls.user
+        )
+        cls.factory = RequestFactory()
+    
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', True)
+    def test_default_filter_enabled(self):
+        request = self.factory.get(reverse('structures:index'))
+        request.user = self.user
+        response = views.index(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/structures/list/?tags=tag_a')
+
+    @patch(MODULE_PATH + '.STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED', False)
+    def test_default_filter_disabled(self):
+        request = self.factory.get(reverse('structures:index'))
+        request.user = self.user
+        response = views.index(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/structures/list/')
+
     def test_perm_view_alliance_structures_no_alliance(self):
         # run with a user that is not a member of an alliance        
         character = EveCharacter.objects.get(character_id=1011)
@@ -131,11 +147,8 @@ class TestStructureList(NoSocketsTestCase):
             structure_ids, 
             {1000000000003}
         )
-            
+
     def test_perm_view_all_structures(self):        
-        AuthUtils.add_permission_to_user_by_name(
-            'structures.view_all_structures', self.user
-        )
         request = self.factory.get(reverse('structures:structure_list_data'))
         request.user = self.user
         response = views.structure_list_data(request)
@@ -157,15 +170,8 @@ class TestStructureList(NoSocketsTestCase):
                 1300000000003,
             }
         )
-
-    def test_list_filter_by_tag_1(self):               
-        StructureTag.objects.get(name='tag_a')
-        StructureTag.objects.get(name='tag_b')
-        StructureTag.objects.get(name='tag_c')       
-        AuthUtils.add_permission_to_user_by_name(
-            'structures.view_all_structures', self.user
-        )
-
+    
+    def test_list_filter_by_tag_1(self):        
         # no filter
         request = self.factory.get('{}'.format(
             reverse('structures:structure_list_data')
@@ -356,7 +362,10 @@ class TestAddStructureOwner(NoSocketsTestCase):
         mock_notify_admins, 
         mock_update_structures_for_owner
     ):
-        Webhook.objects.filter(name='Test Webhook 1').delete()
+        webhook = Webhook.objects.filter(name='Test Webhook 1').first()
+        webhook.is_default = False
+        webhook.save()
+        
         token = Mock(spec=Token)
         token.character_id = self.user.profile.main_character.character_id
         request = self.factory.get(reverse('structures:add_structure_owner'))
@@ -377,6 +386,9 @@ class TestAddStructureOwner(NoSocketsTestCase):
         my_owner = Owner.objects.get(character=my_ownership)
         self.assertIsNone(my_owner.webhooks.first())
         self.assertTrue(mock_update_structures_for_owner.delay.called)
+                
+        webhook.is_default = True
+        webhook.save()
 
     @patch(MODULE_PATH + '.messages_plus')
     def test_view_add_structure_owner_wrong_ownership(self, mock_messages):

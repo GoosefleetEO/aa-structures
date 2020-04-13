@@ -332,5 +332,10 @@ def add_no_wrap_html(text: str) -> str:
 
 
 def yesno_str(value: bool) -> str:
-    """returns yes/no for boolean as string and with localization"""
-    return _('yes') if value is True else _('no')
+    """returns yes/no for boolean else empty string and with localization"""
+    if value is True:
+        return _('yes') 
+    elif value is False:
+        return _('no')
+    else:
+        return ''
