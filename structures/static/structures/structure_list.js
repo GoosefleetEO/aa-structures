@@ -7,9 +7,9 @@ $(document).ready(function(){
     var titleCorporation = elem.getAttribute('data-titleCorporation');
     var titleRegion = elem.getAttribute('data-titleRegion');
     var titleSolarSystem = elem.getAttribute('data-titleSolarSystem');
+    var titleHasSov = elem.getAttribute('data-titleHasSov');
     var titleCategory = elem.getAttribute('data-titleCategory');
     var titleGroup = elem.getAttribute('data-titleGroup');
-    var titleType = elem.getAttribute('data-titleType');
     var Reinforced = elem.getAttribute('data-Reinforced');
     var State = elem.getAttribute('data-State');
     var LowPower = elem.getAttribute('data-LowPower');
@@ -43,9 +43,9 @@ $(document).ready(function(){
             { data: 'corporation_name' },
             { data: 'region_name' },
             { data: 'solar_system_name' },
+            { data: 'has_sov' },
             { data: 'category_name' },
-            { data: 'group_name' },
-            { data: 'type_name' },
+            { data: 'group_name' },            
             { data: 'is_reinforced_str' },
             { data: 'state_str' },
             { data: 'is_low_power_str' }
@@ -81,15 +81,15 @@ $(document).ready(function(){
                 },
                 {
                     idx: 14,
-                    title: titleCategory
+                    title: titleHasSov
                 },
                 {
                     idx: 15,
-                    title: titleGroup
+                    title: titleCategory
                 },  
                 {
                     idx: 16,
-                    title: titleType
+                    title: titleGroup
                 },                    
                 {
                     idx: 17,

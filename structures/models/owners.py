@@ -611,32 +611,42 @@ class Owner(models.Model):
             
             # add fuel expiration
             for starbase in starbases:
-                starbase_details = EsiSmartRequest.fetch(
-                    'Corporation.get_corporations_corporation_id_starbases_starbase_id',
-                    args={
-                        'corporation_id': corporation_id, 
-                        'starbase_id': starbase['starbase_id'],
-                        'system_id': starbase['system_id'],
-                    },                    
-                    esi_client=esi_client,
-                    logger_tag=add_prefix()
-                )
-                fuel_quantity = None
-                if 'fuels' in starbase_details:
-                    for fuel in starbase_details['fuels']:
-                        fuel_type, _ = EveType.objects.get_or_create_esi(
-                            fuel['type_id']
+                if starbase['state'] != 'offline':
+                    starbase_details = EsiSmartRequest.fetch(
+                        'Corporation.get_corporations_corporation_id_starbases_starbase_id',    # noqa
+                        args={
+                            'corporation_id': corporation_id, 
+                            'starbase_id': starbase['starbase_id'],
+                            'system_id': starbase['system_id'],
+                        },                    
+                        esi_client=esi_client,
+                        logger_tag=add_prefix()
+                    )
+                    fuel_quantity = None
+                    if 'fuels' in starbase_details:
+                        for fuel in starbase_details['fuels']:
+                            fuel_type, _ = EveType.objects.get_or_create_esi(
+                                fuel['type_id']
+                            )
+                            if fuel_type.is_fuel_block:
+                                fuel_quantity = fuel['quantity']
+                    if fuel_quantity:                    
+                        starbase_type, _ = EveType.objects.get_or_create_esi(
+                            starbase['type_id']
                         )
-                        if fuel_type.is_fuel_block:
-                            fuel_quantity = fuel['quantity']
-                if fuel_quantity:
-                    starbase_type, _ = EveType.objects.get_or_create_esi(
-                        starbase['type_id']
-                    )
-                    hours = math.floor(
-                        fuel_quantity / starbase_type.starbase_fuel_per_hour
-                    )
-                    starbase['fuel_expires'] = now() + timedelta(hours=hours)
+                        solar_system, _ = \
+                            EveSolarSystem.objects.get_or_create_esi(
+                                starbase['system_id']
+                            )                                        
+                        sov_discount = 0.25 \
+                            if solar_system.corporation_has_sov(self.corporation) else 0
+                        hours = math.floor(
+                            fuel_quantity / (
+                                starbase_type.starbase_fuel_per_hour 
+                                * (1 - sov_discount)
+                            )
+                        )
+                        starbase['fuel_expires'] = now() + timedelta(hours=hours)
                 
             # convert starbases to structures            
             for starbase in starbases:

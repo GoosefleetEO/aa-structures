@@ -3,7 +3,8 @@ from pydoc import locate
 
 from bravado.exception import HTTPError
 
-from django.db import models
+from django.db import models, transaction
+from django.utils.timezone import now
 
 from . import __title__
 from .helpers import EsiSmartRequest
@@ -100,6 +101,38 @@ class EveUniverseManager(models.Manager):
         return count_updated
 
 
+class EveSovereigntyMapManager(models.Manager):
+    
+    def update_from_esi(self):        
+        logger.info('Fetching sovereignty map from ESI...')
+        map = EsiSmartRequest.fetch('Sovereignty.get_sovereignty_map', args={})
+        last_updated = now()
+        obj_list = list()
+        for solar_system in map:
+            obj_def = {
+                'solar_system_id': solar_system['system_id'],
+                'last_updated': last_updated
+            }
+            for key in ['alliance_id', 'corporation_id', 'faction_id']:
+                if key in solar_system and solar_system[key]:
+                    obj_def[key] = solar_system[key]
+                else:
+                    obj_def[key] = None
+
+            if (
+                obj_def['alliance_id']
+                or obj_def['corporation_id']
+                or obj_def['faction_id']
+            ):                
+                obj_list.append(self.model(**obj_def))
+        
+        if obj_list:
+            logger.info('Storing sovereignty map ...')
+            with transaction.atomic():
+                self.all().delete()
+                self.bulk_create(obj_list, batch_size=1000)
+                    
+
 class EveEntityManager(models.Manager):
 
     def get_or_create_esi(self, eve_entity_id: int) -> tuple:
@@ -108,12 +141,11 @@ class EveEntityManager(models.Manager):
         eve_id: Eve Online ID of object
         
         Returns: object, created        
-        """
-        from .models import EveEntity
+        """        
         try:
             obj = self.get(id=eve_entity_id)
             created = False
-        except EveEntity.DoesNotExist:
+        except self.model.DoesNotExist:
             obj, created = self.update_or_create_esi(eve_entity_id)
 
         return obj, created
@@ -168,13 +200,11 @@ class StructureManager(models.Manager):
         esi_client: ESI client with scope: esi-universe.read_structures.v1
         
         Returns: object, created
-        """
-        from .models import Structure
-
+        """        
         try:
-            obj = Structure.objects.get(id=structure_id)
+            obj = self.get(id=structure_id)
             created = False
-        except Structure.DoesNotExist:            
+        except self.model.DoesNotExist:            
             obj, created = self.update_or_create_esi(structure_id, esi_client)
         return obj, created
 
@@ -233,8 +263,9 @@ class StructureManager(models.Manager):
         self, structure: dict, owner: object
     ) -> tuple:
         """update or create structure from given dict"""
-        from .models import EveType, EveSolarSystem, Structure,\
-            StructureService, EvePlanet, EveMoon
+        from .models import (
+            EveType, EveSolarSystem, StructureService, EvePlanet, EveMoon
+        )
         from .models.eveuniverse import EveUniverse
         eve_type, _ = EveType.objects.get_or_create_esi(
             structure['type_id']
@@ -264,8 +295,8 @@ class StructureManager(models.Manager):
             if 'reinforce_hour' in structure else None
 
         state = \
-            Structure.get_matching_state_for_esi_state(structure['state']) \
-            if 'state' in structure else Structure.STATE_UNKNOWN
+            self.model.get_matching_state_for_esi_state(structure['state']) \
+            if 'state' in structure else self.model.STATE_UNKNOWN
 
         state_timer_start = \
             structure['state_timer_start'] \

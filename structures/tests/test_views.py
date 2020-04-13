@@ -79,7 +79,8 @@ class TestStructureList(NoSocketsTestCase):
                 1200000000004, 
                 1200000000005,
                 1300000000001,
-                1300000000002
+                1300000000002,
+                1300000000003,
             }
         )
         
@@ -103,13 +104,14 @@ class TestStructureList(NoSocketsTestCase):
                 1200000000004, 
                 1200000000005,
                 1300000000001,
-                1300000000002
+                1300000000002,
+                1300000000003,
             }
         )
 
     def test_perm_view_alliance_structures_no_alliance(self):
         # run with a user that is not a member of an alliance        
-        character = EveCharacter.objects.get(character_id=1002)        
+        character = EveCharacter.objects.get(character_id=1011)
         user = create_user(character.character_id)        
         AuthUtils.add_permission_to_user_by_name(
             'structures.basic_access', user
@@ -151,7 +153,8 @@ class TestStructureList(NoSocketsTestCase):
                 1200000000004, 
                 1200000000005,
                 1300000000001,
-                1300000000002
+                1300000000002,
+                1300000000003,
             }
         )
 
@@ -182,7 +185,8 @@ class TestStructureList(NoSocketsTestCase):
                 1200000000004, 
                 1200000000005,
                 1300000000001,
-                1300000000002
+                1300000000002,
+                1300000000003,
             }
         )
 
@@ -377,7 +381,7 @@ class TestAddStructureOwner(NoSocketsTestCase):
     @patch(MODULE_PATH + '.messages_plus')
     def test_view_add_structure_owner_wrong_ownership(self, mock_messages):
         token = Mock(spec=Token)        
-        token.character_id = 1002
+        token.character_id = 1011
         request = self.factory.get(reverse('structures:add_structure_owner'))
         request.user = self.user
         request.token = token

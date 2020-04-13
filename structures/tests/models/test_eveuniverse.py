@@ -1,5 +1,7 @@
 from django.utils import translation
 
+from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
+
 from ...models import (
     EveCategory, 
     EveGroup, 
@@ -8,7 +10,8 @@ from ...models import (
     EveConstellation, 
     EveSolarSystem, 
     EvePlanet,
-    EveMoon
+    EveMoon,
+    EveSovereigntyMap
 )
 from ...models.eveuniverse import EveUniverse
 from ..testdata import load_entities
@@ -259,7 +262,9 @@ class TestEveSolarSystem(NoSocketsTestCase):
             EveType,  
             EveRegion,
             EveConstellation,
-            EveSolarSystem
+            EveSolarSystem,
+            EveSovereigntyMap,
+            EveCharacter
         ])
 
     def test_get(self):        
@@ -293,6 +298,34 @@ class TestEveSolarSystem(NoSocketsTestCase):
         self.assertFalse(obj.is_low_sec)
         self.assertFalse(obj.is_null_sec)
         self.assertTrue(obj.is_wh_space)
+
+    def test_sov_alliance_id(self):        
+        # returns alliance ID for sov system in null
+        obj = EveSolarSystem.objects.get(id=30000474)
+        expected = 3001
+        self.assertEqual(obj.sov_alliance_id, expected)
+
+        # returns None if there is not sov info
+        obj = EveSolarSystem.objects.get(id=30000476)
+        self.assertIsNone(obj.sov_alliance_id)
+
+        # returns None if system is not in Null sec
+        obj = EveSolarSystem.objects.get(id=30002537)
+        self.assertIsNone(obj.sov_alliance_id)
+
+    def test_corporation_has_sov(self):        
+        corp = EveCorporationInfo.objects.get(corporation_id=2001)
+        # Wayne Tech has sov in 1-PG
+        obj = EveSolarSystem.objects.get(id=30000474)
+        self.assertTrue(obj.corporation_has_sov(corp))
+
+        # Wayne Tech has no sov in A-C5
+        obj = EveSolarSystem.objects.get(id=30000476)
+        self.assertFalse(obj.corporation_has_sov(corp))
+
+        # Wayne Tech has no sov in Amamake
+        obj = EveSolarSystem.objects.get(id=30002537)
+        self.assertFalse(obj.corporation_has_sov(corp))
 
 
 class TestEvePlanet(NoSocketsTestCase):
@@ -348,3 +381,16 @@ class TestEveMoon(NoSocketsTestCase):
         
         expected = 'Amamake_de II - Mond 1'
         self.assertEqual(obj._name_localized_generated('de'), expected)
+
+
+class TestEveSovereigntyMap(NoSocketsTestCase):
+
+    def test_str(self):
+        obj = EveSovereigntyMap(solar_system_id=99)
+        expected = '99'
+        self.assertEqual(str(obj), expected)
+
+    def test_repr(self):
+        obj = EveSovereigntyMap(solar_system_id=99)
+        expected = 'EveSovereigntyMap(solar_system_id=\'99\')'
+        self.assertEqual(repr(obj), expected)

@@ -247,6 +247,12 @@
             "name": "1-PGSG",
             "security_status": -0.496552765369415,
             "eve_constellation_id": 20000069
+        },
+        {
+            "id": 30000476,
+            "name": "A-C5TC",
+            "security_status": -0.396552765369415,
+            "eve_constellation_id": 20000069
         }
     ],
     
@@ -373,17 +379,16 @@
             "id": 40161471,
             "name": "Amamake IV - Moon 1",
             "eve_solar_system_id": 30002537
+        },
+        {
+            "id": 40029527,
+            "name": "1-PGSG I - Moon 1",
+            "eve_solar_system_id": 30000474
         }
     ], 
 
     "EveAllianceInfo":
-    [
-        {
-            "alliance_id": 3001,
-            "alliance_name": "Wayne Enterprises",
-            "alliance_ticker": "WYE",            
-            "executor_corp_id": 2001
-        },
+    [       
         {
             "alliance_id": 500012,
             "alliance_name": "Blood Raider Covenant",
@@ -393,25 +398,7 @@
     ],
 
     "EveCorporationInfo":
-    [
-        {
-            "corporation_id": 2001,
-            "corporation_name": "Wayne Technologies",
-            "corporation_ticker": "WYT",
-            "member_count": 4200
-        },
-        {
-            "corporation_id": 2002,
-            "corporation_name": "Wayne Foods",
-            "corporation_ticker": "WYF",
-            "member_count": 8875
-        },
-        {
-            "corporation_id": 2102,
-            "corporation_name": "Lexcorp",
-            "corporation_ticker": "LEX",
-            "member_count": 2500
-        },
+    [        
         {
             "corporation_id": 1000134,
             "corporation_name": "Blood Raiders",
@@ -426,10 +413,21 @@
             "character_name": "Bruce Wayne",
             "corporation_id": 2001,
             "corporation_name": "Wayne Technologies",
-            "corporation_ticker": "WYE"
+            "corporation_ticker": "WYE",
+            "alliance_id": 3001,
+            "alliance_name": "Wayne Enterprises"
         },
         {
-            "character_id": 1002,
+            "character_id": 1003,
+            "character_name": "Clark Kent",
+            "corporation_id": 2002,
+            "corporation_name": "Wayne Foods",
+            "corporation_ticker": "WYE",
+            "alliance_id": 3001,
+            "alliance_name": "Wayne Enterprises"
+        },
+        {
+            "character_id": 1011,
             "character_name": "Lex Luther",
             "corporation_id": 2102,
             "corporation_name": "Lexcorp",
@@ -490,6 +488,25 @@
             "name": "NPC Corp"
         }
     ],
+
+    "EveSovereigntyMap": 
+    [
+        {
+            "alliance_id": 3011,
+            "corporation_id": 2011,
+            "solar_system_id": 30000726
+        },
+        {
+            "alliance_id": 3001,
+            "corporation_id": 2001,
+            "solar_system_id": 30000474
+        },
+        {
+            "alliance_id": 3001,
+            "corporation_id": 2001,
+            "solar_system_id": 30000728
+        }
+    ],
    
     "Structure":
     [
@@ -533,7 +550,7 @@
             "id": 1000000000003,  
             "name": "Test Structure Charlie",
             "eve_type_id": 35832,
-            "eve_solar_system_id": 30002537,            
+            "eve_solar_system_id": 30000476,            
             "reinforce_hour": 11,
             "state": 11,
             "owner_corporation_id": 2102,
@@ -586,6 +603,15 @@
             "eve_type_id": 16214,
             "owner_corporation_id": 2001,
             "eve_moon_id": 40161466
+        },
+        {
+            "id": 1300000000003,
+            "name": "Amamake II - Moon 2",
+            "state": 22,
+            "eve_solar_system_id": 30000474,
+            "eve_type_id": 20062,
+            "owner_corporation_id": 2001,
+            "eve_moon_id": 40029527
         }
     ],
     
@@ -789,7 +815,7 @@
         {
             "notification_id": 1027272058,
             "type": "CharAppAcceptMsg",
-            "sender_id": 1002,
+            "sender_id": 1011,
             "sender_type": "character",
             "timestamp": "2019-08-16T15:08:00Z",
             "text": "applicationText: ''\ncharID: 1002\ncorpID: 2001\n"

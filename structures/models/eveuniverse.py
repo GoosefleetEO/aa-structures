@@ -8,8 +8,10 @@ from django.utils.translation import gettext
 from django.utils import translation
 from django.utils.timezone import now
 
+from allianceauth.eveonline.models import EveCorporationInfo
+
 from .. import __title__
-from ..managers import EveUniverseManager
+from ..managers import EveUniverseManager, EveSovereigntyMapManager
 from ..utils import LoggerAddTag
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
@@ -480,6 +482,32 @@ class EveSolarSystem(EveUniverse):
     def is_wh_space(self):
         return 31000000 <= self.id < 32000000
 
+    @property
+    def sov_alliance_id(self) -> int:
+        """returns ID of sov owning alliance for this system or None"""
+        if self.is_null_sec:
+            try:
+                map = EveSovereigntyMap.objects.get(solar_system_id=self.id)
+                alliance_id = map.alliance_id if map.alliance_id else None        
+            except EveSovereigntyMap.DoesNotExist:
+                alliance_id = None
+        else:
+            alliance_id = None
+        
+        return alliance_id
+    
+    def corporation_has_sov(self, corporation: EveCorporationInfo) -> bool:
+        """returns true if given corporation has sov in this solar system
+        else False
+        """
+        alliance_id = \
+            int(corporation.alliance.alliance_id) if corporation.alliance else None
+        return (
+            self.is_null_sec 
+            and alliance_id 
+            and self.sov_alliance_id == alliance_id
+        )
+
 
 class EvePlanet(EveUniverse):
     """"planet in Eve Online"""
@@ -582,3 +610,49 @@ class EveMoon(EveUniverse):
         }
         has_esi_localization = False
         generate_localization = True
+
+
+class EveSovereigntyMap(models.Model):
+    """Shows which alliance / corporation / faction owns a system
+    
+    Note: This model does not hold FKs to respective objects like 
+    EveSolarSystem to avoid having load all those object from ESI
+    """
+
+    solar_system_id = models.PositiveIntegerField(primary_key=True)
+    alliance_id = models.PositiveIntegerField(
+        blank=True, 
+        null=True, 
+        db_index=True,
+        help_text='alliance who holds sov for this system'
+    )
+    corporation_id = models.PositiveIntegerField(
+        blank=True, 
+        null=True, 
+        db_index=True,
+        help_text='corporation who holds sov for this system'
+    )
+    faction_id = models.PositiveIntegerField(
+        blank=True, 
+        null=True, 
+        db_index=True,
+        help_text='faction who holds sov for this system'
+    )
+    last_updated = models.DateTimeField(
+        default=None,
+        null=True,
+        blank=True,
+        help_text='When this object was last updated from ESI',
+        db_index=True
+    )
+
+    objects = EveSovereigntyMapManager()
+    
+    def __str__(self):
+        return str(self.solar_system_id)
+
+    def __repr__(self):
+        return '{}(solar_system_id=\'{}\')'.format(
+            self.__class__.__name__,
+            self.solar_system_id
+        )

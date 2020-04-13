@@ -127,6 +127,19 @@ class TestStructure(NoSocketsTestCase):
             Structure.extract_name_from_esi_respose('Alpha'), expected
         )
 
+    def test_owner_has_sov(self):
+        # Wayne Tech has sov in 1-PG
+        obj = Structure.objects.get(id=1300000000003)
+        self.assertTrue(obj.owner_has_sov)
+
+        # Wayne Tech has no sov in A-C5TC
+        obj = Structure.objects.get(id=1000000000003)
+        self.assertFalse(obj.owner_has_sov)
+
+        # Wayne Tech has no sov in Amamake
+        obj = Structure.objects.get(id=1000000000001)
+        self.assertFalse(obj.owner_has_sov)
+
 
 class TestStructureNoSetup(NoSocketsTestCase):
     

@@ -10,7 +10,8 @@ from .eveuniverse import (
     EveConstellation, 
     EveSolarSystem, 
     EvePlanet, 
-    EveMoon  
+    EveMoon,
+    EveSovereigntyMap  
 )
 from .structures import (
     Structure, StructureService, StructureTag

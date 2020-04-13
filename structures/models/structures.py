@@ -310,6 +310,10 @@ class Structure(models.Model):
             self.STATE_HULL_VULNERABLE
         ]
 
+    @property
+    def owner_has_sov(self):
+        return self.eve_solar_system.corporation_has_sov(self.owner.corporation)
+
     def __str__(self):
         return '{} - {}'.format(self.eve_solar_system, self.name)
 

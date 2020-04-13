@@ -18,6 +18,7 @@ from .models import (
     EveSolarSystem,
     EveMoon,
     EvePlanet,
+    EveSovereigntyMap,
     StructureTag,
     StructureService,
     Webhook,
@@ -75,6 +76,15 @@ if STRUCTURES_DEVELOPER_MODE:
     @admin.register(EveType)
     class EveTypeAdmin(admin.ModelAdmin):
         pass
+
+    @admin.register(EveSovereigntyMap)
+    class EveSovereigntyMapAdmin(admin.ModelAdmin):
+        list_display = (
+            'solar_system_id', 'alliance_id', 'corporation_id', 'faction_id'
+        )
+        search_fields = [
+            'solar_system_id', 'alliance_id', 'corporation_id', 'faction_id'
+        ]
 
 
 @admin.register(Notification)

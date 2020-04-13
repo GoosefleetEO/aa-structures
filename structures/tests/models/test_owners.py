@@ -25,6 +25,7 @@ from ...models import (
     EveSolarSystem,
     EveMoon,
     EvePlanet,
+    EveSovereigntyMap,
     EveEntity,
     StructureTag,
     StructureService,
@@ -298,9 +299,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             EveType,
             EveRegion,
             EveConstellation,
-            EveSolarSystem,            
+            EveSolarSystem,
+            EveSovereigntyMap,      
             EvePlanet,
-            EveMoon,
+            EveMoon,            
             EveCorporationInfo,
             EveCharacter,            
         ])
@@ -345,7 +347,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
 
     def test_returns_error_when_char_has_no_permission(self):
-        user_2 = create_user(1002)        
+        user_2 = create_user(1011)        
         owner = Owner.objects.create(
             corporation=self.corporation,
             character=user_2.character_ownerships.first()
@@ -602,18 +604,18 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
         structure = Structure.objects.get(id=1300000000003)        
         self.assertEqual(structure.name, 'Panic Room')
-        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.eve_solar_system_id, 30000474)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 20062)        
         self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
-        self.assertEqual(structure.eve_moon_id, 40161471)
+        self.assertEqual(structure.eve_moon_id, 40029527)
         self.assertGreaterEqual(
             structure.fuel_expires, 
-            now() + timedelta(hours=100) - timedelta(seconds=10)
+            now() + timedelta(hours=133) - timedelta(seconds=10)
         )
         self.assertLessEqual(
             structure.fuel_expires, 
-            now() + timedelta(hours=100) + timedelta(seconds=10)
+            now() + timedelta(hours=133) + timedelta(seconds=10)
         )
         
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
@@ -1221,8 +1223,8 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.assertEqual(Timer.objects.count(), 5)
         
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', False)        
-    @patch(MODULE_PATH + '.Token', autospec=True)
-    @patch(MODULE_PATH + '.esi_client_factory', autospec=True)
+    @patch(MODULE_PATH + '.Token', spec=True)
+    @patch(MODULE_PATH + '.esi_client_factory')
     def test_report_error_when_esi_returns_error_during_sync(
         self, mock_esi_client_factory, mock_Token
     ):

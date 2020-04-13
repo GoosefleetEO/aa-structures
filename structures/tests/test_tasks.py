@@ -72,7 +72,7 @@ class TestUpdateStructures(NoSocketsTestCase):
         owner_2002 = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2002)
         )
-        tasks.update_all_structures()
+        tasks.update_structures()
         self.assertEqual(mock_update_structures_for_owner.delay.call_count, 2)
         call_args_list = mock_update_structures_for_owner.delay.call_args_list
         args, kwargs = call_args_list[0]
@@ -84,7 +84,7 @@ class TestUpdateStructures(NoSocketsTestCase):
     def test_does_not_update_structures_for_non_active_owners(
         self, mock_update_structures_for_owner
     ):        
-        Owner.objects.all().delete()
+        Owner.objects.filter().delete()
         owner_2001 = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001),
             is_active=True
@@ -93,11 +93,28 @@ class TestUpdateStructures(NoSocketsTestCase):
             corporation=EveCorporationInfo.objects.get(corporation_id=2002),
             is_active=False
         )
-        tasks.update_all_structures()
+        tasks.update_structures()
         self.assertEqual(mock_update_structures_for_owner.delay.call_count, 1)
         call_args_list = mock_update_structures_for_owner.delay.call_args_list
         args, kwargs = call_args_list[0]
         self.assertEqual(args[0], owner_2001.pk)        
+
+    @patch(MODULE_PATH + '.EveSovereigntyMap.objects.update_from_esi')
+    @patch(MODULE_PATH + '.update_structures_for_owner')
+    def test_update_all_structures(
+        self, mock_update_structures_for_owner, mock_update_from_esi
+    ):
+        Owner.objects.filter().delete()
+        Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2001),
+            is_active=True
+        )
+        app.conf.task_always_eager = True
+        tasks.update_all_structures()
+        app.conf.task_always_eager = False
+
+        self.assertTrue(mock_update_structures_for_owner.delay.called)
+        self.assertTrue(mock_update_from_esi.called)
 
 
 class TestSyncNotifications(NoSocketsTestCase):

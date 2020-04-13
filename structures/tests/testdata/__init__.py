@@ -25,6 +25,7 @@ from ...models import (
     EveSolarSystem,
     EveMoon,
     EvePlanet,
+    EveSovereigntyMap,
     StructureTag,
     StructureService,    
     EveEntity,
@@ -480,6 +481,11 @@ def esi_mock_client():
         .get_corporations_corporation_id_customs_offices = \
         esi_get_corporations_corporation_id_customs_offices
     
+    # Sovereignty
+    mock_client.Sovereignty\
+        .get_sovereignty_map.return_value.result.return_value = \
+        _esi_data['Sovereignty']['get_sovereignty_map']
+
     # Universe
     mock_client.Universe\
         .get_universe_categories_category_id\
@@ -564,10 +570,31 @@ def load_entity(EntityClass):
     entity_name = EntityClass.__name__
     EntityClass.objects.all().delete()
     for obj in entities_testdata[entity_name]:
-        if issubclass(EntityClass, EveUniverse) and EntityClass.has_esi_localization():            
+        if (
+            issubclass(EntityClass, EveUniverse) and EntityClass.has_esi_localization()
+        ):
             for _, lc_model, lc_esi in EveUniverse.LANG_CODES_MAPPING:
                 if lc_esi != EveUniverse.ESI_DEFAULT_LANGUAGE:
                     obj['name_' + lc_model] = obj['name'] + '_' + lc_model
+        elif EntityClass == EveCharacter:
+            EveCharacter.objects.create(**obj)
+            corp_defaults = {
+                'corporation_name': obj['corporation_name'],
+                'member_count': 99
+            }
+            if 'alliance_id' in obj:
+                alliance, _ = EveAllianceInfo.objects.get_or_create(
+                    alliance_id=obj['alliance_id'],
+                    defaults={
+                        'alliance_name': obj['alliance_name']
+                    }                    
+                )
+                corp_defaults['alliance'] = alliance
+            EveCorporationInfo.objects.get_or_create(
+                corporation_id=obj['corporation_id'],
+                defaults=corp_defaults
+            )
+            continue
         EntityClass.objects.create(**obj)
     assert(len(entities_testdata[entity_name]) == EntityClass.objects.count()) 
 
@@ -583,8 +610,7 @@ def load_entities(entities_def: list = None):
         EveSolarSystem,
         EveMoon,
         EvePlanet,            
-        EveAllianceInfo,
-        EveCorporationInfo,
+        EveSovereigntyMap,        
         EveCharacter,    
         EveEntity,
         StructureTag,

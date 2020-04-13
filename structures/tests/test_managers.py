@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from bravado.exception import HTTPError
 
-from allianceauth.eveonline.models import EveCorporationInfo
+from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
 
 from . import to_json
 from ..managers import EsiSmartRequest  # noqa
@@ -16,7 +16,8 @@ from ..models import (
     EveConstellation,
     EveSolarSystem,
     EveMoon,
-    EvePlanet,    
+    EvePlanet,
+    EveSovereigntyMap,
     Owner,    
     Structure,
     StructureService
@@ -491,7 +492,9 @@ class TestEvePlanetManager(NoSocketsTestCase):
         self.assertEqual(obj.name_zh, 'Amamake_zh IV')
         
     @patch(MODULE_PATH_HELPERS + '.provider')
-    def test_can_create_object_from_esi_if_not_found_w_parent(self, mock_provider):
+    def test_can_create_object_from_esi_if_not_found_w_parent(
+        self, mock_provider
+    ):
         mock_provider.client = esi_mock_client()
         EveSolarSystem.objects.get(id=30000474).delete()
         EveType.objects.get(id=2016).delete()
@@ -507,6 +510,35 @@ class TestEvePlanetManager(NoSocketsTestCase):
         self.assertEqual(obj_parent_2.id, 2016)
 
 
+class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
+
+    @patch(MODULE_PATH_HELPERS + '.provider')
+    def test_can_fetch_from_esi_and_overwrites_existing_map(
+        self, mock_provider
+    ):
+        mock_provider.client = esi_mock_client()
+        
+        EveSovereigntyMap.objects.create(
+            solar_system_id=30000726,
+            alliance_id=3001
+        )
+        
+        EveSovereigntyMap.objects.update_from_esi()
+        self.assertEqual(EveSovereigntyMap.objects.count(), 3)
+        
+        obj = EveSovereigntyMap.objects.get(solar_system_id=30000726)
+        self.assertEqual(obj.corporation_id, 2011)
+        self.assertEqual(obj.alliance_id, 3011)
+
+        obj = EveSovereigntyMap.objects.get(solar_system_id=30000474)
+        self.assertEqual(obj.corporation_id, 2001)
+        self.assertEqual(obj.alliance_id, 3001)
+
+        obj = EveSovereigntyMap.objects.get(solar_system_id=30000728)
+        self.assertEqual(obj.corporation_id, 2001)
+        self.assertEqual(obj.alliance_id, 3001)
+
+    
 class TestEveEntityManager(NoSocketsTestCase):
     
     def test_can_get_stored_object(self):
@@ -587,7 +619,7 @@ class TestStructureManager(NoSocketsTestCase):
             EveRegion,
             EveConstellation,
             EveSolarSystem,
-            EveCorporationInfo            
+            EveCharacter
         ])
         
         Owner.objects.create(
@@ -649,7 +681,7 @@ class TestStructureManager(NoSocketsTestCase):
             EveRegion,
             EveConstellation,
             EveSolarSystem,
-            EveCorporationInfo            
+            EveCharacter
         ])        
         owner = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)

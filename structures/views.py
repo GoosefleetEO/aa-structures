@@ -140,13 +140,14 @@ class StructuresRowConverter:
         self._row['corporation_name'] = corporation.corporation_name
         
     def _convert_location(self):
+        solar_system = self._structure.eve_solar_system
         self._row['region_name'] = \
-            self._structure.eve_solar_system.eve_constellation\
+            solar_system.eve_constellation\
             .eve_region.name_localized
         self._row['solar_system_name'] = \
-            self._structure.eve_solar_system.name_localized
+            solar_system.name_localized
         solar_system_url = dotlan.solar_system_url(
-            self._structure.eve_solar_system.name
+            solar_system.name
         )
         if self._structure.eve_moon:
             location_name = self._structure.eve_moon.name_localized
@@ -194,12 +195,15 @@ class StructuresRowConverter:
 
     def _convert_name(self):
         self._row['structure_name'] = escape(self._structure.name)
-        if self._structure.tags:
+        self._row['has_sov'] = yesno_str(self._structure.owner_has_sov)
+        if self._structure.tags:            
+            tags = [
+                x.html for x in self._structure.tags.all().order_by('name')
+            ]
+            if self._structure.owner_has_sov:
+                tags.insert(0, '<span class="label label-primary">SOV</span>')
             self._row['structure_name'] += format_html(
-                '<br>{}',
-                mark_safe(' '.join([
-                    x.html for x in self._structure.tags.all().order_by('name')
-                ]))
+                '<br>{}', mark_safe(' '.join(tags))
             )
 
     def _convert_services(self):

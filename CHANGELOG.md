@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.2.0] - 2020-04-12
 
-**POS fuel**
+**POS fuel & sovereignty info**
 
 If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
 
 ### Added
 
-- Display "fuel expires" for starbases (w/o sof effects) ([#20](https://gitlab.com/ErikKalkoken/aa-structures/issues/20))
+- Shows "fuel expires" for starbases ([#20](https://gitlab.com/ErikKalkoken/aa-structures/issues/20))
+- Shows sov tag if a system of structure owner has sov for that system
 
 ## [1.1.4] - 2020-04-14
 

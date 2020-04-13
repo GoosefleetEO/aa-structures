@@ -72,7 +72,7 @@
                     "state_timer_end": null,
                     "state_timer_start": null,
                     "structure_id": 1000000000003,
-                    "system_id": 30002537,
+                    "system_id": 30000476,
                     "type_id": 35832,
                     "unanchors_at": null
                 }
@@ -100,10 +100,10 @@
                     "unanchors_at": "2020-05-05T07:00:00Z"
                 },
                 {
-                    "moon_id": 40161471,
+                    "moon_id": 40029527,
                     "starbase_id": 1300000000003,
                     "state": "online",                    
-                    "system_id": 30002537,
+                    "system_id": 30000474,
                     "type_id": 20062
                 }
             ]
@@ -143,6 +143,16 @@
                 "attack_if_at_war": false,
                 "attack_if_other_security_status_dropping": false,
                 "fuel_bay_take": "config_starbase_equipment_role",
+                "fuels": [
+                    {
+                      "quantity": 5,
+                      "type_id": 4051
+                    },
+                    {
+                      "quantity": 11678,
+                      "type_id": 16275
+                    }
+                  ],   
                 "fuel_bay_view": "starbase_fuel_technician_role",                
                 "offline": "config_starbase_equipment_role",
                 "online": "config_starbase_equipment_role",
@@ -296,6 +306,36 @@
         }
     },
 
+    "Sovereignty":
+    {
+        "get_sovereignty_map": 
+        [
+            {
+                "alliance_id": 3011,
+                "corporation_id": 2011,
+                "system_id": 30000726
+            },
+            {
+                "alliance_id": 3001,
+                "corporation_id": 2001,
+                "system_id": 30000474,
+                "faction_id": null
+            },
+            {
+                "alliance_id": 3001,
+                "corporation_id": 2001,
+                "system_id": 30000728,
+                "faction_id": null
+            },            
+            {
+                "alliance_id": null,
+                "corporation_id": null,
+                "system_id": 30000142,
+                "faction_id": null
+            }
+        ]
+    },
+
     "Universe":
     {
         "get_universe_structures_structure_id":
@@ -333,7 +373,7 @@
                     "y": -130157937025.56424,
                     "z": -442026427345.6355
                 },            
-                "solar_system_id": 30002537,
+                "solar_system_id": 30000476,
                 "type_id": 35832
             }
         }        

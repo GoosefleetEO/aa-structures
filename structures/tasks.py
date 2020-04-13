@@ -10,7 +10,7 @@ from allianceauth.notifications import notify
 
 from . import __title__
 from .utils import LoggerAddTag, make_logger_prefix
-from .models import Owner, Notification, Webhook
+from .models import Owner, Notification, Webhook, EveSovereigntyMap
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
@@ -47,11 +47,25 @@ def update_structures_for_owner(owner_pk, user_pk=None):
 
 
 @shared_task
-def update_all_structures():
-    """fetches all structures for all active owner from ESI"""
+def update_structures():
+    """fetches all structures for all active owner from ESI"""    
     for owner in Owner.objects.all():
         if owner.is_active:
             update_structures_for_owner.delay(owner.pk)
+
+
+@shared_task
+def update_sov_map():
+    """updates the sovereignty map"""
+    EveSovereigntyMap.objects.update_from_esi()
+
+
+@shared_task
+def update_all_structures():
+    """main task for starting regular update of all structures 
+    and related data from ESI
+    """
+    chain(update_sov_map.si(), update_structures.si()).delay()
 
 
 @shared_task
