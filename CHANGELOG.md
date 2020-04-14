@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.1.4] - 2020-04-14
+
+If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
+
+### Fixed
+
+- Structure sync will no longer abort if fetching a localized structure returns an empty response.
+
 ## [1.1.3] - 2020-04-06
 
 If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.

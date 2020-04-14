@@ -896,6 +896,203 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertFalse(owner.update_structures_esi())
 
 
+class TestUpdateStructuresEsi2(NoSocketsTestCase):
+
+    def setUp(self):
+        self.default_lang = 'en-us'
+        self.structures_w_lang = {
+            'en-us': [
+                {
+                    'structure_id': 1001,
+                    'services':
+                    [
+                        {
+                            'name': 'alpha',
+                            'state': 'online'
+                        },
+                        {
+                            'name': 'bravo',
+                            'state': 'online'
+                        }
+                    ],
+                },
+                {
+                    'structure_id': 1002,
+                    'services':
+                    [
+                        {
+                            'name': 'bravo',
+                            'state': 'offline'
+                        }
+                    ],
+                }
+            ],
+            'ko': [
+                {
+                    'structure_id': 1001,
+                    'services':
+                    [
+                        {
+                            'name': 'alpha_ko',
+                            'state': 'online'
+                        },
+                        {
+                            'name': 'bravo_ko',
+                            'state': 'online'
+                        }
+                    ],
+                },
+                {
+                    'structure_id': 1002,
+                    'services':
+                    [
+                        {
+                            'name': 'bravo_ko',
+                            'state': 'offline'
+                        }
+                    ],
+                }
+            ],
+            'de': [
+                {
+                    'structure_id': 1001,
+                    'services':
+                    [
+                        {
+                            'name': 'alpha_de',
+                            'state': 'online'
+                        },
+                        {
+                            'name': 'bravo_de',
+                            'state': 'online'
+                        }
+                    ],
+                },
+                {
+                    'structure_id': 1002,
+                    'services':
+                    [
+                        {
+                            'name': 'bravo_de',
+                            'state': 'offline'
+                        }
+                    ],
+                }
+            ]
+        }
+
+    def test_collect_services_with_localizations(self):        
+        structures_services = \
+            Owner._collect_services_with_localizations(
+                self.structures_w_lang, self.default_lang
+            )
+        expected = {
+            1001: {
+                'de': ['alpha_de', 'bravo_de'], 
+                'ko': ['alpha_ko', 'bravo_ko']
+            },
+            1002: {
+                'de': ['bravo_de'], 
+                'ko': ['bravo_ko']
+            }
+        }
+        self.maxDiff = None
+        self.assertEqual(to_json(structures_services), to_json(expected))
+
+    def test_condense_services_localizations_into_structures(self):
+        structures_services = {
+            1001: {
+                'de': ['alpha_de', 'bravo_de'], 
+                'ko': ['alpha_ko', 'bravo_ko']
+            },
+            1002: {
+                'de': ['bravo_de'], 
+                'ko': ['bravo_ko']
+            }
+        }
+        structures = Owner._condense_services_localizations_into_structures(
+            self.structures_w_lang, self.default_lang, structures_services
+        )
+        excepted = [
+            {
+                'structure_id': 1001,
+                'services':
+                [                    
+                    {
+                        'name': 'alpha',
+                        'name_de': 'alpha_de',
+                        'name_ko': 'alpha_ko',
+                        'state': 'online'
+                    },
+                    {
+                        'name': 'bravo',
+                        'name_de': 'bravo_de',
+                        'name_ko': 'bravo_ko',
+                        'state': 'online'
+                    }
+                ]
+            },
+            {
+                'structure_id': 1002,
+                'services':
+                [
+                    {
+                        'name': 'bravo',
+                        'name_de': 'bravo_de',
+                        'name_ko': 'bravo_ko',
+                        'state': 'offline'
+                    }
+                ]
+            }               
+        ]    
+        self.maxDiff = None
+        self.assertEqual(to_json(structures), to_json(excepted))
+
+    def test_condense_services_localizations_into_structures_2(self):
+        structures_services = {
+            1001: {
+                'de': ['alpha_de', 'bravo_de']
+            },
+            1002: {
+                'de': ['bravo_de']
+            }
+        }
+        structures = Owner._condense_services_localizations_into_structures(
+            self.structures_w_lang, self.default_lang, structures_services
+        )
+        excepted = [
+            {
+                'structure_id': 1001,
+                'services':
+                [                    
+                    {
+                        'name': 'alpha',
+                        'name_de': 'alpha_de',                        
+                        'state': 'online'
+                    },
+                    {
+                        'name': 'bravo',
+                        'name_de': 'bravo_de',                        
+                        'state': 'online'
+                    }
+                ]
+            },
+            {
+                'structure_id': 1002,
+                'services':
+                [
+                    {
+                        'name': 'bravo',
+                        'name_de': 'bravo_de',                        
+                        'state': 'offline'
+                    }
+                ]
+            }               
+        ]    
+        self.maxDiff = None
+        self.assertEqual(to_json(structures), to_json(excepted))
+
+
 class TestFetchNotificationsEsi(NoSocketsTestCase):
 
     @classmethod
