@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.2.0] - 2020-04-12
+## [1.2.0] - 2020-04-16
 
-**POS fuel & system type tags**
+**POS fuel & generated tags**
 
 If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
 
@@ -18,6 +18,10 @@ If you are upgrading from a version prior to 1.1.0 please make sure to follow th
 - Shows "fuel expires" for starbases ([#20](https://gitlab.com/ErikKalkoken/aa-structures/issues/20))
 - Shows a system type tag, e.g. "highsec" or "nullsec"
 - Shows sov tag if a system of structure owner has sov for that system
+
+### Fixed
+
+- New attempt to reduce the memory leaks in celery workers ([#18](https://gitlab.com/ErikKalkoken/aa-structures/issues/18))
 
 ## [1.1.4] - 2020-04-14
 

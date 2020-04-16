@@ -12,6 +12,7 @@ from django.utils.translation import gettext_noop
 
 from .. import __title__
 from .eveuniverse import EsiNameLocalization
+from .eveuniverse import EveSolarSystem
 from ..managers import StructureManager
 from ..managers import StructureTagManager
 from ..utils import LoggerAddTag, create_bs_label_html
@@ -24,11 +25,11 @@ class StructureTag(models.Model):
     """tag for organizing structures"""
 
     # special tags
-    TAG_SOV = gettext_noop('sov')
-    TAG_HIGH_SEC = gettext_noop('highsec')
-    TAG_LOW_SEC = gettext_noop('lowsec')
-    TAG_NULL_SEC = gettext_noop('nullsec')
-    TAG_W_SPACE = gettext_noop('w_space')
+    NAME_SOV_TAG = gettext_noop('sov')
+    NAME_HIGHSEC_TAG = gettext_noop('highsec')
+    NAME_LOWSEC_TAG = gettext_noop('lowsec')
+    NAME_NULLSEC_TAG = gettext_noop('nullsec')
+    NAME_W_SPACE_TAG = gettext_noop('w_space')
     
     # styles
     STYLE_GREY = 'default'
@@ -46,6 +47,25 @@ class StructureTag(models.Model):
         (STYLE_RED, 'red'),
     ]
     
+    SPACE_TYPE_MAP = {
+        EveSolarSystem.TYPE_HIGHSEC: {
+            'name': NAME_HIGHSEC_TAG,
+            'style': STYLE_GREEN
+        },
+        EveSolarSystem.TYPE_LOWSEC: {
+            'name': NAME_LOWSEC_TAG,
+            'style': STYLE_ORANGE
+        },
+        EveSolarSystem.TYPE_NULLSEC: {
+            'name': NAME_NULLSEC_TAG,
+            'style': STYLE_RED
+        },
+        EveSolarSystem.TYPE_W_SPACE: {
+            'name': NAME_W_SPACE_TAG,
+            'style': STYLE_LIGHT_BLUE
+        },        
+    }
+
     name = models.CharField(
         max_length=255,
         unique=True,
@@ -385,14 +405,25 @@ class Structure(models.Model):
         super().save(*args, **kwargs)
         self.update_generated_tags()
         
-    def update_generated_tags(self):
-        """updates all generated tags for this structure"""
-        space_type_tag, _ = StructureTag.objects.get_or_create_for_space_type(
+    def update_generated_tags(self, recreate_tags=False):
+        """updates all generated tags for this structure
+        
+        recreate_tags: when set true all tags will be re-created,
+        otherwise just re-added if they are missing
+        """        
+        method_name = 'update_or_create_for_space_type' \
+            if recreate_tags else 'get_or_create_for_space_type'
+
+        space_type_tag, _ = getattr(StructureTag.objects, method_name)(
             self.eve_solar_system
         )
+        
         self.tags.add(space_type_tag)
         if self.owner_has_sov:
-            sov_tag, _ = StructureTag.objects.get_or_create_for_sov()
+            method_name = 'update_or_create_for_sov' \
+                if recreate_tags else 'get_or_create_for_sov'
+
+            sov_tag, _ = getattr(StructureTag.objects, method_name)()
             self.tags.add(sov_tag)
         
         

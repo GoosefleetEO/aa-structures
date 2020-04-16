@@ -141,6 +141,45 @@ class TestStructure(NoSocketsTestCase):
         self.assertFalse(obj.owner_has_sov)
 
 
+class TestStructure2(NoSocketsTestCase):
+    
+    def setUp(self):                
+        create_structures()        
+        set_owner_character(character_id=1001)
+
+    def test_can_create_generated_tags(self):
+        obj = Structure.objects.get(id=1300000000003)
+        obj.tags.clear()
+        self.assertFalse(obj.tags.exists())
+        obj.update_generated_tags()
+        null_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
+        self.assertIn(null_tag, list(obj.tags.all()))
+        sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
+        self.assertIn(sov_tag, list(obj.tags.all()))
+
+    def test_can_update_generated_tags(self):
+        obj = Structure.objects.get(id=1300000000003)
+        null_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
+        self.assertIn(null_tag, list(obj.tags.all()))
+        null_tag.order = 100
+        null_tag.style = StructureTag.STYLE_DARK_BLUE
+        null_tag.save()
+
+        sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
+        self.assertIn(sov_tag, list(obj.tags.all()))
+        sov_tag.order = 100
+        sov_tag.style = StructureTag.STYLE_RED
+        sov_tag.save()
+
+        obj.update_generated_tags(recreate_tags=True)
+        null_tag.refresh_from_db()
+        self.assertEqual(null_tag.style, StructureTag.STYLE_RED)
+        self.assertEqual(null_tag.order, 50)
+        sov_tag.refresh_from_db()
+        self.assertEqual(sov_tag.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(sov_tag.order, 20)
+        
+
 class TestStructureSave(NoSocketsTestCase):
 
     @classmethod
@@ -160,10 +199,10 @@ class TestStructureSave(NoSocketsTestCase):
             state=Structure.STATE_SHIELD_VULNERABLE,
             eve_type_id=35832,
         )
-        lowsec_tag = StructureTag.objects.get(name=StructureTag.TAG_LOW_SEC)
+        lowsec_tag = StructureTag.objects.get(name=StructureTag.NAME_LOWSEC_TAG)
         self.assertIn(lowsec_tag, obj.tags.all())
         self.assertIsNone(
-            StructureTag.objects.filter(name=StructureTag.TAG_SOV).first()
+            StructureTag.objects.filter(name=StructureTag.NAME_SOV_TAG).first()
         )
         
     def test_can_save_tags_null_sec_w_sov(self):
@@ -175,9 +214,9 @@ class TestStructureSave(NoSocketsTestCase):
             state=Structure.STATE_SHIELD_VULNERABLE,
             eve_type_id=35832,
         )
-        nullsec_tag = StructureTag.objects.get(name=StructureTag.TAG_NULL_SEC)
+        nullsec_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
         self.assertIn(nullsec_tag, obj.tags.all())
-        sov_tag = StructureTag.objects.get(name=StructureTag.TAG_SOV)
+        sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
         self.assertIn(sov_tag, obj.tags.all())
 
 

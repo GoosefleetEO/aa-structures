@@ -386,28 +386,37 @@ class StructureManager(models.Manager):
 
 
 class StructureTagManager(models.Manager):
-             
-    def get_or_create_for_space_type(self, solar_system) -> tuple:
-        if solar_system.is_null_sec:
-            name = self.model.TAG_NULL_SEC
-            style = self.model.STYLE_RED
-        elif solar_system.is_low_sec:
-            name = self.model.TAG_LOW_SEC
-            style = self.model.STYLE_ORANGE
-        elif solar_system.is_high_sec:
-            name = self.model.TAG_HIGH_SEC
-            style = self.model.STYLE_GREEN
-        elif solar_system.is_w_space:
-            name = self.model.TAG_W_SPACE
-            style = self.model.STYLE_LIGHT_BLUE
+    
+    def get_or_create_for_space_type(self, solar_system: object) -> tuple:
+        if solar_system.space_type in self.model.SPACE_TYPE_MAP:
+            name = self.model.SPACE_TYPE_MAP[solar_system.space_type]['name']
         else:
             name = None
-            
+
         if name:
-            return self.get_or_create(
-                name=name, 
+            try:
+                obj = self.get(name=name)
+                created = False
+            except self.model.DoesNotExist:
+                obj, created = self.update_or_create_for_space_type(solar_system)
+
+        else:
+            obj = None
+            created = None
+        
+        return obj, created
+
+    def update_or_create_for_space_type(self, solar_system: object) -> tuple:
+        if solar_system.space_type in self.model.SPACE_TYPE_MAP:
+            params = self.model.SPACE_TYPE_MAP[solar_system.space_type]            
+        else:
+            params = None
+        
+        if params:
+            return self.update_or_create(
+                name=params['name'], 
                 defaults={
-                    'style': style,
+                    'style': params['style'],
                     'description': (
                         'this tag represents a space type. system generated.'
                     ),                
@@ -420,8 +429,17 @@ class StructureTagManager(models.Manager):
             return None, None
 
     def get_or_create_for_sov(self) -> tuple:
-        obj, created = self.get_or_create(
-            name='sov', 
+        try:
+            obj = self.get(name=self.model.NAME_SOV_TAG)
+            created = False
+        except self.model.DoesNotExist:
+            obj, created = self.update_or_create_for_sov()
+
+        return obj, created
+    
+    def update_or_create_for_sov(self) -> tuple:
+        obj, created = self.update_or_create(
+            name=self.model.NAME_SOV_TAG, 
             defaults={
                 'style': self.model.STYLE_DARK_BLUE,
                 'description': (

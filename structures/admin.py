@@ -523,9 +523,7 @@ class StructureAdmin(admin.ModelAdmin):
 
     def _type(self, structure):
         return format_html(
-            '{}<br>{}',
-            structure.eve_type,
-            structure.eve_type.eve_group
+            '{}<br>{}', structure.eve_type, structure.eve_type.eve_group
         )
 
     def _tags(self, structure):
@@ -575,7 +573,7 @@ class StructureAdmin(admin.ModelAdmin):
     def update_generated_tags(self, request, queryset):
         structure_count = 0
         for structure in queryset:
-            structure.update_generated_tags()
+            structure.update_generated_tags(recreate_tags=True)
             structure_count += 1
 
         self.message_user(

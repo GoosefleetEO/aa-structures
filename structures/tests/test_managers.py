@@ -798,53 +798,101 @@ class TestStructureTagManager(NoSocketsTestCase):
             EveSolarSystem
         ])
     
-    def test_get_or_create_for_space_type_highsec(self):
-        solar_system = EveSolarSystem.objects.get(id=30002506)
+    def test_can_get_space_type_tag_that_exists(self):
+        solar_system = EveSolarSystem.objects.get(id=30002537)
+        tag = StructureTag.objects.create(name=StructureTag.NAME_LOWSEC_TAG)
         obj, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
-        self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.TAG_HIGH_SEC)
-        self.assertEqual(obj.style, StructureTag.STYLE_GREEN)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
-
-    def test_get_or_create_for_space_type_lowsec(self):
+        self.assertFalse(created)
+        self.assertEqual(obj, tag)
+        
+    def test_can_get_space_type_tag_that_does_not_exist(self):
         solar_system = EveSolarSystem.objects.get(id=30002537)
         obj, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.TAG_LOW_SEC)
+        self.assertEqual(obj.name, StructureTag.NAME_LOWSEC_TAG)
         self.assertEqual(obj.style, StructureTag.STYLE_ORANGE)
         self.assertEqual(obj.is_user_managed, False)
         self.assertEqual(obj.is_default, False)
         self.assertEqual(obj.order, 50)
 
-    def test_get_or_create_for_space_type_nullsec(self):
+    def test_can_update_space_type_tag(self):
+        solar_system = EveSolarSystem.objects.get(id=30002537)
+        StructureTag.objects.create(
+            name=StructureTag.NAME_LOWSEC_TAG,
+            style=StructureTag.STYLE_GREEN,
+            is_user_managed=True,
+            is_default=True,
+            order=100
+        )
+        obj, created = \
+            StructureTag.objects.update_or_create_for_space_type(solar_system)
+        self.assertFalse(created)
+        self.assertEqual(obj.name, StructureTag.NAME_LOWSEC_TAG)
+        self.assertEqual(obj.style, StructureTag.STYLE_ORANGE)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+
+    def test_can_create_for_space_type_highsec(self):
+        solar_system = EveSolarSystem.objects.get(id=30002506)
+        obj, created = \
+            StructureTag.objects.update_or_create_for_space_type(solar_system)
+        self.assertTrue(created)
+        self.assertEqual(obj.name, StructureTag.NAME_HIGHSEC_TAG)
+        self.assertEqual(obj.style, StructureTag.STYLE_GREEN)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 50)
+    
+    def test_can_create_for_space_type_nullsec(self):
         solar_system = EveSolarSystem.objects.get(id=30000474)
         obj, created = \
-            StructureTag.objects.get_or_create_for_space_type(solar_system)
+            StructureTag.objects.update_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.TAG_NULL_SEC)
+        self.assertEqual(obj.name, StructureTag.NAME_NULLSEC_TAG)
         self.assertEqual(obj.style, StructureTag.STYLE_RED)
         self.assertEqual(obj.is_user_managed, False)
         self.assertEqual(obj.is_default, False)
         self.assertEqual(obj.order, 50)
 
-    def test_get_or_create_for_space_type_w_space(self):
+    def test_can_create_for_space_type_w_space(self):
         solar_system = EveSolarSystem.objects.get(id=31000005)
         obj, created = \
-            StructureTag.objects.get_or_create_for_space_type(solar_system)
+            StructureTag.objects.update_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.TAG_W_SPACE)
+        self.assertEqual(obj.name, StructureTag.NAME_W_SPACE_TAG)
         self.assertEqual(obj.style, StructureTag.STYLE_LIGHT_BLUE)
         self.assertEqual(obj.is_user_managed, False)
         self.assertEqual(obj.is_default, False)
         self.assertEqual(obj.order, 50)
 
-    def test_get_or_create_sov(self):
-        obj, created = StructureTag.objects.get_or_create_for_sov()
+    def test_can_get_existing_sov_tag(self):
+        tag = StructureTag.objects.create(name='sov')        
+        obj, created = StructureTag.objects.update_or_create_for_sov()
+        self.assertFalse(created)
+        self.assertEqual(obj, tag)
+
+    def test_can_get_non_existing_sov_tag(self):
+        obj, created = StructureTag.objects.update_or_create_for_sov()
         self.assertTrue(created)
+        self.assertEqual(obj.name, 'sov')
+        self.assertEqual(obj.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(obj.is_user_managed, False)
+        self.assertEqual(obj.is_default, False)
+        self.assertEqual(obj.order, 20)
+
+    def test_can_update_sov_tag(self):
+        StructureTag.objects.create(
+            name='sov', 
+            style=StructureTag.STYLE_GREEN,
+            is_user_managed=True,
+            is_default=True,
+            order=100
+        )
+        obj, created = StructureTag.objects.update_or_create_for_sov()
+        self.assertFalse(created)
         self.assertEqual(obj.name, 'sov')
         self.assertEqual(obj.style, StructureTag.STYLE_DARK_BLUE)
         self.assertEqual(obj.is_user_managed, False)
@@ -856,7 +904,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         solar_system = EveSolarSystem.objects.get(id=30000474)
         obj, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
-        self.assertEqual(obj.name, StructureTag.TAG_NULL_SEC)
+        self.assertEqual(obj.name, StructureTag.NAME_NULLSEC_TAG)
         self.assertEqual(obj.style, StructureTag.STYLE_RED)
         self.assertEqual(obj.is_user_managed, False)
         self.assertEqual(obj.is_default, False)
@@ -871,7 +919,7 @@ class TestStructureTagManager(NoSocketsTestCase):
             StructureTag.objects.get_or_create_for_space_type(solar_system)
 
         self.assertFalse(created)
-        self.assertEqual(obj.name, StructureTag.TAG_NULL_SEC)
+        self.assertEqual(obj.name, StructureTag.NAME_NULLSEC_TAG)
         self.assertEqual(obj.style, StructureTag.STYLE_RED)
         self.assertEqual(obj.is_user_managed, False)
         self.assertEqual(obj.is_default, False)
