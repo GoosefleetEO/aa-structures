@@ -19,7 +19,6 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
 
-from esi.clients import esi_client_factory
 from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
 from esi.models import Token
 
@@ -45,8 +44,7 @@ from ..utils import (
     LoggerAddTag, 
     make_logger_prefix, 
     chunks, 
-    DATETIME_FORMAT, 
-    get_swagger_spec_path
+    DATETIME_FORMAT
 )
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
@@ -268,7 +266,7 @@ class Owner(models.Model):
         
         add_prefix = self._logger_prefix()
         try:            
-            esi_client, error = self.esi_client()
+            token, error = self.token()
             if error:
                 self.structures_last_error = error
                 self.structures_last_sync = now()
@@ -276,11 +274,11 @@ class Owner(models.Model):
                 raise TokenError(self.to_friendly_error_message(error))
 
             try:                
-                structures = self._fetch_upwell_structures(esi_client)
+                structures = self._fetch_upwell_structures(token)
                 if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-                    structures += self._fetch_custom_offices(esi_client)
+                    structures += self._fetch_custom_offices(token)
                 if STRUCTURES_FEATURE_STARBASES:
-                    structures += self._fetch_starbases(esi_client)
+                    structures += self._fetch_starbases(token)
 
                 logger.info(add_prefix(
                     'Storing updates for {:,} structures'.format(
@@ -342,7 +340,7 @@ class Owner(models.Model):
 
         return success
 
-    def _fetch_upwell_structures(self, esi_client: object) -> list:
+    def _fetch_upwell_structures(self, token: Token) -> list:
         """fetch Upwell structures from ESI for self"""
         from .eveuniverse import EsiNameLocalization
 
@@ -352,10 +350,10 @@ class Owner(models.Model):
         # fetch all structures incl. localizations for services
         structures_w_lang = EsiSmartRequest.fetch_with_localization(
             esi_path='Corporation.get_corporations_corporation_id_structures',
-            args={'corporation_id': corporation_id},            
+            args={'corporation_id': corporation_id}, 
+            token=token,
             languages=EsiNameLocalization.ESI_LANGUAGES,
-            has_pages=True,            
-            esi_client=esi_client,
+            has_pages=True,
             logger_tag=add_prefix()
         )
         
@@ -379,8 +377,8 @@ class Owner(models.Model):
             for structure in structures:                
                 structure_info = EsiSmartRequest.fetch(
                     'Universe.get_universe_structures_structure_id',
-                    args={'structure_id': structure['structure_id']},                    
-                    esi_client=esi_client,
+                    args={'structure_id': structure['structure_id']},
+                    token=token,
                     logger_tag=add_prefix()
                 )                
                 structure['name'] = Structure.extract_name_from_esi_respose(
@@ -448,7 +446,7 @@ class Owner(models.Model):
                             service['name_' + lang] = name_loc
         return structures
 
-    def _fetch_custom_offices(self, esi_client: object) -> list:
+    def _fetch_custom_offices(self, token: Token) -> list:
         """fetch custom offices from ESI for self"""
 
         def extract_planet_name(text: str) -> str:
@@ -462,9 +460,9 @@ class Owner(models.Model):
 
         pocos = EsiSmartRequest.fetch(
             'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
-            args={'corporation_id': corporation_id},            
+            args={'corporation_id': corporation_id},
+            token=token,
             has_pages=True,
-            esi_client=esi_client,
             logger_tag=add_prefix()
         )       
         structures = list()
@@ -486,9 +484,9 @@ class Owner(models.Model):
                     'Assets.post_corporations_corporation_id_assets_locations',
                     args={
                         'corporation_id': corporation_id, 
-                        'item_ids': item_ids_chunk
-                    },                    
-                    esi_client=esi_client,
+                        'item_ids': item_ids_chunk,
+                    },
+                    token=token,
                     logger_tag=add_prefix()
                 )
                 locations_data += locations_data_chunk
@@ -506,9 +504,9 @@ class Owner(models.Model):
                     'Assets.post_corporations_corporation_id_assets_names',
                     args={
                         'corporation_id': corporation_id, 
-                        'item_ids': item_ids
-                    },                    
-                    esi_client=esi_client,
+                        'item_ids': item_ids,                        
+                    },
+                    token=token,
                     logger_tag=add_prefix()
                 )
                 names_data += names_data_chunk
@@ -568,7 +566,7 @@ class Owner(models.Model):
 
         return structures
 
-    def _fetch_starbases(self, esi_client: object) -> list:
+    def _fetch_starbases(self, token: Token) -> list:
         """fetch starbases from ESI for self"""
 
         add_prefix = self._logger_prefix()        
@@ -576,9 +574,9 @@ class Owner(models.Model):
         corporation_id = self.corporation.corporation_id        
         starbases = EsiSmartRequest.fetch(
             'Corporation.get_corporations_corporation_id_starbases',
-            args={'corporation_id': corporation_id},            
+            args={'corporation_id': corporation_id},
+            token=token,
             has_pages=True,
-            esi_client=esi_client,
             logger_tag=add_prefix()
         )
        
@@ -596,9 +594,9 @@ class Owner(models.Model):
                     'Assets.post_corporations_corporation_id_assets_names',
                     args={
                         'corporation_id': corporation_id, 
-                        'item_ids': item_ids_chunk
-                    },                    
-                    esi_client=esi_client,
+                        'item_ids': item_ids_chunk,                        
+                    },
+                    token=token,
                     logger_tag=add_prefix()
                 )
                 names_data += names_data_chunk
@@ -617,9 +615,9 @@ class Owner(models.Model):
                         args={
                             'corporation_id': corporation_id, 
                             'starbase_id': starbase['starbase_id'],
-                            'system_id': starbase['system_id'],
-                        },                    
-                        esi_client=esi_client,
+                            'system_id': starbase['system_id'],                            
+                        },
+                        token=token,
                         logger_tag=add_prefix()
                     )
                     fuel_quantity = None
@@ -689,7 +687,7 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()
         notifications_count = 0
         try:            
-            esi_client, error = self.esi_client()
+            token, error = self.token()
             if error:
                 self.notifications_last_error = error
                 self.notifications_last_sync = now()
@@ -698,7 +696,7 @@ class Owner(models.Model):
            
             # fetch notifications from ESI
             try:
-                notifications = self._fetch_notifications_from_esi(esi_client)
+                notifications = self._fetch_notifications_from_esi(token)
                 new_notifications_count, notifications_count = \
                     self._store_notifications(
                         notifications, notifications_count
@@ -709,7 +707,7 @@ class Owner(models.Model):
                             new_notifications_count
                         )
                     ))
-                    self._process_timers_for_notifications(esi_client)
+                    self._process_timers_for_notifications(token)
 
                 else:
                     logger.info(add_prefix(
@@ -747,15 +745,13 @@ class Owner(models.Model):
 
         return success
 
-    def _fetch_notifications_from_esi(self, esi_client):
+    def _fetch_notifications_from_esi(self, token: Token) -> dict:
         """ fetching all notifications from ESI for current owner"""
         add_prefix = self._logger_prefix()
         notifications = EsiSmartRequest.fetch(
             'Character.get_characters_character_id_notifications',
-            args={
-                'character_id': self.character.character.character_id
-            },            
-            esi_client=esi_client,
+            args={'character_id': self.character.character.character_id},
+            token=token,
             logger_tag=add_prefix()
         )                
         if STRUCTURES_DEVELOPER_MODE:
@@ -850,7 +846,7 @@ class Owner(models.Model):
             
         return new_notifications_count, notifications_count
 
-    def _process_timers_for_notifications(self, esi_client):
+    def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
         if STRUCTURES_ADD_TIMERS:
             cutoff_dt_for_stale = now() - timedelta(
@@ -865,11 +861,11 @@ class Owner(models.Model):
                 .select_related().order_by('timestamp')
 
             if len(notifications) > 0:
-                if not esi_client:
-                    esi_client = self.esi_client()
+                if not token:
+                    token = self.token()
 
                 for notification in notifications:
-                    notification.process_for_timerboard(esi_client)
+                    notification.process_for_timerboard(token)
 
     def send_new_notifications(
         self, rate_limited: bool = True, user: User = None
@@ -972,8 +968,8 @@ class Owner(models.Model):
         """returns standard logger prefix function"""
         return make_logger_prefix(self.corporation.corporation_ticker)
 
-    def esi_client(self) -> object:
-        """returns a new ESI client for the given owner with token"""
+    def token(self) -> Token:
+        """returns a valid Token for the owner"""
         token = None
         error = None
         add_prefix = self._logger_prefix()
@@ -1017,17 +1013,8 @@ class Owner(models.Model):
                         'No token found with sufficient scopes'
                     ))
                     error = self.ERROR_TOKEN_INVALID
-
-        if token:
-            logger.info(add_prefix('Starting ESI client...'))
-            logger.debug('Using token: {}'.format(token))                
-            client = esi_client_factory(
-                token=token, spec_file=get_swagger_spec_path()
-            )
-        else:
-            client = None
-        
-        return client, error
+                
+        return token, error
 
     def _send_report_to_user(
         self,        

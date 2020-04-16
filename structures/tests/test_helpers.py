@@ -36,21 +36,72 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         esi_get_corporations_corporation_id_structures.override_data = None
 
     @patch(MODULE_PATH + '.provider')
-    def test_can_fetch_object_from_esi(self, mock_provider):                    
+    def test_can_fetch_object_from_esi(self, mock_provider):
         EsiSmartRequest.fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
             logger_tag='dummy'
         )                
-        self.assertEqual(len(mock_provider.mock_calls), 2)        
-        args = mock_provider.mock_calls[0]
-        self.assertEqual(len(args), 3)
         self.assertEqual(
-            args[0], 'client.Universe.get_universe_categories_category_id'
+            len(
+                mock_provider.client.Universe
+                .get_universe_categories_category_id.mock_calls
+            ), 
+            2
         )
+        args, kwargs = \
+            mock_provider.client.Universe\
+            .get_universe_categories_category_id.call_args
         self.assertEqual(
-            args[2], {'category_id': 65}
-        )        
+            kwargs, {'category_id': 65}
+        )
+
+    @patch(MODULE_PATH + '.provider')
+    def test_can_fetch_object_with_client(self, mock_provider):
+        mock_client = Mock()
+        EsiSmartRequest.fetch(
+            esi_path='Universe.get_universe_categories_category_id',
+            args={'category_id': 65},
+            logger_tag='dummy',
+            esi_client=mock_client
+        )                
+        self.assertEqual(
+            len(mock_client.Universe.get_universe_categories_category_id.mock_calls), 
+            2
+        )
+        args, kwargs = \
+            mock_client.Universe.get_universe_categories_category_id.call_args        
+        self.assertEqual(
+            kwargs, {'category_id': 65}
+        )
+
+    @patch(MODULE_PATH + '.provider')
+    def test_can_fetch_object_with_token(self, mock_provider):
+        mock_token = Mock()
+        mock_token.access_token = 'my_access_token'
+        EsiSmartRequest.fetch(
+            esi_path='Universe.get_universe_categories_category_id',
+            args={'category_id': 65},
+            logger_tag='dummy',
+            token=mock_token
+        )                
+        self.assertEqual(
+            len(
+                mock_provider.client.Universe
+                .get_universe_categories_category_id.mock_calls
+            ), 
+            2
+        )
+        args, kwargs = \
+            mock_provider.client.Universe\
+            .get_universe_categories_category_id.call_args
+        self.assertEqual(
+            kwargs, 
+            {
+                'category_id': 65,
+                'token': 'my_access_token'
+            }
+        )
 
     @patch(MODULE_PATH + '.provider')
     def test_raises_exception_on_invalid_esi_path(self, mock_provider):                        

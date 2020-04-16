@@ -613,7 +613,7 @@ class TestStructureManager(NoSocketsTestCase):
     @patch(MODULE_PATH_HELPERS + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
-        mock_client = esi_mock_client()
+        mock_token = Mock()
         load_entities([
             EveCategory,
             EveGroup,
@@ -629,7 +629,7 @@ class TestStructureManager(NoSocketsTestCase):
         )
 
         obj, created = Structure.objects.get_or_create_esi(
-            1000000000001, mock_client
+            1000000000001, mock_token
         )        
         self.assertTrue(created)
         self.assertEqual(obj.id, 1000000000001)
@@ -644,7 +644,7 @@ class TestStructureManager(NoSocketsTestCase):
     @patch(MODULE_PATH_HELPERS + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):
         mock_provider.client = esi_mock_client()            
-        mock_client = esi_mock_client()
+        mock_token = Mock()
         create_structures()
         obj = Structure.objects.get(id=1000000000001)
         obj.name = 'Batcave'
@@ -653,7 +653,7 @@ class TestStructureManager(NoSocketsTestCase):
         self.assertEqual(obj.name, 'Batcave')
         
         obj, created = Structure.objects.update_or_create_esi(
-            1000000000001, mock_client
+            1000000000001, mock_token
         )        
         self.assertFalse(created)
         self.assertEqual(obj.id, 1000000000001)
@@ -661,17 +661,17 @@ class TestStructureManager(NoSocketsTestCase):
         
     @patch(MODULE_PATH_HELPERS + '.provider')
     def test_raises_exception_when_create_fails(self, mock_provider):        
-        mock_provider = Mock(side_effect=RuntimeError)  # noqa        
-        mock_client = Mock()        
-        mock_client.Universe.get_universe_structures_structure_id\
+        mock_token = Mock()
+        mock_provider.client\
+            .Universe.get_universe_structures_structure_id\
             .return_value.result.side_effect = RuntimeError()
                 
         with self.assertRaises(RuntimeError):
             Structure.objects.update_or_create_esi(
-                1000000000001, mock_client
+                1000000000001, mock_token
             )
 
-    def test_raises_exception_when_create_without_esi_client(self):
+    def test_raises_exception_when_create_without_token(self):
         with self.assertRaises(ValueError):
             obj, created = Structure.objects.update_or_create_esi(987, None)
 

@@ -6,7 +6,9 @@ from bravado.exception import (
 )
 
 from django.conf import settings
+
 from allianceauth.eveonline.providers import provider
+from esi.models import Token
 
 from . import __title__
 from .utils import LoggerAddTag
@@ -34,6 +36,7 @@ class EsiSmartRequest:
         args: dict,        
         has_pages: bool = False,        
         esi_client: object = None,
+        token: Token = None,
         logger_tag: str = None
     ) -> dict:
         """returns an response object from ESI, will retry on bad requests"""
@@ -42,6 +45,7 @@ class EsiSmartRequest:
             args=args,
             has_pages=has_pages,                
             esi_client=esi_client,
+            token=token,
             logger_tag=logger_tag
         ).popitem()
         return request_object
@@ -54,6 +58,7 @@ class EsiSmartRequest:
         languages: set,
         has_pages: bool = False,
         esi_client: object = None,
+        token: Token = None,
         logger_tag: str = None
     ) -> dict:
         """returns dict of response objects from ESI
@@ -67,6 +72,7 @@ class EsiSmartRequest:
             languages=languages,
             has_pages=has_pages,                
             esi_client=esi_client,
+            token=token,
             logger_tag=logger_tag
         )
     
@@ -78,6 +84,7 @@ class EsiSmartRequest:
         languages: set = None,
         has_pages: bool = False,        
         esi_client: object = None,
+        token: Token = None,
         logger_tag: str = None
     ) -> dict:
         """returns dict of response objects from ESI with localization"""
@@ -97,6 +104,7 @@ class EsiSmartRequest:
                 args=args,
                 has_pages=has_pages,                
                 esi_client=esi_client,
+                token=token,
                 logger_tag=logger_tag
             )
             
@@ -109,6 +117,7 @@ class EsiSmartRequest:
         args: dict,        
         has_pages: bool = False,        
         esi_client: object = None,
+        token: Token = None,
         logger_tag: str = None
     ) -> dict:
         """fetches esi objects incl. all pages if requested and returns them""" 
@@ -117,6 +126,7 @@ class EsiSmartRequest:
             args=args, 
             has_pages=has_pages, 
             esi_client=esi_client,
+            token=token,
             logger_tag=logger_tag
         )        
         if has_pages:
@@ -128,6 +138,7 @@ class EsiSmartRequest:
                     page=page,
                     pages=pages,
                     esi_client=esi_client,
+                    token=token,
                     logger_tag=logger_tag
                 )  
                 response_object += response_object_page
@@ -143,6 +154,7 @@ class EsiSmartRequest:
         page: int = None,
         pages: int = None,        
         esi_client: object = None,
+        token: Token = None,
         logger_tag: str = None
     ) -> tuple:
         """Returns response object and pages from ESI, retries on 502s"""
@@ -184,6 +196,10 @@ class EsiSmartRequest:
             log_message_base += ' - Page {}/{}'.format(
                 page, pages if pages else '?'
             )
+        if token:
+            if token.expired:
+                token.refresh()
+            args['token'] = token.access_token
             
         logger.info(add_prefix(log_message_base))
         for retry_count in range(cls._ESI_MAX_RETRIES + 1):

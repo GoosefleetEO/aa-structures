@@ -187,17 +187,17 @@ class TestForwardNotifications(NoSocketsTestCase):
                 owner_pk=_get_invalid_owner_pk()
             )
 
-    @patch(MODULE_PATH_MODELS_OWNERS + '.Token', autospec=True)
-    @patch(MODULE_PATH_MODELS_OWNERS + '.esi_client_factory', autospec=True)
+    @patch(MODULE_PATH_MODELS_OWNERS + '.Token', spec=True)
+    @patch('structures.helpers.provider')
     @patch(
         'structures.models.notifications.dhooks_lite.Webhook.execute',
-        autospec=True
+        spec=True
     )
     def test_send_new_notifications_no_structures_preloaded(
-        self, mock_execute, mock_esi_client_factory, mock_token
+        self, mock_execute, mock_provider, mock_token
     ):        
         logger.debug('test_send_new_notifications_no_structures_preloaded')
-        mock_esi_client_factory.return_value = esi_mock_client()
+        mock_provider.client = esi_mock_client()
         
         # remove structures from setup so we can start from scratch
         Structure.objects.all().delete()
@@ -218,7 +218,7 @@ class TestForwardNotifications(NoSocketsTestCase):
         
     @patch(
         'structures.models.notifications.dhooks_lite.Webhook.execute',
-        autospec=True
+        spec=True
     )
     def test_send_notifications(self, mock_execute):
         logger.debug('test_send_notifications')
@@ -284,10 +284,10 @@ class TestSendTestNotification(NoSocketsTestCase):
         self.owner.save()
         load_notification_entities(self.owner)
 
-    @patch(MODULE_PATH + '.notify', autospec=True)
+    @patch(MODULE_PATH + '.notify', spec=True)
     @patch(
         'structures.models.notifications.dhooks_lite.Webhook.execute',
-        autospec=True
+        spec=True
     )
     def test_send_test_notification(self, mock_execute, mock_notify):
         logger.debug('test_send_test_notification')
@@ -306,7 +306,7 @@ class TestSendTestNotification(NoSocketsTestCase):
         args = mock_notify.call_args[1]
         self.assertEqual(args['level'], 'success')
 
-    @patch(MODULE_PATH + '.notify', autospec=True)
+    @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Webhook.send_test_notification')
     def test_send_test_notification_error(
         self, mock_send_test_notification, mock_notify

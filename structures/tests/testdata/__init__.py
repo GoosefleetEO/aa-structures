@@ -104,7 +104,9 @@ entities_testdata = _load_testdata_entities()
 ESI_LANGUAGES = {'de', 'en-us', 'fr', 'ja', 'ru', 'zh', 'ko'}
 
 
-def esi_get_universe_planets_planet_id(planet_id, language=None):
+def esi_get_universe_planets_planet_id(
+    planet_id, language=None, *args, **kwargs
+):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
     unless the function property override_data is set
@@ -139,7 +141,7 @@ def esi_get_universe_planets_planet_id(planet_id, language=None):
 
 
 def esi_get_corporations_corporation_id_structures(
-    corporation_id, page=None, language=None
+    corporation_id, page=None, language=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
@@ -203,7 +205,9 @@ def esi_get_corporations_corporation_id_structures(
 esi_get_corporations_corporation_id_structures.override_data = None
 
 
-def esi_get_corporations_corporation_id_starbases(corporation_id, page=None):
+def esi_get_corporations_corporation_id_starbases(
+    corporation_id, page=None, *args, **kwargs
+):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
     unless the function property override_data is set
@@ -262,7 +266,7 @@ esi_get_corporations_corporation_id_starbases.override_data = None
 
 
 def esi_get_corporations_corporation_id_starbases_starbase_id(
-    corporation_id, starbase_id, system_id
+    corporation_id, starbase_id, system_id, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test"""
 
@@ -297,7 +301,9 @@ def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
         )
 
  
-def esi_get_characters_character_id_notifications(character_id):            
+def esi_get_characters_character_id_notifications(
+    character_id, *args, **kwargs
+):
     """simulates ESI endpoint of same name for mock test"""
 
     mock_operation = Mock()
@@ -306,7 +312,7 @@ def esi_get_characters_character_id_notifications(character_id):
 
 
 def esi_get_corporations_corporation_id_customs_offices(
-    corporation_id, page=None
+    corporation_id, page=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -367,7 +373,7 @@ esi_get_corporations_corporation_id_customs_offices.override_data = None
 def _esi_post_corporations_corporation_id_assets(
     category: str,
     corporation_id: int, 
-    item_ids: list,
+    item_ids: list,    
     my_esi_data: list = None
 ) -> list:
     """simulates ESI endpoint of same name for mock test"""
@@ -389,7 +395,7 @@ def _esi_post_corporations_corporation_id_assets(
 
 
 def esi_post_corporations_corporation_id_assets_locations(
-    corporation_id: int, item_ids: list
+    corporation_id: int, item_ids: list, *args, **kwargs
 ) -> list:
     return _esi_post_corporations_corporation_id_assets(
         'post_corporations_corporation_id_assets_locations', 
@@ -403,7 +409,7 @@ esi_post_corporations_corporation_id_assets_locations.override_data = None
 
 
 def esi_post_corporations_corporation_id_assets_names(
-    corporation_id: int, item_ids: list
+    corporation_id: int, item_ids: list, *args, **kwargs
 ) -> list:
     return _esi_post_corporations_corporation_id_assets(
         'post_corporations_corporation_id_assets_names', 

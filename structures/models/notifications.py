@@ -7,6 +7,7 @@ from time import sleep
 import yaml
 
 import pytz
+import dhooks_lite
 
 from django.db import models
 from django.core.validators import MinValueValidator
@@ -16,7 +17,7 @@ from django.utils import translation
 
 from allianceauth.eveonline.evelinks import dotlan
 
-import dhooks_lite
+from esi.models import Token
 from multiselectfield import MultiSelectField
 
 from ..app_settings import (
@@ -1195,7 +1196,7 @@ class Notification(models.Model):
 
         return success
 
-    def process_for_timerboard(self, esi_client: object = None) -> bool:
+    def process_for_timerboard(self, token: Token = None) -> bool:
         """add/removes a timer related to this notification for some types
         returns True when a timer was processed, else False
         """
@@ -1209,7 +1210,7 @@ class Notification(models.Model):
                         NTYPE_STRUCTURE_LOST_SHIELD,
                     ]:
                         timer = self._gen_timer_structure_reinforcement(
-                            parsed_text, esi_client
+                            parsed_text, token
                         )
                     elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
                         timer = self._gen_timer_structure_anchoring(parsed_text)
@@ -1251,10 +1252,10 @@ class Notification(models.Model):
 
         return success
     
-    def _gen_timer_structure_reinforcement(self, parsed_text, esi_client):
+    def _gen_timer_structure_reinforcement(self, parsed_text, token):
         """generate timer for structure reinforcements"""
         structure_obj, _ = Structure.objects.get_or_create_esi(
-            parsed_text['structureID'], esi_client
+            parsed_text['structureID'], token
         )
         eve_time = self.timestamp \
             + self._ldap_timedelta_2_timedelta(

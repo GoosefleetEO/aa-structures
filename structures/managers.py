@@ -6,6 +6,8 @@ from bravado.exception import HTTPError
 from django.db import models, transaction
 from django.utils.timezone import now
 
+from esi.models import Token
+
 from . import __title__
 from .helpers import EsiSmartRequest
 from .utils import LoggerAddTag, make_logger_prefix
@@ -191,13 +193,14 @@ class EveEntityManager(models.Manager):
 class StructureManager(models.Manager):
 
     def get_or_create_esi(
-        self, structure_id: int, esi_client: object
+        self, structure_id: int, token: Token
     ) -> tuple:
         """get or create a structure with data from ESI if needed
         
         structure_id: Structure ID of object in Eve Online
 
-        esi_client: ESI client with scope: esi-universe.read_structures.v1
+        token: ``esi.models.Token`` object with scope: 
+        ``esi-universe.read_structures.v1``
         
         Returns: object, created
         """        
@@ -205,18 +208,19 @@ class StructureManager(models.Manager):
             obj = self.get(id=structure_id)
             created = False
         except self.model.DoesNotExist:            
-            obj, created = self.update_or_create_esi(structure_id, esi_client)
+            obj, created = self.update_or_create_esi(structure_id, token)
         return obj, created
 
     def update_or_create_esi(
-        self, structure_id: int, esi_client: object
+        self, structure_id: int, token: Token
     ) -> tuple:
         """update or create a structure from ESI for given structure ID
         This will only fetch basic info about a structure
         
         structure_id: Structure ID of object in Eve Online
 
-        esi_client: ESI client with scope: esi-universe.read_structures.v1
+        token: ``esi.models.Token`` object with scope: 
+        ``esi-universe.read_structures.v1``
         
         Returns: object, created
         """
@@ -228,13 +232,13 @@ class StructureManager(models.Manager):
         logger.info(add_prefix('Trying to fetch structure from ESI'))
         
         try:
-            if esi_client is None:
-                raise ValueError('Can not fetch structure without esi client')
+            if token is None:
+                raise ValueError('Can not fetch structure without token')
             
             structure_info = EsiSmartRequest.fetch(
                 esi_path='Universe.get_universe_structures_structure_id', 
                 args={'structure_id': structure_id},                 
-                esi_client=esi_client,
+                token=token,
                 logger_tag=add_prefix()
             )            
             structure = {
@@ -271,13 +275,9 @@ class StructureManager(models.Manager):
             EveMoon
         )
         from .models.eveuniverse import EveUniverse
-        eve_type, _ = EveType.objects.get_or_create_esi(
-            structure['type_id']
-        )
+        eve_type, _ = EveType.objects.get_or_create_esi(structure['type_id'])
         eve_solar_system, _ = \
-            EveSolarSystem.objects.get_or_create_esi(
-                structure['system_id']
-            )
+            EveSolarSystem.objects.get_or_create_esi(structure['system_id'])
         fuel_expires = \
             structure['fuel_expires'] \
             if 'fuel_expires' in structure else None
@@ -327,16 +327,14 @@ class StructureManager(models.Manager):
             if 'position' in structure else None
 
         if 'planet_id' in structure:
-            eve_planet, _ = EvePlanet.objects.get_or_create_esi(
-                structure['planet_id'],                
-            )
+            eve_planet, _ = \
+                EvePlanet.objects.get_or_create_esi(structure['planet_id'])
         else:
             eve_planet = None
 
         if 'moon_id' in structure:
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(
-                structure['moon_id'],             
-            )
+            eve_moon, _ = \
+                EveMoon.objects.get_or_create_esi(structure['moon_id'])
         else:
             eve_moon = None
 

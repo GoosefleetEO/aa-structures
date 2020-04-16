@@ -345,7 +345,7 @@ class TestNotificationAddToTimerboard(NoSocketsTestCase):
         Timer.objects.all().delete()
         
     @patch(MODULE_PATH + '.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED', False)
-    @patch('allianceauth.timerboard.models.Timer', autospec=True)
+    @patch('allianceauth.timerboard.models.Timer', spec=True)
     def test_setting_disabled(self, mock_Timer):
         x = Notification.objects.get(notification_id=1000000404)
         self.assertFalse(x.process_for_timerboard())
