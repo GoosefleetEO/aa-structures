@@ -15,7 +15,7 @@ from bravado.exception import HTTPGatewayTimeout
 
 from django.conf import settings
 
-from allianceauth.eveonline.providers import provider
+from esi.clients import esi_client_factory
 from esi.models import Token
 
 from .. import __title__
@@ -26,6 +26,8 @@ logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 ESI_MAX_RETRIES = 3
 ESI_RETRY_SLEEP_SECS = 1
+
+_my_esi_client = None
 
 
 def esi_fetch(    
@@ -142,6 +144,17 @@ def _fetch_with_paging(
     return response_object
 
 
+def _esi_client() -> object:
+    """returns the singular esi client used in this module"""
+    global _my_esi_client
+
+    if not _my_esi_client:
+        logger.info('Initializing esi client for esi_fetch....')
+        _my_esi_client = esi_client_factory()
+    
+    return _my_esi_client    
+
+
 def _fetch_with_retries(
     esi_path: str,         
     args: dict,        
@@ -168,7 +181,7 @@ def _fetch_with_retries(
     esi_category_name = esi_path_parts[0]
     esi_method_name = esi_path_parts[1]
     if not esi_client:
-        esi_client = provider.client
+        esi_client = _esi_client()
     if not hasattr(esi_client, esi_category_name):
         raise ValueError(
             'Invalid ESI category: %s' % esi_category_name

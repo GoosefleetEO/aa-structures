@@ -188,16 +188,16 @@ class TestForwardNotifications(NoSocketsTestCase):
             )
 
     @patch(MODULE_PATH_MODELS_OWNERS + '.Token', spec=True)
-    @patch('structures.helpers.esi_fetch.provider')
+    @patch('structures.helpers.esi_fetch._esi_client')
     @patch(
         'structures.models.notifications.dhooks_lite.Webhook.execute',
         spec=True
     )
     def test_send_new_notifications_no_structures_preloaded(
-        self, mock_execute, mock_provider, mock_token
+        self, mock_execute, mock_esi_client, mock_token
     ):        
         logger.debug('test_send_new_notifications_no_structures_preloaded')
-        mock_provider.client = esi_mock_client()
+        mock_esi_client.side_effect = esi_mock_client
         
         # remove structures from setup so we can start from scratch
         Structure.objects.all().delete()

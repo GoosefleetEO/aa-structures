@@ -22,25 +22,14 @@ MODULE_PATH = __package__ + '.esi_fetch'
 logger = set_test_logger(MODULE_PATH, __file__)
 
 
-class Dummy():
-    """this class is needed to create a nested object to spec an ESI client"""
-    pass
-
-
-dummy_provider = Dummy()
-dummy_provider.client = Dummy()
-dummy_provider.client.Universe = Dummy()
-dummy_provider.client.Universe.get_universe_categories_category_id = Dummy()
-
-
 class TestEsiFetch(NoSocketsTestCase):
     
     def setUp(self):
         self.add_prefix = make_logger_prefix('Test')
-        esi_get_corporations_corporation_id_structures.override_data = None
-
-    @patch(MODULE_PATH + '.provider')
-    def test_can_fetch_object_from_esi(self, mock_provider):
+        esi_get_corporations_corporation_id_structures.override_data = None        
+    
+    @patch(MODULE_PATH + '._esi_client')
+    def test_can_fetch_object_from_esi(self, mock_esi_client):        
         esi_fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
@@ -48,20 +37,21 @@ class TestEsiFetch(NoSocketsTestCase):
         )                
         self.assertEqual(
             len(
-                mock_provider.client.Universe
+                mock_esi_client.return_value.Universe
                 .get_universe_categories_category_id.mock_calls
             ), 
             2
         )
         args, kwargs = \
-            mock_provider.client.Universe\
+            mock_esi_client.return_value.Universe\
             .get_universe_categories_category_id.call_args
         self.assertEqual(
             kwargs, {'category_id': 65}
         )
+    
 
-    @patch(MODULE_PATH + '.provider')
-    def test_can_fetch_object_with_client(self, mock_provider):
+    @patch(MODULE_PATH + '._esi_client')
+    def test_can_fetch_object_with_client(self, mock_esi_client):
         mock_client = Mock()
         esi_fetch(
             esi_path='Universe.get_universe_categories_category_id',
@@ -77,12 +67,12 @@ class TestEsiFetch(NoSocketsTestCase):
             mock_client.Universe.get_universe_categories_category_id.call_args        
         self.assertEqual(
             kwargs, {'category_id': 65}
-        )
+        )    
 
-    @patch(MODULE_PATH + '.provider')
-    def test_can_fetch_object_with_token(self, mock_provider):
+    @patch(MODULE_PATH + '._esi_client')
+    def test_can_fetch_object_with_token(self, mock_esi_client):
         mock_token = Mock()
-        mock_token.access_token = 'my_access_token'
+        mock_token.access_token = 'my_access_token'        
         esi_fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
@@ -91,13 +81,13 @@ class TestEsiFetch(NoSocketsTestCase):
         )                
         self.assertEqual(
             len(
-                mock_provider.client.Universe
+                mock_esi_client.return_value.Universe
                 .get_universe_categories_category_id.mock_calls
             ), 
             2
         )
         args, kwargs = \
-            mock_provider.client.Universe\
+            mock_esi_client.return_value.Universe\
             .get_universe_categories_category_id.call_args
         self.assertEqual(
             kwargs, 
@@ -107,24 +97,28 @@ class TestEsiFetch(NoSocketsTestCase):
             }
         )
 
-    @patch(MODULE_PATH + '.provider')
-    def test_raises_exception_on_invalid_esi_path(self, mock_provider):                        
+    @patch(MODULE_PATH + '._esi_client')
+    def test_raises_exception_on_invalid_esi_path(self, mock_esi_client):                        
         with self.assertRaises(ValueError):
             esi_fetch(
                 'invalid', 
                 {'group_id': 65}
             )
     
-    @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
-    def test_raises_exception_on_wrong_esi_category(self, mock_provider):                        
+    @patch(MODULE_PATH + '._esi_client', spec_set=True)
+    def test_raises_exception_on_wrong_esi_category(self, mock_esi_client):                        
+        my_client = Mock(spec='Universe.get_universe_categories_category_id')
+        mock_esi_client.return_value = my_client
         with self.assertRaises(ValueError):
             esi_fetch(
                 'invalid.get_universe_groups_group_id',               
                 {'group_id': 65}
             )
     
-    @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
-    def test_raises_exception_on_wrong_esi_method(self, mock_provider):                
+    @patch(MODULE_PATH + '._esi_client', spec_set=True)    
+    def test_raises_exception_on_wrong_esi_method(self, mock_esi_client):
+        my_client = Mock(spec='Universe.get_universe_categories_category_id')
+        mock_esi_client.return_value = my_client
         with self.assertRaises(ValueError):
             esi_fetch(
                 'Universe.invalid',                 
@@ -132,8 +126,8 @@ class TestEsiFetch(NoSocketsTestCase):
             )
     
     @patch(MODULE_PATH + '.ESI_RETRY_SLEEP_SECS', 0)
-    @patch(MODULE_PATH + '.provider')
-    def test_can_retry_on_exceptions(self, mock_provider):        
+    @patch(MODULE_PATH + '._esi_client')
+    def test_can_retry_on_exceptions(self, mock_esi_client):        
         
         def my_side_effect():
             """special mock client for testing retry ability"""
@@ -149,7 +143,7 @@ class TestEsiFetch(NoSocketsTestCase):
                 return esi_get_universe_categories_category_id(category_id=65)\
                     .result()
             
-        mock_provider.client.Universe\
+        mock_esi_client.return_value.Universe\
             .get_universe_categories_category_id.return_value\
             .result.side_effect = my_side_effect
 
@@ -211,7 +205,7 @@ class TestEsiFetch(NoSocketsTestCase):
                 Mock()
             )
         self.assertEqual(retry_counter, 1)
-
+    
     def test_can_fetch_multiple_pages(self):
         mock_client = esi_mock_client()
 
@@ -234,7 +228,7 @@ class TestEsiFetch(NoSocketsTestCase):
                 service_names = {x['name'] for x in obj['services']}
         expected = {'Clone Bay', 'Market Hub'}
         self.assertEqual(service_names, expected)
-
+    
     def test_can_fetch_multiple_pages_and_languages(self):
         mock_client = esi_mock_client()
 
