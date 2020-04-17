@@ -8,6 +8,8 @@ import os
 import re
 from time import sleep
 
+from bravado.exception import HTTPError
+
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -376,16 +378,25 @@ class Owner(models.Model):
                 )
             ))
             for structure in structures:                
-                structure_info = esi_fetch(
-                    'Universe.get_universe_structures_structure_id',
-                    args={'structure_id': structure['structure_id']},
-                    token=token,
-                    logger_tag=add_prefix()
-                )                
-                structure['name'] = Structure.extract_name_from_esi_respose(
-                    structure_info['name']
-                )
-                structure['position'] = structure_info['position']
+                try:
+                    structure_info = esi_fetch(
+                        'Universe.get_universe_structures_structure_id',
+                        args={'structure_id': structure['structure_id']},
+                        token=token,
+                        logger_tag=add_prefix()
+                    )
+                    structure['name'] = Structure.extract_name_from_esi_respose(
+                        structure_info['name']
+                    )
+                    structure['position'] = structure_info['position']
+                except HTTPError as ex:
+                    logger.exception(
+                        'Failed to load details for structure with ID %d due '
+                        'to the following exception: %s' % (
+                            structure['structure_id'], ex
+                        )
+                    )
+                    structure['name'] = '(no data)'
 
         if STRUCTURES_DEVELOPER_MODE:
             self._store_raw_data('structures', structures, corporation_id)

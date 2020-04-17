@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 **POS fuel & generated tags**
 
-If you are upgrading from a version prior to 1.1.0 please make sure to follow the upgrade instructions for 1.1.0.
-
 ### Added
 
 - Shows "fuel expires" for starbases ([#20](https://gitlab.com/ErikKalkoken/aa-structures/issues/20))
@@ -22,6 +20,10 @@ If you are upgrading from a version prior to 1.1.0 please make sure to follow th
 ### Fixed
 
 - New attempt to reduce the memory leaks in celery workers ([#18](https://gitlab.com/ErikKalkoken/aa-structures/issues/18))
+
+### Changed
+
+- Improved resilience of the sync process against some HTTP errors. Will show "(no data)" as name if sync is incomplete for that particular structure. ([#22](https://gitlab.com/ErikKalkoken/aa-structures/issues/22))
 
 ## [1.1.4] - 2020-04-14
 

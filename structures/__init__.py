@@ -1,4 +1,4 @@
 default_app_config = 'structures.apps.StructuresConfig'
 
-__version__ = '1.2.0a8'
+__version__ = '1.2.0a9'
 __title__ = 'Alliance Structures'

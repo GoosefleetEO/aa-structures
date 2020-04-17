@@ -9,6 +9,8 @@ import os
 from random import randrange
 from unittest.mock import Mock
 
+from bravado.exception import HTTPNotFound
+
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 
@@ -92,9 +94,9 @@ def _load_testdata_entities() -> dict:
     return entities
 
 
-_esi_data = _load_esi_data()
+esi_data = _load_esi_data()
 esi_corp_structures_data = \
-    _esi_data['Corporation']['get_corporations_corporation_id_structures']
+    esi_data['Corporation']['get_corporations_corporation_id_structures']
 entities_testdata = _load_testdata_entities()
 
 
@@ -228,7 +230,7 @@ def esi_get_corporations_corporation_id_starbases(
 
     if esi_get_corporations_corporation_id_starbases.override_data is None:
         my_corp_starbases_data = \
-            _esi_data['Corporation'][
+            esi_data['Corporation'][
                 'get_corporations_corporation_id_starbases'
             ]
     else:
@@ -271,24 +273,30 @@ def esi_get_corporations_corporation_id_starbases_starbase_id(
     """simulates ESI endpoint of same name for mock test"""
 
     corporation_starbase_details = \
-        _esi_data['Corporation']['get_corporations_corporation_id_starbases_starbase_id']   # noqa
+        esi_data['Corporation']['get_corporations_corporation_id_starbases_starbase_id']   # noqa
     if str(starbase_id) in corporation_starbase_details:
         mock_operation = Mock()
         mock_operation.result.return_value = \
             corporation_starbase_details[str(starbase_id)]
         return mock_operation
 
-    else:
-        raise RuntimeError(
-            'Can not find data for starbase {}'.format(starbase_id)
-        )
+    else:        
+        mock_response = Mock()
+        mock_response.status_code = 404
+        message = 'Can not find starbase with ID %s' % starbase_id
+        raise HTTPNotFound(mock_response, message=message)
 
 
 def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
 
-    universe_structures_data = \
-        _esi_data['Universe']['get_universe_structures_structure_id']
+    if not esi_get_universe_structures_structure_id.override_data:
+        universe_structures_data = \
+            esi_data['Universe']['get_universe_structures_structure_id']        
+    else:
+        universe_structures_data = \
+            esi_get_universe_structures_structure_id.override_data        
+
     if str(structure_id) in universe_structures_data:
         mock_operation = Mock()
         mock_operation.result.return_value = \
@@ -296,11 +304,15 @@ def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
         return mock_operation
 
     else:
-        raise RuntimeError(
-            'Can not find structure for {}'.format(structure_id)
-        )
+        mock_response = Mock()
+        mock_response.status_code = 404
+        message = 'Can not find structure with ID %s' % structure_id
+        raise HTTPNotFound(mock_response, message=message)
 
+
+esi_get_universe_structures_structure_id.override_data = None
  
+
 def esi_get_characters_character_id_notifications(
     character_id, *args, **kwargs
 ):
@@ -334,7 +346,7 @@ def esi_get_corporations_corporation_id_customs_offices(
 
     if esi_get_corporations_corporation_id_customs_offices.override_data is None:   # noqa: E501
         my_corp_customs_offices_data = \
-            _esi_data['Planetary_Interaction'][
+            esi_data['Planetary_Interaction'][
                 'get_corporations_corporation_id_customs_offices'
             ]
 
@@ -379,7 +391,7 @@ def _esi_post_corporations_corporation_id_assets(
     """simulates ESI endpoint of same name for mock test"""
 
     if my_esi_data is None:
-        my_esi_data = _esi_data['Corporation'][category]
+        my_esi_data = esi_data['Corporation'][category]
     
     if str(corporation_id) not in my_esi_data:
         raise RuntimeError(
@@ -490,7 +502,7 @@ def esi_mock_client():
     # Sovereignty
     mock_client.Sovereignty\
         .get_sovereignty_map.return_value.result.return_value = \
-        _esi_data['Sovereignty']['get_sovereignty_map']
+        esi_data['Sovereignty']['get_sovereignty_map']
 
     # Universe
     mock_client.Universe\
@@ -524,6 +536,9 @@ def esi_mock_client():
             "name": "1RG-GU",
             "region_id": 10000005
         }
+    mock_client.Universe\
+        .get_universe_systems.return_value.result.return_value = \
+        esi_data['Universe']['get_universe_systems']
     mock_client.Universe\
         .get_universe_systems_system_id\
         .return_value.result.return_value = {

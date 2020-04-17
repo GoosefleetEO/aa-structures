@@ -49,7 +49,6 @@ class TestEsiFetch(NoSocketsTestCase):
             kwargs, {'category_id': 65}
         )
     
-
     @patch(MODULE_PATH + '._esi_client')
     def test_can_fetch_object_with_client(self, mock_esi_client):
         mock_client = Mock()
@@ -96,6 +95,16 @@ class TestEsiFetch(NoSocketsTestCase):
                 'token': 'my_access_token'
             }
         )
+
+    @patch(MODULE_PATH + '._esi_client')
+    def test_can_fetch_object_from_esi_wo_args(self, mock_esi_client):
+        mock_esi_client.side_effect = esi_mock_client
+        solar_systems = esi_fetch(
+            esi_path='Universe.get_universe_systems',         
+            logger_tag='dummy'
+        )
+        expected = [30002506, 31000005, 30002537, 30000474, 30000476]
+        self.assertSetEqual(set(solar_systems), set(expected))
 
     @patch(MODULE_PATH + '._esi_client')
     def test_raises_exception_on_invalid_esi_path(self, mock_esi_client):                        

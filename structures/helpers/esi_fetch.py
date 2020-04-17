@@ -30,21 +30,32 @@ ESI_RETRY_SLEEP_SECS = 1
 _my_esi_client = None
 
 
-def esi_fetch(    
-    esi_path: str,         
-    args: dict,        
+def esi_fetch(
+    esi_path: str,
+    args: dict = None,
     has_pages: bool = False,
-    esi_client: object = None,
     token: Token = None,
+    esi_client: object = None,
     logger_tag: str = None
 ) -> dict:
-    """returns an response object from ESI, will retry on bad requests.    
+    """returns an response object from ESI, will retry on some HTTP errors.
     will automatically return all pages if requested
+
+    Args:
+    - esi_path: Full path of esi route, 
+    e.g. ``Universe.get_universe_categories_category_id``
+    - args: arguments for ESI method as dict, e.g. ``{'category_id': 65}``
+    - has_pages: When set to True will assume endpoint supports paging
+    - token: esi token from django-esi to be used with request
+    - esi_client: esi client object from django-esi to be used for request 
+    instead of default esi client from this module
+    - logger_tag: every log message will start with this text in brackets
     """
     _, request_object = _fetch_main(
         esi_path=esi_path, 
         args=args,
-        has_pages=has_pages,                
+        languages=None,
+        has_pages=has_pages,
         esi_client=esi_client,
         token=token,
         logger_tag=logger_tag
@@ -53,9 +64,9 @@ def esi_fetch(
 
 
 def esi_fetch_with_localization(
-    esi_path: str,         
-    args: dict,        
+    esi_path: str,
     languages: set,
+    args: dict = None,
     has_pages: bool = False,
     esi_client: object = None,
     token: Token = None,
@@ -65,35 +76,50 @@ def esi_fetch_with_localization(
     will contain one full object items for each language if supported or just one
     will retry on bad request responses from ESI
     will automatically return all pages if requested
+
+    Args:
+    - esi_path: Full path of esi route, 
+    e.g. ``Universe.get_universe_categories_category_id``
+    - languages: languages to be retrieved from ESI as codes, 
+    should match official codes supported by ESI, e.g. ``{'de', 'ko'}``
+    - args: arguments for ESI method as dict, e.g. ``{'category_id': 65}``
+    - has_pages: When set to True will assume endpoint supports paging
+    - token: esi token from django-esi to be used with request
+    - esi_client: esi client object from django-esi to be used for request 
+    instead of default esi client from this module
+    - logger_tag: every log message will start with this text in brackets
     """
     return _fetch_main(
         esi_path=esi_path,
         args=args,
         languages=languages,
-        has_pages=has_pages,                
+        has_pages=has_pages,
         esi_client=esi_client,
         token=token,
         logger_tag=logger_tag
     )
 
 
-def _fetch_main(    
-    esi_path: str,         
-    args: dict,        
-    languages: set = None,
-    has_pages: bool = False,        
-    esi_client: object = None,
-    token: Token = None,
-    logger_tag: str = None
+def _fetch_main(
+    esi_path: str,
+    args: dict,
+    languages: set,
+    has_pages: bool,
+    esi_client: object,
+    token: Token,
+    logger_tag: str
 ) -> dict:
     """returns dict of response objects from ESI with localization"""
-            
+
+    if not args:
+        args = {}
+    
     if not languages:
         has_localization = False
         languages = {'dummy'}
     else:
         has_localization = True
-    
+
     response_objects = dict()
     for language in languages:
         if has_localization:
@@ -101,19 +127,19 @@ def _fetch_main(
         response_objects[language] = _fetch_with_paging(
             esi_path=esi_path, 
             args=args,
-            has_pages=has_pages,                
+            has_pages=has_pages,
             esi_client=esi_client,
             token=token,
             logger_tag=logger_tag
         )
-        
+
     return response_objects
 
 
-def _fetch_with_paging(    
-    esi_path: str,         
-    args: dict,        
-    has_pages: bool = False,        
+def _fetch_with_paging(
+    esi_path: str,
+    args: dict,
+    has_pages: bool = False,
     esi_client: object = None,
     token: Token = None,
     logger_tag: str = None
@@ -128,7 +154,7 @@ def _fetch_with_paging(
         logger_tag=logger_tag
     )        
     if has_pages:
-        for page in range(2, pages + 1):                        
+        for page in range(2, pages + 1):
             response_object_page, _ = _fetch_with_retries(
                 esi_path=esi_path, 
                 args=args,
@@ -152,29 +178,51 @@ def _esi_client() -> object:
         logger.info('Initializing esi client for esi_fetch....')
         _my_esi_client = esi_client_factory()
     
-    return _my_esi_client    
+    return _my_esi_client
 
 
 def _fetch_with_retries(
-    esi_path: str,         
-    args: dict,        
+    esi_path: str,
+    args: dict,
     has_pages: bool = False,
     page: int = None,
-    pages: int = None,        
+    pages: int = None,
     esi_client: object = None,
     token: Token = None,
     logger_tag: str = None
 ) -> tuple:
     """Returns response object and pages from ESI, retries on 502s"""
-    
-    def make_logger_prefix(tag: str = None):
-        """creates a function to add logger prefix"""
-        return lambda text: '{}{}'.format(
-            (tag + ': ') if tag else '', 
-            text
-        )
 
-    add_prefix = make_logger_prefix(logger_tag)
+    esi_category, esi_method_name, log_message_base = _prepare_esi_request(
+        esi_path=esi_path,
+        args=args,
+        has_pages=has_pages,
+        page=page,
+        pages=pages,
+        esi_client=esi_client,
+        token=token,
+    )
+    response_object, pages = _execute_esi_request(
+        esi_category=esi_category,
+        esi_method_name=esi_method_name,
+        args=args,
+        has_pages=has_pages,
+        logger_tag=logger_tag,
+        log_message_base=log_message_base,
+    )
+    return response_object, pages
+
+
+def _prepare_esi_request(
+    esi_path: str,
+    args: dict,
+    has_pages: bool = False,
+    page: int = None,
+    pages: int = None,
+    esi_client: object = None,
+    token: Token = None,
+):
+    """parses and validates input for esi request"""
     esi_path_parts = esi_path.split('.')
     if len(esi_path_parts) != 2:
         raise ValueError('Invalid esi_path')
@@ -191,7 +239,7 @@ def _fetch_with_retries(
         raise ValueError(
             'Invalid ESI method for %s category: %s'
             % (esi_category_name, esi_method_name)
-        )              
+        )
     log_message_base = 'Fetching from ESI: {}'.format(esi_path)
     if settings.DEBUG:
         log_message_base += '({})'.format(
@@ -208,15 +256,29 @@ def _fetch_with_retries(
         if token.expired:
             token.refresh()
         args['token'] = token.access_token
-        
+    
+    return esi_category, esi_method_name, log_message_base
+
+
+def _execute_esi_request(
+    esi_category: str,
+    esi_method_name: str,
+    args: dict,
+    has_pages: bool,
+    logger_tag: str,
+    log_message_base: str,
+):
+    """make request to ESI
+    
+    returns request object and total number of pages to retrieve
+    """
+    add_prefix = _make_logger_prefix(logger_tag)
     logger.info(add_prefix(log_message_base))
     for retry_count in range(ESI_MAX_RETRIES + 1):
         if retry_count > 0:
             logger.warn(add_prefix(
                 '{} - Retry {} / {}'.format(
-                    log_message_base,
-                    retry_count, 
-                    ESI_MAX_RETRIES
+                    log_message_base, retry_count, ESI_MAX_RETRIES
                 )
             ))
         try:                  
@@ -246,5 +308,12 @@ def _fetch_with_retries(
                 sleep(sleep_seconds)
             else:
                 raise ex
-
+    
     return response_object, pages
+
+
+def _make_logger_prefix(tag: str = None):
+    """creates a function to add logger prefix"""
+    return lambda text: '{}{}'.format(
+        (tag + ': ') if tag else '', text
+    )

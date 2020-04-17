@@ -338,6 +338,15 @@
 
     "Universe":
     {
+        "get_universe_systems":
+        [
+            30002506,
+            31000005,
+            30002537,
+            30000474,
+            30000476
+        ],
+        
         "get_universe_structures_structure_id":
         {
             "1000000000001": 

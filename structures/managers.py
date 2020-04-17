@@ -53,8 +53,8 @@ class EveUniverseManager(models.Manager):
                 eve_data_objects = \
                     esi_fetch_with_localization(
                         esi_path=esi_path,
-                        args=args,                        
                         languages=EsiNameLocalization.ESI_LANGUAGES,
+                        args=args,                        
                         logger_tag=add_prefix()
                     )
             else:

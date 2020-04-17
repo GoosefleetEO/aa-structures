@@ -58,7 +58,8 @@ from ..testdata import (
     create_structures,
     set_owner_character,
     esi_mock_client,
-    create_user
+    create_user,
+    esi_data
 )
 from ...utils import set_test_logger, NoSocketsTestCase
 
@@ -657,6 +658,29 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)
     @patch('structures.helpers.esi_fetch._esi_client')
+    def test_update_will_not_break_on_http_error_from_structure_info(
+        self, mock_esi_client, mock_Token
+    ):                       
+        mock_esi_client.side_effect = esi_mock_client
+        # remove info data for structure with ID 1000000000002
+        data = deepcopy(
+            esi_data['Universe']['get_universe_structures_structure_id']
+        )
+        del data["1000000000002"]
+        esi_get_universe_structures_structure_id.override_data = data            
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )                        
+        self.assertTrue(owner.update_structures_esi())
+        esi_get_universe_structures_structure_id.override_data = None
+
+        structure = Structure.objects.get(id=1000000000002)
+        self.assertEqual(structure.name, '(no data)')
+        
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
+    @patch(MODULE_PATH + '.Token', spec=True)
+    @patch('structures.helpers.esi_fetch._esi_client')
     def test_removes_old_structures(
         self, mock_esi_client, mock_Token
     ):                       
@@ -691,13 +715,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch('structures.helpers.esi_fetch._esi_client')
     def test_tags_are_not_modified_by_update(
         self, mock_esi_client, mock_Token
-    ):
-        mock_esi_client.return_value.Corporation\
-            .get_corporations_corporation_id_structures.side_effect = \
-            esi_get_corporations_corporation_id_structures
-        mock_esi_client.return_value.Universe\
-            .get_universe_structures_structure_id.side_effect =\
-            esi_get_universe_structures_structure_id
+    ):        
+        mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
         )        
@@ -1227,15 +1246,13 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # create mocks        
         def get_characters_character_id_notifications_error(*args, **kwargs):
             mock_response = Mock()
-            mock_response.status_code = None
+            mock_response.status_code = 502
             raise HTTPBadGateway(mock_response)
-        
-        mock_client = Mock()       
-        mock_client.Character\
+                
+        mock_esi_client.return_value.Character\
             .get_characters_character_id_notifications.side_effect =\
             get_characters_character_id_notifications_error
-        mock_esi_client.client = mock_client
-
+        
         # create test data
         AuthUtils.add_permission_to_user_by_name(
             'structures.add_structure_owner', self.user
