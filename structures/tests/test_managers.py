@@ -6,7 +6,6 @@ from bravado.exception import HTTPError
 from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
 
 from . import to_json
-from ..managers import EsiSmartRequest  # noqa
 from ..models import (
     EveEntity,    
     EveCategory,
@@ -33,7 +32,7 @@ from .testdata import (
 from ..utils import NoSocketsTestCase, set_test_logger
 
 MODULE_PATH = 'structures.managers'
-MODULE_PATH_HELPERS = 'structures.helpers'
+MODULE_PATH_ESI_FETCH = 'structures.helpers.esi_fetch'
 logger = set_test_logger(MODULE_PATH, __file__)
 
 
@@ -54,7 +53,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
     
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi(self, mock_provider):
         mock_provider.client = esi_mock_client()
 
@@ -69,7 +68,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.name_zh, 'Structure_zh')
         self.assertIsInstance(obj.last_updated, datetime)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):        
         mock_provider.client = esi_mock_client()
 
@@ -86,7 +85,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
 
@@ -96,7 +95,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 65)
         self.assertEqual(obj.name, 'Structure')
         
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_raises_exception_when_create_fails(self, mock_provider):
         mock_provider.client.Universe\
             .get_universe_categories_category_id.return_value\
@@ -105,7 +104,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         with self.assertRaises(RuntimeError):
             EveCategory.objects.update_or_create_esi(65)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_update_all_objects_from_esi(self, mock_provider):        
         mock_provider.client = esi_mock_client()
 
@@ -124,7 +123,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(obj.name, 'Structure')
         self.assertEqual(count_updated, total_count)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_recover_from_errors_during_update_all_objects_from_esi(
         self, mock_provider
     ):
@@ -156,7 +155,7 @@ class TestEveGroupManager(NoSocketsTestCase):
         self.assertEqual(obj.name, 'Citadel')
         self.assertEqual(obj.eve_category_id, 65)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         
@@ -167,7 +166,7 @@ class TestEveGroupManager(NoSocketsTestCase):
         self.assertEqual(obj.name, 'Citadel')
         self.assertEqual(obj.eve_category_id, 65)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found_including_parent(
         self, mock_provider
     ):
@@ -185,7 +184,7 @@ class TestEveGroupManager(NoSocketsTestCase):
         self.assertEqual(obj_parent.id, 65)
         self.assertEqual(obj_parent.name, 'Structure')
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_update_from_esi_not_including_related(self, mock_provider):
         mock_provider.client = esi_mock_client()
         load_entity(EveGroup)
@@ -225,7 +224,7 @@ class TestEveTypeManager(NoSocketsTestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 35832)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         
@@ -234,7 +233,7 @@ class TestEveTypeManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 35832)
         self.assertIsInstance(EveType.objects.get(id=35832), EveType)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found_including_related(
         self, mock_provider
     ):
@@ -261,7 +260,7 @@ class TestEveRegionManager(NoSocketsTestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 10000005)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()                
         
@@ -287,7 +286,7 @@ class TestEveConstellationManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 20000069)
         self.assertEqual(obj.name, '1RG-GU')
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         load_entity(EveRegion)
@@ -297,7 +296,7 @@ class TestEveConstellationManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 20000069)
         self.assertEqual(obj.name, '1RG-GU')
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found_w_parent(
         self, mock_provider
     ):
@@ -340,7 +339,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         self.assertEqual(obj.security_status, -0.496552765369415)
         self.assertEqual(obj.eve_constellation_id, 20000069)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         
@@ -352,7 +351,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         self.assertEqual(obj.security_status, -0.496552765369415)
         self.assertEqual(obj.eve_constellation_id, 20000069)
         
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found_including_related(
         self, mock_provider
     ):
@@ -377,7 +376,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         self.assertEqual(obj_parent.name, "1RG-GU")
         self.assertEqual(obj_parent.eve_region_id, 10000005)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_update_object_from_esi_including_related(self, mock_provider):
         mock_provider.client = esi_mock_client()
         load_entity(EveSolarSystem)
@@ -425,7 +424,7 @@ class TestEveMoonManager(NoSocketsTestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 40161465)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
        
@@ -438,7 +437,7 @@ class TestEveMoonManager(NoSocketsTestCase):
         self.assertEqual(obj.position_y, 2)
         self.assertEqual(obj.position_z, 3)
         
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found_w_parent(self, mock_provider):
         mock_provider.client = esi_mock_client()
         EveSolarSystem.objects.get(id=30000474).delete()
@@ -473,7 +472,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 40161469)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         
@@ -493,7 +492,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
         self.assertEqual(obj.name_ru, 'Amamake_ru IV')
         self.assertEqual(obj.name_zh, 'Amamake_zh IV')
         
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found_w_parent(
         self, mock_provider
     ):
@@ -514,7 +513,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
 
 class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_fetch_from_esi_and_overwrites_existing_map(
         self, mock_provider
     ):
@@ -551,7 +550,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 3011)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         
@@ -561,7 +560,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 3011)
         self.assertEqual(obj.name, "Big Bad Alliance")
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):
         mock_provider.client = esi_mock_client()
         load_entity(EveEntity)
@@ -577,7 +576,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 3011)
         self.assertEqual(obj.name, "Big Bad Alliance")
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_raises_exceptions_if_no_esi_match(self, mock_provider):
         mock_client = Mock()    
         mock_client.Universe.post_universe_names\
@@ -587,7 +586,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             EveEntity.objects.update_or_create_esi(3011)
         
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_raises_exception_when_create_fails(self, mock_provider):
         mock_client = Mock()        
         mock_client.Universe.post_universe_names\
@@ -610,7 +609,7 @@ class TestStructureManager(NoSocketsTestCase):
         self.assertFalse(created)
         self.assertEqual(obj.id, 1000000000001)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_create_object_from_esi_if_not_found(self, mock_provider):
         mock_provider.client = esi_mock_client()
         mock_token = Mock()
@@ -641,7 +640,7 @@ class TestStructureManager(NoSocketsTestCase):
         self.assertEqual(obj.position_y, 7310316270.0)
         self.assertEqual(obj.position_z, -163686684205.0)
 
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_can_update_object_from_esi(self, mock_provider):
         mock_provider.client = esi_mock_client()            
         mock_token = Mock()
@@ -659,7 +658,7 @@ class TestStructureManager(NoSocketsTestCase):
         self.assertEqual(obj.id, 1000000000001)
         self.assertEqual(obj.name, 'Test Structure Alpha')
         
-    @patch(MODULE_PATH_HELPERS + '.provider')
+    @patch(MODULE_PATH_ESI_FETCH + '.provider')
     def test_raises_exception_when_create_fails(self, mock_provider):        
         mock_token = Mock()
         mock_provider.client\

@@ -1,20 +1,24 @@
 from unittest.mock import Mock, patch
 
-from bravado.exception import (
-    HTTPBadGateway, HTTPServiceUnavailable, HTTPGatewayTimeout, HTTPForbidden
-)
-
-from ..helpers import EsiSmartRequest
-from ..models.eveuniverse import EsiNameLocalization
-from .testdata import (
+from bravado.exception import HTTPBadGateway
+from bravado.exception import HTTPServiceUnavailable
+from bravado.exception import HTTPGatewayTimeout
+from bravado.exception import HTTPForbidden
+    
+from structures.helpers.esi_fetch import esi_fetch
+from structures.helpers.esi_fetch import esi_fetch_with_localization
+from structures.models.eveuniverse import EsiNameLocalization
+from structures.tests.testdata import (
     esi_get_universe_categories_category_id, 
     esi_mock_client,
     esi_get_corporations_corporation_id_structures
 )
-from ..utils import NoSocketsTestCase, set_test_logger, make_logger_prefix
+from structures.utils import (
+    NoSocketsTestCase, set_test_logger, make_logger_prefix
+)
 
 
-MODULE_PATH = 'structures.helpers'
+MODULE_PATH = __package__ + '.esi_fetch'
 logger = set_test_logger(MODULE_PATH, __file__)
 
 
@@ -29,7 +33,7 @@ dummy_provider.client.Universe = Dummy()
 dummy_provider.client.Universe.get_universe_categories_category_id = Dummy()
 
 
-class TestEsiSmartRequest(NoSocketsTestCase):
+class TestEsiFetch(NoSocketsTestCase):
     
     def setUp(self):
         self.add_prefix = make_logger_prefix('Test')
@@ -37,7 +41,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.provider')
     def test_can_fetch_object_from_esi(self, mock_provider):
-        EsiSmartRequest.fetch(
+        esi_fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
             logger_tag='dummy'
@@ -59,7 +63,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     @patch(MODULE_PATH + '.provider')
     def test_can_fetch_object_with_client(self, mock_provider):
         mock_client = Mock()
-        EsiSmartRequest.fetch(
+        esi_fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
             logger_tag='dummy',
@@ -79,7 +83,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     def test_can_fetch_object_with_token(self, mock_provider):
         mock_token = Mock()
         mock_token.access_token = 'my_access_token'
-        EsiSmartRequest.fetch(
+        esi_fetch(
             esi_path='Universe.get_universe_categories_category_id',
             args={'category_id': 65},
             logger_tag='dummy',
@@ -106,7 +110,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     @patch(MODULE_PATH + '.provider')
     def test_raises_exception_on_invalid_esi_path(self, mock_provider):                        
         with self.assertRaises(ValueError):
-            EsiSmartRequest.fetch(
+            esi_fetch(
                 'invalid', 
                 {'group_id': 65}
             )
@@ -114,7 +118,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
     def test_raises_exception_on_wrong_esi_category(self, mock_provider):                        
         with self.assertRaises(ValueError):
-            EsiSmartRequest.fetch(
+            esi_fetch(
                 'invalid.get_universe_groups_group_id',               
                 {'group_id': 65}
             )
@@ -122,12 +126,12 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     @patch(MODULE_PATH + '.provider', autospec=dummy_provider)
     def test_raises_exception_on_wrong_esi_method(self, mock_provider):                
         with self.assertRaises(ValueError):
-            EsiSmartRequest.fetch(
+            esi_fetch(
                 'Universe.invalid',                 
                 {'group_id': 65}
             )
     
-    @patch(MODULE_PATH + '.EsiSmartRequest._ESI_RETRY_SLEEP_SECS', 0)
+    @patch(MODULE_PATH + '.ESI_RETRY_SLEEP_SECS', 0)
     @patch(MODULE_PATH + '.provider')
     def test_can_retry_on_exceptions(self, mock_provider):        
         
@@ -153,7 +157,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         MyException = HTTPBadGateway
         retry_counter = 0
         max_retries = 3        
-        response_object = EsiSmartRequest.fetch(
+        response_object = esi_fetch(
             'Universe.get_universe_categories_category_id',
             {'category_id': 65}
         )        
@@ -165,7 +169,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         retry_counter = 0
         max_retries = 4
         with self.assertRaises(MyException):
-            response_object = EsiSmartRequest.fetch(
+            response_object = esi_fetch(
                 'Universe.get_universe_categories_category_id',
                 {'category_id': 65},
                 Mock()
@@ -176,7 +180,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         MyException = HTTPServiceUnavailable
         retry_counter = 0
         max_retries = 3
-        response_object = EsiSmartRequest.fetch(
+        response_object = esi_fetch(
             'Universe.get_universe_categories_category_id',
             {'category_id': 65}
         )        
@@ -188,7 +192,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         MyException = HTTPGatewayTimeout
         retry_counter = 0
         max_retries = 3
-        response_object = EsiSmartRequest.fetch(
+        response_object = esi_fetch(
             'Universe.get_universe_categories_category_id',
             {'category_id': 65}
         )        
@@ -201,7 +205,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
         retry_counter = 0
         max_retries = 3
         with self.assertRaises(MyException):
-            response_object = EsiSmartRequest.fetch(
+            response_object = esi_fetch(
                 'Universe.get_universe_categories_category_id',
                 {'category_id': 65},
                 Mock()
@@ -211,7 +215,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     def test_can_fetch_multiple_pages(self):
         mock_client = esi_mock_client()
 
-        structures = EsiSmartRequest.fetch(
+        structures = esi_fetch(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': 2001},
             esi_client=mock_client,
@@ -234,7 +238,7 @@ class TestEsiSmartRequest(NoSocketsTestCase):
     def test_can_fetch_multiple_pages_and_languages(self):
         mock_client = esi_mock_client()
 
-        structures_list = EsiSmartRequest.fetch_with_localization(
+        structures_list = esi_fetch_with_localization(
             'Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': 2001},
             esi_client=mock_client,

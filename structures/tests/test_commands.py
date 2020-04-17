@@ -35,7 +35,7 @@ PACKAGE_PATH = 'structures.management.commands'
 class TestUpdateSde(NoSocketsTestCase):
 
     @patch(PACKAGE_PATH + '.structures_updatesde.get_input')
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_can_update_all_models(self, mock_provider, mock_get_input):
         mock_provider.client = esi_mock_client()
         mock_get_input.return_value = 'Y'

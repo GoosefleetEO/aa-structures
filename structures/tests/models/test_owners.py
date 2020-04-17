@@ -398,7 +398,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)    
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_can_sync_upwell_structures(
         self, mock_provider, mock_Token
     ):
@@ -511,7 +511,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)    
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_can_sync_pocos(self, mock_provider, mock_Token):
         mock_provider.client = esi_mock_client()
         owner = Owner.objects.create(
@@ -547,7 +547,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)    
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_can_sync_starbases(self, mock_provider, mock_Token):
         mock_provider.client = esi_mock_client()
         owner = Owner.objects.create(
@@ -622,7 +622,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_can_sync_all_structures(
         self, mock_provider, mock_Token, mock_notify
     ):                                       
@@ -656,7 +656,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_removes_old_structures(
         self, mock_provider, mock_Token
     ):                       
@@ -688,7 +688,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_tags_are_not_modified_by_update(
         self, mock_provider, mock_Token
     ):                               
@@ -732,7 +732,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_remove_current_structures_when_esi_returns_none(
         self, mock_provider, mock_Token
     ):                               
@@ -759,7 +759,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.notify')
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_reports_error_to_user_when_update_fails(
         self, mock_provider, mock_Token, mock_notify
     ):                               
@@ -779,7 +779,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_removes_outdated_services(
         self, mock_provider, mock_Token
     ):                       
@@ -819,7 +819,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_define_poco_name_from_assets_if_not_match_with_planets(
         self, mock_provider, mock_Token, mock_notify
     ):                               
@@ -840,7 +840,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_define_poco_name_from_planet_type_if_found(
         self, mock_provider, mock_Token, mock_notify
     ):                               
@@ -861,7 +861,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_define_poco_name_from_planet_type_localized(
         self, mock_provider, mock_Token, mock_notify
     ):                               
@@ -881,7 +881,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
     @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_update_pocos_no_asset_name_match(
         self, mock_provider, mock_Token, mock_notify
     ):
@@ -905,7 +905,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Structure.objects.update_or_create_from_dict')
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_reports_error_during_storing(
         self, mock_provider, mock_Token, mock_update_or_create_from_dict
     ):                       
@@ -1178,7 +1178,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', True)    
     @patch(MODULE_PATH + '.notify', spec=True)
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_can_fetch_notifications_correctly(
         self, mock_provider, mock_Token, mock_notify
     ):
@@ -1219,10 +1219,10 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # should not have more timers
         self.assertEqual(Timer.objects.count(), 5)
         
-    @patch('structures.helpers.EsiSmartRequest._ESI_RETRY_SLEEP_SECS', 0)
+    @patch('structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS', 0)
     @patch(MODULE_PATH + '.STRUCTURES_ADD_TIMERS', False)        
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     def test_report_error_when_esi_returns_error_during_sync(
         self, mock_provider, mock_Token
     ):
@@ -1278,7 +1278,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         return True
 
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     @patch(
         'structures.models.notifications.Notification.send_to_webhook', 
         autospec=True
@@ -1305,7 +1305,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         self.assertSetEqual(notification_ids, expected)
 
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     @patch(
         'structures.models.notifications.Notification.send_to_webhook', 
         autospec=True
@@ -1384,7 +1384,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         self.assertSetEqual(results[wh_mining.pk], expected)
 
     @patch(MODULE_PATH + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     @patch(
         'structures.models.notifications.Notification.send_to_webhook', 
         autospec=True

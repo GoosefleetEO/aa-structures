@@ -9,7 +9,7 @@ from django.utils.timezone import now
 from esi.models import Token
 
 from . import __title__
-from .helpers import EsiSmartRequest
+from structures.helpers.esi_fetch import esi_fetch_with_localization, esi_fetch
 from .utils import LoggerAddTag, make_logger_prefix
 
 
@@ -51,7 +51,7 @@ class EveUniverseManager(models.Manager):
             args = {self.model.esi_pk(): eve_id}
             if self.model.has_esi_localization():
                 eve_data_objects = \
-                    EsiSmartRequest.fetch_with_localization(
+                    esi_fetch_with_localization(
                         esi_path=esi_path,
                         args=args,                        
                         languages=EsiNameLocalization.ESI_LANGUAGES,
@@ -60,7 +60,7 @@ class EveUniverseManager(models.Manager):
             else:
                 eve_data_objects = dict()
                 eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = \
-                    EsiSmartRequest.fetch(
+                    esi_fetch(
                         esi_path=esi_path,
                         args=args,
                         logger_tag=add_prefix()
@@ -107,7 +107,7 @@ class EveSovereigntyMapManager(models.Manager):
     
     def update_from_esi(self):        
         logger.info('Fetching sovereignty map from ESI...')
-        map = EsiSmartRequest.fetch('Sovereignty.get_sovereignty_map', args={})
+        map = esi_fetch('Sovereignty.get_sovereignty_map', args={})
         last_updated = now()
         obj_list = list()
         for solar_system in map:
@@ -163,7 +163,7 @@ class EveEntityManager(models.Manager):
             '%s(id=%d)' % (self.model.__name__, eve_entity_id)
         )        
         try:            
-            response = EsiSmartRequest.fetch(
+            response = esi_fetch(
                 esi_path='Universe.post_universe_names', 
                 args={'ids': [eve_entity_id]},
                 logger_tag=add_prefix()
@@ -235,7 +235,7 @@ class StructureManager(models.Manager):
             if token is None:
                 raise ValueError('Can not fetch structure without token')
             
-            structure_info = EsiSmartRequest.fetch(
+            structure_info = esi_fetch(
                 esi_path='Universe.get_universe_structures_structure_id', 
                 args={'structure_id': structure_id},                 
                 token=token,

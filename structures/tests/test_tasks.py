@@ -188,7 +188,7 @@ class TestForwardNotifications(NoSocketsTestCase):
             )
 
     @patch(MODULE_PATH_MODELS_OWNERS + '.Token', spec=True)
-    @patch('structures.helpers.provider')
+    @patch('structures.helpers.esi_fetch.provider')
     @patch(
         'structures.models.notifications.dhooks_lite.Webhook.execute',
         spec=True

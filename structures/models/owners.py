@@ -36,7 +36,8 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,    
 )
 from .eveuniverse import EvePlanet, EveSolarSystem, EveType, EveUniverse
-from ..helpers import EsiSmartRequest
+from structures.helpers.esi_fetch import esi_fetch
+from structures.helpers.esi_fetch import esi_fetch_with_localization
 from .structures import Structure
 from .notifications import EveEntity, Notification
                 
@@ -348,7 +349,7 @@ class Owner(models.Model):
         corporation_id = self.corporation.corporation_id
         
         # fetch all structures incl. localizations for services
-        structures_w_lang = EsiSmartRequest.fetch_with_localization(
+        structures_w_lang = esi_fetch_with_localization(
             esi_path='Corporation.get_corporations_corporation_id_structures',
             args={'corporation_id': corporation_id}, 
             token=token,
@@ -375,7 +376,7 @@ class Owner(models.Model):
                 )
             ))
             for structure in structures:                
-                structure_info = EsiSmartRequest.fetch(
+                structure_info = esi_fetch(
                     'Universe.get_universe_structures_structure_id',
                     args={'structure_id': structure['structure_id']},
                     token=token,
@@ -458,7 +459,7 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
 
-        pocos = EsiSmartRequest.fetch(
+        pocos = esi_fetch(
             'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
             args={'corporation_id': corporation_id},
             token=token,
@@ -480,7 +481,7 @@ class Owner(models.Model):
             item_ids = [x['office_id'] for x in pocos]
             locations_data = list()
             for item_ids_chunk in chunks(item_ids, 999):               
-                locations_data_chunk = EsiSmartRequest.fetch(
+                locations_data_chunk = esi_fetch(
                     'Assets.post_corporations_corporation_id_assets_locations',
                     args={
                         'corporation_id': corporation_id, 
@@ -500,7 +501,7 @@ class Owner(models.Model):
             ))
             names_data = list()
             for item_ids_chunk in chunks(item_ids, 999):                
-                names_data_chunk = EsiSmartRequest.fetch(
+                names_data_chunk = esi_fetch(
                     'Assets.post_corporations_corporation_id_assets_names',
                     args={
                         'corporation_id': corporation_id, 
@@ -572,7 +573,7 @@ class Owner(models.Model):
         add_prefix = self._logger_prefix()        
         structures = list()
         corporation_id = self.corporation.corporation_id        
-        starbases = EsiSmartRequest.fetch(
+        starbases = esi_fetch(
             'Corporation.get_corporations_corporation_id_starbases',
             args={'corporation_id': corporation_id},
             token=token,
@@ -590,7 +591,7 @@ class Owner(models.Model):
             item_ids = [x['starbase_id'] for x in starbases]
             names_data = list()
             for item_ids_chunk in chunks(item_ids, 999):
-                names_data_chunk = EsiSmartRequest.fetch(
+                names_data_chunk = esi_fetch(
                     'Assets.post_corporations_corporation_id_assets_names',
                     args={
                         'corporation_id': corporation_id, 
@@ -610,7 +611,7 @@ class Owner(models.Model):
             # add fuel expiration
             for starbase in starbases:
                 if starbase['state'] != 'offline':
-                    starbase_details = EsiSmartRequest.fetch(
+                    starbase_details = esi_fetch(
                         'Corporation.get_corporations_corporation_id_starbases_starbase_id',    # noqa
                         args={
                             'corporation_id': corporation_id, 
@@ -748,7 +749,7 @@ class Owner(models.Model):
     def _fetch_notifications_from_esi(self, token: Token) -> dict:
         """ fetching all notifications from ESI for current owner"""
         add_prefix = self._logger_prefix()
-        notifications = EsiSmartRequest.fetch(
+        notifications = esi_fetch(
             'Character.get_characters_character_id_notifications',
             args={'character_id': self.character.character.character_id},
             token=token,
