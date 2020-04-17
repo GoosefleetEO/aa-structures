@@ -459,14 +459,7 @@ class Owner(models.Model):
         return structures
 
     def _fetch_custom_offices(self, token: Token) -> list:
-        """fetch custom offices from ESI for self"""
-
-        def extract_planet_name(text: str) -> str:
-            """extract name of planet from assert name for a customs office"""
-            reg_ex = re.compile(r'Customs Office \((.+)\)')
-            matches = reg_ex.match(text)
-            return matches.group(1) if matches else text
-        
+        """fetch custom offices from ESI for self"""        
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
 
@@ -483,48 +476,13 @@ class Owner(models.Model):
                 'No custom offices retrieved from ESI'
             ))
         else:
-            # fetching locations
-            logger.info(add_prefix(
-                'Fetching locations for {} custom offices from ESI'.format(
-                    len(pocos)
-                )
-            ))
-            item_ids = [x['office_id'] for x in pocos]
-            locations_data = list()
-            for item_ids_chunk in chunks(item_ids, 999):               
-                locations_data_chunk = esi_fetch(
-                    'Assets.post_corporations_corporation_id_assets_locations',
-                    args={
-                        'corporation_id': corporation_id, 
-                        'item_ids': item_ids_chunk,
-                    },
-                    token=token,
-                    logger_tag=add_prefix()
-                )
-                locations_data += locations_data_chunk
-            positions = {x['item_id']: x['position'] for x in locations_data}
-
-            # fetching names
-            logger.info(add_prefix(
-                'Fetching names for {} custom office names from ESI'.format(
-                    len(pocos)
-                )
-            ))
-            names_data = list()
-            for item_ids_chunk in chunks(item_ids, 999):                
-                names_data_chunk = esi_fetch(
-                    'Assets.post_corporations_corporation_id_assets_names',
-                    args={
-                        'corporation_id': corporation_id, 
-                        'item_ids': item_ids,                        
-                    },
-                    token=token,
-                    logger_tag=add_prefix()
-                )
-                names_data += names_data_chunk
-            names = {
-                x['item_id']: extract_planet_name(x['name']) for x in names_data
-            }
+            item_ids = [x['office_id'] for x in pocos]            
+            positions = self._fetch_locations_for_pocos(
+                corporation_id, item_ids, token
+            )
+            names = self._fetch_names_for_pocos(
+                corporation_id, item_ids, token
+            )
 
             # making sure we have all solar systems loaded
             # incl. their planets for later name matching
@@ -578,6 +536,61 @@ class Owner(models.Model):
 
         return structures
 
+    def _fetch_locations_for_pocos(self, corporation_id, item_ids, token):
+        add_prefix = self._logger_prefix()
+        logger.info(add_prefix(
+            'Fetching locations for {} custom offices from ESI'.format(
+                len(item_ids)
+            )
+        ))        
+        locations_data = list()
+        for item_ids_chunk in chunks(item_ids, 999):               
+            locations_data_chunk = esi_fetch(
+                'Assets.post_corporations_corporation_id_assets_locations',
+                args={
+                    'corporation_id': corporation_id, 
+                    'item_ids': item_ids_chunk,
+                },
+                token=token,
+                logger_tag=add_prefix()
+            )
+            locations_data += locations_data_chunk
+        positions = {x['item_id']: x['position'] for x in locations_data}
+        return positions
+
+    def _fetch_names_for_pocos(self, corporation_id, item_ids, token):
+        add_prefix = self._logger_prefix()
+        logger.info(add_prefix(
+            'Fetching names for {} custom office names from ESI'.format(
+                len(item_ids)
+            )
+        ))
+        names_data = list()
+        for item_ids_chunk in chunks(item_ids, 999):                
+            names_data_chunk = esi_fetch(
+                'Assets.post_corporations_corporation_id_assets_names',
+                args={
+                    'corporation_id': corporation_id, 
+                    'item_ids': item_ids,                        
+                },
+                token=token,
+                logger_tag=add_prefix()
+            )
+            names_data += names_data_chunk
+
+        names = {
+            x['item_id']: self._extract_planet_name(x['name']) 
+            for x in names_data
+        }
+        return names
+
+    @staticmethod
+    def _extract_planet_name(text: str) -> str:
+        """extract name of planet from assert name for a customs office"""
+        reg_ex = re.compile(r'Customs Office \((.+)\)')
+        matches = reg_ex.match(text)
+        return matches.group(1) if matches else text
+
     def _fetch_starbases(self, token: Token) -> list:
         """fetch starbases from ESI for self"""
 
@@ -591,73 +604,17 @@ class Owner(models.Model):
             has_pages=True,
             logger_tag=add_prefix()
         )
-       
-        # add starbase names                
+               
         if not starbases:
             logger.info(add_prefix('No starbases retrieved from ESI'))
         else:
-            logger.info(add_prefix(
-                'Fetching names for {} starbases from ESI'.format(len(starbases))
-            ))
-            item_ids = [x['starbase_id'] for x in starbases]
-            names_data = list()
-            for item_ids_chunk in chunks(item_ids, 999):
-                names_data_chunk = esi_fetch(
-                    'Assets.post_corporations_corporation_id_assets_names',
-                    args={
-                        'corporation_id': corporation_id, 
-                        'item_ids': item_ids_chunk,                        
-                    },
-                    token=token,
-                    logger_tag=add_prefix()
-                )
-                names_data += names_data_chunk
-            names = {x['item_id']: x['name'] for x in names_data}
-
-            for starbase in starbases:                
-                starbase_id = starbase['starbase_id']
-                starbase['name'] = \
-                    names[starbase_id] if starbase_id in names else 'Starbase'
-            
-            # add fuel expiration
+            names = self._fetch_starbases_names(
+                corporation_id, starbases, token
+            )            
             for starbase in starbases:
-                if starbase['state'] != 'offline':
-                    starbase_details = esi_fetch(
-                        'Corporation.get_corporations_corporation_id_starbases_starbase_id',    # noqa
-                        args={
-                            'corporation_id': corporation_id, 
-                            'starbase_id': starbase['starbase_id'],
-                            'system_id': starbase['system_id'],                            
-                        },
-                        token=token,
-                        logger_tag=add_prefix()
-                    )
-                    fuel_quantity = None
-                    if 'fuels' in starbase_details:
-                        for fuel in starbase_details['fuels']:
-                            fuel_type, _ = EveType.objects.get_or_create_esi(
-                                fuel['type_id']
-                            )
-                            if fuel_type.is_fuel_block:
-                                fuel_quantity = fuel['quantity']
-                    if fuel_quantity:                    
-                        starbase_type, _ = EveType.objects.get_or_create_esi(
-                            starbase['type_id']
-                        )
-                        solar_system, _ = \
-                            EveSolarSystem.objects.get_or_create_esi(
-                                starbase['system_id']
-                            )                                        
-                        sov_discount = 0.25 \
-                            if solar_system.corporation_has_sov(self.corporation) else 0
-                        hours = math.floor(
-                            fuel_quantity / (
-                                starbase_type.starbase_fuel_per_hour 
-                                * (1 - sov_discount)
-                            )
-                        )
-                        starbase['fuel_expires'] = now() + timedelta(hours=hours)
-                
+                starbase['fuel_expires'] = self._calc_starbase_fuel_expires(
+                    corporation_id, starbase, token
+                )
             # convert starbases to structures            
             for starbase in starbases:
                 if starbase['starbase_id'] in names:
@@ -692,6 +649,75 @@ class Owner(models.Model):
             self._store_raw_data('starbases', structures, corporation_id)
 
         return structures
+
+    def _fetch_starbases_names(self, corporation_id, starbases, token):
+        add_prefix = self._logger_prefix()
+        logger.info(add_prefix(
+            'Fetching names for {} starbases from ESI'.format(len(starbases))
+        ))
+        item_ids = [x['starbase_id'] for x in starbases]
+        names_data = list()
+        for item_ids_chunk in chunks(item_ids, 999):
+            names_data_chunk = esi_fetch(
+                'Assets.post_corporations_corporation_id_assets_names',
+                args={
+                    'corporation_id': corporation_id, 
+                    'item_ids': item_ids_chunk,                        
+                },
+                token=token,
+                logger_tag=add_prefix()
+            )
+            names_data += names_data_chunk
+        names = {x['item_id']: x['name'] for x in names_data}
+
+        for starbase in starbases:                
+            starbase_id = starbase['starbase_id']
+            starbase['name'] = \
+                names[starbase_id] if starbase_id in names else 'Starbase'
+
+        return names
+
+    def _calc_starbase_fuel_expires(self, corporation_id, starbase, token):
+        add_prefix = self._logger_prefix()
+        fuel_expires = None
+        if starbase['state'] != 'offline':
+            starbase_details = esi_fetch(
+                'Corporation.get_corporations_corporation_id_starbases_starbase_id',
+                args={
+                    'corporation_id': corporation_id, 
+                    'starbase_id': starbase['starbase_id'],
+                    'system_id': starbase['system_id'],
+                },
+                token=token,
+                logger_tag=add_prefix()
+            )
+            fuel_quantity = None
+            if 'fuels' in starbase_details:
+                for fuel in starbase_details['fuels']:
+                    fuel_type, _ = EveType.objects.get_or_create_esi(
+                        fuel['type_id']
+                    )
+                    if fuel_type.is_fuel_block:
+                        fuel_quantity = fuel['quantity']
+            if fuel_quantity:                    
+                starbase_type, _ = EveType.objects.get_or_create_esi(
+                    starbase['type_id']
+                )
+                solar_system, _ = \
+                    EveSolarSystem.objects.get_or_create_esi(
+                        starbase['system_id']
+                    )                                        
+                sov_discount = 0.25 \
+                    if solar_system.corporation_has_sov(self.corporation) else 0
+                hours = math.floor(
+                    fuel_quantity / (
+                        starbase_type.starbase_fuel_per_hour 
+                        * (1 - sov_discount)
+                    )
+                )
+                fuel_expires = now() + timedelta(hours=hours)
+        
+        return fuel_expires
     
     def fetch_notifications_esi(self, user: User = None):
         """fetches notification for the current owners and proceses them"""
