@@ -13,6 +13,7 @@ Alliance Auth.
 - [Installation](#installation)
 - [Updating](#updating)
 - [Localization](#localization)
+- [Structure tags](#structure-tags)
 - [Settings](#settings)
 - [Permissions](#permissions)
 - [Notifications](#notifications)
@@ -55,7 +56,7 @@ This is an example for a notification posted on Discord:
 
 **Important**: This app is a plugin for Alliance Auth. If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
 
-### 1. Install app
+### Step 1 - Install app
 
 Make sure you are in the virtual environment (venv) of your Alliance Auth installation. Then install the newest release from PyPI:
 
@@ -63,7 +64,7 @@ Make sure you are in the virtual environment (venv) of your Alliance Auth instal
 pip install aa-structures
 ```
 
-### 2 Update Eve Online app
+### Step 2 - Update Eve Online app
 
 Update the Eve Online app used for authentication in your AA installation to include the following scopes:
 
@@ -76,7 +77,7 @@ esi-planets.read_customs_offices.v1
 esi-universe.read_structures.v1
 ```
 
-### 3. Configure AA settings
+### Step 3 - Configure AA settings
 
 Configure your AA settings (`local.py`) as follows:
 
@@ -100,12 +101,29 @@ CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
 
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.
 
-> **Recommended celery setup**:<br>The Alliance Structures app uses celery to refresh data from ESI on a regular basis. We strongly recommend to enable the following additional settings for celery workers to enable logging and to protect against memory leaks:<br>
-`-l info --max-memory-per-child 262144`
-<br><br>In most setups this config is part of your supervisor configuration file which is located here: `myauth/supervisor.conf`. <br><br>Note that you need to restart the supervisor service itself to activate those changes.<br>
-e.g. on Ubuntu:<br>`systemctl restart supervisor`
+### Step 4 - Celery worker configuration
 
-### 4. Finalize installation into AA
+This app uses celery for critical functions like refreshing data from ESI. We strongly recommend to enable the following additional settings for celery workers to enable proper logging and to protect against potential memory leaks:
+
+- To enable logging of celery tasks up to info level: `-l info`
+
+- To automatically restart workers that grow above 256 MB: `--max-memory-per-child 262144`
+
+Here is how an example config would look for workers in your `supervisor conf`:
+
+```plain
+command=/home/allianceserver/venv/auth/bin/celery -A myauth worker -l info --max-memory-per-child 262144
+```
+
+Note that you need to restart the supervisor service itself to activate these changes.
+
+e.g. on Ubuntu:
+
+```bash
+systemctl restart supervisor
+```
+
+### Step 5 - Finalize installation into AA
 
 Run migrations & copy static files
 
@@ -116,13 +134,13 @@ python manage.py collectstatic
 
 Restart your supervisor services for AA
 
-### 5. Setup permissions
+### Step 6 - Setup permissions
 
 Now you can setup permissions in Alliance Auth for your users.
 
 See section [Permissions](#permissions) below for details.
 
-### 6. Setup notifications to Discord
+### Step 7 - Setup notifications to Discord
 
 The setup and configuration for Discord webhooks is done on the admin page under **Structures**.
 
@@ -130,7 +148,7 @@ To setup notifications you first need to add the Discord webhook that point to t
 
 Finally to verify that your webhook is correctly setup you can send a test notification. This is one of the available actions on Webhooks page.
 
-### 7. Add structure owners
+### Step 8 - Add structure owners
 
 Next you need to add your first structure owner with the character that will be used for fetching structures. Just open the Alliance Structures app and click on "Add Structure Owner". Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
 
@@ -180,6 +198,29 @@ The following parts of the app will use localization with the default language:
 
 - Timers
 - Name of Custom Offices
+
+## Structure tags
+
+Structure tags are colored text labels that can be attached to individual structures. Their main purpose is to provide an easy way to organize structures. Tags are shown below the name on the structure list and you can filter the structure list by tags.
+
+For example you might be responsible for fueling structures in your alliance and there are a couple structures that you do not need to care about. With structure tags you can just apply a tag like "fueling" to those structures that you need to manage and then filter the structure list to only see those.
+
+There are two kinds of structure tags: Custom tags and generated tags
+
+### Custom tags
+
+Custom tags are created by users. You can created them on the admin panel under Structure tags, give them any name, color and define its order. Existing structure tags can be assigned to a structure on the structures page within the admin panel.
+
+You can also define custom tags as default. Default tags are automatically added to every newly added structure. Furthermore you enable default tags to be your default tag filter to be active when opening the structure list (see [Settings](#settings))
+
+### Generated tags
+
+Generated tags are automatically created by and added to structures by the system. These tags are calculated based on properties of a structure. The purpose of generated tags is to provide additional information and filter options for structures in the structure list.
+
+There are currently two types of generated tags:
+
+- space type: Shows which space type the structure is in, e.g. null sec or low sec
+- sov: Shows that the owner of that structures has sovereignty in the respective solar system
 
 ## Settings
 

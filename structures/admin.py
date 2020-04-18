@@ -628,6 +628,15 @@ class StructureAdmin(admin.ModelAdmin):
     )
     inlines = (StructureAdminInline, )
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        """only show custom tags in dropdown"""
+        if db_field.name == "tags":
+            kwargs["queryset"] = StructureTag.objects.filter(is_user_managed=True)
+        
+        return super(StructureAdmin, self).formfield_for_manytomany(
+            db_field, request, **kwargs
+        )
+
 
 @admin.register(Webhook)
 class WebhookAdmin(admin.ModelAdmin):

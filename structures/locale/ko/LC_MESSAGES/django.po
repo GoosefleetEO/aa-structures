@@ -2,205 +2,209 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-04-03 22:01+0200\n"
+"POT-Creation-Date: 2020-04-18 14:09+0200\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
-"Language-Team: Korean (Korea) (https://www.transifex.com/kalkoken-apps/teams/107978/ko_KR/)\n"
+"Language-Team: Korean (Korea) (https://www.transifex.com/kalkoken-apps/"
+"teams/107978/ko_KR/)\n"
+"Language: ko_KR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: ko_KR\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: models/eveuniverse.py:513
+#: models/eveuniverse.py:616
 msgid "Moon"
 msgstr ""
 
-#: models/notifications.py:46
+#: models/notifications.py:47
 msgid "English"
 msgstr ""
 
-#: models/notifications.py:47
+#: models/notifications.py:48
 msgid "German"
 msgstr ""
 
-#: models/notifications.py:48
+#: models/notifications.py:49
 msgid "Spanish"
 msgstr ""
 
-#: models/notifications.py:49
+#: models/notifications.py:50
 msgid "Chinese Simplified"
 msgstr ""
 
-#: models/notifications.py:50
+#: models/notifications.py:51
 msgid "Russian"
 msgstr ""
 
-#: models/notifications.py:51
+#: models/notifications.py:52
 msgid "Korean"
 msgstr ""
 
-#: models/notifications.py:155
+#: models/notifications.py:156
 msgid "Discord Webhook"
 msgstr ""
 
-#: models/notifications.py:225
+#: models/notifications.py:226
 #, python-format
 msgid ""
 "This is a test notification from %s.\n"
 "The webhook appears to be correctly configured."
 msgstr ""
 
-#: models/notifications.py:462
+#: models/notifications.py:467
 #, python-format
 msgid "%(ticker)s Notification"
 msgstr ""
 
-#: models/notifications.py:586 models/notifications.py:805
+#: models/notifications.py:591 models/notifications.py:810
 msgid "(unknown)"
 msgstr ""
 
-#: models/notifications.py:595 models/notifications.py:684
+#: models/notifications.py:600 models/notifications.py:689
 #, python-format
 msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
 msgstr ""
 
-#: models/notifications.py:602
+#: models/notifications.py:607
 msgid "Structure online"
 msgstr ""
 
-#: models/notifications.py:603
+#: models/notifications.py:608
 msgid "is now online."
 msgstr ""
 
-#: models/notifications.py:607
+#: models/notifications.py:612
 msgid "Structure fuel alert"
 msgstr ""
 
-#: models/notifications.py:608
+#: models/notifications.py:613
 msgid "has less then 24hrs fuel left."
 msgstr ""
 
-#: models/notifications.py:612
+#: models/notifications.py:617
 msgid "Structure services off-line"
 msgstr ""
 
-#: models/notifications.py:613
+#: models/notifications.py:618
 msgid "has all services off-lined."
 msgstr ""
 
-#: models/notifications.py:624
+#: models/notifications.py:629
 msgid "Structure low power"
 msgstr ""
 
-#: models/notifications.py:625
+#: models/notifications.py:630
 msgid "went to low power mode."
 msgstr ""
 
-#: models/notifications.py:629
+#: models/notifications.py:634
 msgid "Structure full power"
 msgstr ""
 
-#: models/notifications.py:630
+#: models/notifications.py:635
 msgid "went to full power mode."
 msgstr ""
 
-#: models/notifications.py:634
+#: models/notifications.py:639
 msgid "Structure un-anchoring"
 msgstr ""
 
-#: models/notifications.py:638
+#: models/notifications.py:643
 #, python-format
 msgid "has started un-anchoring. It will be fully un-anchored at: %s"
 msgstr ""
 
-#: models/notifications.py:644
+#: models/notifications.py:649
 msgid "Structure under attack"
 msgstr ""
 
-#: models/notifications.py:645
+#: models/notifications.py:650
 #, python-format
 msgid "is under attack by %s"
 msgstr ""
 
-#: models/notifications.py:650
+#: models/notifications.py:655
 msgid "Structure lost shield"
 msgstr ""
 
-#: models/notifications.py:654
+#: models/notifications.py:659
 #, python-format
 msgid "has lost its shields. Armor timer end at: %s"
 msgstr ""
 
-#: models/notifications.py:659
+#: models/notifications.py:664
 msgid "Structure lost armor"
 msgstr ""
 
-#: models/notifications.py:663
+#: models/notifications.py:668
 #, python-format
 msgid "has lost its armor. Hull timer end at: %s"
 msgstr ""
 
-#: models/notifications.py:668
+#: models/notifications.py:673
 msgid "Structure destroyed"
 msgstr ""
 
-#: models/notifications.py:669
+#: models/notifications.py:674
 msgid "has been destroyed."
 msgstr ""
 
-#: models/notifications.py:704
+#: models/notifications.py:709
 #, python-format
 msgid ""
 "has been transferred from %(from_corporation)s to %(to_corporation)s by "
 "%(character)s."
 msgstr ""
 
-#: models/notifications.py:715
+#: models/notifications.py:720
 msgid "Ownership transferred"
 msgstr ""
 
-#: models/notifications.py:723
+#: models/notifications.py:728
 #, python-format
 msgid "%(structure_type)s has started anchoring in %(solar_system)s. "
 msgstr ""
 
-#: models/notifications.py:734
+#: models/notifications.py:739
 msgid "Structure anchoring"
 msgstr ""
 
-#: models/notifications.py:753
+#: models/notifications.py:758
 msgid "Moon mining extraction started"
 msgstr ""
 
-#: models/notifications.py:755
+#: models/notifications.py:760
 #, python-format
 msgid ""
-"A moon mining extraction has been started for %(structure_name)s at %(moon)s in %(solar_system)s. Extraction was started by %(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will autofracture on %(auto_time)s.\n"
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s "
+"in %(solar_system)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will autofracture "
+"on %(auto_time)s.\n"
 msgstr ""
 
-#: models/notifications.py:772
+#: models/notifications.py:777
 msgid "Extraction finished"
 msgstr ""
 
-#: models/notifications.py:774
+#: models/notifications.py:779
 #, python-format
 msgid ""
-"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s is finished and the chunk is ready to be shot at.\n"
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s is "
+"finished and the chunk is ready to be shot at.\n"
 "The chunk will automatically fracture on %(auto_time)s."
 msgstr ""
 
-#: models/notifications.py:787
+#: models/notifications.py:792
 msgid "Automatic Fracture"
 msgstr ""
 
-#: models/notifications.py:789
+#: models/notifications.py:794
 #, python-format
 msgid ""
 "The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
@@ -208,22 +212,22 @@ msgid ""
 "harvested.\n"
 msgstr ""
 
-#: models/notifications.py:806
+#: models/notifications.py:811
 msgid "Extraction cancelled"
 msgstr ""
 
-#: models/notifications.py:808
+#: models/notifications.py:813
 #, python-format
 msgid ""
-"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s"
-" has been cancelled by %(character)s."
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
+"has been cancelled by %(character)s."
 msgstr ""
 
-#: models/notifications.py:823
+#: models/notifications.py:828
 msgid "Moondrill fired"
 msgstr ""
 
-#: models/notifications.py:825
+#: models/notifications.py:830
 #, python-format
 msgid ""
 "The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
@@ -231,106 +235,107 @@ msgid ""
 "harvested."
 msgstr ""
 
-#: models/notifications.py:856
+#: models/notifications.py:861
 msgid "Orbital under attack"
 msgstr ""
 
-#: models/notifications.py:858
+#: models/notifications.py:863
 #, python-format
 msgid ""
 "The %(structure_type)s at %(planet)s in %(solar_system)s is under attack by "
 "%(aggressor)s."
 msgstr ""
 
-#: models/notifications.py:871
+#: models/notifications.py:876
 msgid "Orbital reinforced"
 msgstr ""
 
-#: models/notifications.py:873
+#: models/notifications.py:878
 #, python-format
 msgid ""
-"The %(structure_type)s at %(planet)s in %(solar_system)s has been reinforced"
-" by %(aggressor)s and will come out at: %(date)s."
+"The %(structure_type)s at %(planet)s in %(solar_system)s has been reinforced "
+"by %(aggressor)s and will come out at: %(date)s."
 msgstr ""
 
-#: models/notifications.py:907
+#: models/notifications.py:912
 msgid "shield"
 msgstr ""
 
-#: models/notifications.py:908
+#: models/notifications.py:913
 msgid "armor"
 msgstr ""
 
-#: models/notifications.py:909
+#: models/notifications.py:914
 msgid "hull"
 msgstr ""
 
-#: models/notifications.py:922
+#: models/notifications.py:927
 msgid "Starbase under attack"
 msgstr ""
 
-#: models/notifications.py:924
+#: models/notifications.py:929
 #, python-format
 msgid ""
-"The starbase %(structure_name)s at %(moon)s in %(solar_system)s is under attack by %(aggressor)s.\n"
+"The starbase %(structure_name)s at %(moon)s in %(solar_system)s is under "
+"attack by %(aggressor)s.\n"
 "%(damage_text)s"
 msgstr ""
 
-#: models/notifications.py:938
+#: models/notifications.py:943
 msgid "Starbase low on fuel"
 msgstr ""
 
-#: models/notifications.py:940
+#: models/notifications.py:945
 #, python-format
 msgid ""
 "The starbase %(structure_name)s at %(moon)s in %(solar_system)s is low on "
 "fuel. It has %(quantity)d fuel blocks left."
 msgstr ""
 
-#: models/notifications.py:978
+#: models/notifications.py:983
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s is being captured"
 msgstr ""
 
-#: models/notifications.py:984
+#: models/notifications.py:989
 #, python-format
 msgid ""
 "A capsuleer has started to influence the %(type)s in %(solar_system)s "
 "belonging to %(owner)s with an Entosis Link."
 msgstr ""
 
-#: models/notifications.py:996
+#: models/notifications.py:1001
 #, python-format
 msgid ""
 "Command nodes for %(structure_type)s in %(solar_system)s have begun to "
 "decloak"
 msgstr ""
 
-#: models/notifications.py:1003
+#: models/notifications.py:1008
 #, python-format
 msgid ""
 "Command nodes for %(structure_type)s in %(solar_system)s can now be found "
 "throughout the %(constellation)s constellation"
 msgstr ""
 
-#: models/notifications.py:1021
+#: models/notifications.py:1026
 #, python-format
 msgid "DED Sovereignty claim acknowledgment: %s"
 msgstr ""
 
-#: models/notifications.py:1025
+#: models/notifications.py:1030
 #, python-format
 msgid ""
-"DED now officially acknowledges that your member corporation %(corporation)s"
-" has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
+"DED now officially acknowledges that your member corporation %(corporation)s "
+"has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
 msgstr ""
 
-#: models/notifications.py:1040
+#: models/notifications.py:1045
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s has entered reinforced mode"
 msgstr ""
 
-#: models/notifications.py:1047
+#: models/notifications.py:1052
 #, python-format
 msgid ""
 "The %(structure_type)s in %(solar_system)s belonging to %(owner)s has been "
@@ -338,144 +343,164 @@ msgid ""
 "%(date)s"
 msgstr ""
 
-#: models/notifications.py:1061
+#: models/notifications.py:1066
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s has been destroyed"
 msgstr ""
 
-#: models/notifications.py:1067
+#: models/notifications.py:1072
 #, python-format
 msgid ""
 "The command nodes for %(structure_type)s in %(solar_system)s belonging to "
 "%(owner)s have been destroyed by hostile forces."
 msgstr ""
 
-#: models/notifications.py:1260
+#: models/notifications.py:1265
 msgid "Armor timer"
 msgstr ""
 
-#: models/notifications.py:1262 models/notifications.py:1334
+#: models/notifications.py:1267 models/notifications.py:1343
 msgid "Final timer"
 msgstr ""
 
-#: models/notifications.py:1286
+#: models/notifications.py:1291
 msgid "Anchor timer"
 msgstr ""
 
-#: models/notifications.py:1312
+#: models/notifications.py:1321
 msgid "Sov timer"
 msgstr ""
 
-#: models/notifications.py:1359
+#: models/notifications.py:1368
 msgid "Extraction ready"
 msgstr ""
 
-#: models/owners.py:980
+#: models/owners.py:1073
 #, python-format
 msgid "Error: %s"
 msgstr ""
 
-#: models/owners.py:983
+#: models/owners.py:1076
 #, python-format
 msgid ""
 "Syncing of %(topic)s for \"%(owner)s\" %(result)s.\n"
 "%(message_details)s"
 msgstr ""
 
-#: models/owners.py:988
+#: models/owners.py:1081
 msgid "completed successfully"
 msgstr ""
 
-#: models/owners.py:988
+#: models/owners.py:1081
 msgid "has failed"
 msgstr ""
 
-#: models/owners.py:995
+#: models/owners.py:1088
 #, python-format
 msgid "%(title)s: %(topic)s updated for %(owner)s: %(result)s"
 msgstr ""
 
-#: models/owners.py:1000
+#: models/owners.py:1093
 msgid "OK"
 msgstr ""
 
-#: models/owners.py:1000
+#: models/owners.py:1093
 msgid "FAILED"
 msgstr ""
 
-#: models/structures.py:104
+#: models/structures.py:28
+msgid "sov"
+msgstr ""
+
+#: models/structures.py:29
+msgid "highsec"
+msgstr ""
+
+#: models/structures.py:30
+msgid "lowsec"
+msgstr ""
+
+#: models/structures.py:31
+msgid "nullsec"
+msgstr ""
+
+#: models/structures.py:32
+msgid "w_space"
+msgstr ""
+
+#: models/structures.py:165
 msgid "anchor vulnerable"
 msgstr ""
 
-#: models/structures.py:105
+#: models/structures.py:166
 msgid "anchoring"
 msgstr ""
 
-#: models/structures.py:106
+#: models/structures.py:167
 msgid "armor reinforce"
 msgstr ""
 
-#: models/structures.py:107
+#: models/structures.py:168
 msgid "armor vulnerable"
 msgstr ""
 
-#: models/structures.py:108
+#: models/structures.py:169
 msgid "deploy vulnerable"
 msgstr ""
 
-#: models/structures.py:109
+#: models/structures.py:170
 msgid "fitting invulnerable"
 msgstr ""
 
-#: models/structures.py:110
+#: models/structures.py:171
 msgid "hull reinforce"
 msgstr ""
 
-#: models/structures.py:111
+#: models/structures.py:172
 msgid "hull vulnerable"
 msgstr ""
 
-#: models/structures.py:112
+#: models/structures.py:173
 msgid "online deprecated"
 msgstr ""
 
-#: models/structures.py:113
+#: models/structures.py:174
 msgid "onlining vulnerable"
 msgstr ""
 
-#: models/structures.py:114
+#: models/structures.py:175
 msgid "shield vulnerable"
 msgstr ""
 
-#: models/structures.py:115
+#: models/structures.py:176
 msgid "unanchored"
 msgstr ""
 
-#: models/structures.py:118 models/structures.py:345
+#: models/structures.py:179 models/structures.py:437
 msgid "offline"
 msgstr ""
 
-#: models/structures.py:119 models/structures.py:346
+#: models/structures.py:180 models/structures.py:438
 msgid "online"
 msgstr ""
 
-#: models/structures.py:120
+#: models/structures.py:181
 msgid "onlining"
 msgstr ""
 
-#: models/structures.py:121
+#: models/structures.py:182
 msgid "reinforced"
 msgstr ""
 
-#: models/structures.py:122
+#: models/structures.py:183
 msgid "unanchoring "
 msgstr ""
 
-#: models/structures.py:125 views.py:207 views.py:228 views.py:242
+#: models/structures.py:186 views.py:215 views.py:236 views.py:267
 msgid "N/A"
 msgstr ""
 
-#: models/structures.py:126
+#: models/structures.py:187
 msgid "unknown"
 msgstr ""
 
@@ -522,7 +547,6 @@ msgid "Location"
 msgstr ""
 
 #: templates/structures/structure_list.html:77
-#: templates/structures/structure_list.html:123
 msgid "Type"
 msgstr ""
 
@@ -543,7 +567,7 @@ msgid "Fuel Expires"
 msgstr ""
 
 #: templates/structures/structure_list.html:82
-#: templates/structures/structure_list.html:125
+#: templates/structures/structure_list.html:124
 msgid "State"
 msgstr ""
 
@@ -599,11 +623,11 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-#: templates/structures/structure_list.html:124
+#: templates/structures/structure_list.html:123
 msgid "Reinforced?"
 msgstr ""
 
-#: templates/structures/structure_list.html:126
+#: templates/structures/structure_list.html:125
 msgid "Low Power?"
 msgstr ""
 
@@ -637,42 +661,42 @@ msgstr ""
 msgid "s"
 msgstr ""
 
-#: utils.py:336
+#: utils.py:344
 msgid "yes"
 msgstr ""
 
-#: utils.py:336
+#: utils.py:346
 msgid "no"
 msgstr ""
 
-#: views.py:248
+#: views.py:251
 msgid "Low Power"
 msgstr ""
 
-#: views.py:356
+#: views.py:359
 #, python-format
 msgid ""
 "You can only use your main or alt characters to add corporations. However, "
 "character %s is neither. "
 msgstr ""
 
-#: views.py:396
+#: views.py:399
 #, python-format
 msgid ""
-"%(corporation)s has been added with %(character)s as sync character. We have"
-" started fetching structures for this corporation. You will receive a report"
-" once the process is finished."
+"%(corporation)s has been added with %(character)s as sync character. We have "
+"started fetching structures for this corporation. You will receive a report "
+"once the process is finished."
 msgstr ""
 
-#: views.py:414
+#: views.py:417
 #, python-format
 msgid "%(corporation)s was added as new structure owner by %(user)s."
 msgstr ""
 
-#: views.py:439
+#: views.py:442
 msgid "service is up"
 msgstr ""
 
-#: views.py:441
+#: views.py:444
 msgid "service is down"
 msgstr ""

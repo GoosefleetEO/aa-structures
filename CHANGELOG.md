@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Shows "fuel expires" for starbases ([#20](https://gitlab.com/ErikKalkoken/aa-structures/issues/20))
-- Shows a system type tag, e.g. "highsec" or "nullsec"
-- Shows sov tag if a system of structure owner has sov for that system
+- Added generated structure tags to show space type and sovereignty status for structures
+- Documentation on how structure tags work added to README
 
 ### Fixed
 
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Improved resilience of the sync process against some HTTP errors. Will show "(no data)" as name if sync is incomplete for that particular structure. ([#22](https://gitlab.com/ErikKalkoken/aa-structures/issues/22))
+- Will no longer abort syncing of structures for a owner if ESI returns a HTTP error for one structure. Will instead show "(no data)" as name that particular structure. ([#22](https://gitlab.com/ErikKalkoken/aa-structures/issues/22))
 
 ## [1.1.4] - 2020-04-14
 
