@@ -433,6 +433,14 @@
             "corporation_name": "Lexcorp",
             "corporation_ticker": "LEX"
         }
+        ,
+        {
+            "character_id": 1005,
+            "character_name": "Peter Parker",
+            "corporation_id": 2005,
+            "corporation_name": "Daily Bugle",
+            "corporation_ticker": "DB"
+        }
     ],
     "EveEntity":
     [

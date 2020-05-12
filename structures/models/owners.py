@@ -277,44 +277,48 @@ class Owner(models.Model):
                 raise TokenError(self.to_friendly_error_message(error))
 
             try:                
-                structures = self._fetch_upwell_structures(token)
+                structures = self._fetch_upwell_structures(token)                
                 if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
                     structures += self._fetch_custom_offices(token)
+                
                 if STRUCTURES_FEATURE_STARBASES:
                     structures += self._fetch_starbases(token)
 
-                logger.info(add_prefix(
-                    'Storing updates for {:,} structures'.format(
-                        len(structures)
-                    )
-                ))
-                with transaction.atomic():
-                    # remove structures no longer returned from ESI
-                    ids_local = {
-                        x.id
-                        for x in Structure.objects.filter(owner=self)
-                    }
-                    ids_from_esi = {x['structure_id'] for x in structures}
-                    ids_to_remove = ids_local - ids_from_esi
+                if structures:
+                    logger.info(add_prefix(
+                        'Storing updates for {:,} structures'.format(len(structures))
+                    ))
+                    with transaction.atomic():
+                        # remove structures no longer returned from ESI
+                        ids_local = {
+                            x.id
+                            for x in Structure.objects.filter(owner=self)
+                        }
+                        ids_from_esi = {x['structure_id'] for x in structures}
+                        ids_to_remove = ids_local - ids_from_esi
 
-                    if len(ids_to_remove) > 0:
-                        Structure.objects\
-                            .filter(id__in=ids_to_remove)\
-                            .delete()
-                        logger.info(
-                            'Removed {} structures which apparently no longer '
-                            'exist.'.format(len(ids_to_remove))
-                        )
+                        if len(ids_to_remove) > 0:
+                            Structure.objects\
+                                .filter(id__in=ids_to_remove)\
+                                .delete()
+                            logger.info(
+                                'Removed {} structures which apparently no longer '
+                                'exist.'.format(len(ids_to_remove))
+                            )
 
-                    # update structures
-                    for structure in structures:
-                        Structure.objects.update_or_create_from_dict(
-                            structure, self
-                        )
-                                        
-                    self.structures_last_error = self.ERROR_NONE
-                    self.structures_last_sync = now()
-                    self.save()
+                        # update structures
+                        for structure in structures:
+                            Structure.objects.update_or_create_from_dict(
+                                structure, self
+                            )
+                                            
+                        self.structures_last_error = self.ERROR_NONE
+                        self.structures_last_sync = now()
+                        self.save()
+                else:
+                    logger.info(add_prefix(
+                        'This corporation does not appear to have any structures'
+                    ))
 
             except Exception as ex:
                 logger.exception(add_prefix(
@@ -349,57 +353,62 @@ class Owner(models.Model):
 
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
-        
-        # fetch all structures incl. localizations for services
-        structures_w_lang = esi_fetch_with_localization(
-            esi_path='Corporation.get_corporations_corporation_id_structures',
-            args={'corporation_id': corporation_id}, 
-            token=token,
-            languages=EsiNameLocalization.ESI_LANGUAGES,
-            has_pages=True,
-            logger_tag=add_prefix()
-        )
-        
-        # reduce data        
-        structures = self._compress_services_localization(
-            structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
-        )
-        
-        # fetch additional information for structures
-        if not structures:
-            logger.info(add_prefix(
-                'No Upwell structures retrieved from ESI'
-            ))
-        else:
-            logger.info(add_prefix(
-                'Fetching additional infos for {} '
-                'Upwell structures from ESI'.format(
-                    len(structures)
-                )
-            ))
-            for structure in structures:                
-                try:
-                    structure_info = esi_fetch(
-                        'Universe.get_universe_structures_structure_id',
-                        args={'structure_id': structure['structure_id']},
-                        token=token,
-                        logger_tag=add_prefix()
-                    )
-                    structure['name'] = Structure.extract_name_from_esi_respose(
-                        structure_info['name']
-                    )
-                    structure['position'] = structure_info['position']
-                except HTTPError as ex:
-                    logger.exception(
-                        'Failed to load details for structure with ID %d due '
-                        'to the following exception: %s' % (
-                            structure['structure_id'], ex
-                        )
-                    )
-                    structure['name'] = '(no data)'
+        structures = list()
 
-        if STRUCTURES_DEVELOPER_MODE:
-            self._store_raw_data('structures', structures, corporation_id)
+        try:
+            # fetch all structures incl. localizations for services
+            structures_w_lang = esi_fetch_with_localization(
+                esi_path='Corporation.get_corporations_corporation_id_structures',
+                args={'corporation_id': corporation_id}, 
+                token=token,
+                languages=EsiNameLocalization.ESI_LANGUAGES,
+                has_pages=True,
+                logger_tag=add_prefix()
+            )
+            
+            # reduce data        
+            structures = self._compress_services_localization(
+                structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
+            )
+            
+            # fetch additional information for structures
+            if not structures:
+                logger.info(add_prefix(
+                    'No Upwell structures retrieved from ESI'
+                ))
+            else:
+                logger.info(add_prefix(
+                    'Fetching additional infos for {} '
+                    'Upwell structures from ESI'.format(
+                        len(structures)
+                    )
+                ))
+                for structure in structures:                
+                    try:
+                        structure_info = esi_fetch(
+                            'Universe.get_universe_structures_structure_id',
+                            args={'structure_id': structure['structure_id']},
+                            token=token,
+                            logger_tag=add_prefix()
+                        )
+                        structure['name'] = Structure.extract_name_from_esi_respose(
+                            structure_info['name']
+                        )
+                        structure['position'] = structure_info['position']
+                    except HTTPError as ex:
+                        logger.exception(
+                            'Failed to load details for structure with ID %d due '
+                            'to the following exception: %s' % (
+                                structure['structure_id'], ex
+                            )
+                        )
+                        structure['name'] = '(no data)'
+
+            if STRUCTURES_DEVELOPER_MODE:
+                self._store_raw_data('structures', structures, corporation_id)
+        
+        except (HTTPError, ConnectionError):
+            logger.exception(add_prefix('Failed to fetch upwell structures'))
 
         return structures
     
@@ -462,77 +471,80 @@ class Owner(models.Model):
         """fetch custom offices from ESI for self"""        
         add_prefix = self._logger_prefix()        
         corporation_id = self.corporation.corporation_id
-
-        pocos = esi_fetch(
-            'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
-            args={'corporation_id': corporation_id},
-            token=token,
-            has_pages=True,
-            logger_tag=add_prefix()
-        )       
         structures = list()
-        if not pocos:
-            logger.info(add_prefix(
-                'No custom offices retrieved from ESI'
-            ))
-        else:
-            item_ids = [x['office_id'] for x in pocos]            
-            positions = self._fetch_locations_for_pocos(
-                corporation_id, item_ids, token
-            )
-            names = self._fetch_names_for_pocos(
-                corporation_id, item_ids, token
-            )
-
-            # making sure we have all solar systems loaded
-            # incl. their planets for later name matching
-            for solar_system_id in {int(x['system_id']) for x in pocos}:
-                EveSolarSystem.objects.get_or_create_esi(solar_system_id)
-
-            # compile pocos into structures list
-            for poco in pocos:
-                office_id = poco['office_id']
-                if office_id in names:
-                    try:
-                        eve_planet = EvePlanet.objects.get(name=names[office_id])
-                        planet_id = eve_planet.id                    
-                        name = eve_planet.eve_type.name_localized_for_language(
-                            STRUCTURES_DEFAULT_LANGUAGE
-                        )
-
-                    except EvePlanet.DoesNotExist:
-                        name = names[office_id]
-                        planet_id = None
-                else:
-                    name = None
-                    planet_id = None
-
-                reinforce_exit_start = datetime(
-                    year=2000,
-                    month=1,
-                    day=1,
-                    hour=poco['reinforce_exit_start']
+        try:
+            pocos = esi_fetch(
+                'Planetary_Interaction.get_corporations_corporation_id_customs_offices',
+                args={'corporation_id': corporation_id},
+                token=token,
+                has_pages=True,
+                logger_tag=add_prefix()
+            )                   
+            if not pocos:
+                logger.info(add_prefix(
+                    'No custom offices retrieved from ESI'
+                ))
+            else:
+                item_ids = [x['office_id'] for x in pocos]            
+                positions = self._fetch_locations_for_pocos(
+                    corporation_id, item_ids, token
                 )
-                reinforce_hour = reinforce_exit_start + timedelta(hours=1)
-                structure = {
-                    'structure_id': office_id,
-                    'type_id': EveType.EVE_TYPE_ID_POCO,
-                    'corporation_id': corporation_id,
-                    'name': name if name else '',
-                    'system_id': poco['system_id'],
-                    'reinforce_hour': reinforce_hour.hour,
-                    'state': Structure.STATE_UNKNOWN
-                }
-                if planet_id:
-                    structure['planet_id'] = planet_id
+                names = self._fetch_names_for_pocos(
+                    corporation_id, item_ids, token
+                )
 
-                if office_id in positions:
-                    structure['position'] = positions[office_id]
+                # making sure we have all solar systems loaded
+                # incl. their planets for later name matching
+                for solar_system_id in {int(x['system_id']) for x in pocos}:
+                    EveSolarSystem.objects.get_or_create_esi(solar_system_id)
 
-                structures.append(structure)
+                # compile pocos into structures list
+                for poco in pocos:
+                    office_id = poco['office_id']
+                    if office_id in names:
+                        try:
+                            eve_planet = EvePlanet.objects.get(name=names[office_id])
+                            planet_id = eve_planet.id                    
+                            name = eve_planet.eve_type.name_localized_for_language(
+                                STRUCTURES_DEFAULT_LANGUAGE
+                            )
 
-        if STRUCTURES_DEVELOPER_MODE:
-            self._store_raw_data('customs_offices', structures, corporation_id)
+                        except EvePlanet.DoesNotExist:
+                            name = names[office_id]
+                            planet_id = None
+                    else:
+                        name = None
+                        planet_id = None
+
+                    reinforce_exit_start = datetime(
+                        year=2000,
+                        month=1,
+                        day=1,
+                        hour=poco['reinforce_exit_start']
+                    )
+                    reinforce_hour = reinforce_exit_start + timedelta(hours=1)
+                    structure = {
+                        'structure_id': office_id,
+                        'type_id': EveType.EVE_TYPE_ID_POCO,
+                        'corporation_id': corporation_id,
+                        'name': name if name else '',
+                        'system_id': poco['system_id'],
+                        'reinforce_hour': reinforce_hour.hour,
+                        'state': Structure.STATE_UNKNOWN
+                    }
+                    if planet_id:
+                        structure['planet_id'] = planet_id
+
+                    if office_id in positions:
+                        structure['position'] = positions[office_id]
+
+                    structures.append(structure)
+
+            if STRUCTURES_DEVELOPER_MODE:
+                self._store_raw_data('customs_offices', structures, corporation_id)
+
+        except (HTTPError, ConnectionError):
+            logger.exception(add_prefix('Failed to fetch custom offices'))
 
         return structures
 
@@ -596,57 +608,61 @@ class Owner(models.Model):
 
         add_prefix = self._logger_prefix()        
         structures = list()
-        corporation_id = self.corporation.corporation_id        
-        starbases = esi_fetch(
-            'Corporation.get_corporations_corporation_id_starbases',
-            args={'corporation_id': corporation_id},
-            token=token,
-            has_pages=True,
-            logger_tag=add_prefix()
-        )
-               
-        if not starbases:
-            logger.info(add_prefix('No starbases retrieved from ESI'))
-        else:
-            names = self._fetch_starbases_names(
-                corporation_id, starbases, token
-            )            
-            for starbase in starbases:
-                starbase['fuel_expires'] = self._calc_starbase_fuel_expires(
-                    corporation_id, starbase, token
-                )
-            # convert starbases to structures            
-            for starbase in starbases:
-                if starbase['starbase_id'] in names:
-                    name = names[starbase['starbase_id']]
-                else:
-                    name = 'Starbase'
-                structure = {
-                    'structure_id': starbase['starbase_id'],
-                    'type_id': starbase['type_id'],
-                    'corporation_id': corporation_id,
-                    'name': name,
-                    'system_id': starbase['system_id']
-                }
-                if 'state' in starbase:
-                    structure['state'] = starbase['state']
+        corporation_id = self.corporation.corporation_id
+        try:            
+            starbases = esi_fetch(
+                'Corporation.get_corporations_corporation_id_starbases',
+                args={'corporation_id': corporation_id},
+                token=token,
+                has_pages=True,
+                logger_tag=add_prefix()
+            )
+                
+            if not starbases:
+                logger.info(add_prefix('No starbases retrieved from ESI'))
+            else:
+                names = self._fetch_starbases_names(
+                    corporation_id, starbases, token
+                )            
+                for starbase in starbases:
+                    starbase['fuel_expires'] = self._calc_starbase_fuel_expires(
+                        corporation_id, starbase, token
+                    )
+                # convert starbases to structures            
+                for starbase in starbases:
+                    if starbase['starbase_id'] in names:
+                        name = names[starbase['starbase_id']]
+                    else:
+                        name = 'Starbase'
+                    structure = {
+                        'structure_id': starbase['starbase_id'],
+                        'type_id': starbase['type_id'],
+                        'corporation_id': corporation_id,
+                        'name': name,
+                        'system_id': starbase['system_id']
+                    }
+                    if 'state' in starbase:
+                        structure['state'] = starbase['state']
 
-                if 'moon_id' in starbase:
-                    structure['moon_id'] = starbase['moon_id']
+                    if 'moon_id' in starbase:
+                        structure['moon_id'] = starbase['moon_id']
 
-                if 'fuel_expires' in starbase:
-                    structure['fuel_expires'] = starbase['fuel_expires']
+                    if 'fuel_expires' in starbase:
+                        structure['fuel_expires'] = starbase['fuel_expires']
 
-                if 'reinforced_until' in starbase:
-                    structure['state_timer_end'] = starbase['reinforced_until']
+                    if 'reinforced_until' in starbase:
+                        structure['state_timer_end'] = starbase['reinforced_until']
 
-                if 'unanchors_at' in starbase:
-                    structure['unanchors_at'] = starbase['unanchors_at']
+                    if 'unanchors_at' in starbase:
+                        structure['unanchors_at'] = starbase['unanchors_at']
 
-                structures.append(structure)
+                    structures.append(structure)
 
-        if STRUCTURES_DEVELOPER_MODE:
-            self._store_raw_data('starbases', structures, corporation_id)
+            if STRUCTURES_DEVELOPER_MODE:
+                self._store_raw_data('starbases', structures, corporation_id)
+        
+        except (HTTPError, ConnectionError):
+            logger.exception(add_prefix('Failed to fetch starbases'))
 
         return structures
 

@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import timedelta, datetime
 from unittest.mock import patch, Mock
 
-from bravado.exception import HTTPBadGateway
+from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 
 from django.utils.timezone import now, utc
 
@@ -50,6 +50,9 @@ from ..testdata import (
     esi_get_corporations_corporation_id_customs_offices,
     esi_post_corporations_corporation_id_assets_names,
     esi_get_universe_structures_structure_id,
+    esi_post_corporations_corporation_id_assets_locations,
+    esi_get_corporations_corporation_id_starbases_starbase_id,
+    esi_get_corporations_corporation_id_starbases,
     entities_testdata,
     esi_corp_structures_data,
     load_entities,
@@ -320,7 +323,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             character=cls.character,
             owner_hash='x1',
             user=cls.user
-        )        
+        )
         Structure.objects.all().delete()
         
         # create StructureTag objects
@@ -654,6 +657,197 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # user report has been sent
         self.assertTrue(mock_notify.called)
 
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)
+    @patch(MODULE_PATH + '.notify', spec=True)
+    @patch(MODULE_PATH + '.Token', spec=True)
+    @patch('structures.helpers.esi_fetch._esi_client')
+    def test_can_handle_owner_without_structures(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):                                       
+        mock_esi_client.side_effect = esi_mock_client
+
+        my_character = EveCharacter.objects.get(character_id=1005)
+        my_corporation = EveCorporationInfo.objects.get(corporation_id=2005)
+        my_user = AuthUtils.create_user(my_character.character_name)
+        AuthUtils.add_permission_to_user_by_name(
+            'structures.add_structure_owner', my_user
+        )        
+        my_main_ownership = CharacterOwnership.objects.create(
+            character=my_character, owner_hash='x1123456', user=my_user
+        )
+        owner = Owner.objects.create(
+            corporation=my_corporation, character=my_main_ownership
+        )
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=my_user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = set()
+        self.assertSetEqual(structure_ids, expected)
+                
+        # user report has been sent
+        self.assertTrue(mock_notify.called)
+
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)    
+    @patch(MODULE_PATH + '.notify', spec=True)
+    @patch(MODULE_PATH + '.Token', spec=True)
+    @patch('structures.helpers.esi_fetch._esi_client')
+    @patch('structures.helpers.esi_fetch.sleep')
+    def test_will_not_break_on_http_error_when_fetching_upwell_structures(
+        self, mock_sleep, mock_esi_client, mock_Token, mock_notify
+    ):                                       
+        # create our own esi_client                
+        mock_esi_client.return_value.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+            esi_post_corporations_corporation_id_assets_locations
+        mock_esi_client.return_value.Assets\
+            .post_corporations_corporation_id_assets_names = \
+            esi_post_corporations_corporation_id_assets_names        
+        mock_esi_client.return_value.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+            esi_get_corporations_corporation_id_customs_offices
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+            HTTPInternalServerError(Mock(**{'status_code': 500}))
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_starbases.side_effect = \
+            esi_get_corporations_corporation_id_starbases
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_starbases_starbase_id.side_effect = \
+            esi_get_corporations_corporation_id_starbases_starbase_id
+        mock_esi_client.return_value.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+            esi_get_universe_structures_structure_id        
+
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )        
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = {
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(structure_ids, expected)
+        
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)    
+    @patch(MODULE_PATH + '.notify', spec=True)
+    @patch(MODULE_PATH + '.Token', spec=True)
+    @patch('structures.helpers.esi_fetch._esi_client')
+    @patch('structures.helpers.esi_fetch.sleep')
+    def test_will_not_break_on_http_error_when_fetching_custom_offices(
+        self, mock_sleep, mock_esi_client, mock_Token, mock_notify
+    ):                                       
+        # create our own esi_client                
+        mock_esi_client.return_value.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+            esi_post_corporations_corporation_id_assets_locations
+        mock_esi_client.return_value.Assets\
+            .post_corporations_corporation_id_assets_names = \
+            esi_post_corporations_corporation_id_assets_names        
+        mock_esi_client.return_value.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices.side_effect = \
+            HTTPInternalServerError(Mock(**{'status_code': 500}))
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+            esi_get_corporations_corporation_id_structures
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_starbases.side_effect = \
+            esi_get_corporations_corporation_id_starbases
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_starbases_starbase_id.side_effect = \
+            esi_get_corporations_corporation_id_starbases_starbase_id
+        mock_esi_client.return_value.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+            esi_get_universe_structures_structure_id        
+
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )        
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = {
+            1000000000001, 
+            1000000000002,
+            1000000000003,           
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(structure_ids, expected)
+       
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', True)
+    @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', True)    
+    @patch(MODULE_PATH + '.notify', spec=True)
+    @patch(MODULE_PATH + '.Token', spec=True)
+    @patch('structures.helpers.esi_fetch._esi_client')
+    @patch('structures.helpers.esi_fetch.sleep')
+    def test_will_not_break_on_http_error_when_fetching_star_bases(
+        self, mock_sleep, mock_esi_client, mock_Token, mock_notify
+    ):                                       
+        # create our own esi_client            
+        mock_esi_client.return_value.Assets\
+            .post_corporations_corporation_id_assets_locations = \
+            esi_post_corporations_corporation_id_assets_locations
+        mock_esi_client.return_value.Assets\
+            .post_corporations_corporation_id_assets_names = \
+            esi_post_corporations_corporation_id_assets_names
+        mock_esi_client.return_value.Planetary_Interaction\
+            .get_corporations_corporation_id_customs_offices = \
+            esi_get_corporations_corporation_id_customs_offices
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_structures.side_effect = \
+            esi_get_corporations_corporation_id_structures
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_starbases.side_effect = \
+            HTTPInternalServerError(Mock(**{'status_code': 500}))
+        mock_esi_client.return_value.Corporation\
+            .get_corporations_corporation_id_starbases_starbase_id.side_effect = \
+            esi_get_corporations_corporation_id_starbases_starbase_id
+        mock_esi_client.return_value.Universe\
+            .get_universe_structures_structure_id.side_effect =\
+            esi_get_universe_structures_structure_id        
+
+        owner = Owner.objects.create(
+            corporation=self.corporation, character=self.main_ownership
+        )        
+        # run update task
+        self.assertTrue(owner.update_structures_esi(user=self.user))
+        owner.refresh_from_db()
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        
+        # must contain all expected structures
+        structure_ids = {x['id'] for x in Structure.objects.values('id')}
+        expected = {
+            1000000000001, 
+            1000000000002, 
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,          
+        }
+        self.assertSetEqual(structure_ids, expected)
+       
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)

@@ -1,3 +1,4 @@
+# flake8: noqa
 """scripts generates large amount of random structures for load testing"""
 
 import os

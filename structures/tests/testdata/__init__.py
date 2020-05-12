@@ -177,12 +177,10 @@ def esi_get_corporations_corporation_id_structures(
         my_corp_structures_data \
             = esi_get_corporations_corporation_id_structures.override_data
 
-    if not str(corporation_id) in my_corp_structures_data:
-        raise ValueError(
-            'No test data for corporation ID: {}'. format(corporation_id)
-        )
-    
-    corp_data = deepcopy(my_corp_structures_data[str(corporation_id)])
+    if str(corporation_id) in my_corp_structures_data:
+        corp_data = deepcopy(my_corp_structures_data[str(corporation_id)])    
+    else:
+        corp_data = list()
 
     # add pseudo localization
     if language:
@@ -245,12 +243,10 @@ def esi_get_corporations_corporation_id_starbases(
         my_corp_starbases_data \
             = esi_get_corporations_corporation_id_starbases.override_data
 
-    if not str(corporation_id) in my_corp_starbases_data:
-        raise ValueError(
-            'No test data for corporation ID: {}'. format(corporation_id)
-        )
-    
-    corp_data = deepcopy(my_corp_starbases_data[str(corporation_id)])
+    if str(corporation_id) in my_corp_starbases_data:
+        corp_data = deepcopy(my_corp_starbases_data[str(corporation_id)])
+    else:    
+        corp_data = list()
 
     start = (page - 1) * page_size
     stop = start + page_size
@@ -360,13 +356,11 @@ def esi_get_corporations_corporation_id_customs_offices(
         my_corp_customs_offices_data \
             = esi_get_corporations_corporation_id_customs_offices.override_data
 
-    if not str(corporation_id) in my_corp_customs_offices_data:
-        raise ValueError(
-            'No test data for corporation ID: {}'. format(corporation_id)
-        )
+    if str(corporation_id) in my_corp_customs_offices_data:
+        corp_data = deepcopy(my_corp_customs_offices_data[str(corporation_id)])
+    else:
+        corp_data = list()
     
-    corp_data = deepcopy(my_corp_customs_offices_data[str(corporation_id)])
-
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))

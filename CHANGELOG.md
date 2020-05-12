@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.2.1] - 2020-05-12
+
+### Changed
+
+- Improves structure sync resilience against network issues and if only some of the ESI endpoints are down
+
 ## [1.2.0] - 2020-04-16
 
 **POS fuel & generated tags**
