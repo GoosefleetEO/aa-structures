@@ -1,11 +1,16 @@
 #tab_structures thead th 
 {
     text-align: center; 
-    vertical-align: middle
+    vertical-align: middle;
+    white-space: nowrap;
 }
 #tab_structures tbody td 
 {
     text-align: center;
     vertical-align: middle;
-    word-wrap:break-word;
-}       
+    word-wrap: break-word;
+}
+.no_wrap
+{
+    white-space: nowrap;
+}

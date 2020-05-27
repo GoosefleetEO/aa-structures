@@ -29,18 +29,18 @@ $(document).ready(function(){
             { data: 'type' },
             { data: 'structure_name' },
             { data: 'services' },
-            { data: 'last_online_at',
-                render: {
-                    _: 'display',
-                    sort: 'timestamp'
-                }
-            },
             { data: 'fuel_expires_at',
                 render: {
                     _: 'display',
                     sort: 'timestamp'
                 }
             },
+            { data: 'last_online_at',
+                render: {
+                    _: 'display',
+                    sort: 'timestamp'
+                }
+            },            
             { data: 'reinforcement' },
             { data: 'state_details' },
 

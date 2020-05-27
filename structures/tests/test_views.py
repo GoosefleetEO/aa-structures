@@ -341,10 +341,7 @@ class TestStructurePowerModes(NoSocketsTestCase):
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure['power_mode_str'], 'Abandoned')
         self.assertIn('Abandoned', my_structure['fuel_expires_at']['display'])
-        self.assertEqual(
-            parse_datetime(my_structure['last_online_at']['timestamp']), 
-            structure.last_online_at
-        )
+        self.assertIn('Abandoned', my_structure['last_online_at']['display'])        
 
     def test_maybe_abandoned(self):
         structure_id = 1000000000001

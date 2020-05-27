@@ -251,7 +251,7 @@ class StructuresRowBuilder:
         elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
                 create_bs_label_html(
-                    self._structure.get_power_mode_display(), 'default'
+                    self._structure.get_power_mode_display(), 'warning'
                 )
             )                    
             fuel_expires_timestamp = None
@@ -313,6 +313,13 @@ class StructuresRowBuilder:
                 )
             )                    
             last_online_at_timestamp = None
+        elif self._structure.is_abandoned:
+            last_online_at_display = format_html_lazy(
+                create_bs_label_html(
+                    self._structure.get_power_mode_display(), 'danger'
+                )
+            )
+            last_online_at_timestamp = None
         elif self._structure.last_online_at:
             last_online_at_timestamp = \
                 self._structure.last_online_at.isoformat()
@@ -323,6 +330,8 @@ class StructuresRowBuilder:
                 if not last_online_at_display:
                     last_online_at_display = '?'
                     last_online_at_timestamp = None
+                else:
+                    last_online_at_display = '- ' + last_online_at_display
             else:
                 last_online_at_display = \
                     self._structure.last_online_at.strftime(DATETIME_FORMAT)

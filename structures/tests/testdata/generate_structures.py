@@ -13,13 +13,13 @@ myauth_dir = os.path.dirname(
 ) + "/myauth"
 sys.path.insert(0, myauth_dir)
 
-from datetime import timedelta  # noqa: E402
-from random import randrange    # noqa: E402
+from datetime import timedelta
+from random import randrange  
 
-import django   # noqa: E402
-from django.db import transaction   # noqa: E402
-from django.apps import apps    # noqa: E402
-from django.utils.timezone import now   # noqa: E402
+import django 
+from django.db import transaction 
+from django.apps import apps  
+from django.utils.timezone import now 
 
 # init and setup django project
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myauth.settings.local")
@@ -29,12 +29,12 @@ if not apps.is_installed('structures'):
     raise RuntimeError("The app structures is not installed")    
 
 from allianceauth.eveonline.models import EveCorporationInfo, \
-    EveAllianceInfo     # noqa: E402
-from esi.clients import esi_client_factory  # noqa: E402
+    EveAllianceInfo   
+from esi.clients import esi_client_factory
 
 from structures.models import (
     Structure, Owner, EveType, EveSolarSystem, StructureTag, StructureService
-)     # noqa: E402
+)   
 
 print(
     'generate_structure - '
@@ -189,8 +189,10 @@ with transaction.atomic():
         if not is_low_power:
             fuel_expires_at = \
                 now() + timedelta(days=randrange(14), hours=randrange(12))
+            last_online_at = now()
         else:
             fuel_expires_at = None
+            last_online_at = now() - timedelta(days=get_random([1, 2, 3, 10]))
         structure = Structure.objects.create(
             id=1000000000001 + i,
             owner=get_random(owners),
@@ -199,7 +201,8 @@ with transaction.atomic():
             eve_solar_system=get_random(eve_solar_systems), 
             reinforce_hour=randrange(24),
             state=state,
-            fuel_expires_at=fuel_expires_at
+            fuel_expires_at=fuel_expires_at,
+            last_online_at=last_online_at,
         )
         if is_low_power:
             state = StructureService.STATE_OFFLINE
