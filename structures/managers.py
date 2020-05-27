@@ -1,10 +1,11 @@
-import logging
 from pydoc import locate
 
 from bravado.exception import HTTPError
 
 from django.db import models, transaction
 from django.utils.timezone import now
+
+from allianceauth.services.hooks import get_extension_logger
 
 from esi.models import Token
 
@@ -13,7 +14,7 @@ from structures.helpers.esi_fetch import esi_fetch_with_localization, esi_fetch
 from .utils import LoggerAddTag, make_logger_prefix
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 class EveUniverseManager(models.Manager):
@@ -46,7 +47,7 @@ class EveUniverseManager(models.Manager):
         add_prefix = make_logger_prefix(
             '%s(id=%d)' % (self.model.__name__, eve_id)
         )        
-        try:            
+        try:
             esi_path = 'Universe.' + self.model.esi_method()
             args = {self.model.esi_pk(): eve_id}
             if self.model.has_esi_localization():
@@ -278,7 +279,7 @@ class StructureManager(models.Manager):
         eve_type, _ = EveType.objects.get_or_create_esi(structure['type_id'])
         eve_solar_system, _ = \
             EveSolarSystem.objects.get_or_create_esi(structure['system_id'])
-        fuel_expires = \
+        fuel_expires_at = \
             structure['fuel_expires'] \
             if 'fuel_expires' in structure else None
 
@@ -350,7 +351,7 @@ class StructureManager(models.Manager):
                 'position_x': position_x,
                 'position_y': position_y,
                 'position_z': position_z,
-                'fuel_expires': fuel_expires,
+                'fuel_expires_at': fuel_expires_at,
                 'next_reinforce_hour': next_reinforce_hour,
                 'next_reinforce_weekday': next_reinforce_weekday,
                 'next_reinforce_apply': next_reinforce_apply,
@@ -359,9 +360,9 @@ class StructureManager(models.Manager):
                 'state_timer_start': state_timer_start,
                 'state_timer_end': state_timer_end,
                 'unanchors_at': unanchors_at,
-                'last_updated': owner.structures_last_sync
+                'last_updated_at': now()
             }
-        )
+        )        
         # save related structure services
         StructureService.objects.filter(structure=obj).delete()
         if 'services' in structure and structure['services']:
@@ -381,7 +382,15 @@ class StructureManager(models.Manager):
                             args[field_name] = service[field_name]
 
                 StructureService.objects.create(**args)
-                
+
+        if (
+            obj.structureservice_set
+            .filter(state=StructureService.STATE_ONLINE)
+            .exists()
+        ):
+            obj.last_online_at = now()
+            obj.save()
+        
         return obj, created
 
 

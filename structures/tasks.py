@@ -1,11 +1,10 @@
-import logging
-
 from time import sleep
 
 from celery import shared_task, chain
 
 from django.contrib.auth.models import User
 
+from allianceauth.services.hooks import get_extension_logger
 from allianceauth.notifications import notify
 
 from . import __title__
@@ -13,7 +12,7 @@ from .utils import LoggerAddTag, make_logger_prefix
 from .models import Owner, Notification, Webhook, EveSovereigntyMap
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 def _get_owner(owner_pk) -> Owner:

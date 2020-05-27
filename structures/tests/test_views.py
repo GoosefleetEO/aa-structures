@@ -6,6 +6,7 @@ from urllib.parse import urlparse, parse_qs
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory
 from django.urls import reverse
+from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
 from allianceauth.tests.auth_utils import AuthUtils
@@ -20,7 +21,7 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
 )
-from ..models import Owner, Webhook
+from ..models import Owner, Webhook, Structure
 from .testdata import \
     create_structures, set_owner_character, load_entities, create_user
 from ..utils import set_test_logger, NoSocketsTestCase
@@ -33,8 +34,13 @@ logger = set_test_logger(MODULE_PATH, __file__)
 
 class TestStructureList(NoSocketsTestCase):
         
-    def setUp(self):    
-        create_structures()
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities()
+    
+    def setUp(self):
+        create_structures(dont_load_entities=True)
         self.user, self.owner = set_owner_character(character_id=1001)
         AuthUtils.add_permission_to_user_by_name(
             'structures.basic_access', self.user
@@ -266,6 +272,120 @@ class TestStructureList2(NoSocketsTestCase):
         self.assertIn('tags', query_dict)
         params = query_dict['tags'][0].split(',')
         self.assertSetEqual(set(params), {'tag_c', 'tag_b'})
+        
+
+class TestStructurePowerModes(NoSocketsTestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()        
+        cls.factory = RequestFactory()
+        load_entities()
+
+    def setUp(self):
+        create_structures(dont_load_entities=True)
+        self.user, self.owner = set_owner_character(character_id=1001)
+        AuthUtils.add_permission_to_user_by_name(
+            'structures.basic_access', self.user
+        )
+        AuthUtils.add_permission_to_user_by_name(
+            'structures.view_all_structures', self.user
+        )
+        
+    def display_data_for_structure(self, structure_id: int):
+        request = self.factory.get(reverse('structures:structure_list_data'))
+        request.user = self.user
+        response = views.structure_list_data(request)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content.decode('utf-8'))
+        for row in data:
+            if row['structure_id'] == structure_id:
+                return row
+        
+        return None
+        
+    def test_full_power(self):
+        structure_id = 1000000000001
+        structure = Structure.objects.get(id=structure_id)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()        
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], 'Full Power')
+        self.assertEqual(
+            parse_datetime(my_structure['fuel_expires_at']['timestamp']), 
+            structure.fuel_expires_at
+        )
+        self.assertIn('Full Power', my_structure['last_online_at']['display'])
+
+    def test_low_power(self):
+        structure_id = 1000000000001
+        structure = Structure.objects.get(id=structure_id)
+        structure.fuel_expires_at = None
+        structure.last_online_at = now() - timedelta(days=3)
+        structure.save()        
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], 'Low Power')
+        self.assertEqual(
+            parse_datetime(my_structure['last_online_at']['timestamp']), 
+            structure.last_online_at
+        )
+        self.assertIn('Low Power', my_structure['fuel_expires_at']['display'])
+
+    def test_abandoned(self):
+        structure_id = 1000000000001
+        structure = Structure.objects.get(id=structure_id)
+        structure.fuel_expires_at = None
+        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        structure.save()
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], 'Abandoned')
+        self.assertIn('Abandoned', my_structure['fuel_expires_at']['display'])
+        self.assertEqual(
+            parse_datetime(my_structure['last_online_at']['timestamp']), 
+            structure.last_online_at
+        )
+
+    def test_maybe_abandoned(self):
+        structure_id = 1000000000001
+        structure = Structure.objects.get(id=structure_id)
+        structure.fuel_expires_at = None
+        structure.last_online_at = None
+        structure.save()
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], 'Abandoned?')
+        self.assertIn('Abandoned?', my_structure['fuel_expires_at']['display'])
+        self.assertIn('Abandoned?', my_structure['last_online_at']['display'])
+
+    def test_poco(self):
+        structure_id = 1200000000003        
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], '')
+        self.assertIn('N/A', my_structure['fuel_expires_at']['display'])
+        self.assertIn('N/A', my_structure['last_online_at']['display'])
+
+    def test_starbase_online(self):
+        structure_id = 1300000000001
+        structure = Structure.objects.get(id=structure_id)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], '')
+        self.assertEqual(
+            parse_datetime(my_structure['fuel_expires_at']['timestamp']), 
+            structure.fuel_expires_at
+        )
+        self.assertIn('-', my_structure['last_online_at']['display'])
+
+    def test_starbase_offline(self):
+        structure_id = 1300000000001
+        structure = Structure.objects.get(id=structure_id)
+        structure.fuel_expires_at = None
+        structure.save()
+        my_structure = self.display_data_for_structure(structure_id)
+        self.assertEqual(my_structure['power_mode_str'], '')
+        self.assertIn('N/A', my_structure['fuel_expires_at']['display'])
+        self.assertIn('-', my_structure['last_online_at']['display'])
         
 
 class TestAddStructureOwner(NoSocketsTestCase):

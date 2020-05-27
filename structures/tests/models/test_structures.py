@@ -76,23 +76,79 @@ class TestStructure(NoSocketsTestCase):
         )
         self.assertEqual(repr(x), expected)
 
+    def test_is_full_power(self):
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        
+        # true when upwell structure and has fuel that is not expired
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        self.assertTrue(structure.is_full_power)
+
+        # false when upwell structure and has fuel, but is expired
+        structure.fuel_expires_at = now() - timedelta(hours=1)
+        self.assertFalse(structure.is_full_power)
+
+        # False when no fuel info
+        structure.fuel_expires_at = None
+        self.assertFalse(structure.is_full_power)
+
+        # none when no upwell structure        
+        poco.fuel_expires_at = now() + timedelta(hours=1)
+        self.assertIsNone(poco.is_full_power)
+
     def test_is_low_power(self):
-        obj = Structure.objects.get(id=1000000000001)
+        structure = Structure.objects.get(id=1000000000001)
         
-        # true if Upwell structure and has no fuel
-        obj.fuel_expires = None
-        self.assertTrue(obj.is_low_power)
+        # true if Upwell structure and fuel expired and last online < 7d
+        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.last_online_at = now() - timedelta(days=3)
+        self.assertTrue(structure.is_low_power)
         
+        # True if Upwell structure and no fuel info and last online < 7d
+        structure.fuel_expires_at = None
+        structure.last_online_at = now() - timedelta(days=3)
+        self.assertTrue(structure.is_low_power)
+
         # false if Upwell structure and it has fuel
-        obj.fuel_expires = now() + timedelta(days=3)
-        self.assertFalse(obj.is_low_power)
+        structure.fuel_expires_at = now() + timedelta(days=3)
+        self.assertFalse(structure.is_low_power)
+        
+        # none if upwell structure, but not online info
+        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.last_online_at = None
+        self.assertFalse(structure.is_low_power)
 
-        # false for non structures
-        obj = Structure.objects.get(id=1300000000001)   # starbase
-        self.assertFalse(obj.is_low_power)
+        structure.fuel_expires_at = None
+        structure.last_online_at = None
+        self.assertFalse(structure.is_low_power)
 
-        obj = Structure.objects.get(id=1200000000003)   # POS
-        self.assertFalse(obj.is_low_power)
+        # none for non structures
+        starbase = Structure.objects.get(id=1300000000001)
+        self.assertIsNone(starbase.is_low_power)
+
+        pos = Structure.objects.get(id=1200000000003)
+        self.assertIsNone(pos.is_low_power)
+
+    def test_is_abandoned(self):
+        # none for non structures
+        starbase = Structure.objects.get(id=1300000000001)   # starbase        
+        self.assertIsNone(starbase.is_abandoned)
+
+        structure = Structure.objects.get(id=1000000000001)
+                
+        # true when upwell structure, online > 7 days
+        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+
+        # false when upwell structure, online <= 7 days or none
+        structure.last_online_at = now() - timedelta(days=7, seconds=0)
+        self.assertFalse(structure.is_abandoned)
+
+        structure.last_online_at = now() - timedelta(days=3)
+        self.assertFalse(structure.is_abandoned)
+
+        # none if missing information
+        structure.last_online_at = None
+        self.assertFalse(structure.is_abandoned)
 
     def test_is_reinforced(self):
         x = Structure.objects.get(id=1000000000001)
@@ -129,16 +185,73 @@ class TestStructure(NoSocketsTestCase):
 
     def test_owner_has_sov(self):
         # Wayne Tech has sov in 1-PG
-        obj = Structure.objects.get(id=1300000000003)
-        self.assertTrue(obj.owner_has_sov)
+        pos = Structure.objects.get(id=1300000000003)
+        self.assertTrue(pos.owner_has_sov)
 
         # Wayne Tech has no sov in A-C5TC
-        obj = Structure.objects.get(id=1000000000003)
-        self.assertFalse(obj.owner_has_sov)
+        structure = Structure.objects.get(id=1000000000003)
+        self.assertFalse(structure.owner_has_sov)
 
         # Wayne Tech has no sov in Amamake
-        obj = Structure.objects.get(id=1000000000001)
-        self.assertFalse(obj.owner_has_sov)
+        structure = Structure.objects.get(id=1000000000001)
+        self.assertFalse(structure.owner_has_sov)
+
+
+class TestStructurePowerMode(NoSocketsTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()        
+
+    def test_returns_none_for_non_upwell_structures(self):
+        starbase = Structure.objects.get(id=1300000000001)
+        self.assertIsNone(starbase.power_mode)
+
+        pos = Structure.objects.get(id=1200000000003)
+        self.assertIsNone(pos.power_mode)
+
+        structure = Structure.objects.get(id=1000000000001)
+        self.assertIsNotNone(structure.power_mode)
+
+    def test_full_power_mode(self):
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        self.assertEqual(structure.power_mode, Structure.MODE_FULL_POWER)
+        self.assertEqual(structure.get_power_mode_display(), 'Full Power')
+
+    def test_low_power_mode(self):
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.last_online_at = now() - timedelta(days=3)
+        self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
+
+        structure.fuel_expires_at = None
+        structure.last_online_at = now() - timedelta(days=3)
+        self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
+        self.assertEqual(structure.get_power_mode_display(), 'Low Power')
+
+    def test_abandoned_mode(self):
+        structure = Structure.objects.get(id=1000000000001)        
+        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        self.assertEqual(structure.power_mode, Structure.MODE_ABANDONED)
+
+        structure.fuel_expires_at = None
+        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        self.assertEqual(structure.power_mode, Structure.MODE_ABANDONED)
+        self.assertEqual(structure.get_power_mode_display(), 'Abandoned')
+
+    def test_low_abandoned_mode(self):
+        structure = Structure.objects.get(id=1000000000001)        
+        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.last_online_at = None
+        self.assertEqual(structure.power_mode, Structure.MODE_LOW_ABANDONED)
+
+        structure.fuel_expires_at = None
+        structure.last_online_at = None
+        self.assertEqual(structure.power_mode, Structure.MODE_LOW_ABANDONED)
+        self.assertEqual(structure.get_power_mode_display(), 'Abandoned?')
 
 
 class TestStructure2(NoSocketsTestCase):

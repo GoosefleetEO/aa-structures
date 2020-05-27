@@ -1,5 +1,5 @@
 """Structure related models"""
-
+from datetime import timedelta
 import re
 import logging
 
@@ -7,6 +7,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.validators import MaxValueValidator
 from django.utils.html import escape
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 
@@ -206,6 +207,20 @@ class Structure(models.Model):
         'unanchoring ': STATE_POS_UNANCHORING,
     }
 
+    # power modes
+    MODE_FULL_POWER = 'FU'
+    MODE_LOW_POWER = 'LO'
+    MODE_ABANDONED = 'AB'
+    MODE_LOW_ABANDONED = 'LA'
+    MODE_UNKNOWN = 'UN'
+    MODE_CHOICES = (
+        (MODE_FULL_POWER, _('Full Power')),
+        (MODE_LOW_POWER, _('Low Power')),
+        (MODE_ABANDONED, _('Abandoned')),
+        (MODE_LOW_ABANDONED, _('Abandoned?')),
+        (MODE_UNKNOWN, _('Unknown')),
+    )
+
     id = models.BigIntegerField(
         primary_key=True,
         help_text='The Item ID of the structure'
@@ -262,7 +277,7 @@ class Structure(models.Model):
         blank=True,
         help_text='z position in the solar system'
     )
-    fuel_expires = models.DateTimeField(
+    fuel_expires_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
@@ -342,11 +357,11 @@ class Structure(models.Model):
         blank=True,
         help_text='Date at which the structure will unanchor'
     )
-    last_updated = models.DateTimeField(
+    last_online_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text='date this structure was last updated from the EVE server'
+        help_text='date this structure had any of it\'s services online'
     )
     tags = models.ManyToManyField(
         StructureTag,
@@ -354,13 +369,94 @@ class Structure(models.Model):
         blank=True,
         help_text='list of tags for this structure'
     )
+    last_updated_at = models.DateTimeField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text='date this structure was last updated from the EVE server'
+    )
+    created_at = models.DateTimeField(        
+        default=now,        
+        help_text='date this structure was received from ESI for the first time'
+    )
 
     objects = StructureManager()
 
     @property
+    def is_full_power(self):
+        """return True if structure is full power, False if not.
+        
+        Returns None if state can not be determined
+        """
+        power_mode = self.power_mode
+        if not power_mode:
+            return None
+        else:
+            return power_mode == self.MODE_FULL_POWER
+
+    @property
     def is_low_power(self):
-        return False if not self.eve_type.is_upwell_structure \
-            else not self.fuel_expires
+        """return True if structure is low power, False if not.
+        
+        Returns None if state can not be determined
+        """
+        power_mode = self.power_mode
+        if not power_mode:
+            return None
+        else:
+            return power_mode == self.MODE_LOW_POWER
+
+    @property
+    def is_abandoned(self):
+        """return True if structure is abandoned, False if not.
+
+        Returns None if state can not be determined
+        """
+        power_mode = self.power_mode
+        if not power_mode:
+            return None
+        else:
+            return power_mode == self.MODE_ABANDONED
+
+    @property
+    def is_maybe_abandoned(self):
+        """return True if structure is maybe abandoned, False if not.
+
+        Returns None if state can not be determined
+        """
+        power_mode = self.power_mode
+        if not power_mode:
+            return None
+        else:
+            return power_mode == self.MODE_LOW_ABANDONED
+
+    @property
+    def power_mode(self):
+        """returns the calculated power mode of this structure, e.g. low power
+        returns None for non upwell structures
+        """
+        if not self.eve_type.is_upwell_structure:
+            return None
+        
+        if self.fuel_expires_at and self.fuel_expires_at > now():
+            return self.MODE_FULL_POWER
+
+        elif self.last_online_at:
+            if self.last_online_at >= now() - timedelta(days=7):
+                return self.MODE_LOW_POWER
+            else: 
+                return self.MODE_ABANDONED
+
+        else:
+            return self.MODE_LOW_ABANDONED
+    
+    def get_power_mode_display(self):
+        power_mode = self.power_mode
+        for key, value in self.MODE_CHOICES:
+            if key == power_mode:
+                return value
+        
+        return ''
 
     @property
     def is_reinforced(self):

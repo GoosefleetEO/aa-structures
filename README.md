@@ -8,16 +8,13 @@ Alliance Auth.
 ## Contents
 
 - [Overview](#overview)
-- [Key Features](#key-features)
+- [Features Summary](#features-summary)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Updating](#updating)
-- [Localization](#localization)
-- [Structure tags](#structure-tags)
+- [Features](#features)
 - [Settings](#settings)
 - [Permissions](#permissions)
-- [Notifications](#notifications)
-- [Timers](#timers)
 - [Service monitoring](#service-monitoring)
 - [Admin tool](#admin-tools)
 - [Change Log](CHANGELOG.md)
@@ -26,7 +23,7 @@ Alliance Auth.
 
 This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows corporations and alliance to see a current list of all their structures in Auth and also get structure related notification on Discord.
 
-## Features
+## Features Summary
 
 Alliance Structures adds the following main features to Alliance Auth:
 
@@ -178,19 +175,29 @@ python manage.py collectstatic
 
 Finally restart your AA supervisor services.
 
-## Localization
+## Features
+
+In this section you find a detailed description of the following key features:
+
+- [Localization](#localization)
+- [Structure tags](#structure-tags)
+- [Power Modes](#power-modes)
+- [Notifications](#notifications)
+- [Timers](#timers)
+
+### Localization
 
 Alliance Structures has full localization for languages support by Alliance Auth. This chapter describes how to set the language for different parts of the app:
 
-### UI
+#### UI
 
 To switch the UI to your preferred language simply use the language switcher from Auth.
 
-### Notifications on Discord
+#### Notifications on Discord
 
 The language for notifications on Discord can be chosen by configuring the language property for the respective Webhook. The default language will be used if no language is configured for a Webhook.
 
-### Default language
+#### Default language
 
 The default language will be used when no specific language have been configured or no language can be determined. The default language can be defined with the setting `STRUCTURES_DEFAULT_LANGUAGE`.
 
@@ -199,7 +206,7 @@ The following parts of the app will use localization with the default language:
 - Timers
 - Name of Custom Offices
 
-## Structure tags
+### Structure tags
 
 Structure tags are colored text labels that can be attached to individual structures. Their main purpose is to provide an easy way to organize structures. Tags are shown below the name on the structure list and you can filter the structure list by tags.
 
@@ -207,13 +214,13 @@ For example you might be responsible for fueling structures in your alliance and
 
 There are two kinds of structure tags: Custom tags and generated tags
 
-### Custom tags
+#### Custom tags
 
 Custom tags are created by users. You can created them on the admin panel under Structure tags, give them any name, color and define its order. Existing structure tags can be assigned to a structure on the structures page within the admin panel.
 
 You can also define custom tags as default. Default tags are automatically added to every newly added structure. Furthermore you enable default tags to be your default tag filter to be active when opening the structure list (see [Settings](#settings))
 
-### Generated tags
+#### Generated tags
 
 Generated tags are automatically created by and added to structures by the system. These tags are calculated based on properties of a structure. The purpose of generated tags is to provide additional information and filter options for structures in the structure list.
 
@@ -221,6 +228,76 @@ There are currently two types of generated tags:
 
 - space type: Shows which space type the structure is in, e.g. null sec or low sec
 - sov: Shows that the owner of that structures has sovereignty in the respective solar system
+
+### Power Modes
+
+Structures will display the current power mode of an Upwell structure if it can be determined.
+
+Current supported power modes are:
+
+- Full Power
+- Low Power
+- Abandoned
+
+Note that the power modes are inferred, since ESI does not provide the current power mode of structures. So they may not be 100% accurate. If is unclear wether a structure is "Low Power" or "Abandoned", the power mode will be shown as "Abandoned?".
+
+### Notifications
+
+The following notifications are currently supported (names are from the API):
+
+#### Moon Mining
+
+- MoonminingAutomaticFracture
+- MoonminingExtractionCancelled
+- MoonminingExtractionFinished
+- MoonminingExtractionStarted
+- MoonminingLaserFired
+
+#### Upwell Structures
+
+- OwnershipTransferred
+- StructureAnchoring
+- StructureDestroyed
+- StructureFuelAlert
+- StructureLostArmor
+- StructureLostShields
+- StructureOnline
+- StructureServicesOffline
+- StructureUnanchoring
+- StructureUnderAttack
+- StructureWentHighPower
+- StructureWentLowPower
+
+#### POCOs
+
+- OrbitalAttacked
+- OrbitalReinforced
+
+#### Starbases
+
+- TowerAlertMsg
+- TowerResourceAlertMsg
+
+### Sovereignty
+
+- EntosisCaptureStarted
+- SovAllClaimAquiredMsg
+- SovCommandNodeEventStarted
+- SovStructureReinforced
+- SovStructureDestroyed
+
+### Timers
+
+**Alliance Structures** will automatically create friendly timers from  notifications for Alliance Auth's Structure Timers app. This feature can be configured via [Settings](#settings).
+
+Timers can be created from the following notification types:
+
+- OrbitalReinforced
+- MoonminingExtractionStarted
+- SovStructureReinforced
+- StructureAnchoring (excluding structures anchored in null sec)
+- StructureLostArmor
+- StructureLostShields
 
 ## Settings
 
@@ -257,64 +334,6 @@ Can access this app and view | User can access the app and see the structure lis
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
 Can add new structure owner | User can add a corporation with it's structures |  `general.add_structure_owner`
-
-## Notifications
-
-The following notifications are currently supported (names are from the API):
-
-### Moon Mining
-
-- MoonminingAutomaticFracture
-- MoonminingExtractionCancelled
-- MoonminingExtractionFinished
-- MoonminingExtractionStarted
-- MoonminingLaserFired
-
-### Upwell Structures
-
-- OwnershipTransferred
-- StructureAnchoring
-- StructureDestroyed
-- StructureFuelAlert
-- StructureLostArmor
-- StructureLostShields
-- StructureOnline
-- StructureServicesOffline
-- StructureUnanchoring
-- StructureUnderAttack
-- StructureWentHighPower
-- StructureWentLowPower
-
-### POCOs
-
-- OrbitalAttacked
-- OrbitalReinforced
-
-### Starbases
-
-- TowerAlertMsg
-- TowerResourceAlertMsg
-
-## Sovereignty
-
-- EntosisCaptureStarted
-- SovAllClaimAquiredMsg
-- SovCommandNodeEventStarted
-- SovStructureReinforced
-- SovStructureDestroyed
-
-## Timers
-
-**Alliance Structures** will automatically create friendly timers from  notifications for Alliance Auth's Structure Timers app. This feature can be configured via [Settings](#settings).
-
-Timers can be created from the following notification types:
-
-- OrbitalReinforced
-- MoonminingExtractionStarted
-- SovStructureReinforced
-- StructureAnchoring (excluding structures anchored in null sec)
-- StructureLostArmor
-- StructureLostShields
 
 ## Service monitoring
 

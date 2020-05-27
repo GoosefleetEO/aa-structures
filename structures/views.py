@@ -1,4 +1,3 @@
-import logging
 import urllib
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -12,6 +11,8 @@ from django.utils.translation import gettext_lazy
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.eveonline.evelinks import dotlan
+from allianceauth.services.hooks import get_extension_logger
+
 from esi.decorators import token_required
 
 from . import tasks, __title__
@@ -35,7 +36,7 @@ from .utils import (
 )
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 QUERY_PARAM_TAGS = 'tags'
@@ -114,6 +115,7 @@ class StructuresRowBuilder:
         self._build_services()
         self._build_reinforcement_infos()
         self._build_fuel_infos()
+        self._build_online_infos()
         self._build_state()
         return self._row
 
@@ -243,33 +245,94 @@ class StructuresRowBuilder:
                 self._row['reinforcement'] = ''
 
     def _build_fuel_infos(self):
-        self._row['is_low_power'] = self._structure.is_low_power
-        self._row['is_low_power_str'] = yesno_str(self._structure.is_low_power)
-
-        if self._structure.is_low_power:
+        if self._structure.eve_type.is_poco:
+            fuel_expires_display = 'N/A'
+            fuel_expires_timestamp = None
+        elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
-                create_bs_label_html(gettext_lazy('Low Power'), 'default')
+                create_bs_label_html(
+                    self._structure.get_power_mode_display(), 'default'
+                )
             )                    
             fuel_expires_timestamp = None
-        elif self._structure.fuel_expires:
-            fuel_expires_timestamp = self._structure.fuel_expires.isoformat()
+        elif self._structure.is_abandoned:
+            fuel_expires_display = format_html_lazy(
+                create_bs_label_html(
+                    self._structure.get_power_mode_display(), 'danger'
+                )
+            )
+            fuel_expires_timestamp = None
+        elif self._structure.is_maybe_abandoned:
+            fuel_expires_display = format_html_lazy(
+                create_bs_label_html(
+                    self._structure.get_power_mode_display(), 'warning'
+                )
+            )                    
+            fuel_expires_timestamp = None
+        elif self._structure.fuel_expires_at:
+            fuel_expires_timestamp = self._structure.fuel_expires_at.isoformat()
             if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
                 fuel_expires_display = timeuntil_str(
-                    self._structure.fuel_expires - now()
+                    self._structure.fuel_expires_at - now()
                 )
                 if not fuel_expires_display:
                     fuel_expires_display = '?'
                     fuel_expires_timestamp = None
             else:
-                fuel_expires_display = \
-                    self._structure.fuel_expires.strftime(DATETIME_FORMAT)
+                if self._structure.fuel_expires_at >= now():
+                    fuel_expires_display = \
+                        self._structure.fuel_expires_at.strftime(DATETIME_FORMAT)
+                else:
+                    fuel_expires_display = '?'
+                    fuel_expires_timestamp = None                
         else:
             fuel_expires_display = gettext_lazy('N/A')
             fuel_expires_timestamp = None
 
-        self._row['fuel_expires'] = {
+        self._row['fuel_expires_at'] = {
             'display': add_no_wrap_html(fuel_expires_display),
             'timestamp': fuel_expires_timestamp
+        }
+
+    def _build_online_infos(self):        
+        self._row['power_mode_str'] = self._structure.get_power_mode_display()
+        if self._structure.eve_type.is_poco:
+            last_online_at_display = 'N/A'
+            last_online_at_timestamp = None
+        elif self._structure.is_full_power:
+            last_online_at_display = format_html_lazy(
+                create_bs_label_html(
+                    self._structure.get_power_mode_display(), 'success'
+                )
+            )
+            last_online_at_timestamp = None
+        elif self._structure.is_maybe_abandoned:
+            last_online_at_display = format_html_lazy(
+                create_bs_label_html(
+                    self._structure.get_power_mode_display(), 'warning'
+                )
+            )                    
+            last_online_at_timestamp = None
+        elif self._structure.last_online_at:
+            last_online_at_timestamp = \
+                self._structure.last_online_at.isoformat()
+            if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
+                last_online_at_display = timeuntil_str(
+                    now() - self._structure.last_online_at
+                )
+                if not last_online_at_display:
+                    last_online_at_display = '?'
+                    last_online_at_timestamp = None
+            else:
+                last_online_at_display = \
+                    self._structure.last_online_at.strftime(DATETIME_FORMAT)
+        else:
+            last_online_at_display = '-'
+            last_online_at_timestamp = None
+
+        self._row['last_online_at'] = {
+            'display': add_no_wrap_html(last_online_at_display),
+            'timestamp': last_online_at_timestamp
         }
 
     def _build_state(self):

@@ -11,7 +11,7 @@ $(document).ready(function(){
     var titleGroup = elem.getAttribute('data-titleGroup');
     var Reinforced = elem.getAttribute('data-Reinforced');
     var State = elem.getAttribute('data-State');
-    var LowPower = elem.getAttribute('data-LowPower');
+    var PowerMode = elem.getAttribute('data-PowerMode');
 
     /* dataTable def */    
     $('#tab_structures').DataTable({                                
@@ -29,13 +29,19 @@ $(document).ready(function(){
             { data: 'type' },
             { data: 'structure_name' },
             { data: 'services' },
-            { data: 'reinforcement' },
-            { data: 'fuel_expires',
+            { data: 'last_online_at',
                 render: {
                     _: 'display',
                     sort: 'timestamp'
                 }
             },
+            { data: 'fuel_expires_at',
+                render: {
+                    _: 'display',
+                    sort: 'timestamp'
+                }
+            },
+            { data: 'reinforcement' },
             { data: 'state_details' },
 
             { data: 'alliance_name' },
@@ -46,14 +52,14 @@ $(document).ready(function(){
             { data: 'group_name' },            
             { data: 'is_reinforced_str' },
             { data: 'state_str' },
-            { data: 'is_low_power_str' }
+            { data: 'power_mode_str' }
         ],
                     
         lengthMenu: [[7, 15, 25, 50, -1], [7, 15, 25, 50, "All"]],
         
         columnDefs: [
             { "sortable": false, "targets": [0, 3, 4, 6] },
-            { "visible": false, "targets": [10, 11, 12, 13, 14, 15, 16, 17, 18] }
+            { "visible": false, "targets": [11, 12, 13, 14, 15, 16, 17, 18, 19] }
         ],
         
         order: [ [ 1, "asc" ], [ 5, "asc" ] ],
@@ -62,40 +68,40 @@ $(document).ready(function(){
         {
             columns: [                                       
                 {
-                    idx: 10,
+                    idx: 11,
                     title: titleAlliance
                 },
                 {
-                    idx: 11,
+                    idx: 12,
                     title: titleCorporation
                 },
                 {
-                    idx: 12,
+                    idx: 13,
                     title: titleRegion
                 },
                 {
-                    idx: 13,
+                    idx: 14,
                     title: titleSolarSystem
                 },              
                 {
-                    idx: 14,
+                    idx: 15,
                     title: titleCategory
                 },  
                 {
-                    idx: 15,
+                    idx: 16,
                     title: titleGroup
                 },                    
                 {
-                    idx: 16,
+                    idx: 17,
                     title: Reinforced
                 },
                 {
-                    idx: 17,
+                    idx: 18,
                     title: State
                 },
                 {
-                    idx: 18,
-                    title: LowPower
+                    idx: 19,
+                    title: PowerMode
                 }
             ],
             bootstrap: true

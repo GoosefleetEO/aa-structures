@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.3.0] - 2020-05-27
+
+### Added
+
+- New column "Last Online" for Upwell structures
+- Now shows when a structure is Abandoned. Note that this is currently a calculated figure and may not be 100% accurate, since ESI doesn't provide the abandoned mode (or any power mode) at the moment.
+- Now uses the extensions logger
+
+### Changed
+
+- Updated dependency for django-esi
+
 ## [1.2.1] - 2020-05-12
 
 ### Changed

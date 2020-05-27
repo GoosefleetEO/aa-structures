@@ -431,7 +431,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)
         self.assertEqual(structure.reinforce_hour, 18)
-        self.assertEqual(structure.fuel_expires, datetime(
+        self.assertEqual(structure.fuel_expires_at, datetime(
             2020, 3, 5, 5, 0, 0, tzinfo=utc
         ))
         self.assertEqual(structure.state_timer_start, datetime(
@@ -586,11 +586,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             2020, 4, 5, 7, 0, 0, tzinfo=utc
         ))
         self.assertGreaterEqual(
-            structure.fuel_expires, 
+            structure.fuel_expires_at, 
             now() + timedelta(hours=24) - timedelta(seconds=10)
         )
         self.assertLessEqual(
-            structure.fuel_expires, 
+            structure.fuel_expires_at, 
             now() + timedelta(hours=24) + timedelta(seconds=10)
         )
        
@@ -604,7 +604,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.unanchors_at, datetime(
             2020, 5, 5, 7, 0, 0, tzinfo=utc
         ))
-        self.assertIsNone(structure.fuel_expires)
+        self.assertIsNone(structure.fuel_expires_at)
 
         structure = Structure.objects.get(id=1300000000003)        
         self.assertEqual(structure.name, 'Panic Room')
@@ -614,11 +614,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
         self.assertEqual(structure.eve_moon_id, 40029527)
         self.assertGreaterEqual(
-            structure.fuel_expires, 
+            structure.fuel_expires_at, 
             now() + timedelta(hours=133) - timedelta(seconds=10)
         )
         self.assertLessEqual(
-            structure.fuel_expires, 
+            structure.fuel_expires_at, 
             now() + timedelta(hours=133) + timedelta(seconds=10)
         )
         

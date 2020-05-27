@@ -695,7 +695,7 @@ class Owner(models.Model):
 
     def _calc_starbase_fuel_expires(self, corporation_id, starbase, token):
         add_prefix = self._logger_prefix()
-        fuel_expires = None
+        fuel_expires_at = None
         if starbase['state'] != 'offline':
             starbase_details = esi_fetch(
                 'Corporation.get_corporations_corporation_id_starbases_starbase_id',
@@ -731,9 +731,9 @@ class Owner(models.Model):
                         * (1 - sov_discount)
                     )
                 )
-                fuel_expires = now() + timedelta(hours=hours)
+                fuel_expires_at = now() + timedelta(hours=hours)
         
-        return fuel_expires
+        return fuel_expires_at
     
     def fetch_notifications_esi(self, user: User = None):
         """fetches notification for the current owners and proceses them"""

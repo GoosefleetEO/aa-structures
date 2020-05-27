@@ -187,10 +187,10 @@ with transaction.atomic():
             or state == Structure.STATE_HULL_REINFORCE
 
         if not is_low_power:
-            fuel_expires = \
+            fuel_expires_at = \
                 now() + timedelta(days=randrange(14), hours=randrange(12))
         else:
-            fuel_expires = None
+            fuel_expires_at = None
         structure = Structure.objects.create(
             id=1000000000001 + i,
             owner=get_random(owners),
@@ -199,7 +199,7 @@ with transaction.atomic():
             eve_solar_system=get_random(eve_solar_systems), 
             reinforce_hour=randrange(24),
             state=state,
-            fuel_expires=fuel_expires
+            fuel_expires_at=fuel_expires_at
         )
         if is_low_power:
             state = StructureService.STATE_OFFLINE

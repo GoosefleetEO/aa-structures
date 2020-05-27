@@ -526,7 +526,7 @@
             "reinforce_hour": 5,
             "state": 11,
             "owner_corporation_id": 2001,
-            "fuel_expires": "dummy",
+            "fuel_expires_at": "dummy",
             "services": [
                 {
                     "name": "Clone Bay",

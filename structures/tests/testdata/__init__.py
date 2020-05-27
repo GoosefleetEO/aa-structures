@@ -49,22 +49,14 @@ _currentdir = os.path.dirname(os.path.abspath(inspect.getfile(
 # internal functions
 
 def _load_esi_data():
-    with open(
-        _currentdir + '/esi_data.json', 
-        'r', 
-        encoding='utf-8'
-    ) as f:
+    with open(_currentdir + '/esi_data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     return data
 
 
 def _load_testdata_entities() -> dict:    
-    with open(
-        _currentdir + '/entities.json', 
-        'r', 
-        encoding='utf-8'
-    ) as f:
+    with open(_currentdir + '/entities.json', 'r', encoding='utf-8') as f:
         entities = json.load(f)
     
     # update timestamp to current
@@ -77,9 +69,9 @@ def _load_testdata_entities() -> dict:
 
     # update timestamps on structures
     for structure in entities['Structure']:
-        if 'fuel_expires' in structure:
-            fuel_expires = now() + timedelta(days=1 + randrange(5))
-            structure['fuel_expires'] = fuel_expires
+        if 'fuel_expires_at' in structure:
+            fuel_expires_at = now() + timedelta(days=1 + randrange(5))
+            structure['fuel_expires_at'] = fuel_expires_at
 
         if 'state_timer_start' in structure:
             state_timer_start = now() + timedelta(days=1 + randrange(3))
@@ -636,12 +628,14 @@ def load_entities(entities_def: list = None):
             load_entity(EntityClass)
 
 
-def create_structures():
+def create_structures(dont_load_entities: bool = False) -> object:
     """create structure entities from test data
-    Will create all structure for owner if provided
+    
+    returns created owner
     """
     
-    load_entities()
+    if not dont_load_entities:
+        load_entities()
             
     default_webhooks = Webhook.objects.filter(is_default=True)
     for corporation in EveCorporationInfo.objects.all():
@@ -683,7 +677,7 @@ def create_structures():
     Structure.objects.all().delete()
     for structure in entities_testdata['Structure']:
         x = structure.copy()
-        x['last_updated'] = now()
+        x['last_updated_at'] = now()
         x['owner'] = Owner.objects.get(
             corporation__corporation_id=x['owner_corporation_id']
         )
@@ -715,6 +709,8 @@ def create_structures():
                     )
                 )
         obj.save()
+
+    return my_owner
 
 
 def create_user(character_id, load_data=False) -> User:

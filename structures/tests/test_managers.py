@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 from bravado.exception import HTTPError
+
+from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
 
@@ -617,8 +619,7 @@ class TestStructureManager(NoSocketsTestCase):
             EveConstellation,
             EveSolarSystem,
             EveCharacter
-        ])
-        
+        ])        
         Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
@@ -672,10 +673,8 @@ class TestStructureManager(NoSocketsTestCase):
 
 
 class TestStructureManagerCreateFromDict(NoSocketsTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    
+    def test_can_create_full(self):       
         load_entities([
             EveCategory,
             EveGroup,
@@ -686,14 +685,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             EveCharacter,
             EveSovereigntyMap
         ])
-        cls.owner = Owner.objects.create(
+        owner = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
-    
-    def test_can_create_full(self):
-       
-        structure = {     
-            "corporation_id": 2001,
+        structure = {            
             "fuel_expires": None,        
             "name": "Test Structure Alpha",
             "next_reinforce_apply": None,
@@ -729,21 +724,25 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "type_id": 35832,
             "unanchors_at": None
         }
-        obj, created = Structure.objects.update_or_create_from_dict(
-            structure, self.owner
-        )
+        obj, created = Structure.objects.update_or_create_from_dict(structure, owner)
         
         # check structure
+        self.assertTrue(created)
         self.assertEqual(obj.id, 1000000000001)
         self.assertEqual(obj.name, 'Test Structure Alpha')
         self.assertEqual(obj.eve_type_id, 35832)
         self.assertEqual(obj.eve_solar_system_id, 30002537)
-        self.assertEqual(int(obj.owner.corporation.corporation_id), 2001)
+        self.assertEqual(obj.owner, owner)
         self.assertEqual(obj.position_x, 55028384780.0)
         self.assertEqual(obj.position_y, 7310316270.0)
         self.assertEqual(obj.position_z, -163686684205.0)
         self.assertEqual(obj.reinforce_hour, 18)
         self.assertEqual(obj.state, Structure.STATE_SHIELD_VULNERABLE)
+        self.assertAlmostEqual((now() - obj.created_at).total_seconds(), 0, delta=2)
+        self.assertAlmostEqual(
+            (now() - obj.last_updated_at).total_seconds(), 0, delta=2
+        )
+        self.assertAlmostEqual((now() - obj.last_online_at).total_seconds(), 0, delta=2)
         # todo: add more content tests
         
         # check services
@@ -777,7 +776,115 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             ),
         }
         self.assertEqual(services, expected)
+    
+    def test_can_update_full(self):       
+        owner = create_structures()
+        obj = Structure.objects.get(id=1000000000001)
+        obj.last_updated_at = now() - timedelta(hours=2)
+        obj.save()
+        structure = {     
+            "corporation_id": 2001,
+            "fuel_expires": None,
+            "name": "Test Structure Alpha Updated",
+            "next_reinforce_apply": None,
+            "next_reinforce_hour": None,
+            "next_reinforce_weekday": None,
+            "position": {
+                "x": 55028384780.0,
+                "y": 7310316270.0,
+                "z": -163686684205.0
+            },
+            "profile_id": 101853,
+            "reinforce_hour": 18,
+            "reinforce_weekday": 5,
+            "services": [
+                {
+                    "name": "Clone Bay",
+                    "name_de": "Clone Bay_de",
+                    "name_ko": "Clone Bay_ko",
+                    "state": "online"
+                },
+                {
+                    "name": "Market Hub",
+                    "name_de": "Market Hub_de",
+                    "name_ko": "Market Hub_ko",
+                    "state": "offline"
+                }
+            ],
+            "state": "shield_vulnerable",
+            "state_timer_end": None,
+            "state_timer_start": None,
+            "structure_id": 1000000000001,
+            "system_id": 30002537,
+            "type_id": 35832,
+            "unanchors_at": None
+        }
+        obj, created = Structure.objects.update_or_create_from_dict(structure, owner)
+        
+        # check structure
+        self.assertFalse(created)
+        self.assertEqual(obj.id, 1000000000001)
+        self.assertEqual(obj.name, 'Test Structure Alpha Updated')
+        self.assertEqual(obj.eve_type_id, 35832)
+        self.assertEqual(obj.eve_solar_system_id, 30002537)
+        self.assertEqual(obj.owner, owner)
+        self.assertEqual(obj.position_x, 55028384780.0)
+        self.assertEqual(obj.position_y, 7310316270.0)
+        self.assertEqual(obj.position_z, -163686684205.0)
+        self.assertEqual(obj.reinforce_hour, 18)
+        self.assertEqual(obj.state, Structure.STATE_SHIELD_VULNERABLE)        
+        self.assertAlmostEqual(
+            (now() - obj.last_updated_at).total_seconds(), 0, delta=2
+        )
+        self.assertAlmostEqual((now() - obj.last_online_at).total_seconds(), 0, delta=2)
 
+    def test_does_not_update_last_online_when_services_are_offline(self):       
+        owner = create_structures()
+        obj = Structure.objects.get(id=1000000000001)
+        obj.last_online_at = None
+        obj.save()
+        structure = {            
+            "fuel_expires": None,        
+            "name": "Test Structure Alpha Updated",
+            "next_reinforce_apply": None,
+            "next_reinforce_hour": None,
+            "next_reinforce_weekday": None,
+            "position": {
+                "x": 55028384780.0,
+                "y": 7310316270.0,
+                "z": -163686684205.0
+            },
+            "profile_id": 101853,
+            "reinforce_hour": 18,
+            "reinforce_weekday": 5,
+            "services": [
+                {
+                    "name": "Clone Bay",
+                    "name_de": "Clone Bay_de",
+                    "name_ko": "Clone Bay_ko",
+                    "state": "offline"
+                },
+                {
+                    "name": "Market Hub",
+                    "name_de": "Market Hub_de",
+                    "name_ko": "Market Hub_ko",
+                    "state": "offline"
+                }
+            ],
+            "state": "shield_vulnerable",
+            "state_timer_end": None,
+            "state_timer_start": None,
+            "structure_id": 1000000000001,
+            "system_id": 30002537,
+            "type_id": 35832,
+            "unanchors_at": None
+        }
+        obj, created = Structure.objects.update_or_create_from_dict(structure, owner)
+        
+        # check structure
+        self.assertFalse(created)
+        self.assertIsNone(obj.last_online_at)
+        
 
 class TestStructureTagManager(NoSocketsTestCase):
 

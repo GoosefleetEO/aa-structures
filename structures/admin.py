@@ -1,5 +1,3 @@
-import logging
-
 from celery import chain
 
 from django.contrib import admin
@@ -8,6 +6,7 @@ from django.db.models.functions import Lower
 from django.utils.html import format_html
 
 from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
+from allianceauth.services.hooks import get_extension_logger
 
 from . import __title__
 from .app_settings import STRUCTURES_DEVELOPER_MODE
@@ -33,7 +32,7 @@ from . import tasks
 from .utils import LoggerAddTag
 
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 if STRUCTURES_DEVELOPER_MODE:
@@ -602,7 +601,8 @@ class StructureAdmin(admin.ModelAdmin):
                 'state',
                 ('state_timer_start', 'state_timer_end', ),
                 'unanchors_at',
-                'fuel_expires'
+                'fuel_expires_at',
+                'last_online_at',
             )
         }),
         ('Reinforcement', {
@@ -622,7 +622,7 @@ class StructureAdmin(admin.ModelAdmin):
         }),
         (None, {
             'fields': (
-                ('id', 'last_updated', )
+                ('id', 'last_updated_at', )
             )
         }),
     )
