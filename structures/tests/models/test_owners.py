@@ -944,26 +944,23 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_CUSTOMS_OFFICES', False)
     @patch(MODULE_PATH + '.Token', spec=True)
     @patch('structures.helpers.esi_fetch._esi_client')
-    def test_remove_current_structures_when_esi_returns_none(
+    def test_only_remove_structures_not_returned_from_esi(
         self, mock_esi_client, mock_Token
     ):                               
         esi_get_corporations_corporation_id_structures.override_data = \
-            {'2001': []}
-        esi_get_corporations_corporation_id_customs_offices.override_data = \
             {'2001': []}        
-        mock_esi_client.side_effect = esi_mock_client       
-        owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
-        )
-        
+        mock_esi_client.side_effect = esi_mock_client        
+        create_structures(dont_load_entities=True)
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        owner.character = self.main_ownership        
+        self.assertGreater(owner.structure_set.count(), 0)
+
         # run update task
         self.assertTrue(owner.update_structures_esi())
         owner.refresh_from_db()
-        self.assertEqual(
-            owner.structures_last_error, Owner.ERROR_NONE            
-        )                
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
         # must be empty
-        self.assertEqual(Structure.objects.count(), 0)
+        self.assertEqual(owner.structure_set.count(), 0)
 
     @patch(MODULE_PATH + '.settings.DEBUG', False)
     @patch(MODULE_PATH + '.STRUCTURES_FEATURE_STARBASES', False)
@@ -1133,7 +1130,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertFalse(owner.update_structures_esi())
 
 
-class TestUpdateStructuresEsi2(NoSocketsTestCase):
+class TestUpdateStructuresEsiWithLocalization(NoSocketsTestCase):
 
     def setUp(self):
         self.default_lang = 'en-us'

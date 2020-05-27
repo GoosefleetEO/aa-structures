@@ -288,38 +288,39 @@ class Owner(models.Model):
                     logger.info(add_prefix(
                         'Storing updates for {:,} structures'.format(len(structures))
                     ))
-                    with transaction.atomic():
-                        # remove structures no longer returned from ESI
-                        ids_local = {
-                            x.id
-                            for x in Structure.objects.filter(owner=self)
-                        }
-                        ids_from_esi = {x['structure_id'] for x in structures}
-                        ids_to_remove = ids_local - ids_from_esi
-
-                        if len(ids_to_remove) > 0:
-                            Structure.objects\
-                                .filter(id__in=ids_to_remove)\
-                                .delete()
-                            logger.info(
-                                'Removed {} structures which apparently no longer '
-                                'exist.'.format(len(ids_to_remove))
-                            )
-
-                        # update structures
-                        for structure in structures:
-                            Structure.objects.update_or_create_from_dict(
-                                structure, self
-                            )
-                                            
-                        self.structures_last_error = self.ERROR_NONE
-                        self.structures_last_sync = now()
-                        self.save()
                 else:
                     logger.info(add_prefix(
                         'This corporation does not appear to have any structures'
                     ))
 
+                with transaction.atomic():
+                    # remove structures no longer returned from ESI
+                    ids_local = {
+                        x.id
+                        for x in Structure.objects.filter(owner=self)
+                    }
+                    ids_from_esi = {x['structure_id'] for x in structures}
+                    ids_to_remove = ids_local - ids_from_esi
+
+                    if len(ids_to_remove) > 0:
+                        Structure.objects\
+                            .filter(id__in=ids_to_remove)\
+                            .delete()
+                        logger.info(
+                            'Removed {} structures which apparently no longer '
+                            'exist.'.format(len(ids_to_remove))
+                        )
+
+                    # update structures
+                    for structure in structures:
+                        Structure.objects.update_or_create_from_dict(
+                            structure, self
+                        )
+                                        
+                    self.structures_last_error = self.ERROR_NONE
+                    self.structures_last_sync = now()
+                    self.save()
+                
             except Exception as ex:
                 logger.exception(add_prefix(
                     'An unexpected error ocurred {}'. format(ex)

@@ -9,15 +9,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.3.0] - 2020-05-27
 
+**Abandoned Structures**
+
 ### Added
 
 - New column "Last Online" for Upwell structures
-- Now shows when a structure is Abandoned. Note that this is currently a calculated figure and may not be 100% accurate, since ESI doesn't provide the abandoned mode (or any power mode) at the moment.
+- Now shows when a structure is Abandoned. ([#24](https://gitlab.com/ErikKalkoken/aa-structures/issues/24))
 - Now uses the extensions logger
 
 ### Changed
 
 - Updated dependency for django-esi
+
+### Fixed
+
+- Will now correctly remove all structures if ESI returns no structures at all
 
 ## [1.2.1] - 2020-05-12
 

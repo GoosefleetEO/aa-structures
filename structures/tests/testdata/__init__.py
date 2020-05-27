@@ -629,15 +629,12 @@ def load_entities(entities_def: list = None):
 
 
 def create_structures(dont_load_entities: bool = False) -> object:
-    """create structure entities from test data
-    
-    returns created owner
-    """
+    """create structure entities from test data"""
     
     if not dont_load_entities:
         load_entities()
             
-    default_webhooks = Webhook.objects.filter(is_default=True)
+    default_webhooks = Webhook.objects.filter(is_default=True)    
     for corporation in EveCorporationInfo.objects.all():
         EveEntity.objects.get_or_create(
             id=corporation.corporation_id,
@@ -649,7 +646,7 @@ def create_structures(dont_load_entities: bool = False) -> object:
         my_owner = Owner.objects.create(corporation=corporation)
         for x in default_webhooks:
             my_owner.webhooks.add(x)
-
+        
         if int(corporation.corporation_id) in [2001, 2002]:
             alliance = EveAllianceInfo.objects.get(alliance_id=3001)
             corporation.alliance = alliance
@@ -709,8 +706,6 @@ def create_structures(dont_load_entities: bool = False) -> object:
                     )
                 )
         obj.save()
-
-    return my_owner
 
 
 def create_user(character_id, load_data=False) -> User:

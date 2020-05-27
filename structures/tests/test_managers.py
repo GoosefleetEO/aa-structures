@@ -48,54 +48,54 @@ class TestEveCategoryManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):        
         load_entity(EveCategory)
         
-        obj, created = EveCategory.objects.get_or_create_esi(65)
+        structure, created = EveCategory.objects.get_or_create_esi(65)
         
         self.assertFalse(created)
-        self.assertIsInstance(obj, EveCategory)
-        self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
+        self.assertIsInstance(structure, EveCategory)
+        self.assertEqual(structure.id, 65)
+        self.assertEqual(structure.name, 'Structure')
     
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        obj, created = EveCategory.objects.update_or_create_esi(65)
+        structure, created = EveCategory.objects.update_or_create_esi(65)
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveCategory)
-        self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
-        self.assertEqual(obj.name_de, 'Structure_de')        
-        self.assertEqual(obj.name_ko, 'Structure_ko')
-        self.assertEqual(obj.name_ru, 'Structure_ru')
-        self.assertEqual(obj.name_zh, 'Structure_zh')
-        self.assertIsInstance(obj.last_updated, datetime)
+        self.assertIsInstance(structure, EveCategory)
+        self.assertEqual(structure.id, 65)
+        self.assertEqual(structure.name, 'Structure')
+        self.assertEqual(structure.name_de, 'Structure_de')        
+        self.assertEqual(structure.name_ko, 'Structure_ko')
+        self.assertEqual(structure.name_ru, 'Structure_ru')
+        self.assertEqual(structure.name_zh, 'Structure_zh')
+        self.assertIsInstance(structure.last_updated, datetime)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_update_object_from_esi(self, mock_esi_client):        
         mock_esi_client.side_effect = esi_mock_client
 
         load_entity(EveCategory)
-        obj = EveCategory.objects.get(id=65)
-        obj.name = 'Superheroes'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Superheroes')
+        structure = EveCategory.objects.get(id=65)
+        structure.name = 'Superheroes'
+        structure.save()
+        structure.refresh_from_db()
+        self.assertEqual(structure.name, 'Superheroes')
         
-        obj, created = EveCategory.objects.update_or_create_esi(65)
+        structure, created = EveCategory.objects.update_or_create_esi(65)
         self.assertFalse(created)
-        self.assertIsInstance(obj, EveCategory)
-        self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
+        self.assertIsInstance(structure, EveCategory)
+        self.assertEqual(structure.id, 65)
+        self.assertEqual(structure.name, 'Structure')
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        obj, created = EveCategory.objects.get_or_create_esi(65)        
+        structure, created = EveCategory.objects.get_or_create_esi(65)        
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveCategory)
-        self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
+        self.assertIsInstance(structure, EveCategory)
+        self.assertEqual(structure.id, 65)
+        self.assertEqual(structure.name, 'Structure')
         
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_raises_exception_when_create_fails(self, mock_esi_client):
@@ -111,18 +111,18 @@ class TestEveCategoryManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
 
         load_entity(EveCategory)
-        obj = EveCategory.objects.get(id=65)
-        obj.name = 'Superheroes'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Superheroes')
+        structure = EveCategory.objects.get(id=65)
+        structure.name = 'Superheroes'
+        structure.save()
+        structure.refresh_from_db()
+        self.assertEqual(structure.name, 'Superheroes')
         total_count = EveCategory.objects.count()
         
         count_updated = EveCategory.objects.update_all_esi()
         
-        obj.refresh_from_db()
-        self.assertEqual(obj.id, 65)
-        self.assertEqual(obj.name, 'Structure')
+        structure.refresh_from_db()
+        self.assertEqual(structure.id, 65)
+        self.assertEqual(structure.name, 'Structure')
         self.assertEqual(count_updated, total_count)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
@@ -150,23 +150,23 @@ class TestEveGroupManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):        
         load_entity(EveGroup)
         
-        obj, created = EveGroup.objects.get_or_create_esi(1657)                
+        structure, created = EveGroup.objects.get_or_create_esi(1657)                
         self.assertFalse(created)
-        self.assertIsInstance(obj, EveGroup)
-        self.assertEqual(obj.id, 1657)
-        self.assertEqual(obj.name, 'Citadel')
-        self.assertEqual(obj.eve_category_id, 65)
+        self.assertIsInstance(structure, EveGroup)
+        self.assertEqual(structure.id, 1657)
+        self.assertEqual(structure.name, 'Citadel')
+        self.assertEqual(structure.eve_category_id, 65)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         
-        obj, created = EveGroup.objects.get_or_create_esi(1657)        
+        structure, created = EveGroup.objects.get_or_create_esi(1657)        
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveGroup)
-        self.assertEqual(obj.id, 1657)
-        self.assertEqual(obj.name, 'Citadel')
-        self.assertEqual(obj.eve_category_id, 65)
+        self.assertIsInstance(structure, EveGroup)
+        self.assertEqual(structure.id, 1657)
+        self.assertEqual(structure.name, 'Citadel')
+        self.assertEqual(structure.eve_category_id, 65)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found_including_parent(
@@ -175,13 +175,13 @@ class TestEveGroupManager(NoSocketsTestCase):
         EveCategory.objects.get(id=65).delete()
         mock_esi_client.side_effect = esi_mock_client
         
-        obj, created = EveGroup.objects.get_or_create_esi(1657)        
+        structure, created = EveGroup.objects.get_or_create_esi(1657)        
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveGroup)
-        self.assertEqual(obj.id, 1657)
-        self.assertEqual(obj.name, 'Citadel')
+        self.assertIsInstance(structure, EveGroup)
+        self.assertEqual(structure.id, 1657)
+        self.assertEqual(structure.name, 'Citadel')
         
-        obj_parent = obj.eve_category        
+        obj_parent = structure.eve_category        
         self.assertIsInstance(obj_parent, EveCategory)
         self.assertEqual(obj_parent.id, 65)
         self.assertEqual(obj_parent.name, 'Structure')
@@ -190,11 +190,11 @@ class TestEveGroupManager(NoSocketsTestCase):
     def test_can_update_from_esi_not_including_related(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         load_entity(EveGroup)
-        obj = EveGroup.objects.get(id=1657)
-        obj.name = 'Fantastic Four'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Fantastic Four')
+        structure = EveGroup.objects.get(id=1657)
+        structure.name = 'Fantastic Four'
+        structure.save()
+        structure.refresh_from_db()
+        self.assertEqual(structure.name, 'Fantastic Four')
 
         obj_parent = EveCategory.objects.get(id=65)
         obj_parent.name = 'Superheros'
@@ -202,12 +202,12 @@ class TestEveGroupManager(NoSocketsTestCase):
         obj_parent.refresh_from_db()
         self.assertEqual(obj_parent.name, 'Superheros')
         
-        obj, created = EveGroup.objects.update_or_create_esi(1657)        
+        structure, created = EveGroup.objects.update_or_create_esi(1657)        
         self.assertFalse(created)
-        self.assertIsInstance(obj, EveGroup)
-        self.assertEqual(obj.id, 1657)
-        self.assertEqual(obj.name, 'Citadel')
-        self.assertEqual(obj.eve_category_id, 65)
+        self.assertIsInstance(structure, EveGroup)
+        self.assertEqual(structure.id, 1657)
+        self.assertEqual(structure.name, 'Citadel')
+        self.assertEqual(structure.eve_category_id, 65)
         obj_parent.refresh_from_db()
         self.assertEqual(obj_parent.name, 'Superheros')
 
@@ -222,17 +222,17 @@ class TestEveTypeManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):        
         load_entity(EveType)
         
-        obj, created = EveType.objects.get_or_create_esi(35832)                
+        structure, created = EveType.objects.get_or_create_esi(35832)                
         self.assertFalse(created)
-        self.assertEqual(obj.id, 35832)
+        self.assertEqual(structure.id, 35832)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         
-        obj, created = EveType.objects.get_or_create_esi(35832)        
+        structure, created = EveType.objects.get_or_create_esi(35832)        
         self.assertTrue(created)
-        self.assertEqual(obj.id, 35832)
+        self.assertEqual(structure.id, 35832)
         self.assertIsInstance(EveType.objects.get(id=35832), EveType)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
@@ -242,13 +242,13 @@ class TestEveTypeManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveGroup.objects.get(id=1657).delete()
         
-        obj, created = EveType.objects.get_or_create_esi(35832)
+        structure, created = EveType.objects.get_or_create_esi(35832)
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveType)
-        self.assertEqual(obj.id, 35832)
-        self.assertEqual(obj.name, 'Astrahus')
+        self.assertIsInstance(structure, EveType)
+        self.assertEqual(structure.id, 35832)
+        self.assertEqual(structure.name, 'Astrahus')
         
-        obj_parent = obj.eve_group        
+        obj_parent = structure.eve_group        
         self.assertEqual(obj_parent.id, 1657)
         self.assertEqual(obj_parent.name, 'Citadel')
 
@@ -258,18 +258,18 @@ class TestEveRegionManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):        
         load_entity(EveRegion)
 
-        obj, created = EveRegion.objects.get_or_create_esi(10000005)        
+        structure, created = EveRegion.objects.get_or_create_esi(10000005)        
         self.assertFalse(created)
-        self.assertEqual(obj.id, 10000005)
+        self.assertEqual(structure.id, 10000005)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client                
         
-        obj, created = EveRegion.objects.get_or_create_esi(10000005)        
+        structure, created = EveRegion.objects.get_or_create_esi(10000005)        
         self.assertTrue(created)
-        self.assertEqual(obj.id, 10000005)
-        self.assertEqual(obj.name, 'Detorid')
+        self.assertEqual(structure.id, 10000005)
+        self.assertEqual(structure.name, 'Detorid')
 
 
 class TestEveConstellationManager(NoSocketsTestCase):
@@ -282,21 +282,21 @@ class TestEveConstellationManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):        
         load_entity(EveConstellation)
 
-        obj, created = EveConstellation.objects.get_or_create_esi(20000069)
+        structure, created = EveConstellation.objects.get_or_create_esi(20000069)
         
         self.assertFalse(created)
-        self.assertEqual(obj.id, 20000069)
-        self.assertEqual(obj.name, '1RG-GU')
+        self.assertEqual(structure.id, 20000069)
+        self.assertEqual(structure.name, '1RG-GU')
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         load_entity(EveRegion)
 
-        obj, created = EveConstellation.objects.get_or_create_esi(20000069)
+        structure, created = EveConstellation.objects.get_or_create_esi(20000069)
         self.assertTrue(created)
-        self.assertEqual(obj.id, 20000069)
-        self.assertEqual(obj.name, '1RG-GU')
+        self.assertEqual(structure.id, 20000069)
+        self.assertEqual(structure.name, '1RG-GU')
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found_w_parent(
@@ -305,12 +305,12 @@ class TestEveConstellationManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveRegion.objects.get(id=10000005).delete()
 
-        obj, created = EveConstellation.objects.get_or_create_esi(20000069)
+        structure, created = EveConstellation.objects.get_or_create_esi(20000069)
         self.assertTrue(created)
-        self.assertEqual(obj.id, 20000069)
-        self.assertEqual(obj.name, '1RG-GU')
+        self.assertEqual(structure.id, 20000069)
+        self.assertEqual(structure.name, '1RG-GU')
         
-        obj_parent = obj.eve_region        
+        obj_parent = structure.eve_region        
         self.assertEqual(obj_parent.id, 10000005)
         self.assertEqual(obj_parent.name, 'Detorid')
         
@@ -332,26 +332,26 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         load_entity(EveSolarSystem)
         load_entity(EvePlanet)
         
-        obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
         self.assertFalse(created)
-        self.assertIsInstance(obj, EveSolarSystem)
-        self.assertEqual(obj.id, 30000474)
-        self.assertEqual(obj.name, '1-PGSG')
-        self.assertEqual(obj.security_status, -0.496552765369415)
-        self.assertEqual(obj.eve_constellation_id, 20000069)
+        self.assertIsInstance(structure, EveSolarSystem)
+        self.assertEqual(structure.id, 30000474)
+        self.assertEqual(structure.name, '1-PGSG')
+        self.assertEqual(structure.security_status, -0.496552765369415)
+        self.assertEqual(structure.eve_constellation_id, 20000069)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         
-        obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         self.assertTrue(created)
-        self.assertIsInstance(obj, EveSolarSystem)
-        self.assertEqual(obj.id, 30000474)
-        self.assertEqual(obj.name, '1-PGSG')
-        self.assertEqual(obj.security_status, -0.496552765369415)
-        self.assertEqual(obj.eve_constellation_id, 20000069)
+        self.assertIsInstance(structure, EveSolarSystem)
+        self.assertEqual(structure.id, 30000474)
+        self.assertEqual(structure.name, '1-PGSG')
+        self.assertEqual(structure.security_status, -0.496552765369415)
+        self.assertEqual(structure.eve_constellation_id, 20000069)
         
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found_including_related(
@@ -360,19 +360,19 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveConstellation.objects.get(id=20000069).delete()
 
-        obj, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.get_or_create_esi(30000474)
         
         self.assertTrue(created)
-        self.assertEqual(obj.id, 30000474)
-        self.assertEqual(obj.name, '1-PGSG')
-        self.assertEqual(obj.security_status, -0.496552765369415)
-        self.assertEqual(obj.eve_constellation_id, 20000069)
+        self.assertEqual(structure.id, 30000474)
+        self.assertEqual(structure.name, '1-PGSG')
+        self.assertEqual(structure.security_status, -0.496552765369415)
+        self.assertEqual(structure.eve_constellation_id, 20000069)
         self.assertSetEqual(
-            {x.id for x in EvePlanet.objects.filter(eve_solar_system=obj)},
+            {x.id for x in EvePlanet.objects.filter(eve_solar_system=structure)},
             {40029526, 40029528, 40029529}
         )
         
-        obj_parent = obj.eve_constellation
+        obj_parent = structure.eve_constellation
         self.assertIsInstance(obj_parent, EveConstellation)
         self.assertEqual(obj_parent.id, 20000069)
         self.assertEqual(obj_parent.name, "1RG-GU")
@@ -382,11 +382,11 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
     def test_can_update_object_from_esi_including_related(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         load_entity(EveSolarSystem)
-        obj = EveSolarSystem.objects.get(id=30000474)
-        obj.name = 'Alpha'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Alpha')
+        structure = EveSolarSystem.objects.get(id=30000474)
+        structure.name = 'Alpha'
+        structure.save()
+        structure.refresh_from_db()
+        self.assertEqual(structure.name, 'Alpha')
 
         load_entity(EvePlanet)
         obj_child = EvePlanet.objects.get(id=40029526)
@@ -395,11 +395,11 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         obj_child.refresh_from_db()
         self.assertEqual(obj_child.name, 'Alpha I')
 
-        obj, created = EveSolarSystem.objects.update_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.update_or_create_esi(30000474)
         
         self.assertFalse(created)
-        self.assertEqual(obj.id, 30000474)
-        self.assertEqual(obj.name, '1-PGSG')        
+        self.assertEqual(structure.id, 30000474)
+        self.assertEqual(structure.name, '1-PGSG')        
         obj_child.refresh_from_db()
         self.assertEqual(obj_child.name, '1-PGSG I')
         
@@ -422,33 +422,33 @@ class TestEveMoonManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):        
         load_entity(EveMoon)
 
-        obj, created = EveMoon.objects.get_or_create_esi(40161465)        
+        structure, created = EveMoon.objects.get_or_create_esi(40161465)        
         self.assertFalse(created)
-        self.assertEqual(obj.id, 40161465)
+        self.assertEqual(structure.id, 40161465)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
        
-        obj, created = EveMoon.objects.get_or_create_esi(40161465)
+        structure, created = EveMoon.objects.get_or_create_esi(40161465)
         self.assertTrue(created)
-        self.assertEqual(obj.id, 40161465)
-        self.assertEqual(obj.name, 'Amamake II - Moon 1')
-        self.assertEqual(obj.eve_solar_system_id, 30002537)        
-        self.assertEqual(obj.position_x, 1)
-        self.assertEqual(obj.position_y, 2)
-        self.assertEqual(obj.position_z, 3)
+        self.assertEqual(structure.id, 40161465)
+        self.assertEqual(structure.name, 'Amamake II - Moon 1')
+        self.assertEqual(structure.eve_solar_system_id, 30002537)        
+        self.assertEqual(structure.position_x, 1)
+        self.assertEqual(structure.position_y, 2)
+        self.assertEqual(structure.position_z, 3)
         
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found_w_parent(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         EveSolarSystem.objects.get(id=30000474).delete()
         
-        obj, created = EveMoon.objects.get_or_create_esi(40161465)
+        structure, created = EveMoon.objects.get_or_create_esi(40161465)
         self.assertTrue(created)
-        self.assertEqual(obj.id, 40161465)
+        self.assertEqual(structure.id, 40161465)
         
-        obj_parent_1 = obj.eve_solar_system
+        obj_parent_1 = structure.eve_solar_system
         self.assertEqual(obj_parent_1.id, 30002537)
 
 
@@ -469,30 +469,30 @@ class TestEvePlanetManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EvePlanet)
 
-        obj, created = EvePlanet.objects.get_or_create_esi(40161469)
+        structure, created = EvePlanet.objects.get_or_create_esi(40161469)
         
         self.assertFalse(created)
-        self.assertEqual(obj.id, 40161469)
+        self.assertEqual(structure.id, 40161469)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         
-        obj, created = EvePlanet.objects.get_or_create_esi(40161469)        
+        structure, created = EvePlanet.objects.get_or_create_esi(40161469)        
         self.assertTrue(created)
-        self.assertEqual(obj.id, 40161469)
-        self.assertEqual(obj.name, 'Amamake IV')
-        self.assertEqual(obj.eve_solar_system_id, 30002537)
-        self.assertEqual(obj.eve_type_id, 2016)
-        self.assertEqual(obj.position_x, 1)
-        self.assertEqual(obj.position_y, 2)
-        self.assertEqual(obj.position_z, 3)
+        self.assertEqual(structure.id, 40161469)
+        self.assertEqual(structure.name, 'Amamake IV')
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.eve_type_id, 2016)
+        self.assertEqual(structure.position_x, 1)
+        self.assertEqual(structure.position_y, 2)
+        self.assertEqual(structure.position_z, 3)
 
         # localizations
-        self.assertEqual(obj.name_de, 'Amamake_de IV')
-        self.assertEqual(obj.name_ko, 'Amamake_ko IV')
-        self.assertEqual(obj.name_ru, 'Amamake_ru IV')
-        self.assertEqual(obj.name_zh, 'Amamake_zh IV')
+        self.assertEqual(structure.name_de, 'Amamake_de IV')
+        self.assertEqual(structure.name_ko, 'Amamake_ko IV')
+        self.assertEqual(structure.name_ru, 'Amamake_ru IV')
+        self.assertEqual(structure.name_zh, 'Amamake_zh IV')
         
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found_w_parent(
@@ -502,14 +502,14 @@ class TestEvePlanetManager(NoSocketsTestCase):
         EveSolarSystem.objects.get(id=30000474).delete()
         EveType.objects.get(id=2016).delete()
 
-        obj, created = EvePlanet.objects.get_or_create_esi(40161469)        
+        structure, created = EvePlanet.objects.get_or_create_esi(40161469)        
         self.assertTrue(created)
-        self.assertEqual(obj.id, 40161469)
+        self.assertEqual(structure.id, 40161469)
         
-        obj_parent_1 = obj.eve_solar_system
+        obj_parent_1 = structure.eve_solar_system
         self.assertEqual(obj_parent_1.id, 30002537)
 
-        obj_parent_2 = obj.eve_type
+        obj_parent_2 = structure.eve_type
         self.assertEqual(obj_parent_2.id, 2016)
 
 
@@ -529,17 +529,17 @@ class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
         EveSovereigntyMap.objects.update_from_esi()
         self.assertEqual(EveSovereigntyMap.objects.count(), 3)
         
-        obj = EveSovereigntyMap.objects.get(solar_system_id=30000726)
-        self.assertEqual(obj.corporation_id, 2011)
-        self.assertEqual(obj.alliance_id, 3011)
+        structure = EveSovereigntyMap.objects.get(solar_system_id=30000726)
+        self.assertEqual(structure.corporation_id, 2011)
+        self.assertEqual(structure.alliance_id, 3011)
 
-        obj = EveSovereigntyMap.objects.get(solar_system_id=30000474)
-        self.assertEqual(obj.corporation_id, 2001)
-        self.assertEqual(obj.alliance_id, 3001)
+        structure = EveSovereigntyMap.objects.get(solar_system_id=30000474)
+        self.assertEqual(structure.corporation_id, 2001)
+        self.assertEqual(structure.alliance_id, 3001)
 
-        obj = EveSovereigntyMap.objects.get(solar_system_id=30000728)
-        self.assertEqual(obj.corporation_id, 2001)
-        self.assertEqual(obj.alliance_id, 3001)
+        structure = EveSovereigntyMap.objects.get(solar_system_id=30000728)
+        self.assertEqual(structure.corporation_id, 2001)
+        self.assertEqual(structure.alliance_id, 3001)
 
     
 class TestEveEntityManager(NoSocketsTestCase):
@@ -547,36 +547,36 @@ class TestEveEntityManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveEntity)
 
-        obj, created = EveEntity.objects.get_or_create_esi(3011)
+        structure, created = EveEntity.objects.get_or_create_esi(3011)
         
         self.assertFalse(created)
-        self.assertEqual(obj.id, 3011)
+        self.assertEqual(structure.id, 3011)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         
-        obj, created = EveEntity.objects.get_or_create_esi(3011)
+        structure, created = EveEntity.objects.get_or_create_esi(3011)
         
         self.assertTrue(created)
-        self.assertEqual(obj.id, 3011)
-        self.assertEqual(obj.name, "Big Bad Alliance")
+        self.assertEqual(structure.id, 3011)
+        self.assertEqual(structure.name, "Big Bad Alliance")
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_update_object_from_esi(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
         load_entity(EveEntity)
-        obj = EveEntity.objects.get(id=3011)
-        obj.name = 'Fantastic Four'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Fantastic Four')
+        structure = EveEntity.objects.get(id=3011)
+        structure.name = 'Fantastic Four'
+        structure.save()
+        structure.refresh_from_db()
+        self.assertEqual(structure.name, 'Fantastic Four')
         
-        obj, created = EveEntity.objects.update_or_create_esi(3011)
+        structure, created = EveEntity.objects.update_or_create_esi(3011)
         
         self.assertFalse(created)
-        self.assertEqual(obj.id, 3011)
-        self.assertEqual(obj.name, "Big Bad Alliance")
+        self.assertEqual(structure.id, 3011)
+        self.assertEqual(structure.name, "Big Bad Alliance")
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_raises_exceptions_if_no_esi_match(self, mock_esi_client):        
@@ -601,11 +601,11 @@ class TestStructureManager(NoSocketsTestCase):
         mock_client = Mock(side_effect=RuntimeError)        
         create_structures()
 
-        obj, created = Structure.objects.get_or_create_esi(
+        structure, created = Structure.objects.get_or_create_esi(
             1000000000001, mock_client
         )        
         self.assertFalse(created)
-        self.assertEqual(obj.id, 1000000000001)
+        self.assertEqual(structure.id, 1000000000001)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
@@ -624,36 +624,36 @@ class TestStructureManager(NoSocketsTestCase):
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
 
-        obj, created = Structure.objects.get_or_create_esi(
+        structure, created = Structure.objects.get_or_create_esi(
             1000000000001, mock_token
         )        
         self.assertTrue(created)
-        self.assertEqual(obj.id, 1000000000001)
-        self.assertEqual(obj.name, 'Test Structure Alpha')
-        self.assertEqual(obj.eve_type_id, 35832)
-        self.assertEqual(obj.eve_solar_system_id, 30002537)
-        self.assertEqual(int(obj.owner.corporation.corporation_id), 2001)
-        self.assertEqual(obj.position_x, 55028384780.0)
-        self.assertEqual(obj.position_y, 7310316270.0)
-        self.assertEqual(obj.position_z, -163686684205.0)
+        self.assertEqual(structure.id, 1000000000001)
+        self.assertEqual(structure.name, 'Test Structure Alpha')
+        self.assertEqual(structure.eve_type_id, 35832)
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.position_x, 55028384780.0)
+        self.assertEqual(structure.position_y, 7310316270.0)
+        self.assertEqual(structure.position_z, -163686684205.0)
 
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_can_update_object_from_esi(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client            
         mock_token = Mock()
         create_structures()
-        obj = Structure.objects.get(id=1000000000001)
-        obj.name = 'Batcave'
-        obj.save()
-        obj.refresh_from_db()
-        self.assertEqual(obj.name, 'Batcave')
+        structure = Structure.objects.get(id=1000000000001)
+        structure.name = 'Batcave'
+        structure.save()
+        structure.refresh_from_db()
+        self.assertEqual(structure.name, 'Batcave')
         
-        obj, created = Structure.objects.update_or_create_esi(
+        structure, created = Structure.objects.update_or_create_esi(
             1000000000001, mock_token
         )        
         self.assertFalse(created)
-        self.assertEqual(obj.id, 1000000000001)
-        self.assertEqual(obj.name, 'Test Structure Alpha')
+        self.assertEqual(structure.id, 1000000000001)
+        self.assertEqual(structure.name, 'Test Structure Alpha')
         
     @patch(MODULE_PATH_ESI_FETCH + '._esi_client')
     def test_raises_exception_when_create_fails(self, mock_esi_client):        
@@ -669,7 +669,7 @@ class TestStructureManager(NoSocketsTestCase):
 
     def test_raises_exception_when_create_without_token(self):
         with self.assertRaises(ValueError):
-            obj, created = Structure.objects.update_or_create_esi(987, None)
+            structure, created = Structure.objects.update_or_create_esi(987, None)
 
 
 class TestStructureManagerCreateFromDict(NoSocketsTestCase):
@@ -724,25 +724,30 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "type_id": 35832,
             "unanchors_at": None
         }
-        obj, created = Structure.objects.update_or_create_from_dict(structure, owner)
+        structure, created = \
+            Structure.objects.update_or_create_from_dict(structure, owner)
         
         # check structure
         self.assertTrue(created)
-        self.assertEqual(obj.id, 1000000000001)
-        self.assertEqual(obj.name, 'Test Structure Alpha')
-        self.assertEqual(obj.eve_type_id, 35832)
-        self.assertEqual(obj.eve_solar_system_id, 30002537)
-        self.assertEqual(obj.owner, owner)
-        self.assertEqual(obj.position_x, 55028384780.0)
-        self.assertEqual(obj.position_y, 7310316270.0)
-        self.assertEqual(obj.position_z, -163686684205.0)
-        self.assertEqual(obj.reinforce_hour, 18)
-        self.assertEqual(obj.state, Structure.STATE_SHIELD_VULNERABLE)
-        self.assertAlmostEqual((now() - obj.created_at).total_seconds(), 0, delta=2)
+        self.assertEqual(structure.id, 1000000000001)
+        self.assertEqual(structure.name, 'Test Structure Alpha')
+        self.assertEqual(structure.eve_type_id, 35832)
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.owner, owner)
+        self.assertEqual(structure.position_x, 55028384780.0)
+        self.assertEqual(structure.position_y, 7310316270.0)
+        self.assertEqual(structure.position_z, -163686684205.0)
+        self.assertEqual(structure.reinforce_hour, 18)
+        self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)
         self.assertAlmostEqual(
-            (now() - obj.last_updated_at).total_seconds(), 0, delta=2
+            (now() - structure.created_at).total_seconds(), 0, delta=2
         )
-        self.assertAlmostEqual((now() - obj.last_online_at).total_seconds(), 0, delta=2)
+        self.assertAlmostEqual(
+            (now() - structure.last_updated_at).total_seconds(), 0, delta=2
+        )
+        self.assertAlmostEqual(
+            (now() - structure.last_online_at).total_seconds(), 0, delta=2
+        )
         # todo: add more content tests
         
         # check services
@@ -755,7 +760,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
                     'state': x.state
                 }
             )
-            for x in obj.structureservice_set.all()
+            for x in structure.structureservice_set.all()
         }
         expected = {
             to_json(
@@ -778,10 +783,11 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         self.assertEqual(services, expected)
     
     def test_can_update_full(self):       
-        owner = create_structures()
-        obj = Structure.objects.get(id=1000000000001)
-        obj.last_updated_at = now() - timedelta(hours=2)
-        obj.save()
+        create_structures()
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.last_updated_at = now() - timedelta(hours=2)
+        structure.save()
         structure = {     
             "corporation_id": 2001,
             "fuel_expires": None,
@@ -819,30 +825,34 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "type_id": 35832,
             "unanchors_at": None
         }
-        obj, created = Structure.objects.update_or_create_from_dict(structure, owner)
+        structure, created = \
+            Structure.objects.update_or_create_from_dict(structure, owner)
         
         # check structure
         self.assertFalse(created)
-        self.assertEqual(obj.id, 1000000000001)
-        self.assertEqual(obj.name, 'Test Structure Alpha Updated')
-        self.assertEqual(obj.eve_type_id, 35832)
-        self.assertEqual(obj.eve_solar_system_id, 30002537)
-        self.assertEqual(obj.owner, owner)
-        self.assertEqual(obj.position_x, 55028384780.0)
-        self.assertEqual(obj.position_y, 7310316270.0)
-        self.assertEqual(obj.position_z, -163686684205.0)
-        self.assertEqual(obj.reinforce_hour, 18)
-        self.assertEqual(obj.state, Structure.STATE_SHIELD_VULNERABLE)        
+        self.assertEqual(structure.id, 1000000000001)
+        self.assertEqual(structure.name, 'Test Structure Alpha Updated')
+        self.assertEqual(structure.eve_type_id, 35832)
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.owner, owner)
+        self.assertEqual(structure.position_x, 55028384780.0)
+        self.assertEqual(structure.position_y, 7310316270.0)
+        self.assertEqual(structure.position_z, -163686684205.0)
+        self.assertEqual(structure.reinforce_hour, 18)
+        self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)        
         self.assertAlmostEqual(
-            (now() - obj.last_updated_at).total_seconds(), 0, delta=2
+            (now() - structure.last_updated_at).total_seconds(), 0, delta=2
         )
-        self.assertAlmostEqual((now() - obj.last_online_at).total_seconds(), 0, delta=2)
+        self.assertAlmostEqual(
+            (now() - structure.last_online_at).total_seconds(), 0, delta=2
+        )
 
     def test_does_not_update_last_online_when_services_are_offline(self):       
-        owner = create_structures()
-        obj = Structure.objects.get(id=1000000000001)
-        obj.last_online_at = None
-        obj.save()
+        create_structures()
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.last_online_at = None
+        structure.save()
         structure = {            
             "fuel_expires": None,        
             "name": "Test Structure Alpha Updated",
@@ -879,11 +889,12 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "type_id": 35832,
             "unanchors_at": None
         }
-        obj, created = Structure.objects.update_or_create_from_dict(structure, owner)
+        structure, created = \
+            Structure.objects.update_or_create_from_dict(structure, owner)
         
         # check structure
         self.assertFalse(created)
-        self.assertIsNone(obj.last_online_at)
+        self.assertIsNone(structure.last_online_at)
         
 
 class TestStructureTagManager(NoSocketsTestCase):
@@ -903,21 +914,21 @@ class TestStructureTagManager(NoSocketsTestCase):
     def test_can_get_space_type_tag_that_exists(self):
         solar_system = EveSolarSystem.objects.get(id=30002537)
         tag = StructureTag.objects.create(name=StructureTag.NAME_LOWSEC_TAG)
-        obj, created = \
+        structure, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
         self.assertFalse(created)
-        self.assertEqual(obj, tag)
+        self.assertEqual(structure, tag)
         
     def test_can_get_space_type_tag_that_does_not_exist(self):
         solar_system = EveSolarSystem.objects.get(id=30002537)
-        obj, created = \
+        structure, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.NAME_LOWSEC_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_ORANGE)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_LOWSEC_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_ORANGE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
 
     def test_can_update_space_type_tag(self):
         solar_system = EveSolarSystem.objects.get(id=30002537)
@@ -928,62 +939,62 @@ class TestStructureTagManager(NoSocketsTestCase):
             is_default=True,
             order=100
         )
-        obj, created = \
+        structure, created = \
             StructureTag.objects.update_or_create_for_space_type(solar_system)
         self.assertFalse(created)
-        self.assertEqual(obj.name, StructureTag.NAME_LOWSEC_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_ORANGE)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_LOWSEC_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_ORANGE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
 
     def test_can_create_for_space_type_highsec(self):
         solar_system = EveSolarSystem.objects.get(id=30002506)
-        obj, created = \
+        structure, created = \
             StructureTag.objects.update_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.NAME_HIGHSEC_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_GREEN)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_HIGHSEC_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_GREEN)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
     
     def test_can_create_for_space_type_nullsec(self):
         solar_system = EveSolarSystem.objects.get(id=30000474)
-        obj, created = \
+        structure, created = \
             StructureTag.objects.update_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.NAME_NULLSEC_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_RED)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_NULLSEC_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_RED)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
 
     def test_can_create_for_space_type_w_space(self):
         solar_system = EveSolarSystem.objects.get(id=31000005)
-        obj, created = \
+        structure, created = \
             StructureTag.objects.update_or_create_for_space_type(solar_system)
         self.assertTrue(created)
-        self.assertEqual(obj.name, StructureTag.NAME_W_SPACE_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_LIGHT_BLUE)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_W_SPACE_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_LIGHT_BLUE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
 
     def test_can_get_existing_sov_tag(self):
         tag = StructureTag.objects.create(name='sov')        
-        obj, created = StructureTag.objects.update_or_create_for_sov()
+        structure, created = StructureTag.objects.update_or_create_for_sov()
         self.assertFalse(created)
-        self.assertEqual(obj, tag)
+        self.assertEqual(structure, tag)
 
     def test_can_get_non_existing_sov_tag(self):
-        obj, created = StructureTag.objects.update_or_create_for_sov()
+        structure, created = StructureTag.objects.update_or_create_for_sov()
         self.assertTrue(created)
-        self.assertEqual(obj.name, 'sov')
-        self.assertEqual(obj.style, StructureTag.STYLE_DARK_BLUE)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 20)
+        self.assertEqual(structure.name, 'sov')
+        self.assertEqual(structure.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 20)
 
     def test_can_update_sov_tag(self):
         StructureTag.objects.create(
@@ -993,37 +1004,37 @@ class TestStructureTagManager(NoSocketsTestCase):
             is_default=True,
             order=100
         )
-        obj, created = StructureTag.objects.update_or_create_for_sov()
+        structure, created = StructureTag.objects.update_or_create_for_sov()
         self.assertFalse(created)
-        self.assertEqual(obj.name, 'sov')
-        self.assertEqual(obj.style, StructureTag.STYLE_DARK_BLUE)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 20)
+        self.assertEqual(structure.name, 'sov')
+        self.assertEqual(structure.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 20)
 
     """
     def test_update_nullsec_tag(self):
         solar_system = EveSolarSystem.objects.get(id=30000474)
-        obj, created = \
+        structure, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
-        self.assertEqual(obj.name, StructureTag.NAME_NULLSEC_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_RED)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_NULLSEC_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_RED)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
 
-        obj.style = StructureTag.STYLE_GREEN
-        obj.is_user_managed = True
-        obj.order = 100
-        obj.save()
+        structure.style = StructureTag.STYLE_GREEN
+        structure.is_user_managed = True
+        structure.order = 100
+        structure.save()
 
-        obj, created = \
+        structure, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
 
         self.assertFalse(created)
-        self.assertEqual(obj.name, StructureTag.NAME_NULLSEC_TAG)
-        self.assertEqual(obj.style, StructureTag.STYLE_RED)
-        self.assertEqual(obj.is_user_managed, False)
-        self.assertEqual(obj.is_default, False)
-        self.assertEqual(obj.order, 50)
+        self.assertEqual(structure.name, StructureTag.NAME_NULLSEC_TAG)
+        self.assertEqual(structure.style, StructureTag.STYLE_RED)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 50)
     """
