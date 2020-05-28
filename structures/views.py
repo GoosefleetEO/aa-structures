@@ -227,7 +227,8 @@ class StructuresRowBuilder:
                     service_name = format_html('<del>{}</del>', service_name)
                 
                 services.append(service_name)
-            self._row['services'] = '<br>'.join(services)
+            services_str = '<br>'.join(services) if services else '-'
+            self._row['services'] = services_str
 
     def _build_reinforcement_infos(self):
         self._row['is_reinforced'] = self._structure.is_reinforced
@@ -345,7 +346,11 @@ class StructuresRowBuilder:
         }
 
     def _build_state(self):
-        self._row['state_str'] = self._structure.get_state_display()
+        
+        def cap_first(s: str) -> str:
+            return s[0].upper() + s[1::]
+        
+        self._row['state_str'] = cap_first(self._structure.get_state_display())
         self._row['state_details'] = self._row['state_str']
         if self._structure.state_timer_end:
             self._row['state_details'] += format_html(
@@ -353,6 +358,11 @@ class StructuresRowBuilder:
                 add_no_wrap_html(
                     self._structure.state_timer_end.strftime(DATETIME_FORMAT)
                 )
+            )
+        if self._structure.unanchors_at:            
+            self._row['state_details'] += format_html(
+                '<br>Unanchoring until {}', 
+                add_no_wrap_html(self._structure.unanchors_at.strftime(DATETIME_FORMAT))
             )
 
 

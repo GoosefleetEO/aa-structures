@@ -447,6 +447,9 @@ class Structure(models.Model):
             else: 
                 return self.MODE_ABANDONED
 
+        elif self.state in (self.STATE_ANCHORING, self.STATE_ANCHOR_VULNERABLE):
+            return self.MODE_LOW_POWER
+            
         else:
             return self.MODE_LOW_ABANDONED
     

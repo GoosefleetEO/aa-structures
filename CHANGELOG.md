@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - New column "Last Online" for Upwell structures
 - Now shows when a structure is Abandoned. ([#24](https://gitlab.com/ErikKalkoken/aa-structures/issues/24))
+- Now shows when a structure is unanchoring and until when
 - Now uses the extensions logger
 
 ### Changed
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Will now correctly remove all structures if ESI returns no structures at all
+- Added timeout for ESI calls (e.g. should fix occasional hanging tasks when ESI is down)
 
 ## [1.2.1] - 2020-05-12
 

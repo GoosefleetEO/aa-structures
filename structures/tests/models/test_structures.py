@@ -226,6 +226,12 @@ class TestStructurePowerMode(NoSocketsTestCase):
         structure.last_online_at = now() - timedelta(days=3)
         self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
 
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        structure.last_online_at = None
+        structure.state = Structure.STATE_ANCHORING
+        self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
+
         structure.fuel_expires_at = None
         structure.last_online_at = now() - timedelta(days=3)
         self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
