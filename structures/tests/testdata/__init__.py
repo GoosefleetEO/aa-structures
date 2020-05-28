@@ -142,7 +142,7 @@ def esi_get_corporations_corporation_id_structures(
     unless the function property override_data is set
     """
 
-    def mock_result():
+    def mock_result(**kwargs):
         """simulates behavior of result()"""
         if mock_operation.also_return_response:            
             mock_response = Mock()
@@ -205,7 +205,7 @@ def esi_get_corporations_corporation_id_starbases(
     unless the function property override_data is set
     """
 
-    def mock_result():
+    def mock_result(**kwargs):
         """simulates behavior of result()"""
         if mock_operation.also_return_response:            
             mock_response = Mock()
@@ -319,7 +319,7 @@ def esi_get_corporations_corporation_id_customs_offices(
     unless the function property override_data is set
     """
 
-    def mock_result():
+    def mock_result(**kwargs):
         """simulates behavior of result()"""
         if mock_operation.also_return_response:            
             mock_response = Mock()

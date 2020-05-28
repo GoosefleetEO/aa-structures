@@ -239,7 +239,9 @@ Current supported power modes are:
 - Low Power
 - Abandoned
 
-Note that the power modes are inferred, since ESI does not provide the current power mode of structures. So they may not be 100% accurate. If is unclear wether a structure is "Low Power" or "Abandoned", the power mode will be shown as "Abandoned?".
+Note that the power modes are inferred, since ESI does not provide the current power mode of structures. So they may not be 100% accurate.
+
+If it is unclear wether a structure is "Low Power" or "Abandoned", the power mode will be shown as "Abandoned?". This usually happens if a structure already was on "Low Power" before this update has been installed, so the app has no information when it was last online. As mitigation you can manually update the field "last online at" for a structure on the admin site.
 
 ### Notifications
 

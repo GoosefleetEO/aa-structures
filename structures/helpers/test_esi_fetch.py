@@ -138,7 +138,7 @@ class TestEsiFetch(NoSocketsTestCase):
     @patch(MODULE_PATH + '._esi_client')
     def test_can_retry_on_exceptions(self, mock_esi_client):        
         
-        def my_side_effect():
+        def my_side_effect(**kwargs):
             """special mock client for testing retry ability"""
             nonlocal retry_counter, max_retries
             

@@ -38,7 +38,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
-    python_requires='~=3.5',
+    python_requires='~=3.6',
     install_requires=[ 
         'django>=2.2,<3.0',
         'django-esi<2.0',

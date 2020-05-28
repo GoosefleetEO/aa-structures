@@ -479,6 +479,7 @@ class StructureAdmin(admin.ModelAdmin):
         '_owner',
         '_location',
         '_type',
+        '_power_mode',
         '_tags'
     )
     list_filter = (
@@ -524,6 +525,9 @@ class StructureAdmin(admin.ModelAdmin):
         return format_html(
             '{}<br>{}', structure.eve_type, structure.eve_type.eve_group
         )
+
+    def _power_mode(self, structure):
+        return structure.get_power_mode_display()
 
     def _tags(self, structure):
         tag_names = [x.name for x in structure.tags.all()]
@@ -586,7 +590,7 @@ class StructureAdmin(admin.ModelAdmin):
         readonly_fields = tuple([
             x.name for x in Structure._meta.get_fields()
             if isinstance(x, models.fields.Field)
-            and x.name not in ['tags']
+            and x.name not in ['tags', 'last_online_at']
         ])
 
     fieldsets = (

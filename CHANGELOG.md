@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Updated dependency for django-esi
+- Removed support for Python 3.5
 
 ### Fixed
 
