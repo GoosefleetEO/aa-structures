@@ -273,7 +273,7 @@ class StructuresRowBuilder:
             fuel_expires_timestamp = self._structure.fuel_expires_at.isoformat()
             if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
                 fuel_expires_display = timeuntil_str(
-                    self._structure.fuel_expires_at - now()
+                    self._structure.fuel_expires_at - now(), show_seconds=False
                 )
                 if not fuel_expires_display:
                     fuel_expires_display = '?'
@@ -325,7 +325,7 @@ class StructuresRowBuilder:
                 self._structure.last_online_at.isoformat()
             if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
                 last_online_at_display = timeuntil_str(
-                    now() - self._structure.last_online_at
+                    now() - self._structure.last_online_at, show_seconds=False
                 )
                 if not last_online_at_display:
                     last_online_at_display = '?'

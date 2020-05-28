@@ -256,7 +256,7 @@ def set_test_logger(logger_name: str, name: str) -> object:
     return logger
 
 
-def timeuntil_str(duration: timedelta) -> str:
+def timeuntil_str(duration: timedelta, show_seconds=True) -> str:
     """return the duration as nicely formatted string. 
     Or empty string if duration is negative. 
     
@@ -266,28 +266,29 @@ def timeuntil_str(duration: timedelta) -> str:
     if seconds > 0:
         periods = [
             # Translators: Abbreviation for years
-            (_('y'), 60 * 60 * 24 * 365, False),
+            (_('y'), 60 * 60 * 24 * 365, False, True),
             
             # Translators: Abbreviation for months
-            (_('mt'), 60 * 60 * 24 * 30, False),
+            (_('mt'), 60 * 60 * 24 * 30, False, True),
             
             # Translators: Abbreviation for days
-            (_('d'), 60 * 60 * 24, False),
+            (_('d'), 60 * 60 * 24, False, True),
             
             # Translators: Abbreviation for hours
-            (_('h'), 60 * 60, True),
+            (_('h'), 60 * 60, True, True),
             
             # Translators: Abbreviation for months
-            (_('m'), 60, True),
+            (_('m'), 60, True, True),
             
             # Translators: Abbreviation for seconds
-            (_('s'), 1, True)
+            (_('s'), 1, True, show_seconds)
         ]
         strings = list()
-        for period_name, period_seconds, period_static in periods:
+        for period_name, period_seconds, period_static, show in periods:
             if seconds >= period_seconds or period_static:
-                period_value, seconds = divmod(seconds, period_seconds)            
-                strings.append('{}{}'.format(period_value, period_name))
+                period_value, seconds = divmod(seconds, period_seconds)
+                if show:
+                    strings.append('{}{}'.format(period_value, period_name))
 
         result = ' '.join(strings)
     else:

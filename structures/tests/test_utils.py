@@ -195,6 +195,9 @@ class TestTimeUntil(TestCase):
         expected = '0h 33m 10s'
         self.assertEqual(timeuntil_str(duration), expected)
 
+        expected = '0h 33m'
+        self.assertEqual(timeuntil_str(duration, show_seconds=False), expected)
+
         duration = timedelta(
             days=0, seconds=10
         )
