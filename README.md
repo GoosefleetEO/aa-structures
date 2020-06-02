@@ -180,9 +180,10 @@ Finally restart your AA supervisor services.
 In this section you find a detailed description of the following key features:
 
 - [Localization](#localization)
-- [Structure tags](#structure-tags)
-- [Power Modes](#power-modes)
 - [Notifications](#notifications)
+- [Power Modes](#power-modes)
+- [Pings](#pings)
+- [Structure tags](#structure-tags)
 - [Timers](#timers)
 
 ### Localization
@@ -205,6 +206,82 @@ The following parts of the app will use localization with the default language:
 
 - Timers
 - Name of Custom Offices
+
+### Notifications
+
+#### Message rendering on Discord
+
+All notification types are classified in into one of four semantic categories. These categories determine the color of the notification on Discord and whether pings are created.
+
+Category | Color | Ping
+-- | -- | --
+success | green | None
+info | blue | None
+warning | yellow | @here
+danger | red | @everyone
+
+The mapping between notification types and semantic categories is predefined and can at the moment not be individually configured.
+
+But it is possible to turn off pinging for all notifications per webhook and/or per owner on the admin site.
+
+#### Supported notification types
+
+The following Eve Online notification types are currently supported (names are from ESI):
+
+##### Moon Mining
+
+- MoonminingAutomaticFracture
+- MoonminingExtractionCancelled
+- MoonminingExtractionFinished
+- MoonminingExtractionStarted
+- MoonminingLaserFired
+
+##### Upwell Structures
+
+- OwnershipTransferred
+- StructureAnchoring
+- StructureDestroyed
+- StructureFuelAlert
+- StructureLostArmor
+- StructureLostShields
+- StructureOnline
+- StructureServicesOffline
+- StructureUnanchoring
+- StructureUnderAttack
+- StructureWentHighPower
+- StructureWentLowPower
+
+##### POCOs
+
+- OrbitalAttacked
+- OrbitalReinforced
+
+##### Starbases
+
+- TowerAlertMsg
+- TowerResourceAlertMsg
+
+##### Sovereignty
+
+- EntosisCaptureStarted
+- SovAllClaimAquiredMsg
+- SovCommandNodeEventStarted
+- SovStructureReinforced
+- SovStructureDestroyed
+
+### Power Modes
+
+Structures will display the current power mode of an Upwell structure if it can be determined.
+
+Current supported power modes are:
+
+- Full Power
+- Low Power
+- Abandoned
+
+Note that the power modes are inferred, since ESI does not provide the current power mode of structures. So they may not be 100% accurate.
+
+If it is unclear wether a structure is "Low Power" or "Abandoned", the power mode will be shown as "Abandoned?". This usually happens if a structure already was on "Low Power" before this update has been installed, so the app has no information when it was last online. As mitigation you can manually update the field "last online at" for a structure on the admin site.
 
 ### Structure tags
 
@@ -229,65 +306,6 @@ There are currently two types of generated tags:
 - space type: Shows which space type the structure is in, e.g. null sec or low sec
 - sov: Shows that the owner of that structures has sovereignty in the respective solar system
 
-### Power Modes
-
-Structures will display the current power mode of an Upwell structure if it can be determined.
-
-Current supported power modes are:
-
-- Full Power
-- Low Power
-- Abandoned
-
-Note that the power modes are inferred, since ESI does not provide the current power mode of structures. So they may not be 100% accurate.
-
-If it is unclear wether a structure is "Low Power" or "Abandoned", the power mode will be shown as "Abandoned?". This usually happens if a structure already was on "Low Power" before this update has been installed, so the app has no information when it was last online. As mitigation you can manually update the field "last online at" for a structure on the admin site.
-
-### Notifications
-
-The following notifications are currently supported (names are from the API):
-
-#### Moon Mining
-
-- MoonminingAutomaticFracture
-- MoonminingExtractionCancelled
-- MoonminingExtractionFinished
-- MoonminingExtractionStarted
-- MoonminingLaserFired
-
-#### Upwell Structures
-
-- OwnershipTransferred
-- StructureAnchoring
-- StructureDestroyed
-- StructureFuelAlert
-- StructureLostArmor
-- StructureLostShields
-- StructureOnline
-- StructureServicesOffline
-- StructureUnanchoring
-- StructureUnderAttack
-- StructureWentHighPower
-- StructureWentLowPower
-
-#### POCOs
-
-- OrbitalAttacked
-- OrbitalReinforced
-
-#### Starbases
-
-- TowerAlertMsg
-- TowerResourceAlertMsg
-
-### Sovereignty
-
-- EntosisCaptureStarted
-- SovAllClaimAquiredMsg
-- SovCommandNodeEventStarted
-- SovStructureReinforced
-- SovStructureDestroyed
-
 ### Timers
 
 **Alliance Structures** will automatically create friendly timers from  notifications for Alliance Auth's Structure Timers app. This feature can be configured via [Settings](#settings).
@@ -309,7 +327,7 @@ Note that all settings are optional and the app will use the documented default 
 
 Name | Description | Default
 -- | -- | --
-`STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed).<br>Will create timers from anchoring, lost shield and lost armor notifications  | True
+`STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed). Will create timers from anchoring, lost shield and lost armor notifications  | True
 `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`| whether admins will get notifications about import events like when someone adds a structure owner | True
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | False
 `STRUCTURES_DEFAULT_LANGUAGE`| Sets the default language to be used in case no language can be determined. e.g. this language will be used when creating timers. Please use the language codes as defined in the base.py settings file. | en

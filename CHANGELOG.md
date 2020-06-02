@@ -7,16 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.3.0] - 2020-05-27
+## [1.3.0] - 2020-06-02
 
-**Abandoned Structures**
+**Abandoned Structures & Pinging**
 
 ### Added
 
-- New column "Last Online" for Upwell structures
-- Now shows when a structure is Abandoned. ([#24](https://gitlab.com/ErikKalkoken/aa-structures/issues/24))
-- Now shows when a structure is unanchoring and until when
-- Now uses the extensions logger
+- Show when a structure was last online for Upwell structures in "Low Power" mode
+- New power mode "Abandoned" shown for structures. ([#24](https://gitlab.com/ErikKalkoken/aa-structures/issues/24))
+- Show when a structure is currently unanchoring and until when
+- Option allowing to disable pinging per webhook ([#5](https://gitlab.com/ErikKalkoken/aa-structures/issues/5))
+- Option allowing to disable pinging per owner ([#5](https://gitlab.com/ErikKalkoken/aa-structures/issues/5))
+- Enabled logging to the extensions logger
 
 ### Changed
 

@@ -207,6 +207,13 @@ class Webhook(models.Model):
             'pre-set when created'
         )
     )
+    has_pings_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            'to enable or disable pinging of notifications for this webhook '
+            'e.g. with @everyone and @here'
+        )
+    )
 
     def __str__(self):
         return self.name
@@ -475,10 +482,13 @@ class Notification(models.Model):
             logger.warning(add_prefix('Failed to generate embed: %s' % ex))
             raise ex
         else:
-            if embed.color == self.EMBED_COLOR_DANGER:
-                content = '@everyone'
-            elif embed.color == self.EMBED_COLOR_WARNING:
-                content = '@here'
+            if webhook.has_pings_enabled and self.owner.has_pings_enabled:
+                if embed.color == self.EMBED_COLOR_DANGER:
+                    content = '@everyone'
+                elif embed.color == self.EMBED_COLOR_WARNING:
+                    content = '@here'
+                else:
+                    content = None
             else:
                 content = None
 

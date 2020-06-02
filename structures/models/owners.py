@@ -188,6 +188,13 @@ class Owner(models.Model):
             'the overall status of this services'
         )
     )
+    has_pings_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            'to enable or disable pinging of notifications for this owner '
+            'e.g. with @everyone and @here'
+        )
+    )    
 
     def __str__(self) -> str:
         return str(self.corporation.corporation_name)
@@ -584,7 +591,7 @@ class Owner(models.Model):
                 'Assets.post_corporations_corporation_id_assets_names',
                 args={
                     'corporation_id': corporation_id, 
-                    'item_ids': item_ids,                        
+                    'item_ids': item_ids_chunk,                        
                 },
                 token=token,
                 logger_tag=add_prefix()
@@ -821,14 +828,10 @@ class Owner(models.Model):
             folder_name = 'structures_notifications_archive'
             os.makedirs(folder_name, exist_ok=True)
             filename = '{}/notifications_{}_{}.txt'.format(
-                folder_name,
-                self.corporation.corporation_id,
-                now().date().isoformat()
+                folder_name, self.corporation.corporation_id, now().date().isoformat()
             )
             logger.info(add_prefix(
-                'Storing notifications into archive file: {}'.format(
-                    filename
-                )
+                'Storing notifications into archive file: {}'.format(filename)
             ))
             with open(file=filename, mode='a', encoding='utf-8') as f:
                 f.write('[{}] {}:\n'.format(
@@ -836,14 +839,10 @@ class Owner(models.Model):
                     self.corporation.corporation_ticker
                 ))
                 json.dump(
-                    notifications,
-                    f,
-                    cls=DjangoJSONEncoder,
-                    sort_keys=True,
-                    indent=4
+                    notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4
                 )
                 f.write('\n')
-
+       
         logger.debug(add_prefix(
             'Processing {:,} notifications received from ESI'.format(
                 len(notifications)

@@ -226,7 +226,8 @@ class OwnerAdmin(admin.ModelAdmin):
         '_corporation',        
         '_alliance',
         'character',
-        '_webhooks',
+        '_webhooks',        
+        'has_pings_enabled',
         '_is_active',
         '_is_structure_sync_ok',
         '_is_notification_sync_ok',
@@ -234,7 +235,8 @@ class OwnerAdmin(admin.ModelAdmin):
         
     )
     list_filter = (
-        ('corporation__alliance', admin.RelatedOnlyFieldListFilter),
+        ('corporation__alliance', admin.RelatedOnlyFieldListFilter),        
+        'has_pings_enabled',
         'is_active',
         OwnerSyncStatusFilter,
     )
@@ -246,6 +248,7 @@ class OwnerAdmin(admin.ModelAdmin):
                 'character',
                 'webhooks',
                 'is_alliance_main',
+                'has_pings_enabled',                
                 'is_included_in_service_status',
                 'is_active',
             )
@@ -645,8 +648,10 @@ class StructureAdmin(admin.ModelAdmin):
 @admin.register(Webhook)
 class WebhookAdmin(admin.ModelAdmin):
     ordering = ['name']
-    list_display = ('name', 'webhook_type', 'is_active', 'is_default')
-    list_filter = ('webhook_type', 'is_active')
+    list_display = (
+        'name', 'webhook_type', 'has_pings_enabled', 'is_active', 'is_default', 
+    )
+    list_filter = ('webhook_type', 'has_pings_enabled', 'is_active')
     save_as = True
     actions = (
         'test_notification',

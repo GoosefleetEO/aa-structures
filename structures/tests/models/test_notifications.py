@@ -244,10 +244,8 @@ class TestNotification(NoSocketsTestCase):
             types_tested.add(x.notification_type)
 
         # make sure we have tested all existing notification types
-        self.assertSetEqual(
-            Notification.get_all_types(), types_tested
-        )
-
+        self.assertSetEqual(Notification.get_all_types(), types_tested)
+        
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_WAIT_SEC', 0)
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
@@ -264,7 +262,7 @@ class TestNotification(NoSocketsTestCase):
 
     @patch(MODULE_PATH + '.STRUCTURES_NOTIFICATION_MAX_RETRIES', 2)    
     @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
-    def test_send_to_webhook_too_many_requests(self, mock_execute):                                
+    def test_send_to_webhook_too_many_requests(self, mock_execute):
         logger.debug('test_send_to_webhook_too_many_requests')        
         mock_response = Mock()
         mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
@@ -329,6 +327,70 @@ class TestNotification(NoSocketsTestCase):
         embed = mock_execute.call_args[1]['embeds'][0]
         self.assertNotIn('The anchoring timer ends at', embed.description)
         
+
+class TestNotificationPings(NoSocketsTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities()
+
+    def setUp(self):        
+        create_structures(dont_load_entities=True)
+        my_user, self.owner = set_owner_character(character_id=1001)        
+        load_notification_entities(self.owner)        
+        
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    def test_can_ping(self, mock_execute):
+        args = {'status_code': 200, 'status_ok': True, 'content': None}
+        mock_response = Mock(**args)
+        mock_execute.return_value = mock_response
+        
+        webhook_normal = Webhook.objects.create(
+            name='Test', url='http://www.example.com/dummy/'
+        )
+        obj = Notification.objects.get(notification_id=1000000509)
+        self.assertTrue(obj.send_to_webhook(webhook_normal))
+        args, kwargs = mock_execute.call_args
+        self.assertTrue(
+            kwargs['content'] and '@everyone' in kwargs['content']
+        )
+
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    def test_can_disable_pinging_webhook(self, mock_execute):
+        args = {'status_code': 200, 'status_ok': True, 'content': None}
+        mock_response = Mock(**args)
+        mock_execute.return_value = mock_response
+                
+        webhook_no_pings = Webhook.objects.create(
+            name='Test2', url='http://www.example.com/x-2/', has_pings_enabled=False
+        )        
+        obj = Notification.objects.get(notification_id=1000000509)        
+        self.assertTrue(obj.send_to_webhook(webhook_no_pings))
+        args, kwargs = mock_execute.call_args
+        self.assertFalse(
+            kwargs['content'] and '@everyone' in kwargs['content']
+        )
+
+    @patch(MODULE_PATH + '.dhooks_lite.Webhook.execute', autospec=True)
+    def test_can_disable_pinging_owner(self, mock_execute):
+        args = {'status_code': 200, 'status_ok': True, 'content': None}
+        mock_response = Mock(**args)
+        mock_execute.return_value = mock_response
+                
+        webhook_normal = Webhook.objects.create(
+            name='Test', url='http://www.example.com/dummy/'
+        )
+        self.owner.webhooks.add(webhook_normal)
+        self.owner.has_pings_enabled = False
+        self.owner.save()
+        obj = Notification.objects.get(notification_id=1000000509)        
+        self.assertTrue(obj.send_to_webhook(webhook_normal))
+        args, kwargs = mock_execute.call_args
+        self.assertFalse(
+            kwargs['content'] and '@everyone' in kwargs['content']
+        )
+
 
 class TestNotificationAddToTimerboard(NoSocketsTestCase):
     

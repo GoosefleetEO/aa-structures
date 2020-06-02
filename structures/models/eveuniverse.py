@@ -507,8 +507,8 @@ class EveSolarSystem(EveUniverse):
         """returns ID of sov owning alliance for this system or None"""
         if self.is_null_sec:
             try:
-                map = EveSovereigntyMap.objects.get(solar_system_id=self.id)
-                alliance_id = map.alliance_id if map.alliance_id else None        
+                sov_map = EveSovereigntyMap.objects.get(solar_system_id=self.id)
+                alliance_id = sov_map.alliance_id if sov_map.alliance_id else None        
             except EveSovereigntyMap.DoesNotExist:
                 alliance_id = None
         else:
