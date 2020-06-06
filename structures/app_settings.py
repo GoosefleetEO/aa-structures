@@ -83,6 +83,10 @@ STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE = \
 STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES = \
     clean_setting('STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES', 120)
 
+# Hard timeout for tasks in seconds to reduce task accumulation during outages
+STRUCTURES_TASKS_TIME_LIMIT = \
+    clean_setting('STRUCTURES_TASKS_TIME_LIMIT', 7200)
+
 # whether created timers are corp restricted on the timerboard
 STRUCTURES_TIMERS_ARE_CORP_RESTRICTED = \
     clean_setting('STRUCTURES_TIMERS_ARE_CORP_RESTRICTED', False)

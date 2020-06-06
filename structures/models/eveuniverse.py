@@ -1,6 +1,5 @@
 """Eve Universe models"""
 
-import logging
 import urllib
 
 from django.db import models
@@ -9,12 +8,13 @@ from django.utils import translation
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
+from allianceauth.services.hooks import get_extension_logger
 
 from .. import __title__
 from ..managers import EveUniverseManager, EveSovereigntyMapManager
 from ..utils import LoggerAddTag
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 class EsiNameLocalization(models.Model):
@@ -149,6 +149,9 @@ class EveUniverse(EsiNameLocalization, models.Model):
 
     objects = EveUniverseManager()
 
+    class Meta:
+        abstract = True
+
     def __repr__(self):
         return '{}(id={}, name=\'{}\')'.format(
             self.__class__.__name__,
@@ -178,10 +181,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
                         self, field_name, 
                         self._name_localized_generated(django_lc)
                     )
-    
-    class Meta:
-        abstract = True
-
+        
     @classmethod
     def esi_pk(cls) -> str:
         """returns the name of the pk column on ESI that must exist"""
@@ -309,7 +309,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
 
 
 class EveCategory(EveUniverse):
-    """group in Eve Online"""
+    """category in Eve Online"""
 
     # named category IDs
     EVE_CATEGORY_ID_ORBITAL = 46
@@ -380,7 +380,15 @@ class EveType(EveUniverse):
 
     @property
     def is_upwell_structure(self):
-        return self.eve_group.eve_category.is_upwell_structure
+        if self.eve_group.eve_category:
+            return self.eve_group.eve_category.is_upwell_structure
+        else:
+            logger.warning(
+                'Group "%s" does not have a category. This is a data error. '
+                'Please update your local SDE data',
+                self.eve_group
+            )
+            return False
 
     @property
     def is_fuel_block(self):

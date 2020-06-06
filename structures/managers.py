@@ -10,7 +10,7 @@ from allianceauth.services.hooks import get_extension_logger
 from esi.models import Token
 
 from . import __title__
-from structures.helpers.esi_fetch import esi_fetch_with_localization, esi_fetch
+from .helpers.esi_fetch import esi_fetch_with_localization, esi_fetch
 from .utils import LoggerAddTag, make_logger_prefix
 
 

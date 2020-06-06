@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.3.1] - 2020-06-06
+
+### Changed
+
+- Added hard time out for all tasks to 2 hours (can be adjusted via settings) to reduce task accumulation during outages.
+
+### Fixed
+
+- A missing category will no longer break rendering of the structure list ([#25](https://gitlab.com/ErikKalkoken/aa-structures/issues/25))
+
 ## [1.3.0] - 2020-06-02
 
 **Abandoned Structures & Pinging**
