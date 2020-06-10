@@ -13,7 +13,7 @@ def get_random_subset(lst: list, max_members: int) -> list:
     return subset
 
 
-my_list = ['one', 'two', 'three', 'four']
+my_list = ["one", "two", "three", "four"]
 
 subset = get_random_subset(my_list, 4)
 # print(subset)

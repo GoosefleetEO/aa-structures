@@ -7,7 +7,7 @@ from ...models import (
     EveRegion,
     EveConstellation,
     EveSolarSystem,
-    EveMoon    
+    EveMoon,
 )
 
 
@@ -17,8 +17,8 @@ def get_input(text):
 
 
 class Command(BaseCommand):
-    help = 'Updates Eve Online SDE data'
-    
+    help = "Updates Eve Online SDE data"
+
     def _update_models(self):
         """updates all SDE models from ESI and provides progress output"""
         models = [
@@ -28,35 +28,33 @@ class Command(BaseCommand):
             EveRegion,
             EveConstellation,
             EveSolarSystem,
-            EveMoon,        
+            EveMoon,
         ]
         model_count = 0
         for EveModel in models:
-            total_objects = EveModel.objects.count()                        
+            total_objects = EveModel.objects.count()
             model_count += 1
             self.stdout.write(
-                'Updating %d objects of %s (%d/%d)...' % (
-                    total_objects, 
-                    EveModel.__name__, 
-                    model_count, 
-                    len(models)
-                )
-            )            
+                "Updating %d objects of %s (%d/%d)..."
+                % (total_objects, EveModel.__name__, model_count, len(models))
+            )
             count_updated = EveModel.objects.update_all_esi()
             if count_updated < total_objects:
-                self.stdout.write(self.style.DANGER(
-                    'Only %d objects updated due to an error.' % count_updated
-                ))
-                
+                self.stdout.write(
+                    self.style.DANGER(
+                        "Only %d objects updated due to an error." % count_updated
+                    )
+                )
+
     def handle(self, *args, **options):
         self.stdout.write(
-            'This command will reload all local EVE Online SDE data from '
-            'the server. This process can take a while to complete.'            
+            "This command will reload all local EVE Online SDE data from "
+            "the server. This process can take a while to complete."
         )
-        user_input = get_input('Are you sure you want to proceed? (Y/n)?')
-        if user_input == 'Y':
-            self.stdout.write('Starting update. Please stand by.')
+        user_input = get_input("Are you sure you want to proceed? (Y/n)?")
+        if user_input == "Y":
+            self.stdout.write("Starting update. Please stand by.")
             self._update_models()
-            self.stdout.write('Update completed!')
+            self.stdout.write("Update completed!")
         else:
-            self.stdout.write('Aborted')
+            self.stdout.write("Aborted")

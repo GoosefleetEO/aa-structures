@@ -6,23 +6,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('structures', '0002_auto_20191121_2335'),
+        ("structures", "0002_auto_20191121_2335"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='notification',
-            name='is_timer_added',
-            field=models.BooleanField(blank=True, default=None, help_text='True when a timer has been added for this notification', null=True),
+            model_name="notification",
+            name="is_timer_added",
+            field=models.BooleanField(
+                blank=True,
+                default=None,
+                help_text="True when a timer has been added for this notification",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='notification',
-            name='is_sent',
-            field=models.BooleanField(blank=True, default=False, help_text='True when this notification has been forwarded to Discord'),
+            model_name="notification",
+            name="is_sent",
+            field=models.BooleanField(
+                blank=True,
+                default=False,
+                help_text="True when this notification has been forwarded to Discord",
+            ),
         ),
         migrations.AlterField(
-            model_name='notification',
-            name='last_updated',
-            field=models.DateTimeField(help_text='Date when this notification has last been updated from ESI'),
+            model_name="notification",
+            name="last_updated",
+            field=models.DateTimeField(
+                help_text="Date when this notification has last been updated from ESI"
+            ),
         ),
     ]

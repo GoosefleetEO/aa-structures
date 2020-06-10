@@ -6,18 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('structures', '0011_last_online'),
+        ("structures", "0011_last_online"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='owner',
-            name='has_pings_enabled',
-            field=models.BooleanField(default=True, help_text='to enable or disable pinging of notifications for this owner e.g. with @everyone and @here'),
+            model_name="owner",
+            name="has_pings_enabled",
+            field=models.BooleanField(
+                default=True,
+                help_text="to enable or disable pinging of notifications for this owner e.g. with @everyone and @here",
+            ),
         ),
         migrations.AddField(
-            model_name='webhook',
-            name='has_pings_enabled',
-            field=models.BooleanField(default=True, help_text='to enable or disable pinging of notifications for this webhook e.g. with @everyone and @here'),
+            model_name="webhook",
+            name="has_pings_enabled",
+            field=models.BooleanField(
+                default=True,
+                help_text="to enable or disable pinging of notifications for this webhook e.g. with @everyone and @here",
+            ),
         ),
     ]

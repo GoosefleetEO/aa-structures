@@ -7,42 +7,101 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('structures', '0009_localizations'),
+        ("structures", "0009_localizations"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='EveSovereigntyMap',
+            name="EveSovereigntyMap",
             fields=[
-                ('solar_system_id', models.PositiveIntegerField(primary_key=True, serialize=False)),
-                ('alliance_id', models.PositiveIntegerField(blank=True, db_index=True, help_text='alliance who holds sov for this system', null=True)),
-                ('corporation_id', models.PositiveIntegerField(blank=True, db_index=True, help_text='corporation who holds sov for this system', null=True)),
-                ('faction_id', models.PositiveIntegerField(blank=True, db_index=True, help_text='faction who holds sov for this system', null=True)),
-                ('last_updated', models.DateTimeField(blank=True, db_index=True, default=None, help_text='When this object was last updated from ESI', null=True)),
+                (
+                    "solar_system_id",
+                    models.PositiveIntegerField(primary_key=True, serialize=False),
+                ),
+                (
+                    "alliance_id",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        db_index=True,
+                        help_text="alliance who holds sov for this system",
+                        null=True,
+                    ),
+                ),
+                (
+                    "corporation_id",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        db_index=True,
+                        help_text="corporation who holds sov for this system",
+                        null=True,
+                    ),
+                ),
+                (
+                    "faction_id",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        db_index=True,
+                        help_text="faction who holds sov for this system",
+                        null=True,
+                    ),
+                ),
+                (
+                    "last_updated",
+                    models.DateTimeField(
+                        blank=True,
+                        db_index=True,
+                        default=None,
+                        help_text="When this object was last updated from ESI",
+                        null=True,
+                    ),
+                ),
             ],
         ),
         migrations.AlterModelOptions(
-            name='structuretag',
-            options={'ordering': ['order', 'name']},
+            name="structuretag", options={"ordering": ["order", "name"]},
         ),
         migrations.AddField(
-            model_name='structuretag',
-            name='is_user_managed',
-            field=models.BooleanField(default=True, help_text='if False this tag is created and managed by the system and can not be modified by users'),
+            model_name="structuretag",
+            name="is_user_managed",
+            field=models.BooleanField(
+                default=True,
+                help_text="if False this tag is created and managed by the system and can not be modified by users",
+            ),
         ),
         migrations.AddField(
-            model_name='structuretag',
-            name='order',
-            field=models.PositiveIntegerField(blank=True, default=100, help_text='number defining the order tags are shown. custom tags can not have an order below 100', validators=[django.core.validators.MinValueValidator(100)]),
+            model_name="structuretag",
+            name="order",
+            field=models.PositiveIntegerField(
+                blank=True,
+                default=100,
+                help_text="number defining the order tags are shown. custom tags can not have an order below 100",
+                validators=[django.core.validators.MinValueValidator(100)],
+            ),
         ),
         migrations.AlterField(
-            model_name='structuretag',
-            name='is_default',
-            field=models.BooleanField(default=False, help_text='if true this custom tag will automatically be added to new structures'),
+            model_name="structuretag",
+            name="is_default",
+            field=models.BooleanField(
+                default=False,
+                help_text="if true this custom tag will automatically be added to new structures",
+            ),
         ),
         migrations.AlterField(
-            model_name='structuretag',
-            name='style',
-            field=models.CharField(blank=True, choices=[('default', 'grey'), ('primary', 'dark blue'), ('success', 'green'), ('info', 'light blue'), ('warning', 'orange'), ('danger', 'red')], default='default', help_text='color style of tag', max_length=16),
+            model_name="structuretag",
+            name="style",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("default", "grey"),
+                    ("primary", "dark blue"),
+                    ("success", "green"),
+                    ("info", "light blue"),
+                    ("warning", "orange"),
+                    ("danger", "red"),
+                ],
+                default="default",
+                help_text="color style of tag",
+                max_length=16,
+            ),
         ),
     ]
