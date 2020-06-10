@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Changed
+
+- Enabled Black formatting for the whole codebase
+- ESI timeout improved
+
 ## [1.3.1] - 2020-06-06
 
 ### Changed

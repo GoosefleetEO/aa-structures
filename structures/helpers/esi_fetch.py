@@ -19,6 +19,7 @@ from esi.clients import esi_client_factory
 from esi.models import Token
 
 from .. import __title__
+from ..app_settings import STRUCTURES_ESI_TIMEOUT_ENABLED
 from ..utils import LoggerAddTag
 
 
@@ -26,7 +27,6 @@ logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
 ESI_MAX_RETRIES = 3
 ESI_RETRY_SLEEP_SECS = 1
-ESI_API_TIMEOUT = 10
 
 _my_esi_client = None
 
@@ -282,15 +282,16 @@ def _execute_esi_request(
             )
         try:
             operation = getattr(esi_category, esi_method_name)(**args)
+            result_args = {"timeout": (5, 30)} if STRUCTURES_ESI_TIMEOUT_ENABLED else {}
             if has_pages:
                 operation.also_return_response = True
-                response_object, response = operation.result(timeout=ESI_API_TIMEOUT)
+                response_object, response = operation.result(**result_args)
                 if "x-pages" in response.headers:
                     pages = int(response.headers["x-pages"])
                 else:
                     pages = 0
             else:
-                response_object = operation.result()
+                response_object = operation.result(**result_args)
                 pages = 0
             break
 

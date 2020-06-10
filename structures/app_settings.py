@@ -94,3 +94,6 @@ STRUCTURES_TASKS_TIME_LIMIT = clean_setting("STRUCTURES_TASKS_TIME_LIMIT", 7200)
 STRUCTURES_TIMERS_ARE_CORP_RESTRICTED = clean_setting(
     "STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False
 )
+
+# whether created timers are corp restricted on the timerboard
+STRUCTURES_ESI_TIMEOUT_ENABLED = clean_setting("STRUCTURES_ESI_TIMEOUT_ENABLED", True)
