@@ -1,4 +1,5 @@
-# this scripts adds test notifications to a specified corporation / structure
+# flake8: noqa
+""" this scripts adds test notifications to a specified corporation / structure"""
 
 from datetime import timedelta
 import inspect

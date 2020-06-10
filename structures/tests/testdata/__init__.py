@@ -1,3 +1,4 @@
+# flake8: noqa
 """functions for loading test data and for building mocks"""
 
 from copy import deepcopy
