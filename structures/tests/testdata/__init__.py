@@ -555,7 +555,10 @@ def load_entity(EntityClass):
             if "alliance_id" in obj:
                 alliance, _ = EveAllianceInfo.objects.get_or_create(
                     alliance_id=obj["alliance_id"],
-                    defaults={"alliance_name": obj["alliance_name"]},
+                    defaults={
+                        "alliance_name": obj["alliance_name"],
+                        "executor_corp_id": obj["corporation_id"],
+                    },
                 )
                 corp_defaults["alliance"] = alliance
             EveCorporationInfo.objects.get_or_create(

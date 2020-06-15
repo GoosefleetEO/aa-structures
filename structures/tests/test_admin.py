@@ -256,7 +256,7 @@ class TestStructureAdmin(TestCase):
         request.user = self.user
         changelist = my_modeladmin.get_changelist_instance(request)
         filterspec = changelist.get_filters(request)[0][0]
-        expected = [("2002", "Wayne Foods"), ("2001", "Wayne Technologies")]
+        expected = [(2002, "Wayne Foods"), (2001, "Wayne Technologies")]
         self.assertEqual(filterspec.lookup_choices, expected)
 
         # Make sure the correct queryset is returned
@@ -288,7 +288,7 @@ class TestStructureAdmin(TestCase):
         request.user = self.user
         changelist = modeladmin.get_changelist_instance(request)
         filterspec = changelist.get_filters(request)[0][0]
-        expected = [("3001", "Wayne Enterprises")]
+        expected = [(3001, "Wayne Enterprises")]
         self.assertEqual(filterspec.lookup_choices, expected)
 
         # Make sure the correct queryset is returned
