@@ -239,6 +239,7 @@ class TestNotification(NoSocketsTestCase):
 
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(x.send_to_webhook(self.webhook))
+        self.assertEqual(mock_execute.call_count, 1)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_MAX_RETRIES", 2)
     @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
@@ -247,11 +248,12 @@ class TestNotification(NoSocketsTestCase):
         mock_response = Mock()
         mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
         mock_response.status_ok = False
-        mock_response.content = {"retry_after": 100}
+        mock_response.content = {"retry_after": 10}
         mock_execute.return_value = mock_response
 
         x = Notification.objects.get(notification_id=1000000502)
         self.assertFalse(x.send_to_webhook(self.webhook))
+        self.assertEqual(mock_execute.call_count, 3)
 
     @patch(MODULE_PATH + ".settings.DEBUG", False)
     @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)

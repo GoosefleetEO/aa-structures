@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.3.3] - 2020-06-16
+
+### Changed
+
+- Now using Discord retry logic from dhooks-lite
+
+### Fixed
+
+- Adopted tests to work with AA 2.7.2
+
 ## [1.3.2] - 2020-06-10
 
 ### Changed

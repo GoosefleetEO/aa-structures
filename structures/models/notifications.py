@@ -1111,19 +1111,15 @@ class Notification(models.Model):
                     else:
                         retry_after = STRUCTURES_NOTIFICATION_WAIT_SEC
                     logger.warn(
-                        add_prefix("rate limited - retry after %d secs" % retry_after)
+                        add_prefix(
+                            "rate limited - will retry after %d secs" % retry_after
+                        )
                     )
                     sleep(retry_after)
 
                 else:
-                    logger.warn(
-                        add_prefix(
-                            "HTTP error {} while trying "
-                            "to send notifications".format(res.status_code)
-                        )
-                    )
-                    if retry_count < max_retries + 1:
-                        sleep(STRUCTURES_NOTIFICATION_WAIT_SEC)
+                    logger.warn(add_prefix("Failed to send message"))
+                    break
 
             except Exception as ex:
                 logger.warn(
