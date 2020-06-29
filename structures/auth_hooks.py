@@ -14,7 +14,7 @@ class StructuresMenuItem(MenuItemHook):
         MenuItemHook.__init__(
             self,
             _(__title__),
-            "fa fa-building fa-fw",
+            "fas fa-building fa-fw",
             "structures:index",
             navactive=["structures:index"],
         )
