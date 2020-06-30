@@ -1,4 +1,4 @@
-# Alliance Structures
+# Structures
 
 App for managing Eve Online structures with
 Alliance Auth.
@@ -21,13 +21,13 @@ Alliance Auth.
 
 ## Overview
 
-This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows corporations and alliance to see a current list of all their structures in Auth and also get structure related notification on Discord.
+This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows all member corporations to see a current list of all their structures in Auth and also get structure related notification on Discord.
 
 ## Features Summary
 
-Alliance Structures adds the following main features to Alliance Auth:
+Structures adds the following main features to Alliance Auth:
 
-- Structure browser with a detailed list of all structures owned by alliances / corporation, automatically synced with the game server
+- Structure browser with a detailed list of all structures owned by member corporations, automatically synced with the game server
 - Structures include all Upwell structures, Custom Offices and Starbases / POSes
 - Automatically forwards structure notifications to Discord channels as alerts
 - Notification categories include Upwell Structures, Moon Mining, Customs Offices, Starbases and Sovereignty
@@ -37,7 +37,7 @@ Alliance Structures adds the following main features to Alliance Auth:
 - Interface for 3rd party monitoring of the services status
 - Chinese :cn:, English :us: and German :de: localization
 
-*We are looking for help with translating Alliance Structures for more languages incl. French, Korean, Russian, and Spanish. If you are interested please sign up on our [Transifex project](https://www.transifex.com/kalkoken-apps/aa-structures/).*
+*We are looking for help with translating Structures for more languages incl. French, Korean, Russian, and Spanish. If you are interested please sign up on our [Transifex project](https://www.transifex.com/kalkoken-apps/aa-structures/).*
 
 ## Screenshots
 
@@ -147,7 +147,7 @@ Finally to verify that your webhook is correctly setup you can send a test notif
 
 ### Step 8 - Add structure owners
 
-Next you need to add your first structure owner with the character that will be used for fetching structures. Just open the Alliance Structures app and click on "Add Structure Owner". Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
+Next you need to add your first structure owner with the character that will be used for fetching structures. Just open the Structures app and click on "Add Structure Owner". Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
 
 Once a structure owner is set the app will start fetching the corporation structures and related notifications. Wait a minute and then reload the structure list page to see the result.
 
@@ -157,7 +157,7 @@ Note that as admin you can review all structures and notifications on the admin 
 
 ## Updating
 
-To update your existing installation of Alliance Structures first enable your virtual environment.
+To update your existing installation of Structures first enable your virtual environment.
 
 Then run the following commands from your AA project directory (the one that contains `manage.py`).
 
@@ -188,7 +188,7 @@ In this section you find a detailed description of the following key features:
 
 ### Localization
 
-Alliance Structures has full localization for languages support by Alliance Auth. This chapter describes how to set the language for different parts of the app:
+Structures has full localization for languages support by Alliance Auth. This chapter describes how to set the language for different parts of the app:
 
 #### UI
 
@@ -308,7 +308,7 @@ There are currently two types of generated tags:
 
 ### Timers
 
-**Alliance Structures** will automatically create friendly timers from  notifications for Alliance Auth's Structure Timers app. This feature can be configured via [Settings](#settings).
+**Structures** will automatically create friendly timers from  notifications for Alliance Auth's Structure Timers app. This feature can be configured via [Settings](#settings).
 
 Timers can be created from the following notification types:
 
@@ -358,7 +358,7 @@ Can add new structure owner | User can add a corporation with it's structures | 
 
 ## Service monitoring
 
-Alliances may want to rely on getting prompt notifications on Discord to keep their assets save. However, an app like Alliance Structures is fully dependant on external services like the Eve API (ESI) to stay operational.
+Alliances may want to rely on getting prompt notifications on Discord to keep their assets save. However, an app like Structures is fully dependant on external services like the Eve API (ESI) to stay operational.
 
 In order stay alliance apprised about any potential service outages, this app has a simple HTTP interface that enables monitoring of it's service status by a 3rd party monitoring application. (e.g. [Uptimerobot](https://www.uptimerobot.com)).
 

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.3.4] - 2020-06-30
+
+### Changed
+
+- Renamed the app from "Alliance Structures" to "Structures" to better reflect that it works just as well when is Auth is setup for a corporation or a coalition.
+- Update to Font Awesome v5. Thank you Peter Pfeufer for your contribution!
+
 ## [1.3.3] - 2020-06-16
 
 ### Changed
