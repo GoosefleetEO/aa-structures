@@ -100,6 +100,20 @@ entities_testdata = _load_testdata_entities()
 ESI_LANGUAGES = {"de", "en-us", "fr", "ja", "ru", "zh", "ko"}
 
 
+class EsiOperation:
+    def __init__(self, data, headers: dict = None, also_return_response: bool = False):
+        self._data = data
+        self._headers = headers if headers else {"x-pages": 1}
+        self.also_return_response = also_return_response
+
+    def result(self, **kwargs):
+        if self.also_return_response:
+            mock_response = Mock(**{"headers": self._headers})
+            return [self._data, mock_response]
+        else:
+            return self._data
+
+
 def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data 
@@ -123,9 +137,7 @@ def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs
     if language in ESI_LANGUAGES.difference({"en-us"}):
         entity["name"] += "_" + language
 
-    mock_operation = Mock()
-    mock_operation.result.return_value = entity
-    return mock_operation
+    return EsiOperation(data=entity)
 
 
 def esi_get_corporations_corporation_id_structures(
@@ -135,15 +147,6 @@ def esi_get_corporations_corporation_id_structures(
     will use the respective test data 
     unless the function property override_data is set
     """
-
-    def mock_result(**kwargs):
-        """simulates behavior of result()"""
-        if mock_operation.also_return_response:
-            mock_response = Mock()
-            mock_response.headers = mock_operation._headers
-            return [mock_operation._data, mock_response]
-        else:
-            return mock_operation._data
 
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
@@ -178,15 +181,73 @@ def esi_get_corporations_corporation_id_structures(
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
 
-    mock_operation = Mock()
-    mock_operation.also_return_response = False
-    mock_operation._headers = {"x-pages": pages_count}
-    mock_operation._data = corp_data[start:stop]
-    mock_operation.result.side_effect = mock_result
-    return mock_operation
+    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
 
 
 esi_get_corporations_corporation_id_structures.override_data = None
+
+
+def esi_get_corporations_corporation_id_structures_2(
+    corporation_id, page=None, language=None, *args, **kwargs
+):
+    """simulates ESI endpoint of same name for mock test
+    will use the respective test data 
+    unless the function property override_data is set
+    
+    VARIANT that simulates django-esi 2.0
+    """
+
+    class RequestConfig:
+        def __init__(self, also_return_response):
+            self.also_return_response = also_return_response
+
+    class EsiOperation:
+        def __init__(self, headers, data, also_return_response=False):
+            self._headers = headers
+            self._data = data
+            self.request_config = RequestConfig(also_return_response)
+
+        def result(self, **kwargs):
+            if self.request_config.also_return_response:
+                mock_response = Mock(**{"headers": self._headers})
+                return [self._data, mock_response]
+            else:
+                return self._data
+
+    page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
+    if not page:
+        page = 1
+
+    if esi_get_corporations_corporation_id_structures.override_data is None:
+        my_corp_structures_data = esi_corp_structures_data
+    else:
+        if not isinstance(
+            esi_get_corporations_corporation_id_structures.override_data, dict
+        ):
+            raise TypeError("data must be dict")
+
+        my_corp_structures_data = (
+            esi_get_corporations_corporation_id_structures.override_data
+        )
+
+    if str(corporation_id) in my_corp_structures_data:
+        corp_data = deepcopy(my_corp_structures_data[str(corporation_id)])
+    else:
+        corp_data = list()
+
+    # add pseudo localization
+    if language:
+        for obj in corp_data:
+            if "services" in obj and obj["services"]:
+                for service in obj["services"]:
+                    if language != "en-us":
+                        service["name"] += "_%s" % language
+
+    start = (page - 1) * page_size
+    stop = start + page_size
+    pages_count = int(math.ceil(len(corp_data) / page_size))
+
+    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
 
 
 def esi_get_corporations_corporation_id_starbases(
@@ -232,13 +293,7 @@ def esi_get_corporations_corporation_id_starbases(
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
-
-    mock_operation = Mock()
-    mock_operation.also_return_response = False
-    mock_operation._headers = {"x-pages": pages_count}
-    mock_operation._data = corp_data[start:stop]
-    mock_operation.result.side_effect = mock_result
-    return mock_operation
+    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
 
 
 esi_get_corporations_corporation_id_starbases.override_data = None
@@ -253,11 +308,7 @@ def esi_get_corporations_corporation_id_starbases_starbase_id(
         "get_corporations_corporation_id_starbases_starbase_id"
     ]  # noqa
     if str(starbase_id) in corporation_starbase_details:
-        mock_operation = Mock()
-        mock_operation.result.return_value = corporation_starbase_details[
-            str(starbase_id)
-        ]
-        return mock_operation
+        return EsiOperation(data=corporation_starbase_details[str(starbase_id)])
 
     else:
         mock_response = Mock()
@@ -279,9 +330,7 @@ def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
         )
 
     if str(structure_id) in universe_structures_data:
-        mock_operation = Mock()
-        mock_operation.result.return_value = universe_structures_data[str(structure_id)]
-        return mock_operation
+        return EsiOperation(data=universe_structures_data[str(structure_id)])
 
     else:
         mock_response = Mock()
@@ -296,9 +345,7 @@ esi_get_universe_structures_structure_id.override_data = None
 def esi_get_characters_character_id_notifications(character_id, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
 
-    mock_operation = Mock()
-    mock_operation.result.return_value = entities_testdata["Notification"]
-    return mock_operation
+    return EsiOperation(data=entities_testdata["Notification"])
 
 
 def esi_get_corporations_corporation_id_customs_offices(
@@ -308,16 +355,6 @@ def esi_get_corporations_corporation_id_customs_offices(
     will use the respective test data
     unless the function property override_data is set
     """
-
-    def mock_result(**kwargs):
-        """simulates behavior of result()"""
-        if mock_operation.also_return_response:
-            mock_response = Mock()
-            mock_response.headers = mock_operation._headers
-            return [mock_operation._data, mock_response]
-        else:
-            return mock_operation._data
-
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
         page = 1
@@ -347,13 +384,7 @@ def esi_get_corporations_corporation_id_customs_offices(
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
-
-    mock_operation = Mock()
-    mock_operation.also_return_response = False
-    mock_operation._headers = {"x-pages": pages_count}
-    mock_operation._data = corp_data[start:stop]
-    mock_operation.result.side_effect = mock_result
-    return mock_operation
+    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
 
 
 esi_get_corporations_corporation_id_customs_offices.override_data = None
@@ -374,9 +405,7 @@ def _esi_post_corporations_corporation_id_assets(
             )
         )
     else:
-        mock_operation = Mock()
-        mock_operation.result.return_value = my_esi_data[str(corporation_id)]
-        return mock_operation
+        return EsiOperation(data=my_esi_data[str(corporation_id)])
 
 
 def esi_post_corporations_corporation_id_assets_locations(
@@ -408,17 +437,14 @@ esi_post_corporations_corporation_id_assets_names.override_data = None
 
 
 def esi_get_universe_categories_category_id(category_id, language=None):
-    mock_operation = Mock()
     obj_data = {"id": 65, "name": "Structure"}
     if language in ESI_LANGUAGES.difference({"en-us"}):
         obj_data["name"] += "_" + language
 
-    mock_operation.result.return_value = obj_data
-    return mock_operation
+    return EsiOperation(data=obj_data)
 
 
 def esi_get_universe_moons_moon_id(moon_id, language=None):
-    mock_operation = Mock()
     obj_data = {
         "id": 40161465,
         "name": "Amamake II - Moon 1",
@@ -428,12 +454,18 @@ def esi_get_universe_moons_moon_id(moon_id, language=None):
     if language in ESI_LANGUAGES.difference({"en-us"}):
         obj_data["name"] += "_" + language
 
-    mock_operation.result.return_value = obj_data
-    return mock_operation
+    return EsiOperation(data=obj_data)
 
 
-def esi_mock_client():
-    """provides a mocked ESI client"""
+def esi_return_data(data):
+    return lambda **kwargs: EsiOperation(data=data)
+
+
+def esi_mock_client(version=1.6):
+    """provides a mocked ESI client
+    
+    version is the supported version of django-esi
+    """
     mock_client = Mock()
 
     # Assets
@@ -450,9 +482,14 @@ def esi_mock_client():
     )
 
     # Corporation
-    mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
-        esi_get_corporations_corporation_id_structures
-    )
+    if version == 1.6:
+        mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
+            esi_get_corporations_corporation_id_structures
+        )
+    elif version == 2.0:
+        mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
+            esi_get_corporations_corporation_id_structures_2
+        )
     mock_client.Corporation.get_corporations_corporation_id_starbases.side_effect = (
         esi_get_corporations_corporation_id_starbases
     )
@@ -466,53 +503,44 @@ def esi_mock_client():
     )
 
     # Sovereignty
-    mock_client.Sovereignty.get_sovereignty_map.return_value.result.return_value = esi_data[
-        "Sovereignty"
-    ][
-        "get_sovereignty_map"
-    ]
+    mock_client.Sovereignty.get_sovereignty_map.side_effect = esi_return_data(
+        esi_data["Sovereignty"]["get_sovereignty_map"]
+    )
 
     # Universe
     mock_client.Universe.get_universe_categories_category_id.side_effect = (
         esi_get_universe_categories_category_id
     )
 
-    mock_client.Universe.get_universe_groups_group_id.return_value.result.return_value = {
-        "id": 1657,
-        "name": "Citadel",
-        "category_id": 65,
-    }
-    mock_client.Universe.get_universe_types_type_id.return_value.result.return_value = {
-        "id": 35832,
-        "name": "Astrahus",
-        "group_id": 1657,
-    }
-    mock_client.Universe.get_universe_regions_region_id.return_value.result.return_value = {
-        "id": 10000005,
-        "name": "Detorid",
-    }
-    mock_client.Universe.get_universe_constellations_constellation_id.return_value.result.return_value = {
-        "id": 20000069,
-        "name": "1RG-GU",
-        "region_id": 10000005,
-    }
-    mock_client.Universe.get_universe_systems.return_value.result.return_value = esi_data[
-        "Universe"
-    ][
-        "get_universe_systems"
-    ]
-    mock_client.Universe.get_universe_systems_system_id.return_value.result.return_value = {
-        "id": 30000474,
-        "name": "1-PGSG",
-        "security_status": -0.496552765369415,
-        "constellation_id": 20000069,
-        "star_id": 99,
-        "planets": [
-            {"planet_id": 40029526},
-            {"planet_id": 40029528},
-            {"planet_id": 40029529},
-        ],
-    }
+    mock_client.Universe.get_universe_groups_group_id.side_effect = esi_return_data(
+        {"id": 1657, "name": "Citadel", "category_id": 65,}
+    )
+    mock_client.Universe.get_universe_types_type_id.side_effect = esi_return_data(
+        {"id": 35832, "name": "Astrahus", "group_id": 1657,}
+    )
+    mock_client.Universe.get_universe_regions_region_id.side_effect = esi_return_data(
+        {"id": 10000005, "name": "Detorid",}
+    )
+    mock_client.Universe.get_universe_constellations_constellation_id.side_effect = esi_return_data(
+        {"id": 20000069, "name": "1RG-GU", "region_id": 10000005,}
+    )
+    mock_client.Universe.get_universe_systems.side_effect = esi_return_data(
+        esi_data["Universe"]["get_universe_systems"]
+    )
+    mock_client.Universe.get_universe_systems_system_id.side_effect = esi_return_data(
+        {
+            "id": 30000474,
+            "name": "1-PGSG",
+            "security_status": -0.496552765369415,
+            "constellation_id": 20000069,
+            "star_id": 99,
+            "planets": [
+                {"planet_id": 40029526},
+                {"planet_id": 40029528},
+                {"planet_id": 40029529},
+            ],
+        }
+    )
     mock_client.Universe.get_universe_planets_planet_id.side_effect = (
         esi_get_universe_planets_planet_id
     )
@@ -521,9 +549,9 @@ def esi_mock_client():
         esi_get_universe_moons_moon_id
     )
 
-    mock_client.Universe.post_universe_names.return_value.result.return_value = [
-        {"id": 3011, "category": "alliance", "name": "Big Bad Alliance"}
-    ]
+    mock_client.Universe.post_universe_names.side_effect = esi_return_data(
+        [{"id": 3011, "category": "alliance", "name": "Big Bad Alliance"}]
+    )
 
     mock_client.Universe.get_universe_structures_structure_id.side_effect = (
         esi_get_universe_structures_structure_id

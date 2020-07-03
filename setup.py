@@ -41,7 +41,7 @@ setup(
     python_requires="~=3.6",
     install_requires=[
         "django>=2.2,<3.0",
-        "django-esi<2.0",
+        "django-esi>=1.5,<3",
         "dhooks-lite>=0.4.0",
         "django-navhelper",
         "django-multiselectfield",

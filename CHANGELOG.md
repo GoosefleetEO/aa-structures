@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.3.5] - 2020-07-03
+
+### Added
+
+- This app now works with both the old (1.6.x) and new (2.0.x) version of django-esi
+
 ## [1.3.4] - 2020-06-30
 
 ### Changed
