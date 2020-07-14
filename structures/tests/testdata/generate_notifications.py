@@ -38,8 +38,8 @@ from structures.models import (
 )  # noqa: E402, E501
 
 # corporation / structure the notifications will be added to
-CORPORATION_ID = 98612071  # SODIC
-STRUCTURE_ID = 1024796015529  # Alpha
+CORPORATION_ID = 98267621  # RABIS
+STRUCTURE_ID = 1014475167450  # Tower in Enaluri
 
 print(
     "load_test_notifications - "

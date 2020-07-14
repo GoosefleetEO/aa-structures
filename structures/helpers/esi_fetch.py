@@ -271,6 +271,8 @@ def _execute_esi_request(
     """
     add_prefix = _make_logger_prefix(logger_tag)
     logger.info(add_prefix(log_message_base))
+    response_object = None
+    pages = 0
     for retry_count in range(ESI_MAX_RETRIES + 1):
         if retry_count > 0:
             logger.warn(

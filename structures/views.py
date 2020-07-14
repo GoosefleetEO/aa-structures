@@ -426,6 +426,7 @@ def add_structure_owner(request, token):
             ),
         )
         success = False
+        owned_char = None
 
     if success:
         try:

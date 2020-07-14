@@ -107,10 +107,9 @@ def send_notifications(notification_pks: list, rate_limited=True):
 def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
     """sends test notification to given webhook"""
 
-    add_prefix = make_logger_prefix("test notification")
+    webhook = Webhook.objects.get(pk=webhook_pk)
+    add_prefix = make_logger_prefix(webhook)
     try:
-        webhook = Webhook.objects.get(pk=webhook_pk)
-        add_prefix = make_logger_prefix(webhook)
         send_report = webhook.send_test_notification()
         error_code = None
     except Exception as ex:

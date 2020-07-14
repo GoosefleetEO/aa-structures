@@ -582,7 +582,7 @@ class Notification(models.Model):
             description += gettext("is now online.")
             color = self.EMBED_COLOR_SUCCESS
 
-        if self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
+        elif self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
             title = gettext("Structure fuel alert")
             description += gettext("has less then 24hrs fuel left.")
             color = self.EMBED_COLOR_WARNING
@@ -649,6 +649,9 @@ class Notification(models.Model):
             description += gettext("has been destroyed.")
             color = self.EMBED_COLOR_DANGER
 
+        else:
+            raise NotImplementedError()
+
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
 
@@ -702,6 +705,9 @@ class Notification(models.Model):
                 )
             title = gettext("Structure anchoring")
             color = self.EMBED_COLOR_INFO
+
+        else:
+            raise NotImplementedError()
 
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
@@ -800,6 +806,9 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_SUCCESS
 
+        else:
+            raise NotImplementedError()
+
         structure_type, _ = EveType.objects.get_or_create_esi(
             parsed_text["structureTypeID"]
         )
@@ -845,6 +854,9 @@ class Notification(models.Model):
                 "date": reinforce_exit_time.strftime(DATETIME_FORMAT),
             }
             color = self.EMBED_COLOR_DANGER
+
+        else:
+            raise NotImplementedError()
 
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
@@ -902,6 +914,9 @@ class Notification(models.Model):
                 "quantity": quantity,
             }
             color = self.EMBED_COLOR_WARNING
+
+        else:
+            raise NotImplementedError()
 
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
@@ -1020,6 +1035,9 @@ class Notification(models.Model):
                 "owner": sov_owner_link,
             }
             color = self.EMBED_COLOR_DANGER
+
+        else:
+            raise NotImplementedError()
 
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
@@ -1199,6 +1217,8 @@ class Notification(models.Model):
             details = gettext("Armor timer")
         elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
             details = gettext("Final timer")
+        else:
+            raise NotImplementedError()
 
         return Timer(
             details=details,
@@ -1336,5 +1356,7 @@ class Notification(models.Model):
                     )
                     self.is_timer_added = False
                     self.save()
+        else:
+            timer = None
 
         return timer
