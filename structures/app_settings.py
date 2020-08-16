@@ -95,5 +95,12 @@ STRUCTURES_TIMERS_ARE_CORP_RESTRICTED = clean_setting(
     "STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False
 )
 
-# whether created timers are corp restricted on the timerboard
+# whether ESI timeout is enabled
 STRUCTURES_ESI_TIMEOUT_ENABLED = clean_setting("STRUCTURES_ESI_TIMEOUT_ENABLED", True)
+
+# Default page size for structure list.
+# Must be an integer value from the current options as seen in the app.
+STRUCTURES_DEFAULT_PAGE_LENGTH = clean_setting("STRUCTURES_DEFAULT_PAGE_LENGTH", 10)
+
+# Wether paging is enabled for the structure list
+STRUCTURES_PAGING_ENABLED = clean_setting("STRUCTURES_PAGING_ENABLED", True)

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.4.0] - tbd
+
+### Added
+
+- (Will now also create timers for Structure Timers II if it is installed)
+- Ability to configure paging for the structure list via settings
+
+### Changed
+
+- Moved "Add Structure Owner" button to the top of the page
+- Refreshed UI
+
 ## [1.3.6] - 2020-07-14
 
 ### Fixed

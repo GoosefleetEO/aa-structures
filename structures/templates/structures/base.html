@@ -3,11 +3,9 @@
 
 {% block page_title %}{% trans "Structures" %}{% endblock %}
 
-{% block content %}
-    <div class="col-lg-12">        
-        <h2 class="text-center">{{ page_title }}</h2>
-        <div class="col-lg-12 container">            
-            {% block details %}{% endblock %}
-        </div>
-    </div>
+{% block content %}    
+    <h2 class="text-center">{{ page_title }}</h2>
+    <div class="col-lg-12 container">            
+        {% block details %}{% endblock %}
+    </div>    
 {% endblock %}

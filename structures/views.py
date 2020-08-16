@@ -20,6 +20,8 @@ from .app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
     STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED,
+    STRUCTURES_DEFAULT_PAGE_LENGTH,
+    STRUCTURES_PAGING_ENABLED,
 )
 from .forms import TagsFilterForm
 from .models import Owner, Structure, StructureTag, StructureService, Webhook
@@ -89,6 +91,8 @@ def structure_list(request):
         "active_tags": active_tags,
         "tags_filter_form": form,
         "tags_exist": StructureTag.objects.exists(),
+        "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
+        "data_tables_paging": STRUCTURES_PAGING_ENABLED,
     }
     return render(request, "structures/structure_list.html", context)
 
