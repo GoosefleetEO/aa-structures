@@ -12,7 +12,7 @@ from allianceauth.eveonline.models import (
     EveAllianceInfo,
 )
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.timerboard.models import Timer
+from allianceauth.timerboard.models import Timer as AuthTimer
 from allianceauth.tests.auth_utils import AuthUtils
 
 from esi.errors import TokenExpiredError, TokenInvalidError
@@ -1260,7 +1260,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
 
         # create test data
-        Timer.objects.all().delete()
+        AuthTimer.objects.all().delete()
         AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
@@ -1278,13 +1278,13 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.assertTrue(mock_notify.called)
 
         # should have added timers
-        self.assertEqual(Timer.objects.count(), 5)
+        self.assertEqual(AuthTimer.objects.count(), 5)
 
         # run sync again
         self.assertTrue(self.owner.fetch_notifications_esi())
 
         # should not have more timers
-        self.assertEqual(Timer.objects.count(), 5)
+        self.assertEqual(AuthTimer.objects.count(), 5)
 
     @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)

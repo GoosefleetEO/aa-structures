@@ -1,0 +1,154 @@
+{
+    "EveCategory": [
+        {
+            "id": 2,
+            "name": "Celestial",
+            "published": true
+        },
+        {
+            "id": 65,
+            "name": "Structure",
+            "published": true
+        }
+    ],
+    "EveConstellation": [
+        {
+            "eve_region_id": 10000005,
+            "id": 20000069,
+            "name": "1RG-GU",
+            "position_x": 6.589576156777015e+16,
+            "position_y": -2.414094652686306e+16,
+            "position_z": -2.0586943916879514e+17
+        },
+        {
+            "eve_region_id": 10000030,
+            "id": 20000372,
+            "name": "Hed",
+            "position_x": -1.282693384263374e+17,
+            "position_y": 3.8212719069804984e+16,
+            "position_z": 7556108809294752.0
+        }
+    ],
+    "EveGroup": [
+        {
+            "eve_category_id": 2,
+            "id": 7,
+            "name": "Planet",
+            "published": false
+        },
+        {
+            "eve_category_id": 65,
+            "id": 1406,
+            "name": "Refinery",
+            "published": true
+        },
+        {
+            "eve_category_id": 65,
+            "id": 1657,
+            "name": "Citadel",
+            "published": true
+        }
+    ],
+    "EveMoon": [
+        {
+            "eve_planet_id": 40161464,
+            "id": 40161465,
+            "name": "Amamake II - Moon 1",
+            "position_x": 55026981697.0,
+            "position_y": 7310370842.0,
+            "position_z": -163687030576.0
+        }
+    ],
+    "EvePlanet": [
+        {
+            "eve_solar_system_id": 30002537,
+            "eve_type_id": 11,
+            "id": 40161464,
+            "name": "Amamake II",
+            "position_x": 54986876136.0,
+            "position_y": 7304805367.0,
+            "position_z": -163545075399.0
+        }
+    ],
+    "EveRegion": [
+        {
+            "description": "In the outer reaches of the south, nestled behind its formidable neighbors, lies Detorid. This unassuming region is home to what have become termed dead storms, a phenomenon thus far not found anywhere else. They appear randomly, centered around certain planets, ravage the area for days, then abruptly vanish.\r\n\r\nScientists have had relatively few chances to travel to the region to study dead storms, as Detorid once marked the edge of the Jove Empire and now lies within the Angel Cartel's territory. Current theory points to the storms being tears in the fabric of space. Why they exist in the first place, or the reason for their being focused around certain planets, remain mysteries and will no doubt do so for some time yet.",
+            "id": 10000005,
+            "name": "Detorid"
+        },
+        {
+            "description": "\"Never Again\"",
+            "id": 10000030,
+            "name": "Heimatar"
+        }
+    ],
+    "EveSolarSystem": [
+        {
+            "eve_constellation_id": 20000069,
+            "eve_star_id": null,
+            "id": 30000474,
+            "name": "1-PGSG",
+            "position_x": 6.225366790851818e+16,
+            "position_y": -1.3859715493969482e+16,
+            "position_z": -1.964787490343949e+17,
+            "security_status": -0.4965527653694153
+        },
+        {
+            "eve_constellation_id": 20000372,
+            "eve_star_id": null,
+            "id": 30002537,
+            "name": "Amamake",
+            "position_x": -1.242922662884945e+17,
+            "position_y": 4.4194364193727224e+16,
+            "position_z": 6110392433587103.0,
+            "security_status": 0.43876123428344727
+        }
+    ],
+    "EveType": [
+        {
+            "capacity": 0.0,
+            "eve_graphic_id": null,
+            "eve_group_id": 7,
+            "eve_market_group_id": null,
+            "icon_id": 10136,
+            "id": 11,
+            "mass": 1e+35,
+            "name": "Planet (Temperate)",
+            "packaged_volume": 1.0,
+            "portion_size": 1,
+            "published": false,
+            "radius": 10000.0,
+            "volume": 1.0
+        },
+        {
+            "capacity": 0.0,
+            "eve_graphic_id": null,
+            "eve_group_id": 1657,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 35832,
+            "mass": 3000000000.0,
+            "name": "Astrahus",
+            "packaged_volume": 8000.0,
+            "portion_size": 1,
+            "published": true,
+            "radius": 45000.0,
+            "volume": 8000.0
+        },
+        {
+            "capacity": 0.0,
+            "eve_graphic_id": null,
+            "eve_group_id": 1406,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 35835,
+            "mass": 3000000000.0,
+            "name": "Athanor",
+            "packaged_volume": 8000.0,
+            "portion_size": 1,
+            "published": true,
+            "radius": 45000.0,
+            "volume": 8000.0
+        }
+    ]
+}

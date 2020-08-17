@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytz
 
-from allianceauth.timerboard.models import Timer
+from allianceauth.timerboard.models import Timer as AuthTimer
 
 from ...models import EveEntity, Notification, Webhook, Structure
 from ..testdata import (
@@ -13,6 +13,7 @@ from ..testdata import (
     create_structures,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 from ...utils import set_test_logger, NoSocketsTestCase
 
 MODULE_PATH = "structures.models.notifications"
@@ -367,18 +368,20 @@ class TestNotificationPings(NoSocketsTestCase):
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
 
+@patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
 class TestNotificationAddToTimerboard(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         create_structures()
-        my_user, cls.owner = set_owner_character(character_id=1001)
+        load_eveuniverse()
+        _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
         cls.webhook = Webhook.objects.create(
             name="Test", url="http://www.example.com/dummy/"
         )
         cls.owner.webhooks.add(cls.webhook)
-        Timer.objects.all().delete()
+        AuthTimer.objects.all().delete()
 
     @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
     @patch("allianceauth.timerboard.models.Timer", spec=True)
@@ -416,34 +419,34 @@ class TestNotificationAddToTimerboard(NoSocketsTestCase):
         for x in notification_without_timer_query:
             self.assertFalse(x.process_for_timerboard())
 
-        self.assertEqual(Timer.objects.count(), 0)
+        self.assertEqual(AuthTimer.objects.count(), 0)
 
         x = Notification.objects.get(notification_id=1000000501)
         self.assertTrue(x.process_for_timerboard())
-        self.assertEqual(Timer.objects.count(), 1)
+        self.assertEqual(AuthTimer.objects.count(), 1)
 
         x = Notification.objects.get(notification_id=1000000504)
         self.assertTrue(x.process_for_timerboard())
-        self.assertEqual(Timer.objects.count(), 2)
+        self.assertEqual(AuthTimer.objects.count(), 2)
 
         x = Notification.objects.get(notification_id=1000000505)
         self.assertTrue(x.process_for_timerboard())
-        self.assertEqual(Timer.objects.count(), 3)
+        self.assertEqual(AuthTimer.objects.count(), 3)
 
         x = Notification.objects.get(notification_id=1000000602)
         self.assertTrue(x.process_for_timerboard())
-        self.assertEqual(Timer.objects.count(), 4)
+        self.assertEqual(AuthTimer.objects.count(), 4)
 
-        ids_set_1 = {x.id for x in Timer.objects.all()}
+        ids_set_1 = {x.id for x in AuthTimer.objects.all()}
         x = Notification.objects.get(notification_id=1000000404)
         self.assertTrue(x.process_for_timerboard())
-        self.assertEqual(Timer.objects.count(), 5)
+        self.assertEqual(AuthTimer.objects.count(), 5)
 
         # this should remove the right timer only
         x = Notification.objects.get(notification_id=1000000402)
         x.process_for_timerboard()
-        self.assertEqual(Timer.objects.count(), 4)
-        ids_set_2 = {x.id for x in Timer.objects.all()}
+        self.assertEqual(AuthTimer.objects.count(), 4)
+        ids_set_2 = {x.id for x in AuthTimer.objects.all()}
         self.assertSetEqual(ids_set_1, ids_set_2)
 
     @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
@@ -455,23 +458,23 @@ class TestNotificationAddToTimerboard(NoSocketsTestCase):
     def test_corp_restriction_1(self):
         x = Notification.objects.get(notification_id=1000000504)
         self.assertTrue(x.process_for_timerboard())
-        t = Timer.objects.first()
+        t = AuthTimer.objects.first()
         self.assertFalse(t.corp_timer)
 
     @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", True)
     def test_corp_restriction_2(self):
         x = Notification.objects.get(notification_id=1000000504)
         self.assertTrue(x.process_for_timerboard())
-        t = Timer.objects.first()
+        t = AuthTimer.objects.first()
         self.assertTrue(t.corp_timer)
 
     def test_anchoring_timer_created_for_low_sec(self):
         obj = Notification.objects.get(notification_id=1000000501)
         self.assertTrue(obj.process_for_timerboard())
-        timer = Timer.objects.first()
+        timer = AuthTimer.objects.first()
         self.assertEqual(timer.eve_time, obj.timestamp + timedelta(hours=24))
 
     def test_anchoring_timer_not_created_for_null_sec(self):
         obj = Notification.objects.get(notification_id=1000010501)
         self.assertFalse(obj.process_for_timerboard())
-        self.assertIsNone(Timer.objects.first())
+        self.assertIsNone(AuthTimer.objects.first())
