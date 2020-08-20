@@ -500,14 +500,14 @@ if "structuretimers" in app_labels():
             super().setUpClass()
             create_structures()
             load_eveuniverse()
-            _, cls.owner = set_owner_character(character_id=1001)
-            load_notification_entities(cls.owner)
-            cls.webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
-            cls.owner.webhooks.add(cls.webhook)
 
         def setUp(self) -> None:
+            _, self.owner = set_owner_character(character_id=1001)
+            load_notification_entities(self.owner)
+            self.webhook = Webhook.objects.create(
+                name="Test", url="http://www.example.com/dummy/"
+            )
+            self.owner.webhooks.add(self.webhook)
             AuthTimer.objects.all().delete()
             Timer.objects.all().delete()
 
@@ -563,7 +563,16 @@ if "structuretimers" in app_labels():
 
         def test_timer_sov_reinforcement(self):
             notification = Notification.objects.get(notification_id=1000000804)
+
+            # do not process if owner is not set as main for alliance
+            self.assertFalse(notification.process_for_timerboard())
+
+            # process for alliance main
+            self.owner.is_alliance_main = True
+            self.owner.save()
+            notification.owner.refresh_from_db()
             self.assertTrue(notification.process_for_timerboard())
+
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.TYPE_FINAL)

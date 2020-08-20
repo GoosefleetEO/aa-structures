@@ -1344,6 +1344,9 @@ class Notification(models.Model):
 
     def _gen_timer_sov_reinforcements(self, parsed_text: str) -> bool:
         """generate timer for sov reinforcements"""
+        if not self.owner.is_alliance_main:
+            return False
+
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text["solarSystemID"]
         )

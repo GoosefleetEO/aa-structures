@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.4.0] - tbd
+## [1.4.0] - 2020-08-20
 
 ### Added
 
@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Moved "Add Structure Owner" button to the top of the page
 - Refreshed UI
+
+### Fixed
+
+- Will no longer create multiple timers for sov notifications
 
 ## [1.3.6] - 2020-07-14
 
