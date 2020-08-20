@@ -12,7 +12,6 @@ from allianceauth.eveonline.models import (
     EveAllianceInfo,
 )
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.timerboard.models import Timer as AuthTimer
 from allianceauth.tests.auth_utils import AuthUtils
 
 from esi.errors import TokenExpiredError, TokenInvalidError
@@ -66,7 +65,17 @@ from ..testdata import (
     create_user,
     esi_data,
 )
-from ...utils import set_test_logger, NoSocketsTestCase
+from ..testdata.load_eveuniverse import load_eveuniverse
+from ...utils import app_labels, set_test_logger, NoSocketsTestCase
+
+if "timerboard" in app_labels():
+    from allianceauth.timerboard.models import Timer as AuthTimer
+
+    has_auth_timers = True
+
+else:
+    has_auth_timers = False
+
 
 MODULE_PATH = "structures.models.owners"
 logger = set_test_logger(MODULE_PATH, __file__)
@@ -1206,6 +1215,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         create_structures()
+        load_eveuniverse()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
     def test_report_error_when_run_without_char(self):
@@ -1245,7 +1255,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_TOKEN_INVALID)
 
-    # normal synch of new structures, mode my_alliance
     @patch(
         "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
         False,
@@ -1260,13 +1269,22 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
 
         # create test data
-        AuthTimer.objects.all().delete()
+        if has_auth_timers:
+            AuthTimer.objects.all().delete()
+
         AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
 
         # run update task
-        self.assertTrue(self.owner.fetch_notifications_esi(user=self.user))
+        if "structuretimers" in app_labels():
+            with patch(
+                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ):
+                self.assertTrue(self.owner.fetch_notifications_esi(user=self.user))
+        else:
+            self.assertTrue(self.owner.fetch_notifications_esi(user=self.user))
+
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_NONE)
         # should only contain the right notifications
@@ -1277,14 +1295,15 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # user report has been sent
         self.assertTrue(mock_notify.called)
 
-        # should have added timers
-        self.assertEqual(AuthTimer.objects.count(), 5)
+        if has_auth_timers:
+            # should have added timers
+            self.assertEqual(AuthTimer.objects.count(), 5)
 
-        # run sync again
-        self.assertTrue(self.owner.fetch_notifications_esi())
+            # run sync again
+            self.assertTrue(self.owner.fetch_notifications_esi())
 
-        # should not have more timers
-        self.assertEqual(AuthTimer.objects.count(), 5)
+            # should not have more timers
+            self.assertEqual(AuthTimer.objects.count(), 5)
 
     @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)

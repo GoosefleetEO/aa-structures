@@ -6,6 +6,16 @@
             "published": true
         },
         {
+            "id": 40,
+            "name": "Sovereignty Structures",
+            "published": true
+        },
+        {
+            "id": 46,
+            "name": "Orbitals",
+            "published": true
+        },
+        {
             "id": 65,
             "name": "Structure",
             "published": true
@@ -34,6 +44,24 @@
             "eve_category_id": 2,
             "id": 7,
             "name": "Planet",
+            "published": false
+        },
+        {
+            "eve_category_id": 40,
+            "id": 1003,
+            "name": "Territorial Claim Unit",
+            "published": true
+        },
+        {
+            "eve_category_id": 40,
+            "id": 1012,
+            "name": "Infrastructure Hub",
+            "published": true
+        },
+        {
+            "eve_category_id": 46,
+            "id": 1025,
+            "name": "Orbital Infrastructure",
             "published": false
         },
         {
@@ -119,6 +147,51 @@
             "published": false,
             "radius": 10000.0,
             "volume": 1.0
+        },
+        {
+            "capacity": 35000.0,
+            "eve_graphic_id": null,
+            "eve_group_id": 1025,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 2233,
+            "mass": 5000000000.0,
+            "name": "Customs Office",
+            "packaged_volume": 100000000.0,
+            "portion_size": 1,
+            "published": false,
+            "radius": 8000.0,
+            "volume": 100000000.0
+        },
+        {
+            "capacity": 0.0,
+            "eve_graphic_id": null,
+            "eve_group_id": 1003,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 32226,
+            "mass": 1000000.0,
+            "name": "Territorial Claim Unit",
+            "packaged_volume": 5000.0,
+            "portion_size": 1,
+            "published": true,
+            "radius": 1602.0,
+            "volume": 5000.0
+        },
+        {
+            "capacity": 10000.0,
+            "eve_graphic_id": null,
+            "eve_group_id": 1012,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 32458,
+            "mass": 1000000.0,
+            "name": "Infrastructure Hub",
+            "packaged_volume": 60000.0,
+            "portion_size": 1,
+            "published": true,
+            "radius": 10290.0,
+            "volume": 60000.0
         },
         {
             "capacity": 0.0,

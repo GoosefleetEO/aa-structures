@@ -349,7 +349,7 @@ Name | Description | Default
 
 ## Permissions
 
-This is an overview of all permissions used by this app:
+This is an overview of all permissions used by this app. Note that all permissions are in the "general" section.
 
 Name | Purpose | Code
 -- | -- | --

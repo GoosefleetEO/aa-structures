@@ -12,17 +12,22 @@ before_script:
 test-3.6:
   image: python:3.6-buster
   script:  
-  - tox -e py36
+  - tox -e py36-all
 
 test-3.7:
   image: python:3.7-buster
   script:  
-  - tox -e py37
+  - tox -e py37-all
 
 test-3.8:
   image: python:3.8-buster
   script:  
-  - tox -e py38
+  - tox -e py38-all
+
+test-3.6-core:
+  image: python:3.6-buster
+  script:  
+  - tox -e py36-core
 
 test-linter:
   image: python:3.8-buster
