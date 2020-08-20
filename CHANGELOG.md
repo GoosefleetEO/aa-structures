@@ -7,17 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.4.0] - tbd
+## [1.4.0] - 2020-08-20
 
 ### Added
 
-- (Will now also create timers for Structure Timers II if it is installed)
+- Will now also create timers for [Structure Timers II](https://gitlab.com/ErikKalkoken/aa-structuretimers) if it is installed
 - Ability to configure paging for the structure list via settings
 
 ### Changed
 
 - Moved "Add Structure Owner" button to the top of the page
 - Refreshed UI
+
+### Fixed
+
+- Will no longer create multiple timers for sov notifications
 
 ## [1.3.6] - 2020-07-14
 

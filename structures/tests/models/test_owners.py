@@ -1217,6 +1217,8 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         create_structures()
         load_eveuniverse()
         cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.owner.is_alliance_main = True
+        cls.owner.save()
 
     def test_report_error_when_run_without_char(self):
         my_owner = Owner.objects.get(corporation__corporation_id=2002)
