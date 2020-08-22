@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- (Will now also create timers for Structure Timers II if it is installed)
+- Will now also create timers for [Structure Timers II](https://gitlab.com/ErikKalkoken/aa-structuretimers) if it is installed
 - Ability to configure paging for the structure list via settings
 
 ### Changed
