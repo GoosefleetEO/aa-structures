@@ -727,6 +727,23 @@ class Notification(models.Model):
         thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
         return title, description, color, thumbnail
 
+    def _ore_composition_text(self, parsed_text: dict) -> str:
+        if "oreVolumeByType" not in parsed_text:
+            return ""
+
+        ore_list = list()
+        for ore_type_id, volume in parsed_text["oreVolumeByType"].items():
+            ore_type, _ = EveType.objects.get_or_create_esi(ore_type_id)
+            if ore_type:
+                ore_list.append(
+                    {"id": ore_type_id, "name": ore_type.name, "volume": volume}
+                )
+
+        ore_list_2 = sorted(ore_list, key=lambda x: x["name"])
+        return "\n- " + "\n- ".join(
+            [f"{ore['name']}: {ore['volume']:,.0f} m³" for ore in ore_list_2]
+        )
+
     def _gen_embed_moons(self, parsed_text: dict) -> tuple:
         moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -747,6 +764,7 @@ class Notification(models.Model):
                 "Extraction was started by %(character)s.\n"
                 "The chunk will be ready on location at %(ready_time)s, "
                 "and will autofracture on %(auto_time)s.\n"
+                "\nEstimated ore composition: %(ore_composition_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
@@ -754,6 +772,7 @@ class Notification(models.Model):
                 "character": started_by,
                 "ready_time": ready_time.strftime(DATETIME_FORMAT),
                 "auto_time": auto_time.strftime(DATETIME_FORMAT),
+                "ore_composition_text": self._ore_composition_text(parsed_text),
             }
             color = self.EMBED_COLOR_INFO
 
@@ -764,12 +783,14 @@ class Notification(models.Model):
                 "The extraction for %(structure_name)s at %(moon)s "
                 "in %(solar_system)s is finished and the chunk is ready "
                 "to be shot at.\n"
-                "The chunk will automatically fracture on %(auto_time)s."
+                "The chunk will automatically fracture on %(auto_time)s.\n"
+                "\nOre composition: %(ore_composition_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
                 "auto_time": auto_time.strftime(DATETIME_FORMAT),
+                "ore_composition_text": self._ore_composition_text(parsed_text),
             }
             color = self.EMBED_COLOR_INFO
 
@@ -779,10 +800,12 @@ class Notification(models.Model):
                 "The moondrill fitted to %(structure_name)s at %(moon)s"
                 " in %(solar_system)s has automatically been fired "
                 "and the moon products are ready to be harvested.\n"
+                "\nOre composition: %(ore_composition_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
+                "ore_composition_text": self._ore_composition_text(parsed_text),
             }
             color = self.EMBED_COLOR_SUCCESS
 
@@ -812,12 +835,14 @@ class Notification(models.Model):
             description = gettext(
                 "The moondrill fitted to %(structure_name)s at %(moon)s "
                 "in %(solar_system)s has been fired by %(character)s "
-                "and the moon products are ready to be harvested."
+                "and the moon products are ready to be harvested.\n"
+                "\nEstimated ore composition: %(ore_composition_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
                 "character": fired_by,
+                "ore_composition_text": self._ore_composition_text(parsed_text),
             }
             color = self.EMBED_COLOR_SUCCESS
 
