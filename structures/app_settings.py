@@ -73,6 +73,12 @@ STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED = clean_setting(
     "STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED", False
 )
 
+# Wether ore details are shown on moon timers
+STRUCTURES_NOTIFICATION_SHOW_MOON_ORE = clean_setting(
+    "STRUCTURES_NOTIFICATION_SHOW_MOON_ORE", True
+)
+
+
 # how to handle notification about NPC attacks
 STRUCTURES_REPORT_NPC_ATTACKS = clean_setting("STRUCTURES_REPORT_NPC_ATTACKS", True)
 

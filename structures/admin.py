@@ -230,6 +230,7 @@ class OwnerAdmin(admin.ModelAdmin):
         "character",
         "_webhooks",
         "has_pings_enabled",
+        "_ping_groups",
         "_is_active",
         "_is_structure_sync_ok",
         "_is_notification_sync_ok",
@@ -242,33 +243,13 @@ class OwnerAdmin(admin.ModelAdmin):
         OwnerSyncStatusFilter,
     )
     ordering = ["corporation__corporation_name"]
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "corporation",
-                    "character",
-                    "webhooks",
-                    "is_alliance_main",
-                    "has_pings_enabled",
-                    "is_included_in_service_status",
-                    "is_active",
-                )
-            },
-        ),
-        (
-            "Sync Status",
-            {
-                "classes": ("collapse",),
-                "fields": (
-                    ("structures_last_sync", "structures_last_error",),
-                    ("notifications_last_sync", "notifications_last_error",),
-                    ("forwarding_last_sync", "forwarding_last_error",),
-                ),
-            },
-        ),
-    )
+
+    def _ping_groups(self, obj):
+        names = [x.name for x in obj.ping_groups.all().order_by("name")]
+        if names:
+            return names
+        else:
+            return None
 
     def _corporation(self, obj):
         return obj.corporation.corporation_name
@@ -284,13 +265,11 @@ class OwnerAdmin(admin.ModelAdmin):
     _alliance.admin_order_field = "corporation__alliance__alliance_name"
 
     def _webhooks(self, obj):
-        webhook_names = [x.name for x in obj.webhooks.all().order_by("name")]
-        if webhook_names:
-            return ", ".join(webhook_names)
+        names = [x.name for x in obj.webhooks.all().order_by("name")]
+        if names:
+            return names
         else:
             return None
-
-    _webhooks.short_description = "Webhooks"
 
     def _is_active(self, obj):
         return obj.is_active
@@ -336,6 +315,36 @@ class OwnerAdmin(admin.ModelAdmin):
                 "forwarding_last_error",
             )
         return self.readonly_fields
+
+    filter_horizontal = ("ping_groups",)
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "corporation",
+                    "character",
+                    "webhooks",
+                    "is_alliance_main",
+                    "has_pings_enabled",
+                    "ping_groups",
+                    "is_included_in_service_status",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Sync Status",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    ("structures_last_sync", "structures_last_error",),
+                    ("notifications_last_sync", "notifications_last_error",),
+                    ("forwarding_last_sync", "forwarding_last_error",),
+                ),
+            },
+        ),
+    )
 
     actions = ("update_structures", "fetch_notifications", "send_notifications")
 
@@ -599,11 +608,7 @@ class StructureAdmin(admin.ModelAdmin):
                 "classes": ("collapse",),
                 "fields": (
                     ("reinforce_hour",),
-                    (
-                        "next_reinforce_hour",
-                        "next_reinforce_weekday",
-                        "next_reinforce_apply",
-                    ),
+                    ("next_reinforce_hour", "next_reinforce_apply",),
                 ),
             },
         ),
@@ -635,11 +640,20 @@ class WebhookAdmin(admin.ModelAdmin):
         "name",
         "webhook_type",
         "has_pings_enabled",
+        "_ping_groups",
         "is_active",
         "is_default",
     )
     list_filter = ("webhook_type", "has_pings_enabled", "is_active")
     save_as = True
+
+    def _ping_groups(self, obj):
+        names = [x.name for x in obj.ping_groups.all().order_by("name")]
+        if names:
+            return names
+        else:
+            return None
+
     actions = ("test_notification", "activate", "deactivate")
 
     def test_notification(self, request, queryset):
@@ -672,3 +686,5 @@ class WebhookAdmin(admin.ModelAdmin):
             self.message_user(request, 'You have de-activated profile "{}"'.format(obj))
 
     deactivate.short_description = "Deactivate selected profiles"
+
+    filter_horizontal = ("ping_groups",)

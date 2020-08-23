@@ -255,23 +255,12 @@ class Structure(models.Model):
             "effect at the time shown by next_reinforce_apply"
         ),
     )
-    next_reinforce_weekday = models.PositiveIntegerField(
-        null=True,
-        default=None,
-        blank=True,
-        validators=[MaxValueValidator(6)],
-        help_text=(
-            "The date and time when the structure’s newly requested "
-            "reinforcement times (e.g. next_reinforce_hour and "
-            "next_reinforce_day) will take effect"
-        ),
-    )
     next_reinforce_apply = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
         help_text=(
-            "The requested change to reinforce_weekday that will take "
+            "The requested change to reinforce_hour that will take "
             "effect at the time shown by next_reinforce_apply"
         ),
     )
@@ -287,13 +276,6 @@ class Structure(models.Model):
             "The structure will become vulnerable at a random time that "
             "is +/- 2 hours centered on the value of this property"
         ),
-    )
-    reinforce_weekday = models.PositiveIntegerField(
-        null=True,
-        default=None,
-        blank=True,
-        validators=[MaxValueValidator(6)],
-        help_text="(no longer used)",
     )
     state = models.IntegerField(
         choices=STATE_CHOICES,

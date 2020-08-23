@@ -5,7 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] - yyyy-mm-dd
+## [1.5.0] - 2020-08-23
+
+### Added
+
+- Added ability to ping selected groups on Discord with notifications ([#5](https://gitlab.com/ErikKalkoken/aa-structures/issues/5))
+- Now shows ore details on moon mining notifications (can be disabled via setting) ([#29](https://gitlab.com/ErikKalkoken/aa-structures/issues/29))
+
+### Changed
+
+- Removed obsolete "reinforce weekday" from database
 
 ## [1.4.0] - 2020-08-20
 

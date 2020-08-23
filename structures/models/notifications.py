@@ -6,10 +6,12 @@ import logging
 from time import sleep
 import yaml
 
-import pytz
 import dhooks_lite
+import pytz
+from requests.exceptions import HTTPError
 
 from django.db import models
+from django.contrib.auth.models import Group
 from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _, gettext
@@ -26,12 +28,18 @@ from ..app_settings import (
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
     STRUCTURES_NOTIFICATION_MAX_RETRIES,
     STRUCTURES_NOTIFICATION_WAIT_SEC,
+    STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from .. import __title__
 from ..managers import EveEntityManager
-from ..utils import LoggerAddTag, DATETIME_FORMAT, make_logger_prefix, app_labels
+from ..utils import (
+    app_labels,
+    LoggerAddTag,
+    DATETIME_FORMAT,
+    make_logger_prefix,
+)
 from .eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
 from .structures import Structure
 
@@ -215,6 +223,12 @@ class Webhook(models.Model):
             "to enable or disable pinging of notifications for this webhook "
             "e.g. with @everyone and @here"
         ),
+    )
+    ping_groups = models.ManyToManyField(
+        Group,
+        default=None,
+        blank=True,
+        help_text="Groups to be pinged for each notification",
     )
 
     def __str__(self):
@@ -465,12 +479,34 @@ class Notification(models.Model):
                 elif embed.color == self.EMBED_COLOR_WARNING:
                     content = "@here"
                 else:
-                    content = None
+                    content = ""
             else:
-                content = None
+                content = ""
+
+            if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
+                if "discord" in app_labels():
+                    DiscordUser = self._import_discord()
+
+                    groups = set(self.owner.ping_groups.all()) | set(
+                        webhook.ping_groups.all()
+                    )
+                    for group in groups:
+                        try:
+                            role = DiscordUser.objects.group_to_role(group)
+                        except HTTPError:
+                            logger.warning("Failed to get Discord roles", exc_info=True)
+                        else:
+                            if role:
+                                content += f" <@&{role['id']}>"
 
             success = self._execute_webhook(hook, content, embed, add_prefix)
         return success
+
+    @staticmethod
+    def _import_discord() -> object:
+        from allianceauth.services.modules.discord.models import DiscordUser
+
+        return DiscordUser
 
     @classmethod
     def _ldap_datetime_2_dt(cls, ldap_dt: int) -> datetime:
@@ -764,7 +800,7 @@ class Notification(models.Model):
                 "Extraction was started by %(character)s.\n"
                 "The chunk will be ready on location at %(ready_time)s, "
                 "and will autofracture on %(auto_time)s.\n"
-                "\nEstimated ore composition: %(ore_composition_text)s"
+                "%(ore_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
@@ -772,7 +808,12 @@ class Notification(models.Model):
                 "character": started_by,
                 "ready_time": ready_time.strftime(DATETIME_FORMAT),
                 "auto_time": auto_time.strftime(DATETIME_FORMAT),
-                "ore_composition_text": self._ore_composition_text(parsed_text),
+                "ore_text": gettext(
+                    "\nEstimated ore composition: %s"
+                    % self._ore_composition_text(parsed_text)
+                )
+                if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+                else "",
             }
             color = self.EMBED_COLOR_INFO
 
@@ -784,13 +825,17 @@ class Notification(models.Model):
                 "in %(solar_system)s is finished and the chunk is ready "
                 "to be shot at.\n"
                 "The chunk will automatically fracture on %(auto_time)s.\n"
-                "\nOre composition: %(ore_composition_text)s"
+                "%(ore_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
                 "auto_time": auto_time.strftime(DATETIME_FORMAT),
-                "ore_composition_text": self._ore_composition_text(parsed_text),
+                "ore_text": gettext(
+                    "\nOre composition: %s" % self._ore_composition_text(parsed_text)
+                )
+                if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+                else "",
             }
             color = self.EMBED_COLOR_INFO
 
@@ -800,12 +845,16 @@ class Notification(models.Model):
                 "The moondrill fitted to %(structure_name)s at %(moon)s"
                 " in %(solar_system)s has automatically been fired "
                 "and the moon products are ready to be harvested.\n"
-                "\nOre composition: %(ore_composition_text)s"
+                "%(ore_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
-                "ore_composition_text": self._ore_composition_text(parsed_text),
+                "ore_text": gettext(
+                    "\nOre composition: %s" % self._ore_composition_text(parsed_text)
+                )
+                if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+                else "",
             }
             color = self.EMBED_COLOR_SUCCESS
 
@@ -836,13 +885,17 @@ class Notification(models.Model):
                 "The moondrill fitted to %(structure_name)s at %(moon)s "
                 "in %(solar_system)s has been fired by %(character)s "
                 "and the moon products are ready to be harvested.\n"
-                "\nEstimated ore composition: %(ore_composition_text)s"
+                "%(ore_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
                 "character": fired_by,
-                "ore_composition_text": self._ore_composition_text(parsed_text),
+                "ore_text": gettext(
+                    "\nOre composition: %s" % self._ore_composition_text(parsed_text)
+                )
+                if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+                else "",
             }
             color = self.EMBED_COLOR_SUCCESS
 

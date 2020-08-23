@@ -1,18 +1,14 @@
 {
-    "Corporation":
-    {
-        "get_corporations_corporation_id_structures":
-        {
+    "Corporation": {
+        "get_corporations_corporation_id_structures": {
             "2001": [
                 {
                     "corporation_id": 2001,
-                    "fuel_expires": "2020-03-05T05:00:00Z",        
+                    "fuel_expires": "2020-03-05T05:00:00Z",
                     "next_reinforce_apply": null,
                     "next_reinforce_hour": null,
-                    "next_reinforce_weekday": null,        
                     "profile_id": 52436,
                     "reinforce_hour": 19,
-                    "reinforce_weekday": 2,
                     "services": [
                         {
                             "name": "Reprocessing",
@@ -33,13 +29,11 @@
                 },
                 {
                     "corporation_id": 2001,
-                    "fuel_expires": "2020-03-05T05:00:00Z",        
+                    "fuel_expires": "2020-03-05T05:00:00Z",
                     "next_reinforce_apply": null,
                     "next_reinforce_hour": null,
-                    "next_reinforce_weekday": null,                
                     "profile_id": 101853,
                     "reinforce_hour": 18,
-                    "reinforce_weekday": 5,
                     "services": [
                         {
                             "name": "Clone Bay",
@@ -60,13 +54,11 @@
                 },
                 {
                     "corporation_id": 2001,
-                    "fuel_expires": null,        
+                    "fuel_expires": null,
                     "next_reinforce_apply": null,
                     "next_reinforce_hour": null,
-                    "next_reinforce_weekday": null,        
                     "profile_id": 101853,
                     "reinforce_hour": 18,
-                    "reinforce_weekday": 5,           
                     "services": null,
                     "state": "shield_vulnerable",
                     "state_timer_end": null,
@@ -78,11 +70,8 @@
                 }
             ]
         },
-
-        "get_corporations_corporation_id_starbases":
-        {
-            "2001":
-            [
+        "get_corporations_corporation_id_starbases": {
+            "2001": [
                 {
                     "moon_id": 40161465,
                     "starbase_id": 1300000000001,
@@ -94,7 +83,7 @@
                 {
                     "moon_id": 40161466,
                     "starbase_id": 1300000000002,
-                    "state": "offline",                    
+                    "state": "offline",
                     "system_id": 30002537,
                     "type_id": 20061,
                     "unanchors_at": "2020-05-05T07:00:00Z"
@@ -102,17 +91,14 @@
                 {
                     "moon_id": 40029527,
                     "starbase_id": 1300000000003,
-                    "state": "online",                    
+                    "state": "online",
                     "system_id": 30000474,
                     "type_id": 20062
                 }
             ]
         },
-
-        "get_corporations_corporation_id_starbases_starbase_id":
-        {
-            "1300000000001":
-            {
+        "get_corporations_corporation_id_starbases_starbase_id": {
+            "1300000000001": {
                 "allow_alliance_members": true,
                 "allow_corporation_members": true,
                 "anchor": "config_starbase_equipment_role",
@@ -121,22 +107,21 @@
                 "fuel_bay_take": "config_starbase_equipment_role",
                 "fuel_bay_view": "starbase_fuel_technician_role",
                 "fuels": [
-                  {
-                    "quantity": 960,
-                    "type_id": 4051
-                  },
-                  {
-                    "quantity": 11678,
-                    "type_id": 16275
-                  }
+                    {
+                        "quantity": 960,
+                        "type_id": 4051
+                    },
+                    {
+                        "quantity": 11678,
+                        "type_id": 16275
+                    }
                 ],
                 "offline": "config_starbase_equipment_role",
                 "online": "config_starbase_equipment_role",
                 "unanchor": "config_starbase_equipment_role",
                 "use_alliance_standings": true
             },
-            "1300000000002":
-            {
+            "1300000000002": {
                 "allow_alliance_members": true,
                 "allow_corporation_members": true,
                 "anchor": "config_starbase_equipment_role",
@@ -145,22 +130,21 @@
                 "fuel_bay_take": "config_starbase_equipment_role",
                 "fuels": [
                     {
-                      "quantity": 5,
-                      "type_id": 4051
+                        "quantity": 5,
+                        "type_id": 4051
                     },
                     {
-                      "quantity": 11678,
-                      "type_id": 16275
+                        "quantity": 11678,
+                        "type_id": 16275
                     }
-                  ],   
-                "fuel_bay_view": "starbase_fuel_technician_role",                
+                ],
+                "fuel_bay_view": "starbase_fuel_technician_role",
                 "offline": "config_starbase_equipment_role",
                 "online": "config_starbase_equipment_role",
                 "unanchor": "config_starbase_equipment_role",
                 "use_alliance_standings": true
             },
-            "1300000000003":
-            {
+            "1300000000003": {
                 "allow_alliance_members": true,
                 "allow_corporation_members": true,
                 "anchor": "config_starbase_equipment_role",
@@ -170,56 +154,50 @@
                 "fuel_bay_view": "starbase_fuel_technician_role",
                 "fuels": [
                     {
-                      "quantity": 1000,
-                      "type_id": 4051
+                        "quantity": 1000,
+                        "type_id": 4051
                     },
                     {
-                      "quantity": 11678,
-                      "type_id": 16275
+                        "quantity": 11678,
+                        "type_id": 16275
                     }
-                  ],                
+                ],
                 "offline": "config_starbase_equipment_role",
                 "online": "config_starbase_equipment_role",
                 "unanchor": "config_starbase_equipment_role",
                 "use_alliance_standings": true
             }
         },
-
-        "post_corporations_corporation_id_assets_locations":
-        {
-            "2001": 
-            [
+        "post_corporations_corporation_id_assets_locations": {
+            "2001": [
                 {
                     "item_id": 1200000000003,
                     "position": {
-                    "x": 1.2,
-                    "y": 2.3,
-                    "z": -3.4
+                        "x": 1.2,
+                        "y": 2.3,
+                        "z": -3.4
                     }
                 },
                 {
                     "item_id": 1200000000004,
                     "position": {
-                    "x": 5.2,
-                    "y": 6.3,
-                    "z": -7.4
+                        "x": 5.2,
+                        "y": 6.3,
+                        "z": -7.4
                     }
                 },
                 {
                     "item_id": 1200000000005,
                     "position": {
-                    "x": 1.2,
-                    "y": 6.3,
-                    "z": -7.4
+                        "x": 1.2,
+                        "y": 6.3,
+                        "z": -7.4
                     }
                 }
             ]
         },
-
-        "post_corporations_corporation_id_assets_names":
-        {
-            "2001":
-            [
+        "post_corporations_corporation_id_assets_names": {
+            "2001": [
                 {
                     "item_id": 1200000000003,
                     "name": "Customs Office (Amamake V)"
@@ -247,13 +225,9 @@
             ]
         }
     },
-
-    "Planetary_Interaction":
-    {
-        "get_corporations_corporation_id_customs_offices":
-        {
-            "2001":
-            [
+    "Planetary_Interaction": {
+        "get_corporations_corporation_id_customs_offices": {
+            "2001": [
                 {
                     "alliance_tax_rate": 0.02,
                     "allow_access_with_standings": true,
@@ -305,11 +279,8 @@
             ]
         }
     },
-
-    "Sovereignty":
-    {
-        "get_sovereignty_map": 
-        [
+    "Sovereignty": {
+        "get_sovereignty_map": [
             {
                 "alliance_id": 3011,
                 "corporation_id": 2011,
@@ -326,7 +297,7 @@
                 "corporation_id": 2001,
                 "system_id": 30000728,
                 "faction_id": null
-            },            
+            },
             {
                 "alliance_id": null,
                 "corporation_id": null,
@@ -335,56 +306,48 @@
             }
         ]
     },
-
-    "Universe":
-    {
-        "get_universe_systems":
-        [
+    "Universe": {
+        "get_universe_systems": [
             30002506,
             31000005,
             30002537,
             30000474,
             30000476
         ],
-        
-        "get_universe_structures_structure_id":
-        {
-            "1000000000001": 
-            {
+        "get_universe_structures_structure_id": {
+            "1000000000001": {
                 "corporation_id": 2001,
                 "name": "Amamake - Test Structure Alpha",
                 "position": {
                     "x": 55028384780.0,
                     "y": 7310316270.0,
                     "z": -163686684205.0
-                },            
+                },
                 "solar_system_id": 30002537,
                 "type_id": 35832
             },
-            "1000000000002":
-            {
+            "1000000000002": {
                 "corporation_id": 2001,
                 "name": "Amamake - Test Structure Bravo",
                 "position": {
                     "x": -2518743930339.066,
                     "y": -130157937025.56424,
                     "z": -442026427345.6355
-                },            
+                },
                 "solar_system_id": 30002537,
                 "type_id": 35835
             },
-            "1000000000003":
-            {
+            "1000000000003": {
                 "corporation_id": 2001,
                 "name": "Amamake - Test Structure Charlie",
                 "position": {
                     "x": -2518743930339.066,
                     "y": -130157937025.56424,
                     "z": -442026427345.6355
-                },            
+                },
                 "solar_system_id": 30000476,
                 "type_id": 35832
             }
-        }        
+        }
     }
 }

@@ -666,11 +666,9 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "name": "Test Structure Alpha",
             "next_reinforce_apply": None,
             "next_reinforce_hour": None,
-            "next_reinforce_weekday": None,
             "position": {"x": 55028384780.0, "y": 7310316270.0, "z": -163686684205.0},
             "profile_id": 101853,
             "reinforce_hour": 18,
-            "reinforce_weekday": 5,
             "services": [
                 {
                     "name": "Clone Bay",
@@ -764,11 +762,9 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "name": "Test Structure Alpha Updated",
             "next_reinforce_apply": None,
             "next_reinforce_hour": None,
-            "next_reinforce_weekday": None,
             "position": {"x": 55028384780.0, "y": 7310316270.0, "z": -163686684205.0},
             "profile_id": 101853,
             "reinforce_hour": 18,
-            "reinforce_weekday": 5,
             "services": [
                 {
                     "name": "Clone Bay",
@@ -825,11 +821,9 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "name": "Test Structure Alpha Updated",
             "next_reinforce_apply": None,
             "next_reinforce_hour": None,
-            "next_reinforce_weekday": None,
             "position": {"x": 55028384780.0, "y": 7310316270.0, "z": -163686684205.0},
             "profile_id": 101853,
             "reinforce_hour": 18,
-            "reinforce_weekday": 5,
             "services": [
                 {
                     "name": "Clone Bay",

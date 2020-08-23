@@ -271,12 +271,6 @@ class StructureManager(models.Manager):
             else None
         )
 
-        next_reinforce_weekday = (
-            structure["next_reinforce_weekday"]
-            if "next_reinforce_weekday" in structure
-            else None
-        )
-
         next_reinforce_apply = (
             structure["next_reinforce_apply"]
             if "next_reinforce_apply" in structure
@@ -335,7 +329,6 @@ class StructureManager(models.Manager):
                 "position_z": position_z,
                 "fuel_expires_at": fuel_expires_at,
                 "next_reinforce_hour": next_reinforce_hour,
-                "next_reinforce_weekday": next_reinforce_weekday,
                 "next_reinforce_apply": next_reinforce_apply,
                 "reinforce_hour": reinforce_hour,
                 "state": state,

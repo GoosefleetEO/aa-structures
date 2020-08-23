@@ -12,7 +12,7 @@ from bravado.exception import HTTPError
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
@@ -157,6 +157,12 @@ class Owner(models.Model):
             "to enable or disable pinging of notifications for this owner "
             "e.g. with @everyone and @here"
         ),
+    )
+    ping_groups = models.ManyToManyField(
+        Group,
+        default=None,
+        blank=True,
+        help_text="Groups to be pinged for each notification",
     )
 
     def __str__(self) -> str:
