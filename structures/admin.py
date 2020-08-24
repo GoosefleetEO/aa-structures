@@ -229,7 +229,7 @@ class OwnerAdmin(admin.ModelAdmin):
         "_alliance",
         "character",
         "_webhooks",
-        "has_pings_enabled",
+        "has_default_pings_enabled",
         "_ping_groups",
         "_is_active",
         "_is_structure_sync_ok",
@@ -238,7 +238,7 @@ class OwnerAdmin(admin.ModelAdmin):
     )
     list_filter = (
         ("corporation__alliance", admin.RelatedOnlyFieldListFilter),
-        "has_pings_enabled",
+        "has_default_pings_enabled",
         "is_active",
         OwnerSyncStatusFilter,
     )
@@ -326,7 +326,7 @@ class OwnerAdmin(admin.ModelAdmin):
                     "character",
                     "webhooks",
                     "is_alliance_main",
-                    "has_pings_enabled",
+                    "has_default_pings_enabled",
                     "ping_groups",
                     "is_included_in_service_status",
                     "is_active",
@@ -639,12 +639,12 @@ class WebhookAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "webhook_type",
-        "has_pings_enabled",
+        "has_default_pings_enabled",
         "_ping_groups",
         "is_active",
         "is_default",
     )
-    list_filter = ("webhook_type", "has_pings_enabled", "is_active")
+    list_filter = ("webhook_type", "has_default_pings_enabled", "is_active")
     save_as = True
 
     def _ping_groups(self, obj):

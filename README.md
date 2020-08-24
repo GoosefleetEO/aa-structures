@@ -182,7 +182,6 @@ In this section you find a detailed description of the following key features:
 - [Localization](#localization)
 - [Notifications](#notifications)
 - [Power Modes](#power-modes)
-- [Pings](#pings)
 - [Structure tags](#structure-tags)
 - [Timers](#timers)
 
@@ -209,9 +208,9 @@ The following parts of the app will use localization with the default language:
 
 ### Notifications
 
-#### Message rendering on Discord
+#### Message rendering and pinging on Discord
 
-All notification types are classified in into one of four semantic categories. These categories determine the color of the notification on Discord and whether pings are created.
+All notification types are classified in into one of four semantic categories. These categories determine the color of the notification on Discord and whether default pings are created.
 
 Category | Color | Ping
 -- | -- | --
@@ -222,7 +221,15 @@ danger | red | @everyone
 
 The mapping between notification types and semantic categories is predefined and can at the moment not be individually configured.
 
-But it is possible to turn off pinging for all notifications per webhook and/or per owner on the admin site.
+But it is possible to turn off default pings for all notifications per webhook and/or per owner on the admin site.
+
+#### Group pings
+
+You can also define groups to be pinged for notifications on Discord per webhook and/or per owner. All users belonging to that group will then be receive that ping on Discord if they have access to the respective channel.
+
+Groups defined per webhook will be added to groups defined per owner and group pings are independent from default pings.
+
+Note that you need to have Auth's Discord service enabled for group pings to work.
 
 #### Supported notification types
 

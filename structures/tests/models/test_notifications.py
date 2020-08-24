@@ -350,7 +350,9 @@ class TestNotificationPings(NoSocketsTestCase):
         mock_execute.return_value = mock_response
 
         webhook_no_pings = Webhook.objects.create(
-            name="Test2", url="http://www.example.com/x-2/", has_pings_enabled=False
+            name="Test2",
+            url="http://www.example.com/x-2/",
+            has_default_pings_enabled=False,
         )
         obj = Notification.objects.get(notification_id=1000000509)
         self.assertTrue(obj.send_to_webhook(webhook_no_pings))
@@ -367,7 +369,7 @@ class TestNotificationPings(NoSocketsTestCase):
             name="Test", url="http://www.example.com/dummy/"
         )
         self.owner.webhooks.add(webhook_normal)
-        self.owner.has_pings_enabled = False
+        self.owner.has_default_pings_enabled = False
         self.owner.save()
         obj = Notification.objects.get(notification_id=1000000509)
         self.assertTrue(obj.send_to_webhook(webhook_normal))

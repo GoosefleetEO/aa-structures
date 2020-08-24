@@ -5,6 +5,7 @@ import json
 import logging
 from time import sleep
 import yaml
+from typing import List, Set
 
 import dhooks_lite
 import pytz
@@ -217,7 +218,7 @@ class Webhook(models.Model):
             "whether owners have this webhook automatically " "pre-set when created"
         ),
     )
-    has_pings_enabled = models.BooleanField(
+    has_default_pings_enabled = models.BooleanField(
         default=True,
         help_text=(
             "to enable or disable pinging of notifications for this webhook "
@@ -228,13 +229,13 @@ class Webhook(models.Model):
         Group,
         default=None,
         blank=True,
-        help_text="Groups to be pinged for each notification",
+        help_text="Groups to be pinged for each notification - ",
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}(id={}, name='{}')".format(
             self.__class__.__name__, self.id, self.name
         )
@@ -280,10 +281,10 @@ class EveEntity(models.Model):
 
     objects = EveEntityManager()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}(id={}, category='{}', name='{}')".format(
             self.__class__.__name__, self.id, self.get_category_display(), self.name
         )
@@ -370,10 +371,10 @@ class Notification(models.Model):
     class Meta:
         unique_together = (("notification_id", "owner"),)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.notification_id)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "%s(notification_id=%d, owner='%s', notification_type='%s')" % (
             self.__class__.__name__,
             self.notification_id,
@@ -382,27 +383,27 @@ class Notification(models.Model):
         )
 
     @property
-    def is_alliance_level(self):
+    def is_alliance_level(self) -> bool:
         """whether this is an alliance level notification"""
         return self.notification_type in NTYPE_FOR_ALLIANCE_LEVEL
 
     @classmethod
-    def get_all_types(cls):
+    def get_all_types(cls) -> Set[int]:
         """returns a set with all supported notification types"""
         return {x[0] for x in NTYPE_CHOICES}
 
     @classmethod
-    def get_all_type_names(cls):
+    def get_all_type_names(cls) -> Set[str]:
         """returns a set with names of all supported notification types"""
         return {x[1] for x in NTYPE_CHOICES}
 
     @classmethod
-    def get_types_for_timerboard(cls):
+    def get_types_for_timerboard(cls) -> List[int]:
         """returns set of types relevant for the timerboard"""
         return _NTYPE_RELEVANT_FOR_TIMERBOARD
 
     @classmethod
-    def get_matching_notification_type(cls, type_name) -> int:
+    def get_matching_notification_type(cls, type_name: str) -> int:
         """returns matching notification type for given name or None"""
         match = None
         for x in NTYPE_CHOICES:
@@ -416,8 +417,8 @@ class Notification(models.Model):
         """returns the notifications's text as dict"""
         return yaml.safe_load(self.text)
 
-    def is_npc_attacking(self):
-        """ whether this notification is about a NPC attacking"""
+    def is_npc_attacking(self) -> bool:
+        """whether this notification is about a NPC attacking"""
         result = False
         if self.notification_type in [
             NTYPE_ORBITAL_ATTACKED,
@@ -441,11 +442,11 @@ class Notification(models.Model):
 
         return result
 
-    def filter_for_npc_attacks(self):
+    def filter_for_npc_attacks(self) -> bool:
         """true when notification to be filtered out due to npc attacks"""
         return not STRUCTURES_REPORT_NPC_ATTACKS and self.is_npc_attacking()
 
-    def filter_for_alliance_level(self):
+    def filter_for_alliance_level(self) -> bool:
         """true when notification to be filtered out due to alliance level"""
         return self.is_alliance_level and not self.owner.is_alliance_main
 
@@ -473,7 +474,10 @@ class Notification(models.Model):
             logger.warning(add_prefix("Failed to generate embed: %s" % ex))
             raise ex
         else:
-            if webhook.has_pings_enabled and self.owner.has_pings_enabled:
+            if (
+                webhook.has_default_pings_enabled
+                and self.owner.has_default_pings_enabled
+            ):
                 if embed.color == self.EMBED_COLOR_DANGER:
                     content = "@everyone"
                 elif embed.color == self.EMBED_COLOR_WARNING:
@@ -539,17 +543,13 @@ class Notification(models.Model):
                 NTYPE_STRUCTURE_DESTROYED,
                 NTYPE_STRUCTURE_ONLINE,
             ]:
-                title, description, color, thumbnail = self._gen_embed_structures_1(
-                    parsed_text
-                )
+                embed_draft = self._gen_embed_structures_1(parsed_text)
 
             elif self.notification_type in [
                 NTYPE_OWNERSHIP_TRANSFERRED,
                 NTYPE_STRUCTURE_ANCHORING,
             ]:
-                title, description, color, thumbnail = self._gen_embed_structures_2(
-                    parsed_text
-                )
+                embed_draft = self._gen_embed_structures_2(parsed_text)
 
             elif self.notification_type in [
                 NTYPE_MOONS_AUTOMATIC_FRACTURE,
@@ -558,25 +558,19 @@ class Notification(models.Model):
                 NTYPE_MOONS_EXTRACTION_STARTED,
                 NTYPE_MOONS_LASER_FIRED,
             ]:
-                title, description, color, thumbnail = self._gen_embed_moons(
-                    parsed_text
-                )
+                embed_draft = self._gen_embed_moons(parsed_text)
 
             elif self.notification_type in [
                 NTYPE_ORBITAL_ATTACKED,
                 NTYPE_ORBITAL_REINFORCED,
             ]:
-                title, description, color, thumbnail = self._gen_embed_pocos(
-                    parsed_text
-                )
+                embed_draft = self._gen_embed_pocos(parsed_text)
 
             elif self.notification_type in [
                 NTYPE_TOWER_ALERT_MSG,
                 NTYPE_TOWER_RESOURCE_ALERT_MSG,
             ]:
-                title, description, color, thumbnail = self._gen_embed_poses(
-                    parsed_text
-                )
+                embed_draft = self._gen_embed_poses(parsed_text)
 
             elif self.notification_type in [
                 NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
@@ -585,7 +579,7 @@ class Notification(models.Model):
                 NTYPE_SOV_STRUCTURE_REINFORCED,
                 NTYPE_SOV_STRUCTURE_DESTROYED,
             ]:
-                title, description, color, thumbnail = self._gen_embed_sov(parsed_text)
+                embed_draft = self._gen_embed_sov(parsed_text)
 
             else:
                 raise NotImplementedError("type: {}".format(self.notification_type))
@@ -596,15 +590,15 @@ class Notification(models.Model):
             footer = None
 
         return dhooks_lite.Embed(
-            title=title,
-            description=description,
-            color=color,
-            thumbnail=thumbnail,
+            title=embed_draft.title,
+            description=embed_draft.description,
+            color=embed_draft.color,
+            thumbnail=embed_draft.thumbnail,
             timestamp=self.timestamp,
             footer=footer,
         )
 
-    def _gen_embed_structures_1(self, parsed_text: dict) -> tuple:
+    def _gen_embed_structures_1(self, parsed_text: dict) -> dhooks_lite.Embed:
 
         try:
             my_structure = Structure.objects.get(id=parsed_text["structureID"])
@@ -703,10 +697,14 @@ class Notification(models.Model):
         else:
             raise NotImplementedError()
 
-        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-        return title, description, color, thumbnail
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=dhooks_lite.Thumbnail(structure_type.icon_url()),
+        )
 
-    def _gen_embed_structures_2(self, parsed_text: dict) -> tuple:
+    def _gen_embed_structures_2(self, parsed_text: dict) -> dhooks_lite.Embed:
         structure_type, _ = EveType.objects.get_or_create_esi(
             parsed_text["structureTypeID"]
         )
@@ -760,8 +758,12 @@ class Notification(models.Model):
         else:
             raise NotImplementedError()
 
-        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-        return title, description, color, thumbnail
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=dhooks_lite.Thumbnail(structure_type.icon_url()),
+        )
 
     def _ore_composition_text(self, parsed_text: dict) -> str:
         if "oreVolumeByType" not in parsed_text:
@@ -780,7 +782,7 @@ class Notification(models.Model):
             [f"{ore['name']}: {ore['volume']:,.0f} m³" for ore in ore_list_2]
         )
 
-    def _gen_embed_moons(self, parsed_text: dict) -> tuple:
+    def _gen_embed_moons(self, parsed_text: dict) -> dhooks_lite.Embed:
         moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text["solarSystemID"]
@@ -905,10 +907,14 @@ class Notification(models.Model):
         structure_type, _ = EveType.objects.get_or_create_esi(
             parsed_text["structureTypeID"]
         )
-        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-        return title, description, color, thumbnail
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=dhooks_lite.Thumbnail(structure_type.icon_url()),
+        )
 
-    def _gen_embed_pocos(self, parsed_text: dict) -> tuple:
+    def _gen_embed_pocos(self, parsed_text: dict) -> dhooks_lite.Embed:
         planet, _ = EvePlanet.objects.get_or_create_esi(parsed_text["planetID"])
         structure_type, _ = EveType.objects.get_or_create_esi(EveType.EVE_TYPE_ID_POCO)
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -951,10 +957,14 @@ class Notification(models.Model):
         else:
             raise NotImplementedError()
 
-        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-        return title, description, color, thumbnail
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=dhooks_lite.Thumbnail(structure_type.icon_url()),
+        )
 
-    def _gen_embed_poses(self, parsed_text: dict) -> tuple:
+    def _gen_embed_poses(self, parsed_text: dict) -> dhooks_lite.Embed:
         eve_moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
         structure_type, _ = EveType.objects.get_or_create_esi(parsed_text["typeID"])
         solar_system_link = self._gen_solar_system_text(eve_moon.eve_solar_system)
@@ -1011,10 +1021,14 @@ class Notification(models.Model):
         else:
             raise NotImplementedError()
 
-        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-        return title, description, color, thumbnail
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=dhooks_lite.Thumbnail(structure_type.icon_url()),
+        )
 
-    def _gen_embed_sov(self, parsed_text: dict) -> tuple:
+    def _gen_embed_sov(self, parsed_text: dict) -> dhooks_lite.Embed:
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text["solarSystemID"]
         )
@@ -1132,8 +1146,12 @@ class Notification(models.Model):
         else:
             raise NotImplementedError()
 
-        thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
-        return title, description, color, thumbnail
+        return dhooks_lite.Embed(
+            title=title,
+            description=description,
+            color=color,
+            thumbnail=dhooks_lite.Thumbnail(structure_type.icon_url()),
+        )
 
     @classmethod
     def _gen_solar_system_text(cls, solar_system: EveSolarSystem) -> str:
@@ -1145,17 +1163,17 @@ class Notification(models.Model):
         return text
 
     @classmethod
-    def _gen_alliance_link(cls, alliance_name):
+    def _gen_alliance_link(cls, alliance_name: str):
         return "[{}]({})".format(alliance_name, dotlan.alliance_url(alliance_name))
 
     @classmethod
-    def _gen_corporation_link(cls, corporation_name):
+    def _gen_corporation_link(cls, corporation_name: str):
         return "[{}]({})".format(
             corporation_name, dotlan.corporation_url(corporation_name)
         )
 
     @classmethod
-    def _get_attacker_link(cls, parsed_text):
+    def _get_attacker_link(cls, parsed_text: dict) -> str:
         """returns the attacker link from a parsed_text
         For Upwell structures only
         """

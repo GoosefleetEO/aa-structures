@@ -151,7 +151,7 @@ class Owner(models.Model):
             "the overall status of this services"
         ),
     )
-    has_pings_enabled = models.BooleanField(
+    has_default_pings_enabled = models.BooleanField(
         default=True,
         help_text=(
             "to enable or disable pinging of notifications for this owner "
@@ -162,7 +162,7 @@ class Owner(models.Model):
         Group,
         default=None,
         blank=True,
-        help_text="Groups to be pinged for each notification",
+        help_text="Groups to be pinged for each notification - ",
     )
 
     def __str__(self) -> str:

@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.5.0] - 2020-08-23
 
+**Group pings**
+
 ### Added
 
-- Added ability to ping selected groups on Discord with notifications ([#5](https://gitlab.com/ErikKalkoken/aa-structures/issues/5))
+- Added ability to ping groups on Discord with notifications ([#5](https://gitlab.com/ErikKalkoken/aa-structures/issues/5))
 - Now shows ore details on moon mining notifications (can be disabled via setting) ([#29](https://gitlab.com/ErikKalkoken/aa-structures/issues/29))
 
 ### Changed
@@ -17,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Removed obsolete "reinforce weekday" from database
 
 ## [1.4.0] - 2020-08-20
+
+**Structure Timers II**
 
 ### Added
 
