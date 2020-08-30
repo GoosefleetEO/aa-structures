@@ -135,7 +135,11 @@ class TestEveType(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_entities(
-            [EveCategory, EveGroup, EveType,]
+            [
+                EveCategory,
+                EveGroup,
+                EveType,
+            ]
         )
         cls.type_astrahus = EveType.objects.get(id=35832)
         cls.type_poco = EveType.objects.get(id=2233)
@@ -224,7 +228,11 @@ class TestEveTypeStarBaseSize(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_entities(
-            [EveCategory, EveGroup, EveType,]
+            [
+                EveCategory,
+                EveGroup,
+                EveType,
+            ]
         )
 
     def test_returns_large_for_large_control_tower(self):

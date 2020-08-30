@@ -620,7 +620,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"unique_together": {("structure", "name")},},
+            options={
+                "unique_together": {("structure", "name")},
+            },
         ),
         migrations.CreateModel(
             name="Notification",
@@ -685,6 +687,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"unique_together": {("notification_id", "owner")},},
+            options={
+                "unique_together": {("notification_id", "owner")},
+            },
         ),
     ]

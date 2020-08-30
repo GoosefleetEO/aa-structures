@@ -12,10 +12,14 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name="structure", old_name="fuel_expires", new_name="fuel_expires_at",
+            model_name="structure",
+            old_name="fuel_expires",
+            new_name="fuel_expires_at",
         ),
         migrations.RenameField(
-            model_name="structure", old_name="last_updated", new_name="last_updated_at",
+            model_name="structure",
+            old_name="last_updated",
+            new_name="last_updated_at",
         ),
         migrations.AddField(
             model_name="structure",

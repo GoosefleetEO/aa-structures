@@ -338,9 +338,18 @@ class OwnerAdmin(admin.ModelAdmin):
             {
                 "classes": ("collapse",),
                 "fields": (
-                    ("structures_last_sync", "structures_last_error",),
-                    ("notifications_last_sync", "notifications_last_error",),
-                    ("forwarding_last_sync", "forwarding_last_error",),
+                    (
+                        "structures_last_sync",
+                        "structures_last_error",
+                    ),
+                    (
+                        "notifications_last_sync",
+                        "notifications_last_error",
+                    ),
+                    (
+                        "forwarding_last_sync",
+                        "forwarding_last_error",
+                    ),
                 ),
             },
         ),
@@ -595,7 +604,10 @@ class StructureAdmin(admin.ModelAdmin):
                 "classes": ("collapse",),
                 "fields": (
                     "state",
-                    ("state_timer_start", "state_timer_end",),
+                    (
+                        "state_timer_start",
+                        "state_timer_end",
+                    ),
                     "unanchors_at",
                     "fuel_expires_at",
                     "last_online_at",
@@ -608,7 +620,10 @@ class StructureAdmin(admin.ModelAdmin):
                 "classes": ("collapse",),
                 "fields": (
                     ("reinforce_hour",),
-                    ("next_reinforce_hour", "next_reinforce_apply",),
+                    (
+                        "next_reinforce_hour",
+                        "next_reinforce_apply",
+                    ),
                 ),
             },
         ),
@@ -619,7 +634,17 @@ class StructureAdmin(admin.ModelAdmin):
                 "fields": ("position_x", "position_y", "position_z"),
             },
         ),
-        (None, {"fields": (("id", "last_updated_at",))}),
+        (
+            None,
+            {
+                "fields": (
+                    (
+                        "id",
+                        "last_updated_at",
+                    )
+                )
+            },
+        ),
     )
     inlines = (StructureAdminInline,)
 

@@ -329,7 +329,7 @@ class Structure(models.Model):
     @property
     def is_full_power(self):
         """return True if structure is full power, False if not.
-        
+
         Returns None if state can not be determined
         """
         power_mode = self.power_mode
@@ -341,7 +341,7 @@ class Structure(models.Model):
     @property
     def is_low_power(self):
         """return True if structure is low power, False if not.
-        
+
         Returns None if state can not be determined
         """
         power_mode = self.power_mode
@@ -448,7 +448,7 @@ class Structure(models.Model):
 
     def update_generated_tags(self, recreate_tags=False):
         """updates all generated tags for this structure
-        
+
         recreate_tags: when set true all tags will be re-created,
         otherwise just re-added if they are missing
         """

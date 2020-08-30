@@ -59,7 +59,7 @@ class EsiNameLocalization(models.Model):
 
     def name_localized_for_language(self, language: str):
         """returns the localized version of name for the given language
-        
+
         will return the default if a translation does not exist
         """
         lang_mapping = self._language_code_translation(language, self.LANG_CODES_DJANGO)
@@ -95,7 +95,7 @@ class EsiNameLocalization(models.Model):
 
 class EveUniverse(EsiNameLocalization, models.Model):
     """Base class for all EveUniverse models
-    
+
     Eve Universe classes need to have a meta class defined: `EveUniverseMeta`
 
     Properties are:
@@ -104,21 +104,21 @@ class EveUniverse(EsiNameLocalization, models.Model):
 
     esi_method: name of the ESI method to be called for fetching objects
 
-    children: dict of mapping between ESI dict and model class for 
+    children: dict of mapping between ESI dict and model class for
     children objects (e.g. planets for solar system), default is None
-    
-    fk_mappings: mapping of field names from model to ESI for FKs, 
+
+    fk_mappings: mapping of field names from model to ESI for FKs,
     default is None
-    
+
     field_mappings: mapping of field names from model to ESI for non FKs,
     default is None
-    
-    has_esi_localization: True/False, whether this model gets translations from ESI, 
+
+    has_esi_localization: True/False, whether this model gets translations from ESI,
     Default is True
 
-    generate_localization: (optional) True/False, whether this model will 
+    generate_localization: (optional) True/False, whether this model will
     generate localizations by itself, default is false
-    
+
     """
 
     id = models.PositiveIntegerField(primary_key=True, help_text="Eve Online ID")
@@ -146,11 +146,11 @@ class EveUniverse(EsiNameLocalization, models.Model):
 
     def set_generated_translations(self):
         """updates localization fields with generated values if defined
-        
+
         Purpose is to provide localized names for models where ESI does
         not provide localizations and where those names can be generated
         e.g. planets, moons
-        
+
         Will look for _name_localized_generated() defined in the model
         and run it to set all localized names
         Does nothing if that method is not defined
@@ -202,7 +202,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
     @classmethod
     def _fk_mappings(cls) -> dict:
         """returns the foreign key mappings for this class
-        
+
         'model field name': ('Foreign Key name on ESI', 'related model class')
         """
 
@@ -567,8 +567,8 @@ class EveMoon(EveUniverse):
 
 class EveSovereigntyMap(models.Model):
     """Shows which alliance / corporation / faction owns a system
-    
-    Note: This model does not hold FKs to respective objects like 
+
+    Note: This model does not hold FKs to respective objects like
     EveSolarSystem to avoid having load all those object from ESI
     """
 

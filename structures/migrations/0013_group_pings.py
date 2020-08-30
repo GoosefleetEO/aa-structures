@@ -21,8 +21,14 @@ class Migration(migrations.Migration):
             old_name="has_pings_enabled",
             new_name="has_default_pings_enabled",
         ),
-        migrations.RemoveField(model_name="structure", name="next_reinforce_weekday",),
-        migrations.RemoveField(model_name="structure", name="reinforce_weekday",),
+        migrations.RemoveField(
+            model_name="structure",
+            name="next_reinforce_weekday",
+        ),
+        migrations.RemoveField(
+            model_name="structure",
+            name="reinforce_weekday",
+        ),
         migrations.AddField(
             model_name="owner",
             name="ping_groups",

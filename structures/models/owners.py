@@ -387,7 +387,7 @@ class Owner(models.Model):
         structures_w_lang: dict, default_lang: str
     ) -> list:
         """compress service names localizations for each structure
-        We are assuming that services are returned from ESI in the same order 
+        We are assuming that services are returned from ESI in the same order
         for each language.
         """
         structures_services = Owner._collect_services_with_localizations(
@@ -524,7 +524,10 @@ class Owner(models.Model):
         for item_ids_chunk in chunks(item_ids, 999):
             locations_data_chunk = esi_fetch(
                 "Assets.post_corporations_corporation_id_assets_locations",
-                args={"corporation_id": corporation_id, "item_ids": item_ids_chunk,},
+                args={
+                    "corporation_id": corporation_id,
+                    "item_ids": item_ids_chunk,
+                },
                 token=token,
                 logger_tag=add_prefix(),
             )
@@ -545,7 +548,10 @@ class Owner(models.Model):
         for item_ids_chunk in chunks(item_ids, 999):
             names_data_chunk = esi_fetch(
                 "Assets.post_corporations_corporation_id_assets_names",
-                args={"corporation_id": corporation_id, "item_ids": item_ids_chunk,},
+                args={
+                    "corporation_id": corporation_id,
+                    "item_ids": item_ids_chunk,
+                },
                 token=token,
                 logger_tag=add_prefix(),
             )
@@ -634,7 +640,10 @@ class Owner(models.Model):
         for item_ids_chunk in chunks(item_ids, 999):
             names_data_chunk = esi_fetch(
                 "Assets.post_corporations_corporation_id_assets_names",
-                args={"corporation_id": corporation_id, "item_ids": item_ids_chunk,},
+                args={
+                    "corporation_id": corporation_id,
+                    "item_ids": item_ids_chunk,
+                },
                 token=token,
                 logger_tag=add_prefix(),
             )

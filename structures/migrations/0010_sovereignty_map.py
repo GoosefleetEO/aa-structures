@@ -58,7 +58,8 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterModelOptions(
-            name="structuretag", options={"ordering": ["order", "name"]},
+            name="structuretag",
+            options={"ordering": ["order", "name"]},
         ),
         migrations.AddField(
             model_name="structuretag",

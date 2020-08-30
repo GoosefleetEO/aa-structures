@@ -38,7 +38,7 @@ def update_sov_map():
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_all_structures():
-    """main task for starting regular update of all structures 
+    """main task for starting regular update of all structures
     and related data from ESI
     """
     chain(update_sov_map.si(), update_structures.si()).delay()

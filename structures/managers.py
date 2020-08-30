@@ -19,12 +19,12 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 class EveUniverseManager(models.Manager):
     def get_or_create_esi(self, eve_id: int) -> tuple:
-        """gets or creates eve universe object fetched from ESI if needed. 
+        """gets or creates eve universe object fetched from ESI if needed.
         Will always get/create parent objects.
-        
+
         eve_id: Eve Online ID of object
 
-        Returns: object, created        
+        Returns: object, created
         """
         try:
             obj = self.get(id=eve_id)
@@ -35,7 +35,7 @@ class EveUniverseManager(models.Manager):
         return obj, created
 
     def update_or_create_esi(self, eve_id: int) -> tuple:
-        """updates or creates Eve Universe object with data fetched from ESI. 
+        """updates or creates Eve Universe object with data fetched from ESI.
         Will always update/create children and get/create parent objects.
 
         eve_id: Eve Online ID of object
@@ -132,10 +132,10 @@ class EveSovereigntyMapManager(models.Manager):
 class EveEntityManager(models.Manager):
     def get_or_create_esi(self, eve_entity_id: int) -> tuple:
         """gets or creates EveEntity obj with data fetched from ESI if needed
-        
+
         eve_id: Eve Online ID of object
-        
-        Returns: object, created        
+
+        Returns: object, created
         """
         try:
             obj = self.get(id=eve_entity_id)
@@ -147,10 +147,10 @@ class EveEntityManager(models.Manager):
 
     def update_or_create_esi(self, eve_entity_id: int) -> tuple:
         """updates or creates EveEntity object with data fetched from ESI
-        
+
         eve_id: Eve Online ID of object
-        
-        Returns: object, created        
+
+        Returns: object, created
         """
         add_prefix = make_logger_prefix(
             "%s(id=%d)" % (self.model.__name__, eve_entity_id)
@@ -181,12 +181,12 @@ class EveEntityManager(models.Manager):
 class StructureManager(models.Manager):
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:
         """get or create a structure with data from ESI if needed
-        
+
         structure_id: Structure ID of object in Eve Online
 
-        token: ``esi.models.Token`` object with scope: 
+        token: ``esi.models.Token`` object with scope:
         ``esi-universe.read_structures.v1``
-        
+
         Returns: object, created
         """
         try:
@@ -199,12 +199,12 @@ class StructureManager(models.Manager):
     def update_or_create_esi(self, structure_id: int, token: Token) -> tuple:
         """update or create a structure from ESI for given structure ID
         This will only fetch basic info about a structure
-        
+
         structure_id: Structure ID of object in Eve Online
 
-        token: ``esi.models.Token`` object with scope: 
+        token: ``esi.models.Token`` object with scope:
         ``esi-universe.read_structures.v1``
-        
+
         Returns: object, created
         """
         from .models import Owner

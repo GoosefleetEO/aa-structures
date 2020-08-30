@@ -239,7 +239,11 @@ class TestStructureList2(TestCase):
 
     def test_set_tags_filter(self):
         request = self.factory.post(
-            reverse("structures:structure_list"), data={"tag_b": True, "tag_c": True,}
+            reverse("structures:structure_list"),
+            data={
+                "tag_b": True,
+                "tag_c": True,
+            },
         )
         request.user = self.user
         response = views.structure_list(request)

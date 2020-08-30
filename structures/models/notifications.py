@@ -1212,9 +1212,9 @@ class Notification(models.Model):
 
     def _execute_webhook(self, hook, content, embed, add_prefix) -> bool:
         """executes webhook for sending the message, will retry on errors
-        
+
         Sets this notification as "sent" if successful
-        
+
         returns True/False on success
         """
         success = False

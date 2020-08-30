@@ -121,7 +121,7 @@ class EsiOperation:
 
 def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test
-    will use the respective test data 
+    will use the respective test data
     unless the function property override_data is set
     """
 
@@ -149,7 +149,7 @@ def esi_get_corporations_corporation_id_structures(
     corporation_id, page=None, language=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
-    will use the respective test data 
+    will use the respective test data
     unless the function property override_data is set
     """
 
@@ -196,9 +196,9 @@ def esi_get_corporations_corporation_id_structures_2(
     corporation_id, page=None, language=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
-    will use the respective test data 
+    will use the respective test data
     unless the function property override_data is set
-    
+
     VARIANT that simulates django-esi 2.0
     """
 
@@ -259,7 +259,7 @@ def esi_get_corporations_corporation_id_starbases(
     corporation_id, page=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
-    will use the respective test data 
+    will use the respective test data
     unless the function property override_data is set
     """
 
@@ -468,7 +468,7 @@ def esi_return_data(data):
 
 def esi_mock_client(version=1.6):
     """provides a mocked ESI client
-    
+
     version is the supported version of django-esi
     """
     mock_client = Mock()
@@ -518,16 +518,33 @@ def esi_mock_client(version=1.6):
     )
 
     mock_client.Universe.get_universe_groups_group_id.side_effect = esi_return_data(
-        {"id": 1657, "name": "Citadel", "category_id": 65,}
+        {
+            "id": 1657,
+            "name": "Citadel",
+            "category_id": 65,
+        }
     )
     mock_client.Universe.get_universe_types_type_id.side_effect = esi_return_data(
-        {"id": 35832, "name": "Astrahus", "group_id": 1657,}
+        {
+            "id": 35832,
+            "name": "Astrahus",
+            "group_id": 1657,
+        }
     )
     mock_client.Universe.get_universe_regions_region_id.side_effect = esi_return_data(
-        {"id": 10000005, "name": "Detorid",}
+        {
+            "id": 10000005,
+            "name": "Detorid",
+        }
     )
-    mock_client.Universe.get_universe_constellations_constellation_id.side_effect = esi_return_data(
-        {"id": 20000069, "name": "1RG-GU", "region_id": 10000005,}
+    mock_client.Universe.get_universe_constellations_constellation_id.side_effect = (
+        esi_return_data(
+            {
+                "id": 20000069,
+                "name": "1RG-GU",
+                "region_id": 10000005,
+            }
+        )
     )
     mock_client.Universe.get_universe_systems.side_effect = esi_return_data(
         esi_data["Universe"]["get_universe_systems"]
@@ -706,7 +723,7 @@ def create_structures(dont_load_entities: bool = False) -> object:
 
 def create_user(character_id, load_data=False) -> User:
     """create a user from the given character id and returns it
-    
+
     Needs: EveCharacter
     """
     if load_data:
