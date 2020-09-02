@@ -27,7 +27,7 @@ class EsiNameLocalization(models.Model):
         ("de", "de", "de"),
         ("ko", "ko", "ko"),
         ("ru", "ru", "ru"),
-        ("zh-hans", "zh", "zh"),
+        # ("zh-hans", "zh", "zh"),
     )
     LANG_CODES_DJANGO = 0
     LANG_CODES_MODEL = 1

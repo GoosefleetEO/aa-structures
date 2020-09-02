@@ -417,7 +417,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_de": "Clone Bay_de",
                     "name_ko": "Clone Bay_ko",
                     "name_ru": "Clone Bay_ru",
-                    "name_zh": "Clone Bay_zh",
+                    # "name_zh": "Clone Bay_zh",
                     "state": StructureService.STATE_ONLINE,
                 }
             ),
@@ -427,7 +427,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_de": "Market Hub_de",
                     "name_ko": "Market Hub_ko",
                     "name_ru": "Market Hub_ru",
-                    "name_zh": "Market Hub_zh",
+                    # "name_zh": "Market Hub_zh",
                     "state": StructureService.STATE_OFFLINE,
                 }
             ),
@@ -440,7 +440,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_de": x.name_de,
                     "name_ko": x.name_ko,
                     "name_ru": x.name_ru,
-                    "name_zh": x.name_zh,
+                    # "name_zh": x.name_zh,
                     "state": x.state,
                 }
             )
@@ -457,7 +457,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_de": "Reprocessing_de",
                     "name_ko": "Reprocessing_ko",
                     "name_ru": "Reprocessing_ru",
-                    "name_zh": "Reprocessing_zh",
+                    # "name_zh": "Reprocessing_zh",
                     "state": StructureService.STATE_ONLINE,
                 }
             ),
@@ -467,7 +467,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_de": "Moon Drilling_de",
                     "name_ko": "Moon Drilling_ko",
                     "name_ru": "Moon Drilling_ru",
-                    "name_zh": "Moon Drilling_zh",
+                    # "name_zh": "Moon Drilling_zh",
                     "state": StructureService.STATE_ONLINE,
                 }
             ),
@@ -480,7 +480,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_de": x.name_de,
                     "name_ko": x.name_ko,
                     "name_ru": x.name_ru,
-                    "name_zh": x.name_zh,
+                    # "name_zh": x.name_zh,
                     "state": x.state,
                 }
             )

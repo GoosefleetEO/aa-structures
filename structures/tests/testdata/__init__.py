@@ -102,7 +102,15 @@ entities_testdata = _load_testdata_entities()
 ##############################
 # functions for mocking calls to ESI with test data
 
-ESI_LANGUAGES = {"de", "en-us", "fr", "ja", "ru", "zh", "ko"}
+ESI_LANGUAGES = {
+    "de",
+    "en-us",
+    "fr",
+    "ja",
+    "ru",
+    "ko",
+    # "zh"
+}
 
 
 class EsiOperation:
@@ -262,16 +270,6 @@ def esi_get_corporations_corporation_id_starbases(
     will use the respective test data
     unless the function property override_data is set
     """
-
-    def mock_result(**kwargs):
-        """simulates behavior of result()"""
-        if mock_operation.also_return_response:
-            mock_response = Mock()
-            mock_response.headers = mock_operation._headers
-            return [mock_operation._data, mock_response]
-        else:
-            return mock_operation._data
-
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
         page = 1

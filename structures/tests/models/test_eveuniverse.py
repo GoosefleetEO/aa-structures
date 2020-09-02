@@ -68,7 +68,7 @@ class TestEveUniverseLocalization(NoSocketsTestCase):
             name_de="Name_de",
             name_ko="Name_ko",
             name_ru="",
-            name_zh="Name_zh",
+            # name_zh="Name_zh",
         )
 
     def test_can_localized_name_de_1(self):
@@ -90,10 +90,12 @@ class TestEveUniverseLocalization(NoSocketsTestCase):
             expected = "Name_ko"
             self.assertEqual(self.obj.name_localized, expected)
 
+    """
     def test_can_localized_name_zh(self):
         with translation.override("zh-hans"):
             expected = "Name_zh"
             self.assertEqual(self.obj.name_localized, expected)
+    """
 
     def test_falls_back_to_en_for_missing_translation(self):
         with translation.override("ru"):
@@ -127,7 +129,7 @@ class TestEveUniverseLocalization(NoSocketsTestCase):
         self.assertEqual(obj.name_de, "Amamake_de I")
         self.assertEqual(obj.name_ko, "Amamake_ko I")
         self.assertEqual(obj.name_ru, "Amamake_ru I")
-        self.assertEqual(obj.name_zh, "Amamake_zh I")
+        # self.assertEqual(obj.name_zh, "Amamake_zh I")
 
 
 class TestEveType(NoSocketsTestCase):

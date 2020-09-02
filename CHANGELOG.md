@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.1] - 2020-09-02
+
+### Changed
+
+- Temporary removed support for Chinese (zh), because ESI does not seam to support it anymore and returns 400 bad request. Waiting for resolution to [this ESI issue](https://github.com/esi/esi-issues/issues/1235) for final decision.
+
 ## [1.5.0] - 2020-08-24
 
 **Group pings**

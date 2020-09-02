@@ -60,7 +60,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         self.assertEqual(structure.name_de, "Structure_de")
         self.assertEqual(structure.name_ko, "Structure_ko")
         self.assertEqual(structure.name_ru, "Structure_ru")
-        self.assertEqual(structure.name_zh, "Structure_zh")
+        # self.assertEqual(structure.name_zh, "Structure_zh")
         self.assertIsInstance(structure.last_updated, datetime)
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
@@ -472,7 +472,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
         self.assertEqual(structure.name_de, "Amamake_de IV")
         self.assertEqual(structure.name_ko, "Amamake_ko IV")
         self.assertEqual(structure.name_ru, "Amamake_ru IV")
-        self.assertEqual(structure.name_zh, "Amamake_zh IV")
+        # self.assertEqual(structure.name_zh, "Amamake_zh IV")
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_can_create_object_from_esi_if_not_found_w_parent(self, mock_esi_client):

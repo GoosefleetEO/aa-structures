@@ -69,7 +69,7 @@ LANGUAGES = (
     ("en", _("English")),
     ("de", _("German")),
     ("es", _("Spanish")),
-    ("zh-hans", _("Chinese Simplified")),
+    # ("zh-hans", _("Chinese Simplified")),
     ("ru", _("Russian")),
     ("ko", _("Korean")),
 )
