@@ -15,8 +15,8 @@ from django.db import models
 from django.contrib.auth.models import Group
 from django.core.validators import MinValueValidator
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _, gettext
 from django.utils import translation
+from django.utils.translation import gettext_lazy as _, gettext
 
 from allianceauth.eveonline.evelinks import dotlan
 
@@ -1045,9 +1045,7 @@ class Notification(models.Model):
 
         structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
         structure_type_name = structure_type.name_localized
-        sov_owner_link = self._gen_alliance_link(
-            self.owner.corporation.alliance.alliance_name
-        )
+        sov_owner_link = self._gen_alliance_link(self.sender.name)
         if self.notification_type == NTYPE_SOV_ENTOSIS_CAPTURE_STARTED:
             title = gettext(
                 "%(structure_type)s in %(solar_system)s is being captured"
@@ -1374,10 +1372,7 @@ class Notification(models.Model):
                 visibility=visibility,
                 structure_name=structure_obj.name,
                 owner_name=self.owner.corporation.corporation_name,
-                details_notes=(
-                    "Automatically created from structure notification for "
-                    f"{self.owner.corporation}"
-                ),
+                details_notes=self._timer_details_notes(),
             )
             timer_added = True
 
@@ -1429,10 +1424,7 @@ class Notification(models.Model):
                     eve_alliance=self.owner.corporation.alliance,
                     visibility=visibility,
                     owner_name=self.owner.corporation.corporation_name,
-                    details_notes=(
-                        "Automatically created from structure notification for "
-                        f"{self.owner.corporation}"
-                    ),
+                    details_notes=self._timer_details_notes(),
                 )
                 timer_added = True
 
@@ -1490,11 +1482,8 @@ class Notification(models.Model):
                 eve_corporation=self.owner.corporation,
                 eve_alliance=self.owner.corporation.alliance,
                 visibility=visibility,
-                owner_name=self.owner.corporation.corporation_name,
-                details_notes=(
-                    "Automatically created from structure notification for "
-                    f"{self.owner.corporation}"
-                ),
+                owner_name=self.sender.name,
+                details_notes=self._timer_details_notes(),
             )
             timer_added = True
 
@@ -1545,10 +1534,7 @@ class Notification(models.Model):
                 visibility=visibility,
                 structure_name="Customs Office",
                 owner_name=self.owner.corporation.corporation_name,
-                details_notes=(
-                    "Automatically created from structure notification for "
-                    f"{self.owner.corporation}"
-                ),
+                details_notes=self._timer_details_notes(),
             )
             timer_added = True
 
@@ -1626,10 +1612,7 @@ class Notification(models.Model):
                     visibility=visibility,
                     structure_name=parsed_text["structureName"],
                     owner_name=self.owner.corporation.corporation_name,
-                    details_notes=(
-                        "Automatically created from structure notification for "
-                        f"{self.owner.corporation}"
-                    ),
+                    details_notes=self._timer_details_notes(),
                 )
                 timer_added = True
 
@@ -1681,3 +1664,10 @@ class Notification(models.Model):
                         )
 
         return timer_added
+
+    def _timer_details_notes(self) -> str:
+        """returns generated details notes string for Timers"""
+        return (
+            "Automatically created from structure notification for "
+            f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
+        )

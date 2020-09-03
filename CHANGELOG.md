@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.3] - 2020-09-03
+
+### Fixes
+
+- Wrong owner for Sov Structures in generated timers ([#32](https://gitlab.com/ErikKalkoken/aa-structures/issues/32))
+
 ## [1.5.2] - 2020-09-02
 
 ### Fixes

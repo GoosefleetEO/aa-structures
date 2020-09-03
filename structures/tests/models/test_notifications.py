@@ -718,7 +718,7 @@ if "structuretimers" in app_labels():
                 timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
             )
             self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
-            self.assertEqual(timer.owner_name, "Wayne Technologies")
+            self.assertEqual(timer.owner_name, "Wayne Enterprises")
             self.assertTrue(timer.details_notes)
 
         def test_timer_orbital_reinforcements(self):
