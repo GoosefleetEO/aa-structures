@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.4] - 2020-09-07
+
+### Added
+
+- Will now log warnings if no owner is configured to receive alliance wide notifications, e.g. as required for processing sov notifications.
+- Is it now possible to active/deactivate multiple owners in bulk
+- Admin site now shows in the owner list how many structures and notifications exist for an owner
+- Admin site now shows in the owner list if an owner is enabled as alliance main
+
 ## [1.5.3] - 2020-09-03
 
 ### Fixes

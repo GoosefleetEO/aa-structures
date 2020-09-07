@@ -29,6 +29,15 @@ def update_structures():
         if owner.is_active:
             update_structures_for_owner.delay(owner.pk)
 
+    if (
+        Owner.objects.filter(is_active=True).count() > 0
+        and Owner.objects.filter(is_active=True, is_alliance_main=True).count() == 0
+    ):
+        logger.warning(
+            "No owner configured to process alliance wide notifications. "
+            "Please set 'is alliance main' to True for the designated owner."
+        )
+
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_sov_map():

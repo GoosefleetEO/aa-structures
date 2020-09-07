@@ -228,18 +228,22 @@ class OwnerAdmin(admin.ModelAdmin):
         "_corporation",
         "_alliance",
         "character",
+        "_is_active",
         "_webhooks",
         "has_default_pings_enabled",
         "_ping_groups",
-        "_is_active",
+        "_is_alliance_main",
         "_is_structure_sync_ok",
         "_is_notification_sync_ok",
         "_is_forwarding_sync_ok",
+        "_structures_count",
+        "_notifications_count",
     )
     list_filter = (
         ("corporation__alliance", admin.RelatedOnlyFieldListFilter),
         "has_default_pings_enabled",
         "is_active",
+        "is_alliance_main",
         OwnerSyncStatusFilter,
     )
     ordering = ["corporation__corporation_name"]
@@ -277,6 +281,12 @@ class OwnerAdmin(admin.ModelAdmin):
     _is_active.boolean = True
     _is_active.short_description = "active"
 
+    def _is_alliance_main(self, obj):
+        return obj.is_alliance_main
+
+    _is_alliance_main.boolean = True
+    _is_alliance_main.short_description = "alliance main"
+
     def _is_structure_sync_ok(self, obj):
         if not obj.is_active:
             return None
@@ -303,6 +313,72 @@ class OwnerAdmin(admin.ModelAdmin):
 
     _is_forwarding_sync_ok.boolean = True
     _is_forwarding_sync_ok.short_description = "forwarding"
+
+    def _notifications_count(self, obj: Owner) -> int:
+        return obj.notification_set.count()
+
+    _notifications_count.short_description = "notifications"
+
+    def _structures_count(self, obj: Owner) -> int:
+        return obj.structure_set.count()
+
+    _structures_count.short_description = "structures"
+
+    actions = (
+        "update_structures",
+        "fetch_notifications",
+        "send_notifications",
+        "deactivate_owners",
+        "activate_owners",
+    )
+
+    def activate_owners(self, request, queryset):
+        queryset.update(is_active=True)
+        self.message_user(request, f"Activated {queryset.count()} owners")
+
+    activate_owners.short_description = "Activate selected owners"
+
+    def deactivate_owners(self, request, queryset):
+        queryset.update(is_active=False)
+        self.message_user(request, f"Deactivated {queryset.count()} owners")
+
+    deactivate_owners.short_description = "Deactivate selected owners"
+
+    def update_structures(self, request, queryset):
+        for obj in queryset:
+            tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            text = "Started updating structures for: {}. ".format(obj)
+            text += "You will receive a notification once it is completed."
+
+            self.message_user(request, text)
+
+    update_structures.short_description = "Update structures from EVE server"
+
+    def fetch_notifications(self, request, queryset):
+        for obj in queryset:
+            tasks.fetch_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            text = "Started fetching notifications for: {}. ".format(obj)
+            text += "You will receive a notification once it is completed."
+
+            self.message_user(request, text)
+
+    fetch_notifications.short_description = "Fetch notifications from EVE server"
+
+    def send_notifications(self, request, queryset):
+        send_tasks = list()
+        for owner in queryset:
+            send_tasks.append(
+                tasks.send_new_notifications_for_owner.si(owner_pk=owner.pk)
+            )
+            self.message_user(
+                request, "Started sending new notifications for: {}. ".format(owner)
+            )
+        chain(send_tasks).delay()
+
+    send_notifications.short_description = "Send new notifications to Discord"
+
+    def has_add_permission(self, request):
+        return True if STRUCTURES_DEVELOPER_MODE else False
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
@@ -354,44 +430,6 @@ class OwnerAdmin(admin.ModelAdmin):
             },
         ),
     )
-
-    actions = ("update_structures", "fetch_notifications", "send_notifications")
-
-    def update_structures(self, request, queryset):
-        for obj in queryset:
-            tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = "Started updating structures for: {}. ".format(obj)
-            text += "You will receive a notification once it is completed."
-
-            self.message_user(request, text)
-
-    update_structures.short_description = "Update structures from EVE server"
-
-    def fetch_notifications(self, request, queryset):
-        for obj in queryset:
-            tasks.fetch_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = "Started fetching notifications for: {}. ".format(obj)
-            text += "You will receive a notification once it is completed."
-
-            self.message_user(request, text)
-
-    fetch_notifications.short_description = "Fetch notifications from EVE server"
-
-    def send_notifications(self, request, queryset):
-        send_tasks = list()
-        for owner in queryset:
-            send_tasks.append(
-                tasks.send_new_notifications_for_owner.si(owner_pk=owner.pk)
-            )
-            self.message_user(
-                request, "Started sending new notifications for: {}. ".format(owner)
-            )
-        chain(send_tasks).delay()
-
-    send_notifications.short_description = "Send new notifications to Discord"
-
-    def has_add_permission(self, request):
-        return True if STRUCTURES_DEVELOPER_MODE else False
 
 
 @admin.register(StructureTag)
