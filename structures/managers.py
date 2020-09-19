@@ -26,6 +26,7 @@ class EveUniverseManager(models.Manager):
 
         Returns: object, created
         """
+        eve_id = int(eve_id)
         try:
             obj = self.get(id=eve_id)
             created = False
@@ -44,6 +45,7 @@ class EveUniverseManager(models.Manager):
         """
         from .models import EsiNameLocalization
 
+        eve_id = int(eve_id)
         add_prefix = make_logger_prefix("%s(id=%d)" % (self.model.__name__, eve_id))
         try:
             esi_path = "Universe." + self.model.esi_method()
@@ -137,6 +139,7 @@ class EveEntityManager(models.Manager):
 
         Returns: object, created
         """
+        eve_entity_id = int(eve_entity_id)
         try:
             obj = self.get(id=eve_entity_id)
             created = False
@@ -152,8 +155,9 @@ class EveEntityManager(models.Manager):
 
         Returns: object, created
         """
+        eve_entity_id = int(eve_entity_id)
         add_prefix = make_logger_prefix(
-            "%s(id=%d)" % (self.model.__name__, eve_entity_id)
+            "%s(id=%s)" % (self.model.__name__, eve_entity_id)
         )
         try:
             response = esi_fetch(

@@ -9,9 +9,8 @@ from allianceauth.services.tasks import QueueOnce
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
-from .utils import LoggerAddTag, make_logger_prefix
+from .utils import LoggerAddTag
 from .models import EveSovereigntyMap, Notification, Owner, Webhook
-
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -21,18 +20,7 @@ TASK_PRIO_HIGH = 2
 @shared_task(base=QueueOnce)
 def send_messages_for_webhook(webhook_pk: int) -> None:
     """sends all currently queued messages for given webhook to Discord"""
-    try:
-        webhook = Webhook.objects.get(pk=webhook_pk)
-    except Webhook.DoesNotExist:
-        logger.error("Webhook with pk = %s does not exist. Aborting.", webhook_pk)
-    else:
-        if not webhook.is_active:
-            logger.info("Tracker %s: Webhook disabled - skipping sending", webhook)
-            return
-
-        logger.info("Started sending messages to webhook %s", webhook)
-        webhook.send_queued_messages()
-        logger.info("Completed sending messages to webhook %s", webhook)
+    Webhook.objects.send_queued_messages_for_webhook(webhook_pk)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -125,42 +113,32 @@ def send_notifications(notification_pks: list, rate_limited=True) -> None:
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
     """sends test notification to given webhook"""
-
-    webhook = Webhook.objects.get(pk=webhook_pk)
-    add_prefix = make_logger_prefix(webhook)
     try:
-        send_report = webhook.send_test_notification()
-        error_code = None
-    except Exception as ex:
-        logger.exception("Failed to send test notification")
-        send_report = None
-        error_code = str(ex)
-
-    success = error_code is None
-    if user_pk:
-        try:
+        webhook = Webhook.objects.get(pk=webhook_pk)
+        if user_pk:
+            user = User.objects.get(pk=user_pk)
+        else:
+            user = None
+    except Webhook.DoesNotExist:
+        logger.error("Webhook with pk = %s does not exist. Aborting.", webhook_pk)
+    except User.DoesNotExist:
+        logger.error("User with pk = %s does not exist. Aborting.", user_pk)
+    else:
+        send_report, send_success = webhook.send_test_message(user)
+        if user:
             message = 'Test notification to webhook "{}" {}.\n'.format(
-                webhook, "completed successfully" if success else "has failed"
+                webhook, "completed successfully" if send_success else "has failed"
             )
-            if success:
-                message += "send report:\n{}".format(send_report)
-            else:
-                message += "Error code: {}".format(error_code)
+            if not send_success:
+                message += "Error: {}".format(send_report)
 
             notify(
-                user=User.objects.get(pk=user_pk),
+                user=user,
                 title='{}: Test notification to "{}": {}'.format(
-                    __title__, webhook, "OK" if success else "FAILED"
+                    __title__, webhook, "OK" if send_success else "FAILED"
                 ),
                 message=message,
-                level="success" if success else "danger",
-            )
-        except Exception as ex:
-            logger.exception(
-                add_prefix(
-                    "An unexpected error ocurred while trying to "
-                    + "report to user: {}".format(ex)
-                )
+                level="success" if send_success else "danger",
             )
 
 

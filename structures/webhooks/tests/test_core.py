@@ -7,14 +7,19 @@ import dhooks_lite
 from django.test import TestCase
 from allianceauth.tests.auth_utils import AuthUtils
 
-from ..core.webhooks import DiscordWebhookMixin
+from .. import core
 from ..utils import JSONDateTimeDecoder
 
 
-MODULE_PATH = "structures.core.webhooks"
+MODULE_PATH = core.__package__ + ".core"
 
 
-class Webhook(DiscordWebhookMixin):
+class Webhook(core.DiscordWebhookMixin):
+    """Fake Webhook model used for testing
+
+    TODO: Replace with Django model inheriting from WebhookBase
+    """
+
     def __init__(self, name, url) -> None:
         self.pk = randint(1, 10000)
         self.name = name
@@ -27,6 +32,13 @@ class TestDiscordWebhookMixin(TestCase):
     def setUp(self) -> None:
         self.webhook = Webhook("Dummy 1", "dummy-1-url")
         self.webhook.clear_queue()
+
+    def test_str(self):
+        self.assertEqual(str(self.webhook), "Dummy 1")
+
+    def test_repr(self):
+        expected = "Webhook(pk=%s, name='Dummy 1')" % self.webhook.pk
+        self.assertEqual(repr(self.webhook), expected)
 
     def test_can_size_and_clear_queue(self):
         # 0 when empty

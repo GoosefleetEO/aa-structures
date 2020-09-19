@@ -90,10 +90,6 @@ CELERYBEAT_SCHEDULE['structures_fetch_all_notifications'] = {
     'task': 'structures.tasks.fetch_all_notifications',
     'schedule': crontab(minute='*/5'),
 }
-CELERYBEAT_SCHEDULE['structures_send_all_new_notifications'] = {
-    'task': 'structures.tasks.send_all_new_notifications',
-    'schedule': crontab(minute='*/1'),
-}
 ```
 
 - Optional: Add additional settings if you want to change any defaults. See [Settings](#settings) for the full list.

@@ -1,7 +1,6 @@
 """Notification related models"""
 
 from datetime import datetime, timedelta
-import json
 import logging
 import yaml
 from typing import List, Set
@@ -31,7 +30,7 @@ from ..app_settings import (
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from .. import __title__
-from ..core.webhooks import DiscordWebhookMixin
+from ..webhooks.models import WebhookBase
 from ..managers import EveEntityManager
 from ..utils import (
     app_labels,
@@ -163,35 +162,9 @@ def get_default_notification_types():
     return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
 
 
-class Webhook(DiscordWebhookMixin, models.Model):
+class Webhook(WebhookBase):
     """A destination for forwarding notification alerts"""
 
-    TYPE_DISCORD = 1
-
-    TYPE_CHOICES = [
-        (TYPE_DISCORD, _("Discord Webhook")),
-    ]
-
-    name = models.CharField(
-        max_length=64, unique=True, help_text="short name to identify this webhook"
-    )
-    webhook_type = models.IntegerField(
-        choices=TYPE_CHOICES, default=TYPE_DISCORD, help_text="type of this webhook"
-    )
-    url = models.CharField(
-        max_length=255,
-        unique=True,
-        help_text=(
-            "URL of this webhook, e.g. "
-            "https://discordapp.com/api/webhooks/123456/abcdef"
-        ),
-    )
-    notes = models.TextField(
-        null=True,
-        default=None,
-        blank=True,
-        help_text="you can add notes about this webhook here if you want",
-    )
     notification_types = MultiSelectField(
         choices=NTYPE_CHOICES,
         default=get_default_notification_types,
@@ -205,10 +178,6 @@ class Webhook(DiscordWebhookMixin, models.Model):
         blank=True,
         verbose_name="language",
         help_text="language of notifications send to this webhook",
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="whether notifications are currently sent to this webhook",
     )
     is_default = models.BooleanField(
         default=False,
@@ -229,31 +198,6 @@ class Webhook(DiscordWebhookMixin, models.Model):
         blank=True,
         help_text="Groups to be pinged for each notification - ",
     )
-
-    def __str__(self) -> str:
-        return self.name
-
-    def __repr__(self) -> str:
-        return "{}(id={}, name='{}')".format(
-            self.__class__.__name__, self.id, self.name
-        )
-
-    def send_test_notification(self) -> str:
-        """Sends a test notification to this webhook and returns send report"""
-        hook = dhooks_lite.Webhook(self.url)
-        response = hook.execute(
-            _(
-                "This is a test notification from %s.\n"
-                "The webhook appears to be correctly configured."
-            )
-            % __title__,
-            wait_for_response=True,
-        )
-        if response.status_ok:
-            send_report_json = json.dumps(response.content, indent=4, sort_keys=True)
-        else:
-            send_report_json = "HTTP status code {}".format(response.status_code)
-        return send_report_json
 
 
 class EveEntity(models.Model):
@@ -1189,11 +1133,11 @@ class Notification(models.Model):
         """returns the aggressor link from a parsed_text
         for POS and POCOs only
         """
-        if "aggressorAllianceID" in parsed_text:
+        if parsed_text.get("aggressorAllianceID"):
             key = "aggressorAllianceID"
-        elif "aggressorCorpID" in parsed_text:
+        elif parsed_text.get("aggressorCorpID"):
             key = "aggressorCorpID"
-        elif "aggressorID" in parsed_text:
+        elif parsed_text.get("aggressorID"):
             key = "aggressorID"
         else:
             return "(Unknown aggressor)"

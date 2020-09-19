@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import json
 from unittest.mock import Mock, patch
 import re
 
@@ -25,42 +24,6 @@ from ...utils import set_test_logger, NoSocketsTestCase, app_labels
 
 MODULE_PATH = "structures.models.notifications"
 logger = set_test_logger(MODULE_PATH, __file__)
-
-
-class TestWebhook(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.my_webhook = Webhook(name="Dummy Webhook", url="https://www.example.com")
-
-    def test_str(self):
-        self.assertEqual(str(self.my_webhook), "Dummy Webhook")
-
-    def test_repr(self):
-        expected = "Webhook(id=%s, name='Dummy Webhook')" % self.my_webhook.id
-        self.assertEqual(repr(self.my_webhook), expected)
-
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute")
-    def test_send_test_notification_ok(self, mock_send_message):
-        mock_response = Mock()
-        mock_response.status_ok = True
-        expected_send_report = {"dummy": "abc123"}
-        mock_response.content = expected_send_report
-        mock_send_message.return_value = mock_response
-
-        response = self.my_webhook.send_test_notification()
-        self.assertDictEqual(json.loads(response), expected_send_report)
-
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute")
-    def test_send_test_notification_failed(self, mock_send_message):
-        mock_response = Mock()
-        mock_response.status_ok = False
-        mock_response.status_code = 500
-        mock_response.content = None
-        mock_send_message.return_value = mock_response
-
-        response = self.my_webhook.send_test_notification()
-        self.assertEqual(response, "HTTP status code 500")
 
 
 class TestEveEntities(NoSocketsTestCase):
@@ -260,6 +223,15 @@ class TestNotification(NoSocketsTestCase):
         obj.send_to_webhook(self.webhook)
         embed = mock_send_message.call_args[1]["embeds"][0]
         self.assertNotIn("The anchoring timer ends at", embed.description)
+
+    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_notification_with_null_aggressor_alliance(self, mock_send_message):
+        mock_send_message.return_value = True
+
+        obj = Notification.objects.get(notification_id=1000020601)
+        result = obj.send_to_webhook(self.webhook)
+        self.assertTrue(result)
 
 
 class TestNotificationPings(NoSocketsTestCase):

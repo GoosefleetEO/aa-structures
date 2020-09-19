@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.0] - 2020-09-19
+
+**Performce Improvements**
+
+### Update note
+
+This release does no longer need the scheduled task `structures_send_all_new_notifications`. Please remove it from your settings.
+
+### Changed
+
+- Reduced the lead time for sending new messages to webhooks by up to 1 minute
+
+### Fixed
+
+- Failed to send message when attacker had no alliance
+
 ## [1.5.4] - 2020-09-07
 
 ### Added

@@ -37,6 +37,14 @@ class DiscordWebhookMixin:
             cache.get_master_client(), f"{__title__}_webhook_{self.pk}_errors"
         )
 
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return "{}(pk={}, name='{}')".format(
+            self.__class__.__name__, self.pk, self.name
+        )
+
     def queue_size(self) -> int:
         """returns current size of the queue"""
         return self._main_queue.size()
