@@ -16,7 +16,7 @@ from .eveuniverse import EsiNameLocalization
 from .eveuniverse import EveSolarSystem
 from ..managers import StructureManager
 from ..managers import StructureTagManager
-from ..utils import LoggerAddTag, create_bs_label_html
+from ..utils import LoggerAddTag, add_bs_label_html
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
@@ -111,7 +111,7 @@ class StructureTag(models.Model):
             name = escape(self.name)
         else:
             name = _(self.name)
-        return create_bs_label_html(name, self.style)
+        return add_bs_label_html(name, self.style)
 
     @classmethod
     def sorted(cls, tags: list, reverse: bool = False) -> list:

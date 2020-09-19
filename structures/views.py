@@ -34,7 +34,7 @@ from .utils import (
     timeuntil_str,
     add_no_wrap_html,
     yesno_str,
-    create_bs_label_html,
+    add_bs_label_html,
 )
 
 
@@ -241,21 +241,17 @@ class StructuresRowBuilder:
             fuel_expires_timestamp = None
         elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
-                create_bs_label_html(
-                    self._structure.get_power_mode_display(), "warning"
-                )
+                add_bs_label_html(self._structure.get_power_mode_display(), "warning")
             )
             fuel_expires_timestamp = None
         elif self._structure.is_abandoned:
             fuel_expires_display = format_html_lazy(
-                create_bs_label_html(self._structure.get_power_mode_display(), "danger")
+                add_bs_label_html(self._structure.get_power_mode_display(), "danger")
             )
             fuel_expires_timestamp = None
         elif self._structure.is_maybe_abandoned:
             fuel_expires_display = format_html_lazy(
-                create_bs_label_html(
-                    self._structure.get_power_mode_display(), "warning"
-                )
+                add_bs_label_html(self._structure.get_power_mode_display(), "warning")
             )
             fuel_expires_timestamp = None
         elif self._structure.fuel_expires_at:
@@ -291,21 +287,17 @@ class StructuresRowBuilder:
             last_online_at_timestamp = None
         elif self._structure.is_full_power:
             last_online_at_display = format_html_lazy(
-                create_bs_label_html(
-                    self._structure.get_power_mode_display(), "success"
-                )
+                add_bs_label_html(self._structure.get_power_mode_display(), "success")
             )
             last_online_at_timestamp = None
         elif self._structure.is_maybe_abandoned:
             last_online_at_display = format_html_lazy(
-                create_bs_label_html(
-                    self._structure.get_power_mode_display(), "warning"
-                )
+                add_bs_label_html(self._structure.get_power_mode_display(), "warning")
             )
             last_online_at_timestamp = None
         elif self._structure.is_abandoned:
             last_online_at_display = format_html_lazy(
-                create_bs_label_html(self._structure.get_power_mode_display(), "danger")
+                add_bs_label_html(self._structure.get_power_mode_display(), "danger")
             )
             last_online_at_timestamp = None
         elif self._structure.last_online_at:

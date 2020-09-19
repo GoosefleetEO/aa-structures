@@ -41,23 +41,23 @@ class TestWebhook(NoSocketsTestCase):
         self.assertEqual(repr(self.my_webhook), expected)
 
     @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute")
-    def test_send_test_notification_ok(self, mock_execute):
+    def test_send_test_notification_ok(self, mock_send_message):
         mock_response = Mock()
         mock_response.status_ok = True
         expected_send_report = {"dummy": "abc123"}
         mock_response.content = expected_send_report
-        mock_execute.return_value = mock_response
+        mock_send_message.return_value = mock_response
 
         response = self.my_webhook.send_test_notification()
         self.assertDictEqual(json.loads(response), expected_send_report)
 
     @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute")
-    def test_send_test_notification_failed(self, mock_execute):
+    def test_send_test_notification_failed(self, mock_send_message):
         mock_response = Mock()
         mock_response.status_ok = False
         mock_response.status_code = 500
         mock_response.content = None
-        mock_execute.return_value = mock_response
+        mock_send_message.return_value = mock_response
 
         response = self.my_webhook.send_test_notification()
         self.assertEqual(response, "HTTP status code 500")
@@ -214,107 +214,51 @@ class TestNotification(NoSocketsTestCase):
         x1 = Notification.objects.get(notification_id=1000000509)
         self.assertFalse(x1.filter_for_alliance_level())
 
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_send_to_webhook_all_notification_types(self, mock_execute):
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_send_to_webhook_all_notification_types(self, mock_send_message):
         logger.debug("test_send_to_webhook_normal")
-
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.status_ok = True
-        mock_response.content = None
-        mock_execute.return_value = mock_response
+        mock_send_message.return_value = True
 
         types_tested = set()
         for x in Notification.objects.all():
             self.assertFalse(x.is_sent)
             self.assertTrue(x.send_to_webhook(self.webhook))
-            self.assertTrue(x.is_sent)
             types_tested.add(x.notification_type)
 
         # make sure we have tested all existing notification types
         self.assertSetEqual(Notification.get_all_types(), types_tested)
 
-    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_WAIT_SEC", 0)
-    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_MAX_RETRIES", 2)
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_send_to_webhook_http_error(self, mock_execute):
-        logger.debug("test_send_to_webhook_http_error")
-        mock_response = Mock()
-        mock_response.status_code = 400
-        mock_response.status_ok = False
-        mock_response.content = None
-        mock_execute.return_value = mock_response
-
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(x.send_to_webhook(self.webhook))
-        self.assertEqual(mock_execute.call_count, 1)
-
-    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_MAX_RETRIES", 2)
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_send_to_webhook_too_many_requests(self, mock_execute):
-        logger.debug("test_send_to_webhook_too_many_requests")
-        mock_response = Mock()
-        mock_response.status_code = Notification.HTTP_CODE_TOO_MANY_REQUESTS
-        mock_response.status_ok = False
-        mock_response.content = {"retry_after": 10}
-        mock_execute.return_value = mock_response
-
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(x.send_to_webhook(self.webhook))
-        self.assertEqual(mock_execute.call_count, 3)
-
-    @patch(MODULE_PATH + ".settings.DEBUG", False)
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_send_to_webhook_exception(self, mock_execute):
-        logger.debug("test_send_to_webhook_exception")
-        mock_execute.side_effect = RuntimeError("Dummy exception")
-
-        x = Notification.objects.get(notification_id=1000000502)
-        self.assertFalse(x.send_to_webhook(self.webhook))
-
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", spec=True)
-    def test_send_notification_without_existing_structure(self, mock_execute):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.status_ok = True
-        mock_response.content = None
-        mock_execute.return_value = mock_response
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_send_notification_without_existing_structure(self, mock_send_message):
+        mock_send_message.return_value = True
 
         Structure.objects.all().delete()
         obj = Notification.objects.get(notification_id=1000000505)
         obj.send_to_webhook(self.webhook)
-        embed = mock_execute.call_args[1]["embeds"][0]
+        embed = mock_send_message.call_args[1]["embeds"][0]
         self.assertEqual(
             embed.description[:39], "The Astrahus **(unknown)** in [Amamake]"
         )
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", spec=True)
-    def test_anchoring_in_low_sec_has_timer(self, mock_execute):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.status_ok = True
-        mock_response.content = None
-        mock_execute.return_value = mock_response
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_anchoring_in_low_sec_has_timer(self, mock_send_message):
+        mock_send_message.return_value = True
 
         obj = Notification.objects.get(notification_id=1000000501)
         obj.send_to_webhook(self.webhook)
-        embed = mock_execute.call_args[1]["embeds"][0]
+        embed = mock_send_message.call_args[1]["embeds"][0]
         self.assertIn("The anchoring timer ends at", embed.description)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", spec=True)
-    def test_anchoring_in_null_sec_no_timer(self, mock_execute):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.status_ok = True
-        mock_response.content = None
-        mock_execute.return_value = mock_response
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_anchoring_in_null_sec_no_timer(self, mock_send_message):
+        mock_send_message.return_value = True
 
         obj = Notification.objects.get(notification_id=1000010501)
         obj.send_to_webhook(self.webhook)
-        embed = mock_execute.call_args[1]["embeds"][0]
+        embed = mock_send_message.call_args[1]["embeds"][0]
         self.assertNotIn("The anchoring timer ends at", embed.description)
 
 
@@ -329,25 +273,25 @@ class TestNotificationPings(NoSocketsTestCase):
         _, self.owner = set_owner_character(character_id=1001)
         load_notification_entities(self.owner)
 
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_can_ping(self, mock_execute):
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_can_ping(self, mock_send_message):
         args = {"status_code": 200, "status_ok": True, "content": None}
         mock_response = Mock(**args)
-        mock_execute.return_value = mock_response
+        mock_send_message.return_value = mock_response
 
         webhook_normal = Webhook.objects.create(
             name="Test", url="http://www.example.com/dummy/"
         )
         obj = Notification.objects.get(notification_id=1000000509)
         self.assertTrue(obj.send_to_webhook(webhook_normal))
-        args, kwargs = mock_execute.call_args
+        args, kwargs = mock_send_message.call_args
         self.assertTrue(kwargs["content"] and "@everyone" in kwargs["content"])
 
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_can_disable_pinging_webhook(self, mock_execute):
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_can_disable_pinging_webhook(self, mock_send_message):
         args = {"status_code": 200, "status_ok": True, "content": None}
         mock_response = Mock(**args)
-        mock_execute.return_value = mock_response
+        mock_send_message.return_value = mock_response
 
         webhook_no_pings = Webhook.objects.create(
             name="Test2",
@@ -356,14 +300,14 @@ class TestNotificationPings(NoSocketsTestCase):
         )
         obj = Notification.objects.get(notification_id=1000000509)
         self.assertTrue(obj.send_to_webhook(webhook_no_pings))
-        args, kwargs = mock_execute.call_args
+        args, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
-    @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-    def test_can_disable_pinging_owner(self, mock_execute):
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_can_disable_pinging_owner(self, mock_send_message):
         args = {"status_code": 200, "status_ok": True, "content": None}
         mock_response = Mock(**args)
-        mock_execute.return_value = mock_response
+        mock_send_message.return_value = mock_response
 
         webhook_normal = Webhook.objects.create(
             name="Test", url="http://www.example.com/dummy/"
@@ -373,7 +317,7 @@ class TestNotificationPings(NoSocketsTestCase):
         self.owner.save()
         obj = Notification.objects.get(notification_id=1000000509)
         self.assertTrue(obj.send_to_webhook(webhook_normal))
-        args, kwargs = mock_execute.call_args
+        args, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
 
@@ -400,10 +344,10 @@ if "discord" in app_labels():
 
             return {"id": group.pk, "name": group.name}
 
-        @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-        def test_can_ping_via_webhook(self, mock_execute, mock_import_discord):
+        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+        def test_can_ping_via_webhook(self, mock_send_message, mock_import_discord):
             args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_execute.return_value = Mock(**args)
+            mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
@@ -416,13 +360,13 @@ if "discord" in app_labels():
             self.assertTrue(obj.send_to_webhook(webhook))
 
             self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_execute.call_args
+            args, kwargs = mock_send_message.call_args
             self.assertIn(f"<@&{self.group_1.pk}>", kwargs["content"])
 
-        @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-        def test_can_ping_via_owner(self, mock_execute, mock_import_discord):
+        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+        def test_can_ping_via_owner(self, mock_send_message, mock_import_discord):
             args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_execute.return_value = Mock(**args)
+            mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
@@ -435,13 +379,13 @@ if "discord" in app_labels():
             self.assertTrue(obj.send_to_webhook(webhook))
 
             self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_execute.call_args
+            args, kwargs = mock_send_message.call_args
             self.assertIn(f"<@&{self.group_2.pk}>", kwargs["content"])
 
-        @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-        def test_can_ping_both(self, mock_execute, mock_import_discord):
+        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+        def test_can_ping_both(self, mock_send_message, mock_import_discord):
             args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_execute.return_value = Mock(**args)
+            mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
@@ -455,14 +399,14 @@ if "discord" in app_labels():
             self.assertTrue(obj.send_to_webhook(webhook))
 
             self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_execute.call_args
+            args, kwargs = mock_send_message.call_args
             self.assertIn(f"<@&{self.group_1.pk}>", kwargs["content"])
             self.assertIn(f"<@&{self.group_2.pk}>", kwargs["content"])
 
-        @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-        def test_no_ping_if_not_set(self, mock_execute, mock_import_discord):
+        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+        def test_no_ping_if_not_set(self, mock_send_message, mock_import_discord):
             args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_execute.return_value = Mock(**args)
+            mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
@@ -474,13 +418,13 @@ if "discord" in app_labels():
             self.assertTrue(obj.send_to_webhook(webhook))
 
             self.assertFalse(mock_import_discord.called)
-            args, kwargs = mock_execute.call_args
+            args, kwargs = mock_send_message.call_args
             self.assertFalse(re.search(r"(<@&\d+>)", kwargs["content"]))
 
-        @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", autospec=True)
-        def test_can_handle_http_error(self, mock_execute, mock_import_discord):
+        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+        def test_can_handle_http_error(self, mock_send_message, mock_import_discord):
             args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_execute.return_value = Mock(**args)
+            mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 HTTPError
             )
@@ -493,7 +437,7 @@ if "discord" in app_labels():
             self.assertTrue(obj.send_to_webhook(webhook))
 
             self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_execute.call_args
+            args, kwargs = mock_send_message.call_args
             self.assertFalse(re.search(r"(<@&\d+>)", kwargs["content"]))
 
 

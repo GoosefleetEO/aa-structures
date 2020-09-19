@@ -45,5 +45,6 @@ setup(
         "dhooks-lite>=0.4.0",
         "django-navhelper",
         "django-multiselectfield",
+        "redis-simple-mq",
     ],
 )

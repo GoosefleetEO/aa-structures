@@ -3,19 +3,18 @@ from unittest.mock import Mock, patch
 from celery import Celery
 
 from django.contrib.auth.models import User
+from django.test import TestCase
 
-from allianceauth.tests.auth_utils import AuthUtils
 from allianceauth.eveonline.models import EveCorporationInfo
+from structures.models.notifications import Notification
 
-from ..utils import set_test_logger, NoSocketsTestCase
+from ..utils import set_test_logger, NoSocketsTestCase, generate_invalid_pk
 from .. import tasks
-from ..models import Owner, Notification, Structure
+from ..models import Owner, Webhook
 from .testdata import (
     load_notification_entities,
-    get_all_notification_ids,
     create_structures,
     set_owner_character,
-    esi_mock_client,
 )
 
 
@@ -25,14 +24,34 @@ logger = set_test_logger(MODULE_PATH, __file__)
 app = Celery("myauth")
 
 
-def _get_invalid_owner_pk():
-    owner_pks = [x.pk for x in Owner.objects.all()]
-    return (max(owner_pks) + 1) if owner_pks else 99
+@patch(MODULE_PATH + ".Webhook.send_queued_messages", spec=True)
+@patch(MODULE_PATH + ".logger", spec=True)
+class TestSendMessagesForWebhook(TestCase):
+    def setUp(self) -> None:
+        self.webhook = Webhook.objects.create(
+            name="Dummy", url="https://www.example.com/webhook"
+        )
 
+    def test_normal(self, mock_logger, mock_send_queued_messages):
+        tasks.send_messages_for_webhook(self.webhook.pk)
+        self.assertEqual(mock_send_queued_messages.call_count, 1)
+        self.assertEqual(mock_logger.info.call_count, 2)
+        self.assertEqual(mock_logger.error.call_count, 0)
 
-def _get_invalid_user_pk():
-    pks = [x.pk for x in User.objects.all()]
-    return (max(pks) + 1) if pks else 99
+    def test_invalid_pk(self, mock_logger, mock_send_queued_messages):
+        tasks.send_messages_for_webhook(generate_invalid_pk(Webhook))
+        self.assertEqual(mock_send_queued_messages.call_count, 0)
+        self.assertEqual(mock_logger.info.call_count, 0)
+        self.assertEqual(mock_logger.error.call_count, 1)
+
+    def test_disabled_webhook(self, mock_logger, mock_send_queued_messages):
+        self.webhook.is_active = False
+        self.webhook.save()
+
+        tasks.send_messages_for_webhook(self.webhook.pk)
+        self.assertEqual(mock_send_queued_messages.call_count, 0)
+        self.assertEqual(mock_logger.info.call_count, 1)
+        self.assertEqual(mock_logger.error.call_count, 0)
 
 
 class TestUpdateStructures(NoSocketsTestCase):
@@ -52,13 +71,13 @@ class TestUpdateStructures(NoSocketsTestCase):
     def test_call_structure_update_with_owner_and_ignores_invalid_user(
         self, mock_update_structures_esi
     ):
-        tasks.update_structures_for_owner(self.owner.pk, _get_invalid_user_pk())
+        tasks.update_structures_for_owner(self.owner.pk, generate_invalid_pk(User))
         first, second = mock_update_structures_esi.call_args
         self.assertIsNone(first[0])
 
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
-            tasks.update_structures_for_owner(owner_pk=_get_invalid_owner_pk())
+            tasks.update_structures_for_owner(owner_pk=generate_invalid_pk(Owner))
 
     @patch(MODULE_PATH + ".update_structures_for_owner")
     def test_can_update_structures_for_all_owners(
@@ -116,17 +135,13 @@ class TestUpdateStructures(NoSocketsTestCase):
         self.assertTrue(mock_update_from_esi.called)
 
 
-class TestSyncNotifications(NoSocketsTestCase):
+class TestFetchAllNotifications(NoSocketsTestCase):
     def setUp(self):
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
 
-    def test_raises_exception_if_owner_is_unknown(self):
-        with self.assertRaises(Owner.DoesNotExist):
-            tasks.fetch_notifications_for_owner(owner_pk=_get_invalid_owner_pk())
-
     @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
-    @patch(MODULE_PATH + ".fetch_notifications_for_owner")
+    @patch(MODULE_PATH + ".process_notifications_for_owner")
     def test_fetch_all_notifications(self, mock_fetch_notifications_owner):
         Owner.objects.all().delete()
         owner_2001 = Owner.objects.create(
@@ -144,7 +159,7 @@ class TestSyncNotifications(NoSocketsTestCase):
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2002.pk)
 
     @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
-    @patch(MODULE_PATH + ".fetch_notifications_for_owner")
+    @patch(MODULE_PATH + ".process_notifications_for_owner")
     def test_fetch_all_notifications_not_active(self, mock_fetch_notifications_owner):
         """test that not active owners are not synced"""
         Owner.objects.all().delete()
@@ -163,94 +178,44 @@ class TestSyncNotifications(NoSocketsTestCase):
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2001.pk)
 
 
-class TestForwardNotifications(NoSocketsTestCase):
-    def setUp(self):
+class TestProcessNotificationsForOwner(TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
-        self.owner.is_alliance_main = True
-        self.owner.save()
-        load_notification_entities(self.owner)
+        cls.user, cls.owner = set_owner_character(character_id=1001)
 
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
-            tasks.send_new_notifications_for_owner(owner_pk=_get_invalid_owner_pk())
+            tasks.process_notifications_for_owner(owner_pk=generate_invalid_pk(Owner))
 
-    @patch(MODULE_PATH_MODELS_OWNERS + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    @patch("structures.models.notifications.dhooks_lite.Webhook.execute", spec=True)
-    def test_send_new_notifications_no_structures_preloaded(
-        self, mock_execute, mock_esi_client, mock_token
+    @patch(MODULE_PATH + ".send_messages_for_webhook")
+    @patch(MODULE_PATH + ".Owner.fetch_notifications_esi")
+    def test_normal(
+        self,
+        mock_fetch_notifications_esi,
+        mock_send_messages_for_webhook,
     ):
-        logger.debug("test_send_new_notifications_no_structures_preloaded")
-        mock_esi_client.side_effect = esi_mock_client
+        load_notification_entities(self.owner)
+        Notification.objects.exclude(notification_id=1000000509).delete()
+        self.owner.webhooks.first().clear_queue()
 
-        # remove structures from setup so we can start from scratch
-        Structure.objects.all().delete()
+        tasks.process_notifications_for_owner(owner_pk=self.owner.pk)
+        self.assertTrue(mock_fetch_notifications_esi.called)
+        self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
 
-        # user needs permission to run tasks
-        AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-
-        app.conf.task_always_eager = True
-        tasks.send_all_new_notifications(rate_limited=False)
-        app.conf.task_always_eager = False
-
-        # should have sent all notifications
-        self.assertEqual(mock_execute.call_count, len(get_all_notification_ids()))
-
-    @patch("structures.models.notifications.dhooks_lite.Webhook.execute", spec=True)
-    def test_send_notifications(self, mock_execute):
-        logger.debug("test_send_notifications")
-        ids = {1000000401, 1000000402, 1000000403}
-        notification_pks = [
-            x.pk for x in Notification.objects.filter(notification_id__in=ids)
-        ]
-        tasks.send_notifications(notification_pks, rate_limited=False)
-
-        # should have sent notification
-        self.assertEqual(mock_execute.call_count, 3)
-
-    @patch(MODULE_PATH + ".send_new_notifications_for_owner")
-    def test_send_all_new_notifications(self, mock_send_new_notifications_for_owner):
-        Owner.objects.all().delete()
-        owner_2001 = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2001)
-        )
-        owner_2002 = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
-        )
-        app.conf.task_always_eager = True
-        tasks.send_all_new_notifications()
-        app.conf.task_always_eager = False
-        self.assertEqual(mock_send_new_notifications_for_owner.si.call_count, 2)
-        call_args_list = mock_send_new_notifications_for_owner.si.call_args_list
-        args, kwargs = call_args_list[0]
-        self.assertEqual(kwargs["owner_pk"], owner_2001.pk)
-        args, kwargs = call_args_list[1]
-        self.assertEqual(kwargs["owner_pk"], owner_2002.pk)
-
-    @patch(MODULE_PATH + ".send_new_notifications_for_owner")
-    def test_send_all_new_notifications_not_active(
-        self, mock_send_new_notifications_for_owner
+    @patch(MODULE_PATH + ".send_messages_for_webhook")
+    @patch(MODULE_PATH + ".Owner.fetch_notifications_esi")
+    def test_dont_sent_if_queue_is_empty(
+        self,
+        mock_fetch_notifications_esi,
+        mock_send_messages_for_webhook,
     ):
-        """no notifications are sent for non active owners"""
-        Owner.objects.all().delete()
-        owner_2001 = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2001),
-            is_active=True,
-        )
-        Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
-            is_active=False,
-        )
-        app.conf.task_always_eager = True
-        tasks.send_all_new_notifications()
-        app.conf.task_always_eager = False
-        self.assertEqual(mock_send_new_notifications_for_owner.si.call_count, 1)
-        call_args_list = mock_send_new_notifications_for_owner.si.call_args_list
-        args, kwargs = call_args_list[0]
-        self.assertEqual(kwargs["owner_pk"], owner_2001.pk)
+        self.owner.webhooks.first().clear_queue()
+
+        tasks.process_notifications_for_owner(owner_pk=self.owner.pk)
+        self.assertTrue(mock_fetch_notifications_esi.called)
+        self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 0)
 
 
 class TestSendTestNotification(NoSocketsTestCase):
@@ -293,3 +258,19 @@ class TestSendTestNotification(NoSocketsTestCase):
         self.assertTrue(mock_notify.called)
         args = mock_notify.call_args[1]
         self.assertEqual(args["level"], "danger")
+
+
+class TestSendNotifications(TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+
+    @patch(MODULE_PATH + ".send_messages_for_webhook")
+    def test_normal(self, mock_send_messages_for_webhook):
+        load_notification_entities(self.owner)
+
+        notification_pk = Notification.objects.get(notification_id=1000000509).pk
+        tasks.send_notifications([notification_pk])
+        self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)

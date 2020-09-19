@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta
 import json
 import logging
-from time import sleep
 import yaml
 from typing import List, Set
 
@@ -27,13 +26,12 @@ from ..app_settings import (
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
-    STRUCTURES_NOTIFICATION_MAX_RETRIES,
-    STRUCTURES_NOTIFICATION_WAIT_SEC,
     STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from .. import __title__
+from ..core.webhooks import DiscordWebhookMixin
 from ..managers import EveEntityManager
 from ..utils import (
     app_labels,
@@ -165,7 +163,7 @@ def get_default_notification_types():
     return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
 
 
-class Webhook(models.Model):
+class Webhook(DiscordWebhookMixin, models.Model):
     """A destination for forwarding notification alerts"""
 
     TYPE_DISCORD = 1
@@ -464,9 +462,6 @@ class Notification(models.Model):
             ticker = self.owner.corporation.corporation_ticker
 
         username = gettext("%(ticker)s Notification") % {"ticker": ticker}
-        hook = dhooks_lite.Webhook(
-            webhook.url, username=username, avatar_url=avatar_url
-        )
         success = False
         try:
             embed = self._generate_embed(webhook.language_code)
@@ -503,7 +498,12 @@ class Notification(models.Model):
                             if role:
                                 content += f" <@&{role['id']}>"
 
-            success = self._execute_webhook(hook, content, embed, add_prefix)
+            success = webhook.send_message(
+                content=content,
+                embeds=[embed],
+                username=username,
+                avatar_url=avatar_url,
+            )
         return success
 
     @staticmethod
@@ -1207,57 +1207,6 @@ class Notification(models.Model):
             return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
         else:
             return None
-
-    def _execute_webhook(self, hook, content, embed, add_prefix) -> bool:
-        """executes webhook for sending the message, will retry on errors
-
-        Sets this notification as "sent" if successful
-
-        returns True/False on success
-        """
-        success = False
-        max_retries = STRUCTURES_NOTIFICATION_MAX_RETRIES
-        for retry_count in range(max_retries + 1):
-            if retry_count > 0:
-                logger.warn(
-                    add_prefix("Retry {} / {}".format(retry_count, max_retries))
-                )
-            try:
-                res = hook.execute(
-                    content=content, embeds=[embed], wait_for_response=True
-                )
-                if res.status_ok:
-                    self.is_sent = True
-                    self.save()
-                    success = True
-                    break
-
-                elif res.status_code == self.HTTP_CODE_TOO_MANY_REQUESTS:
-                    if "retry_after" in res.content:
-                        retry_after = res.content["retry_after"] / 1000
-                    else:
-                        retry_after = STRUCTURES_NOTIFICATION_WAIT_SEC
-                    logger.warn(
-                        add_prefix(
-                            "rate limited - will retry after %d secs" % retry_after
-                        )
-                    )
-                    sleep(retry_after)
-
-                else:
-                    logger.warn(add_prefix("Failed to send message"))
-                    break
-
-            except Exception as ex:
-                logger.warn(
-                    add_prefix("Unexpected issue when trying to send message: %s" % ex)
-                )
-                if settings.DEBUG:
-                    raise ex
-                else:
-                    break
-
-        return success
 
     def process_for_timerboard(self, token: Token = None) -> bool:
         """add/removes a timer related to this notification for some types

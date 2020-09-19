@@ -1,5 +1,3 @@
-from celery import chain
-
 from django.contrib import admin
 from django.db import models
 from django.db.models.functions import Lower
@@ -12,21 +10,21 @@ from . import __title__
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveEntity,
+    EveGroup,
     EveMoon,
     EvePlanet,
+    EveRegion,
+    EveSolarSystem,
     EveSovereigntyMap,
+    EveType,
+    Notification,
+    Owner,
+    Structure,
     StructureTag,
     StructureService,
     Webhook,
-    EveEntity,
-    Owner,
-    Notification,
-    Structure,
 )
 from . import tasks
 from .utils import LoggerAddTag
@@ -123,7 +121,7 @@ class NotificationAdmin(admin.ModelAdmin):
     actions = (
         "mark_as_sent",
         "mark_as_unsent",
-        "send_to_webhook",
+        "send_to_webhooks",
         "process_for_timerboard",
     )
 
@@ -153,7 +151,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
     mark_as_unsent.short_description = "Mark selected notifications as unsent"
 
-    def send_to_webhook(self, request, queryset):
+    def send_to_webhooks(self, request, queryset):
         obj_pks = [obj.pk for obj in queryset]
         tasks.send_notifications.delay(obj_pks)
 
@@ -163,7 +161,7 @@ class NotificationAdmin(admin.ModelAdmin):
             "configured webhooks".format(len(obj_pks)),
         )
 
-    send_to_webhook.short_description = (
+    send_to_webhooks.short_description = (
         "Send selected notifications to configured webhooks"
     )
 
@@ -327,7 +325,6 @@ class OwnerAdmin(admin.ModelAdmin):
     actions = (
         "update_structures",
         "fetch_notifications",
-        "send_notifications",
         "deactivate_owners",
         "activate_owners",
     )
@@ -356,26 +353,13 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def fetch_notifications(self, request, queryset):
         for obj in queryset:
-            tasks.fetch_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            tasks.process_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
             text = "Started fetching notifications for: {}. ".format(obj)
             text += "You will receive a notification once it is completed."
 
             self.message_user(request, text)
 
     fetch_notifications.short_description = "Fetch notifications from EVE server"
-
-    def send_notifications(self, request, queryset):
-        send_tasks = list()
-        for owner in queryset:
-            send_tasks.append(
-                tasks.send_new_notifications_for_owner.si(owner_pk=owner.pk)
-            )
-            self.message_user(
-                request, "Started sending new notifications for: {}. ".format(owner)
-            )
-        chain(send_tasks).delay()
-
-    send_notifications.short_description = "Send new notifications to Discord"
 
     def has_add_permission(self, request):
         return True if STRUCTURES_DEVELOPER_MODE else False
@@ -706,6 +690,7 @@ class WebhookAdmin(admin.ModelAdmin):
         "_ping_groups",
         "is_active",
         "is_default",
+        "_messages_in_queue",
     )
     list_filter = ("webhook_type", "has_default_pings_enabled", "is_active")
     save_as = True
@@ -717,7 +702,10 @@ class WebhookAdmin(admin.ModelAdmin):
         else:
             return None
 
-    actions = ("test_notification", "activate", "deactivate")
+    def _messages_in_queue(self, obj):
+        return obj.queue_size()
+
+    actions = ("test_notification", "activate", "deactivate", "purge_messages")
 
     def test_notification(self, request, queryset):
         for obj in queryset:
@@ -749,5 +737,20 @@ class WebhookAdmin(admin.ModelAdmin):
             self.message_user(request, 'You have de-activated profile "{}"'.format(obj))
 
     deactivate.short_description = "Deactivate selected profiles"
+
+    def purge_messages(self, request, queryset):
+        actions_count = 0
+        killmails_deleted = 0
+        for webhook in queryset:
+            killmails_deleted += webhook.clear_queue()
+            actions_count += 1
+
+        self.message_user(
+            request,
+            f"Purged queued messages for {actions_count} webhooks, "
+            f"deleting a total of {killmails_deleted} messages.",
+        )
+
+    purge_messages.short_description = "Purge queued messages from selected webhooks"
 
     filter_horizontal = ("ping_groups",)

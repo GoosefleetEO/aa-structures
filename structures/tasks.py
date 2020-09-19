@@ -1,19 +1,38 @@
-from time import sleep
-
 from celery import shared_task, chain
 
 from django.contrib.auth.models import User
 
-from allianceauth.services.hooks import get_extension_logger
 from allianceauth.notifications import notify
+from allianceauth.services.hooks import get_extension_logger
+from allianceauth.services.tasks import QueueOnce
+
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
 from .utils import LoggerAddTag, make_logger_prefix
-from .models import Owner, Notification, Webhook, EveSovereigntyMap
+from .models import EveSovereigntyMap, Notification, Owner, Webhook
 
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+TASK_PRIO_HIGH = 2
+
+
+@shared_task(base=QueueOnce)
+def send_messages_for_webhook(webhook_pk: int) -> None:
+    """sends all currently queued messages for given webhook to Discord"""
+    try:
+        webhook = Webhook.objects.get(pk=webhook_pk)
+    except Webhook.DoesNotExist:
+        logger.error("Webhook with pk = %s does not exist. Aborting.", webhook_pk)
+    else:
+        if not webhook.is_active:
+            logger.info("Tracker %s: Webhook disabled - skipping sending", webhook)
+            return
+
+        logger.info("Started sending messages to webhook %s", webhook)
+        webhook.send_queued_messages()
+        logger.info("Completed sending messages to webhook %s", webhook)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -54,9 +73,16 @@ def update_all_structures():
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def fetch_notifications_for_owner(owner_pk, user_pk=None):
-    """fetches all notification for owner from ESI and proceses them"""
-    _get_owner(owner_pk).fetch_notifications_esi(_get_user(user_pk))
+def process_notifications_for_owner(owner_pk, user_pk=None):
+    """fetches all notification for owner from ESI and processes them"""
+    owner = _get_owner(owner_pk)
+    owner.fetch_notifications_esi(_get_user(user_pk))
+    owner.send_new_notifications()
+    for webhook in owner.webhooks.filter(is_active=True):
+        if webhook.queue_size() > 0:
+            send_messages_for_webhook.apply_async(
+                kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
+            )
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -64,35 +90,14 @@ def fetch_all_notifications():
     """fetch notifications for all owners"""
     for owner in Owner.objects.all():
         if owner.is_active:
-            fetch_notifications_for_owner.apply_async(
-                kwargs={"owner_pk": owner.pk}, priority=2
+            process_notifications_for_owner.apply_async(
+                kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
             )
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_new_notifications_for_owner(owner_pk, rate_limited=True, user_pk=None):
-    """forwards new notification for this owner to configured webhooks"""
-    _get_owner(owner_pk).send_new_notifications(rate_limited, _get_user(user_pk))
-
-
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_all_new_notifications(rate_limited=True):
-    """sends all unsent notifications to active webhooks and adds timers"""
-    send_tasks = list()
-    for owner in Owner.objects.all():
-        if owner.is_active:
-            send_tasks.append(
-                send_new_notifications_for_owner.si(
-                    owner_pk=owner.pk, rate_limited=rate_limited
-                )
-            )
-
-    chain(send_tasks).apply_async(priority=2)
-
-
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_notifications(notification_pks: list, rate_limited=True):
-    """send notifications defined by list of pks"""
+def send_notifications(notification_pks: list, rate_limited=True) -> None:
+    """send notifications defined by list of pks (used for admin action)"""
     notifications = Notification.objects.filter(pk__in=notification_pks)
     if notifications:
         logger.info(
@@ -100,20 +105,25 @@ def send_notifications(notification_pks: list, rate_limited=True):
                 len(notification_pks)
             )
         )
+        webhooks = set()
         for n in notifications:
-            for webhook in n.owner.webhooks.all():
+            for webhook in n.owner.webhooks.filter(is_active=True):
+                webhooks.add(webhook)
                 if (
                     str(n.notification_type) in webhook.notification_types
                     and not n.filter_for_npc_attacks()
                     and not n.filter_for_alliance_level()
                 ):
                     n.send_to_webhook(webhook)
-            if rate_limited:
-                sleep(1)
+
+        for webhook in webhooks:
+            send_messages_for_webhook.apply_async(
+                kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
+            )
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
+def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
     """sends test notification to given webhook"""
 
     webhook = Webhook.objects.get(pk=webhook_pk)
@@ -154,7 +164,7 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None):
             )
 
 
-def _get_owner(owner_pk) -> Owner:
+def _get_owner(owner_pk: int) -> Owner:
     """returns the owner or raises exception"""
     try:
         owner = Owner.objects.get(pk=owner_pk)
@@ -165,7 +175,7 @@ def _get_owner(owner_pk) -> Owner:
     return owner
 
 
-def _get_user(user_pk) -> User:
+def _get_user(user_pk: int) -> User:
     """returns the user or None. Logs if user is requested but can't be found."""
     user = None
     if user_pk:

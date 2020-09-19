@@ -696,7 +696,7 @@ class Owner(models.Model):
 
         return fuel_expires_at
 
-    def fetch_notifications_esi(self, user: User = None):
+    def fetch_notifications_esi(self, user: User = None) -> bool:
         """fetches notification for the current owners and proceses them"""
 
         add_prefix = self._logger_prefix()

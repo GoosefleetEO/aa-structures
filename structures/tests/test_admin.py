@@ -77,7 +77,7 @@ class TestNotificationAdmin(TestCase):
     @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
     @patch(MODULE_PATH + ".tasks.send_notifications")
     def test_action_send_to_webhook(self, mock_task, mock_message_user):
-        self.modeladmin.send_to_webhook(MockRequest(self.user), self.obj_qs)
+        self.modeladmin.send_to_webhooks(MockRequest(self.user), self.obj_qs)
         self.assertEqual(mock_task.delay.call_count, 1)
         self.assertTrue(mock_message_user.called)
 
@@ -125,19 +125,11 @@ class TestOwnerAdmin(TestCase):
         self.assertTrue(mock_message_user.called)
 
     @patch(MODULE_PATH + ".OwnerAdmin.message_user", auto_spec=True)
-    @patch(MODULE_PATH + ".tasks.fetch_notifications_for_owner")
+    @patch(MODULE_PATH + ".tasks.process_notifications_for_owner")
     def test_action_fetch_notifications(self, mock_task, mock_message_user):
         owner_qs = Owner.objects.filter(corporation__corporation_id__in=[2001, 2002])
         self.modeladmin.fetch_notifications(MockRequest(self.user), owner_qs)
         self.assertEqual(mock_task.delay.call_count, 2)
-        self.assertTrue(mock_message_user.called)
-
-    @patch(MODULE_PATH + ".OwnerAdmin.message_user", auto_spec=True)
-    @patch(MODULE_PATH + ".tasks.send_new_notifications_for_owner")
-    def test_action_send_notifications(self, mock_task, mock_message_user):
-        owner_qs = Owner.objects.filter(corporation__corporation_id__in=[2001, 2002])
-        self.modeladmin.send_notifications(MockRequest(self.user), owner_qs)
-        self.assertEqual(mock_task.si.call_count, 2)
         self.assertTrue(mock_message_user.called)
 
     def test_owner_sync_status_filter(self):
