@@ -7,15 +7,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.6.0] - 2020-09-19
 
-**Performce Improvements**
+**Faster notifications**
 
 ### Update note
 
-This release does no longer need the scheduled task `structures_send_all_new_notifications`. Please remove it from your settings.
+With this release Structures no longer needs the scheduled task `structures_send_all_new_notifications`. Please remove it from your settings.
+Hint: If you still get warnings in your worker log after removing it, please also remove it from periodic tasks on your admin site.
+
+### Added
+
+- Setting the avatar name and url for webhooks by Structures can be disabled ([#31](https://gitlab.com/ErikKalkoken/aa-structures/issues/31))
+- Notification text now mentions which corporation a structure belongs to
 
 ### Changed
 
-- Reduced the lead time for sending new messages to webhooks by up to 1 minute
+- Reduced the lead time for sending new messages to webhooks (by up to 1 minute quicker)
+- Significantly reduced the amount of tasks that are started per hour
+- Removed the scheduled task `structures_send_all_new_notifications`
 
 ### Fixed
 

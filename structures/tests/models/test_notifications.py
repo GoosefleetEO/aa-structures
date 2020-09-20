@@ -233,6 +233,30 @@ class TestNotification(NoSocketsTestCase):
         result = obj.send_to_webhook(self.webhook)
         self.assertTrue(result)
 
+    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", True)
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_can_send_message_with_setting_avatar(self, mock_send_message):
+        mock_send_message.return_value = True
+
+        obj = Notification.objects.get(notification_id=1000020601)
+        result = obj.send_to_webhook(self.webhook)
+        self.assertTrue(result)
+        _, kwargs = mock_send_message.call_args
+        self.assertIsNotNone(kwargs["avatar_url"])
+        self.assertIsNotNone(kwargs["username"])
+
+    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", False)
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_can_send_message_without_setting_avatar(self, mock_send_message):
+        mock_send_message.return_value = True
+
+        obj = Notification.objects.get(notification_id=1000020601)
+        result = obj.send_to_webhook(self.webhook)
+        self.assertTrue(result)
+        _, kwargs = mock_send_message.call_args
+        self.assertIsNone(kwargs["avatar_url"])
+        self.assertIsNone(kwargs["username"])
+
 
 class TestNotificationPings(NoSocketsTestCase):
     @classmethod

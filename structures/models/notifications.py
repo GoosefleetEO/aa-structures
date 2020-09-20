@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 import logging
 import yaml
-from typing import List, Set
+from typing import List, Set, Tuple
 
 import dhooks_lite
 import pytz
@@ -26,6 +26,7 @@ from ..app_settings import (
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
     STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
+    STRUCTURES_NOTIFICATION_SET_AVATAR,
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
@@ -398,14 +399,7 @@ class Notification(models.Model):
         """
         add_prefix = make_logger_prefix("notification:{}".format(self.notification_id))
         logger.info(add_prefix("Trying to sent to webhook: %s" % webhook))
-        if self.is_alliance_level:
-            avatar_url = self.owner.corporation.alliance.logo_url()
-            ticker = self.owner.corporation.alliance.alliance_ticker
-        else:
-            avatar_url = self.owner.corporation.logo_url()
-            ticker = self.owner.corporation.corporation_ticker
 
-        username = gettext("%(ticker)s Notification") % {"ticker": ticker}
         success = False
         try:
             embed = self._generate_embed(webhook.language_code)
@@ -442,6 +436,7 @@ class Notification(models.Model):
                             if role:
                                 content += f" <@&{role['id']}>"
 
+            username, avatar_url = self._gen_avatar()
             success = webhook.send_message(
                 content=content,
                 embeds=[embed],
@@ -449,6 +444,22 @@ class Notification(models.Model):
                 avatar_url=avatar_url,
             )
         return success
+
+    def _gen_avatar(self) -> Tuple[str, str]:
+        if STRUCTURES_NOTIFICATION_SET_AVATAR:
+            if self.is_alliance_level:
+                avatar_url = self.owner.corporation.alliance.logo_url()
+                ticker = self.owner.corporation.alliance.alliance_ticker
+            else:
+                avatar_url = self.owner.corporation.logo_url()
+                ticker = self.owner.corporation.corporation_ticker
+
+            username = gettext("%(ticker)s Notification") % {"ticker": ticker}
+        else:
+            username = None
+            avatar_url = None
+
+        return username, avatar_url
 
     @staticmethod
     def _import_discord() -> object:
@@ -545,10 +556,9 @@ class Notification(models.Model):
     def _gen_embed_structures_1(self, parsed_text: dict) -> dhooks_lite.Embed:
 
         try:
-            my_structure = Structure.objects.get(id=parsed_text["structureID"])
-            structure_name = my_structure.name
-            structure_type = my_structure.eve_type
-            structure_solar_system = my_structure.eve_solar_system
+            my_structure = Structure.objects.select_related().get(
+                id=parsed_text["structureID"]
+            )
         except Structure.DoesNotExist:
             my_structure = None
             structure_name = gettext("(unknown)")
@@ -558,13 +568,21 @@ class Notification(models.Model):
             structure_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 parsed_text["solarsystemID"]
             )
+            owner_link = "(unknown)"
+        else:
+            structure_name = my_structure.name
+            structure_type = my_structure.eve_type
+            structure_solar_system = my_structure.eve_solar_system
+            owner_link = self._gen_corporation_link(str(my_structure.owner))
 
         description = gettext(
             "The %(structure_type)s %(structure_name)s in %(solar_system)s "
+            "belonging to %(owner_link)s "
         ) % {
             "structure_type": structure_type.name_localized,
             "structure_name": "**%s**" % structure_name,
             "solar_system": self._gen_solar_system_text(structure_solar_system),
+            "owner_link": owner_link,
         }
         if self.notification_type == NTYPE_STRUCTURE_ONLINE:
             title = gettext("Structure online")
@@ -685,10 +703,15 @@ class Notification(models.Model):
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 parsed_text["solarsystemID"]
             )
+            owner_link = self._gen_corporation_link(
+                parsed_text.get("ownerCorpName", "(unknown)")
+            )
             description = gettext(
-                "%(structure_type)s has started anchoring " "in %(solar_system)s. "
+                "A %(structure_type)s belonging to %(owner_link)s "
+                "has started anchoring in %(solar_system)s. "
             ) % {
                 "structure_type": structure_type.name_localized,
+                "owner_link": owner_link,
                 "solar_system": self._gen_solar_system_text(solar_system),
             }
             if not solar_system.is_null_sec:
@@ -733,6 +756,7 @@ class Notification(models.Model):
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
         structure_name = parsed_text["structureName"]
+        owner_link = self._gen_corporation_link(str(self.owner))
         if self.notification_type == NTYPE_MOONS_EXTRACTION_STARTED:
             started_by, _ = EveEntity.objects.get_or_create_esi(
                 parsed_text["startedBy"]
@@ -742,7 +766,8 @@ class Notification(models.Model):
             title = gettext("Moon mining extraction started")
             description = gettext(
                 "A moon mining extraction has been started "
-                "for %(structure_name)s at %(moon)s in %(solar_system)s. "
+                "for %(structure_name)s at %(moon)s in %(solar_system)s "
+                "belonging to %(owner_link)s. "
                 "Extraction was started by %(character)s.\n"
                 "The chunk will be ready on location at %(ready_time)s, "
                 "and will autofracture on %(auto_time)s.\n"
@@ -751,6 +776,7 @@ class Notification(models.Model):
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "character": started_by,
                 "ready_time": ready_time.strftime(DATETIME_FORMAT),
                 "auto_time": auto_time.strftime(DATETIME_FORMAT),
@@ -768,7 +794,8 @@ class Notification(models.Model):
             title = gettext("Extraction finished")
             description = gettext(
                 "The extraction for %(structure_name)s at %(moon)s "
-                "in %(solar_system)s is finished and the chunk is ready "
+                "in %(solar_system)s belonging to %(owner_link)s "
+                "is finished and the chunk is ready "
                 "to be shot at.\n"
                 "The chunk will automatically fracture on %(auto_time)s.\n"
                 "%(ore_text)s"
@@ -776,6 +803,7 @@ class Notification(models.Model):
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "auto_time": auto_time.strftime(DATETIME_FORMAT),
                 "ore_text": gettext(
                     "\nOre composition: %s" % self._ore_composition_text(parsed_text)
@@ -789,13 +817,15 @@ class Notification(models.Model):
             title = gettext("Automatic Fracture")
             description = gettext(
                 "The moondrill fitted to %(structure_name)s at %(moon)s"
-                " in %(solar_system)s has automatically been fired "
+                " in %(solar_system)s belonging to %(owner_link)s "
+                "has automatically been fired "
                 "and the moon products are ready to be harvested.\n"
                 "%(ore_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "ore_text": gettext(
                     "\nOre composition: %s" % self._ore_composition_text(parsed_text)
                 )
@@ -814,11 +844,13 @@ class Notification(models.Model):
             title = gettext("Extraction cancelled")
             description = gettext(
                 "An ongoing extraction for %(structure_name)s at %(moon)s "
-                "in %(solar_system)s has been cancelled by %(character)s."
+                "in %(solar_system)s belonging to %(owner_link)s "
+                "has been cancelled by %(character)s."
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "character": cancelled_by,
             }
 
@@ -829,13 +861,15 @@ class Notification(models.Model):
             title = gettext("Moondrill fired")
             description = gettext(
                 "The moondrill fitted to %(structure_name)s at %(moon)s "
-                "in %(solar_system)s has been fired by %(character)s "
+                "in %(solar_system)s belonging to %(owner_link)s "
+                "has been fired by %(character)s "
                 "and the moon products are ready to be harvested.\n"
                 "%(ore_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "character": fired_by,
                 "ore_text": gettext(
                     "\nOre composition: %s" % self._ore_composition_text(parsed_text)
@@ -865,17 +899,20 @@ class Notification(models.Model):
             parsed_text["solarSystemID"]
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
+        owner_link = self._gen_corporation_link(str(self.owner))
         aggressor_link = self._get_aggressor_link(parsed_text)
 
         if self.notification_type == NTYPE_ORBITAL_ATTACKED:
             title = gettext("Orbital under attack")
             description = gettext(
                 "The %(structure_type)s at %(planet)s in %(solar_system)s "
+                "belonging to %(owner_link)s "
                 "is under attack by %(aggressor)s."
             ) % {
                 "structure_type": structure_type.name_localized,
                 "planet": planet.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "aggressor": aggressor_link,
             }
             color = self.EMBED_COLOR_WARNING
@@ -887,12 +924,14 @@ class Notification(models.Model):
             title = gettext("Orbital reinforced")
             description = gettext(
                 "The %(structure_type)s at %(planet)s in %(solar_system)s "
+                "belonging to %(owner_link)s "
                 "has been reinforced by %(aggressor)s "
                 "and will come out at: %(date)s."
             ) % {
                 "structure_type": structure_type.name_localized,
                 "planet": planet.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "aggressor": aggressor_link,
                 "date": reinforce_exit_time.strftime(DATETIME_FORMAT),
             }
@@ -912,6 +951,7 @@ class Notification(models.Model):
         eve_moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
         structure_type, _ = EveType.objects.get_or_create_esi(parsed_text["typeID"])
         solar_system_link = self._gen_solar_system_text(eve_moon.eve_solar_system)
+        owner_link = self._gen_corporation_link(str(self.owner))
         qs_structures = Structure.objects.filter(eve_moon=eve_moon)
         if qs_structures.exists():
             structure_name = qs_structures.first().name
@@ -936,12 +976,14 @@ class Notification(models.Model):
             title = gettext("Starbase under attack")
             description = gettext(
                 "The starbase %(structure_name)s at %(moon)s "
-                "in %(solar_system)s is under attack by %(aggressor)s.\n"
+                "in %(solar_system)s belonging to %(owner_link)s "
+                "is under attack by %(aggressor)s.\n"
                 "%(damage_text)s"
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": eve_moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "aggressor": aggressor_link,
                 "damage_text": damage_text,
             }
@@ -952,12 +994,13 @@ class Notification(models.Model):
             title = gettext("Starbase low on fuel")
             description = gettext(
                 "The starbase %(structure_name)s at %(moon)s "
-                "in %(solar_system)s is low on fuel. "
+                "in %(solar_system)s belonging to %(owner_link)s is low on fuel. "
                 "It has %(quantity)d fuel blocks left."
             ) % {
                 "structure_name": "**%s**" % structure_name,
                 "moon": eve_moon.name_localized,
                 "solar_system": solar_system_link,
+                "owner_link": owner_link,
                 "quantity": quantity,
             }
             color = self.EMBED_COLOR_WARNING
@@ -1018,11 +1061,12 @@ class Notification(models.Model):
             }
             description = gettext(
                 "Command nodes for %(structure_type)s in %(solar_system)s "
-                "can now be found throughout "
+                "belonging to %(owner)s can now be found throughout "
                 "the %(constellation)s constellation"
             ) % {
                 "structure_type": "**%s**" % structure_type_name,
                 "solar_system": solar_system_link,
+                "owner": sov_owner_link,
                 "constellation": solar_system.eve_constellation.name_localized,
             }
             color = self.EMBED_COLOR_WARNING
@@ -1097,20 +1141,21 @@ class Notification(models.Model):
 
     @classmethod
     def _gen_solar_system_text(cls, solar_system: EveSolarSystem) -> str:
-        text = "[{}]({}) ({})".format(
-            solar_system.name_localized,
-            dotlan.solar_system_url(solar_system.name),
+        text = "{} ({})".format(
+            Webhook.create_link(
+                solar_system.name_localized, dotlan.solar_system_url(solar_system.name)
+            ),
             solar_system.eve_constellation.eve_region.name_localized,
         )
         return text
 
     @classmethod
-    def _gen_alliance_link(cls, alliance_name: str):
-        return "[{}]({})".format(alliance_name, dotlan.alliance_url(alliance_name))
+    def _gen_alliance_link(cls, alliance_name: str) -> str:
+        return Webhook.create_link(alliance_name, dotlan.alliance_url(alliance_name))
 
     @classmethod
-    def _gen_corporation_link(cls, corporation_name: str):
-        return "[{}]({})".format(
+    def _gen_corporation_link(cls, corporation_name: str) -> str:
+        return Webhook.create_link(
             corporation_name, dotlan.corporation_url(corporation_name)
         )
 
@@ -1119,9 +1164,9 @@ class Notification(models.Model):
         """returns the attacker link from a parsed_text
         For Upwell structures only
         """
-        if "allianceName" in parsed_text:
+        if parsed_text.get("allianceName"):
             name = cls._gen_alliance_link(parsed_text["allianceName"])
-        elif "corpName" in parsed_text:
+        elif parsed_text.get("corpName"):
             name = cls._gen_corporation_link(parsed_text["corpName"])
         else:
             name = "(unknown)"
@@ -1143,7 +1188,7 @@ class Notification(models.Model):
             return "(Unknown aggressor)"
 
         entity, _ = EveEntity.objects.get_or_create_esi(parsed_text[key])
-        return "[{}]({})".format(entity.name, entity.profile_url())
+        return Webhook.create_link(entity.name, entity.profile_url())
 
     @classmethod
     def _get_type_id_from_event_type(cls, event_type: int) -> int:

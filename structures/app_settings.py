@@ -73,6 +73,12 @@ STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED = clean_setting(
     "STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED", False
 )
 
+# Wether structures sets the name and avatar icon of a webhook
+# else the webhook will show it's default names as set when defining the webhook
+STRUCTURES_NOTIFICATION_SET_AVATAR = clean_setting(
+    "STRUCTURES_NOTIFICATION_SET_AVATAR", True
+)
+
 # Wether ore details are shown on moon timers
 STRUCTURES_NOTIFICATION_SHOW_MOON_ORE = clean_setting(
     "STRUCTURES_NOTIFICATION_SHOW_MOON_ORE", True

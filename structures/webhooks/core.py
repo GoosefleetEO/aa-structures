@@ -163,7 +163,8 @@ class DiscordWebhookMixin:
             return False
 
     @classmethod
-    def create_discord_link(cls, name: str, url: str) -> str:
+    def create_link(cls, name: str, url: str) -> str:
+        """creates a link for messages of this webhook"""
         return f"[{str(name)}]({str(url)})"
 
     def send_test_message(self, user: User = None) -> Tuple[str, bool]:

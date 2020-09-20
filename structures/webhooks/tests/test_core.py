@@ -131,7 +131,7 @@ class TestDiscordWebhookMixin(TestCase):
         self.assertEqual(self.webhook._error_queue.size(), 0)
 
     def test_can_create_discord_link(self):
-        result = self.webhook.create_discord_link("test-name", "test-url")
+        result = self.webhook.create_link("test-name", "test-url")
         self.assertEqual(result, "[test-name](test-url)")
 
 
