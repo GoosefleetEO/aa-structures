@@ -6,7 +6,6 @@ import logging
 import math
 import os
 import re
-from time import sleep
 
 from bravado.exception import HTTPError
 
@@ -874,9 +873,7 @@ class Owner(models.Model):
                 for notification in notifications:
                     notification.process_for_timerboard(token)
 
-    def send_new_notifications(
-        self, rate_limited: bool = True, user: User = None
-    ) -> bool:
+    def send_new_notifications(self, user: User = None) -> bool:
         """forwards all new notification for this owner to Discord"""
 
         add_prefix = self._logger_prefix()
@@ -912,7 +909,7 @@ class Owner(models.Model):
                             )
                         )
                         notifications_count += self._send_notifications_to_webhook(
-                            new_notifications, webhook, rate_limited
+                            new_notifications, webhook
                         )
 
                 if active_webhooks_count == 0:
@@ -951,9 +948,7 @@ class Owner(models.Model):
 
         return success
 
-    def _send_notifications_to_webhook(
-        self, new_notifications, webhook, rate_limited
-    ) -> int:
+    def _send_notifications_to_webhook(self, new_notifications, webhook) -> int:
         """sends all notifications to given webhook"""
         sent_count = 0
         for notification in new_notifications:
@@ -963,9 +958,6 @@ class Owner(models.Model):
             ):
                 if notification.send_to_webhook(webhook):
                     sent_count += 1
-
-                if rate_limited:
-                    sleep(1)
 
         return sent_count
 

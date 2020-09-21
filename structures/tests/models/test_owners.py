@@ -1370,7 +1370,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
+        self.assertTrue(self.owner.send_new_notifications())
 
         notification_ids = set()
         for x in mock_send_to_webhook.call_args_list:
@@ -1443,7 +1443,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         self.owner.webhooks.add(wh_mining)
 
         # send notifications
-        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
+        self.assertTrue(self.owner.send_new_notifications())
         results = {wh_mining.pk: set(), wh_structures.pk: set()}
         for x in mock_send_to_webhook.call_args_list:
             first = x[0]
@@ -1537,7 +1537,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
             x.save()
 
         # send notifications for 1st owner only
-        self.assertTrue(self.owner.send_new_notifications(rate_limited=False))
+        self.assertTrue(self.owner.send_new_notifications())
         results = {wh_mining.pk: set(), wh_structures.pk: set()}
         for x in mock_send_to_webhook.call_args_list:
             first = x[0]
@@ -1556,6 +1556,6 @@ class TestSendNewNotifications(NoSocketsTestCase):
     @patch(MODULE_PATH + ".Owner._send_notifications_to_webhook", spec=True)
     def test_reports_unexpected_error(self, mock_send):
         mock_send.side_effect = RuntimeError()
-        self.assertFalse(self.owner.send_new_notifications(rate_limited=False))
+        self.assertFalse(self.owner.send_new_notifications())
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.forwarding_last_error, Owner.ERROR_UNKNOWN)

@@ -85,7 +85,7 @@ class TestNotification(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         create_structures()
-        my_user, cls.owner = set_owner_character(character_id=1001)
+        _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
         cls.webhook = Webhook.objects.create(
             name="Test", url="http://www.example.com/dummy/"
@@ -177,7 +177,46 @@ class TestNotification(NoSocketsTestCase):
         x1 = Notification.objects.get(notification_id=1000000509)
         self.assertFalse(x1.filter_for_alliance_level())
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+
+@patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+class TestNotificationSendMessage(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        load_notification_entities(cls.owner)
+        cls.webhook = Webhook.objects.create(
+            name="Test", url="http://www.example.com/dummy/"
+        )
+        cls.owner.webhooks.add(cls.webhook)
+
+    def test_can_send_message_normal(self, mock_send_message):
+        mock_send_message.return_value = True
+
+        obj = Notification.objects.get(notification_id=1000020601)
+        result = obj.send_to_webhook(self.webhook)
+        self.assertTrue(result)
+        _, kwargs = mock_send_message.call_args
+        self.assertIsNotNone(kwargs["content"])
+        self.assertIsNotNone(kwargs["embeds"])
+
+    def test_mark_notification_as_sent_when_successful(self, mock_send_message):
+        mock_send_message.return_value = True
+
+        obj = Notification.objects.get(notification_id=1000020601)
+        obj.send_to_webhook(self.webhook)
+        obj.refresh_from_db()
+        self.assertTrue(obj.is_sent)
+
+    def test_dont_mark_notification_as_sent_when_error(self, mock_send_message):
+        mock_send_message.return_value = False
+
+        obj = Notification.objects.get(notification_id=1000020601)
+        obj.send_to_webhook(self.webhook)
+        obj.refresh_from_db()
+        self.assertFalse(obj.is_sent)
+
     def test_send_to_webhook_all_notification_types(self, mock_send_message):
         logger.debug("test_send_to_webhook_normal")
         mock_send_message.return_value = True
@@ -192,7 +231,6 @@ class TestNotification(NoSocketsTestCase):
         self.assertSetEqual(Notification.get_all_types(), types_tested)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_send_notification_without_existing_structure(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -205,7 +243,6 @@ class TestNotification(NoSocketsTestCase):
         )
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_anchoring_in_low_sec_has_timer(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -215,7 +252,6 @@ class TestNotification(NoSocketsTestCase):
         self.assertIn("The anchoring timer ends at", embed.description)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_anchoring_in_null_sec_no_timer(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -225,7 +261,6 @@ class TestNotification(NoSocketsTestCase):
         self.assertNotIn("The anchoring timer ends at", embed.description)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_notification_with_null_aggressor_alliance(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -234,7 +269,6 @@ class TestNotification(NoSocketsTestCase):
         self.assertTrue(result)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", True)
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_send_message_with_setting_avatar(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -246,7 +280,6 @@ class TestNotification(NoSocketsTestCase):
         self.assertIsNotNone(kwargs["username"])
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", False)
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_send_message_without_setting_avatar(self, mock_send_message):
         mock_send_message.return_value = True
 

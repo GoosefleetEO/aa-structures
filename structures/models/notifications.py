@@ -443,6 +443,10 @@ class Notification(models.Model):
                 username=username,
                 avatar_url=avatar_url,
             )
+            if success:
+                self.is_sent = True
+                self.save()
+
         return success
 
     def _gen_avatar(self) -> Tuple[str, str]:

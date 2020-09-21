@@ -84,7 +84,7 @@ def fetch_all_notifications():
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_notifications(notification_pks: list, rate_limited=True) -> None:
+def send_notifications(notification_pks: list) -> None:
     """send notifications defined by list of pks (used for admin action)"""
     notifications = Notification.objects.filter(pk__in=notification_pks)
     if notifications:

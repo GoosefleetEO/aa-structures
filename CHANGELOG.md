@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.6.0] - 2020-09-19
+## [1.6.0] - BETA
 
 **Faster notifications**
 
@@ -28,6 +28,7 @@ Hint: If you still get warnings in your worker log after removing it, please als
 ### Fixed
 
 - Failed to send message when attacker had no alliance
+- Did not mark notifications as sent leading to repeated resending of the same notifications ([#38](https://gitlab.com/ErikKalkoken/aa-structures/issues/38))
 
 ## [1.5.4] - 2020-09-07
 
