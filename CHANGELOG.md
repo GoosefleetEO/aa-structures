@@ -24,11 +24,13 @@ Hint: If you still get warnings in your worker log after removing it, please als
 - Reduced the lead time for sending new messages to webhooks (by up to 1 minute quicker)
 - Significantly reduced the amount of tasks that are started per hour
 - Removed the scheduled task `structures_send_all_new_notifications`
+- Removed dependency conflict with Auth regarding Django 3
 
 ### Fixed
 
 - Failed to send message when attacker had no alliance
 - Did not mark notifications as sent leading to repeated resending of the same notifications ([#38](https://gitlab.com/ErikKalkoken/aa-structures/issues/38))
+- Core CI tests has a dependency to django-eveuniverse
 
 ## [1.5.4] - 2020-09-07
 

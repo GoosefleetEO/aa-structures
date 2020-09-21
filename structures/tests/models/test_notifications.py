@@ -10,8 +10,6 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 
-from eveuniverse.models import EveSolarSystem as EveSolarSystem2, EveType as EveType2
-
 from ...models import EveEntity, Notification, Webhook, Structure
 from ..testdata import (
     load_entities,
@@ -19,11 +17,14 @@ from ..testdata import (
     create_structures,
     set_owner_character,
 )
-from ..testdata.load_eveuniverse import load_eveuniverse
 from ...utils import set_test_logger, NoSocketsTestCase, app_labels
 
 MODULE_PATH = "structures.models.notifications"
 logger = set_test_logger(MODULE_PATH, __file__)
+
+
+if "structuretimers" in app_labels():
+    from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestEveEntities(NoSocketsTestCase):
@@ -589,6 +590,10 @@ if "timerboard" in app_labels():
 if "structuretimers" in app_labels():
 
     from structuretimers.models import Timer
+    from eveuniverse.models import (
+        EveSolarSystem as EveSolarSystem2,
+        EveType as EveType2,
+    )
 
     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)

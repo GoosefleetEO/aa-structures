@@ -65,7 +65,6 @@ from ..testdata import (
     create_user,
     esi_data,
 )
-from ..testdata.load_eveuniverse import load_eveuniverse
 from ...utils import app_labels, set_test_logger, NoSocketsTestCase
 
 if "timerboard" in app_labels():
@@ -1215,7 +1214,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         create_structures()
-        load_eveuniverse()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.owner.is_alliance_main = True
         cls.owner.save()
@@ -1280,6 +1278,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
         # run update task
         if "structuretimers" in app_labels():
+            from ..testdata.load_eveuniverse import load_eveuniverse
+
+            load_eveuniverse()
             with patch(
                 "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
             ):
