@@ -611,7 +611,6 @@ if "structuretimers" in app_labels():
                 name="Test", url="http://www.example.com/dummy/"
             )
             self.owner.webhooks.add(self.webhook)
-            AuthTimer.objects.all().delete()
             Timer.objects.all().delete()
 
         def test_timer_structure_reinforcement(self):
