@@ -114,7 +114,11 @@ class NotificationAdmin(admin.ModelAdmin):
         if names:
             return ", ".join(names)
         else:
-            return None
+            return format_html(
+                '<span style="color: red"></i>Error: This notification can not be sent, '
+                "because there is no webhook configured for {}. ",
+                obj.owner,
+            )
 
     _webhooks.short_description = "Webhooks"
 
@@ -271,7 +275,10 @@ class OwnerAdmin(admin.ModelAdmin):
         if names:
             return names
         else:
-            return None
+            return format_html(
+                '<span style="color: red"></i>Error: Notifications can not be sent, '
+                "because there is no webhook configured for this owner."
+            )
 
     def _is_active(self, obj):
         return obj.is_active

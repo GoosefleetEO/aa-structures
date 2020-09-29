@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.6.0] - BETA
+## [1.6.0] - 2020-09-29
 
 **Faster notifications**
 
@@ -18,6 +18,7 @@ Hint: If you still get warnings in your worker log after removing it, please als
 
 - Setting the avatar name and url for webhooks by Structures can be disabled ([#31](https://gitlab.com/ErikKalkoken/aa-structures/issues/31))
 - Notification text now mentions which corporation a structure belongs to
+- Now shows an error message on the admin site under Owner and Notifications if no webhook is configured for an owner
 
 ### Changed
 
@@ -30,7 +31,7 @@ Hint: If you still get warnings in your worker log after removing it, please als
 
 - Failed to send message when attacker had no alliance
 - Did not mark notifications as sent leading to repeated resending of the same notifications ([#38](https://gitlab.com/ErikKalkoken/aa-structures/issues/38))
-- Core CI tests has a dependency to django-eveuniverse
+- Core CI tests had a wrong dependency to django-eveuniverse
 
 ## [1.5.4] - 2020-09-07
 
