@@ -450,7 +450,7 @@ class StructureTagAdmin(admin.ModelAdmin):
 class StructureAdminInline(admin.TabularInline):
     model = StructureService
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         return True if STRUCTURES_DEVELOPER_MODE else False
 
     def has_change_permission(self, request, obj=None):
