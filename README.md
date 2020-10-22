@@ -21,7 +21,7 @@ Alliance Auth.
 
 ## Overview
 
-This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows all member corporations to see a current list of all their structures in Auth and also get structure related notification on Discord.
+This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows all member corporations to see a current list of all their structures in Auth and also get structure related notifications on Discord.
 
 ## Features Summary
 
