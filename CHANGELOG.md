@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.1] - 2020-10-22
+
+### Fixed
+
+- has_add_permission() argument mismatch with Django 3 for inlines
+- Notifications not marked as sent when using older redis-simple-mq library ([#40](https://gitlab.com/ErikKalkoken/aa-structures/issues/40))
+
 ## [1.6.0] - 2020-09-29
 
 **Faster notifications**
