@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Improved tab styling
+- Remove Django 3.0 from test matrix
 
 ### Fixed
 

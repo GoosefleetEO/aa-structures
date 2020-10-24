@@ -141,10 +141,9 @@
 {% endblock %}
 
 {% block extra_javascript %}
-    {% include 'bundles/datatables-js.html' %}    
-    <script type="text/javascript" src="{% static 'js/filterDropDown/filterDropDown.min.js' %}"></script>
-
-    <script type="text/javascript" src="{% static 'structures/structure_list.js' %}"></script>
+    {% include 'bundles/datatables-js.html' %}        
+    <script type="application/javascript" src="{% static 'js/filterDropDown/filterDropDown.min.js' %}"></script>
+    <script type="application/javascript" src="{% static 'structures/structure_list.js' %}"></script>
 {% endblock %}
 
 {% block extra_css %}
