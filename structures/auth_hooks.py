@@ -16,7 +16,7 @@ class StructuresMenuItem(MenuItemHook):
             _(__title__),
             "fas fa-building fa-fw",
             "structures:index",
-            navactive=["structures:index"],
+            navactive=["structures:"],
         )
 
     def render(self, request):
