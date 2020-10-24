@@ -8,7 +8,7 @@
     
     <span class="pull-right">
         {% if perms.structures.add_structure_owner %}        
-            <a class="btn btn-success" 
+            <a class="btn btn-success btn-tabs" 
                 href="{% url 'structures:add_structure_owner' %}">
                 {% trans "Add Structure Owner" %}
             </a>            
@@ -20,7 +20,7 @@
         <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">{% trans "Structure List" %}</a></li>        
     </ul>
 
-    <div class="panel panel-default">
+    <div class="panel panel-default panel-tabs">
         <div class="panel-body">        
             <div class="tab-content">                
                 <div role="tabpanel" class="tab-pane active" id="home">                
@@ -75,7 +75,7 @@
                                         </div>                            
                                     </div>
                                 </form>
-                            </div>
+                            </div>                           
                         </div>
 
                         <!-- Main structure table -->
@@ -106,20 +106,20 @@
                             {% endif %}
                         </p>
 
+                         <!-- Table Legend -->
+                        <p class="text-muted">        
+                            {% trans "All dates are EVE time" %} 
+                            • {% trans "Offlined services are shown as" %} <del>{% trans "service" %}</del>
+                            • {% trans "Reinforced structures (except POCOs) are highlighted in red" %}
+                            • {% trans "Data can be outdated by up to 1 hour due to API caching." %}
+                        </p>
+
                     </div>
                 </div>
             </div>
         </div>    
     </div>    
     
-    <!-- Table Legend -->
-    <p class="text-muted">        
-        {% trans "All dates are EVE time" %} 
-        • {% trans "Offlined services are shown as" %} <del>{% trans "service" %}</del>
-        • {% trans "Reinforced structures (except POCOs) are highlighted in red" %}
-        • {% trans "Data can be outdated by up to 1 hour due to API caching." %}
-    </p>
-
     <!-- share data with JS part -->
     <div 
         id="dataExport" 
@@ -150,6 +150,7 @@
 {% block extra_css %}
     {% include 'bundles/datatables-css.html' %}
     
+    <link rel="stylesheet" href="{% static 'structures/global.css' %}" type="text/css" media="screen">    
     <link rel="stylesheet" href="{% static 'structures/structure_list.css' %}" type="text/css" media="screen">    
 {% endblock %}
 

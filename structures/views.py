@@ -157,7 +157,7 @@ class StructuresRowBuilder:
             location_name = self._row["solar_system_name"]
 
         self._row["location"] = format_html(
-            '<a href="{}">{}</a><br>{}',
+            '<a href="{}">{}</a><br><em>{}</em>',
             solar_system_url,
             add_no_wrap_html(location_name),
             add_no_wrap_html(self._row["region_name"]),
@@ -187,7 +187,7 @@ class StructuresRowBuilder:
         # type name
         self._row["type_name"] = structure_type.name_localized
         self._row["type"] = format_html(
-            "{}<br>{}",
+            "{}<br><em>{}</em>",
             add_no_wrap_html(self._row["type_name"]),
             add_no_wrap_html(self._row["group_name"]),
         )
