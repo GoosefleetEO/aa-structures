@@ -3,7 +3,7 @@
 App for managing Eve Online structures with
 Alliance Auth.
 
-![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures?label=django) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg) ![license](https://img.shields.io/badge/license-MIT-green) ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
+![release](https://img.shields.io/pypi/v/aa-structures?label=release) ![python](https://img.shields.io/pypi/pyversions/aa-structures) ![django](https://img.shields.io/pypi/djversions/aa-structures?label=django) ![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg) ![coverage](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/coverage.svg) ![license](https://img.shields.io/badge/license-MIT-green) ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white) ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 
 ## Contents
 

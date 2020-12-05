@@ -103,7 +103,7 @@ class TestEsiFetch(NoSocketsTestCase):
     @patch(MODULE_PATH + "._esi_client")
     def test_uses_timeout_by_default(self, mock_esi_client):
         # fmt: off
-        esi_fetch(esi_path="Universe.get_universe_systems", logger_tag="dummy")        
+        esi_fetch(esi_path="Universe.get_universe_systems", logger_tag="dummy")
         args, kwargs = \
             mock_esi_client.return_value.Universe.get_universe_systems.return_value\
             .result.call_args
@@ -114,7 +114,7 @@ class TestEsiFetch(NoSocketsTestCase):
     @patch(MODULE_PATH + "._esi_client")
     def test_can_disable_timeout(self, mock_esi_client):
         # fmt: off
-        esi_fetch(esi_path="Universe.get_universe_systems", logger_tag="dummy")        
+        esi_fetch(esi_path="Universe.get_universe_systems", logger_tag="dummy")
         args, kwargs = \
             mock_esi_client.return_value.Universe.get_universe_systems.return_value\
             .result.call_args

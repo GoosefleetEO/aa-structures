@@ -5,42 +5,42 @@
 {% load static %}
 
 {% block details %}
-    
+
     <span class="pull-right">
-        {% if perms.structures.add_structure_owner %}        
-            <a class="btn btn-success btn-tabs" 
+        {% if perms.structures.add_structure_owner %}
+            <a class="btn btn-success btn-tabs"
                 href="{% url 'structures:add_structure_owner' %}">
                 {% trans "Add Structure Owner" %}
-            </a>            
-        {% endif %} 
+            </a>
+        {% endif %}
     </span>
-    
+
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">{% trans "Structure List" %}</a></li>        
+        <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">{% trans "Structure List" %}</a></li>
     </ul>
 
     <div class="panel panel-default panel-tabs">
-        <div class="panel-body">        
-            <div class="tab-content">                
-                <div role="tabpanel" class="tab-pane active" id="home">                
-                    <div class="table-responsive">                                
-                        <!-- Tags Filter Button -->                
-                        <span class="pull-right">                    
-                            {% if tags_exist %}                        
+        <div class="panel-body">
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane active" id="home">
+                    <div class="table-responsive">
+                        <!-- Tags Filter Button -->
+                        <span class="pull-right">
+                            {% if tags_exist %}
                                 {% if active_tags %}
                                     <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalTagsFilter">
                                     {% trans "Tags Filter (Active)" %}
-                                    </button>                        
+                                    </button>
                                 {% else %}
-                                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">                                
+                                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">
                                         {% trans "Tags Filter" %}
                                     </button>
                                 {% endif %}
                             {% else %}
                                 <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter" disabled="disabled">
                                     {% trans "Tags Filter" %}
-                                </button>                        
+                                </button>
                             {% endif %}
                         </span>
 
@@ -48,40 +48,40 @@
                         <div class="modal" id="modalTagsFilter" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
                             <div class="modal-dialog" role="document">
                                 <form method="post">
-                                    <div class="modal-content">                            
+                                    <div class="modal-content">
                                         <div class="modal-header">
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                 <span aria-hidden="true">&times;</span>
                                             </button>
                                             <h4 class="modal-title">{% trans "Tags Filter" %}</h4>
                                         </div>
-                                        <div class="modal-body">                                    
+                                        <div class="modal-body">
                                             {% csrf_token %}
-                                            {{ tags_filter_form|bootstrap }}                                                                
+                                            {{ tags_filter_form|bootstrap }}
                                         </div>
                                         <div class="modal-footer">
-                                            <a class="btn btn-default pull-left" href="{% url 'structures:index' %}" role="button">                                        
+                                            <a class="btn btn-default pull-left" href="{% url 'structures:index' %}" role="button">
                                                 {% trans "Reset Filter" %}
                                             </a>
-                                            <a class="btn btn-default pull-left" href="{% url 'structures:structure_list' %}" role="button">                                        
+                                            <a class="btn btn-default pull-left" href="{% url 'structures:structure_list' %}" role="button">
                                                 {% trans "Clear Filter" %}
                                             </a>
-                                            <button type="button" class="btn btn-default" data-dismiss="modal">                                        
+                                            <button type="button" class="btn btn-default" data-dismiss="modal">
                                                 {% trans "Cancel" %}
                                             </button>
-                                            <button type="submit" class="btn btn-primary">                                        
+                                            <button type="submit" class="btn btn-primary">
                                                 {% trans "Apply Filter" %}
                                             </button>
-                                        </div>                            
+                                        </div>
                                     </div>
                                 </form>
-                            </div>                           
+                            </div>
                         </div>
 
                         <!-- Main structure table -->
                         <table id="tab_structures" style="width: 100%" class="table table-striped table-compact">
                             <thead>
-                                <tr>            
+                                <tr>
                                     <th></th>
                                     <th>{% trans "Owner" %}</th>
                                     <th>{% trans "Location" %}</th>
@@ -91,13 +91,13 @@
                                     <th>{% trans "Services" %}</th>
                                     <th>{% trans "Fuel Expires" %}</th>
                                     <th>{% trans "Last Online" %}</th>
-                                    <th>{% trans "R-Hour" %}</th>                            
+                                    <th>{% trans "R-Hour" %}</th>
                                     <th>{% trans "State" %}</th>
                                 </tr>
                             </thead>
                         </table>
 
-                        <p>                    
+                        <p>
                             {% if active_tags %}
                                 {% trans "Active Tags Filter" %}:&nbsp;
                                 {% for tag in active_tags %}
@@ -107,8 +107,8 @@
                         </p>
 
                          <!-- Table Legend -->
-                        <p class="text-muted">        
-                            {% trans "All dates are EVE time" %} 
+                        <p class="text-muted">
+                            {% trans "All dates are EVE time" %}
                             • {% trans "Offlined services are shown as" %} <del>{% trans "service" %}</del>
                             • {% trans "Reinforced structures (except POCOs) are highlighted in red" %}
                             • {% trans "Data can be outdated by up to 1 hour due to API caching." %}
@@ -117,19 +117,19 @@
                     </div>
                 </div>
             </div>
-        </div>    
-    </div>    
-    
+        </div>
+    </div>
+
     <!-- share data with JS part -->
-    <div 
-        id="dataExport" 
+    <div
+        id="dataExport"
         data-listDataUrl="{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:',' }}"
         data-titleAlliance="{% trans 'Alliance' %}"
         data-titleCorporation="{% trans 'Corporation' %}"
         data-titleRegion="{% trans 'Region' %}"
-        data-titleSolarSystem="{% trans 'Solar System' %}"        
+        data-titleSolarSystem="{% trans 'Solar System' %}"
         data-titleCategory="{% trans 'Category' %}"
-        data-titleGroup="{% trans 'Group' %}"        
+        data-titleGroup="{% trans 'Group' %}"
         data-Reinforced="{% trans 'Reinforced?' %}"
         data-State="{% trans 'State' %}"
         data-PowerMode="{% trans 'Power Mode' %}"
@@ -137,22 +137,22 @@
         data-dataTablesPaging="{{ data_tables_paging }}"
     >
     </div>
-    
+
 {% endblock %}
 
 {% block extra_javascript %}
-    {% include 'bundles/datatables-js.html' %}        
+    {% include 'bundles/datatables-js.html' %}
     <script type="application/javascript" src="{% static 'js/filterDropDown/filterDropDown.min.js' %}"></script>
     <script type="application/javascript" src="{% static 'structures/structure_list.js' %}"></script>
 {% endblock %}
 
 {% block extra_css %}
     {% include 'bundles/datatables-css.html' %}
-    
-    <link rel="stylesheet" href="{% static 'structures/global.css' %}" type="text/css" media="screen">    
-    <link rel="stylesheet" href="{% static 'structures/structure_list.css' %}" type="text/css" media="screen">    
+
+    <link rel="stylesheet" href="{% static 'structures/global.css' %}" type="text/css" media="screen">
+    <link rel="stylesheet" href="{% static 'structures/structure_list.css' %}" type="text/css" media="screen">
 {% endblock %}
 
 {% block extra_script %}
-   
+
 {% endblock %}

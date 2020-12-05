@@ -116,14 +116,14 @@ for notification in notifications:
     notification['timestamp'] = dt.isoformat()
 
 with open(
-    file=currentdir + '/td_notifications_2.json', 
-    mode='w', 
+    file=currentdir + '/td_notifications_2.json',
+    mode='w',
     encoding='utf-8'
 ) as f:
     json.dump(
-        notifications, 
-        f,         
-        sort_keys=True, 
+        notifications,
+        f,
+        sort_keys=True,
         indent=4
     )
 
