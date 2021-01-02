@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.3] - 2021-01-02
+
 ### Changed
 
 - Confirming the start of a management command no longer case sensitive
+
+### Fixed
+
+- Fix bool methods on EveSolarSystem for security type (Thanks @huideaki for reporting this bug)
 
 ## [1.6.2] - 2020-10-24
 
