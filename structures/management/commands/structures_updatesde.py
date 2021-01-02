@@ -51,8 +51,8 @@ class Command(BaseCommand):
             "This command will reload all local EVE Online SDE data from "
             "the server. This process can take a while to complete."
         )
-        user_input = get_input("Are you sure you want to proceed? (Y/n)?")
-        if user_input == "Y":
+        user_input = get_input("Are you sure you want to proceed? (y/N)?")
+        if user_input.lower() == "y":
             self.stdout.write("Starting update. Please stand by.")
             self._update_models()
             self.stdout.write("Update completed!")

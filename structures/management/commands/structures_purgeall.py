@@ -61,8 +61,8 @@ class Command(BaseCommand):
             "This command will delete all app related data in the database. "
             "This can not be undone. Use with caution."
         )
-        user_input = get_input("Are you sure you want to proceed? (Y/n)?")
-        if user_input == "Y":
+        user_input = get_input("Are you sure you want to proceed? (y/N)?")
+        if user_input.lower() == "y":
             self.stdout.write("Starting data purge. Please stand by.")
             self._purge_all_data()
             self.stdout.write("Purge complete!")
