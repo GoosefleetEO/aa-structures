@@ -100,9 +100,10 @@ def structure_list(request):
 class StructuresRowBuilder:
     """This class build the HTML table rows from structure objects"""
 
-    def __init__(self):
+    def __init__(self, request):
         self._row = None
         self._structure = None
+        self._request = request
 
     def convert(self, structure) -> dict:
         self._row = {"structure_id": structure.id}
@@ -337,7 +338,11 @@ class StructuresRowBuilder:
                     self._structure.state_timer_end.strftime(DATETIME_FORMAT)
                 ),
             )
-        if self._structure.unanchors_at:
+
+        if (
+            self._request.user.has_perm("structures.view_all_unanchoring_status")
+            and self._structure.unanchors_at
+        ):
             self._row["state_details"] += format_html(
                 "<br>Unanchoring until {}",
                 add_no_wrap_html(
@@ -352,7 +357,7 @@ def structure_list_data(request):
     """returns structure list in JSON for AJAX call in structure_list view"""
 
     structure_rows = list()
-    row_converter = StructuresRowBuilder()
+    row_converter = StructuresRowBuilder(request)
     for structure in _structures_query_for_user(request):
         structure_rows.append(row_converter.convert(structure))
 
