@@ -54,10 +54,11 @@ class General(models.Model):
         managed = False
         default_permissions = ()
         permissions = (
-            ("basic_access", "Can access this app and view"),
+            ("basic_access", "Can access this app and view structures of your corporation"),
             ("view_alliance_structures", "Can view alliance structures"),
             ("view_all_structures", "Can view all structures"),
             ("add_structure_owner", "Can add new structure owner"),
+            ("view_all_unanchoring_status", "Can view unanchoring timers for all structures that are being unanchored"),
         )
 
 
