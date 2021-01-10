@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.6.4] - 2021-01-10
+## [1.7.0] - 2021-01-10
 
 ### Changed
 
 - Users now need to have a permission in order to see when a structure is unanchoring. See the permission section in the README for details.
+- Removed support for Django 2
 
 Thank you @OperatorOverload for your contribution!
 
