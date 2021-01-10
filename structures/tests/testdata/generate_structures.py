@@ -165,6 +165,8 @@ with transaction.atomic():
             get_random([True, False]) or state == Structure.STATE_HULL_REINFORCE
         )
 
+        unanchors_at = None
+
         if not is_low_power:
             fuel_expires_at = now() + timedelta(days=randrange(14), hours=randrange(12))
             last_online_at = now()

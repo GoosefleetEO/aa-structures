@@ -339,7 +339,10 @@ class StructuresRowBuilder:
                 ),
             )
 
-        if self._request.user.has_perm("structures.view_all_unanchoring_status") and self._structure.unanchors_at:
+        if (
+            self._request.user.has_perm("structures.view_all_unanchoring_status")
+            and self._structure.unanchors_at
+        ):
             self._row["state_details"] += format_html(
                 "<br>Unanchoring until {}",
                 add_no_wrap_html(

@@ -6,12 +6,28 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('structures', '0013_group_pings'),
+        ("structures", "0013_group_pings"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='general',
-            options={'default_permissions': (), 'managed': False, 'permissions': (('basic_access', 'Can access this app and view structures of your corporation'), ('view_alliance_structures', 'Can view alliance structures'), ('view_all_structures', 'Can view all structures'), ('add_structure_owner', 'Can add new structure owner'), ('view_all_unanchoring_status', 'Can view unanchoring timers for all structures that are being unanchored'))},
+            name="general",
+            options={
+                "default_permissions": (),
+                "managed": False,
+                "permissions": (
+                    (
+                        "basic_access",
+                        "Can access this app and view structures of your corporation",
+                    ),
+                    ("view_alliance_structures", "Can view alliance structures"),
+                    ("view_all_structures", "Can view all structures"),
+                    ("add_structure_owner", "Can add new structure owner"),
+                    (
+                        "view_all_unanchoring_status",
+                        "Can view unanchoring timers for all structures the user can see",
+                    ),
+                ),
+            },
         ),
     ]

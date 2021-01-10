@@ -362,6 +362,7 @@ Can access this app and view | User can access the app and see the structure lis
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
 Can add new structure owner | User can add a corporation with it's structures |  `general.add_structure_owner`
+Can view unanchoring timers for all structures the user can see | User can view unanchoring timers for all structures the user can see based on other permissions |  `general.view_all_unanchoring_status`
 
 ## Service monitoring
 
