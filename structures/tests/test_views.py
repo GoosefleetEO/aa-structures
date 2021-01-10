@@ -25,42 +25,62 @@ from ..app_settings import (
 )
 from ..models import Owner, Webhook, Structure
 from .testdata import create_structures, set_owner_character, load_entities, create_user
-from ..utils import set_test_logger
 from .. import views
 
 
 MODULE_PATH = "structures.views"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestStructureList(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.factory = RequestFactory()
         load_entities()
-
-    def setUp(self):
         create_structures(dont_load_entities=True)
-        self.user, self.owner = set_owner_character(character_id=1001)
-        AuthUtils.add_permission_to_user_by_name("structures.basic_access", self.user)
-        self.factory = RequestFactory()
 
     def test_basic_access_main_view(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
         request = self.factory.get(reverse("structures:structure_list"))
-        request.user = self.user
+        request.user = user
         response = views.structure_list(request)
+        # then
         self.assertEqual(response.status_code, 200)
 
-    def test_basic_access_own_structures_only(self):
+
+class TestStructureListDataPermissions(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        load_entities()
+        create_structures(dont_load_entities=True)
+
+    def _structure_list_data_view(self, user) -> dict:
+        """helper method:  makes the request to the view
+        and returns response as dict for the given user
+        """
         request = self.factory.get(reverse("structures:structure_list_data"))
-        request.user = self.user
+        request.user = user
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
+        return {
+            row["structure_id"]: row
+            for row in json.loads(response.content.decode("utf-8"))
+        }
 
-        data = json.loads(response.content.decode("utf-8"))
-        structure_ids = {x["structure_id"] for x in data}
+    def test_should_show_own_corporation_only_1(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
         self.assertSetEqual(
-            structure_ids,
+            set(structure_ids),
             {
                 1000000000001,
                 1200000000003,
@@ -72,22 +92,67 @@ class TestStructureList(TestCase):
             },
         )
 
-    def test_perm_view_alliance_structures_normal(self):
-        AuthUtils.add_permission_to_user_by_name(
-            "structures.view_alliance_structures", self.user
-        )
-        request = self.factory.get(reverse("structures:structure_list_data"))
-        request.user = self.user
-        response = views.structure_list_data(request)
-        self.assertEqual(response.status_code, 200)
+    def test_should_show_own_corporation_only_2(self):
+        # given
+        user, _ = set_owner_character(character_id=1011)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
+        self.assertSetEqual(set(structure_ids), {1000000000003})
 
-        data = json.loads(response.content.decode("utf-8"))
-        structure_ids = {x["structure_id"] for x in data}
+    def test_should_show_own_alliance_only_1(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        self.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_alliance_structures", user
+        )
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
         self.assertSetEqual(
-            structure_ids,
+            set(structure_ids),
+            {
+                1000000000001,
+                1000000000002,  # only for alliance
+                1200000000003,
+                1200000000004,
+                1200000000005,
+                1300000000001,
+                1300000000002,
+                1300000000003,
+            },
+        )
+
+    def test_should_show_own_alliance_only_2(self):
+        # given
+        user, _ = set_owner_character(character_id=1011)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        self.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_alliance_structures", user
+        )
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
+        self.assertSetEqual(set(structure_ids), {1000000000003})
+
+    def test_should_show_all_structures(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        self.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_all_structures", user
+        )
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
+        self.assertSetEqual(
+            set(structure_ids),
             {
                 1000000000001,
                 1000000000002,
+                1000000000003,  # only for all
                 1200000000003,
                 1200000000004,
                 1200000000005,
@@ -97,15 +162,40 @@ class TestStructureList(TestCase):
             },
         )
 
+    def test_should_show_unanchoring_status(self):
+        # given
+        user, _ = set_owner_character(character_id=1011)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_all_unanchoring_status", user
+        )
+        # when
+        data = self._structure_list_data_view(user)
+        # then
+        structure = data[1000000000003]
+        self.assertIn("Unanchoring until", structure["state_details"])
 
-class TestStructureList2(TestCase):
+    def test_should_not_show_unanchoring_status(self):
+        # given
+        user, _ = set_owner_character(character_id=1011)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        data = self._structure_list_data_view(user)
+        # then
+        structure = data[1000000000003]
+        self.assertNotIn("Unanchoring until", structure["state_details"])
+
+
+class TestStructureListFilters(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
-        AuthUtils.add_permission_to_user_by_name("structures.basic_access", cls.user)
-        AuthUtils.add_permission_to_user_by_name(
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.basic_access", cls.user
+        )
+        cls.user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_all_structures", cls.user
         )
         cls.factory = RequestFactory()
@@ -125,47 +215,6 @@ class TestStructureList2(TestCase):
         response = views.index(request)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, "/structures/list/")
-
-    def test_perm_view_alliance_structures_no_alliance(self):
-        # run with a user that is not a member of an alliance
-        character = EveCharacter.objects.get(character_id=1011)
-        user = create_user(character.character_id)
-        AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        AuthUtils.add_permission_to_user_by_name(
-            "structures.view_alliance_structures", user
-        )
-
-        request = self.factory.get(reverse("structures:structure_list_data"))
-        request.user = user
-        response = views.structure_list_data(request)
-        self.assertEqual(response.status_code, 200)
-
-        data = json.loads(response.content.decode("utf-8"))
-        structure_ids = {x["structure_id"] for x in data}
-        self.assertSetEqual(structure_ids, {1000000000003})
-
-    def test_perm_view_all_structures(self):
-        request = self.factory.get(reverse("structures:structure_list_data"))
-        request.user = self.user
-        response = views.structure_list_data(request)
-        self.assertEqual(response.status_code, 200)
-
-        data = json.loads(response.content.decode("utf-8"))
-        structure_ids = {x["structure_id"] for x in data}
-        self.assertSetEqual(
-            structure_ids,
-            {
-                1000000000001,
-                1000000000002,
-                1000000000003,
-                1200000000003,
-                1200000000004,
-                1200000000005,
-                1300000000001,
-                1300000000002,
-                1300000000003,
-            },
-        )
 
     def test_list_filter_by_tag_1(self):
         # no filter
