@@ -4,6 +4,7 @@ from unittest.mock import patch, Mock
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 
+from django.test import TestCase
 from django.utils.timezone import now, utc
 
 from allianceauth.eveonline.models import (
@@ -277,7 +278,7 @@ class TestOwner(NoSocketsTestCase):
         )
 
 
-class TestUpdateStructuresEsi(NoSocketsTestCase):
+class TestUpdateStructuresEsi(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
