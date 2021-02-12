@@ -72,103 +72,75 @@ LANGUAGES = (
     ("ko", _("Korean")),
 )
 
-# Notification types
-NTYPE_MOONS_AUTOMATIC_FRACTURE = 401
-NTYPE_MOONS_EXTRACTION_CANCELED = 402
-NTYPE_MOONS_EXTRACTION_FINISHED = 403
-NTYPE_MOONS_EXTRACTION_STARTED = 404
-NTYPE_MOONS_LASER_FIRED = 405
 
-NTYPE_STRUCTURE_ANCHORING = 501
-NTYPE_STRUCTURE_DESTROYED = 502
-NTYPE_STRUCTURE_FUEL_ALERT = 503
-NTYPE_STRUCTURE_LOST_ARMOR = 504
-NTYPE_STRUCTURE_LOST_SHIELD = 505
-NTYPE_STRUCTURE_ONLINE = 506
-NTYPE_STRUCTURE_SERVICES_OFFLINE = 507
-NTYPE_STRUCTURE_UNANCHORING = 508
-NTYPE_STRUCTURE_UNDER_ATTACK = 509
-NTYPE_STRUCTURE_WENT_HIGH_POWER = 510
-NTYPE_STRUCTURE_WENT_LOW_POWER = 511
-NTYPE_STRUCTURE_REINFORCE_CHANGED = 512
-NTYPE_OWNERSHIP_TRANSFERRED = 513
-
-NTYPE_ORBITAL_ATTACKED = 601
-NTYPE_ORBITAL_REINFORCED = 602
-
-NTYPE_TOWER_ALERT_MSG = 701
-NTYPE_TOWER_RESOURCE_ALERT_MSG = 702
-
-NTYPE_SOV_ENTOSIS_CAPTURE_STARTED = 801
-NTYPE_SOV_COMMAND_NODE_EVENT_STARTED = 802
-NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG = 803
-NTYPE_SOV_STRUCTURE_REINFORCED = 804
-NTYPE_SOV_STRUCTURE_DESTROYED = 805
-
-NTYPE_CHOICES = [
+class NotificationType(models.IntegerChoices):
     # moon mining
-    (NTYPE_MOONS_AUTOMATIC_FRACTURE, "MoonminingAutomaticFracture"),
-    (NTYPE_MOONS_EXTRACTION_CANCELED, "MoonminingExtractionCancelled"),
-    (NTYPE_MOONS_EXTRACTION_FINISHED, "MoonminingExtractionFinished"),
-    (NTYPE_MOONS_EXTRACTION_STARTED, "MoonminingExtractionStarted"),
-    (NTYPE_MOONS_LASER_FIRED, "MoonminingLaserFired"),
-    # upwell structures general
-    (NTYPE_OWNERSHIP_TRANSFERRED, "OwnershipTransferred"),
-    (NTYPE_STRUCTURE_ANCHORING, "StructureAnchoring"),
-    (NTYPE_STRUCTURE_DESTROYED, "StructureDestroyed"),
-    (NTYPE_STRUCTURE_FUEL_ALERT, "StructureFuelAlert"),
-    (NTYPE_STRUCTURE_LOST_ARMOR, "StructureLostArmor"),
-    (NTYPE_STRUCTURE_LOST_SHIELD, "StructureLostShields"),
-    (NTYPE_STRUCTURE_ONLINE, "StructureOnline"),
-    (NTYPE_STRUCTURE_SERVICES_OFFLINE, "StructureServicesOffline"),
-    (NTYPE_STRUCTURE_UNANCHORING, "StructureUnanchoring"),
-    (NTYPE_STRUCTURE_UNDER_ATTACK, "StructureUnderAttack"),
-    (NTYPE_STRUCTURE_WENT_HIGH_POWER, "StructureWentHighPower"),
-    (NTYPE_STRUCTURE_WENT_LOW_POWER, "StructureWentLowPower"),
-    # custom offices only
-    (NTYPE_ORBITAL_ATTACKED, "OrbitalAttacked"),
-    (NTYPE_ORBITAL_REINFORCED, "OrbitalReinforced"),
-    # starbases only
-    (NTYPE_TOWER_ALERT_MSG, "TowerAlertMsg"),
-    (NTYPE_TOWER_RESOURCE_ALERT_MSG, "TowerResourceAlertMsg"),
+    MOONS_AUTOMATIC_FRACTURE = 401, "MoonminingAutomaticFracture"
+    MOONS_EXTRACTION_CANCELED = 402, "MoonminingExtractionCancelled"
+    MOONS_EXTRACTION_FINISHED = 403, "MoonminingExtractionFinished"
+    MOONS_EXTRACTION_STARTED = 404, "MoonminingExtractionStarted"
+    MOONS_LASER_FIRED = 405, "MoonminingLaserFired"
+    # upwell structures
+    STRUCTURE_ANCHORING = 501, "StructureAnchoring"
+    STRUCTURE_DESTROYED = 502, "StructureDestroyed"
+    STRUCTURE_FUEL_ALERT = 503, "StructureFuelAlert"
+    STRUCTURE_LOST_ARMOR = 504, "StructureLostArmor"
+    STRUCTURE_LOST_SHIELD = 505, "StructureLostShields"
+    STRUCTURE_ONLINE = 506, "StructureOnline"
+    STRUCTURE_SERVICES_OFFLINE = 507, "StructureServicesOffline"
+    STRUCTURE_UNANCHORING = 508, "StructureUnanchoring"
+    STRUCTURE_UNDER_ATTACK = 509, "StructureUnderAttack"
+    STRUCTURE_WENT_HIGH_POWER = 510, "StructureWentHighPower"
+    STRUCTURE_WENT_LOW_POWER = 511, "StructureWentLowPower"
+    # STRUCTURE_REINFORCE_CHANGED = 512, "StructureReinforceChange"
+    OWNERSHIP_TRANSFERRED = 513, "OwnershipTransferred"
+    # customs offices
+    ORBITAL_ATTACKED = 601, "OrbitalAttacked"
+    ORBITAL_REINFORCED = 602, "OrbitalReinforced"
+    # starbases
+    TOWER_ALERT_MSG = 701, "TowerAlertMsg"
+    TOWER_RESOURCE_ALERT_MSG = 702, "TowerResourceAlertMsg"
     # sov
-    (NTYPE_SOV_ENTOSIS_CAPTURE_STARTED, "EntosisCaptureStarted"),
-    (NTYPE_SOV_COMMAND_NODE_EVENT_STARTED, "SovCommandNodeEventStarted"),
-    (NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG, "SovAllClaimAquiredMsg"),
-    (NTYPE_SOV_STRUCTURE_REINFORCED, "SovStructureReinforced"),
-    (NTYPE_SOV_STRUCTURE_DESTROYED, "SovStructureDestroyed"),
-]
+    SOV_ENTOSIS_CAPTURE_STARTED = 801, "EntosisCaptureStarted"
+    SOV_COMMAND_NODE_EVENT_STARTED = 802, "SovCommandNodeEventStarted"
+    SOV_ALL_CLAIM_ACQUIRED_MSG = 803, "SovAllClaimAquiredMsg"
+    SOV_STRUCTURE_REINFORCED = 804, "SovStructureReinforced"
+    SOV_STRUCTURE_DESTROYED = 805, "SovStructureDestroyed"
 
-_NTYPE_RELEVANT_FOR_TIMERBOARD = [
-    NTYPE_STRUCTURE_LOST_SHIELD,
-    NTYPE_STRUCTURE_LOST_ARMOR,
-    NTYPE_STRUCTURE_ANCHORING,
-    NTYPE_ORBITAL_REINFORCED,
-    NTYPE_MOONS_EXTRACTION_STARTED,
-    NTYPE_MOONS_EXTRACTION_CANCELED,
-    NTYPE_SOV_STRUCTURE_REINFORCED,
-]
+    @classmethod
+    def relevant_for_timerboard(cls):
+        return [
+            cls.STRUCTURE_LOST_SHIELD,
+            cls.STRUCTURE_LOST_ARMOR,
+            cls.STRUCTURE_ANCHORING,
+            cls.ORBITAL_REINFORCED,
+            cls.MOONS_EXTRACTION_STARTED,
+            cls.MOONS_EXTRACTION_CANCELED,
+            cls.SOV_STRUCTURE_REINFORCED,
+        ]
 
-NTYPE_FOR_ALLIANCE_LEVEL = [
-    NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
-    NTYPE_SOV_COMMAND_NODE_EVENT_STARTED,
-    NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG,
-    NTYPE_SOV_STRUCTURE_REINFORCED,
-    NTYPE_SOV_STRUCTURE_DESTROYED,
-]
+    @classmethod
+    def relevant_for_alliance_level(cls):
+        return [
+            cls.SOV_ENTOSIS_CAPTURE_STARTED,
+            cls.SOV_COMMAND_NODE_EVENT_STARTED,
+            cls.SOV_ALL_CLAIM_ACQUIRED_MSG,
+            cls.SOV_STRUCTURE_REINFORCED,
+            cls.SOV_STRUCTURE_DESTROYED,
+        ]
 
 
 def get_default_notification_types():
-    """generates a set of all existing notification types as default"""
-    return tuple(sorted([str(x[0]) for x in NTYPE_CHOICES]))
+    """DEPRECATED: generates a set of all existing notification types as default"""
+    return tuple(sorted([str(x[0]) for x in NotificationType.choices]))
 
 
 class Webhook(WebhookBase):
     """A destination for forwarding notification alerts"""
 
     notification_types = MultiSelectField(
-        choices=NTYPE_CHOICES,
-        default=get_default_notification_types,
+        choices=NotificationType.choices,
+        default=NotificationType.values,
         help_text=("only notifications which selected types are sent to this webhook"),
     )
     language_code = models.CharField(
@@ -280,7 +252,7 @@ class Notification(models.Model):
     )
     sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
     timestamp = models.DateTimeField()
-    notification_type = models.IntegerField(choices=NTYPE_CHOICES)
+    notification_type = models.IntegerField(choices=NotificationType.choices)
     text = models.TextField(
         null=True, default=None, blank=True, help_text="Notification details in YAML"
     )
@@ -328,28 +300,28 @@ class Notification(models.Model):
     @property
     def is_alliance_level(self) -> bool:
         """whether this is an alliance level notification"""
-        return self.notification_type in NTYPE_FOR_ALLIANCE_LEVEL
+        return self.notification_type in NotificationType.relevant_for_alliance_level()
 
     @classmethod
     def get_all_types(cls) -> Set[int]:
         """returns a set with all supported notification types"""
-        return {x[0] for x in NTYPE_CHOICES}
+        return {x[0] for x in NotificationType.choices}
 
     @classmethod
     def get_all_type_names(cls) -> Set[str]:
         """returns a set with names of all supported notification types"""
-        return {x[1] for x in NTYPE_CHOICES}
+        return {x[1] for x in NotificationType.choices}
 
     @classmethod
     def get_types_for_timerboard(cls) -> List[int]:
         """returns set of types relevant for the timerboard"""
-        return _NTYPE_RELEVANT_FOR_TIMERBOARD
+        return NotificationType.relevant_for_timerboard()
 
     @classmethod
     def get_matching_notification_type(cls, type_name: str) -> int:
         """returns matching notification type for given name or None"""
         match = None
-        for x in NTYPE_CHOICES:
+        for x in NotificationType.choices:
             if type_name == x[1]:
                 match = x
                 break
@@ -364,19 +336,19 @@ class Notification(models.Model):
         """whether this notification is about a NPC attacking"""
         result = False
         if self.notification_type in [
-            NTYPE_ORBITAL_ATTACKED,
-            NTYPE_STRUCTURE_UNDER_ATTACK,
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.STRUCTURE_UNDER_ATTACK,
         ]:
             parsed_text = self.get_parsed_text()
             corporation_id = None
-            if self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
+            if self.notification_type == NotificationType.STRUCTURE_UNDER_ATTACK:
                 if (
                     "corpLinkData" in parsed_text
                     and len(parsed_text["corpLinkData"]) >= 3
                 ):
                     corporation_id = int(parsed_text["corpLinkData"][2])
 
-            if self.notification_type == NTYPE_ORBITAL_ATTACKED:
+            if self.notification_type == NotificationType.ORBITAL_ATTACKED:
                 if "aggressorCorpID" in parsed_text:
                     corporation_id = int(parsed_text["aggressorCorpID"])
 
@@ -491,52 +463,52 @@ class Notification(models.Model):
 
         with translation.override(language_code):
             if self.notification_type in [
-                NTYPE_STRUCTURE_FUEL_ALERT,
-                NTYPE_STRUCTURE_SERVICES_OFFLINE,
-                NTYPE_STRUCTURE_WENT_LOW_POWER,
-                NTYPE_STRUCTURE_WENT_HIGH_POWER,
-                NTYPE_STRUCTURE_UNANCHORING,
-                NTYPE_STRUCTURE_UNDER_ATTACK,
-                NTYPE_STRUCTURE_LOST_SHIELD,
-                NTYPE_STRUCTURE_LOST_ARMOR,
-                NTYPE_STRUCTURE_DESTROYED,
-                NTYPE_STRUCTURE_ONLINE,
+                NotificationType.STRUCTURE_FUEL_ALERT,
+                NotificationType.STRUCTURE_SERVICES_OFFLINE,
+                NotificationType.STRUCTURE_WENT_LOW_POWER,
+                NotificationType.STRUCTURE_WENT_HIGH_POWER,
+                NotificationType.STRUCTURE_UNANCHORING,
+                NotificationType.STRUCTURE_UNDER_ATTACK,
+                NotificationType.STRUCTURE_LOST_SHIELD,
+                NotificationType.STRUCTURE_LOST_ARMOR,
+                NotificationType.STRUCTURE_DESTROYED,
+                NotificationType.STRUCTURE_ONLINE,
             ]:
                 embed_draft = self._gen_embed_structures_1(parsed_text)
 
             elif self.notification_type in [
-                NTYPE_OWNERSHIP_TRANSFERRED,
-                NTYPE_STRUCTURE_ANCHORING,
+                NotificationType.OWNERSHIP_TRANSFERRED,
+                NotificationType.STRUCTURE_ANCHORING,
             ]:
                 embed_draft = self._gen_embed_structures_2(parsed_text)
 
             elif self.notification_type in [
-                NTYPE_MOONS_AUTOMATIC_FRACTURE,
-                NTYPE_MOONS_EXTRACTION_CANCELED,
-                NTYPE_MOONS_EXTRACTION_FINISHED,
-                NTYPE_MOONS_EXTRACTION_STARTED,
-                NTYPE_MOONS_LASER_FIRED,
+                NotificationType.MOONS_AUTOMATIC_FRACTURE,
+                NotificationType.MOONS_EXTRACTION_CANCELED,
+                NotificationType.MOONS_EXTRACTION_FINISHED,
+                NotificationType.MOONS_EXTRACTION_STARTED,
+                NotificationType.MOONS_LASER_FIRED,
             ]:
                 embed_draft = self._gen_embed_moons(parsed_text)
 
             elif self.notification_type in [
-                NTYPE_ORBITAL_ATTACKED,
-                NTYPE_ORBITAL_REINFORCED,
+                NotificationType.ORBITAL_ATTACKED,
+                NotificationType.ORBITAL_REINFORCED,
             ]:
                 embed_draft = self._gen_embed_pocos(parsed_text)
 
             elif self.notification_type in [
-                NTYPE_TOWER_ALERT_MSG,
-                NTYPE_TOWER_RESOURCE_ALERT_MSG,
+                NotificationType.TOWER_ALERT_MSG,
+                NotificationType.TOWER_RESOURCE_ALERT_MSG,
             ]:
                 embed_draft = self._gen_embed_poses(parsed_text)
 
             elif self.notification_type in [
-                NTYPE_SOV_ENTOSIS_CAPTURE_STARTED,
-                NTYPE_SOV_COMMAND_NODE_EVENT_STARTED,
-                NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG,
-                NTYPE_SOV_STRUCTURE_REINFORCED,
-                NTYPE_SOV_STRUCTURE_DESTROYED,
+                NotificationType.SOV_ENTOSIS_CAPTURE_STARTED,
+                NotificationType.SOV_COMMAND_NODE_EVENT_STARTED,
+                NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG,
+                NotificationType.SOV_STRUCTURE_REINFORCED,
+                NotificationType.SOV_STRUCTURE_DESTROYED,
             ]:
                 embed_draft = self._gen_embed_sov(parsed_text)
 
@@ -588,17 +560,17 @@ class Notification(models.Model):
             "solar_system": self._gen_solar_system_text(structure_solar_system),
             "owner_link": owner_link,
         }
-        if self.notification_type == NTYPE_STRUCTURE_ONLINE:
+        if self.notification_type == NotificationType.STRUCTURE_ONLINE:
             title = gettext("Structure online")
             description += gettext("is now online.")
             color = self.EMBED_COLOR_SUCCESS
 
-        elif self.notification_type == NTYPE_STRUCTURE_FUEL_ALERT:
+        elif self.notification_type == NotificationType.STRUCTURE_FUEL_ALERT:
             title = gettext("Structure fuel alert")
             description += gettext("has less then 24hrs fuel left.")
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_STRUCTURE_SERVICES_OFFLINE:
+        elif self.notification_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
             title = gettext("Structure services off-line")
             description += gettext("has all services off-lined.")
             if my_structure and my_structure.structureservice_set.count() > 0:
@@ -608,17 +580,17 @@ class Notification(models.Model):
 
             color = self.EMBED_COLOR_DANGER
 
-        elif self.notification_type == NTYPE_STRUCTURE_WENT_LOW_POWER:
+        elif self.notification_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
             title = gettext("Structure low power")
             description += gettext("went to low power mode.")
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_STRUCTURE_WENT_HIGH_POWER:
+        elif self.notification_type == NotificationType.STRUCTURE_WENT_HIGH_POWER:
             title = gettext("Structure full power")
             description += gettext("went to full power mode.")
             color = self.EMBED_COLOR_SUCCESS
 
-        elif self.notification_type == NTYPE_STRUCTURE_UNANCHORING:
+        elif self.notification_type == NotificationType.STRUCTURE_UNANCHORING:
             title = gettext("Structure un-anchoring")
             unanchored_at = self.timestamp + self._ldap_timedelta_2_timedelta(
                 parsed_text["timeLeft"]
@@ -628,14 +600,14 @@ class Notification(models.Model):
             ) % unanchored_at.strftime(DATETIME_FORMAT)
             color = self.EMBED_COLOR_INFO
 
-        elif self.notification_type == NTYPE_STRUCTURE_UNDER_ATTACK:
+        elif self.notification_type == NotificationType.STRUCTURE_UNDER_ATTACK:
             title = gettext("Structure under attack")
             description += gettext("is under attack by %s") % self._get_attacker_link(
                 parsed_text
             )
             color = self.EMBED_COLOR_DANGER
 
-        elif self.notification_type == NTYPE_STRUCTURE_LOST_SHIELD:
+        elif self.notification_type == NotificationType.STRUCTURE_LOST_SHIELD:
             title = gettext("Structure lost shield")
             timer_ends_at = self.timestamp + self._ldap_timedelta_2_timedelta(
                 parsed_text["timeLeft"]
@@ -645,7 +617,7 @@ class Notification(models.Model):
             ) % timer_ends_at.strftime(DATETIME_FORMAT)
             color = self.EMBED_COLOR_DANGER
 
-        elif self.notification_type == NTYPE_STRUCTURE_LOST_ARMOR:
+        elif self.notification_type == NotificationType.STRUCTURE_LOST_ARMOR:
             title = gettext("Structure lost armor")
             timer_ends_at = self.timestamp + self._ldap_timedelta_2_timedelta(
                 parsed_text["timeLeft"]
@@ -655,7 +627,7 @@ class Notification(models.Model):
             ) % timer_ends_at.strftime(DATETIME_FORMAT)
             color = self.EMBED_COLOR_DANGER
 
-        elif self.notification_type == NTYPE_STRUCTURE_DESTROYED:
+        elif self.notification_type == NotificationType.STRUCTURE_DESTROYED:
             title = gettext("Structure destroyed")
             description += gettext("has been destroyed.")
             color = self.EMBED_COLOR_DANGER
@@ -674,7 +646,7 @@ class Notification(models.Model):
         structure_type, _ = EveType.objects.get_or_create_esi(
             parsed_text["structureTypeID"]
         )
-        if self.notification_type == NTYPE_OWNERSHIP_TRANSFERRED:
+        if self.notification_type == NotificationType.OWNERSHIP_TRANSFERRED:
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 parsed_text["solarSystemID"]
             )
@@ -703,7 +675,7 @@ class Notification(models.Model):
             title = gettext("Ownership transferred")
             color = self.EMBED_COLOR_INFO
 
-        elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
+        elif self.notification_type == NotificationType.STRUCTURE_ANCHORING:
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 parsed_text["solarsystemID"]
             )
@@ -761,7 +733,7 @@ class Notification(models.Model):
         solar_system_link = self._gen_solar_system_text(solar_system)
         structure_name = parsed_text["structureName"]
         owner_link = self._gen_corporation_link(str(self.owner))
-        if self.notification_type == NTYPE_MOONS_EXTRACTION_STARTED:
+        if self.notification_type == NotificationType.MOONS_EXTRACTION_STARTED:
             started_by, _ = EveEntity.objects.get_or_create_esi(
                 parsed_text["startedBy"]
             )
@@ -793,7 +765,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_INFO
 
-        elif self.notification_type == NTYPE_MOONS_EXTRACTION_FINISHED:
+        elif self.notification_type == NotificationType.MOONS_EXTRACTION_FINISHED:
             auto_time = self._ldap_datetime_2_dt(parsed_text["autoTime"])
             title = gettext("Extraction finished")
             description = gettext(
@@ -817,7 +789,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_INFO
 
-        elif self.notification_type == NTYPE_MOONS_AUTOMATIC_FRACTURE:
+        elif self.notification_type == NotificationType.MOONS_AUTOMATIC_FRACTURE:
             title = gettext("Automatic Fracture")
             description = gettext(
                 "The moondrill fitted to %(structure_name)s at %(moon)s"
@@ -838,7 +810,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_SUCCESS
 
-        elif self.notification_type == NTYPE_MOONS_EXTRACTION_CANCELED:
+        elif self.notification_type == NotificationType.MOONS_EXTRACTION_CANCELED:
             if parsed_text["cancelledBy"]:
                 cancelled_by, _ = EveEntity.objects.get_or_create_esi(
                     parsed_text["cancelledBy"]
@@ -860,7 +832,7 @@ class Notification(models.Model):
 
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_MOONS_LASER_FIRED:
+        elif self.notification_type == NotificationType.MOONS_LASER_FIRED:
             fired_by, _ = EveEntity.objects.get_or_create_esi(parsed_text["firedBy"])
             title = gettext("Moondrill fired")
             description = gettext(
@@ -906,7 +878,7 @@ class Notification(models.Model):
         owner_link = self._gen_corporation_link(str(self.owner))
         aggressor_link = self._get_aggressor_link(parsed_text)
 
-        if self.notification_type == NTYPE_ORBITAL_ATTACKED:
+        if self.notification_type == NotificationType.ORBITAL_ATTACKED:
             title = gettext("Orbital under attack")
             description = gettext(
                 "The %(structure_type)s at %(planet)s in %(solar_system)s "
@@ -921,7 +893,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
+        elif self.notification_type == NotificationType.ORBITAL_REINFORCED:
             reinforce_exit_time = self._ldap_datetime_2_dt(
                 parsed_text["reinforceExitTime"]
             )
@@ -962,7 +934,7 @@ class Notification(models.Model):
         else:
             structure_name = structure_type.name_localized
 
-        if self.notification_type == NTYPE_TOWER_ALERT_MSG:
+        if self.notification_type == NotificationType.TOWER_ALERT_MSG:
             aggressor_link = self._get_aggressor_link(parsed_text)
             damage_labels = [
                 ("shield", gettext("shield")),
@@ -993,7 +965,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_TOWER_RESOURCE_ALERT_MSG:
+        elif self.notification_type == NotificationType.TOWER_RESOURCE_ALERT_MSG:
             quantity = parsed_text["wants"][0]["quantity"]
             title = gettext("Starbase low on fuel")
             description = gettext(
@@ -1037,7 +1009,7 @@ class Notification(models.Model):
         structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
         structure_type_name = structure_type.name_localized
         sov_owner_link = self._gen_alliance_link(self.sender.name)
-        if self.notification_type == NTYPE_SOV_ENTOSIS_CAPTURE_STARTED:
+        if self.notification_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
             title = gettext(
                 "%(structure_type)s in %(solar_system)s is being captured"
             ) % {
@@ -1055,7 +1027,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_SOV_COMMAND_NODE_EVENT_STARTED:
+        elif self.notification_type == NotificationType.SOV_COMMAND_NODE_EVENT_STARTED:
             title = gettext(
                 "Command nodes for %(structure_type)s in %(solar_system)s "
                 "have begun to decloak"
@@ -1075,7 +1047,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_WARNING
 
-        elif self.notification_type == NTYPE_SOV_ALL_CLAIM_ACQUIRED_MSG:
+        elif self.notification_type == NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG:
             alliance, _ = EveEntity.objects.get_or_create_esi(parsed_text["allianceID"])
             corporation, _ = EveEntity.objects.get_or_create_esi(parsed_text["corpID"])
             title = (
@@ -1094,7 +1066,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_SUCCESS
 
-        elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
+        elif self.notification_type == NotificationType.SOV_STRUCTURE_REINFORCED:
             timer_starts = self._ldap_datetime_2_dt(parsed_text["decloakTime"])
             title = gettext(
                 "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
@@ -1115,7 +1087,7 @@ class Notification(models.Model):
             }
             color = self.EMBED_COLOR_DANGER
 
-        elif self.notification_type == NTYPE_SOV_STRUCTURE_DESTROYED:
+        elif self.notification_type == NotificationType.SOV_STRUCTURE_DESTROYED:
             title = gettext(
                 "%(structure_type)s in %(solar_system)s has been destroyed"
             ) % {
@@ -1208,28 +1180,31 @@ class Notification(models.Model):
         timer_created = False
         if (
             has_auth_timers or has_structure_timers
-        ) and self.notification_type in _NTYPE_RELEVANT_FOR_TIMERBOARD:
+        ) and self.notification_type in NotificationType.relevant_for_timerboard():
             parsed_text = self.get_parsed_text()
             try:
                 with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
                     if self.notification_type in [
-                        NTYPE_STRUCTURE_LOST_ARMOR,
-                        NTYPE_STRUCTURE_LOST_SHIELD,
+                        NotificationType.STRUCTURE_LOST_ARMOR,
+                        NotificationType.STRUCTURE_LOST_SHIELD,
                     ]:
                         timer_created = self._gen_timer_structure_reinforcement(
                             parsed_text, token
                         )
-                    elif self.notification_type == NTYPE_STRUCTURE_ANCHORING:
+                    elif self.notification_type == NotificationType.STRUCTURE_ANCHORING:
                         timer_created = self._gen_timer_structure_anchoring(parsed_text)
-                    elif self.notification_type == NTYPE_SOV_STRUCTURE_REINFORCED:
+                    elif (
+                        self.notification_type
+                        == NotificationType.SOV_STRUCTURE_REINFORCED
+                    ):
                         timer_created = self._gen_timer_sov_reinforcements(parsed_text)
-                    elif self.notification_type == NTYPE_ORBITAL_REINFORCED:
+                    elif self.notification_type == NotificationType.ORBITAL_REINFORCED:
                         timer_created = self._gen_timer_orbital_reinforcements(
                             parsed_text
                         )
                     elif self.notification_type in [
-                        NTYPE_MOONS_EXTRACTION_STARTED,
-                        NTYPE_MOONS_EXTRACTION_CANCELED,
+                        NotificationType.MOONS_EXTRACTION_STARTED,
+                        NotificationType.MOONS_EXTRACTION_CANCELED,
                     ]:
                         if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
                             timer_created = None
@@ -1272,8 +1247,8 @@ class Notification(models.Model):
         timer_added = False
         if has_auth_timers:
             details_map = {
-                NTYPE_STRUCTURE_LOST_SHIELD: gettext("Armor timer"),
-                NTYPE_STRUCTURE_LOST_ARMOR: gettext("Final timer"),
+                NotificationType.STRUCTURE_LOST_SHIELD: gettext("Armor timer"),
+                NotificationType.STRUCTURE_LOST_ARMOR: gettext("Final timer"),
             }
             AuthTimer.objects.create(
                 details=details_map.get(self.notification_type, ""),
@@ -1289,8 +1264,8 @@ class Notification(models.Model):
 
         if has_structure_timers:
             timer_map = {
-                NTYPE_STRUCTURE_LOST_SHIELD: Timer.TYPE_ARMOR,
-                NTYPE_STRUCTURE_LOST_ARMOR: Timer.TYPE_HULL,
+                NotificationType.STRUCTURE_LOST_SHIELD: Timer.TYPE_ARMOR,
+                NotificationType.STRUCTURE_LOST_ARMOR: Timer.TYPE_HULL,
             }
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
                 id=structure_obj.eve_solar_system_id
@@ -1516,7 +1491,7 @@ class Notification(models.Model):
             structure_type = None
             visibility = None
 
-        if self.notification_type == NTYPE_MOONS_EXTRACTION_STARTED:
+        if self.notification_type == NotificationType.MOONS_EXTRACTION_STARTED:
             if has_auth_timers:
                 AuthTimer.objects.create(
                     details=details,
@@ -1558,9 +1533,9 @@ class Notification(models.Model):
                 )
                 timer_added = True
 
-        elif self.notification_type == NTYPE_MOONS_EXTRACTION_CANCELED:
+        elif self.notification_type == NotificationType.MOONS_EXTRACTION_CANCELED:
             notifications_qs = Notification.objects.filter(
-                notification_type=NTYPE_MOONS_EXTRACTION_STARTED,
+                notification_type=NotificationType.MOONS_EXTRACTION_STARTED,
                 owner=self.owner,
                 is_timer_added=True,
                 timestamp__lte=self.timestamp,

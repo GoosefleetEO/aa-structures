@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Changed
+
+- Refactor notification types
+
 ## [1.7.0] - 2021-01-10
 
 ### Changed

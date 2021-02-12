@@ -18,5 +18,6 @@ from .notifications import (
     Webhook,
     Notification,
     EveEntity,
+    NotificationType,
     get_default_notification_types,
 )

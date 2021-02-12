@@ -36,17 +36,7 @@ from ...models import (
     Notification,
     Structure,
 )
-from ...models.notifications import (
-    NTYPE_STRUCTURE_DESTROYED,
-    NTYPE_STRUCTURE_LOST_ARMOR,
-    NTYPE_STRUCTURE_LOST_SHIELD,
-    NTYPE_STRUCTURE_UNDER_ATTACK,
-    NTYPE_MOONS_AUTOMATIC_FRACTURE,
-    NTYPE_MOONS_EXTRACTION_CANCELED,
-    NTYPE_MOONS_EXTRACTION_FINISHED,
-    NTYPE_MOONS_EXTRACTION_STARTED,
-    NTYPE_MOONS_LASER_FIRED,
-)
+from ...models.notifications import NotificationType
 from ..testdata import (
     esi_get_corporations_corporation_id_structures,
     esi_get_corporations_corporation_id_customs_offices,
@@ -1403,11 +1393,11 @@ class TestSendNewNotifications(NoSocketsTestCase):
                 str(x)
                 for x in sorted(
                     [
-                        NTYPE_MOONS_EXTRACTION_CANCELED,
-                        NTYPE_STRUCTURE_DESTROYED,
-                        NTYPE_STRUCTURE_LOST_ARMOR,
-                        NTYPE_STRUCTURE_LOST_SHIELD,
-                        NTYPE_STRUCTURE_UNDER_ATTACK,
+                        NotificationType.MOONS_EXTRACTION_CANCELED,
+                        NotificationType.STRUCTURE_DESTROYED,
+                        NotificationType.STRUCTURE_LOST_ARMOR,
+                        NotificationType.STRUCTURE_LOST_SHIELD,
+                        NotificationType.STRUCTURE_UNDER_ATTACK,
                     ]
                 )
             ]
@@ -1423,11 +1413,11 @@ class TestSendNewNotifications(NoSocketsTestCase):
                 str(x)
                 for x in sorted(
                     [
-                        NTYPE_MOONS_EXTRACTION_CANCELED,
-                        NTYPE_MOONS_AUTOMATIC_FRACTURE,
-                        NTYPE_MOONS_EXTRACTION_FINISHED,
-                        NTYPE_MOONS_EXTRACTION_STARTED,
-                        NTYPE_MOONS_LASER_FIRED,
+                        NotificationType.MOONS_EXTRACTION_CANCELED,
+                        NotificationType.MOONS_AUTOMATIC_FRACTURE,
+                        NotificationType.MOONS_EXTRACTION_FINISHED,
+                        NotificationType.MOONS_EXTRACTION_STARTED,
+                        NotificationType.MOONS_LASER_FIRED,
                     ]
                 )
             ]
@@ -1485,11 +1475,11 @@ class TestSendNewNotifications(NoSocketsTestCase):
                 str(x)
                 for x in sorted(
                     [
-                        NTYPE_MOONS_EXTRACTION_CANCELED,
-                        NTYPE_STRUCTURE_DESTROYED,
-                        NTYPE_STRUCTURE_LOST_ARMOR,
-                        NTYPE_STRUCTURE_LOST_SHIELD,
-                        NTYPE_STRUCTURE_UNDER_ATTACK,
+                        NotificationType.MOONS_EXTRACTION_CANCELED,
+                        NotificationType.STRUCTURE_DESTROYED,
+                        NotificationType.STRUCTURE_LOST_ARMOR,
+                        NotificationType.STRUCTURE_LOST_SHIELD,
+                        NotificationType.STRUCTURE_UNDER_ATTACK,
                     ]
                 )
             ]
@@ -1505,11 +1495,11 @@ class TestSendNewNotifications(NoSocketsTestCase):
                 str(x)
                 for x in sorted(
                     [
-                        NTYPE_MOONS_EXTRACTION_CANCELED,
-                        NTYPE_MOONS_AUTOMATIC_FRACTURE,
-                        NTYPE_MOONS_EXTRACTION_FINISHED,
-                        NTYPE_MOONS_EXTRACTION_STARTED,
-                        NTYPE_MOONS_LASER_FIRED,
+                        NotificationType.MOONS_EXTRACTION_CANCELED,
+                        NotificationType.MOONS_AUTOMATIC_FRACTURE,
+                        NotificationType.MOONS_EXTRACTION_FINISHED,
+                        NotificationType.MOONS_EXTRACTION_STARTED,
+                        NotificationType.MOONS_LASER_FIRED,
                     ]
                 )
             ]
