@@ -106,18 +106,6 @@ class TestNotification(NoSocketsTestCase):
         )
         self.assertEqual(repr(obj), expected)
 
-    def test_ldap_datetime_2_dt(self):
-        self.assertEqual(
-            Notification._ldap_datetime_2_dt(131924601300000000),
-            pytz.utc.localize(
-                datetime(year=2019, month=1, day=20, hour=12, minute=15, second=30)
-            ),
-        )
-
-    def test_ldap_timedelta_2_timedelta(self):
-        expected = timedelta(minutes=15)
-        self.assertEqual(Notification._ldap_timedelta_2_timedelta(9000000000), expected)
-
     def test_get_parsed_text(self):
         obj = Notification.objects.get(notification_id=1000000404)
         parsed_text = obj.get_parsed_text()

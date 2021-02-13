@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Refactor notification types
+- Refactored notification types
+- Refactored notification embeds
 
 ## [1.7.0] - 2021-01-10
 

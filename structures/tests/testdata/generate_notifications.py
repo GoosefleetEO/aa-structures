@@ -56,7 +56,37 @@ except EveCorporationInfo.DoesNotExist:
     corporation = EveCorporationInfo.objects.create_corporation(CORPORATION_ID)
 
 owner = Owner.objects.get(corporation=corporation)
-structure = Structure.objects.get(id=STRUCTURE_ID)
+structure = {
+    "fuel_expires": None,
+    "name": "Test Structure Alpha",
+    "next_reinforce_apply": None,
+    "next_reinforce_hour": None,
+    "position": {"x": 55028384780.0, "y": 7310316270.0, "z": -163686684205.0},
+    "profile_id": 101853,
+    "reinforce_hour": 18,
+    "services": [
+        {
+            "name": "Clone Bay",
+            "name_de": "Clone Bay_de",
+            "name_ko": "Clone Bay_ko",
+            "state": "online",
+        },
+        {
+            "name": "Market Hub",
+            "name_de": "Market Hub_de",
+            "name_ko": "Market Hub_ko",
+            "state": "offline",
+        },
+    ],
+    "state": "shield_vulnerable",
+    "state_timer_end": None,
+    "state_timer_start": None,
+    "structure_id": 1999999999999,
+    "system_id": 30002537,
+    "type_id": 35832,
+    "unanchors_at": None,
+}
+structure, _ = Structure.objects.update_or_create_from_dict(structure, owner)
 
 with open(
     file=currentdir + "/td_notifications_2.json", mode="r", encoding="utf-8"

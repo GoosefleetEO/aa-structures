@@ -8,6 +8,11 @@ from .managers import WebhookBaseManager
 class WebhookBase(DiscordWebhookMixin, models.Model):
     """Base model for a Webhook"""
 
+    class PingType(models.TextChoices):
+        NONE = "NO", _("none")
+        HERE = "HE", _("here")
+        EVERYONE = "EV", _("everyone")
+
     TYPE_DISCORD = 1
 
     TYPE_CHOICES = [

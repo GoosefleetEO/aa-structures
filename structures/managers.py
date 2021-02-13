@@ -103,10 +103,10 @@ class EveUniverseManager(models.Manager):
 class EveSovereigntyMapManager(models.Manager):
     def update_from_esi(self):
         logger.info("Fetching sovereignty map from ESI...")
-        map = esi_fetch("Sovereignty.get_sovereignty_map", args={})
+        sov_map = esi_fetch("Sovereignty.get_sovereignty_map", args={})
         last_updated = now()
         obj_list = list()
-        for solar_system in map:
+        for solar_system in sov_map:
             obj_def = {
                 "solar_system_id": solar_system["system_id"],
                 "last_updated": last_updated,
