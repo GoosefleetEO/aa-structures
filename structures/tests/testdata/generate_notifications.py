@@ -88,18 +88,39 @@ structure = {
 }
 structure, _ = Structure.objects.update_or_create_from_dict(structure, owner)
 
-with open(
-    file=currentdir + "/td_notifications_2.json", mode="r", encoding="utf-8"
-) as f:
-    notifications_json = f.read()
+with open(file=currentdir + "/entities.json", mode="r", encoding="utf-8") as fp:
+    data = json.load(fp)
 
-notifications_json = notifications_json.replace("1000000000001", str(structure.id))
-notifications_json = notifications_json.replace("35835", str(structure.eve_type_id))
-notifications_json = notifications_json.replace("35835", str(structure.eve_type_id))
-notifications_json = notifications_json.replace(
-    "30002537", str(structure.eve_solar_system_id)
-)
-notifications = json.loads(notifications_json)
+notifications = data["Notification"]
+for notification in notifications:
+    if notification["sender_id"] == 2901:
+        notification["sender_id"] = 1000137  # DED
+    elif notification["sender_id"] == 1011:
+        notification["sender_id"] = 3019491
+    elif notification["sender_id"] == 2022:
+        notification["sender_id"] = 1000127  # Guristas
+    elif notification["sender_id"] == 3001:
+        notification["sender_id"] = 99010298
+    notification["text"] = notification["text"].replace(
+        "1000000000001", str(structure.id)
+    )
+    notification["text"] = notification["text"].replace(
+        "35835", str(structure.eve_type_id)
+    )
+    notification["text"] = notification["text"].replace(
+        "35835", str(structure.eve_type_id)
+    )
+    notification["text"] = notification["text"].replace(
+        "30002537", str(structure.eve_solar_system_id)
+    )
+    notification["text"] = notification["text"].replace("1001", "3004037")
+    notification["text"] = notification["text"].replace("1002", "3004029")
+    notification["text"] = notification["text"].replace("1011", "3019491")
+    notification["text"] = notification["text"].replace("2001", "1000127")
+    notification["text"] = notification["text"].replace(
+        "2002", "1000134"
+    )  # Blood Raiders
+    notification["text"] = notification["text"].replace("3001", "99010298")
 
 with transaction.atomic():
     timestamp_start = now() - timedelta(hours=2)

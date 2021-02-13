@@ -75,12 +75,15 @@ LANGUAGES = (
 
 
 class NotificationType(models.IntegerChoices):
+    """Definition of all supported notification types"""
+
     # moon mining
     MOONS_AUTOMATIC_FRACTURE = 401, "MoonminingAutomaticFracture"
     MOONS_EXTRACTION_CANCELED = 402, "MoonminingExtractionCancelled"
     MOONS_EXTRACTION_FINISHED = 403, "MoonminingExtractionFinished"
     MOONS_EXTRACTION_STARTED = 404, "MoonminingExtractionStarted"
     MOONS_LASER_FIRED = 405, "MoonminingLaserFired"
+
     # upwell structures
     STRUCTURE_ANCHORING = 501, "StructureAnchoring"
     STRUCTURE_DESTROYED = 502, "StructureDestroyed"
@@ -93,14 +96,18 @@ class NotificationType(models.IntegerChoices):
     STRUCTURE_UNDER_ATTACK = 509, "StructureUnderAttack"
     STRUCTURE_WENT_HIGH_POWER = 510, "StructureWentHighPower"
     STRUCTURE_WENT_LOW_POWER = 511, "StructureWentLowPower"
+
     # STRUCTURE_REINFORCE_CHANGED = 512, "StructureReinforceChange"
     OWNERSHIP_TRANSFERRED = 513, "OwnershipTransferred"
+
     # customs offices
     ORBITAL_ATTACKED = 601, "OrbitalAttacked"
     ORBITAL_REINFORCED = 602, "OrbitalReinforced"
+
     # starbases
     TOWER_ALERT_MSG = 701, "TowerAlertMsg"
     TOWER_RESOURCE_ALERT_MSG = 702, "TowerResourceAlertMsg"
+
     # sov
     SOV_ENTOSIS_CAPTURE_STARTED = 801, "EntosisCaptureStarted"
     SOV_COMMAND_NODE_EVENT_STARTED = 802, "SovCommandNodeEventStarted"

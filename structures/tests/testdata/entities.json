@@ -821,7 +821,7 @@
             "sender_id": 1011,
             "sender_type": "character",
             "timestamp": "2019-08-16T15:08:00Z",
-            "text": "applicationText: ''\ncharID: 1002\ncorpID: 2001\n"
+            "text": "applicationText: ''\ncharID: 1011\ncorpID: 2001\n"
         },
         {
             "notification_id": 1056803780,
