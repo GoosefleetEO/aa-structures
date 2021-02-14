@@ -96,7 +96,7 @@ for notification in notifications:
     if notification["sender_id"] == 2901:
         notification["sender_id"] = 1000137  # DED
     elif notification["sender_id"] == 1011:
-        notification["sender_id"] = 3019491
+        notification["sender_id"] = 3004029
     elif notification["sender_id"] == 2022:
         notification["sender_id"] = 1000127  # Guristas
     elif notification["sender_id"] == 3001:
@@ -114,8 +114,8 @@ for notification in notifications:
         "30002537", str(structure.eve_solar_system_id)
     )
     notification["text"] = notification["text"].replace("1001", "3004037")
-    notification["text"] = notification["text"].replace("1002", "3004029")
-    notification["text"] = notification["text"].replace("1011", "3019491")
+    notification["text"] = notification["text"].replace("1002", "3019491")
+    notification["text"] = notification["text"].replace("1011", "3004029")
     notification["text"] = notification["text"].replace("2001", "1000127")
     notification["text"] = notification["text"].replace(
         "2002", "1000134"

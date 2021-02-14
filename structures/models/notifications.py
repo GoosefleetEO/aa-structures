@@ -16,7 +16,7 @@ from django.conf import settings
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _, gettext
 
-from allianceauth.eveonline.evelinks import dotlan
+from allianceauth.eveonline.evelinks import dotlan, eveimageserver
 
 from esi.models import Token
 from multiselectfield import MultiSelectField
@@ -77,6 +77,10 @@ LANGUAGES = (
 class NotificationType(models.IntegerChoices):
     """Definition of all supported notification types"""
 
+    # character
+    CHAR_APP_ACCEPT_MSG = 201, "CharAppAcceptMsg"
+    CHAR_LEFT_CORP_MSG = 202, "CharLeftCorpMsg"
+
     # moon mining
     MOONS_AUTOMATIC_FRACTURE = 401, "MoonminingAutomaticFracture"
     MOONS_EXTRACTION_CANCELED = 402, "MoonminingExtractionCancelled"
@@ -116,7 +120,7 @@ class NotificationType(models.IntegerChoices):
     SOV_STRUCTURE_DESTROYED = 805, "SovStructureDestroyed"
 
     @classmethod
-    def relevant_for_timerboard(cls):
+    def relevant_for_timerboard(cls) -> list:
         return [
             cls.STRUCTURE_LOST_SHIELD,
             cls.STRUCTURE_LOST_ARMOR,
@@ -128,7 +132,7 @@ class NotificationType(models.IntegerChoices):
         ]
 
     @classmethod
-    def relevant_for_alliance_level(cls):
+    def relevant_for_alliance_level(cls) -> list:
         return [
             cls.SOV_ENTOSIS_CAPTURE_STARTED,
             cls.SOV_COMMAND_NODE_EVENT_STARTED,
@@ -136,6 +140,13 @@ class NotificationType(models.IntegerChoices):
             cls.SOV_STRUCTURE_REINFORCED,
             cls.SOV_STRUCTURE_DESTROYED,
         ]
+
+    @classmethod
+    def enabled_by_default(cls) -> list:
+        return list(
+            set(NotificationType.values)
+            - {cls.CHAR_APP_ACCEPT_MSG, cls.CHAR_LEFT_CORP_MSG}
+        )
 
 
 def get_default_notification_types():
@@ -148,7 +159,7 @@ class Webhook(WebhookBase):
 
     notification_types = MultiSelectField(
         choices=NotificationType.choices,
-        default=NotificationType.values,
+        default=NotificationType.enabled_by_default(),
         help_text=("only notifications which selected types are sent to this webhook"),
     )
     language_code = models.CharField(
@@ -221,6 +232,19 @@ class EveEntity(models.Model):
         else:
             url = ""
         return url
+
+    def icon_url(self, size: int = 32) -> str:
+        if self.category == self.CATEGORY_ALLIANCE:
+            return eveimageserver.alliance_logo_url(self.id, size)
+        elif (
+            self.category == self.CATEGORY_CORPORATION
+            or self.category == self.CATEGORY_FACTION
+        ):
+            return eveimageserver.corporation_logo_url(self.id, size)
+        elif self.category == self.CATEGORY_CHARACTER:
+            return eveimageserver.character_portrait_url(self.id, size)
+        else:
+            raise NotImplementedError()
 
     @classmethod
     def get_matching_entity_category(cls, type_name) -> int:
@@ -447,11 +471,11 @@ class Notification(models.Model):
         self, language_code: str
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
         """generates a Discord embed for this notification"""
-        from ..core.notification_embeds import NotificationEmbed
+        from ..core.notification_embeds import NotificationBaseEmbed
 
         logger.info("Creating embed with language = %s" % language_code)
         with translation.override(language_code):
-            notification_embed = NotificationEmbed.create(self)
+            notification_embed = NotificationBaseEmbed.create(self)
             return notification_embed.generate_embed(), notification_embed.ping_type
 
     @classmethod

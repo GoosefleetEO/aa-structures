@@ -1339,7 +1339,10 @@ class TestSendNewNotifications(NoSocketsTestCase):
         load_notification_entities(cls.owner)
 
         my_webhook = Webhook.objects.create(
-            name="Dummy", url="dummy-url", is_active=True
+            name="Dummy",
+            url="dummy-url",
+            is_active=True,
+            notification_types=NotificationType.values,
         )
         cls.owner.webhooks.add(my_webhook)
 

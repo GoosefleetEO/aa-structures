@@ -30,7 +30,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
         # when
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         # then
         self.assertIsInstance(
             notification_embed, ne.NotificationMoonminningExtractionFinished
@@ -46,7 +46,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_generate_embed_from_notification(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -59,7 +59,7 @@ class TestNotificationEmbeds(TestCase):
             "owner", "sender"
         ).all():
             # given
-            notification_embed = ne.NotificationEmbed.create(notification)
+            notification_embed = ne.NotificationBaseEmbed.create(notification)
             # when
             discord_embed = notification_embed.generate_embed()
             # then
@@ -69,24 +69,24 @@ class TestNotificationEmbeds(TestCase):
 
     def test_should_require_notification_for_init(self):
         with self.assertRaises(TypeError):
-            ne.NotificationEmbed(notification="dummy")
+            ne.NotificationBaseEmbed(notification="dummy")
 
     def test_should_require_notification_for_factory(self):
         with self.assertRaises(TypeError):
-            ne.NotificationEmbed.create(notification="dummy")
+            ne.NotificationBaseEmbed.create(notification="dummy")
 
     def test_should_not_allow_generating_embed_for_base_class(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationEmbed(notification=notification)
+        notification_embed = ne.NotificationBaseEmbed(notification=notification)
         # when
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             notification_embed.generate_embed()
 
     def test_should_set_ping_everyone_for_color_danger(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         notification_embed._color = notification_embed.COLOR_DANGER
         # when
         notification_embed.generate_embed()
@@ -96,7 +96,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_set_ping_everyone_for_color_warning(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         notification_embed._color = notification_embed.COLOR_WARNING
         # when
         notification_embed.generate_embed()
@@ -106,7 +106,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_not_set_ping_everyone_for_color_info(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         notification_embed._color = notification_embed.COLOR_INFO
         # when
         notification_embed.generate_embed()
@@ -116,7 +116,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_not_set_ping_everyone_for_color_success(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         notification_embed._color = notification_embed.COLOR_SUCCESS
         # when
         notification_embed.generate_embed()
@@ -127,7 +127,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_set_footer_in_developer_mode(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationEmbed.create(notification)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then

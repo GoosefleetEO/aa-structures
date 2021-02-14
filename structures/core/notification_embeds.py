@@ -3,7 +3,7 @@ import datetime as dt
 import dhooks_lite
 from django.utils.translation import gettext
 
-from allianceauth.eveonline.evelinks import dotlan
+from allianceauth.eveonline.evelinks import dotlan, evewho
 
 from ..app_settings import (
     STRUCTURES_DEVELOPER_MODE,
@@ -16,8 +16,12 @@ from ..models.structures import Structure
 from ..utils import DATETIME_FORMAT
 
 
-class NotificationEmbed:
-    """Base class for all notification embeds"""
+class NotificationBaseEmbed:
+    """Base class for all notification embeds
+
+    You must subclass this class to create an embed for a notification type.
+    At least title and description must be defined in the subclass.
+    """
 
     # embed colors
     COLOR_INFO = 0x5BC0DE
@@ -25,13 +29,15 @@ class NotificationEmbed:
     COLOR_WARNING = 0xF0AD4E
     COLOR_DANGER = 0xD9534F
 
+    ICON_DEFAULT_SIZE = 64
+
     def __init__(self, notification: Notification) -> None:
         if not isinstance(notification, Notification):
             raise TypeError("notification must be of type Notification")
         self._notification = notification
         self._parsed_text = notification.get_parsed_text()
-        self._title = "[UNDEFINED]"
-        self._description = "[UNDEFINED]"
+        self._title = None
+        self._description = None
         self._color = None
         self._thumbnail = None
         self._ping_type = None
@@ -52,8 +58,10 @@ class NotificationEmbed:
 
     def generate_embed(self) -> dhooks_lite.Embed:
         """returns generated Discord embed for this object"""
-        if type(self) is NotificationEmbed:
-            raise RuntimeError("Method must not be called for base class")
+        if self._title is None:
+            raise ValueError(f"title not defined for {type(self)}")
+        if self._description is None:
+            raise ValueError(f"description not defined for {type(self)}")
         if self._color == self.COLOR_DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == self.COLOR_WARNING:
@@ -73,13 +81,20 @@ class NotificationEmbed:
         )
 
     @staticmethod
-    def create(notification: Notification) -> "NotificationEmbed":
+    def create(notification: Notification) -> "NotificationBaseEmbed":
         """creates a new instance of the respective subclass for given Notification"""
         if not isinstance(notification, Notification):
             raise TypeError("notification must be of type Notification")
         notification_type = notification.notification_type
+
+        # character
+        if notification_type == NotificationType.CHAR_APP_ACCEPT_MSG:
+            return NotificationCharAppAcceptMsg(notification)
+        elif notification_type == NotificationType.CHAR_LEFT_CORP_MSG:
+            return NotificationCharLeftCorpMsg(notification)
+
         # moonmining
-        if notification_type == NotificationType.MOONS_EXTRACTION_STARTED:
+        elif notification_type == NotificationType.MOONS_EXTRACTION_STARTED:
             return NotificationMoonminningExtractionStarted(notification)
         elif notification_type == NotificationType.MOONS_EXTRACTION_FINISHED:
             return NotificationMoonminningExtractionFinished(notification)
@@ -142,7 +157,7 @@ class NotificationEmbed:
 
         # NOT IMPLEMENTED
         else:
-            raise NotImplementedError(f"type: {notification_type}")
+            raise NotImplementedError(repr(notification_type))
 
     @staticmethod
     def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
@@ -157,6 +172,10 @@ class NotificationEmbed:
     @staticmethod
     def _gen_alliance_link(alliance_name: str) -> str:
         return Webhook.create_link(alliance_name, dotlan.alliance_url(alliance_name))
+
+    @staticmethod
+    def _gen_character_link(character: EveEntity) -> str:
+        return Webhook.create_link(character.name, evewho.character_url(character.id))
 
     @staticmethod
     def _gen_corporation_link(corporation_name: str) -> str:
@@ -191,7 +210,7 @@ class NotificationEmbed:
         return Webhook.create_link(entity.name, entity.profile_url())
 
 
-class NotificationStructureEmbed(NotificationEmbed):
+class NotificationStructureEmbed(NotificationBaseEmbed):
     """Base class for most structure related notification embeds"""
 
     def __init__(self, notification: Notification) -> None:
@@ -330,7 +349,7 @@ class NotificationStructureDestroyed(NotificationStructureEmbed):
         self._color = self.COLOR_DANGER
 
 
-class NotificationStructureOwnershipTransferred(NotificationEmbed):
+class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         structure_type, _ = EveType.objects.get_or_create_esi(
@@ -366,7 +385,7 @@ class NotificationStructureOwnershipTransferred(NotificationEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
 
 
-class NotificationStructureAnchoring(NotificationEmbed):
+class NotificationStructureAnchoring(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         structure_type, _ = EveType.objects.get_or_create_esi(
@@ -397,7 +416,7 @@ class NotificationStructureAnchoring(NotificationEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
 
 
-class NotificationMoonminingEmbed(NotificationEmbed):
+class NotificationMoonminingEmbed(NotificationBaseEmbed):
     """Base class for all moon mining related notification embeds"""
 
     def __init__(self, notification: Notification) -> None:
@@ -561,7 +580,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
         self._color = self.COLOR_SUCCESS
 
 
-class NotificationOrbitalEmbed(NotificationEmbed):
+class NotificationOrbitalEmbed(NotificationBaseEmbed):
     """Base class for all orbital (aka POCO) related notification embeds"""
 
     def __init__(self, notification: Notification) -> None:
@@ -620,7 +639,7 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
         self._color = self.COLOR_DANGER
 
 
-class NotificationTowerEmbed(NotificationEmbed):
+class NotificationTowerEmbed(NotificationBaseEmbed):
     """Base class for all tower (aka POS) related notification embeds"""
 
     def __init__(self, notification: Notification) -> None:
@@ -697,7 +716,7 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
         self._color = self.COLOR_WARNING
 
 
-class NotificationSovEmbed(NotificationEmbed):
+class NotificationSovEmbed(NotificationBaseEmbed):
     """Base class for all sovereignty related notification embeds"""
 
     def __init__(self, notification: Notification) -> None:
@@ -832,3 +851,53 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
             "owner": self._sov_owner_link,
         }
         self._color = self.COLOR_DANGER
+
+
+class NotificationCharEmbed(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._character, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["charID"]
+        )
+        self._corporation, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["corpID"]
+        )
+        self._character_link = self._gen_character_link(self._character)
+        self._corporation_link = self._gen_corporation_link(self._corporation.name)
+        self._thumbnail = dhooks_lite.Thumbnail(
+            self._character.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
+
+
+class NotificationCharAppAcceptMsg(NotificationCharEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "%(character_name)s joins %(corporation_name)s" % {
+            "character_name": self._character.name,
+            "corporation_name": self._corporation.name,
+        }
+        self._description = (
+            "%(character_name)s is now a member of %(corporation_name)s."
+            % {
+                "character_name": self._character_link,
+                "corporation_name": self._corporation_link,
+            }
+        )
+        self._color = self.COLOR_SUCCESS
+
+
+class NotificationCharLeftCorpMsg(NotificationCharEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "%(character_name)s has left %(corporation_name)s" % {
+            "character_name": self._character.name,
+            "corporation_name": self._corporation.name,
+        }
+        self._description = (
+            "%(character_name)s is no longer a member of %(corporation_name)s."
+            % {
+                "character_name": self._character_link,
+                "corporation_name": self._corporation_link,
+            }
+        )
+        self._color = self.COLOR_INFO

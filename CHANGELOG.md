@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Added
+
+- Notification for characters joined and leaving a corporation
+
 ### Changed
 
 - Refactored notification types
