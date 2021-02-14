@@ -9,7 +9,7 @@ from allianceauth.services.tasks import QueueOnce
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
-from .utils import LoggerAddTag
+from app_utils.logging import LoggerAddTag
 from .models import EveSovereigntyMap, Notification, Owner, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)

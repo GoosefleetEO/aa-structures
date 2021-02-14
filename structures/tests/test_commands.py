@@ -3,6 +3,8 @@ from io import StringIO
 
 from django.core.management import call_command
 
+from app_utils.testing import NoSocketsTestCase
+
 from ..models import (
     EveCategory,
     EveGroup,
@@ -27,7 +29,6 @@ from .testdata import (
     load_notification_entities,
     set_owner_character,
 )
-from ..utils import NoSocketsTestCase
 
 PACKAGE_PATH = "structures.management.commands"
 

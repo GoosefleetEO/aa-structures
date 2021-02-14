@@ -8,7 +8,7 @@ from django.test import TestCase
 from allianceauth.eveonline.models import EveCorporationInfo
 from structures.models.notifications import Notification
 
-from ..utils import set_test_logger, NoSocketsTestCase, generate_invalid_pk
+from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 from .. import tasks
 from ..models import Owner, Webhook
 from .testdata import (
@@ -20,7 +20,7 @@ from .testdata import (
 
 MODULE_PATH = "structures.tasks"
 MODULE_PATH_MODELS_OWNERS = "structures.models.owners"
-logger = set_test_logger(MODULE_PATH, __file__)
+
 app = Celery("myauth")
 
 

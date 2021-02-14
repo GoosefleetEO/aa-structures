@@ -56,7 +56,8 @@ from ..testdata import (
     create_user,
     esi_data,
 )
-from ...utils import app_labels, set_test_logger, NoSocketsTestCase
+from app_utils.django import app_labels
+from app_utils.testing import NoSocketsTestCase
 
 if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer
@@ -68,7 +69,6 @@ else:
 
 
 MODULE_PATH = "structures.models.owners"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestOwner(NoSocketsTestCase):

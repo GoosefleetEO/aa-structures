@@ -25,11 +25,10 @@ from ..models import (
     StructureTag,
 )
 from .testdata import load_entity, load_entities, create_structures, esi_mock_client
-from ..utils import NoSocketsTestCase, set_test_logger
+from app_utils.testing import NoSocketsTestCase
 
 MODULE_PATH = "structures.managers"
 MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestEveCategoryManager(NoSocketsTestCase):

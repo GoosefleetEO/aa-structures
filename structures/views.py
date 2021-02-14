@@ -15,6 +15,17 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.services.hooks import get_extension_logger
 
+from app_utils.allianceauth import notify_admins
+from app_utils.datetime import DATETIME_FORMAT, timeuntil_str
+from app_utils.logging import LoggerAddTag
+from app_utils.messages import messages_plus
+from app_utils.views import (
+    format_html_lazy,
+    no_wrap_html,
+    yesno_str,
+    bootstrap_label_html,
+)
+
 from esi.decorators import token_required
 
 from . import tasks, __title__
@@ -27,17 +38,6 @@ from .app_settings import (
 )
 from .forms import TagsFilterForm
 from .models import Owner, Structure, StructureTag, StructureService, Webhook
-from .utils import (
-    format_html_lazy,
-    messages_plus,
-    DATETIME_FORMAT,
-    notify_admins,
-    LoggerAddTag,
-    timeuntil_str,
-    add_no_wrap_html,
-    yesno_str,
-    add_bs_label_html,
-)
 
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -162,8 +162,8 @@ class StructuresRowBuilder:
         self._row["location"] = format_html(
             '<a href="{}">{}</a><br><em>{}</em>',
             solar_system_url,
-            add_no_wrap_html(location_name),
-            add_no_wrap_html(self._row["region_name"]),
+            no_wrap_html(location_name),
+            no_wrap_html(self._row["region_name"]),
         )
 
     def _build_type(self):
@@ -191,8 +191,8 @@ class StructuresRowBuilder:
         self._row["type_name"] = structure_type.name_localized
         self._row["type"] = format_html(
             "{}<br><em>{}</em>",
-            add_no_wrap_html(self._row["type_name"]),
-            add_no_wrap_html(self._row["group_name"]),
+            no_wrap_html(self._row["type_name"]),
+            no_wrap_html(self._row["group_name"]),
         )
 
         # poco
@@ -214,7 +214,7 @@ class StructuresRowBuilder:
             services = list()
             services_qs = self._structure.structureservice_set.all().order_by("name")
             for service in services_qs:
-                service_name = add_no_wrap_html(
+                service_name = no_wrap_html(
                     format_html("<small>{}</small>", service.name_localized)
                 )
                 if service.state == StructureService.STATE_OFFLINE:
@@ -244,17 +244,21 @@ class StructuresRowBuilder:
             fuel_expires_timestamp = None
         elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
-                add_bs_label_html(self._structure.get_power_mode_display(), "warning")
+                bootstrap_label_html(
+                    self._structure.get_power_mode_display(), "warning"
+                )
             )
             fuel_expires_timestamp = None
         elif self._structure.is_abandoned:
             fuel_expires_display = format_html_lazy(
-                add_bs_label_html(self._structure.get_power_mode_display(), "danger")
+                bootstrap_label_html(self._structure.get_power_mode_display(), "danger")
             )
             fuel_expires_timestamp = None
         elif self._structure.is_maybe_abandoned:
             fuel_expires_display = format_html_lazy(
-                add_bs_label_html(self._structure.get_power_mode_display(), "warning")
+                bootstrap_label_html(
+                    self._structure.get_power_mode_display(), "warning"
+                )
             )
             fuel_expires_timestamp = None
         elif self._structure.fuel_expires_at:
@@ -279,7 +283,7 @@ class StructuresRowBuilder:
             fuel_expires_timestamp = None
 
         self._row["fuel_expires_at"] = {
-            "display": add_no_wrap_html(fuel_expires_display),
+            "display": no_wrap_html(fuel_expires_display),
             "timestamp": fuel_expires_timestamp,
         }
 
@@ -290,17 +294,21 @@ class StructuresRowBuilder:
             last_online_at_timestamp = None
         elif self._structure.is_full_power:
             last_online_at_display = format_html_lazy(
-                add_bs_label_html(self._structure.get_power_mode_display(), "success")
+                bootstrap_label_html(
+                    self._structure.get_power_mode_display(), "success"
+                )
             )
             last_online_at_timestamp = None
         elif self._structure.is_maybe_abandoned:
             last_online_at_display = format_html_lazy(
-                add_bs_label_html(self._structure.get_power_mode_display(), "warning")
+                bootstrap_label_html(
+                    self._structure.get_power_mode_display(), "warning"
+                )
             )
             last_online_at_timestamp = None
         elif self._structure.is_abandoned:
             last_online_at_display = format_html_lazy(
-                add_bs_label_html(self._structure.get_power_mode_display(), "danger")
+                bootstrap_label_html(self._structure.get_power_mode_display(), "danger")
             )
             last_online_at_timestamp = None
         elif self._structure.last_online_at:
@@ -323,7 +331,7 @@ class StructuresRowBuilder:
             last_online_at_timestamp = None
 
         self._row["last_online_at"] = {
-            "display": add_no_wrap_html(last_online_at_display),
+            "display": no_wrap_html(last_online_at_display),
             "timestamp": last_online_at_timestamp,
         }
 
@@ -336,9 +344,7 @@ class StructuresRowBuilder:
         if self._structure.state_timer_end:
             self._row["state_details"] += format_html(
                 "<br>{}",
-                add_no_wrap_html(
-                    self._structure.state_timer_end.strftime(DATETIME_FORMAT)
-                ),
+                no_wrap_html(self._structure.state_timer_end.strftime(DATETIME_FORMAT)),
             )
 
         if (
@@ -347,9 +353,7 @@ class StructuresRowBuilder:
         ):
             self._row["state_details"] += format_html(
                 "<br>Unanchoring until {}",
-                add_no_wrap_html(
-                    self._structure.unanchors_at.strftime(DATETIME_FORMAT)
-                ),
+                no_wrap_html(self._structure.unanchors_at.strftime(DATETIME_FORMAT)),
             )
 
 

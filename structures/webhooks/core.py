@@ -10,8 +10,10 @@ from django.core.cache import cache
 
 from allianceauth.services.hooks import get_extension_logger
 
+from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
+from app_utils.logging import LoggerAddTag
+
 from .. import __title__
-from ..utils import LoggerAddTag, JSONDateTimeDecoder, JSONDateTimeEncoder
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 

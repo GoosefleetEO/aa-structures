@@ -11,7 +11,7 @@ from esi.models import Token
 
 from . import __title__
 from .helpers.esi_fetch import esi_fetch_with_localization, esi_fetch
-from .utils import LoggerAddTag, make_logger_prefix
+from app_utils.logging import LoggerAddTag, make_logger_prefix
 
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)

@@ -6,7 +6,6 @@ from django.contrib.admin.sites import AdminSite
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from ..utils import set_test_logger
 from ..admin import (
     NotificationAdmin,
     OwnerAdmin,
@@ -27,7 +26,6 @@ from .testdata import (
 
 
 MODULE_PATH = "structures.admin"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class MockRequest(object):

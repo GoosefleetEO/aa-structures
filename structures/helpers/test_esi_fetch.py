@@ -13,11 +13,11 @@ from structures.tests.testdata import (
     esi_mock_client,
     esi_get_corporations_corporation_id_structures,
 )
-from structures.utils import NoSocketsTestCase, set_test_logger, make_logger_prefix
+from app_utils.logging import make_logger_prefix
+from app_utils.testing import NoSocketsTestCase
 
 
 MODULE_PATH = __package__ + ".esi_fetch"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestEsiFetch(NoSocketsTestCase):

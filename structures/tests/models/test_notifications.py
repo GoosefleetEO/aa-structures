@@ -17,10 +17,10 @@ from ..testdata import (
     create_structures,
     set_owner_character,
 )
-from ...utils import set_test_logger, NoSocketsTestCase, app_labels
+from app_utils.django import app_labels
+from app_utils.testing import NoSocketsTestCase
 
 MODULE_PATH = "structures.models.notifications"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 if "structuretimers" in app_labels():
@@ -207,7 +207,6 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         self.assertFalse(obj.is_sent)
 
     def test_send_to_webhook_all_notification_types(self, mock_send_message):
-        logger.debug("test_send_to_webhook_normal")
         mock_send_message.return_value = True
 
         types_tested = set()

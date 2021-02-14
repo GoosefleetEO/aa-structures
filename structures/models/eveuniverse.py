@@ -12,7 +12,7 @@ from allianceauth.services.hooks import get_extension_logger
 
 from .. import __title__
 from ..managers import EveUniverseManager, EveSovereigntyMapManager
-from ..utils import LoggerAddTag
+from app_utils.logging import LoggerAddTag
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 

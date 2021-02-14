@@ -3,10 +3,9 @@ from django.utils.timezone import now
 
 from ...models import StructureTag, StructureService, Structure
 from ..testdata import create_structures, set_owner_character
-from ...utils import set_test_logger, NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase
 
 MODULE_PATH = "structures.models.structures"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestStructureTag(NoSocketsTestCase):

@@ -6,16 +6,20 @@ from django.utils.translation import gettext
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
 
+from app_utils.datetime import (
+    DATETIME_FORMAT,
+    ldap_time_2_datetime,
+    ldap_timedelta_2_timedelta,
+)
+from app_utils.urls import static_file_absolute_url, reverse_absolute
+
 from ..app_settings import (
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
 )
-from ..helpers.eveonline import ldap_datetime_2_dt, ldap_timedelta_2_timedelta
-from ..helpers.urls import static_file_absolute_url, reverse_absolute
 from ..models.eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
-from ..utils import DATETIME_FORMAT
 
 
 class NotificationBaseEmbed:
@@ -479,8 +483,8 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
         started_by, _ = EveEntity.objects.get_or_create_esi(
             self._parsed_text["startedBy"]
         )
-        ready_time = ldap_datetime_2_dt(self._parsed_text["readyTime"])
-        auto_time = ldap_datetime_2_dt(self._parsed_text["autoTime"])
+        ready_time = ldap_time_2_datetime(self._parsed_text["readyTime"])
+        auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
         self._title = gettext("Moon mining extraction started")
         self._description = gettext(
             "A moon mining extraction has been started "
@@ -510,7 +514,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
 class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        auto_time = ldap_datetime_2_dt(self._parsed_text["autoTime"])
+        auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
         self._title = gettext("Extraction finished")
         self._description = gettext(
             "The extraction for %(structure_name)s at %(moon)s "
@@ -645,7 +649,9 @@ class NotificationOrbitalAttacked(NotificationOrbitalEmbed):
 class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        reinforce_exit_time = ldap_datetime_2_dt(self._parsed_text["reinforceExitTime"])
+        reinforce_exit_time = ldap_time_2_datetime(
+            self._parsed_text["reinforceExitTime"]
+        )
         self._title = gettext("Orbital reinforced")
         self._description = gettext(
             "The %(structure_type)s at %(planet)s in %(solar_system)s "
@@ -839,7 +845,7 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
 class NotificationSovStructureReinforced(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        timer_starts = ldap_datetime_2_dt(self._parsed_text["decloakTime"])
+        timer_starts = ldap_time_2_datetime(self._parsed_text["decloakTime"])
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
         ) % {

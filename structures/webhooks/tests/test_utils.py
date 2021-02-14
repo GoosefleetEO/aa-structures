@@ -3,7 +3,7 @@ import json
 from django.test import TestCase
 from django.utils.timezone import now
 
-from ..utils import JSONDateTimeDecoder, JSONDateTimeEncoder
+from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 
 
 class TestJsonSerializer(TestCase):

@@ -20,7 +20,7 @@ from esi.models import Token
 
 from .. import __title__
 from ..app_settings import STRUCTURES_ESI_TIMEOUT_ENABLED
-from ..utils import LoggerAddTag
+from app_utils.logging import LoggerAddTag
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)

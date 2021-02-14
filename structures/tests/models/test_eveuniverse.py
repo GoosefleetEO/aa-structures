@@ -15,10 +15,10 @@ from ...models import (
 )
 from ...models.eveuniverse import EveUniverse
 from ..testdata import load_entities
-from ...utils import set_test_logger, NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase
+
 
 MODULE_PATH = "structures.models.eveuniverse"
-logger = set_test_logger(MODULE_PATH, __file__)
 
 
 class TestEveUniverse(NoSocketsTestCase):

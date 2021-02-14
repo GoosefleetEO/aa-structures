@@ -11,12 +11,14 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 
+from app_utils.logging import LoggerAddTag
+from app_utils.views import bootstrap_label_html
+
 from .. import __title__
 from .eveuniverse import EsiNameLocalization
 from .eveuniverse import EveSolarSystem
 from ..managers import StructureManager
 from ..managers import StructureTagManager
-from ..utils import LoggerAddTag, add_bs_label_html
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
@@ -111,7 +113,7 @@ class StructureTag(models.Model):
             name = escape(self.name)
         else:
             name = _(self.name)
-        return add_bs_label_html(name, self.style)
+        return bootstrap_label_html(name, self.style)
 
     @classmethod
     def sorted(cls, tags: list, reverse: bool = False) -> list:

@@ -16,10 +16,18 @@ from django.conf import settings
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _, gettext
 
-from allianceauth.eveonline.evelinks import dotlan, eveimageserver
-
+from app_utils.django import app_labels
+from app_utils.datetime import (
+    DATETIME_FORMAT,
+    ldap_time_2_datetime,
+    ldap_timedelta_2_timedelta,
+)
+from app_utils.logging import LoggerAddTag, make_logger_prefix
+from app_utils.urls import static_file_absolute_url
 from esi.models import Token
 from multiselectfield import MultiSelectField
+
+from allianceauth.eveonline.evelinks import dotlan, eveimageserver
 
 from .eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
 
@@ -31,16 +39,8 @@ from ..app_settings import (
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from ..helpers.eveonline import ldap_datetime_2_dt, ldap_timedelta_2_timedelta
-from ..helpers.urls import static_file_absolute_url
 from ..managers import EveEntityManager
 from .structures import Structure
-from ..utils import (
-    app_labels,
-    LoggerAddTag,
-    DATETIME_FORMAT,
-    make_logger_prefix,
-)
 from ..webhooks.models import WebhookBase
 
 
@@ -668,7 +668,7 @@ class Notification(models.Model):
         else:
             structure_type_name = "Other"
 
-        eve_time = ldap_datetime_2_dt(parsed_text["decloakTime"])
+        eve_time = ldap_time_2_datetime(parsed_text["decloakTime"])
         timer_added = False
         if has_auth_timers:
             AuthTimer.objects.create(
@@ -717,7 +717,7 @@ class Notification(models.Model):
             parsed_text["solarSystemID"]
         )
         planet, _ = EvePlanet.objects.get_or_create_esi(parsed_text["planetID"])
-        eve_time = ldap_datetime_2_dt(parsed_text["reinforceExitTime"])
+        eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
         timer_added = False
         if has_auth_timers:
             AuthTimer.objects.create(
@@ -769,7 +769,7 @@ class Notification(models.Model):
         )
         moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
         if "readyTime" in parsed_text:
-            eve_time = ldap_datetime_2_dt(parsed_text["readyTime"])
+            eve_time = ldap_time_2_datetime(parsed_text["readyTime"])
         else:
             eve_time = None
         details = gettext("Extraction ready")
@@ -850,7 +850,7 @@ class Notification(models.Model):
                 parsed_text_2 = notification.get_parsed_text()
                 my_structure_type_id = parsed_text_2["structureTypeID"]
                 if my_structure_type_id == parsed_text["structureTypeID"]:
-                    eve_time = ldap_datetime_2_dt(parsed_text_2["readyTime"])
+                    eve_time = ldap_time_2_datetime(parsed_text_2["readyTime"])
                     if has_auth_timers:
                         timer_query = AuthTimer.objects.filter(
                             system=system,

@@ -42,7 +42,10 @@ from structures.helpers.esi_fetch import esi_fetch_with_localization
 from .structures import Structure
 from .notifications import EveEntity, Notification
 
-from ..utils import LoggerAddTag, make_logger_prefix, chunks, DATETIME_FORMAT
+from app_utils.datetime import DATETIME_FORMAT
+from app_utils.helpers import chunks
+from app_utils.logging import LoggerAddTag, make_logger_prefix
+
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 
