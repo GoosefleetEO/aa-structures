@@ -3,8 +3,10 @@ import urllib
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
-from django.shortcuts import render, redirect, reverse
-from django.utils.html import format_html, mark_safe, escape
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.utils.html import format_html, escape
+from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 

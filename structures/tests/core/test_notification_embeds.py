@@ -51,7 +51,7 @@ class TestNotificationEmbeds(TestCase):
         discord_embed = notification_embed.generate_embed()
         # then
         self.assertIsInstance(discord_embed, dhooks_lite.Embed)
-        self.assertFalse(discord_embed.footer)
+        self.assertTrue(discord_embed.footer)
 
     def test_should_generate_embed_for_all_notification_types(self):
         types_tested = set()

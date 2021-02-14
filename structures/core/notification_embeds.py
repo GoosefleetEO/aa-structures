@@ -1,6 +1,7 @@
 import datetime as dt
 
 import dhooks_lite
+
 from django.utils.translation import gettext
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
@@ -10,6 +11,7 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
 )
 from ..helpers.eveonline import ldap_datetime_2_dt, ldap_timedelta_2_timedelta
+from ..helpers.urls import static_file_absolute_url, reverse_absolute
 from ..models.eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
@@ -62,22 +64,34 @@ class NotificationBaseEmbed:
             raise ValueError(f"title not defined for {type(self)}")
         if self._description is None:
             raise ValueError(f"description not defined for {type(self)}")
+        corporation = self.notification.owner.corporation
+        if self.notification.is_alliance_level:
+            author_name = corporation.alliance.alliance_name
+            author_url = corporation.alliance.logo_url(size=self.ICON_DEFAULT_SIZE)
+        else:
+            author_name = corporation.corporation_name
+            author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
+        app_url = reverse_absolute("structures:index")
+        author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
         if self._color == self.COLOR_DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == self.COLOR_WARNING:
             self._ping_type = Webhook.PingType.HERE
         else:
             self._ping_type = Webhook.PingType.NONE
+        footer_text = "Eve Online"
         if STRUCTURES_DEVELOPER_MODE:
-            footer = dhooks_lite.Footer(self.notification.notification_id)
-        else:
-            footer = None
+            footer_text = f"{footer_text} ID {self.notification.notification_id}"
+        footer_icon_url = static_file_absolute_url("structures/eve_symbol_128.png")
+        footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
-            title=self._title,
-            description=self._description,
+            author=author,
             color=self._color,
-            thumbnail=self._thumbnail,
+            description=self._description,
             footer=footer,
+            timestamp=self.notification.timestamp,
+            title=self._title,
+            thumbnail=self._thumbnail,
         )
 
     @staticmethod
@@ -245,7 +259,9 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             "solar_system": self._gen_solar_system_text(structure_solar_system),
             "owner_link": owner_link,
         }
-        self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
 
 class NotificationStructureOnline(NotificationStructureEmbed):
@@ -382,7 +398,9 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
         }
         self._title = gettext("Ownership transferred")
         self._color = self.COLOR_INFO
-        self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
 
 class NotificationStructureAnchoring(NotificationBaseEmbed):
@@ -413,7 +431,9 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
             )
         self._title = gettext("Structure anchoring")
         self._color = self.COLOR_INFO
-        self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
 
 class NotificationMoonminingEmbed(NotificationBaseEmbed):
@@ -431,7 +451,9 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
         structure_type, _ = EveType.objects.get_or_create_esi(
             self._parsed_text["structureTypeID"]
         )
-        self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
     def _ore_composition_text(self) -> str:
         if "oreVolumeByType" not in self._parsed_text:
@@ -597,7 +619,9 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
         self._solar_system_link = self._gen_solar_system_text(solar_system)
         self._owner_link = self._gen_corporation_link(str(notification.owner))
         self._aggressor_link = self._get_aggressor_link()
-        self._thumbnail = dhooks_lite.Thumbnail(self._structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            self._structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
 
 class NotificationOrbitalAttacked(NotificationOrbitalEmbed):
@@ -660,7 +684,9 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         else:
             self._structure_name = structure_type.name_localized
 
-        self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
 
 class NotificationTowerAlertMsg(NotificationTowerEmbed):
@@ -736,7 +762,9 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
         self._structure_type_name = structure_type.name_localized
         self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
-        self._thumbnail = dhooks_lite.Thumbnail(structure_type.icon_url())
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
 
 
 class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):

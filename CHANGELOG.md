@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.8.0] - tbd.
+
+**Notifications Update**
+
 ### Added
 
-- Notification for characters joined and leaving a corporation
+- Notification for characters joined & left a corporation
+- Direct link to open Structures Auth page from every notification message
 
 ### Changed
 
+- Messages now originate from an app name instead of the organization a notification belongs to. The organization now appears as author on messages.
 - Refactored notification types
 - Refactored notification embeds
 

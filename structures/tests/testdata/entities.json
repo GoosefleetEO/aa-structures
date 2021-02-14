@@ -476,7 +476,12 @@
         {
             "id": 2901,
             "category": 2,
-            "name": "Dummy Corp 3"
+            "name": "DED"
+        },
+        {
+            "id": 2902,
+            "category": 2,
+            "name": "CONCORD"
         },
         {
             "id": 3001,
@@ -930,6 +935,127 @@
             "timestamp": "2019-02-02 22:47:00",
             "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
             "is_read": true
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "AllyJoinedWarAggressorMsg",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-26 16:42:00",
+            "text": "aggressorID: 3001\nallyID: 99009475\ndefenderID: 98369956\nstartTime: 132192745070000000\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "CorpBecameWarEligible",
+            "sender_id": 2901,
+            "sender_type": "corporation",
+            "timestamp": "2019-08-21 21:17:00",
+            "text": "{}\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "CorpNoLongerWarEligible",
+            "sender_id": 2901,
+            "sender_type": "corporation",
+            "timestamp": "2019-07-20 03:51:00",
+            "text": "{}\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "CorpWarSurrenderMsg",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-28 17:24:00",
+            "text": "againstID: 98369956\ncost: null\ndeclaredByID: 3001\ndelayHours: null\nhostileState: null\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "DeclareWar",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-25 19:16:00",
+            "text": "charID: 94177384\ndefenderID: 98369956\nentityID: 3001\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "MutualWarInviteSent",
+            "sender_id": 2101,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-07 20:18:00",
+            "text": "againstID: 3001\ndeclaredByID: 98619178\nexpireTimeStamp: 132202234630922771\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "WarDeclared",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-25 19:16:00",
+            "text": "againstID: 98369956\ncost: 100000000\ndeclaredByID: 3001\ndelayHours: 24\nhostileState: false\ntimeStarted: 132192693000000000\nwarHQ: <b>Faktun - Alpha<\/b>\nwarHQ_IdType:\n- 1000000000001\n- 35825\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "WarRetractedByConcord",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-24 22:21:00",
+            "text": "againstID: 99009354\ndeclaredByID: 3001\nendDate: 132191940600000000\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "WarSurrenderOfferMsg",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-18 20:00:00",
+            "text": "iskValue: 10000000.0\nownerID1: 99009354\nownerID2: 3001\nwarNegotiationID: 453736\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "WarAdopted ",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-09-11 17:17:00",
+            "text": "againstID: 98475807\nallianceID: 3001\ndeclaredByID: 113309599\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "character_id": 1001,
+            "notification_id": 1000000900,
+            "type": "WarInherited",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-09-08 16:07:00",
+            "text": "againstID: 99005338\nallianceID: 99005338\ndeclaredByID: 113309599\nopponentID: 113309599\nquitterID: 98475807\n",
+            "is_read": true,
+            "is_sent": false
         }
     ],
     "Webhook": [

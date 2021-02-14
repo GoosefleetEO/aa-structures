@@ -32,6 +32,7 @@ from ..app_settings import (
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from ..helpers.eveonline import ldap_datetime_2_dt, ldap_timedelta_2_timedelta
+from ..helpers.urls import static_file_absolute_url
 from ..managers import EveEntityManager
 from .structures import Structure
 from ..utils import (
@@ -447,14 +448,8 @@ class Notification(models.Model):
 
     def _gen_avatar(self) -> Tuple[str, str]:
         if STRUCTURES_NOTIFICATION_SET_AVATAR:
-            if self.is_alliance_level:
-                avatar_url = self.owner.corporation.alliance.logo_url()
-                ticker = self.owner.corporation.alliance.alliance_ticker
-            else:
-                avatar_url = self.owner.corporation.logo_url()
-                ticker = self.owner.corporation.corporation_ticker
-
-            username = gettext("%(ticker)s Notification") % {"ticker": ticker}
+            username = "Notifications"
+            avatar_url = static_file_absolute_url("structures/structures_logo.png")
         else:
             username = None
             avatar_url = None
