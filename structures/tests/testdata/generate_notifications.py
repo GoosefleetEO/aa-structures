@@ -95,6 +95,8 @@ notifications = data["Notification"]
 for notification in notifications:
     if notification["sender_id"] == 2901:
         notification["sender_id"] = 1000137  # DED
+    if notification["sender_id"] == 2902:
+        notification["sender_id"] = 1000125  # Concord
     elif notification["sender_id"] == 1011:
         notification["sender_id"] = 3004029
     elif notification["sender_id"] == 2022:
@@ -116,11 +118,13 @@ for notification in notifications:
     notification["text"] = notification["text"].replace("1001", "3004037")
     notification["text"] = notification["text"].replace("1002", "3019491")
     notification["text"] = notification["text"].replace("1011", "3004029")
-    notification["text"] = notification["text"].replace("2001", "1000127")
+    notification["text"] = notification["text"].replace("2001", "98394960")
     notification["text"] = notification["text"].replace(
         "2002", "1000134"
     )  # Blood Raiders
-    notification["text"] = notification["text"].replace("3001", "99010298")
+    notification["text"] = notification["text"].replace("3001", "99005502")
+    notification["text"] = notification["text"].replace("3002", "99009333")
+    notification["text"] = notification["text"].replace("3011", "1354830081")
 
 with transaction.atomic():
     timestamp_start = now() - timedelta(hours=2)

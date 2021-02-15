@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.8.0] - tbd.
+## [1.8.0] - tbd
 
 **Notifications Update**
 
 ### Added
 
+- Notification for wars
 - Notification for characters joined & left a corporation
 - Direct link to open Structures Auth page from every notification message
 

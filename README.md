@@ -38,7 +38,7 @@ Structures adds the following main features to Alliance Auth:
 - Structure browser with a detailed list of all structures owned by member corporations, automatically synced with the game server
 - Structures include all Upwell structures, Custom Offices and Starbases / POSes
 - Automatically forwards structure notifications to Discord channels as alerts
-- Notification categories include Upwell Structures, Moon Mining, Customs Offices, Starbases, Sovereignty, Character joining/leaving a corporation
+- Notification categories include Upwell Structures, Moon Mining, Customs Offices, Starbases, Sovereignty, Wars, Character joining/leaving a corporation
 - Automatically adds timers from notifications to Alliance Auth timerboard app (if installed)
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
@@ -284,6 +284,15 @@ The following Eve Online notification types are currently supported (names are f
 - SovCommandNodeEventStarted
 - SovStructureReinforced
 - SovStructureDestroyed
+
+##### Wars
+
+- AllyJoinedWarAggressorMsg
+- CorpWarSurrenderMsg
+- WarAdopted
+- WarDeclared
+- WarInherited
+- WarRetractedByConcord
 
 ### Power Modes
 

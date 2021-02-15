@@ -120,6 +120,14 @@ class NotificationType(models.IntegerChoices):
     SOV_STRUCTURE_REINFORCED = 804, "SovStructureReinforced"
     SOV_STRUCTURE_DESTROYED = 805, "SovStructureDestroyed"
 
+    # wars
+    WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = 901, "AllyJoinedWarAggressorMsg"
+    WAR_CORP_WAR_SURRENDER_MSG = 902, "CorpWarSurrenderMsg"
+    WAR_WAR_ADOPTED = 903, "WarAdopted "
+    WAR_WAR_DECLARED = 904, "WarDeclared"
+    WAR_WAR_INHERITED = 905, "WarInherited"
+    WAR_WAR_RETRACTED_BY_CONCORD = 906, "WarRetractedByConcord"
+
     @classmethod
     def relevant_for_timerboard(cls) -> list:
         return [
@@ -140,13 +148,28 @@ class NotificationType(models.IntegerChoices):
             cls.SOV_ALL_CLAIM_ACQUIRED_MSG,
             cls.SOV_STRUCTURE_REINFORCED,
             cls.SOV_STRUCTURE_DESTROYED,
+            cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
+            cls.WAR_CORP_WAR_SURRENDER_MSG,
+            cls.WAR_WAR_DECLARED,
+            cls.WAR_WAR_RETRACTED_BY_CONCORD,
+            cls.WAR_WAR_ADOPTED,
+            cls.WAR_WAR_INHERITED,
         ]
 
     @classmethod
     def enabled_by_default(cls) -> list:
         return list(
             set(NotificationType.values)
-            - {cls.CHAR_APP_ACCEPT_MSG, cls.CHAR_LEFT_CORP_MSG}
+            - {
+                cls.CHAR_APP_ACCEPT_MSG,
+                cls.CHAR_LEFT_CORP_MSG,
+                cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
+                cls.WAR_CORP_WAR_SURRENDER_MSG,
+                cls.WAR_WAR_DECLARED,
+                cls.WAR_WAR_RETRACTED_BY_CONCORD,
+                cls.WAR_WAR_ADOPTED,
+                cls.WAR_WAR_INHERITED,
+            }
         )
 
 

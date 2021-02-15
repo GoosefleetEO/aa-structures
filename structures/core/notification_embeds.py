@@ -3,6 +3,7 @@ import datetime as dt
 import dhooks_lite
 
 from django.utils.translation import gettext
+from django.utils.html import strip_tags
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
 
@@ -43,7 +44,7 @@ class NotificationBaseEmbed:
         self._notification = notification
         self._parsed_text = notification.get_parsed_text()
         self._title = None
-        self._description = None
+        self._description = ""
         self._color = None
         self._thumbnail = None
         self._ping_type = None
@@ -173,6 +174,20 @@ class NotificationBaseEmbed:
         elif notification_type == NotificationType.SOV_STRUCTURE_DESTROYED:
             return NotificationSovStructureDestroyed(notification)
 
+        # Sov
+        elif notification_type == NotificationType.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG:
+            return NotificationAllyJoinedWarAggressorMsg(notification)
+        elif notification_type == NotificationType.WAR_CORP_WAR_SURRENDER_MSG:
+            return NotificationCorpWarSurrenderMsg(notification)
+        elif notification_type == NotificationType.WAR_WAR_ADOPTED:
+            return NotificationWarAdopted(notification)
+        elif notification_type == NotificationType.WAR_WAR_DECLARED:
+            return NotificationWarDeclared(notification)
+        elif notification_type == NotificationType.WAR_WAR_INHERITED:
+            return NotificationWarInherited(notification)
+        elif notification_type == NotificationType.WAR_WAR_RETRACTED_BY_CONCORD:
+            return NotificationWarRetractedByConcord(notification)
+
         # NOT IMPLEMENTED
         else:
             raise NotImplementedError(repr(notification_type))
@@ -192,24 +207,25 @@ class NotificationBaseEmbed:
         return Webhook.create_link(alliance_name, dotlan.alliance_url(alliance_name))
 
     @staticmethod
-    def _gen_character_link(character: EveEntity) -> str:
-        return Webhook.create_link(character.name, evewho.character_url(character.id))
+    def _gen_eveentity_external_url(eve_entity: EveEntity) -> str:
+        if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
+            return dotlan.alliance_url(eve_entity.name)
+        elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
+            return dotlan.corporation_url(eve_entity.name)
+        elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
+            return evewho.character_url(eve_entity.id)
+
+    @classmethod
+    def _gen_eveentity_link(cls, eve_entity: EveEntity) -> str:
+        return Webhook.create_link(
+            eve_entity.name, cls._gen_eveentity_external_url(eve_entity)
+        )
 
     @staticmethod
     def _gen_corporation_link(corporation_name: str) -> str:
         return Webhook.create_link(
             corporation_name, dotlan.corporation_url(corporation_name)
         )
-
-    def _get_attacker_link(self) -> str:
-        """returns the attacker link from a parsed_text
-        For Upwell structures only
-        """
-        if self._parsed_text.get("allianceName"):
-            return self._gen_alliance_link(self._parsed_text["allianceName"])
-        elif self._parsed_text.get("corpName"):
-            return self._gen_corporation_link(self._parsed_text["corpName"])
-        return "(unknown)"
 
     def _get_aggressor_link(self) -> str:
         """returns the aggressor link from a parsed_text
@@ -333,6 +349,16 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
             gettext("is under attack by %s") % self._get_attacker_link()
         )
         self._color = self.COLOR_DANGER
+
+    def _get_attacker_link(self) -> str:
+        """returns the attacker link from a parsed_text
+        For Upwell structures only
+        """
+        if self._parsed_text.get("allianceName"):
+            return self._gen_alliance_link(self._parsed_text["allianceName"])
+        elif self._parsed_text.get("corpName"):
+            return self._gen_corporation_link(self._parsed_text["corpName"])
+        return "(unknown)"
 
 
 class NotificationStructureLostShield(NotificationStructureEmbed):
@@ -896,7 +922,7 @@ class NotificationCharEmbed(NotificationBaseEmbed):
         self._corporation, _ = EveEntity.objects.get_or_create_esi(
             eve_entity_id=self._parsed_text["corpID"]
         )
-        self._character_link = self._gen_character_link(self._character)
+        self._character_link = self._gen_eveentity_link(self._character)
         self._corporation_link = self._gen_corporation_link(self._corporation.name)
         self._thumbnail = dhooks_lite.Thumbnail(
             self._character.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -935,3 +961,146 @@ class NotificationCharLeftCorpMsg(NotificationCharEmbed):
             }
         )
         self._color = self.COLOR_INFO
+
+
+class NotificationAllyJoinedWarAggressorMsg(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "Ally Has Joined a War"
+        aggressor, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["aggressorID"]
+        )
+        ally, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["allyID"]
+        )
+        defender, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["defenderID"]
+        )
+        start_time = ldap_time_2_datetime(self._parsed_text["startTime"])
+        self._description = (
+            "%(ally)s has joined %(defender)s in a war against %(aggressor)s. Their participation in the war will start at **%(start_time)s**."
+        ) % {
+            "aggressor": self._gen_eveentity_link(aggressor),
+            "ally": self._gen_eveentity_link(ally),
+            "defender": self._gen_eveentity_link(defender),
+            "start_time": start_time.strftime(DATETIME_FORMAT),
+        }
+        self._thumbnail = dhooks_lite.Thumbnail(
+            ally.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
+        self._color = self.COLOR_WARNING
+
+
+class NotificationWarEmbed(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._declared_by, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["declaredByID"]
+        )
+        self._against, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["againstID"]
+        )
+        self._thumbnail = dhooks_lite.Thumbnail(
+            self._declared_by.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
+
+
+class NotificationCorpWarSurrenderMsg(NotificationWarEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "One party has surrendered"
+        self._description = (
+            "The war between %(against)s and %(declared_by)s is coming to an end "
+            "as one party has surrendered. "
+            "The war will be declared as being over after approximately 24 hours."
+        ) % {
+            "declared_by": self._gen_eveentity_link(self._declared_by),
+            "against": self._gen_eveentity_link(self._against),
+        }
+        self._color = self.COLOR_WARNING
+
+
+class NotificationWarAdopted(NotificationWarEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        alliance, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["allianceID"]
+        )
+        self._title = "War update: %(against)s has left %(alliance)s" % {
+            "against": self._against.name,
+            "alliance": alliance.name,
+        }
+        self._description = (
+            "There has been a development in the war between %(declared_by)s "
+            "and %(alliance)s.\n"
+            "%(against)s is no longer a member of %(alliance)s, "
+            "and therefore a new war between %(declared_by)s and %(against)s has begun."
+        ) % {
+            "declared_by": self._gen_eveentity_link(self._declared_by),
+            "against": self._gen_eveentity_link(self._against),
+            "alliance": self._gen_eveentity_link(alliance),
+        }
+        self._color = self.COLOR_WARNING
+
+
+class NotificationWarDeclared(NotificationWarEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "%(declared_by)s Declares War Against %(against)s" % {
+            "declared_by": self._declared_by.name,
+            "against": self._against.name,
+        }
+        self._description = (
+            "%(declared_by)s has declared war on %(against)s with **%(war_hq)s** "
+            "as the designated war headquarters.\nWithin **%(delay_hours)s** hours fighting can legally occur between those involved."
+        ) % {
+            "declared_by": self._gen_eveentity_link(self._declared_by),
+            "against": self._gen_eveentity_link(self._against),
+            "war_hq": strip_tags(self._parsed_text["warHQ"]),
+            "delay_hours": self._parsed_text["delayHours"],
+        }
+        self._color = self.COLOR_DANGER
+
+
+class NotificationWarInherited(NotificationWarEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        alliance, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["allianceID"]
+        )
+        opponent, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["opponentID"]
+        )
+        quitter, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["quitterID"]
+        )
+        self._title = "%(alliance)s inherits war against %(opponent)s" % {
+            "alliance": alliance.name,
+            "opponent": opponent.name,
+        }
+        self._description = (
+            "%(alliance)s has inherited the war between %(declared_by)s and "
+            "%(against)s from newly joined %(quitter)s. Within **24** hours fighting can legally occur with %(alliance)s."
+        ) % {
+            "declared_by": self._gen_eveentity_link(self._declared_by),
+            "against": self._gen_eveentity_link(self._against),
+            "alliance": self._gen_eveentity_link(alliance),
+            "quitter": self._gen_eveentity_link(quitter),
+        }
+        self._color = self.COLOR_DANGER
+
+
+class NotificationWarRetractedByConcord(NotificationWarEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "CONCORD invalidates war"
+        war_ends = ldap_time_2_datetime(self._parsed_text["endDate"])
+        self._description = (
+            "The war between %(declared_by)s and %(against)s has been retracted by CONCORD.\n"
+            "After **%(end_date)s** CONCORD will again respond to any hostilities between those involved with full force."
+        ) % {
+            "declared_by": self._gen_eveentity_link(self._declared_by),
+            "against": self._gen_eveentity_link(self._against),
+            "end_date": war_ends.strftime(DATETIME_FORMAT),
+        }
+        self._color = self.COLOR_WARNING
