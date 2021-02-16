@@ -1047,29 +1047,11 @@
         {
             "name": "Test Webhook 1",
             "url": "https://www.example.com/webhook1",
-            "is_default": true,
-            "notification_groups": [
-                10,
-                20,
-                30,
-                40,
-                50,
-                60,
-                70
-            ]
+            "is_default": true
         },
         {
             "name": "Test Webhook 2",
-            "url": "https://www.example.com/webhook2",
-            "notification_groups": [
-                10,
-                20,
-                30,
-                40,
-                50,
-                60,
-                70
-            ]
+            "url": "https://www.example.com/webhook2"
         }
     ]
 }

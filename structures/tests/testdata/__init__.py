@@ -38,7 +38,7 @@ from ...models import (
     Webhook,
     Owner,
     Notification,
-    NotificationType,
+    NotificationGroup,
     Structure,
 )
 from ...models.eveuniverse import EveUniverse
@@ -595,7 +595,7 @@ def load_entity(EntityClass):
             for _, lc_model, lc_esi in EveUniverse.LANG_CODES_MAPPING:
                 if lc_esi != EveUniverse.ESI_DEFAULT_LANGUAGE:
                     obj["name_" + lc_model] = obj["name"] + "_" + lc_model
-        elif EntityClass == EveCharacter:
+        elif EntityClass is EveCharacter:
             EveCharacter.objects.create(**obj)
             corp_defaults = {
                 "corporation_name": obj["corporation_name"],
@@ -614,6 +614,8 @@ def load_entity(EntityClass):
                 corporation_id=obj["corporation_id"], defaults=corp_defaults
             )
             continue
+        elif EntityClass is Webhook:
+            obj["notification_groups"] = NotificationGroup.values
         EntityClass.objects.create(**obj)
     assert len(entities_testdata[entity_name]) == EntityClass.objects.count()
 

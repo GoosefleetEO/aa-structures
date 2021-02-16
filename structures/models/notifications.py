@@ -75,16 +75,16 @@ LANGUAGES = (
 )
 
 
-class NotificationGroup(models.IntegerChoices):
+class NotificationGroup(models.TextChoices):
     """Definition of all supported notification groups"""
 
-    CORPORATION_MEMBER = 10
-    MOON_MINING = 20
-    UPWELL_STRUCTURE = 30
-    CUSTOMS_OFFICE = 40
-    STARBASE = 50
-    SOVEREIGNTY = 60
-    WAR = 70
+    CORPORATION_MEMBER = "CM"
+    MOON_MINING = "MM"
+    UPWELL_STRUCTURE = "US"
+    CUSTOMS_OFFICE = "CO"
+    STARBASE = "SB"
+    SOVEREIGNTY = "SV"
+    WAR = "WR"
 
 
 class NotificationType(Enum):
@@ -183,8 +183,8 @@ class NotificationType(Enum):
         return [x.id for x in cls]
 
     @classmethod
-    def ids_for_group(cls, group) -> list:
-        return [x.id for x in cls if int(x.group) == int(group)]
+    def ids_for_group(cls, group: str) -> list:
+        return [x.id for x in cls if str(x.group) == str(group)]
 
     @classmethod
     def relevant_for_timerboard(cls) -> list:

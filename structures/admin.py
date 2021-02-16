@@ -20,6 +20,7 @@ from .models import (
     EveSovereigntyMap,
     EveType,
     Notification,
+    NotificationGroup,
     Owner,
     Structure,
     StructureTag,
@@ -693,7 +694,8 @@ class WebhookAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "webhook_type",
-        "has_default_pings_enabled",
+        "_notification_groups",
+        "_default_pings",
         "_ping_groups",
         "is_active",
         "is_default",
@@ -701,6 +703,23 @@ class WebhookAdmin(admin.ModelAdmin):
     )
     list_filter = ("webhook_type", "has_default_pings_enabled", "is_active")
     save_as = True
+
+    def _notification_groups(self, obj):
+        names = sorted(
+            [
+                NotificationGroup(group_name).label
+                for group_name in obj.notification_groups
+            ]
+        )
+        if names:
+            return names
+        else:
+            return None
+
+    def _default_pings(self, obj):
+        return obj.has_default_pings_enabled
+
+    _default_pings.boolean = True
 
     def _ping_groups(self, obj):
         names = [x.name for x in obj.ping_groups.all().order_by("name")]

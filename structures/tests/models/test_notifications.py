@@ -806,7 +806,12 @@ class TestWebhook(NoSocketsTestCase):
     def test_should_return_notification_type_ids_for_all_groups(self):
         # given
         webhook = Webhook.objects.create(
-            name="Test", url="dummy-url", notification_groups=[40, 50]
+            name="Test",
+            url="dummy-url",
+            notification_groups=[
+                NotificationGroup.CUSTOMS_OFFICE,
+                NotificationGroup.STARBASE,
+            ],
         )
         # when
         result = webhook.notification_types

@@ -179,22 +179,24 @@ class TestProcessNotificationsForOwner(TestCase):
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
-    def test_raises_exception_if_owner_is_unknown(self):
+    def test_should_raise_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
             tasks.process_notifications_for_owner(owner_pk=generate_invalid_pk(Owner))
 
     @patch(MODULE_PATH + ".send_messages_for_webhook")
     @patch(MODULE_PATH + ".Owner.fetch_notifications_esi")
-    def test_normal(
+    def test_should_send_notifications_for_owner(
         self,
         mock_fetch_notifications_esi,
         mock_send_messages_for_webhook,
     ):
+        # given
         load_notification_entities(self.owner)
         Notification.objects.exclude(notification_id=1000000509).delete()
         self.owner.webhooks.first().clear_queue()
-
+        # when
         tasks.process_notifications_for_owner(owner_pk=self.owner.pk)
+        # then
         self.assertTrue(mock_fetch_notifications_esi.called)
         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
 
