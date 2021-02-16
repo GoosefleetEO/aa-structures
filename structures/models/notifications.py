@@ -174,9 +174,9 @@ class NotificationType(Enum):
         self.id = id
         self.group = group
 
-    def __eq__(self, o: object) -> bool:
-        """Compare with id instead of tuple"""
-        return self.id == o
+    # def __eq__(self, o: object) -> bool:
+    #     """Compare with id instead of tuple"""
+    #     return self.id == o
 
     @classmethod
     def choices(self) -> List[tuple]:
@@ -451,19 +451,19 @@ class Notification(models.Model):
         """whether this notification is about a NPC attacking"""
         result = False
         if self.notif_type in [
-            NotificationType.ORBITAL_ATTACKED,
-            NotificationType.STRUCTURE_UNDER_ATTACK,
+            NotificationType.ORBITAL_ATTACKED.id,
+            NotificationType.STRUCTURE_UNDER_ATTACK.id,
         ]:
             parsed_text = self.get_parsed_text()
             corporation_id = None
-            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
+            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK.id:
                 if (
                     "corpLinkData" in parsed_text
                     and len(parsed_text["corpLinkData"]) >= 3
                 ):
                     corporation_id = int(parsed_text["corpLinkData"][2])
 
-            if self.notif_type == NotificationType.ORBITAL_ATTACKED:
+            if self.notif_type == NotificationType.ORBITAL_ATTACKED.id:
                 if "aggressorCorpID" in parsed_text:
                     corporation_id = int(parsed_text["aggressorCorpID"])
 
@@ -583,11 +583,13 @@ class Notification(models.Model):
                         timer_created = self._gen_timer_structure_reinforcement(
                             parsed_text, token
                         )
-                    elif self.notif_type == NotificationType.STRUCTURE_ANCHORING:
+                    elif self.notif_type == NotificationType.STRUCTURE_ANCHORING.id:
                         timer_created = self._gen_timer_structure_anchoring(parsed_text)
-                    elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
+                    elif (
+                        self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED.id
+                    ):
                         timer_created = self._gen_timer_sov_reinforcements(parsed_text)
-                    elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
+                    elif self.notif_type == NotificationType.ORBITAL_REINFORCED.id:
                         timer_created = self._gen_timer_orbital_reinforcements(
                             parsed_text
                         )
@@ -878,7 +880,7 @@ class Notification(models.Model):
             structure_type = None
             visibility = None
 
-        if self.notif_type == NotificationType.MOONS_EXTRACTION_STARTED:
+        if self.notif_type == NotificationType.MOONS_EXTRACTION_STARTED.id:
             if has_auth_timers:
                 AuthTimer.objects.create(
                     details=details,
@@ -920,7 +922,7 @@ class Notification(models.Model):
                 )
                 timer_added = True
 
-        elif self.notif_type == NotificationType.MOONS_EXTRACTION_CANCELED:
+        elif self.notif_type == NotificationType.MOONS_EXTRACTION_CANCELED.id:
             notifications_qs = Notification.objects.filter(
                 notif_type=NotificationType.MOONS_EXTRACTION_STARTED.id,
                 owner=self.owner,

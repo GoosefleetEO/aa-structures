@@ -779,13 +779,13 @@ if "structuretimers" in app_labels():
 class TestNotificationType(NoSocketsTestCase):
     def test_should_compare_with_id_1(self):
         # given
-        x = NotificationType.STRUCTURE_ANCHORING
+        x = NotificationType.STRUCTURE_ANCHORING.id
         # when/then
         self.assertTrue(x == "StructureAnchoring")
 
     def test_should_compare_with_id_2(self):
         # given
-        x = NotificationType.STRUCTURE_ANCHORING
+        x = NotificationType.STRUCTURE_ANCHORING.id
         # when/then
         self.assertFalse(x == "xStructureAnchoring")
 
