@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Messages now originate from an app name instead of the organization a notification belongs to. The organization now appears as author on messages.
+- Admins can now choose by notification groups instead of notification types which notifications a webhook should send (while still being able to blacklist notification types for a webhook)
 - Refactored notification types
 - Refactored notification embeds
 

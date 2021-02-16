@@ -693,15 +693,13 @@ class WebhookAdmin(admin.ModelAdmin):
     ordering = ["name"]
     list_display = (
         "name",
-        "webhook_type",
         "_notification_groups",
-        "_default_pings",
         "_ping_groups",
         "is_active",
         "is_default",
         "_messages_in_queue",
     )
-    list_filter = ("webhook_type", "has_default_pings_enabled", "is_active")
+    list_filter = ("is_active",)
     save_as = True
 
     def _notification_groups(self, obj):
@@ -750,19 +748,18 @@ class WebhookAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.is_active = True
             obj.save()
+            self.message_user(request, f'You have activated webhook "{obj}"')
 
-            self.message_user(request, 'You have activated profile "{}"'.format(obj))
-
-    activate.short_description = "Activate selected profiles"
+    activate.short_description = "Activate selected webhook"
 
     def deactivate(self, request, queryset):
         for obj in queryset:
             obj.is_active = False
             obj.save()
 
-            self.message_user(request, 'You have de-activated profile "{}"'.format(obj))
+            self.message_user(request, f'You have de-activated webhook "{obj}"')
 
-    deactivate.short_description = "Deactivate selected profiles"
+    deactivate.short_description = "Deactivate selected webhook"
 
     def purge_messages(self, request, queryset):
         actions_count = 0
@@ -780,3 +777,31 @@ class WebhookAdmin(admin.ModelAdmin):
     purge_messages.short_description = "Purge queued messages from selected webhooks"
 
     filter_horizontal = ("ping_groups",)
+
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "url",
+                    "notes",
+                    "notification_groups",
+                    "ping_groups",
+                    "is_active",
+                    "is_default",
+                )
+            },
+        ),
+        (
+            "Advanced Options",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "language_code",
+                    "has_default_pings_enabled",
+                    "disabled_notification_types",
+                ),
+            },
+        ),
+    )

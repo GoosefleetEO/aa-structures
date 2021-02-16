@@ -179,6 +179,10 @@ class NotificationType(Enum):
         return self.id == o
 
     @classmethod
+    def choices(self) -> List[tuple]:
+        return [(item.id, item.id) for item in self]
+
+    @classmethod
     def ids(cls) -> list:
         return [x.id for x in cls]
 
@@ -256,17 +260,28 @@ class Webhook(WebhookBase):
         blank=True,
         help_text="Groups to be pinged for each notification - ",
     )
-    # disabled_notification_types = MultiSelectField(
-    #     choices=NotificationType.choices,
-    #     default=None,
-    #     help_text="only notifications from selected groups are sent to this webhook"
-    # )
+    disabled_notification_types = MultiSelectField(
+        choices=NotificationType.choices(),
+        default=None,
+        blank=True,
+        help_text=(
+            "Disables sending of notifications for selected notification types "
+            "(regardless of selected notification groups)"
+        ),
+    )
 
     @property
-    def notification_type_ids(self) -> list:
-        result = list()
+    def notification_type_ids(self) -> set:
+        """returns enabled notification type IDs"""
+        disabled_types = (
+            set(self.disabled_notification_types)
+            if self.disabled_notification_types
+            else set()
+        )
+        result = set()
         for group in self.notification_groups:
-            result += NotificationType.ids_for_group(group)
+            types_from_group = set(NotificationType.ids_for_group(group))
+            result |= types_from_group - disabled_types
         return result
 
 

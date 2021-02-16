@@ -803,7 +803,7 @@ class TestNotificationType(NoSocketsTestCase):
 
 
 class TestWebhook(NoSocketsTestCase):
-    def test_should_return_notification_type_ids_for_all_groups(self):
+    def test_should_return_notification_types_for_enabled_groups(self):
         # given
         webhook = Webhook.objects.create(
             name="Test",
@@ -822,6 +822,31 @@ class TestWebhook(NoSocketsTestCase):
                 NotificationType.TOWER_ALERT_MSG.id,
                 NotificationType.TOWER_RESOURCE_ALERT_MSG.id,
                 NotificationType.ORBITAL_ATTACKED.id,
+                NotificationType.ORBITAL_REINFORCED.id,
+            },
+        )
+
+    def test_should_return_notification_types_for_enabled_groups_excluding_disabled_types(
+        self,
+    ):
+        # given
+        webhook = Webhook.objects.create(
+            name="Test",
+            url="dummy-url",
+            notification_groups=[
+                NotificationGroup.CUSTOMS_OFFICE,
+                NotificationGroup.STARBASE,
+            ],
+            disabled_notification_types=[NotificationType.ORBITAL_ATTACKED.id],
+        )
+        # when
+        result = webhook.notification_type_ids
+        # then
+        self.assertSetEqual(
+            set(result),
+            {
+                NotificationType.TOWER_ALERT_MSG.id,
+                NotificationType.TOWER_RESOURCE_ALERT_MSG.id,
                 NotificationType.ORBITAL_REINFORCED.id,
             },
         )
