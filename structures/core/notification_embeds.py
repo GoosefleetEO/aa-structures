@@ -250,7 +250,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         try:
-            structure = Structure.objects.select_related().get(
+            structure = Structure.objects.select_related_defaults().get(
                 id=self._parsed_text["structureID"]
             )
         except Structure.DoesNotExist:

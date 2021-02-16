@@ -862,10 +862,9 @@ class Owner(models.Model):
             cutoff_dt_for_stale = now() - timedelta(
                 hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
             )
-            my_types = Notification.get_types_for_timerboard()
             notifications = (
                 Notification.objects.filter(owner=self)
-                .filter(notif_type__in=my_types)
+                .filter(notif_type__in=NotificationType.relevant_for_timerboard)
                 .exclude(is_timer_added=True)
                 .filter(timestamp__gte=cutoff_dt_for_stale)
                 .select_related()
@@ -891,7 +890,7 @@ class Owner(models.Model):
                 )
                 all_new_notifications = list(
                     Notification.objects.filter(owner=self)
-                    .filter(notif_type__in=NotificationType.ids())
+                    .filter(notif_type__in=NotificationType.ids)
                     .filter(is_sent=False)
                     .filter(timestamp__gte=cutoff_dt_for_stale)
                     .select_related()

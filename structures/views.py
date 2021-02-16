@@ -379,7 +379,7 @@ def _structures_query_for_user(request):
         tags = None
 
     if request.user.has_perm("structures.view_all_structures"):
-        structures_query = Structure.objects.all().select_related()
+        structures_query = Structure.objects.select_related_defaults()
         if tags:
             structures_query = structures_query.filter(tags__name__in=tags).distinct()
 
@@ -389,7 +389,9 @@ def _structures_query_for_user(request):
             for character in request.user.character_ownerships.all()
         }
         corporations = list(
-            EveCorporationInfo.objects.filter(corporation_id__in=corporation_ids)
+            EveCorporationInfo.objects.select_related("alliance").filter(
+                corporation_id__in=corporation_ids
+            )
         )
         if request.user.has_perm("structures.view_alliance_structures"):
             alliances = {
@@ -402,9 +404,9 @@ def _structures_query_for_user(request):
 
             corporations = list(set(corporations))
 
-        structures_query = Structure.objects.filter(
+        structures_query = Structure.objects.select_related_defaults().filter(
             owner__corporation__in=corporations
-        ).select_related()
+        )
 
     return structures_query
 

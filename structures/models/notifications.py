@@ -14,6 +14,7 @@ from django.db import models
 from django.contrib.auth.models import Group
 from django.conf import settings
 from django.utils import translation
+from django.utils.functional import classproperty
 from django.utils.translation import gettext_lazy as _, gettext
 
 from app_utils.django import app_labels
@@ -178,19 +179,19 @@ class NotificationType(Enum):
     #     """Compare with id instead of tuple"""
     #     return self.id == o
 
-    @classmethod
-    def choices(self) -> List[tuple]:
-        return [(item.id, item.id) for item in self]
+    @classproperty
+    def choices(cls) -> List[tuple]:
+        return [(item.id, item.id) for item in cls]
 
-    @classmethod
-    def ids(cls) -> list:
+    @classproperty
+    def ids(cls) -> List[str]:
         return [x.id for x in cls]
 
     @classmethod
     def ids_for_group(cls, group: str) -> list:
         return [x.id for x in cls if str(x.group) == str(group)]
 
-    @classmethod
+    @classproperty
     def relevant_for_timerboard(cls) -> list:
         return [
             cls.STRUCTURE_LOST_SHIELD.id,
@@ -202,7 +203,7 @@ class NotificationType(Enum):
             cls.SOV_STRUCTURE_REINFORCED.id,
         ]
 
-    @classmethod
+    @classproperty
     def relevant_for_alliance_level(cls) -> list:
         return [
             cls.SOV_ENTOSIS_CAPTURE_STARTED.id,
@@ -261,7 +262,7 @@ class Webhook(WebhookBase):
         help_text="Groups to be pinged for each notification - ",
     )
     disabled_notification_types = MultiSelectField(
-        choices=NotificationType.choices(),
+        choices=NotificationType.choices,
         default=None,
         blank=True,
         help_text=(
@@ -420,17 +421,12 @@ class Notification(models.Model):
     @property
     def is_alliance_level(self) -> bool:
         """whether this is an alliance level notification"""
-        return self.notif_type in NotificationType.relevant_for_alliance_level()
+        return self.notif_type in NotificationType.relevant_for_alliance_level
 
     # @classmethod
     # def get_all_types(cls) -> Set[int]:
     #     """returns a set with all supported notification types"""
     #     return {x[0] for x in NotificationType.choices}
-
-    @classmethod
-    def get_types_for_timerboard(cls) -> List[int]:
-        """returns set of types relevant for the timerboard"""
-        return NotificationType.relevant_for_timerboard()
 
     @classmethod
     def get_matching_notification_type(cls, type_name: str) -> int:
@@ -572,7 +568,7 @@ class Notification(models.Model):
         timer_created = False
         if (
             has_auth_timers or has_structure_timers
-        ) and self.notif_type in NotificationType.relevant_for_timerboard():
+        ) and self.notif_type in NotificationType.relevant_for_timerboard:
             parsed_text = self.get_parsed_text()
             try:
                 with translation.override(STRUCTURES_DEFAULT_LANGUAGE):

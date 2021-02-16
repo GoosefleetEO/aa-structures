@@ -183,6 +183,19 @@ class EveEntityManager(models.Manager):
 
 
 class StructureManager(models.Manager):
+    def select_related_defaults(self) -> models.QuerySet:
+        """returns a QuerySet with the default select_related"""
+        return self.select_related(
+            "owner",
+            "owner__corporation",
+            "owner__corporation__alliance",
+            "eve_type",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation__eve_region",
+            "eve_planet",
+            "eve_moon",
+        )
+
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:
         """get or create a structure with data from ESI if needed
 

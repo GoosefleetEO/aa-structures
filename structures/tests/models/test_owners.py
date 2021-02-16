@@ -1379,7 +1379,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         }
         notifications_expected = set(
             Notification.objects.filter(
-                owner=self.owner, notif_type__in=NotificationType.ids()
+                owner=self.owner, notif_type__in=NotificationType.ids
             ).values_list("notification_id", flat=True)
         )
         self.assertSetEqual(notifications_processed, notifications_expected)

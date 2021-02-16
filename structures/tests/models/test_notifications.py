@@ -234,13 +234,13 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
         types_tested = set()
         for notif in Notification.objects.all():
-            if notif.notif_type in NotificationType.ids():
+            if notif.notif_type in NotificationType.ids:
                 self.assertFalse(notif.is_sent)
                 self.assertTrue(notif.send_to_webhook(self.webhook))
                 types_tested.add(notif.notif_type)
 
         # make sure we have tested all existing notification types
-        self.assertSetEqual(set(NotificationType.ids()), types_tested)
+        self.assertSetEqual(set(NotificationType.ids), types_tested)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
