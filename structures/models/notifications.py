@@ -428,17 +428,6 @@ class Notification(models.Model):
     #     """returns a set with all supported notification types"""
     #     return {x[0] for x in NotificationType.choices}
 
-    @classmethod
-    def get_matching_notification_type(cls, type_name: str) -> int:
-        """returns matching notification type for given name or None"""
-        match = None
-        for x in NotificationType.choices:
-            if type_name == x[1]:
-                match = x
-                break
-
-        return match[0] if match else None
-
     def get_parsed_text(self) -> dict:
         """returns the notifications's text as dict"""
         return yaml.safe_load(self.text)

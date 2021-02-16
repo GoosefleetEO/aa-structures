@@ -129,35 +129,31 @@ for notification in notifications:
 with transaction.atomic():
     timestamp_start = now() - timedelta(hours=2)
     for notification in notifications:
-        notif_type = Notification.get_matching_notification_type(notification["type"])
-        if notif_type:
-            sender_type = EveEntity.get_matching_entity_category(
-                notification["sender_type"]
+        sender_type = EveEntity.get_matching_entity_category(
+            notification["sender_type"]
+        )
+        if sender_type != EveEntity.CATEGORY_OTHER:
+            sender, _ = EveEntity.objects.get_or_create_esi(notification["sender_id"])
+        else:
+            sender, _ = EveEntity.objects.get_or_create(
+                id=notification["sender_id"], defaults={"category": sender_type}
             )
-            if sender_type != EveEntity.CATEGORY_OTHER:
-                sender, _ = EveEntity.objects.get_or_create_esi(
-                    notification["sender_id"]
-                )
-            else:
-                sender, _ = EveEntity.objects.get_or_create(
-                    id=notification["sender_id"], defaults={"category": sender_type}
-                )
-            text = notification["text"] if "text" in notification else None
-            is_read = notification["is_read"] if "is_read" in notification else None
-            timestamp_start = timestamp_start + timedelta(minutes=5)
-            obj = Notification.objects.update_or_create(
-                notification_id=notification["notification_id"],
-                owner=owner,
-                defaults={
-                    "sender": sender,
-                    "timestamp": timestamp_start,
-                    "notif_type": notif_type,
-                    "text": text,
-                    "is_read": is_read,
-                    "last_updated": now(),
-                    "is_sent": False,
-                },
-            )
+        text = notification["text"] if "text" in notification else None
+        is_read = notification["is_read"] if "is_read" in notification else None
+        timestamp_start = timestamp_start + timedelta(minutes=5)
+        obj = Notification.objects.update_or_create(
+            notification_id=notification["notification_id"],
+            owner=owner,
+            defaults={
+                "sender": sender,
+                "timestamp": timestamp_start,
+                "notif_type": notification["type"],
+                "text": text,
+                "is_read": is_read,
+                "last_updated": now(),
+                "is_sent": False,
+            },
+        )
 
 print("DONE")
 

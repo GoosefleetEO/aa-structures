@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 **Notifications Update**
 
+> ⚠️ **Important update notes:** This update will remove configured notification types from all webhooks and thereby effectively suspend notification sending. Please make sure to go through all your webhooks and re-configure the notification types to re-enable sending after updating.
+
 ### Added
 
 - Notification for wars
@@ -20,9 +22,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Messages now originate from an app name instead of the organization a notification belongs to. The organization now appears as author on messages.
-- Admins can now choose by notification groups instead of notification types which notifications a webhook should send (while still being able to blacklist notification types for a webhook)
-- Refactored notification types
-- Refactored notification embeds
+- Webhooks are now configured with notification groups instead of notification types, which is more user friendly and works better with larger number of types. You can still disable specific notification types though if needed (see Advanced Options)
+- Improved notification architecture to make it easier for adding new notification types
+- Moved utils into it's own distribution package: allianceauth-app-utils
 
 ## [1.7.0] - 2021-01-10
 
