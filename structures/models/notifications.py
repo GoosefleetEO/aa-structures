@@ -225,8 +225,8 @@ class Webhook(WebhookBase):
 
     notification_groups = MultiSelectField(
         choices=NotificationGroup.choices,
-        default="",
-        help_text=("only notifications from selected groups are sent to this webhook"),
+        default=None,
+        help_text="only notifications from selected groups are sent to this webhook",
     )
     language_code = models.CharField(
         max_length=8,
@@ -256,6 +256,11 @@ class Webhook(WebhookBase):
         blank=True,
         help_text="Groups to be pinged for each notification - ",
     )
+    # disabled_notification_types = MultiSelectField(
+    #     choices=NotificationType.choices,
+    #     default=None,
+    #     help_text="only notifications from selected groups are sent to this webhook"
+    # )
 
     @property
     def notification_type_ids(self) -> list:
