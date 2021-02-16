@@ -814,7 +814,7 @@ class TestWebhook(NoSocketsTestCase):
             ],
         )
         # when
-        result = webhook.notification_types
+        result = webhook.notification_type_ids
         # then
         self.assertSetEqual(
             set(result),

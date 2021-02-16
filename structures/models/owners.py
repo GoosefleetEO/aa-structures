@@ -902,9 +902,9 @@ class Owner(models.Model):
                 for webhook in self.webhooks.filter(is_active=True):
                     active_webhooks_count += 1
                     new_notifications = [
-                        x
-                        for x in all_new_notifications
-                        if str(x.notif_type) in webhook.notification_types
+                        notif
+                        for notif in all_new_notifications
+                        if str(notif.notif_type) in webhook.notification_type_ids
                     ]
                     if len(new_notifications) > 0:
                         new_notifications_count += len(new_notifications)

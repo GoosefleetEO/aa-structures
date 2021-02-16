@@ -94,15 +94,15 @@ def send_notifications(notification_pks: list) -> None:
             )
         )
         webhooks = set()
-        for n in notifications:
-            for webhook in n.owner.webhooks.filter(is_active=True):
+        for notif in notifications:
+            for webhook in notif.owner.webhooks.filter(is_active=True):
                 webhooks.add(webhook)
                 if (
-                    str(n.notif_type) in webhook.notification_types
-                    and not n.filter_for_npc_attacks()
-                    and not n.filter_for_alliance_level()
+                    str(notif.notif_type) in webhook.notification_type_ids
+                    and not notif.filter_for_npc_attacks()
+                    and not notif.filter_for_alliance_level()
                 ):
-                    n.send_to_webhook(webhook)
+                    notif.send_to_webhook(webhook)
 
         for webhook in webhooks:
             send_messages_for_webhook.apply_async(

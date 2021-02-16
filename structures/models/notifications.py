@@ -258,7 +258,7 @@ class Webhook(WebhookBase):
     )
 
     @property
-    def notification_types(self) -> list:
+    def notification_type_ids(self) -> list:
         result = list()
         for group in self.notification_groups:
             result += NotificationType.ids_for_group(group)
