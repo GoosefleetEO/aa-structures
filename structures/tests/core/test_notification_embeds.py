@@ -2,9 +2,10 @@ from unittest.mock import patch
 
 import dhooks_lite
 from django.test import TestCase
+from django.utils.timezone import now
 
 from ...core import notification_embeds as ne
-from ...models.notifications import Notification, Webhook
+from ...models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..testdata import (
     load_notification_entities,
     create_structures,
@@ -40,7 +41,7 @@ class TestNotificationEmbeds(TestCase):
             repr(notification_embed),
             "NotificationMoonminningExtractionFinished(notification=Notification("
             "notification_id=1000000403, owner='Wayne Technologies', "
-            "notification_type='MoonminingExtractionFinished'))",
+            "notif_type='MoonminingExtractionFinished'))",
         )
 
     def test_should_generate_embed_from_notification(self):
@@ -53,19 +54,34 @@ class TestNotificationEmbeds(TestCase):
         self.assertIsInstance(discord_embed, dhooks_lite.Embed)
         self.assertTrue(discord_embed.footer)
 
-    def test_should_generate_embed_for_all_notification_types(self):
+    def test_should_generate_embed_for_all_supported_notification_types(self):
         types_tested = set()
         for notification in Notification.objects.select_related(
             "owner", "sender"
         ).all():
-            # given
-            notification_embed = ne.NotificationBaseEmbed.create(notification)
-            # when
-            discord_embed = notification_embed.generate_embed()
-            # then
-            self.assertIsInstance(discord_embed, dhooks_lite.Embed)
-            types_tested.add(notification.notification_type)
-        self.assertSetEqual(Notification.get_all_types(), types_tested)
+            if notification.notif_type in NotificationType.ids():
+                # given
+                notification_embed = ne.NotificationBaseEmbed.create(notification)
+                # when
+                discord_embed = notification_embed.generate_embed()
+                # then
+                self.assertIsInstance(discord_embed, dhooks_lite.Embed)
+                types_tested.add(notification.notif_type)
+        self.assertSetEqual(set(NotificationType.ids()), types_tested)
+
+    def test_should_raise_exception_for_unsupported_notif_types(self):
+        # given
+        notification = Notification.objects.create(
+            notification_id=666,
+            owner=self.owner,
+            sender=EveEntity.objects.get(id=2001),
+            timestamp=now(),
+            notif_type="XXXUnsupportedNotificationTypeXXX",
+            last_updated=now(),
+        )
+        # when / then
+        with self.assertRaises(NotImplementedError):
+            ne.NotificationBaseEmbed.create(notification)
 
     def test_should_require_notification_for_init(self):
         with self.assertRaises(TypeError):

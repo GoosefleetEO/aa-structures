@@ -98,7 +98,7 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = (
         "notification_id",
         "owner",
-        "notification_type",
+        "notif_type",
         "timestamp",
         "created",
         "last_updated",
@@ -107,7 +107,7 @@ class NotificationAdmin(admin.ModelAdmin):
         "is_timer_added",
     )
     ordering = ["-timestamp", "-notification_id"]
-    list_filter = ("owner", "notification_type", "is_sent")
+    list_filter = ("owner", "is_sent", "notif_type")
 
     def _webhooks(self, obj):
         names = [x.name for x in obj.owner.webhooks.all().order_by("name")]

@@ -38,6 +38,7 @@ from ...models import (
     Webhook,
     Owner,
     Notification,
+    NotificationType,
     Structure,
 )
 from ...models.eveuniverse import EveUniverse
@@ -759,33 +760,23 @@ def set_owner_character(character_id) -> list:
 def load_notification_entities(owner: Owner):
     timestamp_start = now() - timedelta(hours=2)
     for notification in entities_testdata["Notification"]:
-        notification_type = Notification.get_matching_notification_type(
-            notification["type"]
+        notification_id = notification["notification_id"]
+        notif_type = notification["type"]
+        # print(f"Reading notification: {notification_id}-{notif_type}")
+        sender = EveEntity.objects.get(id=notification["sender_id"])
+        text = notification["text"] if "text" in notification else None
+        is_read = notification["is_read"] if "is_read" in notification else None
+        timestamp_start = timestamp_start + timedelta(minutes=5)
+        Notification.objects.update_or_create(
+            notification_id=notification_id,
+            owner=owner,
+            defaults={
+                "sender": sender,
+                "timestamp": timestamp_start,
+                "notif_type": notif_type,
+                "text": text,
+                "is_read": is_read,
+                "last_updated": now(),
+                "is_sent": False,
+            },
         )
-        if notification_type:
-            sender = EveEntity.objects.get(id=notification["sender_id"])
-            text = notification["text"] if "text" in notification else None
-            is_read = notification["is_read"] if "is_read" in notification else None
-            timestamp_start = timestamp_start + timedelta(minutes=5)
-            Notification.objects.update_or_create(
-                notification_id=notification["notification_id"],
-                owner=owner,
-                defaults={
-                    "sender": sender,
-                    "timestamp": timestamp_start,
-                    "notification_type": notification_type,
-                    "text": text,
-                    "is_read": is_read,
-                    "last_updated": now(),
-                    "is_sent": False,
-                },
-            )
-
-
-def get_all_notification_ids() -> set:
-    """returns a set of all notification ids"""
-    ids = set()
-    for x in entities_testdata["Notification"]:
-        if x["type"] in Notification.get_all_type_names():
-            ids.add(x["notification_id"])
-    return ids

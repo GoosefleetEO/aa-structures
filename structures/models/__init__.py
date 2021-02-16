@@ -19,5 +19,6 @@ from .notifications import (
     Notification,
     EveEntity,
     NotificationType,
+    NotificationGroup,
     get_default_notification_types,
 )

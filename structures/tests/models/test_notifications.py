@@ -10,7 +10,14 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 
-from ...models import EveEntity, Notification, Webhook, Structure
+from ...models import (
+    EveEntity,
+    Notification,
+    NotificationType,
+    NotificationGroup,
+    Webhook,
+    Structure,
+)
 from ..testdata import (
     load_entities,
     load_notification_entities,
@@ -102,7 +109,7 @@ class TestNotification(NoSocketsTestCase):
         expected = (
             "Notification(notification_id=1000000403, "
             "owner='Wayne Technologies', "
-            "notification_type='MoonminingExtractionFinished')"
+            "notif_type='MoonminingExtractionFinished')"
         )
         self.assertEqual(repr(obj), expected)
 
@@ -190,6 +197,22 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         self.assertIsNotNone(kwargs["content"])
         self.assertIsNotNone(kwargs["embeds"])
 
+    def test_should_ignore_unsupported_notif_types(self, mock_send_message):
+        # given
+        mock_send_message.return_value = True
+        obj = Notification.objects.create(
+            notification_id=666,
+            owner=self.owner,
+            sender=EveEntity.objects.get(id=2001),
+            timestamp=now(),
+            notif_type="XXXUnsupportedNotificationTypeXXX",
+            last_updated=now(),
+        )
+        # when
+        result = obj.send_to_webhook(self.webhook)
+        # then
+        self.assertFalse(result)
+
     def test_mark_notification_as_sent_when_successful(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -210,13 +233,14 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         mock_send_message.return_value = True
 
         types_tested = set()
-        for x in Notification.objects.all():
-            self.assertFalse(x.is_sent)
-            self.assertTrue(x.send_to_webhook(self.webhook))
-            types_tested.add(x.notification_type)
+        for notif in Notification.objects.all():
+            if notif.notif_type in NotificationType.ids():
+                self.assertFalse(notif.is_sent)
+                self.assertTrue(notif.send_to_webhook(self.webhook))
+                types_tested.add(notif.notif_type)
 
         # make sure we have tested all existing notification types
-        self.assertSetEqual(Notification.get_all_types(), types_tested)
+        self.assertSetEqual(set(NotificationType.ids()), types_tested)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
@@ -534,7 +558,6 @@ if "timerboard" in app_labels():
             self.assertTrue(x.process_for_timerboard())
 
             self.assertEqual(AuthTimer.objects.count(), 5)
-            # self.assertEqual(Timer.objects.count(), 5)
 
             # this should remove the right timer only
             x = Notification.objects.get(notification_id=1000000402)
@@ -751,3 +774,49 @@ if "structuretimers" in app_labels():
             obj = Notification.objects.get(notification_id=1000000402)
             self.assertFalse(obj.process_for_timerboard())
             self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
+
+
+class TestNotificationType(NoSocketsTestCase):
+    def test_should_compare_with_id_1(self):
+        # given
+        x = NotificationType.STRUCTURE_ANCHORING
+        # when/then
+        self.assertTrue(x == "StructureAnchoring")
+
+    def test_should_compare_with_id_2(self):
+        # given
+        x = NotificationType.STRUCTURE_ANCHORING
+        # when/then
+        self.assertFalse(x == "xStructureAnchoring")
+
+    def test_should_return_ids_for_group(self):
+        # when
+        result = NotificationType.ids_for_group(NotificationGroup.CUSTOMS_OFFICE)
+        # then
+        self.assertSetEqual(
+            set(result),
+            {
+                NotificationType.ORBITAL_ATTACKED.id,
+                NotificationType.ORBITAL_REINFORCED.id,
+            },
+        )
+
+
+class TestWebhook(NoSocketsTestCase):
+    def test_should_return_notification_type_ids_for_all_groups(self):
+        # given
+        webhook = Webhook.objects.create(
+            name="Test", url="dummy-url", notification_groups=[40, 50]
+        )
+        # when
+        result = webhook.notification_types
+        # then
+        self.assertSetEqual(
+            set(result),
+            {
+                NotificationType.TOWER_ALERT_MSG.id,
+                NotificationType.TOWER_RESOURCE_ALERT_MSG.id,
+                NotificationType.ORBITAL_ATTACKED.id,
+                NotificationType.ORBITAL_REINFORCED.id,
+            },
+        )

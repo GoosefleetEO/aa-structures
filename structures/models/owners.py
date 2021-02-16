@@ -16,12 +16,16 @@ from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
 
+from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
+from esi.models import Token
+
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
 
-from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
-from esi.models import Token
+from app_utils.datetime import DATETIME_FORMAT
+from app_utils.helpers import chunks
+from app_utils.logging import LoggerAddTag, make_logger_prefix
 
 from .. import __title__
 from ..app_settings import (
@@ -37,14 +41,10 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from .eveuniverse import EvePlanet, EveSolarSystem, EveType, EveUniverse
-from structures.helpers.esi_fetch import esi_fetch
-from structures.helpers.esi_fetch import esi_fetch_with_localization
+from ..helpers.esi_fetch import esi_fetch
+from ..helpers.esi_fetch import esi_fetch_with_localization
 from .structures import Structure
-from .notifications import EveEntity, Notification
-
-from app_utils.datetime import DATETIME_FORMAT
-from app_utils.helpers import chunks
-from app_utils.logging import LoggerAddTag, make_logger_prefix
+from .notifications import EveEntity, Notification, NotificationType
 
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
@@ -817,46 +817,42 @@ class Owner(models.Model):
         new_notifications_count = 0
         with transaction.atomic():
             for notification in notifications:
-                notification_type = Notification.get_matching_notification_type(
-                    notification["type"]
+                sender_type = EveEntity.get_matching_entity_category(
+                    notification["sender_type"]
                 )
-                if notification_type:
-                    sender_type = EveEntity.get_matching_entity_category(
-                        notification["sender_type"]
+                if sender_type != EveEntity.CATEGORY_OTHER:
+                    sender, _ = EveEntity.objects.get_or_create_esi(
+                        notification["sender_id"]
                     )
-                    if sender_type != EveEntity.CATEGORY_OTHER:
-                        sender, _ = EveEntity.objects.get_or_create_esi(
-                            notification["sender_id"]
-                        )
-                    else:
-                        sender, _ = EveEntity.objects.get_or_create(
-                            id=notification["sender_id"],
-                            defaults={"category": sender_type},
-                        )
-                    text = notification["text"] if "text" in notification else None
-                    is_read = (
-                        notification["is_read"] if "is_read" in notification else None
+                else:
+                    sender, _ = EveEntity.objects.get_or_create(
+                        id=notification["sender_id"],
+                        defaults={"category": sender_type},
                     )
-                    obj, created = Notification.objects.update_or_create(
-                        notification_id=notification["notification_id"],
-                        owner=self,
-                        defaults={
-                            "sender": sender,
-                            "timestamp": notification["timestamp"],
-                            "notification_type": notification_type,
-                            "text": text,
-                            "is_read": is_read,
-                            "last_updated": now(),
-                        },
-                    )
-                    notifications_count += 1
-                    if created:
-                        obj.created = now()
-                        obj.save()
-                        new_notifications_count += 1
+                text = notification["text"] if "text" in notification else None
+                is_read = notification["is_read"] if "is_read" in notification else None
+                obj, created = Notification.objects.update_or_create(
+                    notification_id=notification["notification_id"],
+                    owner=self,
+                    defaults={
+                        "sender": sender,
+                        "timestamp": notification["timestamp"],
+                        # at least one type has a trailing white space
+                        # which we need to remove
+                        "notif_type": notification["type"].strip(),
+                        "text": text,
+                        "is_read": is_read,
+                        "last_updated": now(),
+                    },
+                )
+                notifications_count += 1
+                if created:
+                    obj.created = now()
+                    obj.save()
+                    new_notifications_count += 1
 
-            self.notifications_last_error = self.ERROR_NONE
-            self.save()
+        self.notifications_last_error = self.ERROR_NONE
+        self.save()
 
         return new_notifications_count, notifications_count
 
@@ -869,7 +865,7 @@ class Owner(models.Model):
             my_types = Notification.get_types_for_timerboard()
             notifications = (
                 Notification.objects.filter(owner=self)
-                .filter(notification_type__in=my_types)
+                .filter(notif_type__in=my_types)
                 .exclude(is_timer_added=True)
                 .filter(timestamp__gte=cutoff_dt_for_stale)
                 .select_related()
@@ -895,6 +891,7 @@ class Owner(models.Model):
                 )
                 all_new_notifications = list(
                     Notification.objects.filter(owner=self)
+                    .filter(notif_type__in=NotificationType.ids())
                     .filter(is_sent=False)
                     .filter(timestamp__gte=cutoff_dt_for_stale)
                     .select_related()
@@ -907,7 +904,7 @@ class Owner(models.Model):
                     new_notifications = [
                         x
                         for x in all_new_notifications
-                        if str(x.notification_type) in webhook.notification_types
+                        if str(x.notif_type) in webhook.notification_types
                     ]
                     if len(new_notifications) > 0:
                         new_notifications_count += len(new_notifications)

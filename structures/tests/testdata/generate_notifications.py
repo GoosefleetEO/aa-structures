@@ -129,10 +129,8 @@ for notification in notifications:
 with transaction.atomic():
     timestamp_start = now() - timedelta(hours=2)
     for notification in notifications:
-        notification_type = Notification.get_matching_notification_type(
-            notification["type"]
-        )
-        if notification_type:
+        notif_type = Notification.get_matching_notification_type(notification["type"])
+        if notif_type:
             sender_type = EveEntity.get_matching_entity_category(
                 notification["sender_type"]
             )
@@ -153,7 +151,7 @@ with transaction.atomic():
                 defaults={
                     "sender": sender,
                     "timestamp": timestamp_start,
-                    "notification_type": notification_type,
+                    "notif_type": notif_type,
                     "text": text,
                     "is_read": is_read,
                     "last_updated": now(),

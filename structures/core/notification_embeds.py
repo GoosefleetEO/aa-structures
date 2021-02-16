@@ -104,93 +104,93 @@ class NotificationBaseEmbed:
         """creates a new instance of the respective subclass for given Notification"""
         if not isinstance(notification, Notification):
             raise TypeError("notification must be of type Notification")
-        notification_type = notification.notification_type
+        notif_type = notification.notif_type
 
         # character
-        if notification_type == NotificationType.CHAR_APP_ACCEPT_MSG:
+        if notif_type == NotificationType.CHAR_APP_ACCEPT_MSG:
             return NotificationCharAppAcceptMsg(notification)
-        elif notification_type == NotificationType.CHAR_LEFT_CORP_MSG:
+        elif notif_type == NotificationType.CHAR_LEFT_CORP_MSG:
             return NotificationCharLeftCorpMsg(notification)
 
         # moonmining
-        elif notification_type == NotificationType.MOONS_EXTRACTION_STARTED:
+        elif notif_type == NotificationType.MOONS_EXTRACTION_STARTED:
             return NotificationMoonminningExtractionStarted(notification)
-        elif notification_type == NotificationType.MOONS_EXTRACTION_FINISHED:
+        elif notif_type == NotificationType.MOONS_EXTRACTION_FINISHED:
             return NotificationMoonminningExtractionFinished(notification)
-        elif notification_type == NotificationType.MOONS_AUTOMATIC_FRACTURE:
+        elif notif_type == NotificationType.MOONS_AUTOMATIC_FRACTURE:
             return NotificationMoonminningAutomaticFracture(notification)
-        elif notification_type == NotificationType.MOONS_EXTRACTION_CANCELED:
+        elif notif_type == NotificationType.MOONS_EXTRACTION_CANCELED:
             return NotificationMoonminningExtractionCanceled(notification)
-        elif notification_type == NotificationType.MOONS_LASER_FIRED:
+        elif notif_type == NotificationType.MOONS_LASER_FIRED:
             return NotificationMoonminningLaserFired(notification)
 
         # upwell structures
-        elif notification_type == NotificationType.STRUCTURE_ONLINE:
+        elif notif_type == NotificationType.STRUCTURE_ONLINE:
             return NotificationStructureOnline(notification)
-        elif notification_type == NotificationType.STRUCTURE_FUEL_ALERT:
+        elif notif_type == NotificationType.STRUCTURE_FUEL_ALERT:
             return NotificationStructureFuelAlert(notification)
-        elif notification_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
+        elif notif_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
             return NotificationStructureServicesOffline(notification)
-        elif notification_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
+        elif notif_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
             return NotificationStructureWentLowPower(notification)
-        elif notification_type == NotificationType.STRUCTURE_WENT_HIGH_POWER:
+        elif notif_type == NotificationType.STRUCTURE_WENT_HIGH_POWER:
             return NotificationStructureWentHighPower(notification)
-        elif notification_type == NotificationType.STRUCTURE_UNANCHORING:
+        elif notif_type == NotificationType.STRUCTURE_UNANCHORING:
             return NotificationStructureUnanchoring(notification)
-        elif notification_type == NotificationType.STRUCTURE_UNDER_ATTACK:
+        elif notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
             return NotificationStructureUnderAttack(notification)
-        elif notification_type == NotificationType.STRUCTURE_LOST_SHIELD:
+        elif notif_type == NotificationType.STRUCTURE_LOST_SHIELD:
             return NotificationStructureLostShield(notification)
-        elif notification_type == NotificationType.STRUCTURE_LOST_ARMOR:
+        elif notif_type == NotificationType.STRUCTURE_LOST_ARMOR:
             return NotificationStructureLostArmor(notification)
-        elif notification_type == NotificationType.STRUCTURE_DESTROYED:
+        elif notif_type == NotificationType.STRUCTURE_DESTROYED:
             return NotificationStructureDestroyed(notification)
-        elif notification_type == NotificationType.OWNERSHIP_TRANSFERRED:
+        elif notif_type == NotificationType.OWNERSHIP_TRANSFERRED:
             return NotificationStructureOwnershipTransferred(notification)
-        elif notification_type == NotificationType.STRUCTURE_ANCHORING:
+        elif notif_type == NotificationType.STRUCTURE_ANCHORING:
             return NotificationStructureAnchoring(notification)
 
         # Orbitals
-        elif notification_type == NotificationType.ORBITAL_ATTACKED:
+        elif notif_type == NotificationType.ORBITAL_ATTACKED:
             return NotificationOrbitalAttacked(notification)
-        elif notification_type == NotificationType.ORBITAL_REINFORCED:
+        elif notif_type == NotificationType.ORBITAL_REINFORCED:
             return NotificationOrbitalReinforced(notification)
 
         # Towers
-        elif notification_type == NotificationType.TOWER_ALERT_MSG:
+        elif notif_type == NotificationType.TOWER_ALERT_MSG:
             return NotificationTowerAlertMsg(notification)
-        elif notification_type == NotificationType.TOWER_RESOURCE_ALERT_MSG:
+        elif notif_type == NotificationType.TOWER_RESOURCE_ALERT_MSG:
             return NotificationTowerResourceAlertMsg(notification)
 
         # Sov
-        elif notification_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
+        elif notif_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
             return NotificationSovEntosisCaptureStarted(notification)
-        elif notification_type == NotificationType.SOV_COMMAND_NODE_EVENT_STARTED:
+        elif notif_type == NotificationType.SOV_COMMAND_NODE_EVENT_STARTED:
             return NotificationSovCommandNodeEventStarted(notification)
-        elif notification_type == NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG:
+        elif notif_type == NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG:
             return NotificationSovAllClaimAcquiredMsg(notification)
-        elif notification_type == NotificationType.SOV_STRUCTURE_REINFORCED:
+        elif notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
             return NotificationSovStructureReinforced(notification)
-        elif notification_type == NotificationType.SOV_STRUCTURE_DESTROYED:
+        elif notif_type == NotificationType.SOV_STRUCTURE_DESTROYED:
             return NotificationSovStructureDestroyed(notification)
 
         # Sov
-        elif notification_type == NotificationType.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG:
+        elif notif_type == NotificationType.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG:
             return NotificationAllyJoinedWarAggressorMsg(notification)
-        elif notification_type == NotificationType.WAR_CORP_WAR_SURRENDER_MSG:
+        elif notif_type == NotificationType.WAR_CORP_WAR_SURRENDER_MSG:
             return NotificationCorpWarSurrenderMsg(notification)
-        elif notification_type == NotificationType.WAR_WAR_ADOPTED:
+        elif notif_type == NotificationType.WAR_WAR_ADOPTED:
             return NotificationWarAdopted(notification)
-        elif notification_type == NotificationType.WAR_WAR_DECLARED:
+        elif notif_type == NotificationType.WAR_WAR_DECLARED:
             return NotificationWarDeclared(notification)
-        elif notification_type == NotificationType.WAR_WAR_INHERITED:
+        elif notif_type == NotificationType.WAR_WAR_INHERITED:
             return NotificationWarInherited(notification)
-        elif notification_type == NotificationType.WAR_WAR_RETRACTED_BY_CONCORD:
+        elif notif_type == NotificationType.WAR_WAR_RETRACTED_BY_CONCORD:
             return NotificationWarRetractedByConcord(notification)
 
         # NOT IMPLEMENTED
         else:
-            raise NotImplementedError(repr(notification_type))
+            raise NotImplementedError(repr(notif_type))
 
     @staticmethod
     def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
