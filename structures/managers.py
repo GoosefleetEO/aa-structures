@@ -3,6 +3,7 @@ from pydoc import locate
 from bravado.exception import HTTPError
 
 from django.db import models, transaction
+from django.db.models import Case, When, Value
 from django.utils.timezone import now
 
 from allianceauth.services.hooks import get_extension_logger
@@ -445,3 +446,22 @@ class StructureTagManager(models.Manager):
             },
         )
         return obj, created
+
+
+class NotificationQuerySet(models.QuerySet):
+    def annotate_can_be_rendered(self) -> models.QuerySet:
+        """annotates field indicating if a notification can be rendered"""
+        from .models import NotificationType
+
+        return self.annotate(
+            can_be_rendered_2=Case(
+                When(notif_type__in=NotificationType.ids, then=True),
+                default=Value(False),
+                output_field=models.BooleanField(),
+            )
+        )
+
+
+class NotificationManager(models.Manager):
+    def get_queryset(self) -> models.QuerySet:
+        return NotificationQuerySet(self.model, using=self._db)

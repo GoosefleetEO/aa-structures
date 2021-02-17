@@ -1,7 +1,6 @@
 # Structures
 
-App for managing Eve Online structures with
-Alliance Auth.
+App for managing Eve Online structures with Alliance Auth.
 
 [![release](https://img.shields.io/pypi/v/aa-structures?label=release)](https://pypi.org/project/aa-structures/)
 [![python](https://img.shields.io/pypi/pyversions/aa-structures)](https://pypi.org/project/aa-structures/)
@@ -29,7 +28,7 @@ Alliance Auth.
 
 ## Overview
 
-This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows all member corporations to see a current list of all their structures in Auth and also get structure related notifications on Discord.
+This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows all member corporations to see a current list of all their structures in Auth. In addition it allows forwarding Eve Online notifications to Discord.
 
 ## Features Summary
 
@@ -37,9 +36,9 @@ Structures adds the following main features to Alliance Auth:
 
 - Structure browser with a detailed list of all structures owned by member corporations, automatically synced with the game server
 - Structures include all Upwell structures, Custom Offices and Starbases / POSes
-- Automatically forwards structure notifications to Discord channels as alerts
+- Automatically forwards Eve Online notifications to Discord channels as alerts
 - Notification categories include Upwell Structures, Moon Mining, Customs Offices, Starbases, Sovereignty, Wars, Character joining/leaving a corporation
-- Automatically adds timers from notifications to Alliance Auth timerboard app (if installed)
+- Automatically adds timers from relevant notifications to Alliance Auth timerboard app (if installed)
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status

@@ -40,7 +40,7 @@ from ..app_settings import (
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from ..managers import EveEntityManager
+from ..managers import EveEntityManager, NotificationManager
 from .structures import Structure
 from ..webhooks.models import WebhookBase
 
@@ -404,6 +404,8 @@ class Notification(models.Model):
         help_text="Date when this notification was first received from ESI",
     )
 
+    objects = NotificationManager()
+
     class Meta:
         unique_together = (("notification_id", "owner"),)
 
@@ -422,6 +424,11 @@ class Notification(models.Model):
     def is_alliance_level(self) -> bool:
         """whether this is an alliance level notification"""
         return self.notif_type in NotificationType.relevant_for_alliance_level
+
+    @property
+    def can_be_rendered(self) -> bool:
+        """whether this notification can be rendered in Discord"""
+        return self.notif_type in NotificationType.ids
 
     # @classmethod
     # def get_all_types(cls) -> Set[int]:

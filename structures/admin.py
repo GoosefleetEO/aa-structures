@@ -6,6 +6,8 @@ from django.utils.html import format_html
 from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
 from allianceauth.services.hooks import get_extension_logger
 
+from app_utils.logging import LoggerAddTag
+
 from . import __title__
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import (
@@ -28,7 +30,6 @@ from .models import (
     Webhook,
 )
 from . import tasks
-from app_utils.logging import LoggerAddTag
 
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -94,6 +95,27 @@ if STRUCTURES_DEVELOPER_MODE:
         ]
 
 
+class RenderableNotificationFilter(admin.SimpleListFilter):
+    title = "can be send"
+
+    parameter_name = "notification_renderable"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "Yes"),
+            ("no", "No"),
+        )
+
+    def queryset(self, request, queryset):
+        """Return the filtered queryset"""
+        if self.value() == "yes":
+            return queryset.annotate_can_be_rendered().filter(can_be_rendered_2=True)
+        elif self.value() == "no":
+            return queryset.annotate_can_be_rendered().filter(can_be_rendered_2=False)
+        else:
+            return queryset
+
+
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = (
@@ -104,11 +126,12 @@ class NotificationAdmin(admin.ModelAdmin):
         "created",
         "last_updated",
         "_webhooks",
+        "_can_be_send",
         "is_sent",
         "is_timer_added",
     )
     ordering = ["-timestamp", "-notification_id"]
-    list_filter = ("owner", "is_sent", "notif_type")
+    list_filter = ("owner", RenderableNotificationFilter, "is_sent", "notif_type")
 
     def _webhooks(self, obj):
         names = [x.name for x in obj.owner.webhooks.all().order_by("name")]
@@ -121,7 +144,10 @@ class NotificationAdmin(admin.ModelAdmin):
                 obj.owner,
             )
 
-    _webhooks.short_description = "Webhooks"
+    def _can_be_send(self, obj) -> bool:
+        return obj.can_be_rendered
+
+    _can_be_send.boolean = True
 
     actions = (
         "mark_as_sent",
@@ -157,14 +183,18 @@ class NotificationAdmin(admin.ModelAdmin):
     mark_as_unsent.short_description = "Mark selected notifications as unsent"
 
     def send_to_webhooks(self, request, queryset):
-        obj_pks = [obj.pk for obj in queryset]
+        obj_pks = [obj.pk for obj in queryset if obj.can_be_rendered]
+        ignored_count = len([obj for obj in queryset if not obj.can_be_rendered])
         tasks.send_notifications.delay(obj_pks)
-
-        self.message_user(
-            request,
-            "Initiated sending of {} notifications to "
-            "configured webhooks".format(len(obj_pks)),
+        message = (
+            f"Initiated sending of {len(obj_pks)} notification(s) to "
+            f"configured webhooks."
         )
+        if ignored_count:
+            message += (
+                f" Ignored {ignored_count} notification(s), which can not be rendered."
+            )
+        self.message_user(request, message)
 
     send_to_webhooks.short_description = (
         "Send selected notifications to configured webhooks"

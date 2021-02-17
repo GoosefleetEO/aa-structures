@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.8.0] - tbd
 
-**Notifications Update**
+**Notifications Overhaul**
 
 > ⚠️ **Important update notes:** This update will remove configured notification types from all webhooks and thereby effectively suspend notification sending. Please make sure to go through all your webhooks and re-configure the notification types to re-enable sending after updating.
 
