@@ -153,7 +153,7 @@ class NotificationAdmin(admin.ModelAdmin):
         return admin_boolean_icon_html(value)
 
     def _is_timer_added(self, obj):
-        value = obj.is_timer_added if obj.can_be_rendered else None
+        value = obj.is_timer_added if obj.can_have_timer else None
         return admin_boolean_icon_html(value)
 
     actions = (
@@ -209,16 +209,19 @@ class NotificationAdmin(admin.ModelAdmin):
 
     def process_for_timerboard(self, request, queryset):
         notifications_count = 0
+        ignored_count = 0
         for obj in queryset:
             if obj.process_for_timerboard():
                 notifications_count += 1
+            else:
+                ignored_count += 1
 
-        self.message_user(
-            request,
-            "Added timers from {} notifications to timerboard".format(
-                notifications_count
-            ),
+        message = (
+            f"Added timers from {notifications_count} notifications to timerboard."
         )
+        if ignored_count:
+            message += f" Ignored {ignored_count} notification(s), which has no relation to timers."
+        self.message_user(request, message)
 
     process_for_timerboard.short_description = (
         "Process selected notifications for timerboard"
@@ -732,7 +735,7 @@ class WebhookAdmin(admin.ModelAdmin):
         "name",
         "_ping_groups",
         "is_active",
-        "is_default",
+        "_is_default",
         "_messages_in_queue",
     )
     list_filter = ("is_active",)
@@ -749,6 +752,10 @@ class WebhookAdmin(admin.ModelAdmin):
             return names
         else:
             return None
+
+    def _is_default(self, obj):
+        value = True if obj.is_default else None
+        return admin_boolean_icon_html(value)
 
     def _messages_in_queue(self, obj):
         return obj.queue_size()
@@ -802,28 +809,30 @@ class WebhookAdmin(admin.ModelAdmin):
 
     filter_horizontal = ("ping_groups",)
 
-    # fieldsets = (
-    #     (
-    #         None,
-    #         {
-    #             "fields": (
-    #                 "name",
-    #                 "url",
-    #                 "notes",
-    #                 "ping_groups",
-    #                 "is_active",
-    #                 "is_default",
-    #             )
-    #         },
-    #     ),
-    #     (
-    #         "Advanced Options",
-    #         {
-    #             "classes": ("collapse",),
-    #             "fields": (
-    #                 "language_code",
-    #                 "has_default_pings_enabled",
-    #             ),
-    #         },
-    #     ),
-    # )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "url",
+                    "notes",
+                    "notification_types",
+                    "ping_groups",
+                    "is_active",
+                    "is_default",
+                )
+            },
+        ),
+        (
+            "Advanced Options",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "language_code",
+                    "has_default_pings_enabled",
+                    "webhook_type",
+                ),
+            },
+        ),
+    )

@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Webhooks are now configured with notification groups instead of notification types, which is more user friendly and works better with larger number of types. You can still disable specific notification types though if needed (see Advanced Options)
 - Improved notification architecture to make it easier for adding new notification types
 - Moved utils into it's own distribution package: allianceauth-app-utils
+- Improved meaning of "is sent" and "is added to timers" for notifications on admin site
 
 ## [1.7.0] - 2021-01-10
 

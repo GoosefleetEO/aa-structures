@@ -79,54 +79,86 @@ class NotificationType(models.TextChoices):
     """Definition of all supported notification types"""
 
     # character
-    CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg"
-    CHAR_LEFT_CORP_MSG = "CharLeftCorpMsg"
+    CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg", _("Character joins corporation")
+    CHAR_LEFT_CORP_MSG = "CharLeftCorpMsg", _("Character leaves corporation")
 
     # moon mining
-    MOONMINING_AUTOMATIC_FRACTURE = "MoonminingAutomaticFracture"
-    MOONMINING_EXTRACTION_CANCELLED = "MoonminingExtractionCancelled"
-    MOONMINING_EXTRACTION_FINISHED = "MoonminingExtractionFinished"
-    MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted"
-    MOONMINING_LASER_FIRED = "MoonminingLaserFired"
+    MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted", _(
+        "Moonmining extraction started"
+    )
+    MOONMINING_LASER_FIRED = "MoonminingLaserFired", _("Moonmining laser fired")
+    MOONMINING_EXTRACTION_CANCELLED = "MoonminingExtractionCancelled", _(
+        "Moonmining extraction cancelled"
+    )
+    MOONMINING_EXTRACTION_FINISHED = "MoonminingExtractionFinished", _(
+        "Moonmining extraction finished"
+    )
+    MOONMINING_AUTOMATIC_FRACTURE = "MoonminingAutomaticFracture", _(
+        "Moonmining automatic fracture triggered"
+    )
 
     # upwell structures
-    STRUCTURE_ANCHORING = "StructureAnchoring"
-    STRUCTURE_DESTROYED = "StructureDestroyed"
-    STRUCTURE_FUEL_ALERT = "StructureFuelAlert"
-    STRUCTURE_LOST_ARMOR = "StructureLostArmor"
-    STRUCTURE_LOST_SHIELD = "StructureLostShields"
-    STRUCTURE_ONLINE = "StructureOnline"
-    STRUCTURE_SERVICES_OFFLINE = "StructureServicesOffline"
-    STRUCTURE_UNANCHORING = "StructureUnanchoring"
-    STRUCTURE_UNDER_ATTACK = "StructureUnderAttack"
-    STRUCTURE_WENT_HIGH_POWER = "StructureWentHighPower"
-    STRUCTURE_WENT_LOW_POWER = "StructureWentLowPower"
+    STRUCTURE_ANCHORING = "StructureAnchoring", _("Upwell structure anchoring")
+    STRUCTURE_ONLINE = "StructureOnline", _("Upwell structure went online")
+    STRUCTURE_SERVICES_OFFLINE = "StructureServicesOffline", _(
+        "Upwell structure services went offline"
+    )
+    STRUCTURE_WENT_HIGH_POWER = "StructureWentHighPower", _(
+        "Upwell structure went high power"
+    )
+    STRUCTURE_WENT_LOW_POWER = "StructureWentLowPower", _(
+        "Upwell structure went low power"
+    )
+    STRUCTURE_UNANCHORING = "StructureUnanchoring", _("Upwell structure unanchoring")
+    STRUCTURE_FUEL_ALERT = "StructureFuelAlert", _("Upwell structure fuel alert")
+    STRUCTURE_UNDER_ATTACK = "StructureUnderAttack", _(
+        "Upwell structure is under attack"
+    )
+    STRUCTURE_LOST_SHIELD = "StructureLostShields", _("Upwell structure lost shields")
+    STRUCTURE_LOST_ARMOR = "StructureLostArmor", _("Upwell structure lost armor")
+    STRUCTURE_DESTROYED = "StructureDestroyed", _("Upwell structure destroyed")
 
     # STRUCTURE_REINFORCE_CHANGED = "StructureReinforceChange"
-    OWNERSHIP_TRANSFERRED = "OwnershipTransferred"
+    OWNERSHIP_TRANSFERRED = "OwnershipTransferred", _(
+        "Upwell structure ownership transferred"
+    )
 
     # customs offices
-    ORBITAL_ATTACKED = "OrbitalAttacked"
-    ORBITAL_REINFORCED = "OrbitalReinforced"
+    ORBITAL_ATTACKED = "OrbitalAttacked", _("Customs office attacked")
+    ORBITAL_REINFORCED = "OrbitalReinforced", _("Customs office reinforced")
 
     # starbases
-    TOWER_ALERT_MSG = "TowerAlertMsg"
-    TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg"
+    TOWER_ALERT_MSG = "TowerAlertMsg", _("Starbase attacked")
+    TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg", _("Starbase fuel alert")
 
     # sov
-    SOV_ENTOSIS_CAPTURE_STARTED = "EntosisCaptureStarted"
-    SOV_COMMAND_NODE_EVENT_STARTED = "SovCommandNodeEventStarted"
-    SOV_ALL_CLAIM_ACQUIRED_MSG = "SovAllClaimAquiredMsg"
-    SOV_STRUCTURE_REINFORCED = "SovStructureReinforced"
-    SOV_STRUCTURE_DESTROYED = "SovStructureDestroyed"
+    SOV_ENTOSIS_CAPTURE_STARTED = "EntosisCaptureStarted", _(
+        "Sovereignty entosis capture started"
+    )
+    SOV_COMMAND_NODE_EVENT_STARTED = "SovCommandNodeEventStarted", _(
+        "Sovereignty command node event started"
+    )
+    SOV_ALL_CLAIM_ACQUIRED_MSG = "SovAllClaimAquiredMsg", _(
+        "Sovereignty DED claim acknowledgment"
+    )
+    SOV_STRUCTURE_REINFORCED = "SovStructureReinforced", _(
+        "Sovereignty structure reinforced"
+    )
+    SOV_STRUCTURE_DESTROYED = "SovStructureDestroyed", _(
+        "Sovereignty structure destroyed"
+    )
 
     # wars
-    WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = "AllyJoinedWarAggressorMsg"
-    WAR_CORP_WAR_SURRENDER_MSG = "CorpWarSurrenderMsg"
-    WAR_WAR_ADOPTED = "WarAdopted"
-    WAR_WAR_DECLARED = "WarDeclared"
-    WAR_WAR_INHERITED = "WarInherited"
-    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord"
+    WAR_WAR_DECLARED = "WarDeclared", _("War declared")
+    WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = "AllyJoinedWarAggressorMsg", _(
+        "War ally joined"
+    )
+    WAR_WAR_ADOPTED = "WarAdopted", _("War adopted")
+    WAR_WAR_INHERITED = "WarInherited", _("War inherited")
+    WAR_CORP_WAR_SURRENDER_MSG = "CorpWarSurrenderMsg", _("War party surrendered")
+    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", _(
+        "War retracted by Concord"
+    )
 
     @classproperty
     def webhook_defaults(cls) -> list:
@@ -246,15 +278,6 @@ class Webhook(WebhookBase):
         blank=True,
         help_text="Groups to be pinged for each notification - ",
     )
-    disabled_notification_types = MultiSelectField(
-        choices=NotificationType.choices,
-        default=None,
-        blank=True,
-        help_text=(
-            "Disables sending of notifications for selected notification types "
-            "(regardless of selected notification groups)"
-        ),
-    )
 
 
 class EveEntity(models.Model):
@@ -363,7 +386,7 @@ class Notification(models.Model):
     )
     is_timer_added = models.BooleanField(
         null=True,
-        default=None,
+        default=False,
         help_text="True when a timer has been added for this notification",
     )
     last_updated = models.DateTimeField(
@@ -400,6 +423,11 @@ class Notification(models.Model):
     def can_be_rendered(self) -> bool:
         """whether this notification can be rendered in Discord"""
         return self.notif_type in NotificationType.values
+
+    @property
+    def can_have_timer(self) -> bool:
+        """whether this notification can have a timer"""
+        return self.notif_type in NotificationType.relevant_for_timerboard
 
     # @classmethod
     # def get_all_types(cls) -> Set[int]:
