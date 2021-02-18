@@ -328,9 +328,9 @@ class OwnerAdmin(admin.ModelAdmin):
     _is_active.short_description = "active"
 
     def _is_alliance_main(self, obj):
-        return obj.is_alliance_main
+        value = True if obj.is_alliance_main else None
+        return admin_boolean_icon_html(value)
 
-    _is_alliance_main.boolean = True
     _is_alliance_main.short_description = "alliance main"
 
     def _is_structure_sync_ok(self, obj):

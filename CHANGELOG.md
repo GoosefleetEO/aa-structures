@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 > ⚠️ **Important update notes:** This update will remove configured notification types from all webhooks and thereby effectively suspend notification sending. Please make sure to go through all your webhooks and re-configure the notification types to re-enable sending after updating.
 
+> ⚠️ **Users of 1.8.0a3 only:** In case you have installed the alpha version **1.8.0a3** it is critical that you migrate down to migration 0017 **before** installing and applying any higher version. If you did not install this particular alpha version please ignore this note. You can migrate down with `python manage.py migrate structures 0017`. Should you get the error `Data too long for column 'notification_types'` please delete all your webhooks and then try to migrate down again.
+
 ### Added
 
 - Notification for wars
@@ -21,9 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Messages now originate from an app name instead of the organization a notification belongs to. The organization now appears as author on messages.
-- Webhooks are now configured with notification groups instead of notification types, which is more user friendly and works better with larger number of types. You can still disable specific notification types though if needed (see Advanced Options)
-- Improved notification architecture to make it easier for adding new notification types
+- Messages on Discord now show this app as sender instead of the organization of an notification. The organization now appears as author on messages.
+- Improved notification architecture to make it easier for adding more notification types
 - Moved utils into it's own distribution package: allianceauth-app-utils
 - Improved meaning of "is sent" and "is added to timers" for notifications on admin site
 

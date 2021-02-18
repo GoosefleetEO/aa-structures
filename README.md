@@ -54,7 +54,7 @@ Here is an example for the structure browser:
 
 This is an example for a notification posted on Discord:
 
-![Notification example](https://i.imgur.com/OrJsQfW.png)
+![Notification example](https://i.imgur.com/oqBqeFy.png)
 
 ## Installation
 
