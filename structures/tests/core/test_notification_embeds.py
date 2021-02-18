@@ -59,7 +59,7 @@ class TestNotificationEmbeds(TestCase):
         for notification in Notification.objects.select_related(
             "owner", "sender"
         ).all():
-            if notification.notif_type in NotificationType.ids:
+            if notification.notif_type in NotificationType.values:
                 # given
                 notification_embed = ne.NotificationBaseEmbed.create(notification)
                 # when
@@ -67,7 +67,7 @@ class TestNotificationEmbeds(TestCase):
                 # then
                 self.assertIsInstance(discord_embed, dhooks_lite.Embed)
                 types_tested.add(notification.notif_type)
-        self.assertSetEqual(set(NotificationType.ids), types_tested)
+        self.assertSetEqual(set(NotificationType.values), types_tested)
 
     def test_should_raise_exception_for_unsupported_notif_types(self):
         # given

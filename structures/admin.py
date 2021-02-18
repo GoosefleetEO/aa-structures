@@ -6,6 +6,7 @@ from django.utils.html import format_html
 from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
 from allianceauth.services.hooks import get_extension_logger
 
+from app_utils.django import admin_boolean_icon_html
 from app_utils.logging import LoggerAddTag
 
 from . import __title__
@@ -22,7 +23,6 @@ from .models import (
     EveSovereigntyMap,
     EveType,
     Notification,
-    NotificationGroup,
     Owner,
     Structure,
     StructureTag,
@@ -126,28 +126,35 @@ class NotificationAdmin(admin.ModelAdmin):
         "created",
         "last_updated",
         "_webhooks",
-        "_can_be_send",
-        "is_sent",
-        "is_timer_added",
+        "_is_sent",
+        "_is_timer_added",
     )
     ordering = ["-timestamp", "-notification_id"]
     list_filter = ("owner", RenderableNotificationFilter, "is_sent", "notif_type")
 
     def _webhooks(self, obj):
-        names = [x.name for x in obj.owner.webhooks.all().order_by("name")]
+        if not obj.can_be_rendered:
+            return format_html("<i>N/A</i>")
+        names = [
+            x.name
+            for x in obj.owner.webhooks.filter(
+                notification_types__contains=obj.notif_type
+            ).order_by("name")
+        ]
         if names:
             return ", ".join(names)
         else:
             return format_html(
-                '<span style="color: red"></i>Error: This notification can not be sent, '
-                "because there is no webhook configured for {}. ",
-                obj.owner,
+                '<b><span style="color: orange">Not configured</span></b>'
             )
 
-    def _can_be_send(self, obj) -> bool:
-        return obj.can_be_rendered
+    def _is_sent(self, obj):
+        value = obj.is_sent if obj.can_be_rendered else None
+        return admin_boolean_icon_html(value)
 
-    _can_be_send.boolean = True
+    def _is_timer_added(self, obj):
+        value = obj.is_timer_added if obj.can_be_rendered else None
+        return admin_boolean_icon_html(value)
 
     actions = (
         "mark_as_sent",
@@ -723,7 +730,6 @@ class WebhookAdmin(admin.ModelAdmin):
     ordering = ["name"]
     list_display = (
         "name",
-        "_notification_groups",
         "_ping_groups",
         "is_active",
         "is_default",
@@ -731,18 +737,6 @@ class WebhookAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active",)
     save_as = True
-
-    def _notification_groups(self, obj):
-        names = sorted(
-            [
-                NotificationGroup(group_name).label
-                for group_name in obj.notification_groups
-            ]
-        )
-        if names:
-            return names
-        else:
-            return None
 
     def _default_pings(self, obj):
         return obj.has_default_pings_enabled
@@ -808,30 +802,28 @@ class WebhookAdmin(admin.ModelAdmin):
 
     filter_horizontal = ("ping_groups",)
 
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "name",
-                    "url",
-                    "notes",
-                    "notification_groups",
-                    "ping_groups",
-                    "is_active",
-                    "is_default",
-                )
-            },
-        ),
-        (
-            "Advanced Options",
-            {
-                "classes": ("collapse",),
-                "fields": (
-                    "language_code",
-                    "has_default_pings_enabled",
-                    "disabled_notification_types",
-                ),
-            },
-        ),
-    )
+    # fieldsets = (
+    #     (
+    #         None,
+    #         {
+    #             "fields": (
+    #                 "name",
+    #                 "url",
+    #                 "notes",
+    #                 "ping_groups",
+    #                 "is_active",
+    #                 "is_default",
+    #             )
+    #         },
+    #     ),
+    #     (
+    #         "Advanced Options",
+    #         {
+    #             "classes": ("collapse",),
+    #             "fields": (
+    #                 "language_code",
+    #                 "has_default_pings_enabled",
+    #             ),
+    #         },
+    #     ),
+    # )

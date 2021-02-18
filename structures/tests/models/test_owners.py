@@ -38,7 +38,6 @@ from ...models import (
     Webhook,
     Owner,
     Notification,
-    NotificationGroup,
     Structure,
 )
 from ...models.notifications import NotificationType
@@ -1346,7 +1345,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
             name="Dummy",
             url="dummy-url",
             is_active=True,
-            notification_groups=NotificationGroup.values,
+            notification_types=NotificationType.values,
         )
         cls.owner.webhooks.add(my_webhook)
 
@@ -1379,7 +1378,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         }
         notifications_expected = set(
             Notification.objects.filter(
-                owner=self.owner, notif_type__in=NotificationType.ids
+                owner=self.owner, notif_type__in=NotificationType.values
             ).values_list("notification_id", flat=True)
         )
         self.assertSetEqual(notifications_processed, notifications_expected)
@@ -1400,7 +1399,10 @@ class TestSendNewNotifications(NoSocketsTestCase):
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="dummy-url-1",
-            notification_groups=[NotificationGroup.CUSTOMS_OFFICE],
+            notification_types=[
+                NotificationType.ORBITAL_ATTACKED,
+                NotificationType.STRUCTURE_DESTROYED,
+            ],
             is_active=True,
         )
         self.owner.webhooks.clear()
@@ -1414,9 +1416,10 @@ class TestSendNewNotifications(NoSocketsTestCase):
         }
         notifications_expected = set(
             Notification.objects.filter(
-                notif_type__in=NotificationType.ids_for_group(
-                    NotificationGroup.CUSTOMS_OFFICE
-                )
+                notif_type__in=[
+                    NotificationType.ORBITAL_ATTACKED,
+                    NotificationType.STRUCTURE_DESTROYED,
+                ]
             ).values_list("notification_id", flat=True)
         )
         self.assertSetEqual(notifications_processed, notifications_expected)
@@ -1437,13 +1440,19 @@ class TestSendNewNotifications(NoSocketsTestCase):
         webhook_1 = Webhook.objects.create(
             name="Webhook 1",
             url="dummy-url-1",
-            notification_groups=[NotificationGroup.CUSTOMS_OFFICE],
+            notification_types=[
+                NotificationType.ORBITAL_ATTACKED,
+                NotificationType.ORBITAL_REINFORCED,
+            ],
             is_active=True,
         )
         webhook_2 = Webhook.objects.create(
             name="Webhook 2",
             url="dummy-url-2",
-            notification_groups=[NotificationGroup.STARBASE],
+            notification_types=[
+                NotificationType.STRUCTURE_DESTROYED,
+                NotificationType.STRUCTURE_FUEL_ALERT,
+            ],
             is_active=True,
         )
         self.owner.webhooks.clear()
@@ -1462,16 +1471,18 @@ class TestSendNewNotifications(NoSocketsTestCase):
         expected = {
             webhook_1.pk: set(
                 Notification.objects.filter(
-                    notif_type__in=NotificationType.ids_for_group(
-                        NotificationGroup.CUSTOMS_OFFICE
-                    )
+                    notif_type__in=[
+                        NotificationType.ORBITAL_ATTACKED,
+                        NotificationType.ORBITAL_REINFORCED,
+                    ]
                 ).values_list("notification_id", flat=True)
             ),
             webhook_2.pk: set(
                 Notification.objects.filter(
-                    notif_type__in=NotificationType.ids_for_group(
-                        NotificationGroup.STARBASE
-                    )
+                    notif_type__in=[
+                        NotificationType.STRUCTURE_DESTROYED,
+                        NotificationType.STRUCTURE_FUEL_ALERT,
+                    ]
                 ).values_list("notification_id", flat=True)
             ),
         }
@@ -1495,7 +1506,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     #     wh_structures = Webhook.objects.create(
     #         name="Structures",
     #         url="dummy-url-1",
-    #         notification_groups=notification_groups_1,
+    #         notification_types=notification_groups_1,
     #         is_active=True,
     #     )
     #     notification_groups_2 = ",".join(
@@ -1504,7 +1515,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     #     wh_mining = Webhook.objects.create(
     #         name="Mining",
     #         url="dummy-url-2",
-    #         notification_groups=notification_groups_2,
+    #         notification_types=notification_groups_2,
     #         is_default=True,
     #         is_active=True,
     #     )

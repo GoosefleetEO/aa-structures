@@ -98,7 +98,7 @@ def send_notifications(notification_pks: list) -> None:
             for webhook in notif.owner.webhooks.filter(is_active=True):
                 webhooks.add(webhook)
                 if (
-                    str(notif.notif_type) in webhook.notification_type_ids
+                    str(notif.notif_type) in webhook.notification_types
                     and not notif.filter_for_npc_attacks()
                     and not notif.filter_for_alliance_level()
                 ):

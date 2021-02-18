@@ -1,10 +1,9 @@
 """Notification related models"""
 
 from datetime import timedelta
-from enum import Enum
 import logging
 import yaml
-from typing import List, Tuple
+from typing import Tuple
 
 import dhooks_lite
 
@@ -76,162 +75,148 @@ LANGUAGES = (
 )
 
 
-class NotificationGroup(models.TextChoices):
-    """Definition of all supported notification groups"""
-
-    CORPORATION_MEMBER = "CM"
-    MOON_MINING = "MM"
-    UPWELL_STRUCTURE = "US"
-    CUSTOMS_OFFICE = "CO"
-    STARBASE = "SB"
-    SOVEREIGNTY = "SV"
-    WAR = "WR"
-
-
-class NotificationType(Enum):
-    """Definition of all supported notification types
-
-    Each member is a tuple of id, group
-    """
+class NotificationType(models.TextChoices):
+    """Definition of all supported notification types"""
 
     # character
-    CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg", NotificationGroup.CORPORATION_MEMBER
-    CHAR_LEFT_CORP_MSG = "CharLeftCorpMsg", NotificationGroup.CORPORATION_MEMBER
+    CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg"
+    CHAR_LEFT_CORP_MSG = "CharLeftCorpMsg"
 
     # moon mining
-    MOONS_AUTOMATIC_FRACTURE = (
-        "MoonminingAutomaticFracture",
-        NotificationGroup.MOON_MINING,
-    )
-    MOONS_EXTRACTION_CANCELED = (
-        "MoonminingExtractionCancelled",
-        NotificationGroup.MOON_MINING,
-    )
-    MOONS_EXTRACTION_FINISHED = (
-        "MoonminingExtractionFinished",
-        NotificationGroup.MOON_MINING,
-    )
-    MOONS_EXTRACTION_STARTED = (
-        "MoonminingExtractionStarted",
-        NotificationGroup.MOON_MINING,
-    )
-    MOONS_LASER_FIRED = "MoonminingLaserFired", NotificationGroup.MOON_MINING
+    MOONMINING_AUTOMATIC_FRACTURE = "MoonminingAutomaticFracture"
+    MOONMINING_EXTRACTION_CANCELLED = "MoonminingExtractionCancelled"
+    MOONMINING_EXTRACTION_FINISHED = "MoonminingExtractionFinished"
+    MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted"
+    MOONMINING_LASER_FIRED = "MoonminingLaserFired"
 
     # upwell structures
-    STRUCTURE_ANCHORING = "StructureAnchoring", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_DESTROYED = "StructureDestroyed", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_FUEL_ALERT = "StructureFuelAlert", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_LOST_ARMOR = "StructureLostArmor", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_LOST_SHIELD = "StructureLostShields", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_ONLINE = "StructureOnline", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_SERVICES_OFFLINE = (
-        "StructureServicesOffline",
-        NotificationGroup.UPWELL_STRUCTURE,
-    )
-    STRUCTURE_UNANCHORING = "StructureUnanchoring", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_UNDER_ATTACK = "StructureUnderAttack", NotificationGroup.UPWELL_STRUCTURE
-    STRUCTURE_WENT_HIGH_POWER = (
-        "StructureWentHighPower",
-        NotificationGroup.UPWELL_STRUCTURE,
-    )
-    STRUCTURE_WENT_LOW_POWER = (
-        "StructureWentLowPower",
-        NotificationGroup.UPWELL_STRUCTURE,
-    )
+    STRUCTURE_ANCHORING = "StructureAnchoring"
+    STRUCTURE_DESTROYED = "StructureDestroyed"
+    STRUCTURE_FUEL_ALERT = "StructureFuelAlert"
+    STRUCTURE_LOST_ARMOR = "StructureLostArmor"
+    STRUCTURE_LOST_SHIELD = "StructureLostShields"
+    STRUCTURE_ONLINE = "StructureOnline"
+    STRUCTURE_SERVICES_OFFLINE = "StructureServicesOffline"
+    STRUCTURE_UNANCHORING = "StructureUnanchoring"
+    STRUCTURE_UNDER_ATTACK = "StructureUnderAttack"
+    STRUCTURE_WENT_HIGH_POWER = "StructureWentHighPower"
+    STRUCTURE_WENT_LOW_POWER = "StructureWentLowPower"
 
-    # STRUCTURE_REINFORCE_CHANGED = "StructureReinforceChange",NotificationGroup.UPWELL_STRUCTURE
-    OWNERSHIP_TRANSFERRED = "OwnershipTransferred", NotificationGroup.UPWELL_STRUCTURE
+    # STRUCTURE_REINFORCE_CHANGED = "StructureReinforceChange"
+    OWNERSHIP_TRANSFERRED = "OwnershipTransferred"
 
     # customs offices
-    ORBITAL_ATTACKED = "OrbitalAttacked", NotificationGroup.CUSTOMS_OFFICE
-    ORBITAL_REINFORCED = "OrbitalReinforced", NotificationGroup.CUSTOMS_OFFICE
+    ORBITAL_ATTACKED = "OrbitalAttacked"
+    ORBITAL_REINFORCED = "OrbitalReinforced"
 
     # starbases
-    TOWER_ALERT_MSG = "TowerAlertMsg", NotificationGroup.STARBASE
-    TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg", NotificationGroup.STARBASE
+    TOWER_ALERT_MSG = "TowerAlertMsg"
+    TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg"
 
     # sov
-    SOV_ENTOSIS_CAPTURE_STARTED = "EntosisCaptureStarted", NotificationGroup.SOVEREIGNTY
-    SOV_COMMAND_NODE_EVENT_STARTED = (
-        "SovCommandNodeEventStarted",
-        NotificationGroup.SOVEREIGNTY,
-    )
-    SOV_ALL_CLAIM_ACQUIRED_MSG = "SovAllClaimAquiredMsg", NotificationGroup.SOVEREIGNTY
-    SOV_STRUCTURE_REINFORCED = "SovStructureReinforced", NotificationGroup.SOVEREIGNTY
-    SOV_STRUCTURE_DESTROYED = "SovStructureDestroyed", NotificationGroup.SOVEREIGNTY
+    SOV_ENTOSIS_CAPTURE_STARTED = "EntosisCaptureStarted"
+    SOV_COMMAND_NODE_EVENT_STARTED = "SovCommandNodeEventStarted"
+    SOV_ALL_CLAIM_ACQUIRED_MSG = "SovAllClaimAquiredMsg"
+    SOV_STRUCTURE_REINFORCED = "SovStructureReinforced"
+    SOV_STRUCTURE_DESTROYED = "SovStructureDestroyed"
 
     # wars
-    WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = (
-        "AllyJoinedWarAggressorMsg",
-        NotificationGroup.WAR,
-    )
-    WAR_CORP_WAR_SURRENDER_MSG = "CorpWarSurrenderMsg", NotificationGroup.WAR
-    WAR_WAR_ADOPTED = "WarAdopted", NotificationGroup.WAR
-    WAR_WAR_DECLARED = "WarDeclared", NotificationGroup.WAR
-    WAR_WAR_INHERITED = "WarInherited", NotificationGroup.WAR
-    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", NotificationGroup.WAR
-
-    def __init__(self, id, group) -> None:
-        self.id = id
-        self.group = group
-
-    # def __eq__(self, o: object) -> bool:
-    #     """Compare with id instead of tuple"""
-    #     return self.id == o
+    WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = "AllyJoinedWarAggressorMsg"
+    WAR_CORP_WAR_SURRENDER_MSG = "CorpWarSurrenderMsg"
+    WAR_WAR_ADOPTED = "WarAdopted"
+    WAR_WAR_DECLARED = "WarDeclared"
+    WAR_WAR_INHERITED = "WarInherited"
+    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord"
 
     @classproperty
-    def choices(cls) -> List[tuple]:
-        return [(item.id, item.id) for item in cls]
-
-    @classproperty
-    def ids(cls) -> List[str]:
-        return [x.id for x in cls]
-
-    @classmethod
-    def ids_for_group(cls, group: str) -> list:
-        return [x.id for x in cls if str(x.group) == str(group)]
+    def webhook_defaults(cls) -> list:
+        """list of default notifications for new webhooks"""
+        return [
+            cls.STRUCTURE_ANCHORING,
+            cls.STRUCTURE_DESTROYED,
+            cls.STRUCTURE_FUEL_ALERT,
+            cls.STRUCTURE_LOST_ARMOR,
+            cls.STRUCTURE_LOST_SHIELD,
+            cls.STRUCTURE_ONLINE,
+            cls.STRUCTURE_SERVICES_OFFLINE,
+            cls.STRUCTURE_UNDER_ATTACK,
+            cls.STRUCTURE_WENT_HIGH_POWER,
+            cls.STRUCTURE_WENT_LOW_POWER,
+            cls.ORBITAL_ATTACKED,
+            cls.ORBITAL_REINFORCED,
+            cls.TOWER_ALERT_MSG,
+            cls.TOWER_RESOURCE_ALERT_MSG,
+            cls.SOV_STRUCTURE_REINFORCED,
+            cls.SOV_STRUCTURE_DESTROYED,
+        ]
 
     @classproperty
     def relevant_for_timerboard(cls) -> list:
         return [
-            cls.STRUCTURE_LOST_SHIELD.id,
-            cls.STRUCTURE_LOST_ARMOR.id,
-            cls.STRUCTURE_ANCHORING.id,
-            cls.ORBITAL_REINFORCED.id,
-            cls.MOONS_EXTRACTION_STARTED.id,
-            cls.MOONS_EXTRACTION_CANCELED.id,
-            cls.SOV_STRUCTURE_REINFORCED.id,
+            cls.STRUCTURE_LOST_SHIELD,
+            cls.STRUCTURE_LOST_ARMOR,
+            cls.STRUCTURE_ANCHORING,
+            cls.ORBITAL_REINFORCED,
+            cls.MOONMINING_EXTRACTION_STARTED,
+            cls.MOONMINING_EXTRACTION_CANCELLED,
+            cls.SOV_STRUCTURE_REINFORCED,
         ]
 
     @classproperty
     def relevant_for_alliance_level(cls) -> list:
         return [
-            cls.SOV_ENTOSIS_CAPTURE_STARTED.id,
-            cls.SOV_COMMAND_NODE_EVENT_STARTED.id,
-            cls.SOV_ALL_CLAIM_ACQUIRED_MSG.id,
-            cls.SOV_STRUCTURE_REINFORCED.id,
-            cls.SOV_STRUCTURE_DESTROYED.id,
-            cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG.id,
-            cls.WAR_CORP_WAR_SURRENDER_MSG.id,
-            cls.WAR_WAR_DECLARED.id,
-            cls.WAR_WAR_RETRACTED_BY_CONCORD.id,
-            cls.WAR_WAR_ADOPTED.id,
-            cls.WAR_WAR_INHERITED.id,
+            cls.SOV_ENTOSIS_CAPTURE_STARTED,
+            cls.SOV_COMMAND_NODE_EVENT_STARTED,
+            cls.SOV_ALL_CLAIM_ACQUIRED_MSG,
+            cls.SOV_STRUCTURE_REINFORCED,
+            cls.SOV_STRUCTURE_DESTROYED,
+            cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
+            cls.WAR_CORP_WAR_SURRENDER_MSG,
+            cls.WAR_WAR_DECLARED,
+            cls.WAR_WAR_RETRACTED_BY_CONCORD,
+            cls.WAR_WAR_ADOPTED,
+            cls.WAR_WAR_INHERITED,
         ]
+
+
+# def choices_subset(*notification_types):
+#     return tuple([(item.value, item.label) for item in notification_types])
+
+
+# NOTIFICATION_CHOICES = (
+#     (
+#         _("Corporation Member"),
+#         choices_subset(
+#             NotificationType.CHAR_APP_ACCEPT_MSG, NotificationType.CHAR_LEFT_CORP_MSG
+#         ),
+#     ),
+#     (
+#         _("Moonmining"),
+#         choices_subset(
+#             NotificationType.MOONMINING_EXTRACTION_STARTED,
+#             NotificationType.MOONMINING_EXTRACTION_CANCELLED,
+#             NotificationType.MOONMINING_LASER_FIRED,
+#             NotificationType.MOONMINING_EXTRACTION_FINISHED,
+#             NotificationType.MOONMINING_AUTOMATIC_FRACTURE,
+#         ),
+#     ),
+# )
 
 
 def get_default_notification_types():
     """DEPRECATED: generates a set of all existing notification types as default"""
-    return tuple(sorted([str(x[0]) for x in NotificationType.ids]))
+    return tuple(sorted([str(x[0]) for x in NotificationType.values]))
 
 
 class Webhook(WebhookBase):
     """A destination for forwarding notification alerts"""
 
-    notification_groups = MultiSelectField(
-        choices=NotificationGroup.choices,
-        default=None,
-        help_text="only notifications from selected groups are sent to this webhook",
+    notification_types = MultiSelectField(
+        choices=NotificationType.choices,
+        default=NotificationType.webhook_defaults,
+        help_text=(
+            "select which type of notifications should be forwarded to this webhook"
+        ),
     )
     language_code = models.CharField(
         max_length=8,
@@ -270,20 +255,6 @@ class Webhook(WebhookBase):
             "(regardless of selected notification groups)"
         ),
     )
-
-    @property
-    def notification_type_ids(self) -> set:
-        """returns enabled notification type IDs"""
-        disabled_types = (
-            set(self.disabled_notification_types)
-            if self.disabled_notification_types
-            else set()
-        )
-        result = set()
-        for group in self.notification_groups:
-            types_from_group = set(NotificationType.ids_for_group(group))
-            result |= types_from_group - disabled_types
-        return result
 
 
 class EveEntity(models.Model):
@@ -428,7 +399,7 @@ class Notification(models.Model):
     @property
     def can_be_rendered(self) -> bool:
         """whether this notification can be rendered in Discord"""
-        return self.notif_type in NotificationType.ids
+        return self.notif_type in NotificationType.values
 
     # @classmethod
     # def get_all_types(cls) -> Set[int]:
@@ -443,19 +414,19 @@ class Notification(models.Model):
         """whether this notification is about a NPC attacking"""
         result = False
         if self.notif_type in [
-            NotificationType.ORBITAL_ATTACKED.id,
-            NotificationType.STRUCTURE_UNDER_ATTACK.id,
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.STRUCTURE_UNDER_ATTACK,
         ]:
             parsed_text = self.get_parsed_text()
             corporation_id = None
-            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK.id:
+            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
                 if (
                     "corpLinkData" in parsed_text
                     and len(parsed_text["corpLinkData"]) >= 3
                 ):
                     corporation_id = int(parsed_text["corpLinkData"][2])
 
-            if self.notif_type == NotificationType.ORBITAL_ATTACKED.id:
+            if self.notif_type == NotificationType.ORBITAL_ATTACKED:
                 if "aggressorCorpID" in parsed_text:
                     corporation_id = int(parsed_text["aggressorCorpID"])
 
@@ -569,25 +540,23 @@ class Notification(models.Model):
             try:
                 with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
                     if self.notif_type in [
-                        NotificationType.STRUCTURE_LOST_ARMOR.id,
-                        NotificationType.STRUCTURE_LOST_SHIELD.id,
+                        NotificationType.STRUCTURE_LOST_ARMOR,
+                        NotificationType.STRUCTURE_LOST_SHIELD,
                     ]:
                         timer_created = self._gen_timer_structure_reinforcement(
                             parsed_text, token
                         )
-                    elif self.notif_type == NotificationType.STRUCTURE_ANCHORING.id:
+                    elif self.notif_type == NotificationType.STRUCTURE_ANCHORING:
                         timer_created = self._gen_timer_structure_anchoring(parsed_text)
-                    elif (
-                        self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED.id
-                    ):
+                    elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
                         timer_created = self._gen_timer_sov_reinforcements(parsed_text)
-                    elif self.notif_type == NotificationType.ORBITAL_REINFORCED.id:
+                    elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
                         timer_created = self._gen_timer_orbital_reinforcements(
                             parsed_text
                         )
                     elif self.notif_type in [
-                        NotificationType.MOONS_EXTRACTION_STARTED.id,
-                        NotificationType.MOONS_EXTRACTION_CANCELED.id,
+                        NotificationType.MOONMINING_EXTRACTION_STARTED,
+                        NotificationType.MOONMINING_EXTRACTION_CANCELLED,
                     ]:
                         if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
                             timer_created = None
@@ -628,8 +597,8 @@ class Notification(models.Model):
         timer_added = False
         if has_auth_timers:
             details_map = {
-                NotificationType.STRUCTURE_LOST_SHIELD.id: gettext("Armor timer"),
-                NotificationType.STRUCTURE_LOST_ARMOR.id: gettext("Final timer"),
+                NotificationType.STRUCTURE_LOST_SHIELD: gettext("Armor timer"),
+                NotificationType.STRUCTURE_LOST_ARMOR: gettext("Final timer"),
             }
             AuthTimer.objects.create(
                 details=details_map.get(self.notif_type, ""),
@@ -645,8 +614,8 @@ class Notification(models.Model):
 
         if has_structure_timers:
             timer_map = {
-                NotificationType.STRUCTURE_LOST_SHIELD.id: Timer.TYPE_ARMOR,
-                NotificationType.STRUCTURE_LOST_ARMOR.id: Timer.TYPE_HULL,
+                NotificationType.STRUCTURE_LOST_SHIELD: Timer.TYPE_ARMOR,
+                NotificationType.STRUCTURE_LOST_ARMOR: Timer.TYPE_HULL,
             }
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
                 id=structure_obj.eve_solar_system_id
@@ -872,7 +841,7 @@ class Notification(models.Model):
             structure_type = None
             visibility = None
 
-        if self.notif_type == NotificationType.MOONS_EXTRACTION_STARTED.id:
+        if self.notif_type == NotificationType.MOONMINING_EXTRACTION_STARTED:
             if has_auth_timers:
                 AuthTimer.objects.create(
                     details=details,
@@ -914,9 +883,9 @@ class Notification(models.Model):
                 )
                 timer_added = True
 
-        elif self.notif_type == NotificationType.MOONS_EXTRACTION_CANCELED.id:
+        elif self.notif_type == NotificationType.MOONMINING_EXTRACTION_CANCELLED:
             notifications_qs = Notification.objects.filter(
-                notif_type=NotificationType.MOONS_EXTRACTION_STARTED.id,
+                notif_type=NotificationType.MOONMINING_EXTRACTION_STARTED,
                 owner=self.owner,
                 is_timer_added=True,
                 timestamp__lte=self.timestamp,

@@ -455,7 +455,7 @@ class NotificationQuerySet(models.QuerySet):
 
         return self.annotate(
             can_be_rendered_2=Case(
-                When(notif_type__in=NotificationType.ids, then=True),
+                When(notif_type__in=NotificationType.values, then=True),
                 default=Value(False),
                 output_field=models.BooleanField(),
             )

@@ -14,7 +14,6 @@ from ...models import (
     EveEntity,
     Notification,
     NotificationType,
-    NotificationGroup,
     Webhook,
     Structure,
 )
@@ -234,13 +233,13 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
         types_tested = set()
         for notif in Notification.objects.all():
-            if notif.notif_type in NotificationType.ids:
+            if notif.notif_type in NotificationType.values:
                 self.assertFalse(notif.is_sent)
                 self.assertTrue(notif.send_to_webhook(self.webhook))
                 types_tested.add(notif.notif_type)
 
         # make sure we have tested all existing notification types
-        self.assertSetEqual(set(NotificationType.ids), types_tested)
+        self.assertSetEqual(set(NotificationType.values), types_tested)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
@@ -777,76 +776,20 @@ if "structuretimers" in app_labels():
 
 
 class TestNotificationType(NoSocketsTestCase):
-    def test_should_compare_with_id_1(self):
-        # given
-        x = NotificationType.STRUCTURE_ANCHORING.id
-        # when/then
-        self.assertTrue(x == "StructureAnchoring")
-
-    def test_should_compare_with_id_2(self):
-        # given
-        x = NotificationType.STRUCTURE_ANCHORING.id
-        # when/then
-        self.assertFalse(x == "xStructureAnchoring")
-
-    def test_should_return_ids_for_group(self):
-        # when
-        result = NotificationType.ids_for_group(NotificationGroup.CUSTOMS_OFFICE)
-        # then
-        self.assertSetEqual(
-            set(result),
-            {
-                NotificationType.ORBITAL_ATTACKED.id,
-                NotificationType.ORBITAL_REINFORCED.id,
-            },
-        )
+    pass
+    # def test_should_return_extract(self):
+    #     # when
+    #     result = choices_subset(
+    #         NotificationType.MOONMINING_EXTRACTION_FINISHED,
+    #         NotificationType.MOONMINING_EXTRACTION_STARTED,
+    #     )
+    #     # then
+    #     expected = (
+    #         ("MoonminingExtractionFinished", "Moonmining Extraction Finished"),
+    #         ("MoonminingExtractionStarted", "Moonmining Extraction Started"),
+    #     )
+    #     self.assertEqual(result, expected)
 
 
 class TestWebhook(NoSocketsTestCase):
-    def test_should_return_notification_types_for_enabled_groups(self):
-        # given
-        webhook = Webhook.objects.create(
-            name="Test",
-            url="dummy-url",
-            notification_groups=[
-                NotificationGroup.CUSTOMS_OFFICE,
-                NotificationGroup.STARBASE,
-            ],
-        )
-        # when
-        result = webhook.notification_type_ids
-        # then
-        self.assertSetEqual(
-            set(result),
-            {
-                NotificationType.TOWER_ALERT_MSG.id,
-                NotificationType.TOWER_RESOURCE_ALERT_MSG.id,
-                NotificationType.ORBITAL_ATTACKED.id,
-                NotificationType.ORBITAL_REINFORCED.id,
-            },
-        )
-
-    def test_should_return_notification_types_for_enabled_groups_excluding_disabled_types(
-        self,
-    ):
-        # given
-        webhook = Webhook.objects.create(
-            name="Test",
-            url="dummy-url",
-            notification_groups=[
-                NotificationGroup.CUSTOMS_OFFICE,
-                NotificationGroup.STARBASE,
-            ],
-            disabled_notification_types=[NotificationType.ORBITAL_ATTACKED.id],
-        )
-        # when
-        result = webhook.notification_type_ids
-        # then
-        self.assertSetEqual(
-            set(result),
-            {
-                NotificationType.TOWER_ALERT_MSG.id,
-                NotificationType.TOWER_RESOURCE_ALERT_MSG.id,
-                NotificationType.ORBITAL_REINFORCED.id,
-            },
-        )
+    pass

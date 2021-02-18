@@ -890,7 +890,7 @@ class Owner(models.Model):
                 )
                 all_new_notifications = list(
                     Notification.objects.filter(owner=self)
-                    .filter(notif_type__in=NotificationType.ids)
+                    .filter(notif_type__in=NotificationType.values)
                     .filter(is_sent=False)
                     .filter(timestamp__gte=cutoff_dt_for_stale)
                     .select_related()
@@ -903,7 +903,7 @@ class Owner(models.Model):
                     new_notifications = [
                         notif
                         for notif in all_new_notifications
-                        if str(notif.notif_type) in webhook.notification_type_ids
+                        if str(notif.notif_type) in webhook.notification_types
                     ]
                     if len(new_notifications) > 0:
                         new_notifications_count += len(new_notifications)

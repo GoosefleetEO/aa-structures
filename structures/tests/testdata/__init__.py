@@ -38,7 +38,7 @@ from ...models import (
     Webhook,
     Owner,
     Notification,
-    NotificationGroup,
+    NotificationType,
     Structure,
 )
 from ...models.eveuniverse import EveUniverse
@@ -615,7 +615,7 @@ def load_entity(EntityClass):
             )
             continue
         elif EntityClass is Webhook:
-            obj["notification_groups"] = NotificationGroup.values
+            obj["notification_types"] = NotificationType.values
         EntityClass.objects.create(**obj)
     assert len(entities_testdata[entity_name]) == EntityClass.objects.count()
 
