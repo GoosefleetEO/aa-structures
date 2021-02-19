@@ -813,7 +813,7 @@
             "sender_id": 2901,
             "sender_type": "corporation",
             "timestamp": "2019-09-21 18:53:00",
-            "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 2\n",
+            "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 255\n",
             "is_read": false
         },
         {
@@ -915,6 +915,15 @@
             "is_read": true
         },
         {
+            "notification_id": 1000000811,
+            "type": "SovAllClaimLostMsg",
+            "sender_id": 2901,
+            "sender_type": "corporation",
+            "timestamp": "2018-09-11 23:37:00",
+            "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30000474\n",
+            "is_read": true
+        },
+        {
             "notification_id": 1000000804,
             "type": "SovStructureReinforced",
             "sender_id": 3001,
@@ -935,6 +944,26 @@
         {
             "notification_id": 1000000901,
             "type": "AllyJoinedWarAggressorMsg",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-26 16:42:00",
+            "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "notification_id": 1000000921,
+            "type": "AllyJoinedWarAllyMsg",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-26 16:42:00",
+            "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+            "is_read": true,
+            "is_sent": false
+        },
+        {
+            "notification_id": 1000000922,
+            "type": "AllyJoinedWarDefenderMsg",
             "sender_id": 2902,
             "sender_type": "corporation",
             "timestamp": "2019-11-26 16:42:00",

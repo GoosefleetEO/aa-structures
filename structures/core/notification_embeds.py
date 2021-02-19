@@ -1,3 +1,4 @@
+from collections import namedtuple
 import datetime as dt
 
 import dhooks_lite
@@ -149,6 +150,8 @@ class NotificationBaseEmbed:
             return NotificationStructureOwnershipTransferred(notification)
         elif notif_type == NotificationType.STRUCTURE_ANCHORING:
             return NotificationStructureAnchoring(notification)
+        elif notif_type == NotificationType.STRUCTURE_REINFORCE_CHANGED:
+            return NotificationStructureReinforceChange(notification)
 
         # Orbitals
         elif notif_type == NotificationType.ORBITAL_ATTACKED:
@@ -169,14 +172,20 @@ class NotificationBaseEmbed:
             return NotificationSovCommandNodeEventStarted(notification)
         elif notif_type == NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG:
             return NotificationSovAllClaimAcquiredMsg(notification)
+        elif notif_type == NotificationType.SOV_ALL_CLAIM_LOST_MSG:
+            return NotificationSovAllClaimLostMsg(notification)
         elif notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
             return NotificationSovStructureReinforced(notification)
         elif notif_type == NotificationType.SOV_STRUCTURE_DESTROYED:
             return NotificationSovStructureDestroyed(notification)
 
-        # Sov
-        elif notif_type == NotificationType.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG:
-            return NotificationAllyJoinedWarAggressorMsg(notification)
+        # War
+        elif notif_type in [
+            NotificationType.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
+            NotificationType.WAR_ALLY_JOINED_WAR_AllY_MSG,
+            NotificationType.WAR_ALLY_JOINED_WAR_DEFENDER_MSG,
+        ]:
+            return NotificationAllyJoinedWarMsg(notification)
         elif notif_type == NotificationType.WAR_CORP_WAR_SURRENDER_MSG:
             return NotificationCorpWarSurrenderMsg(notification)
         elif notif_type == NotificationType.WAR_WAR_ADOPTED:
@@ -464,6 +473,66 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
+
+
+class NotificationStructureReinforceChange(NotificationBaseEmbed):
+    StructureInfo = namedtuple(
+        "StructureInfo", ["name", "eve_type", "eve_solar_system", "owner_link"]
+    )
+
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        all_structure_info = list()
+        for structure_info in self._parsed_text["allStructureInfo"]:
+            try:
+                structure = Structure.objects.select_related_defaults().get(
+                    id=structure_info[0]
+                )
+            except Structure.DoesNotExist:
+                all_structure_info.append(
+                    self.StructureInfo(
+                        name=structure_info[1],
+                        eve_type=EveType.objects.get_or_create_esi(structure_info[2]),
+                        eve_solar_system=None,
+                        owner_link="(unknown)",
+                    )
+                )
+            else:
+                all_structure_info.append(
+                    self.StructureInfo(
+                        name=structure.name,
+                        eve_type=structure.eve_type,
+                        eve_solar_system=structure.eve_solar_system,
+                        owner_link=self._gen_corporation_link(str(structure.owner)),
+                    )
+                )
+
+        self._title = gettext("Structure reinforcement time changed")
+        change_effective = ldap_time_2_datetime(self._parsed_text["timestamp"])
+        self._description = (
+            gettext(
+                "Reinforcement hour has been changed to **%s** "
+                "for the following structures:\n"
+            )
+            % self._parsed_text["hour"]
+        )
+        for structure_info in all_structure_info:
+            self._description += gettext(
+                "- %(structure_type)s %(structure_name)s in %(solar_system)s "
+                "belonging to %(owner_link)s"
+            ) % {
+                "structure_type": structure_info.eve_type.name_localized,
+                "structure_name": "**%s**" % structure_info.name,
+                "solar_system": self._gen_solar_system_text(
+                    structure_info.eve_solar_system
+                ),
+                "owner_link": structure_info.owner_link,
+            }
+
+        self._description += gettext(
+            "\n\nChange becomes effective at **%s**."
+        ) % change_effective.strftime(DATETIME_FORMAT)
+        self._color = self.COLOR_INFO
 
 
 class NotificationMoonminingEmbed(NotificationBaseEmbed):
@@ -868,6 +937,29 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
         self._color = self.COLOR_SUCCESS
 
 
+class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        alliance, _ = EveEntity.objects.get_or_create_esi(
+            self._parsed_text["allianceID"]
+        )
+        corporation, _ = EveEntity.objects.get_or_create_esi(
+            self._parsed_text["corpID"]
+        )
+        self._title = (
+            gettext("Lost sovereignty in: %s") % self._solar_system.name_localized
+        )
+        self._description = gettext(
+            "DED acknowledges that member corporation %(corporation)s has lost its "
+            "claim to sovereignty on behalf of %(alliance)s in %(solar_system)s."
+        ) % {
+            "corporation": self._gen_corporation_link(corporation.name),
+            "alliance": self._gen_alliance_link(alliance.name),
+            "solar_system": self._solar_system_link,
+        }
+        self._color = self.COLOR_SUCCESS
+
+
 class NotificationSovStructureReinforced(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -963,7 +1055,7 @@ class NotificationCharLeftCorpMsg(NotificationCharEmbed):
         self._color = self.COLOR_INFO
 
 
-class NotificationAllyJoinedWarAggressorMsg(NotificationBaseEmbed):
+class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._title = "Ally Has Joined a War"

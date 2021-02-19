@@ -28,7 +28,7 @@ App for managing Eve Online structures with Alliance Auth.
 
 ## Overview
 
-This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA). It allows all member corporations to see a current list of all their structures in Auth. In addition it allows forwarding Eve Online notifications to Discord.
+This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth). It allows all member corporations to see a current list of all their structures in Auth. In addition it allows forwarding Eve Online notifications to Discord.
 
 ## Features Summary
 
@@ -36,9 +36,15 @@ Structures adds the following main features to Alliance Auth:
 
 - Structure browser with a detailed list of all structures owned by member corporations, automatically synced with the game server
 - Structures include all Upwell structures, Custom Offices and Starbases / POSes
-- Automatically forwards Eve Online notifications to Discord channels as alerts
-- Notification categories include Upwell Structures, Moon Mining, Customs Offices, Starbases, Sovereignty, Wars, Character joining/leaving a corporation
-- Automatically adds timers from relevant notifications to Alliance Auth timerboard app (if installed)
+- Automatically forwards Eve Online notifications to Discord channels as alerts for these categories:
+  - Upwell structures
+  - Customs offices
+  - Starbases
+  - Moon mining
+  - Sovereignty
+  - Wars (*NEW!*)
+  - Corporation membership changes (*NEW!*)
+- Automatically adds timers from relevant notifications to [Alliance Auth Structure Timers](https://allianceauth.readthedocs.io/en/v2.8.1/features/apps/timerboard.html) or [Structure Timers II](https://gitlab.com/ErikKalkoken/aa-structuretimers) app (if installed)
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status
@@ -233,65 +239,6 @@ You can also define groups to be pinged for notifications on Discord per webhook
 Groups defined per webhook will be added to groups defined per owner and group pings are independent from default pings.
 
 Note that you need to have Auth's Discord service enabled for group pings to work.
-
-#### Supported notification types
-
-The following Eve Online notification types are currently supported (names are from ESI):
-
-##### Characters Joining & Leaving
-
-- CharAppAcceptMsg
-- CharLeftCorpMsg
-
-##### Moon Mining
-
-- MoonminingAutomaticFracture
-- MoonminingExtractionCancelled
-- MoonminingExtractionFinished
-- MoonminingExtractionStarted
-- MoonminingLaserFired
-
-##### Upwell Structures
-
-- OwnershipTransferred
-- StructureAnchoring
-- StructureDestroyed
-- StructureFuelAlert
-- StructureLostArmor
-- StructureLostShields
-- StructureOnline
-- StructureServicesOffline
-- StructureUnanchoring
-- StructureUnderAttack
-- StructureWentHighPower
-- StructureWentLowPower
-
-##### POCOs
-
-- OrbitalAttacked
-- OrbitalReinforced
-
-##### Starbases
-
-- TowerAlertMsg
-- TowerResourceAlertMsg
-
-##### Sovereignty
-
-- EntosisCaptureStarted
-- SovAllClaimAquiredMsg
-- SovCommandNodeEventStarted
-- SovStructureReinforced
-- SovStructureDestroyed
-
-##### Wars
-
-- AllyJoinedWarAggressorMsg
-- CorpWarSurrenderMsg
-- WarAdopted
-- WarDeclared
-- WarInherited
-- WarRetractedByConcord
 
 ### Power Modes
 

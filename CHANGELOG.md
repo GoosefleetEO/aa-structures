@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.8.0] - tbd
 
-**Notifications Overhaul**
+**Big Notifications Update**
 
 > ⚠️ **Important update notes:** This update will remove configured notification types from all webhooks and thereby effectively suspend notification sending. Please make sure to go through all your webhooks and re-configure the notification types to re-enable sending after updating.
 
@@ -17,16 +17,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Notification for wars
-- Notification for characters joined & left a corporation
+- Notifications for characters joined & left a corporation: `CharAppAcceptMsg`, `CharLeftCorpMsg`
+- Notifications for sov: `SovAllClaimLostMsg`
+- Notifications for upwell structures: `StructuresReinforcementChanged`
+- Notifications for wars: `AllyJoinedWarAggressorMsg`, `AllyJoinedWarAllyMsg`, `AllyJoinedWarDefenderMsg`, `CorpWarSurrenderMsg`, `WarAdopted`, `WarDeclared`, `WarInherited`, `WarRetractedByConcord`
+
 - Direct link to open Structures Auth page from every notification message
 
 ### Changed
 
 - Messages on Discord now show this app as sender instead of the organization of an notification. The organization now appears as author on messages.
+- Improved meaning of "is sent" and "is added to timers" for notifications on admin site
+- Notification types now described in natural language
 - Improved notification architecture to make it easier for adding more notification types
 - Moved utils into it's own distribution package: allianceauth-app-utils
-- Improved meaning of "is sent" and "is added to timers" for notifications on admin site
 
 ## [1.7.0] - 2021-01-10
 
