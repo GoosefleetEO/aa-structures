@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 **Big Notifications Update**
 
-> ⚠️ **Important update notes:** This update will remove configured notification types from all webhooks and thereby effectively suspend notification sending. Please make sure to go through all your webhooks and re-configure the notification types to re-enable sending after updating.
+> ⚠️ **Important update note:** This update will remove configured notification types from all webhooks and thereby effectively suspends notification sending. Please make sure to go through all your webhooks and re-configure the notification types to re-enable sending after updating.
 
 > ⚠️ **Users of 1.8.0a3 only:** In case you have installed the alpha version **1.8.0a3** it is critical that you migrate down to migration 0017 **before** installing and applying any higher version. If you did not install this particular alpha version please ignore this note. You can migrate down with `python manage.py migrate structures 0017`. Should you get the error `Data too long for column 'notification_types'` please delete all your webhooks and then try to migrate down again.
 
