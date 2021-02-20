@@ -290,6 +290,7 @@ class OwnerAdmin(admin.ModelAdmin):
         OwnerSyncStatusFilter,
     )
     ordering = ["corporation__corporation_name"]
+    search_fields = ["corporation__corporation_name"]
 
     def _ping_groups(self, obj):
         names = [x.name for x in obj.ping_groups.all().order_by("name")]

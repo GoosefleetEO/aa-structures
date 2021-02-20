@@ -20,9 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Notifications for characters joined & left a corporation: `CharAppAcceptMsg`, `CharLeftCorpMsg`
 - Notifications for sov: `SovAllClaimLostMsg`
 - Notifications for upwell structures: `StructuresReinforcementChanged`
-- Notifications for wars: `AllyJoinedWarAggressorMsg`, `AllyJoinedWarAllyMsg`, `AllyJoinedWarDefenderMsg`, `CorpWarSurrenderMsg`, `WarAdopted`, `WarDeclared`, `WarInherited`, `WarRetractedByConcord`
-
+- Notifications for wars: `AllyJoinedWarAggressorMsg`, `AllyJoinedWarAllyMsg`, `AllyJoinedWarDefenderMsg`, `CorpBecameWarEligible`, `CorpNoLongerWarEligible`, `CorpWarSurrenderMsg`, `WarAdopted`, `WarDeclared`, `WarInherited`, `WarRetractedByConcord`
 - Direct link to open Structures Auth page from every notification message
+- Search bar for owners on admin site
 
 ### Changed
 

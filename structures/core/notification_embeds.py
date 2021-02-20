@@ -196,6 +196,10 @@ class NotificationBaseEmbed:
             return NotificationWarInherited(notification)
         elif notif_type == NotificationType.WAR_WAR_RETRACTED_BY_CONCORD:
             return NotificationWarRetractedByConcord(notification)
+        elif notif_type == NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE:
+            return NotificationWarCorporationBecameEligible(notification)
+        elif notif_type == NotificationType.WAR_CORPORATION_NO_LONGER_ELIGIBLE:
+            return NotificationWarCorporationNoLongerEligible(notification)
 
         # NOT IMPLEMENTED
         else:
@@ -1196,3 +1200,35 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
             "end_date": war_ends.strftime(DATETIME_FORMAT),
         }
         self._color = self.COLOR_WARNING
+
+
+class NotificationWarCorporationBecameEligible(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = (
+            "Corporation or alliance is now eligable for formal war declarations"
+        )
+        self._description = (
+            "Your corporation or alliance is **now eligible** to participate in "
+            "formal war declarations. This could be because your corporation "
+            "and/or one of the corporations in your alliance owns a structure "
+            "deployed in space."
+        )
+        self._color = self.COLOR_WARNING
+
+
+class NotificationWarCorporationNoLongerEligible(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = (
+            "Corporation or alliance is no longer eligible for formal war declarations"
+        )
+        self._description = (
+            "Your corporation or alliance is **no longer eligible** to participate "
+            "in formal war declarations.\n"
+            "Neither your corporation nor any of the corporations "
+            "in your alliance own a structure deployed in space at this time. "
+            "If your corporation or alliance is currently involved in a formal war, "
+            "that war will end in 24 hours."
+        )
+        self._color = self.COLOR_INFO

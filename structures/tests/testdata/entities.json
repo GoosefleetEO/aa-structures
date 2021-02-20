@@ -1070,6 +1070,26 @@
             "text": "iskValue: 10000000.0\nownerID1: 99009354\nownerID2: 3011\nwarNegotiationID: 453736\n",
             "is_read": false,
             "is_sent": false
+        },
+        {
+            "notification_id": 1000000916,
+            "type": "CorpBecameWarEligible",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-18 20:00:00",
+            "text": "",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "notification_id": 1000000917,
+            "type": "CorpNoLongerWarEligible",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-18 20:00:00",
+            "text": "",
+            "is_read": false,
+            "is_sent": false
         }
     ],
     "Webhook": [

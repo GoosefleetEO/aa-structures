@@ -162,6 +162,12 @@ class NotificationType(models.TextChoices):
     WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", _(
         "War retracted by Concord"
     )
+    WAR_CORPORATION_BECAME_ELIGIBLE = "CorpBecameWarEligible", _(
+        "War corporation became eligable"
+    )
+    WAR_CORPORATION_NO_LONGER_ELIGIBLE = "CorpNoLongerWarEligible", _(
+        "War corporation no longer eligable"
+    )
 
     # corporation membership
     CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg", _("Character joins corporation")
@@ -215,6 +221,8 @@ class NotificationType(models.TextChoices):
             cls.WAR_WAR_RETRACTED_BY_CONCORD,
             cls.WAR_WAR_ADOPTED,
             cls.WAR_WAR_INHERITED,
+            cls.WAR_CORPORATION_BECAME_ELIGIBLE,
+            cls.WAR_CORPORATION_NO_LONGER_ELIGIBLE,
         ]
 
 

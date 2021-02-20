@@ -1,5 +1,7 @@
 # flake8: noqa
-""" this scripts adds test notifications to a specified corporation / structure"""
+"""
+this scripts create a test owner and adds test notifications to it
+"""
 
 from datetime import timedelta
 import inspect
@@ -35,11 +37,11 @@ from structures.models import (
     Structure,
     Notification,
     EveEntity,
+    Webhook,
 )  # noqa: E402, E501
 
 # corporation / structure the notifications will be added to
-CORPORATION_ID = 98267621  # RABIS
-STRUCTURE_ID = 1014475167450  # Tower in Enaluri
+CORPORATION_ID = 98587692  # RABIS
 
 print(
     "load_test_notifications - "
@@ -55,7 +57,14 @@ try:
 except EveCorporationInfo.DoesNotExist:
     corporation = EveCorporationInfo.objects.create_corporation(CORPORATION_ID)
 
-owner = Owner.objects.get(corporation=corporation)
+owner, created = Owner.objects.get_or_create(
+    corporation=corporation, defaults={"is_active": False}
+)
+if created and not owner.webhooks.exists():
+    webhook = Webhook.objects.filter(is_active=True, is_default=True).first()
+    if webhook:
+        owner.webhooks.add(webhook)
+
 structure = {
     "fuel_expires": None,
     "name": "Test Structure Alpha",
