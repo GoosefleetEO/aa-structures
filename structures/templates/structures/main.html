@@ -76,7 +76,8 @@
                     },
                     { data: 'reinforcement' },
                     { data: 'state_details' },
-
+                    { data: 'core_status' },
+                    { data: 'view_fit' },
                     { data: 'alliance_name' },
                     { data: 'corporation_name' },
                     { data: 'region_name' },
@@ -91,55 +92,55 @@
                 paging: dataTablesPaging,
                 pageLength: dataTablesPageLength,
                 columnDefs: [
-                    { "sortable": false, "targets": [0, 3, 4, 6] },
-                    { "visible": false, "targets": [11, 12, 13, 14, 15, 16, 17, 18, 19] }
+                    { "sortable": false, "targets": [0, 3, 4, 6, 12] },
+                    { "visible": false, "targets": [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21] }
                 ],
                 order: [[1, "asc"], [5, "asc"]],
                 filterDropDown:
                 {
                     columns: [
                         {
-                            idx: 11,
+                            idx: 13,
                             title: "{% trans 'Alliance' %}",
                             maxWidth: "10em"
                         },
                         {
-                            idx: 12,
+                            idx: 14,
                             title: "{% trans 'Corporation' %}",
                             maxWidth: "13em"
                         },
                         {
-                            idx: 13,
+                            idx: 15,
                             title: "{% trans 'Region' %}",
                             maxWidth: "8em"
                         },
                         {
-                            idx: 14,
+                            idx: 16,
                             title: "{% trans 'Solar System' %}",
                             maxWidth: "14em"
                         },
                         {
-                            idx: 15,
+                            idx: 17,
                             title: "{% trans 'Category' %}",
                             maxWidth: "10em"
                         },
                         {
-                            idx: 16,
+                            idx: 18,
                             title: "{% trans 'Group' %}",
                             maxWidth: "7em"
                         },
                         {
-                            idx: 17,
+                            idx: 19,
                             title: "{% trans 'Reinforced?' %}",
                             maxWidth: "13em"
                         },
                         {
-                            idx: 18,
+                            idx: 20,
                             title: "{% trans 'State' %}",
                             maxWidth: "6em"
                         },
                         {
-                            idx: 19,
+                            idx: 21,
                             title: "{% trans 'Power Mode' %}",
                             maxWidth: "12em"
                         }
@@ -152,7 +153,12 @@
                         $(row).addClass('danger');
                     }
                 }
+            });
 
+            $('#modalStructureFit').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget)
+                var ajax_structure_fit = button.data('ajax_structure_fit');
+                $("#modalStructureFitContent").load(ajax_structure_fit)
             });
 
             /* pocos */

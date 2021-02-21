@@ -321,6 +321,9 @@ class Structure(models.Model):
         default=now,
         help_text="date this structure was received from ESI for the first time",
     )
+    has_fit = models.BooleanField(
+        default=False, help_text="bool indicating if the structure has a fit"
+    )
 
     objects = StructureManager()
 

@@ -8,6 +8,7 @@ import os
 from copy import deepcopy
 from datetime import timedelta
 from random import randrange
+from structures.models.owners import OwnerAsset
 from unittest.mock import Mock
 
 from bravado.exception import HTTPNotFound
@@ -576,6 +577,31 @@ def esi_mock_client(version=1.6):
 
     mock_client.Universe.get_universe_structures_structure_id.side_effect = (
         esi_get_universe_structures_structure_id
+    )
+
+    mock_client.Assets.get_corporations_corporation_id_assets.side_effect = (
+        esi_return_data(
+            [
+                {
+                    "is_singleton": False,
+                    "item_id": 1300000001001,
+                    "location_flag": "QuantumCoreRoom",
+                    "location_id": 1000000000001,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 56201,
+                },
+                {
+                    "is_singleton": True,
+                    "item_id": 1300000001002,
+                    "location_flag": "ServiceSlot0",
+                    "location_id": 1000000000001,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 35894,
+                },
+            ]
+        )
     )
 
     return mock_client

@@ -10,6 +10,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from esi.decorators import token_required
+from eveuniverse.models import EveCategory, EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.evelinks import dotlan
@@ -37,8 +38,8 @@ from .app_settings import (
 )
 from .forms import TagsFilterForm
 from .models import (
-    EveCategory,
     Owner,
+    OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
@@ -103,6 +104,50 @@ def main(request):
     return render(request, "structures/main.html", context)
 
 
+@login_required
+@permission_required("structures.view_structure_fit")
+def structure_fit(request, structure_id):
+    """Main view of the structure fit"""
+    structure = Structure.objects.get(id=structure_id)
+    structure_type = EveType.objects.get(id=structure.eve_type_id)
+    structure_layout = {
+        "high": int(
+            structure_type.dogma_attributes.get(eve_dogma_attribute_id=14).value
+        ),
+        "med": int(
+            structure_type.dogma_attributes.get(eve_dogma_attribute_id=13).value
+        ),
+        "low": int(
+            structure_type.dogma_attributes.get(eve_dogma_attribute_id=12).value
+        ),
+        "rig": int(
+            structure_type.dogma_attributes.get(eve_dogma_attribute_id=1137).value
+        ),
+        "service": int(
+            structure_type.dogma_attributes.get(eve_dogma_attribute_id=2056).value
+        ),
+    }
+    fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
+    fittings = OwnerAsset.objects.filter(location_id=structure_id)
+    for fi in fittings:
+        if fi.location_flag == "Cargo":
+            fit_ob["Cargo"].append(fi)
+        elif fi.location_flag == "FighterBay":
+            fit_ob["FighterBay"].append(fi)
+        elif fi.location_flag == "StructureFuel":
+            fit_ob["StructureFuel"].append(fi)
+        else:
+            fit_ob[fi.location_flag] = fi
+
+    context = {
+        "page_title": gettext_lazy(__title__),
+        "slots": structure_layout,
+        "fitting": fit_ob,
+        "structure": structure,
+    }
+    return render(request, "structures/structure_fit.html", context)
+
+
 class StructuresRowBuilder:
     """This class build the HTML table rows from structure objects."""
 
@@ -123,6 +168,8 @@ class StructuresRowBuilder:
         self._build_fuel_infos()
         self._build_online_infos()
         self._build_state()
+        self._build_core_status()
+        self._build_view_fit()
         return self._row
 
     def _build_owner(self):
@@ -360,11 +407,45 @@ class StructuresRowBuilder:
                 no_wrap_html(self._structure.unanchors_at.strftime(DATETIME_FORMAT)),
             )
 
+    def _build_core_status(self):
+        """Only enable view core for structure types"""
+        if self._structure.eve_type.eve_group.eve_category_id == 65:
+            quantum_core = (
+                OwnerAsset.objects.filter(location_id=self._structure.id)
+                .filter(location_flag="QuantumCoreRoom")
+                .count()
+            )
+            if quantum_core:
+                self._row["core_status"] = "Present"
+            else:
+                self._row["core_status"] = "Absent"
+        else:
+            self._row["core_status"] = "N/A"
+
+    def _build_view_fit(self):
+        """Only enable view fit for structure types"""
+        if (
+            self._structure.eve_type.eve_group.eve_category_id == 65
+            and self._structure.has_fit
+        ):
+            ajax_structure_fit = reverse(
+                "structures:structure_fit",
+                args=[self._row["structure_id"]],
+            )
+            self._row["view_fit"] = format_html(
+                '<button type="button" class="btn btn-default" '
+                'data-toggle="modal" data-target="#modalStructureFit" '
+                f"data-ajax_structure_fit={ajax_structure_fit}>"
+                "Fitting</button>"
+            )
+        else:
+            self._row["view_fit"] = ""
+
 
 @login_required
 @permission_required("structures.basic_access")
 def structure_list_data(request):
-    """Returns structure list in JSON for AJAX call in main view."""
+    """returns structure list in JSON for AJAX call in structure_list view"""
     structure_rows = list()
     row_converter = StructuresRowBuilder(request)
     for structure in _structures_query_for_user(request):

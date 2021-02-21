@@ -4,6 +4,7 @@ from celery import Celery
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from allianceauth.eveonline.models import EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
@@ -43,6 +44,7 @@ class TestSendMessagesForWebhook(TestCase):
         self.assertEqual(mock_send_queued_messages.call_count, 0)
 
 
+@override_settings(CELERY_ALWAYS_EAGER=True)
 class TestUpdateStructures(NoSocketsTestCase):
     def setUp(self):
         create_structures()
@@ -52,7 +54,8 @@ class TestUpdateStructures(NoSocketsTestCase):
     def test_call_structure_update_with_owner_and_user(
         self, mock_update_structures_esi
     ):
-        tasks.update_structures_for_owner(self.owner.pk, self.user.pk)
+        """ TODO: Investigate how to call the top level method that contains the chains() """
+        tasks.update_structures_esi_for_owner(self.owner.pk, self.user.pk)
         first, second = mock_update_structures_esi.call_args
         self.assertEqual(first[0], self.user)
 
@@ -60,13 +63,16 @@ class TestUpdateStructures(NoSocketsTestCase):
     def test_call_structure_update_with_owner_and_ignores_invalid_user(
         self, mock_update_structures_esi
     ):
-        tasks.update_structures_for_owner(self.owner.pk, generate_invalid_pk(User))
+        """ TODO: Investigate how to call the top level method that contains the chains() """
+        tasks.update_structures_esi_for_owner(self.owner.pk, generate_invalid_pk(User))
         first, second = mock_update_structures_esi.call_args
         self.assertIsNone(first[0])
 
+    @override_settings(CELERY_ALWAYS_EAGER=True)
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
-            tasks.update_structures_for_owner(owner_pk=generate_invalid_pk(Owner))
+            """ TODO: Investigate how to call the top level method that contains the chains() """
+            tasks.update_structures_esi_for_owner(owner_pk=generate_invalid_pk(Owner))
 
     @patch(MODULE_PATH + ".update_structures_for_owner")
     def test_can_update_structures_for_all_owners(

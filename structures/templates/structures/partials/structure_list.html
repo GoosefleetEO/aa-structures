@@ -71,6 +71,8 @@
                     <th>{% trans "Last Online" %}</th>
                     <th>{% trans "R-Hour" %}</th>
                     <th>{% trans "State" %}</th>
+                    <th>{% trans "Core" %}</th>
+                    <th></th>
                 </tr>
             </thead>
         </table>
@@ -92,5 +94,12 @@
             • {% trans "Data can be outdated by up to 1 hour due to API caching." %}
         </p>
 
+    </div>
+</div>
+
+<div class="modal fade" id="modalStructureFit" tabindex="-1" role="dialog" aria-labelledby="{% trans 'FittingModalLabel '%}">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" id="modalStructureFitContent">
+        </div>
     </div>
 </div>

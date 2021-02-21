@@ -463,3 +463,86 @@ class NotificationQuerySet(models.QuerySet):
 class NotificationManager(models.Manager):
     def get_queryset(self) -> models.QuerySet:
         return NotificationQuerySet(self.model, using=self._db)
+
+
+class OwnerAssetManager(models.Manager):
+    def update_or_create_for_structure_ids_esi(
+        self, structure_ids: list, corporation_id: int, token: Token
+    ) -> tuple:
+        """Fetch assets from esi for list of structures"""
+        from .models import Owner
+        from .models import EveType
+        from .models import OwnerAsset
+        from .models import Structure
+
+        add_prefix = make_logger_prefix(
+            "%s(id=%d)" % (self.model.__name__, corporation_id)
+        )
+        assets = esi_fetch(
+            esi_path="Assets.get_corporations_corporation_id_assets",
+            args={"corporation_id": corporation_id},
+            token=token,
+            has_pages=True,
+            logger_tag=add_prefix(),
+        )
+
+        owner = Owner.objects.get(corporation__corporation_id=corporation_id)
+
+        assets_in_structures = [
+            asset
+            for asset in assets
+            if asset["location_id"] in structure_ids
+            and asset["location_flag"]
+            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage"]
+        ]
+
+        objs = []
+        for asset in assets_in_structures:
+            eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
+            obj, created = self.update_or_create(
+                id=asset["item_id"],
+                defaults={
+                    "owner": owner,
+                    "eve_type": eve_type,
+                    "is_singleton": asset["is_singleton"],
+                    "location_flag": asset["location_flag"],
+                    "location_id": asset["location_id"],
+                    "location_type": asset["location_type"],
+                    "quantity": asset["quantity"],
+                    "last_updated_at": now(),
+                },
+            )
+
+            objs.append(obj)
+
+        objs_ids = [x.id for x in objs]
+
+        """Clean up assets not in structures anymore"""
+        objs_to_delete = OwnerAsset.objects.filter(
+            location_id__in=structure_ids
+        ).exclude(id__in=objs_ids)
+        objs_to_delete.delete()
+
+        for structure_id in structure_ids:
+            assets_in_structure = [
+                asset
+                for asset in assets_in_structures
+                if asset["location_id"] == structure_id
+                and asset["location_flag"]
+                not in [
+                    "CorpDeliveries",
+                    "OfficeFolder",
+                    "SecondaryStorage",
+                    "QuantumCoreRoom",
+                    "StructureFuel",
+                    "ServiceSlot0",
+                    "ServiceSlot1",
+                    "ServiceSlot2",
+                    "ServiceSlot3",
+                    "ServiceSlot4",
+                ]
+            ]
+            has_fit = True if len(assets_in_structure) != 0 else False
+            structure = Structure.objects.get(id=structure_id)
+            structure.has_fit = has_fit
+            structure.save()

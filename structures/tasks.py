@@ -24,8 +24,23 @@ def send_messages_for_webhook(webhook_pk: int) -> None:
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_structures_for_owner(owner_pk, user_pk=None):
-    """fetches all structures for owner from ESI"""
+    """fetches all structures for owner and update the corp assets related to them from ESI"""
+    chain(
+        update_structures_esi_for_owner.si(owner_pk, user_pk),
+        update_structures_assets_for_owner.si(owner_pk, user_pk),
+    ).delay()
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_structures_esi_for_owner(owner_pk, user_pk=None):
+    """fetches all structures for owner"""
     _get_owner(owner_pk).update_structures_esi(_get_user(user_pk))
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_structures_assets_for_owner(owner_pk, user_pk=None):
+    """fetches all structures for owner"""
+    _get_owner(owner_pk).update_asset_esi(_get_user(user_pk))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

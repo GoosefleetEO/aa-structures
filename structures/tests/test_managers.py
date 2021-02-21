@@ -23,6 +23,7 @@ from ..models import (
     Structure,
     StructureService,
     StructureTag,
+    OwnerAsset,
 )
 from . import to_json
 from .testdata import create_structures, esi_mock_client, load_entities, load_entity
@@ -1002,3 +1003,37 @@ class TestStructureTagManager(NoSocketsTestCase):
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
     """
+
+
+class TestOwnerAssetManager(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities(
+            [
+                EveCategory,
+                EveGroup,
+                EveType,
+                EveRegion,
+                EveConstellation,
+                EveSolarSystem,
+            ]
+        )
+
+    @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
+    def test_can_create_or_update_asset_from_esi(self, mock_esi_client):
+        mock_esi_client.side_effect = esi_mock_client
+        mock_token = Mock()
+        create_structures()
+
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure_ids = {x.id for x in Structure.objects.filter(owner=owner)}
+        try:
+            OwnerAsset.objects.update_or_create_for_structure_ids_esi(
+                structure_ids, owner.corporation.corporation_id, mock_token
+            )
+        except Exception:
+            self.fail("Test failed due to exception")
+
+        assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
+        self.assertTrue(len(assets) == 2)

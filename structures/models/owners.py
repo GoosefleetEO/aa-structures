@@ -39,6 +39,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from ..managers import OwnerAssetManager
 from .eveuniverse import (
     EveGroup,
     EveMoon,
@@ -69,6 +70,7 @@ class General(models.Model):
                 "view_all_unanchoring_status",
                 "Can view unanchoring timers for all structures the user can see",
             ),
+            ("view_structure_fit", "Can view structure fit"),
         )
 
 
@@ -117,6 +119,14 @@ class Owner(models.Model):
         null=True, default=None, blank=True, help_text="when the last sync happened"
     )
     structures_last_error = models.IntegerField(
+        choices=ERRORS_LIST,
+        default=ERROR_NONE,
+        help_text="error that occurred at the last sync atttempt (if any)",
+    )
+    assets_last_sync = models.DateTimeField(
+        null=True, default=None, blank=True, help_text="when the last sync happened"
+    )
+    assets_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
         help_text="error that occurred at the last sync atttempt (if any)",
@@ -1094,3 +1104,72 @@ class Owner(models.Model):
             "{}_raw_{}.json".format(name, corporation_id), "w", encoding="utf-8"
         ) as f:
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
+
+    def update_asset_esi(self, user: User = None):
+        """Update all assets for owner where location_id is in the active structure list from esi"""
+        add_prefix = self._logger_prefix()
+        try:
+            token, error = self.token()
+            if error:
+                self.assets_last_error = error
+                self.assets_last_sync = now()
+                self.save()
+                raise TokenError(self.to_friendly_error_message(error))
+
+            try:
+                structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
+                OwnerAsset.objects.update_or_create_for_structure_ids_esi(
+                    structure_ids, self.corporation.corporation_id, token
+                )
+            except Exception as ex:
+                logger.exception(
+                    add_prefix("An unexpected error ocurred {}".format(ex))
+                )
+                self.assets_last_error = self.ERROR_UNKNOWN
+                self.assets_last_sync = now()
+                self.save()
+                raise ex
+        except Exception as ex:
+            success = False
+            error_code = str(ex)
+        else:
+            success = True
+            error_code = None
+
+        if user:
+            self._send_report_to_user(
+                "assets", self.structure_set.count(), success, error_code, user
+            )
+
+
+class OwnerAsset(models.Model):
+    """An asset for a corporation"""
+
+    def __str__(self) -> str:
+        return str(self.eve_type.name)
+
+    def __repr__(self):
+        return "{}(pk={}, eve_type='{}')".format(
+            self.__class__.__name__, self.pk, self.eve_type
+        )
+
+    id = models.BigIntegerField(primary_key=True, help_text="The Item ID of the assets")
+    eve_type = models.ForeignKey(
+        "EveType",
+        on_delete=models.CASCADE,
+        help_text="type of the assets",
+        related_name="+",
+    )
+    owner = models.ForeignKey(
+        "Owner",
+        on_delete=models.CASCADE,
+        help_text="Corporation that owns the assets",
+    )
+    is_singleton = models.BooleanField(null=False)
+    location_flag = models.CharField(null=False, max_length=255)
+    location_id = models.BigIntegerField(null=False)
+    location_type = models.CharField(null=False, max_length=255)
+    quantity = models.IntegerField(null=False)
+    last_updated_at = models.DateTimeField(auto_now=True)
+
+    objects = OwnerAssetManager()
