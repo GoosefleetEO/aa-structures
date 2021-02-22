@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.8.0] - tbd
+## [1.8.1] - tbd
+
+## Changed
+
+- Reduce vulnerability for transaction timeouts
+- Improve performance of notification updates
+
+## [1.8.0] - 2021-02-20
 
 **Big Notifications Update**
 

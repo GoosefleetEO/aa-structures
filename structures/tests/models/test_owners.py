@@ -1210,6 +1210,10 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         cls.owner.is_alliance_main = True
         cls.owner.save()
 
+    def setUp(self) -> None:
+        if has_auth_timers:
+            AuthTimer.objects.all().delete()
+
     def test_report_error_when_run_without_char(self):
         my_owner = Owner.objects.get(corporation__corporation_id=2002)
         self.assertFalse(my_owner.fetch_notifications_esi())
@@ -1218,32 +1222,30 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".Token")
     def test_report_error_when_run_with_expired_token(self, mock_Token):
+        # given
         mock_Token.objects.filter.side_effect = TokenExpiredError()
-
-        # create test data
         AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-
-        # run update task
-        self.assertFalse(self.owner.fetch_notifications_esi())
-
+        # when
+        result = self.owner.fetch_notifications_esi()
+        # then
+        self.assertFalse(result)
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_TOKEN_EXPIRED)
 
     # test invalid token
     @patch(MODULE_PATH + ".Token")
     def test_report_error_when_run_with_invalid_token(self, mock_Token):
+        # given
         mock_Token.objects.filter.side_effect = TokenInvalidError()
-
-        # create test data
         AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-
-        # run update task
-        self.assertFalse(self.owner.fetch_notifications_esi())
-
+        # when
+        result = self.owner.fetch_notifications_esi()
+        # then
+        self.assertFalse(result)
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_TOKEN_INVALID)
 
@@ -1255,20 +1257,15 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".notify", spec=True)
     @patch(MODULE_PATH + ".Token", spec=True)
     @patch("structures.helpers.esi_fetch._esi_client")
-    def test_can_fetch_notifications_correctly(
+    def test_should_create_notifications_and_timers_from_scratch(
         self, mock_esi_client, mock_Token, mock_notify
     ):
+        # given
         mock_esi_client.side_effect = esi_mock_client
-
-        # create test data
-        if has_auth_timers:
-            AuthTimer.objects.all().delete()
-
         self.user = AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-
-        # run update task
+        # when
         if "structuretimers" in app_labels():
             from ..testdata.load_eveuniverse import load_eveuniverse
 
@@ -1276,16 +1273,18 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             with patch(
                 "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
             ):
-                self.assertTrue(self.owner.fetch_notifications_esi(user=self.user))
+                result = self.owner.fetch_notifications_esi(user=self.user)
         else:
-            self.assertTrue(self.owner.fetch_notifications_esi(user=self.user))
+            result = self.owner.fetch_notifications_esi(user=self.user)
 
+        # then
+        self.assertTrue(result)
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_NONE)
         # should only contain the right notifications
-        notif_ids_current = {
-            x["notification_id"] for x in Notification.objects.values("notification_id")
-        }
+        notif_ids_current = set(
+            Notification.objects.values_list("notification_id", flat=True)
+        )
         notif_ids_testdata = {
             x["notification_id"] for x in entities_testdata["Notification"]
         }
@@ -1303,6 +1302,56 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             # should not have more timers
             self.assertEqual(AuthTimer.objects.count(), 5)
 
+    @patch(
+        "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
+        False,
+    )
+    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+    @patch(MODULE_PATH + ".notify", spec=True)
+    @patch(MODULE_PATH + ".Token", spec=True)
+    @patch("structures.helpers.esi_fetch._esi_client")
+    def test_should_create_new_notifications_only(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        self.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.add_structure_owner", self.user
+        )
+        load_notification_entities(self.owner)
+        Notification.objects.get(notification_id=1000000803).delete()
+        Notification.objects.all().update(created=None)
+        # when
+        if "structuretimers" in app_labels():
+            from ..testdata.load_eveuniverse import load_eveuniverse
+
+            load_eveuniverse()
+            with patch(
+                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ):
+                result = self.owner.fetch_notifications_esi(user=self.user)
+        else:
+            result = self.owner.fetch_notifications_esi(user=self.user)
+        # then
+        self.assertTrue(result)
+        self.owner.refresh_from_db()
+        self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_NONE)
+        # should only contain the right notifications
+        notif_ids_current = set(
+            Notification.objects.values_list("notification_id", flat=True)
+        )
+        notif_ids_testdata = {
+            x["notification_id"] for x in entities_testdata["Notification"]
+        }
+        self.assertSetEqual(notif_ids_current, notif_ids_testdata)
+        # should only have created one notification
+        created_ids = set(
+            Notification.objects.filter(created__isnull=False).values_list(
+                "notification_id", flat=True
+            )
+        )
+        self.assertSetEqual(created_ids, {1000000803})
+
     @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
     @patch(MODULE_PATH + ".Token", spec=True)
@@ -1310,7 +1359,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
     def test_report_error_when_esi_returns_error_during_sync(
         self, mock_esi_client, mock_Token
     ):
-        # create mocks
+        # given
         def get_characters_character_id_notifications_error(*args, **kwargs):
             raise HTTPBadGateway(
                 BravadoResponseStub(status_code=502, reason="Test Exception")
@@ -1319,15 +1368,13 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Character.get_characters_character_id_notifications.side_effect = (
             get_characters_character_id_notifications_error
         )
-
-        # create test data
         AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-
-        # run update task
-        self.assertFalse(self.owner.fetch_notifications_esi())
-
+        # when
+        result = self.owner.fetch_notifications_esi()
+        # then
+        self.assertFalse(result)
         self.owner.refresh_from_db()
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_UNKNOWN)
 

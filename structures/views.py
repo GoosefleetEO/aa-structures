@@ -1,7 +1,6 @@
 import urllib
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.db import transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -447,15 +446,14 @@ def add_structure_owner(request, token):
                 token_char.corporation_id
             )
 
-        with transaction.atomic():
-            owner, _ = Owner.objects.update_or_create(
-                corporation=corporation, defaults={"character": owned_char}
-            )
-            default_webhooks = Webhook.objects.filter(is_default=True)
-            if default_webhooks:
-                for webhook in default_webhooks:
-                    owner.webhooks.add(webhook)
-                owner.save()
+        owner, _ = Owner.objects.update_or_create(
+            corporation=corporation, defaults={"character": owned_char}
+        )
+        default_webhooks = Webhook.objects.filter(is_default=True)
+        if default_webhooks:
+            for webhook in default_webhooks:
+                owner.webhooks.add(webhook)
+            owner.save()
 
         tasks.update_structures_for_owner.delay(
             owner_pk=owner.pk, user_pk=request.user.pk

@@ -12,7 +12,7 @@ from bravado.exception import HTTPError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from django.contrib.auth.models import User, Group
-from django.db import models, transaction
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
 
@@ -285,26 +285,22 @@ class Owner(models.Model):
                         )
                     )
 
-                with transaction.atomic():
-                    # remove structures no longer returned from ESI
-                    ids_local = {x.id for x in Structure.objects.filter(owner=self)}
-                    ids_from_esi = {x["structure_id"] for x in structures}
-                    ids_to_remove = ids_local - ids_from_esi
-
-                    if len(ids_to_remove) > 0:
-                        Structure.objects.filter(id__in=ids_to_remove).delete()
-                        logger.info(
-                            "Removed {} structures which apparently no longer "
-                            "exist.".format(len(ids_to_remove))
-                        )
-
-                    # update structures
-                    for structure in structures:
-                        Structure.objects.update_or_create_from_dict(structure, self)
-
-                    self.structures_last_error = self.ERROR_NONE
-                    self.structures_last_sync = now()
-                    self.save()
+                # remove structures no longer returned from ESI
+                ids_local = {x.id for x in Structure.objects.filter(owner=self)}
+                ids_from_esi = {x["structure_id"] for x in structures}
+                ids_to_remove = ids_local - ids_from_esi
+                if len(ids_to_remove) > 0:
+                    Structure.objects.filter(id__in=ids_to_remove).delete()
+                    logger.info(
+                        "Removed {} structures which apparently no longer "
+                        "exist.".format(len(ids_to_remove))
+                    )
+                # update structures
+                for structure in structures:
+                    Structure.objects.update_or_create_from_dict(structure, self)
+                self.structures_last_error = self.ERROR_NONE
+                self.structures_last_sync = now()
+                self.save()
 
             except Exception as ex:
                 logger.exception(
@@ -707,9 +703,7 @@ class Owner(models.Model):
 
     def fetch_notifications_esi(self, user: User = None) -> bool:
         """fetches notification for the current owners and proceses them"""
-
-        add_prefix = self._logger_prefix()
-        notifications_count = 0
+        notifications_count_all = 0
         try:
             token, error = self.token()
             if error:
@@ -721,31 +715,25 @@ class Owner(models.Model):
             # fetch notifications from ESI
             try:
                 notifications = self._fetch_notifications_from_esi(token)
-                (
-                    new_notifications_count,
-                    notifications_count,
-                ) = self._store_notifications(notifications, notifications_count)
-                if new_notifications_count > 0:
+                notifications_count_new = self._store_notifications(notifications)
+                if notifications_count_new > 0:
                     logger.info(
-                        add_prefix(
-                            "Received {} new notifications from ESI".format(
-                                new_notifications_count
-                            )
-                        )
+                        "%s: Received %d new notifications from ESI",
+                        self,
+                        notifications_count_new,
                     )
                     self._process_timers_for_notifications(token)
+                    notifications_count_all += notifications_count_new
 
                 else:
-                    logger.info(add_prefix("No new notifications received from ESI"))
+                    logger.info("%s: No new notifications received from ESI", self)
 
                 self.notifications_last_error = self.ERROR_NONE
                 self.notifications_last_sync = now()
                 self.save()
 
             except Exception as ex:
-                logger.exception(
-                    add_prefix("An unexpected error ocurred {}".format(ex))
-                )
+                logger.exception("%s: An unexpected error ocurred %s", self, ex)
                 self.notifications_last_error = self.ERROR_UNKNOWN
                 self.notifications_last_sync = now()
                 self.save()
@@ -760,7 +748,7 @@ class Owner(models.Model):
 
         if user:
             self._send_report_to_user(
-                "notifications", notifications_count, success, error_code, user
+                "notifications", notifications_count_all, success, error_code, user
             )
 
         return success
@@ -778,31 +766,8 @@ class Owner(models.Model):
             self._store_raw_data(
                 "notifications", notifications, self.corporation.corporation_id
             )
-
         if STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED:
-            # store notifications to disk in continuous file per corp
-            folder_name = "structures_notifications_archive"
-            os.makedirs(folder_name, exist_ok=True)
-            filename = "{}/notifications_{}_{}.txt".format(
-                folder_name, self.corporation.corporation_id, now().date().isoformat()
-            )
-            logger.info(
-                add_prefix(
-                    "Storing notifications into archive file: {}".format(filename)
-                )
-            )
-            with open(file=filename, mode="a", encoding="utf-8") as f:
-                f.write(
-                    "[{}] {}:\n".format(
-                        now().strftime(DATETIME_FORMAT),
-                        self.corporation.corporation_ticker,
-                    )
-                )
-                json.dump(
-                    notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4
-                )
-                f.write("\n")
-
+            self._store_raw_notifications(notifications)
         logger.debug(
             add_prefix(
                 "Processing {:,} notifications received from ESI".format(
@@ -812,49 +777,76 @@ class Owner(models.Model):
         )
         return notifications
 
-    def _store_notifications(self, notifications, notifications_count):
-        """stores all notifications in database"""
-        new_notifications_count = 0
-        with transaction.atomic():
-            for notification in notifications:
-                sender_type = EveEntity.get_matching_entity_category(
-                    notification["sender_type"]
+    def _store_raw_notifications(self, notifications):
+        # store notifications to disk in continuous file per corp
+        folder_name = "structures_notifications_archive"
+        os.makedirs(folder_name, exist_ok=True)
+        filename = "{}/notifications_{}_{}.txt".format(
+            folder_name, self.corporation.corporation_id, now().date().isoformat()
+        )
+        logger.info(
+            "%s: Storing notifications into archive file: %s", self, format(filename)
+        )
+        with open(file=filename, mode="a", encoding="utf-8") as f:
+            f.write(
+                "[{}] {}:\n".format(
+                    now().strftime(DATETIME_FORMAT),
+                    self.corporation.corporation_ticker,
                 )
-                if sender_type != EveEntity.CATEGORY_OTHER:
-                    sender, _ = EveEntity.objects.get_or_create_esi(
-                        notification["sender_id"]
-                    )
-                else:
-                    sender, _ = EveEntity.objects.get_or_create(
-                        id=notification["sender_id"],
-                        defaults={"category": sender_type},
-                    )
-                text = notification["text"] if "text" in notification else None
-                is_read = notification["is_read"] if "is_read" in notification else None
-                obj, created = Notification.objects.update_or_create(
+            )
+            json.dump(notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
+            f.write("\n")
+
+    def _store_notifications(self, notifications: list) -> int:
+        """stores new notifications in database.
+        Returns number of newly created objects.
+        """
+        # identify new notifications
+        existing_notification_ids = set(
+            self.notification_set.values_list("notification_id", flat=True)
+        )
+        new_notifications = [
+            obj
+            for obj in notifications
+            if obj["notification_id"] not in existing_notification_ids
+        ]
+        # create new notif objects
+        new_notification_objects = list()
+        for notification in new_notifications:
+            sender_type = EveEntity.get_matching_entity_category(
+                notification["sender_type"]
+            )
+            if sender_type != EveEntity.CATEGORY_OTHER:
+                sender, _ = EveEntity.objects.get_or_create_esi(
+                    eve_entity_id=notification["sender_id"]
+                )
+            else:
+                sender, _ = EveEntity.objects.get_or_create(
+                    id=notification["sender_id"],
+                    defaults={"category": sender_type},
+                )
+            text = notification["text"] if "text" in notification else None
+            is_read = notification["is_read"] if "is_read" in notification else None
+            new_notification_objects.append(
+                Notification(
                     notification_id=notification["notification_id"],
                     owner=self,
-                    defaults={
-                        "sender": sender,
-                        "timestamp": notification["timestamp"],
-                        # at least one type has a trailing white space
-                        # which we need to remove
-                        "notif_type": notification["type"].strip(),
-                        "text": text,
-                        "is_read": is_read,
-                        "last_updated": now(),
-                    },
+                    sender=sender,
+                    timestamp=notification["timestamp"],
+                    # at least one type has a trailing white space
+                    # which we need to remove
+                    notif_type=notification["type"].strip(),
+                    text=text,
+                    is_read=is_read,
+                    last_updated=now(),
+                    created=now(),
                 )
-                notifications_count += 1
-                if created:
-                    obj.created = now()
-                    obj.save()
-                    new_notifications_count += 1
+            )
 
+        Notification.objects.bulk_create(new_notification_objects)
         self.notifications_last_error = self.ERROR_NONE
         self.save()
-
-        return new_notifications_count, notifications_count
+        return len(new_notification_objects)
 
     def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
