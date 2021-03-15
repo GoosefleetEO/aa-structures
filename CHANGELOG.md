@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## Added
+
+- New dedicated list for Customs offices, meant for public consumption
+
 ## [1.8.1] - 2021-03-01
 
 ## Changed

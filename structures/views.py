@@ -1,3 +1,4 @@
+import re
 import urllib
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -23,6 +24,7 @@ from app_utils.views import (
     no_wrap_html,
     yesno_str,
     bootstrap_label_html,
+    link_html,
 )
 
 from esi.decorators import token_required
@@ -36,7 +38,14 @@ from .app_settings import (
     STRUCTURES_PAGING_ENABLED,
 )
 from .forms import TagsFilterForm
-from .models import Owner, Structure, StructureTag, StructureService, Webhook
+from .models import (
+    EveCategory,
+    Owner,
+    Structure,
+    StructureTag,
+    StructureService,
+    Webhook,
+)
 
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -506,3 +515,66 @@ def service_status(request):
         return HttpResponse(gettext_lazy("service is up"))
     else:
         return HttpResponseServerError(gettext_lazy("service is down"))
+
+
+def poco_list_data(request) -> JsonResponse:
+    pocos = Structure.objects.select_related(
+        "eve_planet",
+        "eve_planet__eve_type",
+        "eve_type",
+        "eve_type__eve_group",
+        "eve_solar_system",
+        "eve_solar_system__eve_constellation__eve_region",
+    ).filter(eve_type__eve_group__eve_category_id=EveCategory.EVE_CATEGORY_ID_ORBITAL)
+    data = list()
+    for poco in pocos:
+        if poco.eve_solar_system.is_low_sec:
+            space_badge_type = "warning"
+        elif poco.eve_solar_system.is_high_sec:
+            space_badge_type = "success"
+        else:
+            space_badge_type = "danger"
+        solar_system_html = format_html(
+            "{}&nbsp;{}",
+            link_html(
+                dotlan.solar_system_url(poco.eve_solar_system.name),
+                poco.eve_solar_system.name,
+            ),
+            bootstrap_label_html(
+                text=poco.eve_solar_system.space_type, label=space_badge_type
+            ),
+        )
+        type_icon = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            poco.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
+        match = re.search(r"Planet \((\S+)\)", poco.eve_planet.eve_type.name)
+        if match:
+            planet_type_name = match.group(1)
+        else:
+            planet_type_name = poco.name
+        planet_type_icon = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            poco.eve_planet.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
+        data.append(
+            {
+                "id": poco.id,
+                "type_icon": type_icon,
+                "region": poco.eve_solar_system.eve_constellation.eve_region.name,
+                "solar_system_html": {
+                    "display": solar_system_html,
+                    "sort": poco.eve_solar_system.name,
+                },
+                "solar_system": poco.eve_solar_system.name,
+                "planet": poco.eve_planet.name,
+                "planet_type_icon": planet_type_icon,
+                "planet_type_name": planet_type_name,
+                "space_type": poco.eve_solar_system.space_type,
+            }
+        )
+    return JsonResponse(data, safe=False)
