@@ -139,25 +139,6 @@
             </div>
         </div>
     </div>
-
-    <!-- share data with JS part -->
-    <div
-        id="dataExport"
-        data-listDataUrl="{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:',' }}"
-        data-titleAlliance="{% trans 'Alliance' %}"
-        data-titleCorporation="{% trans 'Corporation' %}"
-        data-titleRegion="{% trans 'Region' %}"
-        data-titleSolarSystem="{% trans 'Solar System' %}"
-        data-titleCategory="{% trans 'Category' %}"
-        data-titleGroup="{% trans 'Group' %}"
-        data-Reinforced="{% trans 'Reinforced?' %}"
-        data-State="{% trans 'State' %}"
-        data-PowerMode="{% trans 'Power Mode' %}"
-        data-dataTablesPageLength="{{ data_tables_page_length }}"
-        data-dataTablesPaging="{{ data_tables_paging }}"
-    >
-    </div>
-
 {% endblock %}
 
 {% block extra_javascript %}
@@ -165,26 +146,13 @@
     <script type="application/javascript" src="{% static 'js/filterDropDown/filterDropDown.min.js' %}"></script>
     <script type="application/javascript">
         $(document).ready(function () {
+            var dataTablesPageLength = {{ data_tables_page_length }};
+            var dataTablesPaging = ("{{ data_tables_paging }}" == 'True');
 
-            /* retrieve generated data from HTML page */
-            var elem = document.getElementById('dataExport');
-            var listDataUrl = elem.getAttribute('data-listDataUrl');
-            var titleAlliance = elem.getAttribute('data-titleAlliance');
-            var titleCorporation = elem.getAttribute('data-titleCorporation');
-            var titleRegion = elem.getAttribute('data-titleRegion');
-            var titleSolarSystem = elem.getAttribute('data-titleSolarSystem');
-            var titleCategory = elem.getAttribute('data-titleCategory');
-            var titleGroup = elem.getAttribute('data-titleGroup');
-            var Reinforced = elem.getAttribute('data-Reinforced');
-            var State = elem.getAttribute('data-State');
-            var PowerMode = elem.getAttribute('data-PowerMode');
-            var dataTablesPageLength = elem.getAttribute('data-dataTablesPageLength');
-            var dataTablesPaging = (elem.getAttribute('data-dataTablesPaging') == 'True');
-
-            /* dataTable def */
+            /* structures */
             $('#tab_structures').DataTable({
                 ajax: {
-                    url: listDataUrl,
+                    url: "{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:',' }}",
                     dataSrc: '',
                     cache: false
                 },
@@ -236,39 +204,39 @@
                     columns: [
                         {
                             idx: 11,
-                            title: titleAlliance
+                            title: "{% trans 'Alliance' %}"
                         },
                         {
                             idx: 12,
-                            title: titleCorporation
+                            title: "{% trans 'Corporation' %}"
                         },
                         {
                             idx: 13,
-                            title: titleRegion
+                            title: "{% trans 'Region' %}"
                         },
                         {
                             idx: 14,
-                            title: titleSolarSystem
+                            title: "{% trans 'Solar System' %}"
                         },
                         {
                             idx: 15,
-                            title: titleCategory
+                            title: "{% trans 'Category' %}"
                         },
                         {
                             idx: 16,
-                            title: titleGroup
+                            title: "{% trans 'Group' %}"
                         },
                         {
                             idx: 17,
-                            title: Reinforced
+                            title: "{% trans 'Reinforced?' %}"
                         },
                         {
                             idx: 18,
-                            title: State
+                            title: "{% trans 'State' %}"
                         },
                         {
                             idx: 19,
-                            title: PowerMode
+                            title: "{% trans 'Power Mode' %}"
                         }
                     ],
                     bootstrap: true
@@ -281,6 +249,7 @@
 
             });
 
+            /* pocos */
             $('#tab_pocos').DataTable({
                 ajax: {
                     url: "{% url 'structures:poco_list_data' %}",
