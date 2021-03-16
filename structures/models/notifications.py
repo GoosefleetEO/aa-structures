@@ -1,6 +1,5 @@
 """Notification related models"""
 
-from datetime import timedelta
 import logging
 import yaml
 from typing import Tuple
@@ -200,7 +199,6 @@ class NotificationType(models.TextChoices):
         return [
             cls.STRUCTURE_LOST_SHIELD,
             cls.STRUCTURE_LOST_ARMOR,
-            cls.STRUCTURE_ANCHORING,
             cls.ORBITAL_REINFORCED,
             cls.MOONMINING_EXTRACTION_STARTED,
             cls.MOONMINING_EXTRACTION_CANCELLED,
@@ -589,8 +587,6 @@ class Notification(models.Model):
                         timer_created = self._gen_timer_structure_reinforcement(
                             parsed_text, token
                         )
-                    elif self.notif_type == NotificationType.STRUCTURE_ANCHORING:
-                        timer_created = self._gen_timer_structure_anchoring(parsed_text)
                     elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
                         timer_created = self._gen_timer_sov_reinforcements(parsed_text)
                     elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
@@ -685,58 +681,6 @@ class Notification(models.Model):
                 details_notes=self._timer_details_notes(),
             )
             timer_added = True
-
-        return timer_added
-
-    def _gen_timer_structure_anchoring(self, parsed_text: str) -> bool:
-        """generate timer for structure anchoring"""
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            parsed_text["structureTypeID"]
-        )
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarsystemID"]
-        )
-        timer_added = False
-        if not solar_system.is_null_sec:
-            eve_time = self.timestamp + timedelta(hours=24)
-            if has_auth_timers:
-                AuthTimer.objects.create(
-                    details=gettext("Anchor timer"),
-                    system=solar_system.name,
-                    planet_moon="",
-                    structure=structure_type.name,
-                    objective="Friendly",
-                    eve_time=eve_time,
-                    eve_corp=self.owner.corporation,
-                    corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
-                )
-                timer_added = True
-
-            if has_structure_timers:
-                eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
-                    id=parsed_text["solarsystemID"]
-                )
-                structure_type, _ = EveType2.objects.get_or_create_esi(
-                    id=parsed_text["structureTypeID"]
-                )
-                visibility = (
-                    Timer.VISIBILITY_CORPORATION
-                    if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                    else Timer.VISIBILITY_UNRESTRICTED
-                )
-                Timer.objects.create(
-                    eve_solar_system=eve_solar_system,
-                    structure_type=structure_type,
-                    timer_type=Timer.TYPE_ANCHORING,
-                    objective=Timer.OBJECTIVE_FRIENDLY,
-                    date=eve_time,
-                    eve_corporation=self.owner.corporation,
-                    eve_alliance=self.owner.corporation.alliance,
-                    visibility=visibility,
-                    owner_name=self.owner.corporation.corporation_name,
-                    details_notes=self._timer_details_notes(),
-                )
-                timer_added = True
 
         return timer_added
 

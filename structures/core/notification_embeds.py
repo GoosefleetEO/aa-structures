@@ -1,5 +1,4 @@
 from collections import namedtuple
-import datetime as dt
 
 import dhooks_lite
 
@@ -467,11 +466,6 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
             "owner_link": owner_link,
             "solar_system": self._gen_solar_system_text(solar_system),
         }
-        if not solar_system.is_null_sec:
-            unanchored_at = notification.timestamp + dt.timedelta(hours=24)
-            self._description += "The anchoring timer ends at: {}".format(
-                unanchored_at.strftime(DATETIME_FORMAT)
-            )
         self._title = gettext("Structure anchoring")
         self._color = self.COLOR_INFO
         self._thumbnail = dhooks_lite.Thumbnail(

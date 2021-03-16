@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - New dedicated list for Customs offices, meant for public consumption
 
+## Changed
+
+- Removed anchoring time for structure anchoring notifications
+- Removed timer creation for structure anchoring notifications
+
 ## [1.8.1] - 2021-03-01
 
 ## Changed
