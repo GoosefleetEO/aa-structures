@@ -1,0 +1,228 @@
+{% extends 'structures/base.html' %}
+{% load i18n %}
+{% load bootstrap %}
+{% load static %}
+
+{% block details %}
+
+    <span class="pull-right">
+        {% if perms.structures.add_structure_owner %}
+            <a class="btn btn-success btn-tabs"
+                href="{% url 'structures:add_structure_owner' %}">
+                {% trans "Add Structure Owner" %}
+            </a>
+        {% endif %}
+    </span>
+
+    <!-- Nav tabs -->
+    <ul id="myTabs" class="nav nav-tabs" role="tablist">
+        {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
+            <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+            <script id="active-tab" type="application/javascript">structures</script>
+        {% else%}
+            <script id="active-tab" type="application/javascript">pocos</script>
+        {% endif %}
+        <li role="presentation"><a href="#pocos" aria-controls="pocos" role="tab" data-toggle="tab">{% trans "Customs Offices" %}</a></li>
+    </ul>
+
+    <div class="panel panel-default panel-tabs">
+        <div class="panel-body">
+            <div class="tab-content">
+                {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
+                    {% include "structures/partials/structure_list.html" %}
+                {% endif %}
+                {% include "structures/partials/poco_list.html" %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascript %}
+    {% include 'bundles/datatables-js.html' %}
+    <script type="application/javascript" src="{% static 'js/filterDropDown/filterDropDown.min.js' %}"></script>
+    <script type="application/javascript">
+        $(document).ready(function () {
+            var dataTablesPageLength = {{ data_tables_page_length }};
+            var dataTablesPaging = ("{{ data_tables_paging }}" == 'True');
+
+            /* structures */
+            $('#tab_structures').DataTable({
+                ajax: {
+                    url: "{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:',' }}",
+                    dataSrc: '',
+                    cache: false
+                },
+                columns: [
+                    { data: 'corporation_icon' },
+                    { data: 'owner' },
+                    { data: 'location' },
+                    { data: 'type_icon' },
+                    { data: 'type' },
+                    { data: 'structure_name' },
+                    { data: 'services' },
+                    {
+                        data: 'fuel_expires_at',
+                        render: {
+                            _: 'display',
+                            sort: 'timestamp'
+                        }
+                    },
+                    {
+                        data: 'last_online_at',
+                        render: {
+                            _: 'display',
+                            sort: 'timestamp'
+                        }
+                    },
+                    { data: 'reinforcement' },
+                    { data: 'state_details' },
+
+                    { data: 'alliance_name' },
+                    { data: 'corporation_name' },
+                    { data: 'region_name' },
+                    { data: 'solar_system_name' },
+                    { data: 'category_name' },
+                    { data: 'group_name' },
+                    { data: 'is_reinforced_str' },
+                    { data: 'state_str' },
+                    { data: 'power_mode_str' }
+                ],
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                paging: dataTablesPaging,
+                pageLength: dataTablesPageLength,
+                columnDefs: [
+                    { "sortable": false, "targets": [0, 3, 4, 6] },
+                    { "visible": false, "targets": [11, 12, 13, 14, 15, 16, 17, 18, 19] }
+                ],
+                order: [[1, "asc"], [5, "asc"]],
+                filterDropDown:
+                {
+                    columns: [
+                        {
+                            idx: 11,
+                            title: "{% trans 'Alliance' %}",
+                            maxWidth: "10em"
+                        },
+                        {
+                            idx: 12,
+                            title: "{% trans 'Corporation' %}",
+                            maxWidth: "13em"
+                        },
+                        {
+                            idx: 13,
+                            title: "{% trans 'Region' %}",
+                            maxWidth: "8em"
+                        },
+                        {
+                            idx: 14,
+                            title: "{% trans 'Solar System' %}",
+                            maxWidth: "14em"
+                        },
+                        {
+                            idx: 15,
+                            title: "{% trans 'Category' %}",
+                            maxWidth: "10em"
+                        },
+                        {
+                            idx: 16,
+                            title: "{% trans 'Group' %}",
+                            maxWidth: "7em"
+                        },
+                        {
+                            idx: 17,
+                            title: "{% trans 'Reinforced?' %}",
+                            maxWidth: "13em"
+                        },
+                        {
+                            idx: 18,
+                            title: "{% trans 'State' %}",
+                            maxWidth: "6em"
+                        },
+                        {
+                            idx: 19,
+                            title: "{% trans 'Power Mode' %}",
+                            maxWidth: "12em"
+                        }
+                    ],
+                    autoSize: false,
+                    bootstrap: true
+                },
+                createdRow: function (row, data, dataIndex) {
+                    if (data['is_reinforced']) {
+                        $(row).addClass('danger');
+                    }
+                }
+
+            });
+
+            /* pocos */
+            $('#tab_pocos').DataTable({
+                ajax: {
+                    url: "{% url 'structures:poco_list_data' %}",
+                    dataSrc: '',
+                    cache: false
+                },
+                columns: [
+                    { data: 'type_icon' },
+                    { data: 'region' },
+                    {
+                        data: 'solar_system_html',
+                        render: {
+                            _: 'display',
+                            sort: 'sort'
+                        }
+                    },
+                    { data: 'planet' },
+                    { data: 'planet_type_icon' },
+                    { data: 'planet_type_name' },
+                    /* hidden columns */
+                    { data: 'solar_system' },
+                    { data: 'space_type' },
+                ],
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                paging: dataTablesPaging,
+                pageLength: dataTablesPageLength,
+                columnDefs: [
+                    { "sortable": false, "targets": [0, 4] },
+                    { "visible": false, "targets": [ 6, 7 ] },
+                ],
+                order: [ [1, "asc"], [3, "asc"] ],
+                filterDropDown:
+                {
+                    columns: [
+                        {
+                            idx: 7,
+                            title: "{% trans 'Space Type' %}"
+                        },
+                        {
+                            idx: 1
+                        },
+                        {
+                            idx: 6,
+                            title: "{% trans 'Solar System' %}"
+                        },
+                        {
+                            idx: 5
+                        }
+                    ],
+                    autoSize: false,
+                    bootstrap: true
+                }
+            });
+
+            tabName = document.getElementById('active-tab').textContent
+            $('#myTabs a[href="#' + tabName + '"]').tab('show')
+        });
+    </script>
+{% endblock %}
+
+{% block extra_css %}
+    {% include 'bundles/datatables-css.html' %}
+
+    <link rel="stylesheet" href="{% static 'structures/global.css' %}" type="text/css" media="screen">
+    <link rel="stylesheet" href="{% static 'structures/main.css' %}" type="text/css" media="screen">
+{% endblock %}
+
+{% block extra_script %}
+
+{% endblock %}

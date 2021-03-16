@@ -254,24 +254,6 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         )
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    def test_anchoring_in_low_sec_has_timer(self, mock_send_message):
-        mock_send_message.return_value = True
-
-        obj = Notification.objects.get(notification_id=1000000501)
-        obj.send_to_webhook(self.webhook)
-        embed = mock_send_message.call_args[1]["embeds"][0]
-        self.assertIn("The anchoring timer ends at", embed.description)
-
-    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
-    def test_anchoring_in_null_sec_no_timer(self, mock_send_message):
-        mock_send_message.return_value = True
-
-        obj = Notification.objects.get(notification_id=1000010501)
-        obj.send_to_webhook(self.webhook)
-        embed = mock_send_message.call_args[1]["embeds"][0]
-        self.assertNotIn("The anchoring timer ends at", embed.description)
-
-    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_notification_with_null_aggressor_alliance(self, mock_send_message):
         mock_send_message.return_value = True
 
@@ -541,7 +523,7 @@ if "timerboard" in app_labels():
             self.assertEqual(AuthTimer.objects.count(), 0)
 
             x = Notification.objects.get(notification_id=1000000501)
-            self.assertTrue(x.process_for_timerboard())
+            self.assertFalse(x.process_for_timerboard())
 
             x = Notification.objects.get(notification_id=1000000504)
             self.assertTrue(x.process_for_timerboard())
@@ -556,12 +538,12 @@ if "timerboard" in app_labels():
             x = Notification.objects.get(notification_id=1000000404)
             self.assertTrue(x.process_for_timerboard())
 
-            self.assertEqual(AuthTimer.objects.count(), 5)
+            self.assertEqual(AuthTimer.objects.count(), 4)
 
             # this should remove the right timer only
             x = Notification.objects.get(notification_id=1000000402)
             x.process_for_timerboard()
-            self.assertEqual(AuthTimer.objects.count(), 4)
+            self.assertEqual(AuthTimer.objects.count(), 3)
             ids_set_2 = {x.id for x in AuthTimer.objects.all()}
             self.assertSetEqual(ids_set_1, ids_set_2)
 
@@ -583,17 +565,6 @@ if "timerboard" in app_labels():
             self.assertTrue(x.process_for_timerboard())
             t = AuthTimer.objects.first()
             self.assertTrue(t.corp_timer)
-
-        def test_anchoring_timer_created_for_low_sec(self):
-            obj = Notification.objects.get(notification_id=1000000501)
-            self.assertTrue(obj.process_for_timerboard())
-            timer = AuthTimer.objects.first()
-            self.assertEqual(timer.eve_time, obj.timestamp + timedelta(hours=24))
-
-        def test_anchoring_timer_not_created_for_null_sec(self):
-            obj = Notification.objects.get(notification_id=1000010501)
-            self.assertFalse(obj.process_for_timerboard())
-            self.assertIsNone(AuthTimer.objects.first())
 
 
 if "structuretimers" in app_labels():
@@ -645,30 +616,6 @@ if "structuretimers" in app_labels():
             )
             self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
             self.assertEqual(timer.structure_name, "Test Structure Alpha")
-            self.assertEqual(timer.owner_name, "Wayne Technologies")
-            self.assertTrue(timer.details_notes)
-
-        def test_timer_structure_anchoring(self):
-            notification = Notification.objects.get(notification_id=1000000501)
-            self.assertTrue(notification.process_for_timerboard())
-            timer = Timer.objects.first()
-            self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.TYPE_ANCHORING)
-            self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
-            )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=35832))
-            self.assertAlmostEqual(
-                timer.date, now() + timedelta(hours=22), delta=timedelta(hours=1)
-            )
-            self.assertEqual(
-                timer.eve_corporation,
-                EveCorporationInfo.objects.get(corporation_id=2001),
-            )
-            self.assertEqual(
-                timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
-            )
-            self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertTrue(timer.details_notes)
 

@@ -645,12 +645,12 @@
     ],
     "Notification": [
         {
-            "notification_id": 1000000201,
-            "type": "CharLeftCorpMsg",
+            "notification_id": 1000000203,
+            "type": "CorpAppNewMsg",
             "sender_id": 1011,
             "sender_type": "character",
-            "timestamp": "2019-08-16T12:08:00Z",
-            "text": "charID: 1011\ncorpID: 2001\n"
+            "timestamp": "2019-08-16T15:08:00Z",
+            "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
         },
         {
             "notification_id": 1000000202,
@@ -658,7 +658,39 @@
             "sender_id": 1011,
             "sender_type": "character",
             "timestamp": "2019-08-16T15:08:00Z",
-            "text": "applicationText: ''\ncharID: 1011\ncorpID: 2001\n"
+            "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
+        },
+        {
+            "notification_id": 1000000204,
+            "type": "CorpAppRejectCustomMsg",
+            "sender_id": 2001,
+            "sender_type": "corporation",
+            "timestamp": "2019-08-16T15:08:00Z",
+            "text": "applicationText: example1\ncharID: 1011\ncorpID: 2001\ncustomMessage: example2\n"
+        },
+        {
+            "notification_id": 1000000205,
+            "type": "CorpAppInvitedMsg",
+            "sender_id": 2001,
+            "sender_type": "corporation",
+            "timestamp": "2019-08-16T15:08:00Z",
+            "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\ninvokingCharID: 1025469597\n"
+        },
+        {
+            "notification_id": 1000000206,
+            "type": "CharAppWithdrawMsg",
+            "sender_id": 1011,
+            "sender_type": "character",
+            "timestamp": "2019-08-16T15:08:00Z",
+            "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
+        },
+        {
+            "notification_id": 1000000201,
+            "type": "CharLeftCorpMsg",
+            "sender_id": 1011,
+            "sender_type": "character",
+            "timestamp": "2019-08-16T12:08:00Z",
+            "text": "charID: 1011\ncorpID: 2001\n"
         },
         {
             "notification_id": 1000000405,

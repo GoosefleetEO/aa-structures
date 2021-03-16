@@ -31,6 +31,14 @@ from .. import views
 MODULE_PATH = "structures.views"
 
 
+def _response_to_data(response):
+    return json.loads(response.content.decode("utf-8"))
+
+
+def _response_to_dict(response, key="id"):
+    return {row[key]: row for row in _response_to_data(response)}
+
+
 class TestStructureList(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -39,14 +47,14 @@ class TestStructureList(TestCase):
         load_entities()
         create_structures(dont_load_entities=True)
 
-    def test_basic_access_main_view(self):
+    def test_should_have_access_to_main_view(self):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
         # when
-        request = self.factory.get(reverse("structures:structure_list"))
+        request = self.factory.get(reverse("structures:main"))
         request.user = user
-        response = views.structure_list(request)
+        response = views.main(request)
         # then
         self.assertEqual(response.status_code, 200)
 
@@ -67,15 +75,24 @@ class TestStructureListDataPermissions(TestCase):
         request.user = user
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
-        return {
-            row["structure_id"]: row
-            for row in json.loads(response.content.decode("utf-8"))
-        }
+        return _response_to_dict(response, "structure_id")
+
+    def test_should_show_no_structures(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
+        self.assertSetEqual(set(structure_ids), set())
 
     def test_should_show_own_corporation_only_1(self):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
         # when
         structure_ids = self._structure_list_data_view(user).keys()
         # then
@@ -96,6 +113,9 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
         # when
         structure_ids = self._structure_list_data_view(user).keys()
         # then
@@ -105,7 +125,7 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        self.user = AuthUtils.add_permission_to_user_by_name(
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_alliance_structures", user
         )
         # when
@@ -129,7 +149,7 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        self.user = AuthUtils.add_permission_to_user_by_name(
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_alliance_structures", user
         )
         # when
@@ -141,7 +161,7 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        self.user = AuthUtils.add_permission_to_user_by_name(
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_all_structures", user
         )
         # when
@@ -167,6 +187,9 @@ class TestStructureListDataPermissions(TestCase):
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
         user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_all_unanchoring_status", user
         )
         # when
@@ -179,6 +202,9 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
         # when
         data = self._structure_list_data_view(user)
         # then
@@ -206,7 +232,7 @@ class TestStructureListFilters(TestCase):
         request.user = self.user
         response = views.index(request)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/structures/list/?tags=tag_a")
+        self.assertEqual(response.url, "/structures/list?tags=tag_a")
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED", False)
     def test_default_filter_disabled(self):
@@ -214,7 +240,7 @@ class TestStructureListFilters(TestCase):
         request.user = self.user
         response = views.index(request)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/structures/list/")
+        self.assertEqual(response.url, "/structures/list")
 
     def test_list_filter_by_tag_1(self):
         # no filter
@@ -225,7 +251,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json.loads(response.content.decode("utf-8"))
+        data = _response_to_data(response)
         self.assertSetEqual(
             {x["structure_id"] for x in data},
             {
@@ -249,7 +275,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json.loads(response.content.decode("utf-8"))
+        data = _response_to_data(response)
         self.assertSetEqual(
             {x["structure_id"] for x in data}, {1000000000002, 1000000000003}
         )
@@ -262,7 +288,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json.loads(response.content.decode("utf-8"))
+        data = _response_to_data(response)
         self.assertSetEqual({x["structure_id"] for x in data}, {1000000000003})
 
         # filter for tag_c, tag_b
@@ -273,34 +299,34 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json.loads(response.content.decode("utf-8"))
+        data = _response_to_data(response)
         self.assertSetEqual(
             {x["structure_id"] for x in data}, {1000000000002, 1000000000003}
         )
 
     def test_call_with_raw_tags(self):
         request = self.factory.get(
-            "{}?tags=tag_c,tag_b".format(reverse("structures:structure_list"))
+            "{}?tags=tag_c,tag_b".format(reverse("structures:main"))
         )
         request.user = self.user
-        response = views.structure_list(request)
+        response = views.main(request)
         self.assertEqual(response.status_code, 200)
 
     def test_set_tags_filter(self):
         request = self.factory.post(
-            reverse("structures:structure_list"),
+            reverse("structures:main"),
             data={
                 "tag_b": True,
                 "tag_c": True,
             },
         )
         request.user = self.user
-        response = views.structure_list(request)
+        response = views.main(request)
         self.assertEqual(response.status_code, 302)
         parts = urlparse(response.url)
         path = parts[2]
         query_dict = parse_qs(parts[4])
-        self.assertEqual(path, reverse("structures:structure_list"))
+        self.assertEqual(path, reverse("structures:main"))
         self.assertIn("tags", query_dict)
         params = query_dict["tags"][0].split(",")
         self.assertSetEqual(set(params), {"tag_c", "tag_b"})
@@ -327,7 +353,7 @@ class TestStructurePowerModes(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json.loads(response.content.decode("utf-8"))
+        data = _response_to_data(response)
         for row in data:
             if row["structure_id"] == structure_id:
                 return row
@@ -642,3 +668,37 @@ class TestStatus(TestCase):
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
+
+
+class TestPocoList(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.basic_access", cls.user
+        )
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_all_structures", cls.user
+        )
+        cls.factory = RequestFactory()
+
+    def test_should_return_all_pocos(self):
+        # given
+        request = self.factory.get(reverse("structures:poco_list_data"))
+        request.user = self.user
+        # when
+        response = views.poco_list_data(request)
+        # then
+        self.assertEqual(response.status_code, 200)
+        data = _response_to_dict(response)
+        self.assertSetEqual(
+            set(data.keys()), {1200000000003, 1200000000004, 1200000000005}
+        )
+        obj = data[1200000000003]
+        self.assertEqual(obj["region"], "Heimatar")
+        self.assertEqual(obj["solar_system"], "Amamake")
+        self.assertEqual(obj["planet"], "Amamake V")
+        self.assertEqual(obj["planet_type_name"], "Barren")
+        self.assertEqual(obj["space_type"], "lowsec")

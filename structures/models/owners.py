@@ -57,10 +57,8 @@ class General(models.Model):
         managed = False
         default_permissions = ()
         permissions = (
-            (
-                "basic_access",
-                "Can access this app and view structures of your corporation",
-            ),
+            ("basic_access", "Can access this app and view public pages"),
+            ("view_corporation_structures", "Can view corporation structures"),
             ("view_alliance_structures", "Can view alliance structures"),
             ("view_all_structures", "Can view all structures"),
             ("add_structure_owner", "Can add new structure owner"),

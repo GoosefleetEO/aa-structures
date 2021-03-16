@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.9.0] - 2021-03-16
+
+> **Important update notes**:<br>There has been an important change in the permission system. The `basic_access` permission no longer gives access to viewing structures from one's own corporation. Users now need the new permission `view_corporation_structures` for that. Please make sure to add that new permissions after installing this update where applicable (e.g. to Member state).
+
+## Added
+
+- New dedicated tab showing all customs offices, meant for public consumption
+- New permission for viewing corporation structures
+- Notification types for characters applying to join a corp: `CorpAppNewMsg`, `CorpAppInvitedMsg`, `CorpAppRejectCustomMsg`, `CharAppWithdrawMsg`
+
+## Changed
+
+- `basic_access` no longer gives access to viewing structures from one's own corporation. Users now need the new permission `view_corporation_structures` for that.
+- Removed anchoring time for structure anchoring notifications
+- Removed timer creation for structure anchoring notifications
+
 ## [1.8.1] - 2021-03-01
 
 ## Changed

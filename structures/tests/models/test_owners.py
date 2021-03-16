@@ -1294,13 +1294,13 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
         if has_auth_timers:
             # should have added timers
-            self.assertEqual(AuthTimer.objects.count(), 5)
+            self.assertEqual(AuthTimer.objects.count(), 4)
 
             # run sync again
             self.assertTrue(self.owner.fetch_notifications_esi())
 
             # should not have more timers
-            self.assertEqual(AuthTimer.objects.count(), 5)
+            self.assertEqual(AuthTimer.objects.count(), 4)
 
     @patch(
         "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",

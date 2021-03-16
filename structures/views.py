@@ -1,3 +1,4 @@
+import re
 import urllib
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -23,6 +24,7 @@ from app_utils.views import (
     no_wrap_html,
     yesno_str,
     bootstrap_label_html,
+    link_html,
 )
 
 from esi.decorators import token_required
@@ -36,7 +38,14 @@ from .app_settings import (
     STRUCTURES_PAGING_ENABLED,
 )
 from .forms import TagsFilterForm
-from .models import Owner, Structure, StructureTag, StructureService, Webhook
+from .models import (
+    EveCategory,
+    Owner,
+    Structure,
+    StructureTag,
+    StructureService,
+    Webhook,
+)
 
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -48,7 +57,7 @@ QUERY_PARAM_TAGS = "tags"
 @login_required
 @permission_required("structures.basic_access")
 def index(request):
-    url = reverse("structures:structure_list")
+    url = reverse("structures:main")
     if STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED:
         params = {
             QUERY_PARAM_TAGS: ",".join(
@@ -61,9 +70,8 @@ def index(request):
 
 @login_required
 @permission_required("structures.basic_access")
-def structure_list(request):
-    """main view showing the structure list"""
-
+def main(request):
+    """Main view"""
     active_tags = list()
     if request.method == "POST":
         form = TagsFilterForm(data=request.POST)
@@ -72,7 +80,7 @@ def structure_list(request):
                 if activated:
                     active_tags.append(StructureTag.objects.get(name=name))
 
-            url = reverse("structures:structure_list")
+            url = reverse("structures:main")
             if active_tags:
                 params = {QUERY_PARAM_TAGS: ",".join([x.name for x in active_tags])}
                 url += "?{}".format(urllib.parse.urlencode(params))
@@ -95,11 +103,11 @@ def structure_list(request):
         "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
         "data_tables_paging": STRUCTURES_PAGING_ENABLED,
     }
-    return render(request, "structures/structure_list.html", context)
+    return render(request, "structures/main.html", context)
 
 
 class StructuresRowBuilder:
-    """This class build the HTML table rows from structure objects"""
+    """This class build the HTML table rows from structure objects."""
 
     def __init__(self, request):
         self._row = None
@@ -359,8 +367,7 @@ class StructuresRowBuilder:
 @login_required
 @permission_required("structures.basic_access")
 def structure_list_data(request):
-    """returns structure list in JSON for AJAX call in structure_list view"""
-
+    """Returns structure list in JSON for AJAX call in main view."""
     structure_rows = list()
     row_converter = StructuresRowBuilder(request)
     for structure in _structures_query_for_user(request):
@@ -370,7 +377,7 @@ def structure_list_data(request):
 
 
 def _structures_query_for_user(request):
-    """returns query according to users permissions and current tags"""
+    """Returns query according to users permissions and current tags."""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:
         tags = tags_raw.split(",")
@@ -383,15 +390,21 @@ def _structures_query_for_user(request):
             structures_query = structures_query.filter(tags__name__in=tags).distinct()
 
     else:
-        corporation_ids = {
-            character.character.corporation_id
-            for character in request.user.character_ownerships.all()
-        }
-        corporations = list(
-            EveCorporationInfo.objects.select_related("alliance").filter(
-                corporation_id__in=corporation_ids
+        if request.user.has_perm(
+            "structures.view_corporation_structures"
+        ) or request.user.has_perm("structures.view_alliance_structures"):
+            corporation_ids = {
+                character.character.corporation_id
+                for character in request.user.character_ownerships.all()
+            }
+            corporations = list(
+                EveCorporationInfo.objects.select_related("alliance").filter(
+                    corporation_id__in=corporation_ids
+                )
             )
-        )
+        else:
+            corporations = []
+
         if request.user.has_perm("structures.view_alliance_structures"):
             alliances = {
                 corporation.alliance
@@ -415,7 +428,6 @@ def _structures_query_for_user(request):
 @token_required(scopes=Owner.get_esi_scopes())
 def add_structure_owner(request, token):
     token_char = EveCharacter.objects.get(character_id=token.character_id)
-
     success = True
     try:
         owned_char = CharacterOwnership.objects.get(
@@ -492,7 +504,7 @@ def add_structure_owner(request, token):
 
 
 def service_status(request):
-    """public view to 3rd party monitoring
+    """Public view to 3rd party monitoring.
 
     This is view allows running a 3rd party monitoring on the status
     of this services. Service will be reported as down if any of the
@@ -506,3 +518,66 @@ def service_status(request):
         return HttpResponse(gettext_lazy("service is up"))
     else:
         return HttpResponseServerError(gettext_lazy("service is down"))
+
+
+def poco_list_data(request) -> JsonResponse:
+    pocos = Structure.objects.select_related(
+        "eve_planet",
+        "eve_planet__eve_type",
+        "eve_type",
+        "eve_type__eve_group",
+        "eve_solar_system",
+        "eve_solar_system__eve_constellation__eve_region",
+    ).filter(eve_type__eve_group__eve_category_id=EveCategory.EVE_CATEGORY_ID_ORBITAL)
+    data = list()
+    for poco in pocos:
+        if poco.eve_solar_system.is_low_sec:
+            space_badge_type = "warning"
+        elif poco.eve_solar_system.is_high_sec:
+            space_badge_type = "success"
+        else:
+            space_badge_type = "danger"
+        solar_system_html = format_html(
+            "{}<br>{}",
+            link_html(
+                dotlan.solar_system_url(poco.eve_solar_system.name),
+                poco.eve_solar_system.name,
+            ),
+            bootstrap_label_html(
+                text=poco.eve_solar_system.space_type, label=space_badge_type
+            ),
+        )
+        type_icon = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            poco.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
+        match = re.search(r"Planet \((\S+)\)", poco.eve_planet.eve_type.name)
+        if match:
+            planet_type_name = match.group(1)
+        else:
+            planet_type_name = poco.name
+        planet_type_icon = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            poco.eve_planet.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+        )
+        data.append(
+            {
+                "id": poco.id,
+                "type_icon": type_icon,
+                "region": poco.eve_solar_system.eve_constellation.eve_region.name,
+                "solar_system_html": {
+                    "display": solar_system_html,
+                    "sort": poco.eve_solar_system.name,
+                },
+                "solar_system": poco.eve_solar_system.name,
+                "planet": poco.eve_planet.name,
+                "planet_type_icon": planet_type_icon,
+                "planet_type_name": planet_type_name,
+                "space_type": poco.eve_solar_system.space_type,
+            }
+        )
+    return JsonResponse(data, safe=False)

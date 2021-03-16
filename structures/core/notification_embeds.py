@@ -1,5 +1,4 @@
 from collections import namedtuple
-import datetime as dt
 
 import dhooks_lite
 
@@ -25,7 +24,7 @@ from ..models.structures import Structure
 
 
 class NotificationBaseEmbed:
-    """Base class for all notification embeds
+    """Base class for all notification embeds.
 
     You must subclass this class to create an embed for a notification type.
     At least title and description must be defined in the subclass.
@@ -65,7 +64,7 @@ class NotificationBaseEmbed:
         return self._ping_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
-        """returns generated Discord embed for this object"""
+        """Returns generated Discord embed for this object."""
         if self._title is None:
             raise ValueError(f"title not defined for {type(self)}")
         if self._description is None:
@@ -102,13 +101,21 @@ class NotificationBaseEmbed:
 
     @staticmethod
     def create(notification: Notification) -> "NotificationBaseEmbed":
-        """creates a new instance of the respective subclass for given Notification"""
+        """Creates a new instance of the respective subclass for given Notification."""
         if not isinstance(notification, Notification):
             raise TypeError("notification must be of type Notification")
         notif_type = notification.notif_type
 
         # character
-        if notif_type == NotificationType.CHAR_APP_ACCEPT_MSG:
+        if notif_type == NotificationType.CORP_APP_NEW_MSG:
+            return NotificationCorpAppNewMsg(notification)
+        elif notif_type == NotificationType.CORP_APP_INVITED_MSG:
+            return NotificationCorpAppInvitedMsg(notification)
+        elif notif_type == NotificationType.CORP_APP_REJECT_CUSTOM_MSG:
+            return NotificationCorpAppRejectCustomMsg(notification)
+        elif notif_type == NotificationType.CHAR_APP_WITHDRAW_MSG:
+            return NotificationCharAppWithdrawMsg(notification)
+        elif notif_type == NotificationType.CHAR_APP_ACCEPT_MSG:
             return NotificationCharAppAcceptMsg(notification)
         elif notif_type == NotificationType.CHAR_LEFT_CORP_MSG:
             return NotificationCharLeftCorpMsg(notification)
@@ -241,9 +248,7 @@ class NotificationBaseEmbed:
         )
 
     def _get_aggressor_link(self) -> str:
-        """returns the aggressor link from a parsed_text
-        for POS and POCOs only
-        """
+        """Returns the aggressor link from a parsed_text for POS and POCOs only."""
         if self._parsed_text.get("aggressorAllianceID"):
             key = "aggressorAllianceID"
         elif self._parsed_text.get("aggressorCorpID"):
@@ -258,7 +263,7 @@ class NotificationBaseEmbed:
 
 
 class NotificationStructureEmbed(NotificationBaseEmbed):
-    """Base class for most structure related notification embeds"""
+    """Base class for most structure related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -364,9 +369,7 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         self._color = self.COLOR_DANGER
 
     def _get_attacker_link(self) -> str:
-        """returns the attacker link from a parsed_text
-        For Upwell structures only
-        """
+        """Returns the attacker link from a parsed_text for Upwell structures only."""
         if self._parsed_text.get("allianceName"):
             return self._gen_alliance_link(self._parsed_text["allianceName"])
         elif self._parsed_text.get("corpName"):
@@ -467,11 +470,6 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
             "owner_link": owner_link,
             "solar_system": self._gen_solar_system_text(solar_system),
         }
-        if not solar_system.is_null_sec:
-            unanchored_at = notification.timestamp + dt.timedelta(hours=24)
-            self._description += "The anchoring timer ends at: {}".format(
-                unanchored_at.strftime(DATETIME_FORMAT)
-            )
         self._title = gettext("Structure anchoring")
         self._color = self.COLOR_INFO
         self._thumbnail = dhooks_lite.Thumbnail(
@@ -540,7 +538,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
 
 
 class NotificationMoonminingEmbed(NotificationBaseEmbed):
-    """Base class for all moon mining related notification embeds"""
+    """Base class for all moon mining related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -706,7 +704,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
 
 
 class NotificationOrbitalEmbed(NotificationBaseEmbed):
-    """Base class for all orbital (aka POCO) related notification embeds"""
+    """Base class for all orbital (aka POCO) related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -769,7 +767,7 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
 
 
 class NotificationTowerEmbed(NotificationBaseEmbed):
-    """Base class for all tower (aka POS) related notification embeds"""
+    """Base class for all tower (aka POS) related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -848,7 +846,7 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
 
 
 class NotificationSovEmbed(NotificationBaseEmbed):
-    """Base class for all sovereignty related notification embeds"""
+    """Base class for all sovereignty related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -1009,7 +1007,7 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
         self._color = self.COLOR_DANGER
 
 
-class NotificationCharEmbed(NotificationBaseEmbed):
+class NotificationCorpCharEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._character, _ = EveEntity.objects.get_or_create_esi(
@@ -1020,12 +1018,97 @@ class NotificationCharEmbed(NotificationBaseEmbed):
         )
         self._character_link = self._gen_eveentity_link(self._character)
         self._corporation_link = self._gen_corporation_link(self._corporation.name)
+        self._application_text = self._parsed_text.get("applicationText", "")
         self._thumbnail = dhooks_lite.Thumbnail(
             self._character.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
 
 
-class NotificationCharAppAcceptMsg(NotificationCharEmbed):
+class NotificationCorpAppNewMsg(NotificationCorpCharEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "New application from %(character_name)s" % {
+            "character_name": self._character.name,
+        }
+        self._description = (
+            "New application from %(character_name)s to join %(corporation_name)s:\n"
+            "> %(application_text)s"
+            % {
+                "character_name": self._character_link,
+                "corporation_name": self._corporation_link,
+                "application_text": self._application_text,
+            }
+        )
+        self._color = self.COLOR_INFO
+
+
+class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "%(character_name)s has been invited" % {
+            "character_name": self._character.name
+        }
+        inviting_character, _ = EveEntity.objects.get_or_create_esi(
+            eve_entity_id=self._parsed_text["invokingCharID"]
+        )
+        inviting_character = self._gen_eveentity_link(inviting_character)
+
+        self._description = (
+            "%(character_name)s has been invited to join %(corporation_name)s "
+            "by %(inviting_character)s.\n"
+            "Application:\n"
+            "> %(application_text)s"
+            % {
+                "character_name": self._character_link,
+                "corporation_name": self._corporation_link,
+                "inviting_character": inviting_character,
+                "application_text": self._application_text,
+            }
+        )
+        self._color = self.COLOR_INFO
+
+
+class NotificationCorpAppRejectCustomMsg(NotificationCorpCharEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "Rejected application from %(character_name)s" % {
+            "character_name": self._character.name
+        }
+        self._description = (
+            "Application from %(character_name)s to join %(corporation_name)s:\n"
+            "> %(application_text)s\n"
+            "Has been rejected:\n"
+            "> %(customMessage)s"
+            % {
+                "character_name": self._character_link,
+                "corporation_name": self._corporation_link,
+                "application_text": self._application_text,
+                "customMessage": self._parsed_text.get("customMessage", ""),
+            }
+        )
+        self._color = self.COLOR_INFO
+
+
+class NotificationCharAppWithdrawMsg(NotificationCorpCharEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = "%(character_name)s withdrew his/her application" % {
+            "character_name": self._character.name,
+        }
+        self._description = (
+            "%(character_name)s withdrew his/her application to join "
+            "%(corporation_name)s:\n"
+            "> %(application_text)s"
+            % {
+                "character_name": self._character_link,
+                "corporation_name": self._corporation_link,
+                "application_text": self._application_text,
+            }
+        )
+        self._color = self.COLOR_INFO
+
+
+class NotificationCharAppAcceptMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._title = "%(character_name)s joins %(corporation_name)s" % {
@@ -1042,7 +1125,7 @@ class NotificationCharAppAcceptMsg(NotificationCharEmbed):
         self._color = self.COLOR_SUCCESS
 
 
-class NotificationCharLeftCorpMsg(NotificationCharEmbed):
+class NotificationCharLeftCorpMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._title = "%(character_name)s has left %(corporation_name)s" % {
