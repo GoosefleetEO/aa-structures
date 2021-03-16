@@ -541,7 +541,7 @@ def poco_list_data(request) -> JsonResponse:
         else:
             space_badge_type = "danger"
         solar_system_html = format_html(
-            "{}&nbsp;{}",
+            "{}<br>{}",
             link_html(
                 dotlan.solar_system_url(poco.eve_solar_system.name),
                 poco.eve_solar_system.name,

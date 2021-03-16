@@ -15,15 +15,22 @@
     </span>
 
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+    <ul id="myTabs" class="nav nav-tabs" role="tablist">
+        {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
+            <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+            <script id="active-tab" type="application/javascript">structures</script>
+        {% else%}
+            <script id="active-tab" type="application/javascript">pocos</script>
+        {% endif %}
         <li role="presentation"><a href="#pocos" aria-controls="pocos" role="tab" data-toggle="tab">{% trans "Customs Offices" %}</a></li>
     </ul>
 
     <div class="panel panel-default panel-tabs">
         <div class="panel-body">
             <div class="tab-content">
-                {% include "structures/partials/structure_list.html" %}
+                {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
+                    {% include "structures/partials/structure_list.html" %}
+                {% endif %}
                 {% include "structures/partials/poco_list.html" %}
             </div>
         </div>
@@ -93,41 +100,51 @@
                     columns: [
                         {
                             idx: 11,
-                            title: "{% trans 'Alliance' %}"
+                            title: "{% trans 'Alliance' %}",
+                            maxWidth: "10em"
                         },
                         {
                             idx: 12,
-                            title: "{% trans 'Corporation' %}"
+                            title: "{% trans 'Corporation' %}",
+                            maxWidth: "13em"
                         },
                         {
                             idx: 13,
-                            title: "{% trans 'Region' %}"
+                            title: "{% trans 'Region' %}",
+                            maxWidth: "8em"
                         },
                         {
                             idx: 14,
-                            title: "{% trans 'Solar System' %}"
+                            title: "{% trans 'Solar System' %}",
+                            maxWidth: "14em"
                         },
                         {
                             idx: 15,
-                            title: "{% trans 'Category' %}"
+                            title: "{% trans 'Category' %}",
+                            maxWidth: "10em"
                         },
                         {
                             idx: 16,
-                            title: "{% trans 'Group' %}"
+                            title: "{% trans 'Group' %}",
+                            maxWidth: "7em"
                         },
                         {
                             idx: 17,
-                            title: "{% trans 'Reinforced?' %}"
+                            title: "{% trans 'Reinforced?' %}",
+                            maxWidth: "13em"
                         },
                         {
                             idx: 18,
-                            title: "{% trans 'State' %}"
+                            title: "{% trans 'State' %}",
+                            maxWidth: "6em"
                         },
                         {
                             idx: 19,
-                            title: "{% trans 'Power Mode' %}"
+                            title: "{% trans 'Power Mode' %}",
+                            maxWidth: "12em"
                         }
                     ],
+                    autoSize: false,
                     bootstrap: true
                 },
                 createdRow: function (row, data, dataIndex) {
@@ -192,6 +209,9 @@
                     bootstrap: true
                 }
             });
+
+            tabName = document.getElementById('active-tab').textContent
+            $('#myTabs a[href="#' + tabName + '"]').tab('show')
         });
     </script>
 {% endblock %}
