@@ -52,9 +52,9 @@ class TestStructureList(TestCase):
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
         # when
-        request = self.factory.get(reverse("structures:structure_list"))
+        request = self.factory.get(reverse("structures:main"))
         request.user = user
-        response = views.structure_list(request)
+        response = views.main(request)
         # then
         self.assertEqual(response.status_code, 200)
 
@@ -285,27 +285,27 @@ class TestStructureListFilters(TestCase):
 
     def test_call_with_raw_tags(self):
         request = self.factory.get(
-            "{}?tags=tag_c,tag_b".format(reverse("structures:structure_list"))
+            "{}?tags=tag_c,tag_b".format(reverse("structures:main"))
         )
         request.user = self.user
-        response = views.structure_list(request)
+        response = views.main(request)
         self.assertEqual(response.status_code, 200)
 
     def test_set_tags_filter(self):
         request = self.factory.post(
-            reverse("structures:structure_list"),
+            reverse("structures:main"),
             data={
                 "tag_b": True,
                 "tag_c": True,
             },
         )
         request.user = self.user
-        response = views.structure_list(request)
+        response = views.main(request)
         self.assertEqual(response.status_code, 302)
         parts = urlparse(response.url)
         path = parts[2]
         query_dict = parse_qs(parts[4])
-        self.assertEqual(path, reverse("structures:structure_list"))
+        self.assertEqual(path, reverse("structures:main"))
         self.assertIn("tags", query_dict)
         params = query_dict["tags"][0].split(",")
         self.assertSetEqual(set(params), {"tag_c", "tag_b"})

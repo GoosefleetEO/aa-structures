@@ -57,7 +57,7 @@ QUERY_PARAM_TAGS = "tags"
 @login_required
 @permission_required("structures.basic_access")
 def index(request):
-    url = reverse("structures:structure_list")
+    url = reverse("structures:main")
     if STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED:
         params = {
             QUERY_PARAM_TAGS: ",".join(
@@ -70,8 +70,8 @@ def index(request):
 
 @login_required
 @permission_required("structures.basic_access")
-def structure_list(request):
-    """main view showing the structure list"""
+def main(request):
+    """main view"""
 
     active_tags = list()
     if request.method == "POST":
@@ -81,7 +81,7 @@ def structure_list(request):
                 if activated:
                     active_tags.append(StructureTag.objects.get(name=name))
 
-            url = reverse("structures:structure_list")
+            url = reverse("structures:main")
             if active_tags:
                 params = {QUERY_PARAM_TAGS: ",".join([x.name for x in active_tags])}
                 url += "?{}".format(urllib.parse.urlencode(params))
@@ -104,7 +104,7 @@ def structure_list(request):
         "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
         "data_tables_paging": STRUCTURES_PAGING_ENABLED,
     }
-    return render(request, "structures/structure_list.html", context)
+    return render(request, "structures/main.html", context)
 
 
 class StructuresRowBuilder:
@@ -368,7 +368,7 @@ class StructuresRowBuilder:
 @login_required
 @permission_required("structures.basic_access")
 def structure_list_data(request):
-    """returns structure list in JSON for AJAX call in structure_list view"""
+    """returns structure list in JSON for AJAX call in main view"""
 
     structure_rows = list()
     row_converter = StructuresRowBuilder(request)
