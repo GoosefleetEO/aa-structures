@@ -75,7 +75,7 @@ LANGUAGES = (
 
 
 class NotificationType(models.TextChoices):
-    """Definition of all supported notification types"""
+    """Definition of all supported notification types."""
 
     # upwell structures
     STRUCTURE_ANCHORING = "StructureAnchoring", _("Upwell structure anchoring")
@@ -182,7 +182,7 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def webhook_defaults(cls) -> list:
-        """list of default notifications for new webhooks"""
+        """List of default notifications for new webhooks."""
         return [
             cls.STRUCTURE_ANCHORING,
             cls.STRUCTURE_DESTROYED,
@@ -257,12 +257,12 @@ class NotificationType(models.TextChoices):
 
 
 def get_default_notification_types():
-    """DEPRECATED: generates a set of all existing notification types as default"""
+    """DEPRECATED: generates a set of all existing notification types as default-"""
     return tuple(sorted([str(x[0]) for x in NotificationType.values]))
 
 
 class Webhook(WebhookBase):
-    """A destination for forwarding notification alerts"""
+    """A destination for forwarding notification alerts."""
 
     notification_types = MultiSelectField(
         choices=NotificationType.choices,
@@ -302,7 +302,7 @@ class Webhook(WebhookBase):
 
 
 class EveEntity(models.Model):
-    """An EVE entity like a character or an alliance"""
+    """An EVE entity like a character or an alliance."""
 
     CATEGORY_CHARACTER = 1
     CATEGORY_CORPORATION = 2
@@ -333,7 +333,7 @@ class EveEntity(models.Model):
         )
 
     def profile_url(self) -> str:
-        """returns link to website with profile info about this entity"""
+        """Returns link to website with profile info about this entity."""
         if self.category == self.CATEGORY_CORPORATION:
             url = dotlan.corporation_url(self.name)
         elif self.category == self.CATEGORY_ALLIANCE:
@@ -357,7 +357,7 @@ class EveEntity(models.Model):
 
     @classmethod
     def get_matching_entity_category(cls, type_name) -> int:
-        """returns category for given ESI name"""
+        """Returns category for given ESI name."""
         match = None
         for x in cls.CATEGORY_CHOICES:
             if type_name == x[1]:
@@ -367,7 +367,7 @@ class EveEntity(models.Model):
 
 
 class Notification(models.Model):
-    """An EVE Online notification about structures"""
+    """An EVE Online notification about structures."""
 
     HTTP_CODE_TOO_MANY_REQUESTS = 429
 
@@ -437,17 +437,17 @@ class Notification(models.Model):
 
     @property
     def is_alliance_level(self) -> bool:
-        """whether this is an alliance level notification"""
+        """Whether this is an alliance level notification."""
         return self.notif_type in NotificationType.relevant_for_alliance_level
 
     @property
     def can_be_rendered(self) -> bool:
-        """whether this notification can be rendered in Discord"""
+        """Whether this notification can be rendered in Discord."""
         return self.notif_type in NotificationType.values
 
     @property
     def can_have_timer(self) -> bool:
-        """whether this notification can have a timer"""
+        """Whether this notification can have a timer."""
         return self.notif_type in NotificationType.relevant_for_timerboard
 
     # @classmethod
@@ -456,11 +456,11 @@ class Notification(models.Model):
     #     return {x[0] for x in NotificationType.choices}
 
     def get_parsed_text(self) -> dict:
-        """returns the notifications's text as dict"""
+        """Returns the notifications's text as dict."""
         return yaml.safe_load(self.text)
 
     def is_npc_attacking(self) -> bool:
-        """whether this notification is about a NPC attacking"""
+        """Whether this notification is about a NPC attacking."""
         result = False
         if self.notif_type in [
             NotificationType.ORBITAL_ATTACKED,
@@ -485,15 +485,16 @@ class Notification(models.Model):
         return result
 
     def filter_for_npc_attacks(self) -> bool:
-        """true when notification to be filtered out due to npc attacks"""
+        """True when notification to be filtered out due to npc attacks."""
         return not STRUCTURES_REPORT_NPC_ATTACKS and self.is_npc_attacking()
 
     def filter_for_alliance_level(self) -> bool:
-        """true when notification to be filtered out due to alliance level"""
+        """True when notification to be filtered out due to alliance level."""
         return self.is_alliance_level and not self.owner.is_alliance_main
 
     def send_to_webhook(self, webhook: Webhook) -> bool:
-        """sends this notification to the configured webhook
+        """Sends this notification to the configured webhook.
+
         returns True if successful, else False
         """
         logger.info("%s: Trying to sent to webhook: %s", self, webhook)
@@ -562,7 +563,7 @@ class Notification(models.Model):
     def _generate_embed(
         self, language_code: str
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
-        """generates a Discord embed for this notification"""
+        """Generates a Discord embed for this notification."""
         from ..core.notification_embeds import NotificationBaseEmbed
 
         logger.info("Creating embed with language = %s" % language_code)
@@ -578,8 +579,9 @@ class Notification(models.Model):
             return None
 
     def process_for_timerboard(self, token: Token = None) -> bool:
-        """add/removes a timer related to this notification for some types
-        returns True when a timer was processed, else False
+        """Add/removes a timer related to this notification for some types
+
+        Returns True when a timer was processed, else False
         """
         timer_created = False
         if (
@@ -636,7 +638,7 @@ class Notification(models.Model):
     def _gen_timer_structure_reinforcement(
         self, parsed_text: str, token: Token
     ) -> bool:
-        """generate timer for structure reinforcements"""
+        """Generate timer for structure reinforcements"""
         structure_obj, _ = Structure.objects.get_or_create_esi(
             parsed_text["structureID"], token
         )
@@ -693,7 +695,7 @@ class Notification(models.Model):
         return timer_added
 
     def _gen_timer_sov_reinforcements(self, parsed_text: str) -> bool:
-        """generate timer for sov reinforcements"""
+        """Generate timer for sov reinforcements."""
         if not self.owner.is_alliance_main:
             return False
 
@@ -752,7 +754,7 @@ class Notification(models.Model):
         return timer_added
 
     def _gen_timer_orbital_reinforcements(self, parsed_text: str) -> bool:
-        """generate timer for orbital reinforcements"""
+        """Generate timer for orbital reinforcements."""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text["solarSystemID"]
         )
@@ -803,7 +805,7 @@ class Notification(models.Model):
         return timer_added
 
     def _gen_timer_moon_extraction(self, parsed_text: str) -> bool:
-        """generate timer for moon mining extractions"""
+        """Generate timer for moon mining extractions."""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             parsed_text["solarSystemID"]
         )
@@ -928,7 +930,7 @@ class Notification(models.Model):
         return timer_added
 
     def _timer_details_notes(self) -> str:
-        """returns generated details notes string for Timers"""
+        """Return generated details notes string for Timers."""
         return (
             "Automatically created from structure notification for "
             f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"

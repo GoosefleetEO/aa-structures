@@ -71,8 +71,7 @@ def index(request):
 @login_required
 @permission_required("structures.basic_access")
 def main(request):
-    """main view"""
-
+    """Main view"""
     active_tags = list()
     if request.method == "POST":
         form = TagsFilterForm(data=request.POST)
@@ -108,7 +107,7 @@ def main(request):
 
 
 class StructuresRowBuilder:
-    """This class build the HTML table rows from structure objects"""
+    """This class build the HTML table rows from structure objects."""
 
     def __init__(self, request):
         self._row = None
@@ -368,8 +367,7 @@ class StructuresRowBuilder:
 @login_required
 @permission_required("structures.basic_access")
 def structure_list_data(request):
-    """returns structure list in JSON for AJAX call in main view"""
-
+    """Returns structure list in JSON for AJAX call in main view."""
     structure_rows = list()
     row_converter = StructuresRowBuilder(request)
     for structure in _structures_query_for_user(request):
@@ -379,7 +377,7 @@ def structure_list_data(request):
 
 
 def _structures_query_for_user(request):
-    """returns query according to users permissions and current tags"""
+    """Returns query according to users permissions and current tags."""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     if tags_raw:
         tags = tags_raw.split(",")
@@ -430,7 +428,6 @@ def _structures_query_for_user(request):
 @token_required(scopes=Owner.get_esi_scopes())
 def add_structure_owner(request, token):
     token_char = EveCharacter.objects.get(character_id=token.character_id)
-
     success = True
     try:
         owned_char = CharacterOwnership.objects.get(
@@ -507,7 +504,7 @@ def add_structure_owner(request, token):
 
 
 def service_status(request):
-    """public view to 3rd party monitoring
+    """Public view to 3rd party monitoring.
 
     This is view allows running a 3rd party monitoring on the status
     of this services. Service will be reported as down if any of the

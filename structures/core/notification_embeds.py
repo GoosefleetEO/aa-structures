@@ -24,7 +24,7 @@ from ..models.structures import Structure
 
 
 class NotificationBaseEmbed:
-    """Base class for all notification embeds
+    """Base class for all notification embeds.
 
     You must subclass this class to create an embed for a notification type.
     At least title and description must be defined in the subclass.
@@ -64,7 +64,7 @@ class NotificationBaseEmbed:
         return self._ping_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
-        """returns generated Discord embed for this object"""
+        """Returns generated Discord embed for this object."""
         if self._title is None:
             raise ValueError(f"title not defined for {type(self)}")
         if self._description is None:
@@ -101,7 +101,7 @@ class NotificationBaseEmbed:
 
     @staticmethod
     def create(notification: Notification) -> "NotificationBaseEmbed":
-        """creates a new instance of the respective subclass for given Notification"""
+        """Creates a new instance of the respective subclass for given Notification."""
         if not isinstance(notification, Notification):
             raise TypeError("notification must be of type Notification")
         notif_type = notification.notif_type
@@ -248,9 +248,7 @@ class NotificationBaseEmbed:
         )
 
     def _get_aggressor_link(self) -> str:
-        """returns the aggressor link from a parsed_text
-        for POS and POCOs only
-        """
+        """Returns the aggressor link from a parsed_text for POS and POCOs only."""
         if self._parsed_text.get("aggressorAllianceID"):
             key = "aggressorAllianceID"
         elif self._parsed_text.get("aggressorCorpID"):
@@ -265,7 +263,7 @@ class NotificationBaseEmbed:
 
 
 class NotificationStructureEmbed(NotificationBaseEmbed):
-    """Base class for most structure related notification embeds"""
+    """Base class for most structure related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -371,9 +369,7 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         self._color = self.COLOR_DANGER
 
     def _get_attacker_link(self) -> str:
-        """returns the attacker link from a parsed_text
-        For Upwell structures only
-        """
+        """Returns the attacker link from a parsed_text for Upwell structures only."""
         if self._parsed_text.get("allianceName"):
             return self._gen_alliance_link(self._parsed_text["allianceName"])
         elif self._parsed_text.get("corpName"):
@@ -542,7 +538,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
 
 
 class NotificationMoonminingEmbed(NotificationBaseEmbed):
-    """Base class for all moon mining related notification embeds"""
+    """Base class for all moon mining related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -708,7 +704,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
 
 
 class NotificationOrbitalEmbed(NotificationBaseEmbed):
-    """Base class for all orbital (aka POCO) related notification embeds"""
+    """Base class for all orbital (aka POCO) related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -771,7 +767,7 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
 
 
 class NotificationTowerEmbed(NotificationBaseEmbed):
-    """Base class for all tower (aka POS) related notification embeds"""
+    """Base class for all tower (aka POS) related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -850,7 +846,7 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
 
 
 class NotificationSovEmbed(NotificationBaseEmbed):
-    """Base class for all sovereignty related notification embeds"""
+    """Base class for all sovereignty related notification embeds."""
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
