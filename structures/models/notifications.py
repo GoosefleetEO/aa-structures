@@ -169,6 +169,14 @@ class NotificationType(models.TextChoices):
     )
 
     # corporation membership
+    CORP_APP_NEW_MSG = "CorpAppNewMsg", _("Character submitted application")
+    CORP_APP_INVITED_MSG = "CorpAppInvitedMsg", _(
+        "Character invited to join corporation"
+    )
+    CORP_APP_REJECT_CUSTOM_MSG = "CorpAppRejectCustomMsg", _(
+        "Corp application rejected"
+    )
+    CHAR_APP_WITHDRAW_MSG = "CharAppWithdrawMsg", _("Character withdrew application")
     CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg", _("Character joins corporation")
     CHAR_LEFT_CORP_MSG = "CharLeftCorpMsg", _("Character leaves corporation")
 
