@@ -35,8 +35,8 @@ def _response_to_data(response):
     return json.loads(response.content.decode("utf-8"))
 
 
-def _response_to_dict(response):
-    return {row["id"]: row for row in _response_to_data(response)}
+def _response_to_dict(response, key="id"):
+    return {row[key]: row for row in _response_to_data(response)}
 
 
 class TestStructureList(TestCase):
@@ -47,7 +47,7 @@ class TestStructureList(TestCase):
         load_entities()
         create_structures(dont_load_entities=True)
 
-    def test_basic_access_main_view(self):
+    def test_should_have_access_to_main_view(self):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
@@ -75,12 +75,24 @@ class TestStructureListDataPermissions(TestCase):
         request.user = user
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
-        return {row["structure_id"]: row for row in _response_to_data(response)}
+        return _response_to_dict(response, "structure_id")
+
+    def test_should_show_no_structures(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        structure_ids = self._structure_list_data_view(user).keys()
+        # then
+        self.assertSetEqual(set(structure_ids), set())
 
     def test_should_show_own_corporation_only_1(self):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
         # when
         structure_ids = self._structure_list_data_view(user).keys()
         # then
@@ -101,6 +113,9 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
         # when
         structure_ids = self._structure_list_data_view(user).keys()
         # then
@@ -110,7 +125,7 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        self.user = AuthUtils.add_permission_to_user_by_name(
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_alliance_structures", user
         )
         # when
@@ -134,7 +149,7 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        self.user = AuthUtils.add_permission_to_user_by_name(
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_alliance_structures", user
         )
         # when
@@ -146,7 +161,7 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
-        self.user = AuthUtils.add_permission_to_user_by_name(
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_all_structures", user
         )
         # when
@@ -172,6 +187,9 @@ class TestStructureListDataPermissions(TestCase):
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
         user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
+        user = AuthUtils.add_permission_to_user_by_name(
             "structures.view_all_unanchoring_status", user
         )
         # when
@@ -184,6 +202,9 @@ class TestStructureListDataPermissions(TestCase):
         # given
         user, _ = set_owner_character(character_id=1011)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_corporation_structures", user
+        )
         # when
         data = self._structure_list_data_view(user)
         # then

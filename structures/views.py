@@ -392,15 +392,21 @@ def _structures_query_for_user(request):
             structures_query = structures_query.filter(tags__name__in=tags).distinct()
 
     else:
-        corporation_ids = {
-            character.character.corporation_id
-            for character in request.user.character_ownerships.all()
-        }
-        corporations = list(
-            EveCorporationInfo.objects.select_related("alliance").filter(
-                corporation_id__in=corporation_ids
+        if request.user.has_perm(
+            "structures.view_corporation_structures"
+        ) or request.user.has_perm("structures.view_alliance_structures"):
+            corporation_ids = {
+                character.character.corporation_id
+                for character in request.user.character_ownerships.all()
+            }
+            corporations = list(
+                EveCorporationInfo.objects.select_related("alliance").filter(
+                    corporation_id__in=corporation_ids
+                )
             )
-        )
+        else:
+            corporations = []
+
         if request.user.has_perm("structures.view_alliance_structures"):
             alliances = {
                 corporation.alliance

@@ -326,7 +326,8 @@ This is an overview of all permissions used by this app. Note that all permissio
 
 Name | Purpose | Code
 -- | -- | --
-Can access this app and view | User can access the app and see the structure list. He will only be able to see structures belonging to corporations of his characters. We would suggest to enable this permission for the Member state |  `general.basic_access`
+Can access public views | User can access this app and view public pages, e.g. public POCO view |  `general.basic_access`
+Can view corporation structures | User can see structures belonging to corporations of his characters only. |  `general.view_corporation_structures`
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
 Can add new structure owner | User can add a corporation with it's structures |  `general.add_structure_owner`
