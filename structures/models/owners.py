@@ -1,51 +1,47 @@
 """Owner related models"""
 
-from datetime import datetime, timedelta
 import json
 import logging
 import math
 import os
 import re
+from datetime import datetime, timedelta
 
 from bravado.exception import HTTPError
 
-from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group, User
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
-
-from esi.errors import TokenExpiredError, TokenInvalidError, TokenError
+from django.utils.translation import gettext_lazy as _
+from esi.errors import TokenError, TokenExpiredError, TokenInvalidError
 from esi.models import Token
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
-
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag, make_logger_prefix
 
 from .. import __title__
 from ..app_settings import (
+    STRUCTURES_ADD_TIMERS,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
-    STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
     STRUCTURES_FEATURE_STARBASES,
-    STRUCTURES_ADD_TIMERS,
-    STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
     STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES,
+    STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
+    STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
+from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from .eveuniverse import EvePlanet, EveSolarSystem, EveType, EveUniverse
-from ..helpers.esi_fetch import esi_fetch
-from ..helpers.esi_fetch import esi_fetch_with_localization
-from .structures import Structure
 from .notifications import EveEntity, Notification, NotificationType
-
+from .structures import Structure
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 

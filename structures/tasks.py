@@ -1,15 +1,14 @@
-from celery import shared_task, chain
+from celery import chain, shared_task
 
 from django.contrib.auth.models import User
 
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.services.tasks import QueueOnce
-
+from app_utils.logging import LoggerAddTag
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
-from app_utils.logging import LoggerAddTag
 from .models import EveSovereigntyMap, Notification, Owner, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)

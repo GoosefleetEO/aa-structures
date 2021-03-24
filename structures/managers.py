@@ -3,17 +3,15 @@ from pydoc import locate
 from bravado.exception import HTTPError
 
 from django.db import models, transaction
-from django.db.models import Case, When, Value
+from django.db.models import Case, Value, When
 from django.utils.timezone import now
-
-from allianceauth.services.hooks import get_extension_logger
-
 from esi.models import Token
 
-from . import __title__
-from .helpers.esi_fetch import esi_fetch_with_localization, esi_fetch
+from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag, make_logger_prefix
 
+from . import __title__
+from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -267,11 +265,11 @@ class StructureManager(models.Manager):
     def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:
         """update or create structure from given dict"""
         from .models import (
-            EveType,
-            EveSolarSystem,
-            StructureService,
-            EvePlanet,
             EveMoon,
+            EvePlanet,
+            EveSolarSystem,
+            EveType,
+            StructureService,
         )
         from .models.eveuniverse import EveUniverse
 

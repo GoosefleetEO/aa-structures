@@ -1,30 +1,24 @@
+import re
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
-import re
 
-from requests.exceptions import HTTPError
 import pytz
+from requests.exceptions import HTTPError
 
 from django.contrib.auth.models import Group
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
-
-from ...models import (
-    EveEntity,
-    Notification,
-    NotificationType,
-    Webhook,
-    Structure,
-)
-from ..testdata import (
-    load_entities,
-    load_notification_entities,
-    create_structures,
-    set_owner_character,
-)
 from app_utils.django import app_labels
 from app_utils.testing import NoSocketsTestCase
+
+from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
+from ..testdata import (
+    create_structures,
+    load_entities,
+    load_notification_entities,
+    set_owner_character,
+)
 
 MODULE_PATH = "structures.models.notifications"
 
@@ -570,10 +564,9 @@ if "timerboard" in app_labels():
 if "structuretimers" in app_labels():
 
     from structuretimers.models import Timer
-    from eveuniverse.models import (
-        EveSolarSystem as EveSolarSystem2,
-        EveType as EveType2,
-    )
+
+    from eveuniverse.models import EveSolarSystem as EveSolarSystem2
+    from eveuniverse.models import EveType as EveType2
 
     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)

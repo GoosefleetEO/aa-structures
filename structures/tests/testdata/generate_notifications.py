@@ -3,11 +3,11 @@
 this scripts create a test owner and adds test notifications to it
 """
 
-from datetime import timedelta
 import inspect
 import json
 import os
 import sys
+from datetime import timedelta
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 myauth_dir = (
@@ -18,8 +18,8 @@ sys.path.insert(0, myauth_dir)
 
 
 import django  # noqa: E402
-from django.db import transaction  # noqa: E402
 from django.apps import apps  # noqa: E402
+from django.db import transaction  # noqa: E402
 from django.utils.timezone import now  # noqa: E402
 
 # init and setup django project
@@ -29,16 +29,17 @@ django.setup()
 if not apps.is_installed("structures"):
     raise RuntimeError("The app structures is not installed")
 
-from allianceauth.eveonline.models import EveCorporationInfo  # noqa: E402
 from esi.clients import esi_client_factory  # noqa: E402
 
-from structures.models import (
+from allianceauth.eveonline.models import EveCorporationInfo  # noqa: E402
+
+from structures.models import (  # noqa: E402, E501
+    EveEntity,
+    Notification,
     Owner,
     Structure,
-    Notification,
-    EveEntity,
     Webhook,
-)  # noqa: E402, E501
+)
 
 # corporation / structure the notifications will be added to
 CORPORATION_ID = 98587692  # RABIS

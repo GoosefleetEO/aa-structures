@@ -1,23 +1,23 @@
 # flake8: noqa
 
-from .owners import Owner
 from .eveuniverse import (
     EsiNameLocalization,
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
-    EvePlanet,
+    EveGroup,
     EveMoon,
+    EvePlanet,
+    EveRegion,
+    EveSolarSystem,
     EveSovereigntyMap,
+    EveType,
 )
-from .structures import Structure, StructureService, StructureTag
 from .notifications import (
-    Webhook,
-    Notification,
     EveEntity,
+    Notification,
     NotificationType,
+    Webhook,
     get_default_notification_types,
 )
+from .owners import Owner
+from .structures import Structure, StructureService, StructureTag

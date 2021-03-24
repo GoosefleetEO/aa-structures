@@ -9,7 +9,6 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 
 from allianceauth.services.hooks import get_extension_logger
-
 from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 from app_utils.logging import LoggerAddTag
 

@@ -1,9 +1,9 @@
 # flake8: noqa
 """scripts generates large amount of random structures for load testing"""
 
+import inspect
 import os
 import sys
-import inspect
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 myauth_dir = (
@@ -16,8 +16,8 @@ from datetime import timedelta
 from random import randrange
 
 import django
-from django.db import transaction
 from django.apps import apps
+from django.db import transaction
 from django.utils.timezone import now
 
 # init and setup django project
@@ -27,16 +27,17 @@ django.setup()
 if not apps.is_installed("structures"):
     raise RuntimeError("The app structures is not installed")
 
-from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
 from esi.clients import esi_client_factory
 
+from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
+
 from structures.models import (
-    Structure,
-    Owner,
-    EveType,
     EveSolarSystem,
-    StructureTag,
+    EveType,
+    Owner,
+    Structure,
     StructureService,
+    StructureTag,
 )
 
 print(

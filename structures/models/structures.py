@@ -1,11 +1,10 @@
 """Structure related models"""
-from datetime import timedelta
-import re
 import logging
+import re
+from datetime import timedelta
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.core.validators import MinValueValidator
-from django.core.validators import MaxValueValidator
 from django.utils.html import escape
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -15,11 +14,8 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
-from .eveuniverse import EsiNameLocalization
-from .eveuniverse import EveSolarSystem
-from ..managers import StructureManager
-from ..managers import StructureTagManager
-
+from ..managers import StructureManager, StructureTagManager
+from .eveuniverse import EsiNameLocalization, EveSolarSystem
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 

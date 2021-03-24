@@ -1,6 +1,5 @@
 from django.test import TestCase
-
-from eveuniverse.tools.testdata import create_testdata, ModelSpec
+from eveuniverse.tools.testdata import ModelSpec, create_testdata
 
 from . import test_data_filename
 

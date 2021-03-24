@@ -1,22 +1,21 @@
 from django.utils import translation
 
-from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from app_utils.testing import NoSocketsTestCase
 
 from ...models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
-    EvePlanet,
+    EveGroup,
     EveMoon,
+    EvePlanet,
+    EveRegion,
+    EveSolarSystem,
     EveSovereigntyMap,
+    EveType,
 )
 from ...models.eveuniverse import EveUniverse
 from ..testdata import load_entities
-from app_utils.testing import NoSocketsTestCase
-
 
 MODULE_PATH = "structures.models.eveuniverse"
 

@@ -2,8 +2,9 @@
 
 import os
 
-from django.contrib import messages
 from celery.schedules import crontab
+
+from django.contrib import messages
 
 INSTALLED_APPS = [
     "django.contrib.admin",

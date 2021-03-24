@@ -3,16 +3,16 @@
 import urllib
 
 from django.db import models
-from django.utils.translation import gettext
 from django.utils import translation
 from django.utils.timezone import now
+from django.utils.translation import gettext
 
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
+from app_utils.logging import LoggerAddTag
 
 from .. import __title__
-from ..managers import EveUniverseManager, EveSovereigntyMapManager
-from app_utils.logging import LoggerAddTag
+from ..managers import EveSovereigntyMapManager, EveUniverseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 

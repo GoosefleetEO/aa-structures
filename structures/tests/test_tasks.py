@@ -6,17 +6,13 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from allianceauth.eveonline.models import EveCorporationInfo
+from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
+
 from structures.models.notifications import Notification
 
-from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 from .. import tasks
 from ..models import Owner, Webhook
-from .testdata import (
-    load_notification_entities,
-    create_structures,
-    set_owner_character,
-)
-
+from .testdata import create_structures, load_notification_entities, set_owner_character
 
 MODULE_PATH = "structures.tasks"
 MODULE_PATH_MODELS_OWNERS = "structures.models.owners"

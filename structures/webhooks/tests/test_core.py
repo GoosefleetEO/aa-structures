@@ -1,16 +1,15 @@
-from random import randint
 import json
+from random import randint
 from unittest.mock import patch
 
 import dhooks_lite
 
 from django.test import TestCase
-from allianceauth.tests.auth_utils import AuthUtils
 
+from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.json import JSONDateTimeDecoder
 
 from .. import core
-
 
 MODULE_PATH = core.__package__ + ".core"
 

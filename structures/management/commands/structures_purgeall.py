@@ -3,20 +3,20 @@ from django.db import transaction
 
 from ...models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveEntity,
+    EveGroup,
     EveMoon,
     EvePlanet,
-    StructureTag,
-    StructureService,
-    Webhook,
-    EveEntity,
-    Owner,
+    EveRegion,
+    EveSolarSystem,
+    EveType,
     Notification,
+    Owner,
     Structure,
+    StructureService,
+    StructureTag,
+    Webhook,
 )
 
 

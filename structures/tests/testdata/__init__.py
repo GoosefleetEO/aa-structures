@@ -1,12 +1,12 @@
 # flake8: noqa
 """functions for loading test data and for building mocks"""
 
-from copy import deepcopy
-from datetime import timedelta
 import inspect
 import json
 import math
 import os
+from copy import deepcopy
+from datetime import timedelta
 from random import randrange
 from unittest.mock import Mock
 
@@ -17,29 +17,29 @@ from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import (
+    EveAllianceInfo,
     EveCharacter,
     EveCorporationInfo,
-    EveAllianceInfo,
 )
 
 from ...models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveEntity,
+    EveGroup,
     EveMoon,
     EvePlanet,
+    EveRegion,
+    EveSolarSystem,
     EveSovereigntyMap,
-    StructureTag,
-    StructureService,
-    EveEntity,
-    Webhook,
-    Owner,
+    EveType,
     Notification,
     NotificationType,
+    Owner,
     Structure,
+    StructureService,
+    StructureTag,
+    Webhook,
 )
 from ...models.eveuniverse import EveUniverse
 

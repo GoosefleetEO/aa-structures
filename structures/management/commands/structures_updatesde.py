@@ -2,12 +2,12 @@ from django.core.management.base import BaseCommand
 
 from ...models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveGroup,
     EveMoon,
+    EveRegion,
+    EveSolarSystem,
+    EveType,
 )
 
 

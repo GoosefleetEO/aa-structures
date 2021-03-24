@@ -2,23 +2,22 @@ from collections import namedtuple
 
 import dhooks_lite
 
-from django.utils.translation import gettext
 from django.utils.html import strip_tags
+from django.utils.translation import gettext
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
-
 from app_utils.datetime import (
     DATETIME_FORMAT,
     ldap_time_2_datetime,
     ldap_timedelta_2_timedelta,
 )
-from app_utils.urls import static_file_absolute_url, reverse_absolute
+from app_utils.urls import reverse_absolute, static_file_absolute_url
 
 from ..app_settings import (
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
 )
-from ..models.eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
+from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
 

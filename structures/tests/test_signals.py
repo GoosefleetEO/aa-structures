@@ -1,7 +1,7 @@
 from app_utils.testing import NoSocketsTestCase
+
 from ..models import Structure
 from .testdata import create_structures
-
 
 MODULE_PATH = "structures.signals"
 

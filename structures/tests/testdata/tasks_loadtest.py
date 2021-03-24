@@ -19,6 +19,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myauth.settings.local")
 django.setup()
 
 from celery import chain  # noqa: E402
+
 from structures.tasks import fetch_all_notifications  # noqa: E402
 
 if not apps.is_installed("structures"):
