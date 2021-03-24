@@ -454,7 +454,6 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
         structure_type, _ = EveType.objects.get_or_create_esi(
             self._parsed_text["structureTypeID"]
         )
-
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             self._parsed_text["solarsystemID"]
         )

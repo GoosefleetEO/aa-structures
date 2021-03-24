@@ -98,6 +98,7 @@ class TestStructureListDataPermissions(TestCase):
             set(structure_ids),
             {
                 1000000000001,
+                1000000000002,
                 1200000000003,
                 1200000000004,
                 1200000000005,

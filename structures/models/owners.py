@@ -39,7 +39,14 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
-from .eveuniverse import EvePlanet, EveSolarSystem, EveType, EveUniverse
+from .eveuniverse import (
+    EveGroup,
+    EveMoon,
+    EvePlanet,
+    EveSolarSystem,
+    EveType,
+    EveUniverse,
+)
 from .notifications import EveEntity, Notification, NotificationType
 from .structures import Structure
 
@@ -717,6 +724,7 @@ class Owner(models.Model):
                         notifications_count_new,
                     )
                     self._process_timers_for_notifications(token)
+                    self._process_moon_notifications()
                     notifications_count_all += notifications_count_new
 
                 else:
@@ -853,16 +861,43 @@ class Owner(models.Model):
                 .filter(notif_type__in=NotificationType.relevant_for_timerboard)
                 .exclude(is_timer_added=True)
                 .filter(timestamp__gte=cutoff_dt_for_stale)
-                .select_related()
+                .select_related("owner", "sender")
                 .order_by("timestamp")
             )
-
-            if len(notifications) > 0:
+            if notifications.exists():
                 if not token:
                     token = self.token()
-
                 for notification in notifications:
                     notification.process_for_timerboard(token)
+
+    def _process_moon_notifications(self):
+        """processes notifications for timers if any"""
+        notifications = (
+            Notification.objects.filter(owner=self)
+            .filter(notif_type__in=NotificationType.relevant_for_moonmining)
+            .select_related("owner", "sender")
+            .order_by("timestamp")
+        )
+        structure_id_2_moon_id = dict()
+        for notification in notifications:
+            parsed_text = notification.get_parsed_text()
+            moon_id = parsed_text["moonID"]
+            structure_id = parsed_text["structureID"]
+            structure_id_2_moon_id[structure_id] = moon_id
+
+        empty_refineries = Structure.objects.filter(
+            owner=self,
+            eve_type__eve_group_id=EveGroup.EVE_GROUP_ID_REFINERY,
+            eve_moon__isnull=True,
+        )
+        for refinery in empty_refineries:
+            if refinery.id in structure_id_2_moon_id:
+                logger.info("%s: Updating moon for structure %s", self, refinery)
+                eve_moon, _ = EveMoon.objects.get_or_create_esi(
+                    eve_id=structure_id_2_moon_id[refinery.id]
+                )
+                refinery.eve_moon = eve_moon
+                refinery.save()
 
     def send_new_notifications(self, user: User = None) -> bool:
         """forwards all new notification for this owner to Discord"""

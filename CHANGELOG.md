@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.9.1] - 2021-03-24
+
+## Changed
+
+- Will now automatically update the moon for refineries based on respective moon notifications
+
 ## [1.9.0] - 2021-03-16
 
 > **Important update notes**:<br>There has been an important change in the permission system. The `basic_access` permission no longer gives access to viewing structures from one's own corporation. Users now need the new permission `view_corporation_structures` for that. Please make sure to add that new permissions after installing this update where applicable (e.g. to Member state).

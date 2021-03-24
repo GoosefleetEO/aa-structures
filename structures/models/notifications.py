@@ -227,6 +227,16 @@ class NotificationType(models.TextChoices):
             cls.WAR_CORPORATION_NO_LONGER_ELIGIBLE,
         ]
 
+    @classproperty
+    def relevant_for_moonmining(cls) -> list:
+        return [
+            cls.MOONMINING_EXTRACTION_STARTED,
+            cls.MOONMINING_EXTRACTION_CANCELLED,
+            cls.MOONMINING_LASER_FIRED,
+            cls.MOONMINING_EXTRACTION_FINISHED,
+            cls.MOONMINING_AUTOMATIC_FRACTURE,
+        ]
+
 
 # def choices_subset(*notification_types):
 #     return tuple([(item.value, item.label) for item in notification_types])

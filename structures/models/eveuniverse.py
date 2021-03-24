@@ -303,6 +303,7 @@ class EveGroup(EveUniverse):
 
     EVE_GROUP_ID_CONTROL_TOWER = 365
     EVE_GROUP_ID_FUEL_BLOCK = 1136
+    EVE_GROUP_ID_REFINERY = 1406
 
     eve_category = models.ForeignKey(
         EveCategory, on_delete=models.SET_DEFAULT, null=True, default=None, blank=True
