@@ -555,7 +555,7 @@
             "reinforce_hour": 3,
             "state": 3,
             "state_timer_start": "dummy",
-            "owner_corporation_id": 2002,
+            "owner_corporation_id": 2001,
             "services": [
                 {
                     "name": "Clone Bay",

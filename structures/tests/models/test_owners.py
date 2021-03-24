@@ -1349,6 +1349,41 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         )
         self.assertSetEqual(created_ids, {1000000803})
 
+    @patch(
+        "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
+        False,
+    )
+    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    @patch(MODULE_PATH + ".notify", spec=True)
+    @patch(MODULE_PATH + ".Token", spec=True)
+    @patch("structures.helpers.esi_fetch._esi_client")
+    def test_should_set_moon_for_structure_if_missing(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        self.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.add_structure_owner", self.user
+        )
+        load_notification_entities(self.owner)
+        Notification.objects.get(notification_id=1000000803).delete()
+        Notification.objects.all().update(created=None)
+        # when
+        if "structuretimers" in app_labels():
+            from ..testdata.load_eveuniverse import load_eveuniverse
+
+            load_eveuniverse()
+            with patch(
+                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ):
+                result = self.owner.fetch_notifications_esi(user=self.user)
+        else:
+            result = self.owner.fetch_notifications_esi(user=self.user)
+        # then
+        self.assertTrue(result)
+        structure = Structure.objects.get(id=1000000000002)
+        self.assertEqual(structure.eve_moon, EveMoon.objects.get(id=40161465))
+
     @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
     @patch(MODULE_PATH + ".Token", spec=True)
