@@ -1,34 +1,31 @@
 """Notification related models"""
 
 import logging
-import yaml
 from typing import Tuple
 
 import dhooks_lite
-
+import yaml
+from multiselectfield import MultiSelectField
 from requests.exceptions import HTTPError
 
-from django.db import models
-from django.contrib.auth.models import Group
 from django.conf import settings
+from django.contrib.auth.models import Group
+from django.db import models
 from django.utils import translation
 from django.utils.functional import classproperty
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
+from esi.models import Token
 
-from app_utils.django import app_labels
+from allianceauth.eveonline.evelinks import dotlan, eveimageserver
 from app_utils.datetime import (
     DATETIME_FORMAT,
     ldap_time_2_datetime,
     ldap_timedelta_2_timedelta,
 )
+from app_utils.django import app_labels
 from app_utils.logging import LoggerAddTag
 from app_utils.urls import static_file_absolute_url
-from esi.models import Token
-from multiselectfield import MultiSelectField
-
-from allianceauth.eveonline.evelinks import dotlan, eveimageserver
-
-from .eveuniverse import EveType, EveSolarSystem, EveMoon, EvePlanet
 
 from .. import __title__
 from ..app_settings import (
@@ -39,9 +36,9 @@ from ..app_settings import (
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from ..managers import EveEntityManager, NotificationManager
-from .structures import Structure
 from ..webhooks.models import WebhookBase
-
+from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
+from .structures import Structure
 
 if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer
@@ -52,10 +49,9 @@ else:
 
 if "structuretimers" in app_labels():
     from structuretimers.models import Timer
-    from eveuniverse.models import (
-        EveSolarSystem as EveSolarSystem2,
-        EveType as EveType2,
-    )
+
+    from eveuniverse.models import EveSolarSystem as EveSolarSystem2
+    from eveuniverse.models import EveType as EveType2
 
     has_structure_timers = True
 else:

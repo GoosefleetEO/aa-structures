@@ -5,27 +5,27 @@ from bravado.exception import HTTPError
 
 from django.utils.timezone import now
 
-from allianceauth.eveonline.models import EveCorporationInfo, EveCharacter
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from app_utils.testing import NoSocketsTestCase
 
-from . import to_json
 from ..models import (
-    EveEntity,
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveEntity,
+    EveGroup,
     EveMoon,
     EvePlanet,
+    EveRegion,
+    EveSolarSystem,
     EveSovereigntyMap,
+    EveType,
     Owner,
     Structure,
     StructureService,
     StructureTag,
 )
-from .testdata import load_entity, load_entities, create_structures, esi_mock_client
-from app_utils.testing import NoSocketsTestCase
+from . import to_json
+from .testdata import create_structures, esi_mock_client, load_entities, load_entity
 
 MODULE_PATH = "structures.managers"
 MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"

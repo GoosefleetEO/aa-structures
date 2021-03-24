@@ -1,5 +1,5 @@
-from unittest.mock import patch
 from io import StringIO
+from unittest.mock import patch
 
 from django.core.management import call_command
 
@@ -7,20 +7,20 @@ from app_utils.testing import NoSocketsTestCase
 
 from ..models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveEntity,
+    EveGroup,
     EveMoon,
     EvePlanet,
-    StructureTag,
-    StructureService,
-    Webhook,
-    EveEntity,
-    Owner,
+    EveRegion,
+    EveSolarSystem,
+    EveType,
     Notification,
+    Owner,
     Structure,
+    StructureService,
+    StructureTag,
+    Webhook,
 )
 from .testdata import (
     create_structures,

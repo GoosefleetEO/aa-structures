@@ -1,14 +1,15 @@
 from unittest.mock import patch
 
 import dhooks_lite
+
 from django.test import TestCase
 from django.utils.timezone import now
 
 from ...core import notification_embeds as ne
 from ...models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..testdata import (
-    load_notification_entities,
     create_structures,
+    load_notification_entities,
     set_owner_character,
 )
 

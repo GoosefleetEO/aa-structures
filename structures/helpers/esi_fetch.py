@@ -9,19 +9,16 @@
 import logging
 from time import sleep
 
-from bravado.exception import HTTPBadGateway
-from bravado.exception import HTTPServiceUnavailable
-from bravado.exception import HTTPGatewayTimeout
+from bravado.exception import HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
 
 from django.conf import settings
-
 from esi.clients import esi_client_factory
 from esi.models import Token
 
-from .. import __title__
-from ..app_settings import STRUCTURES_ESI_TIMEOUT_ENABLED
 from app_utils.logging import LoggerAddTag
 
+from .. import __title__
+from ..app_settings import STRUCTURES_ESI_TIMEOUT_ENABLED
 
 logger = LoggerAddTag(logging.getLogger(__name__), __title__)
 

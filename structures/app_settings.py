@@ -1,6 +1,5 @@
 from app_utils.django import clean_setting
 
-
 # Whether to automatically add timers for certain notifications
 # on the timerboard (will have no effect if aa-timerboard app is not installed)
 STRUCTURES_ADD_TIMERS = clean_setting("STRUCTURES_ADD_TIMERS", True)

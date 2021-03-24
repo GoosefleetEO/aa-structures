@@ -3,13 +3,12 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.utils.html import format_html
 
-from allianceauth.eveonline.models import EveCorporationInfo, EveAllianceInfo
+from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
-
 from app_utils.django import admin_boolean_icon_html
 from app_utils.logging import LoggerAddTag
 
-from . import __title__
+from . import __title__, tasks
 from .app_settings import STRUCTURES_DEVELOPER_MODE
 from .models import (
     EveCategory,
@@ -25,12 +24,10 @@ from .models import (
     Notification,
     Owner,
     Structure,
-    StructureTag,
     StructureService,
+    StructureTag,
     Webhook,
 )
-from . import tasks
-
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 

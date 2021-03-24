@@ -1,9 +1,11 @@
 from datetime import timedelta
+
 from django.utils.timezone import now
 
-from ...models import StructureTag, StructureService, Structure
-from ..testdata import create_structures, set_owner_character
 from app_utils.testing import NoSocketsTestCase
+
+from ...models import Structure, StructureService, StructureTag
+from ..testdata import create_structures, set_owner_character
 
 MODULE_PATH = "structures.models.structures"
 

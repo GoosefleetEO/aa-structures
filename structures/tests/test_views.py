@@ -1,32 +1,30 @@
-from datetime import timedelta
 import json
-from unittest.mock import patch, Mock
-from urllib.parse import urlparse, parse_qs
+from datetime import timedelta
+from unittest.mock import Mock, patch
+from urllib.parse import parse_qs, urlparse
 
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
-
-from allianceauth.tests.auth_utils import AuthUtils
-from allianceauth.eveonline.models import (
-    EveCharacter,
-    EveCorporationInfo,
-    EveAllianceInfo,
-)
-
 from esi.models import Token
 
-from ..app_settings import (
-    STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
-    STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
-    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES,
+from allianceauth.eveonline.models import (
+    EveAllianceInfo,
+    EveCharacter,
+    EveCorporationInfo,
 )
-from ..models import Owner, Webhook, Structure
-from .testdata import create_structures, set_owner_character, load_entities, create_user
-from .. import views
+from allianceauth.tests.auth_utils import AuthUtils
 
+from .. import views
+from ..app_settings import (
+    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES,
+    STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
+    STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
+)
+from ..models import Owner, Structure, Webhook
+from .testdata import create_structures, create_user, load_entities, set_owner_character
 
 MODULE_PATH = "structures.views"
 

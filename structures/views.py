@@ -2,51 +2,48 @@ import re
 import urllib
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import HttpResponse, JsonResponse, HttpResponseServerError
-from django.shortcuts import render, redirect
+from django.http import HttpResponse, HttpResponseServerError, JsonResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.utils.html import format_html, escape
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
+from esi.decorators import token_required
 
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.eveonline.evelinks import dotlan
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
-
 from app_utils.allianceauth import notify_admins
 from app_utils.datetime import DATETIME_FORMAT, timeuntil_str
 from app_utils.logging import LoggerAddTag
 from app_utils.messages import messages_plus
 from app_utils.views import (
+    bootstrap_label_html,
     format_html_lazy,
+    link_html,
     no_wrap_html,
     yesno_str,
-    bootstrap_label_html,
-    link_html,
 )
 
-from esi.decorators import token_required
-
-from . import tasks, __title__
+from . import __title__, tasks
 from .app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
-    STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
-    STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED,
     STRUCTURES_DEFAULT_PAGE_LENGTH,
+    STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED,
     STRUCTURES_PAGING_ENABLED,
+    STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
 )
 from .forms import TagsFilterForm
 from .models import (
     EveCategory,
     Owner,
     Structure,
-    StructureTag,
     StructureService,
+    StructureTag,
     Webhook,
 )
-
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64

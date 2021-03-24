@@ -1,21 +1,21 @@
 from unittest.mock import patch
 
-from django.test import TestCase, RequestFactory
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
+from django.test import RequestFactory, TestCase
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
 from ..admin import (
     NotificationAdmin,
     OwnerAdmin,
+    OwnerAllianceFilter,
+    OwnerCorporationsFilter,
+    OwnerSyncStatusFilter,
     StructureAdmin,
     WebhookAdmin,
-    OwnerSyncStatusFilter,
-    OwnerCorporationsFilter,
-    OwnerAllianceFilter,
 )
-from ..models import Webhook, Notification, Owner, Structure, StructureTag
+from ..models import Notification, Owner, Structure, StructureTag, Webhook
 from .testdata import (
     create_structures,
     create_user,
@@ -23,7 +23,6 @@ from .testdata import (
     load_notification_entities,
     set_owner_character,
 )
-
 
 MODULE_PATH = "structures.admin"
 

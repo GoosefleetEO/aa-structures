@@ -1,63 +1,60 @@
 from copy import deepcopy
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 
 from django.test import TestCase
 from django.utils.timezone import now, utc
-
 from esi.errors import TokenExpiredError, TokenInvalidError
 
+from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import (
+    EveAllianceInfo,
     EveCharacter,
     EveCorporationInfo,
-    EveAllianceInfo,
 )
-from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.tests.auth_utils import AuthUtils
-
 from app_utils.django import app_labels
-from app_utils.testing import NoSocketsTestCase, BravadoResponseStub
+from app_utils.testing import BravadoResponseStub, NoSocketsTestCase
 
-
-from .. import to_json
 from ...models import (
     EveCategory,
-    EveGroup,
-    EveType,
-    EveRegion,
     EveConstellation,
-    EveSolarSystem,
+    EveEntity,
+    EveGroup,
     EveMoon,
     EvePlanet,
+    EveRegion,
+    EveSolarSystem,
     EveSovereigntyMap,
-    EveEntity,
-    StructureTag,
-    StructureService,
-    Webhook,
-    Owner,
+    EveType,
     Notification,
+    Owner,
     Structure,
+    StructureService,
+    StructureTag,
+    Webhook,
 )
 from ...models.notifications import NotificationType
+from .. import to_json
 from ..testdata import (
-    esi_get_corporations_corporation_id_structures,
-    esi_get_corporations_corporation_id_customs_offices,
-    esi_post_corporations_corporation_id_assets_names,
-    esi_get_universe_structures_structure_id,
-    esi_post_corporations_corporation_id_assets_locations,
-    esi_get_corporations_corporation_id_starbases_starbase_id,
-    esi_get_corporations_corporation_id_starbases,
+    create_structures,
+    create_user,
     entities_testdata,
     esi_corp_structures_data,
+    esi_data,
+    esi_get_corporations_corporation_id_customs_offices,
+    esi_get_corporations_corporation_id_starbases,
+    esi_get_corporations_corporation_id_starbases_starbase_id,
+    esi_get_corporations_corporation_id_structures,
+    esi_get_universe_structures_structure_id,
+    esi_mock_client,
+    esi_post_corporations_corporation_id_assets_locations,
+    esi_post_corporations_corporation_id_assets_names,
     load_entities,
     load_notification_entities,
-    create_structures,
     set_owner_character,
-    esi_mock_client,
-    create_user,
-    esi_data,
 )
 
 if "timerboard" in app_labels():

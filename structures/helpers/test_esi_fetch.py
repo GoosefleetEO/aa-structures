@@ -1,21 +1,22 @@
 from unittest.mock import Mock, patch
 
-from bravado.exception import HTTPBadGateway
-from bravado.exception import HTTPServiceUnavailable
-from bravado.exception import HTTPGatewayTimeout
-from bravado.exception import HTTPForbidden
-
-from structures.helpers.esi_fetch import esi_fetch
-from structures.helpers.esi_fetch import esi_fetch_with_localization
-from structures.models.eveuniverse import EsiNameLocalization
-from structures.tests.testdata import (
-    esi_get_universe_categories_category_id,
-    esi_mock_client,
-    esi_get_corporations_corporation_id_structures,
+from bravado.exception import (
+    HTTPBadGateway,
+    HTTPForbidden,
+    HTTPGatewayTimeout,
+    HTTPServiceUnavailable,
 )
+
 from app_utils.logging import make_logger_prefix
 from app_utils.testing import NoSocketsTestCase
 
+from structures.helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from structures.models.eveuniverse import EsiNameLocalization
+from structures.tests.testdata import (
+    esi_get_corporations_corporation_id_structures,
+    esi_get_universe_categories_category_id,
+    esi_mock_client,
+)
 
 MODULE_PATH = __package__ + ".esi_fetch"
 
