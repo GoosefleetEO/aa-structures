@@ -499,6 +499,7 @@ class TestUpdateStructuresEsi(TestCase):
             1200000000003,
             1200000000004,
             1200000000005,
+            1200000000006,
         }
         self.assertSetEqual(structure_ids, expected)
 
@@ -511,6 +512,9 @@ class TestUpdateStructuresEsi(TestCase):
         self.assertEqual(structure.reinforce_hour, 20)
         self.assertEqual(structure.state, Structure.STATE_UNKNOWN)
         self.assertEqual(structure.eve_planet_id, 40161472)
+
+        # structure = Structure.objects.get(id=1200000000006)
+        # self.assertEqual(structure.name, "Planet (Barren)")
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
@@ -610,6 +614,7 @@ class TestUpdateStructuresEsi(TestCase):
             1200000000003,
             1200000000004,
             1200000000005,
+            1200000000006,
             1300000000001,
             1300000000002,
             1300000000003,
@@ -700,6 +705,7 @@ class TestUpdateStructuresEsi(TestCase):
             1200000000003,
             1200000000004,
             1200000000005,
+            1200000000006,
             1300000000001,
             1300000000002,
             1300000000003,
@@ -807,6 +813,7 @@ class TestUpdateStructuresEsi(TestCase):
             1200000000003,
             1200000000004,
             1200000000005,
+            1200000000006,
         }
         self.assertSetEqual(structure_ids, expected)
 
@@ -975,21 +982,21 @@ class TestUpdateStructuresEsi(TestCase):
     @patch(MODULE_PATH + ".notify", spec=True)
     @patch(MODULE_PATH + ".Token", spec=True)
     @patch("structures.helpers.esi_fetch._esi_client")
-    def test_define_poco_name_from_assets_if_not_match_with_planets(
+    def test_should_have_empty_name_if_not_match_with_planets(
         self, mock_esi_client, mock_Token, mock_notify
     ):
+        # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
         )
         EvePlanet.objects.all().delete()
-
-        # run update task
-        self.assertTrue(owner.update_structures_esi(user=self.user))
-
-        # check name for POCO
+        # when
+        result = owner.update_structures_esi(user=self.user)
+        # then
+        self.assertTrue(result)
         structure = Structure.objects.get(id=1200000000003)
-        self.assertEqual(structure.name, "Amamake V")
+        self.assertEqual(structure.name, "")
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)

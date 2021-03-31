@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.9.2] - 2021-03-31
+
+## Fixed
+
+- Will now set names of customs offices to blank if planet matching fails. ([#48](https://gitlab.com/ErikKalkoken/aa-structures/issues/48))
+
 ## [1.9.1] - 2021-03-24
 
 ## Changed

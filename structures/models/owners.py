@@ -473,17 +473,18 @@ class Owner(models.Model):
                 # compile pocos into structures list
                 for poco in pocos:
                     office_id = poco["office_id"]
-                    if office_id in names:
+                    planet_name = names.get(office_id, "")
+                    if planet_name:
                         try:
-                            eve_planet = EvePlanet.objects.get(name=names[office_id])
+                            eve_planet = EvePlanet.objects.get(name=planet_name)
+                        except EvePlanet.DoesNotExist:
+                            name = ""
+                            planet_id = None
+                        else:
                             planet_id = eve_planet.id
                             name = eve_planet.eve_type.name_localized_for_language(
                                 STRUCTURES_DEFAULT_LANGUAGE
                             )
-
-                        except EvePlanet.DoesNotExist:
-                            name = names[office_id]
-                            planet_id = None
                     else:
                         name = None
                         planet_id = None
@@ -568,13 +569,13 @@ class Owner(models.Model):
 
     @staticmethod
     def _extract_planet_name(text: str) -> str:
-        """extract name of planet from assert name for a customs office"""
+        """Extract name of planet from assert name for a customs office."""
         reg_ex = re.compile(r"Customs Office \((.+)\)")
         matches = reg_ex.match(text)
-        return matches.group(1) if matches else text
+        return matches.group(1) if matches else ""
 
     def _fetch_starbases(self, token: Token) -> list:
-        """fetch starbases from ESI for self"""
+        """Fetch starbases from ESI for self."""
 
         add_prefix = self._logger_prefix()
         structures = list()

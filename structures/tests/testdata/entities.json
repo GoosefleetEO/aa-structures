@@ -604,6 +604,16 @@
             "eve_planet_id": 40029538
         },
         {
+            "id": 1200000000006,
+            "name": "<localized hint=\"Customs Office\">Customs Office*</localized> (1-PGSG VIII)",
+            "eve_type_id": 2233,
+            "eve_solar_system_id": 30000474,
+            "reinforce_hour": 22,
+            "state": 13,
+            "owner_corporation_id": 2001,
+            "eve_planet_id": 40029538
+        },
+        {
             "id": 1300000000001,
             "name": "Amamake II - Moon 1",
             "state": 22,

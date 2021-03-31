@@ -102,6 +102,7 @@ class TestStructureListDataPermissions(TestCase):
                 1200000000003,
                 1200000000004,
                 1200000000005,
+                1200000000006,
                 1300000000001,
                 1300000000002,
                 1300000000003,
@@ -138,6 +139,7 @@ class TestStructureListDataPermissions(TestCase):
                 1200000000003,
                 1200000000004,
                 1200000000005,
+                1200000000006,
                 1300000000001,
                 1300000000002,
                 1300000000003,
@@ -175,6 +177,7 @@ class TestStructureListDataPermissions(TestCase):
                 1200000000003,
                 1200000000004,
                 1200000000005,
+                1200000000006,
                 1300000000001,
                 1300000000002,
                 1300000000003,
@@ -260,6 +263,7 @@ class TestStructureListFilters(TestCase):
                 1200000000003,
                 1200000000004,
                 1200000000005,
+                1200000000006,
                 1300000000001,
                 1300000000002,
                 1300000000003,
@@ -693,7 +697,8 @@ class TestPocoList(TestCase):
         self.assertEqual(response.status_code, 200)
         data = _response_to_dict(response)
         self.assertSetEqual(
-            set(data.keys()), {1200000000003, 1200000000004, 1200000000005}
+            set(data.keys()),
+            {1200000000003, 1200000000004, 1200000000005, 1200000000006},
         )
         obj = data[1200000000003]
         self.assertEqual(obj["region"], "Heimatar")
