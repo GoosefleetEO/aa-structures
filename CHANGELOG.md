@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.9.3] - 2021-04-01
+
+## Fixed
+
+- Poco List breaks when poco has no planet. ([#48](https://gitlab.com/ErikKalkoken/aa-structures/issues/48))
+
 ## [1.9.2] - 2021-03-31
 
 ## Fixed

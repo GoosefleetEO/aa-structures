@@ -550,17 +550,24 @@ def poco_list_data(request) -> JsonResponse:
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
         )
-        match = re.search(r"Planet \((\S+)\)", poco.eve_planet.eve_type.name)
-        if match:
-            planet_type_name = match.group(1)
+        try:
+            match = re.search(r"Planet \((\S+)\)", poco.eve_planet.eve_type.name)
+        except AttributeError:
+            planet_name = planet_type_name = "?"
+            planet_type_icon = ""
         else:
-            planet_type_name = poco.name
-        planet_type_icon = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            poco.eve_planet.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-        )
+            if match:
+                planet_type_name = match.group(1)
+            else:
+                planet_type_name = ""
+            planet_name = poco.eve_planet.name
+            planet_type_icon = format_html(
+                '<img src="{}" width="{}" height="{}"/>',
+                poco.eve_planet.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
+                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            )
+
         data.append(
             {
                 "id": poco.id,
@@ -571,7 +578,7 @@ def poco_list_data(request) -> JsonResponse:
                     "sort": poco.eve_solar_system.name,
                 },
                 "solar_system": poco.eve_solar_system.name,
-                "planet": poco.eve_planet.name,
+                "planet": planet_name,
                 "planet_type_icon": planet_type_icon,
                 "planet_type_name": planet_type_name,
                 "space_type": poco.eve_solar_system.space_type,
