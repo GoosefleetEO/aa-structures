@@ -270,7 +270,7 @@ class OwnerAdmin(admin.ModelAdmin):
         "character",
         "_is_active",
         "_webhooks",
-        "has_default_pings_enabled",
+        "_has_default_pings_enabled",
         "_ping_groups",
         "_is_alliance_main",
         "_is_structure_sync_ok",
@@ -288,6 +288,12 @@ class OwnerAdmin(admin.ModelAdmin):
     )
     ordering = ["corporation__corporation_name"]
     search_fields = ["corporation__corporation_name"]
+
+    def _has_default_pings_enabled(self, obj):
+        return obj.has_default_pings_enabled
+
+    _has_default_pings_enabled.short_description = "default pings"
+    _has_default_pings_enabled.boolean = True
 
     def _ping_groups(self, obj):
         names = [x.name for x in obj.ping_groups.all().order_by("name")]
