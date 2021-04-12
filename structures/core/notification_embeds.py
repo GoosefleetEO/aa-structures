@@ -280,19 +280,22 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
                 self._parsed_text["solarsystemID"]
             )
             owner_link = "(unknown)"
+            location = ""
         else:
             structure_name = structure.name
             structure_type = structure.eve_type
             structure_solar_system = structure.eve_solar_system
             owner_link = self._gen_corporation_link(str(structure.owner))
+            location = f" at {structure.eve_moon} " if structure.eve_moon else ""
 
         self._structure = structure
         self._description = gettext(
-            "The %(structure_type)s %(structure_name)s in %(solar_system)s "
+            "The %(structure_type)s %(structure_name)s%(location)s in %(solar_system)s "
             "belonging to %(owner_link)s "
         ) % {
             "structure_type": structure_type.name_localized,
             "structure_name": "**%s**" % structure_name,
+            "location": location,
             "solar_system": self._gen_solar_system_text(structure_solar_system),
             "owner_link": owner_link,
         }

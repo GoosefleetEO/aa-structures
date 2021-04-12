@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## Changed
+
+## [1.9.4] - 2021-04-13
+
+- Show moon location of refineries if known in all related notifications
+
 ## [1.9.3] - 2021-04-01
 
 ## Fixed
