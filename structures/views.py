@@ -146,7 +146,7 @@ def structure_fit(request, structure_id):
         "fitting": fit_ob,
         "structure": structure,
     }
-    return render(request, "structures/structure_fit.html", context)
+    return render(request, "structures/modals/structure_fit.html", context)
 
 
 class StructuresRowBuilder:
