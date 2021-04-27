@@ -1,7 +1,9 @@
 import re
 import urllib
+from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -109,24 +111,44 @@ def main(request):
 @permission_required("structures.view_structure_fit")
 def structure_fit(request, structure_id):
     """Main view of the structure fit"""
+
+    class Slot(IntEnum):
+        HIGH = 14
+        MEDIUM = 13
+        LOW = 12
+        RIG = 1137
+        SERVICE = 2056
+
+        def image_url(self, slot_num: int):
+            """Return url to image file for this slot variant"""
+            id_map = {
+                self.HIGH: "h",
+                self.MEDIUM: "m",
+                self.LOW: "l",
+                self.RIG: "r",
+                self.SERVICE: "s",
+            }
+            return staticfiles_storage.url(
+                f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
+            )
+
+    def build_panel_url(structure_type: EveType, slot: Slot) -> str:
+        """Return url to image file for this slot and eve type"""
+        slot_num = int(
+            structure_type.dogma_attributes.get(eve_dogma_attribute_id=Slot(slot)).value
+        )
+        return slot.image_url(slot_num)
+
     structure = Structure.objects.get(id=structure_id)
-    structure_type = EveType.objects.get(id=structure.eve_type_id)
-    structure_layout = {
-        "high": int(
-            structure_type.dogma_attributes.get(eve_dogma_attribute_id=14).value
-        ),
-        "med": int(
-            structure_type.dogma_attributes.get(eve_dogma_attribute_id=13).value
-        ),
-        "low": int(
-            structure_type.dogma_attributes.get(eve_dogma_attribute_id=12).value
-        ),
-        "rig": int(
-            structure_type.dogma_attributes.get(eve_dogma_attribute_id=1137).value
-        ),
-        "service": int(
-            structure_type.dogma_attributes.get(eve_dogma_attribute_id=2056).value
-        ),
+    structure_type = EveType.objects.prefetch_related("dogma_attributes").get(
+        id=structure.eve_type_id
+    )
+    slot_image_urls = {
+        "high": build_panel_url(structure_type, Slot.HIGH),
+        "med": build_panel_url(structure_type, Slot.MEDIUM),
+        "low": build_panel_url(structure_type, Slot.LOW),
+        "rig": build_panel_url(structure_type, Slot.RIG),
+        "service": build_panel_url(structure_type, Slot.SERVICE),
     }
     fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
     fittings = OwnerAsset.objects.filter(location_id=structure_id)
@@ -142,7 +164,7 @@ def structure_fit(request, structure_id):
 
     context = {
         "page_title": gettext_lazy(__title__),
-        "slots": structure_layout,
+        "slots": slot_image_urls,
         "fitting": fit_ob,
         "structure": structure,
     }
