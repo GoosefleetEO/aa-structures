@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from esi.decorators import token_required
-from eveuniverse.models import EveCategory, EveType
+from eveuniverse.models import EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.evelinks import dotlan
@@ -38,6 +38,7 @@ from .app_settings import (
 )
 from .forms import TagsFilterForm
 from .models import (
+    EveCategory,
     Owner,
     OwnerAsset,
     Structure,
