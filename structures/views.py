@@ -458,8 +458,8 @@ class StructuresRowBuilder:
             self._row["view_fit"] = format_html(
                 '<button type="button" class="btn btn-default" '
                 'data-toggle="modal" data-target="#modalStructureFit" '
-                f"data-ajax_structure_fit={ajax_structure_fit}>"
-                "Fitting</button>"
+                f'data-ajax_structure_fit={ajax_structure_fit} title="Show fitting">'
+                f'<i class="far fa-eye"></i></button>'
             )
         else:
             self._row["view_fit"] = ""
