@@ -86,7 +86,7 @@ class NotificationBaseEmbed:
         footer_text = "Eve Online"
         if STRUCTURES_DEVELOPER_MODE:
             footer_text = f"{footer_text} ID {self.notification.notification_id}"
-        footer_icon_url = static_file_absolute_url("structures/eve_symbol_128.png")
+        footer_icon_url = static_file_absolute_url("structures/img/eve_symbol_128.png")
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,

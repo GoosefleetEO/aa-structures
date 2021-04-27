@@ -553,7 +553,7 @@ class Notification(models.Model):
     def _gen_avatar(self) -> Tuple[str, str]:
         if STRUCTURES_NOTIFICATION_SET_AVATAR:
             username = "Notifications"
-            avatar_url = static_file_absolute_url("structures/structures_logo.png")
+            avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
         else:
             username = None
             avatar_url = None
