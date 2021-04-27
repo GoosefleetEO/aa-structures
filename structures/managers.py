@@ -470,7 +470,7 @@ class OwnerAssetManager(models.Manager):
         self, structure_ids: list, corporation_id: int, token: Token
     ) -> tuple:
         """Fetch assets from esi for list of structures"""
-        from .models import EveType, Owner, OwnerAsset, Structure
+        from .models import EveType, Owner, Structure
 
         add_prefix = make_logger_prefix(
             "%s(id=%d)" % (self.model.__name__, corporation_id)
@@ -482,9 +482,7 @@ class OwnerAssetManager(models.Manager):
             has_pages=True,
             logger_tag=add_prefix(),
         )
-
         owner = Owner.objects.get(corporation__corporation_id=corporation_id)
-
         assets_in_structures = [
             asset
             for asset in assets
@@ -496,7 +494,7 @@ class OwnerAssetManager(models.Manager):
         objs = []
         for asset in assets_in_structures:
             eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
-            obj, created = self.update_or_create(
+            obj, _ = self.update_or_create(
                 id=asset["item_id"],
                 defaults={
                     "owner": owner,
@@ -509,17 +507,15 @@ class OwnerAssetManager(models.Manager):
                     "last_updated_at": now(),
                 },
             )
-
             objs.append(obj)
 
         objs_ids = [x.id for x in objs]
 
         """Clean up assets not in structures anymore"""
-        objs_to_delete = OwnerAsset.objects.filter(
-            location_id__in=structure_ids
-        ).exclude(id__in=objs_ids)
+        objs_to_delete = self.filter(location_id__in=structure_ids).exclude(
+            id__in=objs_ids
+        )
         objs_to_delete.delete()
-
         for structure_id in structure_ids:
             assets_in_structure = [
                 asset
@@ -539,7 +535,5 @@ class OwnerAssetManager(models.Manager):
                     "ServiceSlot4",
                 ]
             ]
-            has_fit = True if len(assets_in_structure) != 0 else False
-            structure = Structure.objects.get(id=structure_id)
-            structure.has_fit = has_fit
-            structure.save()
+            has_fit = True if assets_in_structure else False
+            Structure.objects.filter(id=structure_id).update(has_fit=has_fit)
