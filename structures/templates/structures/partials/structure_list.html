@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load bootstrap %}
+{% load static %}
 
 <!-- structure list -->
 <div role="tabpanel" class="tab-pane" id="structures">
@@ -100,6 +101,12 @@
 <div class="modal" id="modalStructureFit" tabindex="-1" role="dialog" aria-labelledby="{% trans 'FittingModalLabel '%}">
     <div class="modal-dialog" role="document">
         <div class="modal-content" id="modalStructureFitContent">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Loading...</h4>
+            </div>
+            <div class="modal-body">
+            </div>
         </div>
     </div>
 </div>
