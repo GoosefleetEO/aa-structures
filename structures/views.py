@@ -245,11 +245,11 @@ class StructuresRowBuilder:
         # category
         my_group = structure_type.eve_group
         self._row["group_name"] = my_group.name_localized
-        if my_group.eve_category:
+        try:
             my_category = my_group.eve_category
             self._row["category_name"] = my_category.name_localized
             self._row["is_starbase"] = my_category.is_starbase
-        else:
+        except AttributeError:
             self._row["category_name"] = ""
             self._row["is_starbase"] = None
 
@@ -275,7 +275,7 @@ class StructuresRowBuilder:
     def _build_name(self):
         self._row["structure_name"] = escape(self._structure.name)
         tags = []
-        if self._structure.tags:
+        if self._structure.tags.exists():
             tags += [x.html for x in self._structure.tags.all()]
             self._row["structure_name"] += format_html(
                 "<br>{}", mark_safe(" ".join(tags))
@@ -432,7 +432,7 @@ class StructuresRowBuilder:
 
     def _build_core_status(self):
         """Only enable view core for structure types"""
-        if self._structure.eve_type.eve_group.eve_category_id == 65:
+        if self._structure.eve_type.is_upwell_structure:
             quantum_core = (
                 OwnerAsset.objects.filter(location_id=self._structure.id)
                 .filter(location_flag="QuantumCoreRoom")
@@ -447,10 +447,7 @@ class StructuresRowBuilder:
 
     def _build_view_fit(self):
         """Only enable view fit for structure types"""
-        if (
-            self._structure.eve_type.eve_group.eve_category_id == 65
-            and self._structure.has_fit
-        ):
+        if self._structure.eve_type.is_upwell_structure and self._structure.has_fit:
             ajax_structure_fit = reverse(
                 "structures:structure_fit",
                 args=[self._row["structure_id"]],
@@ -521,6 +518,7 @@ def _structures_query_for_user(request):
             owner__corporation__in=corporations
         )
 
+    structures_query = structures_query.prefetch_related("tags")
     return structures_query
 
 

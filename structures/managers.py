@@ -193,6 +193,8 @@ class StructureManager(models.Manager):
             "eve_solar_system__eve_constellation__eve_region",
             "eve_planet",
             "eve_moon",
+            "eve_type__eve_group",
+            "eve_type__eve_group__eve_category",
         )
 
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:

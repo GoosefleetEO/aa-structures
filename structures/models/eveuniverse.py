@@ -346,9 +346,11 @@ class EveType(EveUniverse):
 
     @property
     def is_upwell_structure(self):
-        if self.eve_group.eve_category:
-            return self.eve_group.eve_category.is_upwell_structure
-        else:
+        try:
+            return (
+                self.eve_group.eve_category_id == EveCategory.EVE_CATEGORY_ID_STRUCTURE
+            )
+        except AttributeError:
             logger.warning(
                 'Group "%s" does not have a category. This is a data error. '
                 "Please update your local SDE data",
