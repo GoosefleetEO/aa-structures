@@ -9,7 +9,7 @@
         {% if perms.structures.add_structure_owner %}
             <a class="btn btn-success btn-tabs"
                 href="{% url 'structures:add_structure_owner' %}">
-                {% trans "Add Structure Owner" %}
+                {% translate "Add Structure Owner" %}
             </a>
         {% endif %}
     </span>
@@ -17,12 +17,12 @@
     <!-- Nav tabs -->
     <ul id="myTabs" class="nav nav-tabs" role="tablist">
         {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
-            <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+            <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% translate "All Structures" %}</a></li>
             <script id="active-tab" type="application/javascript">structures</script>
         {% else%}
             <script id="active-tab" type="application/javascript">pocos</script>
         {% endif %}
-        <li role="presentation"><a href="#pocos" aria-controls="pocos" role="tab" data-toggle="tab">{% trans "Customs Offices" %}</a></li>
+        <li role="presentation"><a href="#pocos" aria-controls="pocos" role="tab" data-toggle="tab">{% translate "Customs Offices" %}</a></li>
     </ul>
 
     <div class="panel panel-default panel-tabs">
@@ -101,47 +101,47 @@
                     columns: [
                         {
                             idx: 13,
-                            title: "{% trans 'Alliance' %}",
+                            title: "{% translate 'Alliance' %}",
                             maxWidth: "10em"
                         },
                         {
                             idx: 14,
-                            title: "{% trans 'Corporation' %}",
+                            title: "{% translate 'Corporation' %}",
                             maxWidth: "13em"
                         },
                         {
                             idx: 15,
-                            title: "{% trans 'Region' %}",
+                            title: "{% translate 'Region' %}",
                             maxWidth: "8em"
                         },
                         {
                             idx: 16,
-                            title: "{% trans 'Solar System' %}",
+                            title: "{% translate 'Solar System' %}",
                             maxWidth: "14em"
                         },
                         {
                             idx: 17,
-                            title: "{% trans 'Category' %}",
+                            title: "{% translate 'Category' %}",
                             maxWidth: "10em"
                         },
                         {
                             idx: 18,
-                            title: "{% trans 'Group' %}",
+                            title: "{% translate 'Group' %}",
                             maxWidth: "7em"
                         },
                         {
                             idx: 19,
-                            title: "{% trans 'Reinforced?' %}",
+                            title: "{% translate 'Reinforced?' %}",
                             maxWidth: "13em"
                         },
                         {
                             idx: 20,
-                            title: "{% trans 'State' %}",
+                            title: "{% translate 'State' %}",
                             maxWidth: "6em"
                         },
                         {
                             idx: 21,
-                            title: "{% trans 'Power Mode' %}",
+                            title: "{% translate 'Power Mode' %}",
                             maxWidth: "12em"
                         }
                     ],
@@ -205,14 +205,14 @@
                     columns: [
                         {
                             idx: 7,
-                            title: "{% trans 'Space Type' %}"
+                            title: "{% translate 'Space Type' %}"
                         },
                         {
                             idx: 1
                         },
                         {
                             idx: 6,
-                            title: "{% trans 'Solar System' %}"
+                            title: "{% translate 'Solar System' %}"
                         },
                         {
                             idx: 5
