@@ -470,10 +470,7 @@ class OwnerAssetManager(models.Manager):
         self, structure_ids: list, corporation_id: int, token: Token
     ) -> tuple:
         """Fetch assets from esi for list of structures"""
-        from .models import Owner
-        from .models import EveType
-        from .models import OwnerAsset
-        from .models import Structure
+        from .models import EveType, Owner, OwnerAsset, Structure
 
         add_prefix = make_logger_prefix(
             "%s(id=%d)" % (self.model.__name__, corporation_id)

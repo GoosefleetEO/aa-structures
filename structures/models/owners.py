@@ -1166,9 +1166,9 @@ class OwnerAsset(models.Model):
         help_text="Corporation that owns the assets",
     )
     is_singleton = models.BooleanField(null=False)
-    location_flag = models.CharField(null=False, max_length=255)
+    location_flag = models.CharField(max_length=255)
     location_id = models.BigIntegerField(null=False)
-    location_type = models.CharField(null=False, max_length=255)
+    location_type = models.CharField(max_length=255)
     quantity = models.IntegerField(null=False)
     last_updated_at = models.DateTimeField(auto_now=True)
 

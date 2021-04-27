@@ -8,7 +8,6 @@ import os
 from copy import deepcopy
 from datetime import timedelta
 from random import randrange
-from structures.models.owners import OwnerAsset
 from unittest.mock import Mock
 
 from bravado.exception import HTTPNotFound
@@ -22,6 +21,8 @@ from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
 )
+
+from structures.models.owners import OwnerAsset
 
 from ...models import (
     EveCategory,

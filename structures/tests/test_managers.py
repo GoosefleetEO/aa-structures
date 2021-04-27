@@ -20,10 +20,10 @@ from ..models import (
     EveSovereigntyMap,
     EveType,
     Owner,
+    OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
-    OwnerAsset,
 )
 from . import to_json
 from .testdata import create_structures, esi_mock_client, load_entities, load_entity
