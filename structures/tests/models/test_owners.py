@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 
-from django.test import TestCase
 from django.utils.timezone import now, utc
 from esi.errors import TokenExpiredError, TokenInvalidError
 
@@ -56,6 +55,7 @@ from ..testdata import (
     load_notification_entities,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer
@@ -266,7 +266,11 @@ class TestOwner(NoSocketsTestCase):
         )
 
 
-class TestUpdateStructuresEsi(TestCase):
+@patch(MODULE_PATH + ".notify", spec=True)
+@patch(MODULE_PATH + ".Token", spec=True)
+@patch("structures.helpers.esi_fetch._esi_client")
+@patch("structures.helpers.esi_fetch.sleep", lambda x: None)
+class TestUpdateStructuresEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -286,6 +290,7 @@ class TestUpdateStructuresEsi(TestCase):
                 EveCharacter,
             ]
         )
+        load_eveuniverse()
         # 1 user
         cls.character = EveCharacter.objects.get(character_id=1001)
 
@@ -310,13 +315,17 @@ class TestUpdateStructuresEsi(TestCase):
         esi_get_corporations_corporation_id_structures.override_data = None
         esi_get_corporations_corporation_id_customs_offices.override_data = None
 
-    def test_returns_error_when_no_sync_char_defined(self):
+    def test_returns_error_when_no_sync_char_defined(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
         owner = Owner.objects.create(corporation=self.corporation)
         self.assertFalse(owner.update_structures_esi())
         owner.refresh_from_db()
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NO_CHARACTER)
 
-    def test_returns_error_when_char_has_no_permission(self):
+    def test_returns_error_when_char_has_no_permission(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
         user_2 = create_user(1011)
         owner = Owner.objects.create(
             corporation=self.corporation, character=user_2.character_ownerships.first()
@@ -327,8 +336,9 @@ class TestUpdateStructuresEsi(TestCase):
             owner.structures_last_error, Owner.ERROR_INSUFFICIENT_PERMISSIONS
         )
 
-    @patch(MODULE_PATH + ".Token")
-    def test_returns_error_when_token_is_expired(self, mock_Token):
+    def test_returns_error_when_token_is_expired(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
         mock_Token.objects.filter.side_effect = TokenExpiredError()
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -340,8 +350,9 @@ class TestUpdateStructuresEsi(TestCase):
         owner.refresh_from_db()
         self.assertEqual(owner.structures_last_error, Owner.ERROR_TOKEN_EXPIRED)
 
-    @patch(MODULE_PATH + ".Token")
-    def test_returns_error_when_token_is_invalid(self, mock_Token):
+    def test_returns_error_when_token_is_invalid(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -355,9 +366,7 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_can_sync_upwell_structures(self, mock_esi_client, mock_Token):
+    def test_can_sync_upwell_structures(self, mock_esi_client, mock_Token, mock_notify):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -478,9 +487,7 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_can_sync_pocos(self, mock_esi_client, mock_Token):
+    def test_can_sync_pocos(self, mock_esi_client, mock_Token, mock_notify):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -518,9 +525,7 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_can_sync_starbases(self, mock_esi_client, mock_Token):
+    def test_can_sync_starbases(self, mock_esi_client, mock_Token, mock_notify):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -592,9 +597,6 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_can_sync_all_structures(self, mock_esi_client, mock_Token, mock_notify):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -626,9 +628,6 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_can_handle_owner_without_structures(
         self, mock_esi_client, mock_Token, mock_notify
     ):
@@ -661,12 +660,8 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    @patch("structures.helpers.esi_fetch.sleep")
     def test_will_not_break_on_http_error_when_fetching_upwell_structures(
-        self, mock_sleep, mock_esi_client, mock_Token, mock_notify
+        self, mock_esi_client, mock_Token, mock_notify
     ):
         # create our own esi_client
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -714,12 +709,8 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    @patch("structures.helpers.esi_fetch.sleep")
     def test_will_not_break_on_http_error_when_fetching_custom_offices(
-        self, mock_sleep, mock_esi_client, mock_Token, mock_notify
+        self, mock_esi_client, mock_Token, mock_notify
     ):
         # create our own esi_client
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -766,12 +757,8 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    @patch("structures.helpers.esi_fetch.sleep")
     def test_will_not_break_on_http_error_when_fetching_star_bases(
-        self, mock_sleep, mock_esi_client, mock_Token, mock_notify
+        self, mock_esi_client, mock_Token, mock_notify
     ):
         # create our own esi_client
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -819,10 +806,8 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_update_will_not_break_on_http_error_from_structure_info(
-        self, mock_esi_client, mock_Token
+        self, mock_esi_client, mock_Token, mock_notify
     ):
         mock_esi_client.side_effect = esi_mock_client
         # remove info data for structure with ID 1000000000002
@@ -840,9 +825,7 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_removes_old_structures(self, mock_esi_client, mock_Token):
+    def test_removes_old_structures(self, mock_esi_client, mock_Token, mock_notify):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -871,9 +854,9 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_tags_are_not_modified_by_update(self, mock_esi_client, mock_Token):
+    def test_tags_are_not_modified_by_update(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -906,10 +889,8 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_only_remove_structures_not_returned_from_esi(
-        self, mock_esi_client, mock_Token
+        self, mock_esi_client, mock_Token, mock_notify
     ):
         esi_get_corporations_corporation_id_structures.override_data = {"2001": []}
         mock_esi_client.side_effect = esi_mock_client
@@ -928,9 +909,6 @@ class TestUpdateStructuresEsi(TestCase):
     @patch(MODULE_PATH + ".settings.DEBUG", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".notify")
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_reports_error_to_user_when_update_fails(
         self, mock_esi_client, mock_Token, mock_notify
     ):
@@ -947,9 +925,7 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_removes_outdated_services(self, mock_esi_client, mock_Token):
+    def test_removes_outdated_services(self, mock_esi_client, mock_Token, mock_notify):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -979,9 +955,6 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_should_have_empty_name_if_not_match_with_planets(
         self, mock_esi_client, mock_Token, mock_notify
     ):
@@ -1000,9 +973,6 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_define_poco_name_from_planet_type_if_found(
         self, mock_esi_client, mock_Token, mock_notify
     ):
@@ -1021,9 +991,6 @@ class TestUpdateStructuresEsi(TestCase):
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "de")
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_define_poco_name_from_planet_type_localized(
         self, mock_esi_client, mock_Token, mock_notify
     ):
@@ -1041,9 +1008,6 @@ class TestUpdateStructuresEsi(TestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_update_pocos_no_asset_name_match(
         self, mock_esi_client, mock_Token, mock_notify
     ):
@@ -1064,10 +1028,8 @@ class TestUpdateStructuresEsi(TestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(MODULE_PATH + ".Structure.objects.update_or_create_from_dict")
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_reports_error_during_storing(
-        self, mock_esi_client, mock_Token, mock_update_or_create_from_dict
+        self, mock_update_or_create_from_dict, mock_esi_client, mock_Token, mock_notify
     ):
         mock_esi_client.side_effect = esi_mock_client
         mock_update_or_create_from_dict.side_effect = RuntimeError

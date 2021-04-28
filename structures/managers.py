@@ -266,6 +266,8 @@ class StructureManager(models.Manager):
 
     def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:
         """update or create structure from given dict"""
+        from eveuniverse.models import EveType as EveUniverseType
+
         from .models import (
             EveMoon,
             EvePlanet,
@@ -282,57 +284,44 @@ class StructureManager(models.Manager):
         fuel_expires_at = (
             structure["fuel_expires"] if "fuel_expires" in structure else None
         )
-
         next_reinforce_hour = (
             structure["next_reinforce_hour"]
             if "next_reinforce_hour" in structure
             else None
         )
-
         next_reinforce_apply = (
             structure["next_reinforce_apply"]
             if "next_reinforce_apply" in structure
             else None
         )
-
         reinforce_hour = (
             structure["reinforce_hour"] if "reinforce_hour" in structure else None
         )
-
         state = (
             self.model.get_matching_state_for_esi_state(structure["state"])
             if "state" in structure
             else self.model.STATE_UNKNOWN
         )
-
         state_timer_start = (
             structure["state_timer_start"] if "state_timer_start" in structure else None
         )
-
         state_timer_end = (
             structure["state_timer_end"] if "state_timer_end" in structure else None
         )
-
         unanchors_at = (
             structure["unanchors_at"] if "unanchors_at" in structure else None
         )
-
         position_x = structure["position"]["x"] if "position" in structure else None
-
         position_y = structure["position"]["y"] if "position" in structure else None
-
         position_z = structure["position"]["z"] if "position" in structure else None
-
         if "planet_id" in structure:
             eve_planet, _ = EvePlanet.objects.get_or_create_esi(structure["planet_id"])
         else:
             eve_planet = None
-
         if "moon_id" in structure:
             eve_moon, _ = EveMoon.objects.get_or_create_esi(structure["moon_id"])
         else:
             eve_moon = None
-
         obj, created = self.update_or_create(
             id=structure["structure_id"],
             defaults={
@@ -355,6 +344,10 @@ class StructureManager(models.Manager):
                 "unanchors_at": unanchors_at,
                 "last_updated_at": now(),
             },
+        )
+        # Make sure we have dogmas loaded for this type for fittings
+        EveUniverseType.objects.get_or_create_esi(
+            id=structure["type_id"], enabled_sections=[EveUniverseType.Section.DOGMAS]
         )
         # save related structure services
         StructureService.objects.filter(structure=obj).delete()

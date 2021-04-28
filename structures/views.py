@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from esi.decorators import token_required
-from eveuniverse.models import EveType
+from eveuniverse.models import EveType as EveUniverseType
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.evelinks import dotlan
@@ -132,7 +132,7 @@ def structure_fit(request, structure_id):
                 f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
             )
 
-    def build_panel_url(structure_type: EveType, slot: Slot) -> str:
+    def build_panel_url(structure_type: EveUniverseType, slot: Slot) -> str:
         """Return url to image file for this slot and eve type"""
         slot_num = int(
             structure_type.dogma_attributes.get(eve_dogma_attribute_id=Slot(slot)).value
@@ -140,7 +140,7 @@ def structure_fit(request, structure_id):
         return slot.image_url(slot_num)
 
     structure = Structure.objects.get(id=structure_id)
-    structure_type = EveType.objects.prefetch_related("dogma_attributes").get(
+    structure_type = EveUniverseType.objects.prefetch_related("dogma_attributes").get(
         id=structure.eve_type_id
     )
     slot_image_urls = {

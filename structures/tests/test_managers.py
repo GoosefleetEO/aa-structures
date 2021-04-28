@@ -27,6 +27,7 @@ from ..models import (
 )
 from . import to_json
 from .testdata import create_structures, esi_mock_client, load_entities, load_entity
+from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.managers"
 MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"
@@ -569,6 +570,11 @@ class TestEveEntityManager(NoSocketsTestCase):
 
 
 class TestStructureManager(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+
     def test_can_get_stored_object(self):
         mock_client = Mock(side_effect=RuntimeError)
         create_structures()
@@ -645,6 +651,11 @@ class TestStructureManager(NoSocketsTestCase):
 
 
 class TestStructureManagerCreateFromDict(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+
     def test_can_create_full(self):
         load_entities(
             [
