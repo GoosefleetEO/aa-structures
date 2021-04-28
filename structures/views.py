@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext, gettext_lazy
 from esi.decorators import token_required
 from eveuniverse.models import EveType as EveUniverseType
 
@@ -283,7 +283,7 @@ class StructuresRowBuilder:
 
     def _build_services(self):
         if self._row["is_poco"] or self._row["is_starbase"]:
-            self._row["services"] = gettext_lazy("N/A")
+            self._row["services"] = "-"
         else:
             services = list()
             services_qs = self._structure.structureservice_set.all().order_by("name")
@@ -303,9 +303,9 @@ class StructuresRowBuilder:
         self._row["is_reinforced_str"] = yesno_str(self._structure.is_reinforced)
 
         if self._row["is_starbase"]:
-            self._row["reinforcement"] = gettext_lazy("N/A")
+            self._row["reinforcement"] = "-"
         else:
-            if self._structure.reinforce_hour:
+            if self._structure.reinforce_hour is not None:
                 self._row["reinforcement"] = "{:02d}:00".format(
                     self._structure.reinforce_hour
                 )
@@ -314,7 +314,7 @@ class StructuresRowBuilder:
 
     def _build_fuel_infos(self):
         if self._structure.eve_type.is_poco:
-            fuel_expires_display = "N/A"
+            fuel_expires_display = "-"
             fuel_expires_timestamp = None
         elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
@@ -353,7 +353,7 @@ class StructuresRowBuilder:
                     fuel_expires_display = "?"
                     fuel_expires_timestamp = None
         else:
-            fuel_expires_display = gettext_lazy("N/A")
+            fuel_expires_display = "-"
             fuel_expires_timestamp = None
 
         self._row["fuel_expires_at"] = {
@@ -364,7 +364,7 @@ class StructuresRowBuilder:
     def _build_online_infos(self):
         self._row["power_mode_str"] = self._structure.get_power_mode_display()
         if self._structure.eve_type.is_poco:
-            last_online_at_display = "N/A"
+            last_online_at_display = "-"
             last_online_at_timestamp = None
         elif self._structure.is_full_power:
             last_online_at_display = format_html_lazy(
@@ -413,14 +413,17 @@ class StructuresRowBuilder:
         def cap_first(s: str) -> str:
             return s[0].upper() + s[1::]
 
-        self._row["state_str"] = cap_first(self._structure.get_state_display())
+        self._row["state_str"] = (
+            cap_first(self._structure.get_state_display())
+            if not self._structure.eve_type.is_poco
+            else "-"
+        )
         self._row["state_details"] = self._row["state_str"]
         if self._structure.state_timer_end:
             self._row["state_details"] += format_html(
                 "<br>{}",
                 no_wrap_html(self._structure.state_timer_end.strftime(DATETIME_FORMAT)),
             )
-
         if (
             self._request.user.has_perm("structures.view_all_unanchoring_status")
             and self._structure.unanchors_at
@@ -443,11 +446,11 @@ class StructuresRowBuilder:
             else:
                 self._row["core_status"] = "Absent"
         else:
-            self._row["core_status"] = "N/A"
+            self._row["core_status"] = "-"
 
     def _build_view_fit(self):
         """Only enable view fit for structure types"""
-        if self._structure.eve_type.is_upwell_structure and self._structure.has_fit:
+        if self._structure.has_fit:
             ajax_structure_fit = reverse(
                 "structures:structure_fit",
                 args=[self._row["structure_id"]],
@@ -455,8 +458,9 @@ class StructuresRowBuilder:
             self._row["view_fit"] = format_html(
                 '<button type="button" class="btn btn-default" '
                 'data-toggle="modal" data-target="#modalStructureFit" '
-                f'data-ajax_structure_fit={ajax_structure_fit} title="Show fitting">'
-                f'<i class="far fa-eye"></i></button>'
+                f"data-ajax_structure_fit={ajax_structure_fit} "
+                f'title="{gettext("Show fitting")}">'
+                f'{gettext("Fitting")}</button>'
             )
         else:
             self._row["view_fit"] = ""

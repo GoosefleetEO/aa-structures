@@ -416,8 +416,8 @@ class TestStructurePowerModes(TestCase):
         structure_id = 1200000000003
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure["power_mode_str"], "")
-        self.assertIn("N/A", my_structure["fuel_expires_at"]["display"])
-        self.assertIn("N/A", my_structure["last_online_at"]["display"])
+        self.assertIn("-", my_structure["fuel_expires_at"]["display"])
+        self.assertIn("-", my_structure["last_online_at"]["display"])
 
     def test_starbase_online(self):
         structure_id = 1300000000001
@@ -439,7 +439,7 @@ class TestStructurePowerModes(TestCase):
         structure.save()
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure["power_mode_str"], "")
-        self.assertIn("N/A", my_structure["fuel_expires_at"]["display"])
+        self.assertIn("-", my_structure["fuel_expires_at"]["display"])
         self.assertIn("-", my_structure["last_online_at"]["display"])
 
 
