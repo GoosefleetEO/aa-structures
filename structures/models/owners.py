@@ -1135,6 +1135,9 @@ class Owner(models.Model):
         else:
             success = True
             error_code = None
+            self.assets_last_error = self.ERROR_NONE
+            self.assets_last_sync = now()
+            self.save()
 
         if user:
             self._send_report_to_user(
