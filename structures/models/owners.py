@@ -1118,7 +1118,7 @@ class Owner(models.Model):
 
             try:
                 structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
-                OwnerAsset.objects.update_or_create_for_structure_ids_esi(
+                OwnerAsset.objects.update_or_create_for_structures_esi(
                     structure_ids, self.corporation.corporation_id, token
                 )
             except Exception as ex:
@@ -1145,14 +1145,6 @@ class Owner(models.Model):
 class OwnerAsset(models.Model):
     """An asset for a corporation"""
 
-    def __str__(self) -> str:
-        return str(self.eve_type.name)
-
-    def __repr__(self):
-        return "{}(pk={}, eve_type='{}')".format(
-            self.__class__.__name__, self.pk, self.eve_type
-        )
-
     id = models.BigIntegerField(primary_key=True, help_text="The Item ID of the assets")
     eve_type = models.ForeignKey(
         "EveType",
@@ -1173,3 +1165,11 @@ class OwnerAsset(models.Model):
     last_updated_at = models.DateTimeField(auto_now=True)
 
     objects = OwnerAssetManager()
+
+    def __str__(self) -> str:
+        return str(self.eve_type.name)
+
+    def __repr__(self):
+        return "{}(pk={}, owner=<{}>, eve_type=<{}>)".format(
+            self.__class__.__name__, self.pk, self.owner, self.eve_type
+        )

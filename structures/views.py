@@ -442,9 +442,13 @@ class StructuresRowBuilder:
                 .count()
             )
             if quantum_core:
-                self._row["core_status"] = "Present"
+                self._row[
+                    "core_status"
+                ] = '<i class="fas fa-check" title="Core present"></i>'
             else:
-                self._row["core_status"] = "Absent"
+                self._row[
+                    "core_status"
+                ] = '<i class="fas fa-times text-danger title="Core absent"></i>'
         else:
             self._row["core_status"] = "-"
 

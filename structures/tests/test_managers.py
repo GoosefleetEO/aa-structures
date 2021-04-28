@@ -6,7 +6,7 @@ from bravado.exception import HTTPError
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from app_utils.testing import NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase, queryset_pks
 
 from ..models import (
     EveCategory,
@@ -1033,18 +1033,36 @@ class TestOwnerAssetManager(NoSocketsTestCase):
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_can_create_or_update_asset_from_esi(self, mock_esi_client):
+        # given
         mock_esi_client.side_effect = esi_mock_client
         mock_token = Mock()
         create_structures()
-
         owner = Owner.objects.get(corporation__corporation_id=2001)
         structure_ids = {x.id for x in Structure.objects.filter(owner=owner)}
+        # when
         try:
-            OwnerAsset.objects.update_or_create_for_structure_ids_esi(
+            OwnerAsset.objects.update_or_create_for_structures_esi(
                 structure_ids, owner.corporation.corporation_id, mock_token
             )
+        # then
         except Exception:
             self.fail("Test failed due to exception")
 
         assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
-        self.assertTrue(len(assets) == 2)
+        self.assertSetEqual(queryset_pks(assets), {1300000001001, 1300000001002})
+        obj = assets.get(pk=1300000001001)
+        self.assertEqual(obj.owner, owner)
+        self.assertEqual(obj.eve_type_id, 56201)
+        self.assertEqual(obj.location_id, 1000000000001)
+        self.assertEqual(obj.location_flag, "QuantumCoreRoom")
+        self.assertEqual(obj.location_type, "item")
+        self.assertEqual(obj.quantity, 1)
+        self.assertFalse(obj.is_singleton)
+        obj = assets.get(pk=1300000001002)
+        self.assertEqual(obj.owner, owner)
+        self.assertEqual(obj.eve_type_id, 35894)
+        self.assertEqual(obj.location_id, 1000000000001)
+        self.assertEqual(obj.location_flag, "ServiceSlot0")
+        self.assertEqual(obj.location_type, "item")
+        self.assertEqual(obj.quantity, 1)
+        self.assertTrue(obj.is_singleton)

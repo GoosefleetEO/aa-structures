@@ -461,10 +461,10 @@ class NotificationManager(models.Manager):
 
 
 class OwnerAssetManager(models.Manager):
-    def update_or_create_for_structure_ids_esi(
+    def update_or_create_for_structures_esi(
         self, structure_ids: list, corporation_id: int, token: Token
     ) -> tuple:
-        """Fetch assets from esi for list of structures"""
+        """Fetch assets from esi for list of structures."""
         from .models import EveType, Owner, Structure
 
         add_prefix = make_logger_prefix(

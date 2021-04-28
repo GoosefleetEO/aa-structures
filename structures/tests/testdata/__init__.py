@@ -22,8 +22,6 @@ from allianceauth.eveonline.models import (
     EveCorporationInfo,
 )
 
-from structures.models.owners import OwnerAsset
-
 from ...models import (
     EveCategory,
     EveConstellation,
