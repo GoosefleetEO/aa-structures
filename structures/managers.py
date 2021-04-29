@@ -520,6 +520,6 @@ class OwnerAssetManager(models.Manager):
                 and asset["location_flag"] == "QuantumCoreRoom"
             ]
             structure = Structure.objects.get(id=structure_id)
-            structure.has_fit = bool(has_fitting)
+            structure.has_fitting = bool(has_fitting)
             structure.has_core = bool(has_core)
             structure.save()

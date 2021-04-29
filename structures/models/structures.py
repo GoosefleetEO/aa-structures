@@ -322,13 +322,18 @@ class Structure(models.Model):
         default=now,
         help_text="date this structure was received from ESI for the first time",
     )
-    has_fit = models.BooleanField(
-        default=False, help_text="bool indicating if the structure has a fit"
+    has_fitting = models.BooleanField(
+        null=True,
+        default=None,
+        blank=True,
+        db_index=True,
+        help_text="bool indicating if the structure has a fitting",
     )
     has_core = models.BooleanField(
         null=True,
         default=None,
         blank=True,
+        db_index=True,
         help_text="bool indicating if the structure has a quantum core",
     )
 

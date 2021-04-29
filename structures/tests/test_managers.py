@@ -1071,9 +1071,9 @@ class TestOwnerAssetManager(NoSocketsTestCase):
         self.assertTrue(obj.is_singleton)
 
         structure = owner.structures.get(id=1000000000001)
-        self.assertTrue(structure.has_fit)
+        self.assertTrue(structure.has_fitting)
         self.assertTrue(structure.has_core)
 
         structure = owner.structures.get(id=1000000000002)
-        self.assertTrue(structure.has_fit)
+        self.assertTrue(structure.has_fitting)
         self.assertFalse(structure.has_core)
