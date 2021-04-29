@@ -46,5 +46,6 @@ setup(
         "django-navhelper",
         "django-multiselectfield",
         "redis-simple-mq>=0.3.1",
+        "django-eveuniverse>=0.7.5",
     ],
 )

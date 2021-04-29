@@ -7,11 +7,11 @@ Global styles shared by all Kalkoken apps - Version 0.2.0
     /* Bootstrap Tabs */
     .template-light-mode .nav-tabs > li.active > a{
         background-color: rgb(236, 240, 241) !important;
-        color: black !important;
+        color: rgb(0, 0, 0) !important;
     }
     .template-dark-mode .nav-tabs > li.active > a{
         background-color: rgb(70, 69, 69) !important;
-        color: white !important;
+        color: rgb(255, 255, 255) !important;
     }
     .panel-tabs {
         border-top: none;

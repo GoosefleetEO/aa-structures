@@ -1,15 +1,18 @@
 import re
 import urllib
+from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext, gettext_lazy
 from esi.decorators import token_required
+from eveuniverse.models import EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.evelinks import dotlan
@@ -39,6 +42,7 @@ from .forms import TagsFilterForm
 from .models import (
     EveCategory,
     Owner,
+    OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
@@ -123,6 +127,8 @@ class StructuresRowBuilder:
         self._build_fuel_infos()
         self._build_online_infos()
         self._build_state()
+        self._build_core_status()
+        self._build_view_fit()
         return self._row
 
     def _build_owner(self):
@@ -175,11 +181,11 @@ class StructuresRowBuilder:
         # category
         my_group = structure_type.eve_group
         self._row["group_name"] = my_group.name_localized
-        if my_group.eve_category:
+        try:
             my_category = my_group.eve_category
             self._row["category_name"] = my_category.name_localized
             self._row["is_starbase"] = my_category.is_starbase
-        else:
+        except AttributeError:
             self._row["category_name"] = ""
             self._row["is_starbase"] = None
 
@@ -195,7 +201,7 @@ class StructuresRowBuilder:
         self._row["type_name"] = structure_type.name_localized
         self._row["type"] = format_html(
             "{}<br><em>{}</em>",
-            no_wrap_html(self._row["type_name"]),
+            no_wrap_html(link_html(structure_type.profile_url, self._row["type_name"])),
             no_wrap_html(self._row["group_name"]),
         )
 
@@ -205,7 +211,7 @@ class StructuresRowBuilder:
     def _build_name(self):
         self._row["structure_name"] = escape(self._structure.name)
         tags = []
-        if self._structure.tags:
+        if self._structure.tags.exists():
             tags += [x.html for x in self._structure.tags.all()]
             self._row["structure_name"] += format_html(
                 "<br>{}", mark_safe(" ".join(tags))
@@ -213,29 +219,33 @@ class StructuresRowBuilder:
 
     def _build_services(self):
         if self._row["is_poco"] or self._row["is_starbase"]:
-            self._row["services"] = gettext_lazy("N/A")
+            self._row["services"] = "-"
         else:
             services = list()
-            services_qs = self._structure.structureservice_set.all().order_by("name")
-            for service in services_qs:
-                service_name = no_wrap_html(
+            for service in self._structure.services.all():
+                service_name_html = no_wrap_html(
                     format_html("<small>{}</small>", service.name_localized)
                 )
                 if service.state == StructureService.STATE_OFFLINE:
-                    service_name = format_html("<del>{}</del>", service_name)
+                    service_name_html = format_html("<del>{}</del>", service_name_html)
 
-                services.append(service_name)
-            services_str = "<br>".join(services) if services else "-"
-            self._row["services"] = services_str
+                services.append({"name": service.name, "html": service_name_html})
+            self._row["services"] = (
+                "<br>".join(
+                    map(lambda x: x["html"], sorted(services, key=lambda x: x["name"]))
+                )
+                if services
+                else "-"
+            )
 
     def _build_reinforcement_infos(self):
         self._row["is_reinforced"] = self._structure.is_reinforced
         self._row["is_reinforced_str"] = yesno_str(self._structure.is_reinforced)
 
         if self._row["is_starbase"]:
-            self._row["reinforcement"] = gettext_lazy("N/A")
+            self._row["reinforcement"] = "-"
         else:
-            if self._structure.reinforce_hour:
+            if self._structure.reinforce_hour is not None:
                 self._row["reinforcement"] = "{:02d}:00".format(
                     self._structure.reinforce_hour
                 )
@@ -244,7 +254,7 @@ class StructuresRowBuilder:
 
     def _build_fuel_infos(self):
         if self._structure.eve_type.is_poco:
-            fuel_expires_display = "N/A"
+            fuel_expires_display = "-"
             fuel_expires_timestamp = None
         elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
@@ -283,7 +293,7 @@ class StructuresRowBuilder:
                     fuel_expires_display = "?"
                     fuel_expires_timestamp = None
         else:
-            fuel_expires_display = gettext_lazy("N/A")
+            fuel_expires_display = "-"
             fuel_expires_timestamp = None
 
         self._row["fuel_expires_at"] = {
@@ -294,7 +304,7 @@ class StructuresRowBuilder:
     def _build_online_infos(self):
         self._row["power_mode_str"] = self._structure.get_power_mode_display()
         if self._structure.eve_type.is_poco:
-            last_online_at_display = "N/A"
+            last_online_at_display = "-"
             last_online_at_timestamp = None
         elif self._structure.is_full_power:
             last_online_at_display = format_html_lazy(
@@ -343,14 +353,17 @@ class StructuresRowBuilder:
         def cap_first(s: str) -> str:
             return s[0].upper() + s[1::]
 
-        self._row["state_str"] = cap_first(self._structure.get_state_display())
+        self._row["state_str"] = (
+            cap_first(self._structure.get_state_display())
+            if not self._structure.eve_type.is_poco
+            else "-"
+        )
         self._row["state_details"] = self._row["state_str"]
         if self._structure.state_timer_end:
             self._row["state_details"] += format_html(
                 "<br>{}",
                 no_wrap_html(self._structure.state_timer_end.strftime(DATETIME_FORMAT)),
             )
-
         if (
             self._request.user.has_perm("structures.view_all_unanchoring_status")
             and self._structure.unanchors_at
@@ -360,11 +373,44 @@ class StructuresRowBuilder:
                 no_wrap_html(self._structure.unanchors_at.strftime(DATETIME_FORMAT)),
             )
 
+    def _build_core_status(self):
+        """Only enable view core for structure types"""
+        if self._structure.eve_type.is_upwell_structure:
+            if self._structure.has_core:
+                self._row[
+                    "core_status"
+                ] = '<i class="fas fa-check" title="Core present"></i>'
+            else:
+                self._row[
+                    "core_status"
+                ] = '<i class="fas fa-times text-danger title="Core absent"></i>'
+        else:
+            self._row["core_status"] = "-"
+
+    def _build_view_fit(self):
+        """Only enable view fit for structure types"""
+        if self._structure.has_fitting and self._request.user.has_perm(
+            "structures.view_structure_fit"
+        ):
+            ajax_structure_fit = reverse(
+                "structures:structure_fit",
+                args=[self._row["structure_id"]],
+            )
+            self._row["view_fit"] = format_html(
+                '<button type="button" class="btn btn-default" '
+                'data-toggle="modal" data-target="#modalStructureFit" '
+                f"data-ajax_structure_fit={ajax_structure_fit} "
+                f'title="{gettext("Show fitting")}">'
+                '<i class="fas fa-search"></i></button>'
+            )
+        else:
+            self._row["view_fit"] = ""
+
 
 @login_required
 @permission_required("structures.basic_access")
 def structure_list_data(request):
-    """Returns structure list in JSON for AJAX call in main view."""
+    """returns structure list in JSON for AJAX call in structure_list view"""
     structure_rows = list()
     row_converter = StructuresRowBuilder(request)
     for structure in _structures_query_for_user(request):
@@ -417,7 +463,105 @@ def _structures_query_for_user(request):
             owner__corporation__in=corporations
         )
 
+    structures_query = structures_query.prefetch_related("tags", "services")
     return structures_query
+
+
+@login_required
+@permission_required("structures.view_structure_fit")
+def structure_fit(request, structure_id):
+    """Main view of the structure fit"""
+
+    class Slot(IntEnum):
+        HIGH = 14
+        MEDIUM = 13
+        LOW = 12
+        RIG = 1137
+        SERVICE = 2056
+
+        def image_url(self) -> str:
+            """Return url to image file for this slot variant"""
+            id_map = {
+                self.HIGH: "h",
+                self.MEDIUM: "m",
+                self.LOW: "l",
+                self.RIG: "r",
+                self.SERVICE: "s",
+            }
+            try:
+                slot_num = type_attributes[self.value]
+                return staticfiles_storage.url(
+                    f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
+                )
+            except KeyError:
+                return ""
+
+    def extract_slot_assets(fittings: list, slot_name: str) -> list:
+        """Return assets for slot sorted by slot number"""
+        return [
+            asset[0]
+            for asset in sorted(
+                [
+                    (asset, asset.location_flag[-1])
+                    for asset in fittings
+                    if asset.location_flag.startswith(slot_name)
+                ],
+                key=lambda x: x[1],
+            )
+        ]
+
+    structure = Structure.objects.select_related(
+        "owner", "eve_type", "eve_solar_system"
+    ).get(id=structure_id)
+    type_attributes = {
+        obj["eve_dogma_attribute_id"]: int(obj["value"])
+        for obj in EveTypeDogmaAttribute.objects.filter(
+            eve_type_id=structure.eve_type_id
+        ).values("eve_dogma_attribute_id", "value")
+    }
+    slot_image_urls = {
+        "high": Slot.HIGH.image_url(),
+        "med": Slot.MEDIUM.image_url(),
+        "low": Slot.LOW.image_url(),
+        "rig": Slot.RIG.image_url(),
+        "service": Slot.SERVICE.image_url(),
+    }
+    fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
+    fittings = OwnerAsset.objects.select_related("eve_type").filter(
+        location_id=structure_id
+    )
+    high_slots = extract_slot_assets(fittings, "HiSlot")
+    med_slots = extract_slot_assets(fittings, "MedSlot")
+    low_slots = extract_slot_assets(fittings, "LoSlot")
+    rig_slots = extract_slot_assets(fittings, "RigSlot")
+    service_slots = extract_slot_assets(fittings, "ServiceSlot")
+    fighter_tubes = extract_slot_assets(fittings, "FighterTube")
+    for fi in fittings:
+        if fi.location_flag == "Cargo":
+            fit_ob["Cargo"].append(fi)
+        elif fi.location_flag == "FighterBay":
+            fit_ob["FighterBay"].append(fi)
+        elif fi.location_flag == "StructureFuel":
+            fit_ob["StructureFuel"].append(fi)
+        else:
+            fit_ob[fi.location_flag] = fi
+
+    context = {
+        "page_title": gettext_lazy(__title__),
+        "slots": slot_image_urls,
+        "fitting": fit_ob,
+        "assets": {
+            "high_slots": high_slots,
+            "med_slots": med_slots,
+            "low_slots": low_slots,
+            "rig_slots": rig_slots,
+            "service_slots": service_slots,
+            "fighter_tubes": fighter_tubes,
+        },
+        "structure": structure,
+        "last_updated": structure.owner.assets_last_sync,
+    }
+    return render(request, "structures/modals/structure_fit.html", context)
 
 
 @login_required

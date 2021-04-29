@@ -86,7 +86,7 @@ class NotificationBaseEmbed:
         footer_text = "Eve Online"
         if STRUCTURES_DEVELOPER_MODE:
             footer_text = f"{footer_text} ID {self.notification.notification_id}"
-        footer_icon_url = static_file_absolute_url("structures/eve_symbol_128.png")
+        footer_icon_url = static_file_absolute_url("structures/img/eve_symbol_128.png")
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,
@@ -325,8 +325,8 @@ class NotificationStructureServicesOffline(NotificationStructureEmbed):
         super().__init__(notification)
         self._title = gettext("Structure services off-line")
         self._description += gettext("has all services off-lined.")
-        if self._structure and self._structure.structureservice_set.count() > 0:
-            qs = self._structure.structureservice_set.all().order_by("name")
+        if self._structure and self._structure.services.count() > 0:
+            qs = self._structure.services.all().order_by("name")
             services_list = "\n".join([x.name for x in qs])
             self._description += "\n*{}*".format(services_list)
         self._color = self.COLOR_DANGER

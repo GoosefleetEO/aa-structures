@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load bootstrap %}
+{% load static %}
 
 <!-- structure list -->
 <div role="tabpanel" class="tab-pane" id="structures">
@@ -9,16 +10,16 @@
             {% if tags_exist %}
                 {% if active_tags %}
                     <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalTagsFilter">
-                    {% trans "Tags Filter (Active)" %}
+                    {% translate "Tags Filter (Active)" %}
                     </button>
                 {% else %}
                     <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter">
-                        {% trans "Tags Filter" %}
+                        {% translate "Tags Filter" %}
                     </button>
                 {% endif %}
             {% else %}
                 <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modalTagsFilter" disabled="disabled">
-                    {% trans "Tags Filter" %}
+                    {% translate "Tags Filter" %}
                 </button>
             {% endif %}
         </span>
@@ -32,7 +33,7 @@
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
-                            <h4 class="modal-title">{% trans "Tags Filter" %}</h4>
+                            <h4 class="modal-title">{% translate "Tags Filter" %}</h4>
                         </div>
                         <div class="modal-body">
                             {% csrf_token %}
@@ -40,16 +41,16 @@
                         </div>
                         <div class="modal-footer">
                             <a class="btn btn-default pull-left" href="{% url 'structures:index' %}" role="button">
-                                {% trans "Reset Filter" %}
+                                {% translate "Reset Filter" %}
                             </a>
                             <a class="btn btn-default pull-left" href="{% url 'structures:main' %}" role="button">
-                                {% trans "Clear Filter" %}
+                                {% translate "Clear Filter" %}
                             </a>
                             <button type="button" class="btn btn-default" data-dismiss="modal">
-                                {% trans "Cancel" %}
+                                {% translate "Cancel" %}
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                {% trans "Apply Filter" %}
+                                {% translate "Apply Filter" %}
                             </button>
                         </div>
                     </div>
@@ -61,36 +62,51 @@
             <thead>
                 <tr>
                     <th></th>
-                    <th>{% trans "Owner" %}</th>
-                    <th>{% trans "Location" %}</th>
+                    <th>{% translate "Owner" %}</th>
+                    <th>{% translate "Location" %}</th>
                     <th></th>
-                    <th>{% trans "Type" %}</th>
-                    <th>{% trans "Name & Tags" %}</th>
-                    <th>{% trans "Services" %}</th>
-                    <th>{% trans "Fuel Expires" %}</th>
-                    <th>{% trans "Last Online" %}</th>
-                    <th>{% trans "R-Hour" %}</th>
-                    <th>{% trans "State" %}</th>
+                    <th>{% translate "Type" %}</th>
+                    <th>{% translate "Name & Tags" %}</th>
+                    <th>{% translate "Services" %}</th>
+                    <th>{% translate "Fuel Expires" %}</th>
+                    <th>{% translate "Last Online" %}</th>
+                    <th>{% translate "R-Hour" %}</th>
+                    <th>{% translate "State" %}</th>
+                    <th>{% translate "Core" %}</th>
+                    <th></th>
                 </tr>
             </thead>
         </table>
 
         <p>
             {% if active_tags %}
-                {% trans "Active Tags Filter" %}:&nbsp;
+                {% translate "Active Tags Filter" %}:&nbsp;
                 {% for tag in active_tags %}
                     {{ tag.html }}&#32;
                 {% endfor %}
             {% endif %}
         </p>
 
-            <!-- Table Legend -->
+        <!-- Table Legend -->
         <p class="text-muted">
-            {% trans "All dates are EVE time" %}
-            • {% trans "Offlined services are shown as" %} <del>{% trans "service" %}</del>
-            • {% trans "Reinforced structures (except POCOs) are highlighted in red" %}
-            • {% trans "Data can be outdated by up to 1 hour due to API caching." %}
+            {% translate "All dates are EVE time" %}
+            • {% translate "Offlined services are shown as" %} <del>{% translate "service" %}</del>
+            • {% translate "Reinforced structures (except POCOs) are highlighted in red" %}
+            • {% translate "Data can be outdated by up to 1 hour due to API caching." %}
         </p>
 
+    </div>
+</div>
+
+<div class="modal" id="modalStructureFit" tabindex="-1" role="dialog" aria-labelledby="{% translate 'FittingModalLabel '%}">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" id="modalStructureFitContent">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Loading...</h4>
+            </div>
+            <div class="modal-body">
+            </div>
+        </div>
     </div>
 </div>

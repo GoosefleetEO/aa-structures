@@ -19,5 +19,5 @@ from .notifications import (
     Webhook,
     get_default_notification_types,
 )
-from .owners import Owner
+from .owners import Owner, OwnerAsset
 from .structures import Structure, StructureService, StructureTag

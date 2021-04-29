@@ -306,7 +306,12 @@ class EveGroup(EveUniverse):
     EVE_GROUP_ID_REFINERY = 1406
 
     eve_category = models.ForeignKey(
-        EveCategory, on_delete=models.SET_DEFAULT, null=True, default=None, blank=True
+        EveCategory,
+        on_delete=models.SET_DEFAULT,
+        null=True,
+        default=None,
+        blank=True,
+        related_name="eve_groups",
     )
 
     class EveUniverseMeta:
@@ -329,8 +334,11 @@ class EveType(EveUniverse):
     STARBASE_LARGE = 3
 
     EVE_IMAGESERVER_BASE_URL = "https://images.evetech.net"
+    URL_PROFILE_TYPE = "https://www.kalkoken.org/apps/eveitems/"
 
-    eve_group = models.ForeignKey(EveGroup, on_delete=models.CASCADE)
+    eve_group = models.ForeignKey(
+        EveGroup, on_delete=models.CASCADE, related_name="eve_types"
+    )
 
     class EveUniverseMeta:
         esi_pk = "type_id"
@@ -346,9 +354,11 @@ class EveType(EveUniverse):
 
     @property
     def is_upwell_structure(self):
-        if self.eve_group.eve_category:
-            return self.eve_group.eve_category.is_upwell_structure
-        else:
+        try:
+            return (
+                self.eve_group.eve_category_id == EveCategory.EVE_CATEGORY_ID_STRUCTURE
+            )
+        except AttributeError:
             logger.warning(
                 'Group "%s" does not have a category. This is a data error. '
                 "Please update your local SDE data",
@@ -387,6 +397,10 @@ class EveType(EveUniverse):
         else:
             return None
 
+    @property
+    def profile_url(self) -> str:
+        return f"{self.URL_PROFILE_TYPE}?typeId={self.id}"
+
     @classmethod
     def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
         if size < 32 or size > 1024 or (size % 2 != 0):
@@ -414,7 +428,9 @@ class EveRegion(EveUniverse):
 class EveConstellation(EveUniverse):
     """constellation in Eve Online"""
 
-    eve_region = models.ForeignKey(EveRegion, on_delete=models.CASCADE)
+    eve_region = models.ForeignKey(
+        EveRegion, on_delete=models.CASCADE, related_name="eve_constellations"
+    )
 
     class EveUniverseMeta:
         esi_pk = "constellation_id"
@@ -430,7 +446,9 @@ class EveSolarSystem(EveUniverse):
     TYPE_W_SPACE = "w-space"
     TYPE_UNKNOWN = "unknown"
 
-    eve_constellation = models.ForeignKey(EveConstellation, on_delete=models.CASCADE)
+    eve_constellation = models.ForeignKey(
+        EveConstellation, on_delete=models.CASCADE, related_name="eve_solar_systems"
+    )
     security_status = models.FloatField()
 
     class EveUniverseMeta:
@@ -511,7 +529,9 @@ class EvePlanet(EveUniverse):
     position_z = models.FloatField(
         null=True, default=None, blank=True, help_text="z position in the solar system"
     )
-    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem, on_delete=models.CASCADE, related_name="eve_planets"
+    )
     eve_type = models.ForeignKey(EveType, on_delete=models.CASCADE)
 
     def _name_localized_generated(self, language: str) -> str:
@@ -547,7 +567,9 @@ class EveMoon(EveUniverse):
     position_z = models.FloatField(
         null=True, default=None, blank=True, help_text="z position in the solar system"
     )
-    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem, on_delete=models.CASCADE, related_name="eve_moons"
+    )
 
     def _name_localized_generated(self, language: str):
         """returns a generated localized moon name for the given language"""

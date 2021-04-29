@@ -1,0 +1,9 @@
+{% load evelinks %}
+
+<li class="list-group-item">
+    <img src="{{ asset.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ asset.eve_type.name }}">&nbsp;
+    <a href="{{ asset.eve_type.profile_url }}" target="_blank">{{ asset.eve_type.name }}</a>
+    {% if asset.is_singleton is False %}
+        &nbsp;x{{asset.quantity}}
+    {% endif %}
+</li>

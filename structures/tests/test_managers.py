@@ -6,7 +6,7 @@ from bravado.exception import HTTPError
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from app_utils.testing import NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase, queryset_pks
 
 from ..models import (
     EveCategory,
@@ -20,12 +20,14 @@ from ..models import (
     EveSovereigntyMap,
     EveType,
     Owner,
+    OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
 )
 from . import to_json
 from .testdata import create_structures, esi_mock_client, load_entities, load_entity
+from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.managers"
 MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"
@@ -568,6 +570,11 @@ class TestEveEntityManager(NoSocketsTestCase):
 
 
 class TestStructureManager(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+
     def test_can_get_stored_object(self):
         mock_client = Mock(side_effect=RuntimeError)
         create_structures()
@@ -644,6 +651,11 @@ class TestStructureManager(NoSocketsTestCase):
 
 
 class TestStructureManagerCreateFromDict(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+
     def test_can_create_full(self):
         load_entities(
             [
@@ -727,7 +739,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
                     "state": x.state,
                 }
             )
-            for x in structure.structureservice_set.all()
+            for x in structure.services.all()
         }
         expected = {
             to_json(
@@ -1002,3 +1014,66 @@ class TestStructureTagManager(NoSocketsTestCase):
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
     """
+
+
+class TestOwnerAssetManager(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities(
+            [
+                EveCategory,
+                EveGroup,
+                EveType,
+                EveRegion,
+                EveConstellation,
+                EveSolarSystem,
+            ]
+        )
+
+    @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
+    def test_can_create_or_update_asset_from_esi_1(self, mock_esi_client):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        mock_token = Mock()
+        create_structures()
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure_ids = set(owner.structures.values_list("id", flat=True))
+        # when
+        try:
+            OwnerAsset.objects.update_or_create_for_structures_esi(
+                structure_ids, owner.corporation.corporation_id, mock_token
+            )
+        # then
+        except Exception:
+            self.fail("Test failed due to exception")
+
+        assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
+        self.assertSetEqual(
+            queryset_pks(assets), {1300000001001, 1300000001002, 1300000002001}
+        )
+        obj = assets.get(pk=1300000001001)
+        self.assertEqual(obj.owner, owner)
+        self.assertEqual(obj.eve_type_id, 56201)
+        self.assertEqual(obj.location_id, 1000000000001)
+        self.assertEqual(obj.location_flag, "QuantumCoreRoom")
+        self.assertEqual(obj.location_type, "item")
+        self.assertEqual(obj.quantity, 1)
+        self.assertFalse(obj.is_singleton)
+
+        obj = assets.get(pk=1300000001002)
+        self.assertEqual(obj.owner, owner)
+        self.assertEqual(obj.eve_type_id, 35894)
+        self.assertEqual(obj.location_id, 1000000000001)
+        self.assertEqual(obj.location_flag, "ServiceSlot0")
+        self.assertEqual(obj.location_type, "item")
+        self.assertEqual(obj.quantity, 1)
+        self.assertTrue(obj.is_singleton)
+
+        structure = owner.structures.get(id=1000000000001)
+        self.assertTrue(structure.has_fitting)
+        self.assertTrue(structure.has_core)
+
+        structure = owner.structures.get(id=1000000000002)
+        self.assertTrue(structure.has_fitting)
+        self.assertFalse(structure.has_core)

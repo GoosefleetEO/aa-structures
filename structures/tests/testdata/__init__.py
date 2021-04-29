@@ -473,18 +473,49 @@ def esi_mock_client(version=1.6):
     mock_client = Mock()
 
     # Assets
+    mock_client.Assets.get_corporations_corporation_id_assets.side_effect = (
+        esi_return_data(
+            [
+                {
+                    "is_singleton": False,
+                    "item_id": 1300000001001,
+                    "location_flag": "QuantumCoreRoom",
+                    "location_id": 1000000000001,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 56201,
+                },
+                {
+                    "is_singleton": True,
+                    "item_id": 1300000001002,
+                    "location_flag": "ServiceSlot0",
+                    "location_id": 1000000000001,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 35894,
+                },
+                {
+                    "is_singleton": True,
+                    "item_id": 1300000002001,
+                    "location_flag": "ServiceSlot0",
+                    "location_id": 1000000000002,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 35894,
+                },
+            ]
+        )
+    )
     mock_client.Assets.post_corporations_corporation_id_assets_locations = (
         esi_post_corporations_corporation_id_assets_locations
     )
     mock_client.Assets.post_corporations_corporation_id_assets_names = (
         esi_post_corporations_corporation_id_assets_names
     )
-
     # Character
     mock_client.Character.get_characters_character_id_notifications.side_effect = (
         esi_get_characters_character_id_notifications
     )
-
     # Corporation
     if version == 1.6:
         mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
@@ -500,17 +531,14 @@ def esi_mock_client(version=1.6):
     mock_client.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
         esi_get_corporations_corporation_id_starbases_starbase_id
     )
-
     # Planetary Interaction
     mock_client.Planetary_Interaction.get_corporations_corporation_id_customs_offices = (
         esi_get_corporations_corporation_id_customs_offices
     )
-
     # Sovereignty
     mock_client.Sovereignty.get_sovereignty_map.side_effect = esi_return_data(
         esi_data["Sovereignty"]["get_sovereignty_map"]
     )
-
     # Universe
     mock_client.Universe.get_universe_categories_category_id.side_effect = (
         esi_get_universe_categories_category_id
@@ -565,19 +593,15 @@ def esi_mock_client(version=1.6):
     mock_client.Universe.get_universe_planets_planet_id.side_effect = (
         esi_get_universe_planets_planet_id
     )
-
     mock_client.Universe.get_universe_moons_moon_id.side_effect = (
         esi_get_universe_moons_moon_id
     )
-
     mock_client.Universe.post_universe_names.side_effect = esi_return_data(
         [{"id": 3011, "category": "alliance", "name": "Big Bad Alliance"}]
     )
-
     mock_client.Universe.get_universe_structures_structure_id.side_effect = (
         esi_get_universe_structures_structure_id
     )
-
     return mock_client
 
 

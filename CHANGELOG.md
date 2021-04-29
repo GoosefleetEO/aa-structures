@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## Changed
+With this release, django-eveuniverse is a new dependency. Once it is installed and migrations are complete please run the following command once:
+
+```bash
+python manage.py structures_load_structures
+```
+
+### Added
+
+- Ability to see current fitting and bay contents for all upwell structures
+- New permission for seeing structure fittings (see also Permissions in README)
+- Dependency to django-eveuniverse
 
 ## [1.9.4] - 2021-04-13
 

@@ -45,6 +45,7 @@ Structures adds the following main features to Alliance Auth:
   - Wars (*NEW!*)
   - Corporation membership changes (*NEW!*)
 - Automatically adds timers from relevant notifications to [Alliance Auth Structure Timers](https://allianceauth.readthedocs.io/en/v2.8.1/features/apps/timerboard.html) or [Structure Timers II](https://gitlab.com/ErikKalkoken/aa-structuretimers) app (if installed)
+- Structure fits (*NEW!*)
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status
@@ -64,7 +65,11 @@ This is an example for a notification posted on Discord:
 
 ## Installation
 
-**Important**: This app is a plugin for Alliance Auth. If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
+### Step 0 - Prerequisites
+
+1. Member Audit is a plugin for Alliance Auth. If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
+
+2. Member Audit needs the app [django-eveuniverse](https://gitlab.com/ErikKalkoken/django-eveuniverse) to function. Please make sure it is installed, before before installing the app.
 
 ### Step 1 - Install app
 
@@ -140,13 +145,24 @@ python manage.py collectstatic
 
 Restart your supervisor services for AA
 
-### Step 6 - Setup permissions
+### Step 6 - Preload Eve Universe data
+
+In order to see structure fits you need to preload some data from ESI once.
+If you already have run those commands previously you can skip this step.
+
+Load Eve Online structure types
+
+```bash
+python manage.py structures_load_structures
+```
+
+### Step 7 - Setup permissions
 
 Now you can setup permissions in Alliance Auth for your users.
 
 See section [Permissions](#permissions) below for details.
 
-### Step 7 - Setup notifications to Discord
+### Step 8 - Setup notifications to Discord
 
 The setup and configuration for Discord webhooks is done on the admin page under **Structures**.
 
@@ -154,7 +170,7 @@ To setup notifications you first need to add the Discord webhook that point to t
 
 Finally to verify that your webhook is correctly setup you can send a test notification. This is one of the available actions on Webhooks page.
 
-### Step 8 - Add structure owners
+### Step 9 - Add structure owners
 
 Next you need to add your first structure owner with the character that will be used for fetching structures. Just open the Structures app and click on "Add Structure Owner". Note that only users with the appropriate permission will be able to see and use this function and that the character needs to be a director.
 
@@ -332,6 +348,7 @@ Can view alliance structures | User can view all structures belonging to corpora
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
 Can add new structure owner | User can add a corporation with it's structures |  `general.add_structure_owner`
 Can view unanchoring timers for all structures the user can see | User can view unanchoring timers for all structures the user can see based on other permissions |  `general.view_all_unanchoring_status`
+Can view structure fittings | User can view structure fittings |  `general.view_structure_fittings`
 
 ## Service monitoring
 

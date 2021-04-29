@@ -205,6 +205,7 @@ class Structure(models.Model):
     owner = models.ForeignKey(
         "Owner",
         on_delete=models.CASCADE,
+        related_name="structures",
         help_text="Corporation that owns the structure",
     )
     eve_type = models.ForeignKey(
@@ -321,8 +322,30 @@ class Structure(models.Model):
         default=now,
         help_text="date this structure was received from ESI for the first time",
     )
+    has_fitting = models.BooleanField(
+        null=True,
+        default=None,
+        blank=True,
+        db_index=True,
+        help_text="bool indicating if the structure has a fitting",
+    )
+    has_core = models.BooleanField(
+        null=True,
+        default=None,
+        blank=True,
+        db_index=True,
+        help_text="bool indicating if the structure has a quantum core",
+    )
 
     objects = StructureManager()
+
+    def __str__(self):
+        return "{} - {}".format(self.eve_solar_system, self.name)
+
+    def __repr__(self):
+        return "{}(id={}, name='{}')".format(
+            self.__class__.__name__, self.id, self.name
+        )
 
     @property
     def is_full_power(self):
@@ -395,14 +418,6 @@ class Structure(models.Model):
         else:
             return self.MODE_LOW_ABANDONED
 
-    def get_power_mode_display(self):
-        power_mode = self.power_mode
-        for key, value in self.MODE_CHOICES:
-            if key == power_mode:
-                return value
-
-        return ""
-
     @property
     def is_reinforced(self):
         return self.state in [
@@ -416,33 +431,18 @@ class Structure(models.Model):
     def owner_has_sov(self):
         return self.eve_solar_system.corporation_has_sov(self.owner.corporation)
 
-    def __str__(self):
-        return "{} - {}".format(self.eve_solar_system, self.name)
-
-    def __repr__(self):
-        return "{}(id={}, name='{}')".format(
-            self.__class__.__name__, self.id, self.name
-        )
-
-    @classmethod
-    def get_matching_state_for_esi_state(cls, esi_state_name) -> int:
-        """returns matching state for esi state name of Upwell structures"""
-        return (
-            cls._STATES_ESI_MAP[esi_state_name]
-            if esi_state_name in cls._STATES_ESI_MAP
-            else cls.STATE_UNKNOWN
-        )
-
-    @classmethod
-    def extract_name_from_esi_respose(cls, esi_name):
-        """extracts the structure's name from the name in an ESI response"""
-        matches = re.search(r"^\S+ - (.+)", esi_name)
-        return matches.group(1) if matches else esi_name
-
     def save(self, *args, **kwargs):
         """make sure related objects are saved whenever structure is saved"""
         super().save(*args, **kwargs)
         self.update_generated_tags()
+
+    def get_power_mode_display(self):
+        power_mode = self.power_mode
+        for key, value in self.MODE_CHOICES:
+            if key == power_mode:
+                return value
+
+        return ""
 
     def update_generated_tags(self, recreate_tags=False):
         """updates all generated tags for this structure
@@ -469,6 +469,21 @@ class Structure(models.Model):
             sov_tag, _ = getattr(StructureTag.objects, method_name)()
             self.tags.add(sov_tag)
 
+    @classmethod
+    def get_matching_state_for_esi_state(cls, esi_state_name) -> int:
+        """returns matching state for esi state name of Upwell structures"""
+        return (
+            cls._STATES_ESI_MAP[esi_state_name]
+            if esi_state_name in cls._STATES_ESI_MAP
+            else cls.STATE_UNKNOWN
+        )
+
+    @classmethod
+    def extract_name_from_esi_respose(cls, esi_name):
+        """extracts the structure's name from the name in an ESI response"""
+        matches = re.search(r"^\S+ - (.+)", esi_name)
+        return matches.group(1) if matches else esi_name
+
 
 class StructureService(EsiNameLocalization, models.Model):
     """service of a structure"""
@@ -489,6 +504,7 @@ class StructureService(EsiNameLocalization, models.Model):
     structure = models.ForeignKey(
         Structure,
         on_delete=models.CASCADE,
+        related_name="services",
         help_text="Structure this service is installed to",
     )
     name = models.CharField(max_length=100, help_text="Name of the service")

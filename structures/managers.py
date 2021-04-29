@@ -193,6 +193,8 @@ class StructureManager(models.Manager):
             "eve_solar_system__eve_constellation__eve_region",
             "eve_planet",
             "eve_moon",
+            "eve_type__eve_group",
+            "eve_type__eve_group__eve_category",
         )
 
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:
@@ -264,6 +266,8 @@ class StructureManager(models.Manager):
 
     def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:
         """update or create structure from given dict"""
+        from eveuniverse.models import EveType as EveUniverseType
+
         from .models import (
             EveMoon,
             EvePlanet,
@@ -280,57 +284,44 @@ class StructureManager(models.Manager):
         fuel_expires_at = (
             structure["fuel_expires"] if "fuel_expires" in structure else None
         )
-
         next_reinforce_hour = (
             structure["next_reinforce_hour"]
             if "next_reinforce_hour" in structure
             else None
         )
-
         next_reinforce_apply = (
             structure["next_reinforce_apply"]
             if "next_reinforce_apply" in structure
             else None
         )
-
         reinforce_hour = (
             structure["reinforce_hour"] if "reinforce_hour" in structure else None
         )
-
         state = (
             self.model.get_matching_state_for_esi_state(structure["state"])
             if "state" in structure
             else self.model.STATE_UNKNOWN
         )
-
         state_timer_start = (
             structure["state_timer_start"] if "state_timer_start" in structure else None
         )
-
         state_timer_end = (
             structure["state_timer_end"] if "state_timer_end" in structure else None
         )
-
         unanchors_at = (
             structure["unanchors_at"] if "unanchors_at" in structure else None
         )
-
         position_x = structure["position"]["x"] if "position" in structure else None
-
         position_y = structure["position"]["y"] if "position" in structure else None
-
         position_z = structure["position"]["z"] if "position" in structure else None
-
         if "planet_id" in structure:
             eve_planet, _ = EvePlanet.objects.get_or_create_esi(structure["planet_id"])
         else:
             eve_planet = None
-
         if "moon_id" in structure:
             eve_moon, _ = EveMoon.objects.get_or_create_esi(structure["moon_id"])
         else:
             eve_moon = None
-
         obj, created = self.update_or_create(
             id=structure["structure_id"],
             defaults={
@@ -354,6 +345,10 @@ class StructureManager(models.Manager):
                 "last_updated_at": now(),
             },
         )
+        # Make sure we have dogmas loaded for this type for fittings
+        EveUniverseType.objects.get_or_create_esi(
+            id=structure["type_id"], enabled_sections=[EveUniverseType.Section.DOGMAS]
+        )
         # save related structure services
         StructureService.objects.filter(structure=obj).delete()
         if "services" in structure and structure["services"]:
@@ -370,9 +365,7 @@ class StructureManager(models.Manager):
 
                 StructureService.objects.create(**args)
 
-        if obj.structureservice_set.filter(
-            state=StructureService.STATE_ONLINE
-        ).exists():
+        if obj.services.filter(state=StructureService.STATE_ONLINE).exists():
             obj.last_online_at = now()
             obj.save()
 
@@ -463,3 +456,70 @@ class NotificationQuerySet(models.QuerySet):
 class NotificationManager(models.Manager):
     def get_queryset(self) -> models.QuerySet:
         return NotificationQuerySet(self.model, using=self._db)
+
+
+class OwnerAssetManager(models.Manager):
+    def update_or_create_for_structures_esi(
+        self, structure_ids: list, corporation_id: int, token: Token
+    ) -> tuple:
+        """Fetch assets from esi for list of structures."""
+        from .models import EveType, Owner, Structure
+
+        add_prefix = make_logger_prefix(
+            "%s(id=%d)" % (self.model.__name__, corporation_id)
+        )
+        assets = esi_fetch(
+            esi_path="Assets.get_corporations_corporation_id_assets",
+            args={"corporation_id": corporation_id},
+            token=token,
+            has_pages=True,
+            logger_tag=add_prefix(),
+        )
+        owner = Owner.objects.get(corporation__corporation_id=corporation_id)
+        assets_in_structures = [
+            asset
+            for asset in assets
+            if asset["location_id"] in structure_ids
+            and asset["location_flag"]
+            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
+        ]
+        objs_ids = []
+        for asset in assets_in_structures:
+            eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
+            obj, _ = self.update_or_create(
+                id=asset["item_id"],
+                defaults={
+                    "owner": owner,
+                    "eve_type": eve_type,
+                    "is_singleton": asset["is_singleton"],
+                    "location_flag": asset["location_flag"],
+                    "location_id": asset["location_id"],
+                    "location_type": asset["location_type"],
+                    "quantity": asset["quantity"],
+                    "last_updated_at": now(),
+                },
+            )
+            objs_ids.append(obj.id)
+
+        # Clean up assets not in structures anymore
+        objs_to_delete = self.filter(location_id__in=structure_ids).exclude(
+            id__in=objs_ids
+        )
+        objs_to_delete.delete()
+        for structure_id in structure_ids:
+            has_fitting = [
+                asset
+                for asset in assets_in_structures
+                if asset["location_id"] == structure_id
+                and asset["location_flag"] != "QuantumCoreRoom"
+            ]
+            has_core = [
+                asset
+                for asset in assets_in_structures
+                if asset["location_id"] == structure_id
+                and asset["location_flag"] == "QuantumCoreRoom"
+            ]
+            structure = Structure.objects.get(id=structure_id)
+            structure.has_fitting = bool(has_fitting)
+            structure.has_core = bool(has_core)
+            structure.save()

@@ -199,6 +199,12 @@ class TestEveType(NoSocketsTestCase):
             self.type_astrahus.icon_url(),
         )
 
+    def test_should_return_profile_url(self):
+        self.assertEqual(
+            self.type_astrahus.profile_url,
+            "https://www.kalkoken.org/apps/eveitems/?typeId=35832",
+        )
+
     def test_is_fuel_block(self):
         obj = EveType.objects.get(id=16213)
         self.assertFalse(obj.is_fuel_block)
