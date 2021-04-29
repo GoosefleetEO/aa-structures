@@ -458,7 +458,9 @@ class StructuresRowBuilder:
 
     def _build_view_fit(self):
         """Only enable view fit for structure types"""
-        if self._structure.has_fit:
+        if self._structure.has_fit and self._request.user.has_perm(
+            "structures.view_structure_fit"
+        ):
             ajax_structure_fit = reverse(
                 "structures:structure_fit",
                 args=[self._row["structure_id"]],
