@@ -1,6 +1,5 @@
 """Notification related models"""
 
-import logging
 from typing import Tuple
 
 import dhooks_lite
@@ -18,6 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from esi.models import Token
 
 from allianceauth.eveonline.evelinks import dotlan, eveimageserver
+from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import (
     DATETIME_FORMAT,
     ldap_time_2_datetime,
@@ -57,7 +57,7 @@ if "structuretimers" in app_labels():
 else:
     has_structure_timers = False
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 # Supported languages
 LANGUAGES = (

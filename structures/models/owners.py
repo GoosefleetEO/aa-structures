@@ -1,7 +1,6 @@
 """Owner related models"""
 
 import json
-import logging
 import math
 import os
 import re
@@ -21,6 +20,7 @@ from esi.models import Token
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
+from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag, make_logger_prefix
@@ -51,7 +51,7 @@ from .eveuniverse import (
 from .notifications import EveEntity, Notification, NotificationType
 from .structures import Structure
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 class General(models.Model):

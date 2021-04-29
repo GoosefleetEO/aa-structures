@@ -6,7 +6,6 @@
     - Automatic retrieval of variants for all requested languages
 """
 
-import logging
 from time import sleep
 
 from bravado.exception import HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable
@@ -15,12 +14,13 @@ from django.conf import settings
 from esi.clients import esi_client_factory
 from esi.models import Token
 
+from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from .. import __title__
 from ..app_settings import STRUCTURES_ESI_TIMEOUT_ENABLED
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 ESI_MAX_RETRIES = 3
 ESI_RETRY_SLEEP_SECS = 1
