@@ -739,7 +739,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
                     "state": x.state,
                 }
             )
-            for x in structure.structureservice_set.all()
+            for x in structure.services.all()
         }
         expected = {
             to_json(

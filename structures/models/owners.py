@@ -105,6 +105,7 @@ class Owner(models.Model):
         EveCorporationInfo,
         primary_key=True,
         on_delete=models.CASCADE,
+        related_name="structure_owner",
         help_text="Corporation owning structures",
     )
     character = models.ForeignKey(
@@ -113,6 +114,7 @@ class Owner(models.Model):
         default=None,
         null=True,
         blank=True,
+        related_name="+",
         help_text="character used for syncing structures",
     )
     structures_last_sync = models.DateTimeField(
@@ -331,7 +333,7 @@ class Owner(models.Model):
 
         if user:
             self._send_report_to_user(
-                "structures", self.structure_set.count(), success, error_code, user
+                "structures", self.structures.count(), success, error_code, user
             )
 
         return success
@@ -816,7 +818,7 @@ class Owner(models.Model):
         """
         # identify new notifications
         existing_notification_ids = set(
-            self.notification_set.values_list("notification_id", flat=True)
+            self.notifications.values_list("notification_id", flat=True)
         )
         new_notifications = [
             obj
@@ -1141,7 +1143,7 @@ class Owner(models.Model):
 
         if user:
             self._send_report_to_user(
-                "assets", self.structure_set.count(), success, error_code, user
+                "assets", self.structures.count(), success, error_code, user
             )
 
 
@@ -1158,11 +1160,12 @@ class OwnerAsset(models.Model):
     owner = models.ForeignKey(
         "Owner",
         on_delete=models.CASCADE,
+        related_name="assets",
         help_text="Corporation that owns the assets",
     )
     is_singleton = models.BooleanField(null=False)
     location_flag = models.CharField(max_length=255)
-    location_id = models.BigIntegerField(null=False)
+    location_id = models.BigIntegerField(null=False, db_index=True)
     location_type = models.CharField(max_length=255)
     quantity = models.IntegerField(null=False)
     last_updated_at = models.DateTimeField(auto_now=True)

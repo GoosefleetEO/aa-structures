@@ -290,7 +290,7 @@ class StructuresRowBuilder:
             self._row["services"] = "-"
         else:
             services = list()
-            services_qs = self._structure.structureservice_set.all().order_by("name")
+            services_qs = self._structure.services.all().order_by("name")
             for service in services_qs:
                 service_name = no_wrap_html(
                     format_html("<small>{}</small>", service.name_localized)

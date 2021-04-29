@@ -365,12 +365,12 @@ class OwnerAdmin(admin.ModelAdmin):
     _is_forwarding_sync_ok.short_description = "forwarding"
 
     def _notifications_count(self, obj: Owner) -> int:
-        return obj.notification_set.count()
+        return obj.notifications.count()
 
     _notifications_count.short_description = "notifications"
 
     def _structures_count(self, obj: Owner) -> int:
-        return obj.structure_set.count()
+        return obj.structures.count()
 
     _structures_count.short_description = "structures"
 
@@ -513,7 +513,7 @@ class OwnerCorporationsFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         qs = (
-            EveCorporationInfo.objects.filter(owner__isnull=False)
+            EveCorporationInfo.objects.filter(structure_owner__isnull=False)
             .values("corporation_id", "corporation_name")
             .distinct()
             .order_by(Lower("corporation_name"))
@@ -535,7 +535,9 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         qs = (
-            EveAllianceInfo.objects.filter(evecorporationinfo__owner__isnull=False)
+            EveAllianceInfo.objects.filter(
+                evecorporationinfo__structure_owner__isnull=False
+            )
             .values("alliance_id", "alliance_name")
             .distinct()
             .order_by(Lower("alliance_name"))

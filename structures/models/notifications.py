@@ -238,30 +238,6 @@ class NotificationType(models.TextChoices):
         ]
 
 
-# def choices_subset(*notification_types):
-#     return tuple([(item.value, item.label) for item in notification_types])
-
-
-# NOTIFICATION_CHOICES = (
-#     (
-#         _("Corporation Member"),
-#         choices_subset(
-#             NotificationType.CHAR_APP_ACCEPT_MSG, NotificationType.CHAR_LEFT_CORP_MSG
-#         ),
-#     ),
-#     (
-#         _("Moonmining"),
-#         choices_subset(
-#             NotificationType.MOONMINING_EXTRACTION_STARTED,
-#             NotificationType.MOONMINING_EXTRACTION_CANCELLED,
-#             NotificationType.MOONMINING_LASER_FIRED,
-#             NotificationType.MOONMINING_EXTRACTION_FINISHED,
-#             NotificationType.MOONMINING_AUTOMATIC_FRACTURE,
-#         ),
-#     ),
-# )
-
-
 def get_default_notification_types():
     """DEPRECATED: generates a set of all existing notification types as default-"""
     return tuple(sorted([str(x[0]) for x in NotificationType.values]))
@@ -388,6 +364,7 @@ class Notification(models.Model):
     owner = models.ForeignKey(
         "Owner",
         on_delete=models.CASCADE,
+        related_name="notifications",
         help_text="Corporation that received this notification",
     )
     sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)

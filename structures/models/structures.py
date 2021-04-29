@@ -205,6 +205,7 @@ class Structure(models.Model):
     owner = models.ForeignKey(
         "Owner",
         on_delete=models.CASCADE,
+        related_name="structures",
         help_text="Corporation that owns the structure",
     )
     eve_type = models.ForeignKey(
@@ -324,12 +325,12 @@ class Structure(models.Model):
     has_fit = models.BooleanField(
         default=False, help_text="bool indicating if the structure has a fit"
     )
-    # has_core = models.BooleanField(
-    #     null=True,
-    #     default=None,
-    #     blank=True,
-    #     help_text="bool indicating if the structure has a quantum core",
-    # )
+    has_core = models.BooleanField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text="bool indicating if the structure has a quantum core",
+    )
 
     objects = StructureManager()
 
@@ -498,6 +499,7 @@ class StructureService(EsiNameLocalization, models.Model):
     structure = models.ForeignKey(
         Structure,
         on_delete=models.CASCADE,
+        related_name="services",
         help_text="Structure this service is installed to",
     )
     name = models.CharField(max_length=100, help_text="Name of the service")

@@ -365,9 +365,7 @@ class StructureManager(models.Manager):
 
                 StructureService.objects.create(**args)
 
-        if obj.structureservice_set.filter(
-            state=StructureService.STATE_ONLINE
-        ).exists():
+        if obj.services.filter(state=StructureService.STATE_ONLINE).exists():
             obj.last_online_at = now()
             obj.save()
 

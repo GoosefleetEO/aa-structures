@@ -442,7 +442,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "state": x.state,
                 }
             )
-            for x in structure.structureservice_set.all()
+            for x in structure.services.all()
         }
         self.assertEqual(services, expected)
 
@@ -482,7 +482,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "state": x.state,
                 }
             )
-            for x in structure.structureservice_set.all()
+            for x in structure.services.all()
         }
         self.assertEqual(services, expected)
 
@@ -898,14 +898,14 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
         owner.character = self.main_ownership
-        self.assertGreater(owner.structure_set.count(), 0)
+        self.assertGreater(owner.structures.count(), 0)
 
         # run update task
         self.assertTrue(owner.update_structures_esi())
         owner.refresh_from_db()
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
         # must be empty
-        self.assertEqual(owner.structure_set.count(), 0)
+        self.assertEqual(owner.structures.count(), 0)
 
     @patch(MODULE_PATH + ".settings.DEBUG", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
