@@ -42,8 +42,7 @@ class TestStructureList(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
-        load_entities()
-        create_structures(dont_load_entities=True)
+        create_structures()
 
     def test_should_have_access_to_main_view(self):
         # given
@@ -62,8 +61,7 @@ class TestStructureListDataPermissions(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
-        load_entities()
-        create_structures(dont_load_entities=True)
+        create_structures()
 
     def _structure_list_data_view(self, user) -> dict:
         """helper method:  makes the request to the view
@@ -706,3 +704,40 @@ class TestPocoList(TestCase):
         self.assertEqual(obj["planet"], "Amamake V")
         self.assertEqual(obj["planet_type_name"], "Barren")
         self.assertEqual(obj["space_type"], "lowsec")
+
+
+class TestStructureFittingModal(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        create_structures()
+
+    def test_should_have_access_to_fitting(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_structure_fit", user
+        )
+        # when
+        request = self.factory.get(
+            reverse("structures:structure_fit", args=[1000000000001])
+        )
+        request.user = user
+        response = views.structure_fit(request, 1000000000001)
+        # then
+        self.assertEqual(response.status_code, 200)
+
+    def test_should_not_have_access_to_fitting(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        request = self.factory.get(
+            reverse("structures:structure_fit", args=[1000000000001])
+        )
+        request.user = user
+        response = views.structure_fit(request, 1000000000001)
+        # then
+        self.assertEqual(response.status_code, 302)

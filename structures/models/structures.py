@@ -324,6 +324,12 @@ class Structure(models.Model):
     has_fit = models.BooleanField(
         default=False, help_text="bool indicating if the structure has a fit"
     )
+    # has_core = models.BooleanField(
+    #     null=True,
+    #     default=None,
+    #     blank=True,
+    #     help_text="bool indicating if the structure has a quantum core",
+    # )
 
     objects = StructureManager()
 

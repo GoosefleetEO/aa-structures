@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext, gettext_lazy
 from esi.decorators import token_required
-from eveuniverse.models import EveType as EveUniverseType
+from eveuniverse.models import EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.evelinks import dotlan
@@ -119,7 +119,7 @@ def structure_fit(request, structure_id):
         RIG = 1137
         SERVICE = 2056
 
-        def image_url(self, slot_num: int):
+        def image_url(self) -> str:
             """Return url to image file for this slot variant"""
             id_map = {
                 self.HIGH: "h",
@@ -128,30 +128,34 @@ def structure_fit(request, structure_id):
                 self.RIG: "r",
                 self.SERVICE: "s",
             }
-            return staticfiles_storage.url(
-                f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
-            )
+            try:
+                slot_num = type_attributes[self.value]
+                return staticfiles_storage.url(
+                    f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
+                )
+            except KeyError:
+                return ""
 
-    def build_panel_url(structure_type: EveUniverseType, slot: Slot) -> str:
-        """Return url to image file for this slot and eve type"""
-        slot_num = int(
-            structure_type.dogma_attributes.get(eve_dogma_attribute_id=Slot(slot)).value
-        )
-        return slot.image_url(slot_num)
-
-    structure = Structure.objects.get(id=structure_id)
-    structure_type = EveUniverseType.objects.prefetch_related("dogma_attributes").get(
-        id=structure.eve_type_id
+    structure = Structure.objects.select_related("eve_type", "eve_solar_system").get(
+        id=structure_id
     )
+    type_attributes = {
+        obj["eve_dogma_attribute_id"]: int(obj["value"])
+        for obj in EveTypeDogmaAttribute.objects.filter(
+            eve_type_id=structure.eve_type_id
+        ).values("eve_dogma_attribute_id", "value")
+    }
     slot_image_urls = {
-        "high": build_panel_url(structure_type, Slot.HIGH),
-        "med": build_panel_url(structure_type, Slot.MEDIUM),
-        "low": build_panel_url(structure_type, Slot.LOW),
-        "rig": build_panel_url(structure_type, Slot.RIG),
-        "service": build_panel_url(structure_type, Slot.SERVICE),
+        "high": Slot.HIGH.image_url(),
+        "med": Slot.MEDIUM.image_url(),
+        "low": Slot.LOW.image_url(),
+        "rig": Slot.RIG.image_url(),
+        "service": Slot.SERVICE.image_url(),
     }
     fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
-    fittings = OwnerAsset.objects.filter(location_id=structure_id)
+    fittings = OwnerAsset.objects.select_related("eve_type").filter(
+        location_id=structure_id
+    )
     for fi in fittings:
         if fi.location_flag == "Cargo":
             fit_ob["Cargo"].append(fi)
