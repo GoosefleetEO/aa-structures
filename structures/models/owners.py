@@ -232,6 +232,18 @@ class Owner(models.Model):
         )
 
     @property
+    def is_asset_sync_ok(self) -> bool:
+        """returns true if they have been no errors
+        and last syncing occurred within alloted time
+        """
+        return (
+            self.assets_last_error == self.ERROR_NONE
+            and self.assets_last_sync
+            and self.assets_last_sync
+            > (now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES))
+        )
+
+    @property
     def are_all_syncs_ok(self) -> bool:
         """returns true if they have been no errors
         and last syncing occurred within alloted time for all sync categories

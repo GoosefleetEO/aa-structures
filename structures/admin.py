@@ -276,6 +276,7 @@ class OwnerAdmin(admin.ModelAdmin):
         "_is_structure_sync_ok",
         "_is_notification_sync_ok",
         "_is_forwarding_sync_ok",
+        "_is_asset_sync_ok",
         "_structures_count",
         "_notifications_count",
     )
@@ -364,6 +365,15 @@ class OwnerAdmin(admin.ModelAdmin):
     _is_forwarding_sync_ok.boolean = True
     _is_forwarding_sync_ok.short_description = "forwarding"
 
+    def _is_asset_sync_ok(self, obj):
+        if not obj.is_active:
+            return None
+        else:
+            return obj.is_asset_sync_ok
+
+    _is_asset_sync_ok.boolean = True
+    _is_asset_sync_ok.short_description = "assets sync"
+
     def _notifications_count(self, obj: Owner) -> int:
         return obj.notifications.count()
 
@@ -425,6 +435,8 @@ class OwnerAdmin(admin.ModelAdmin):
                 "structures_last_sync",
                 "forwarding_last_sync",
                 "forwarding_last_error",
+                "assets_last_sync",
+                "assets_last_error",
             )
         return self.readonly_fields
 
@@ -461,6 +473,10 @@ class OwnerAdmin(admin.ModelAdmin):
                     (
                         "forwarding_last_sync",
                         "forwarding_last_error",
+                    ),
+                    (
+                        "assets_last_sync",
+                        "assets_last_error",
                     ),
                 ),
             },
@@ -667,8 +683,7 @@ class StructureAdmin(admin.ModelAdmin):
             [
                 x.name
                 for x in Structure._meta.get_fields()
-                if isinstance(x, models.fields.Field)
-                and x.name not in ["tags", "last_online_at"]
+                if isinstance(x, models.fields.Field) and x.name not in ["tags"]
             ]
         )
 
@@ -687,6 +702,8 @@ class StructureAdmin(admin.ModelAdmin):
                     "unanchors_at",
                     "fuel_expires_at",
                     "last_online_at",
+                    "has_fitting",
+                    "has_core",
                 ),
             },
         ),
