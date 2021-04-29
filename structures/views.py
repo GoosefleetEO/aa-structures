@@ -440,12 +440,7 @@ class StructuresRowBuilder:
     def _build_core_status(self):
         """Only enable view core for structure types"""
         if self._structure.eve_type.is_upwell_structure:
-            quantum_core = (
-                OwnerAsset.objects.filter(location_id=self._structure.id)
-                .filter(location_flag="QuantumCoreRoom")
-                .count()
-            )
-            if quantum_core:
+            if self._structure.has_core:
                 self._row[
                     "core_status"
                 ] = '<i class="fas fa-check" title="Core present"></i>'
@@ -470,7 +465,7 @@ class StructuresRowBuilder:
                 'data-toggle="modal" data-target="#modalStructureFit" '
                 f"data-ajax_structure_fit={ajax_structure_fit} "
                 f'title="{gettext("Show fitting")}">'
-                f'{gettext("Fitting")}</button>'
+                '<i class="fas fa-search"></i></button>'
             )
         else:
             self._row["view_fit"] = ""

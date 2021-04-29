@@ -1032,13 +1032,13 @@ class TestOwnerAssetManager(NoSocketsTestCase):
         )
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
-    def test_can_create_or_update_asset_from_esi(self, mock_esi_client):
+    def test_can_create_or_update_asset_from_esi_1(self, mock_esi_client):
         # given
         mock_esi_client.side_effect = esi_mock_client
         mock_token = Mock()
         create_structures()
         owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure_ids = {x.id for x in Structure.objects.filter(owner=owner)}
+        structure_ids = set(owner.structures.values_list("id", flat=True))
         # when
         try:
             OwnerAsset.objects.update_or_create_for_structures_esi(
@@ -1049,7 +1049,9 @@ class TestOwnerAssetManager(NoSocketsTestCase):
             self.fail("Test failed due to exception")
 
         assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
-        self.assertSetEqual(queryset_pks(assets), {1300000001001, 1300000001002})
+        self.assertSetEqual(
+            queryset_pks(assets), {1300000001001, 1300000001002, 1300000002001}
+        )
         obj = assets.get(pk=1300000001001)
         self.assertEqual(obj.owner, owner)
         self.assertEqual(obj.eve_type_id, 56201)
@@ -1058,6 +1060,7 @@ class TestOwnerAssetManager(NoSocketsTestCase):
         self.assertEqual(obj.location_type, "item")
         self.assertEqual(obj.quantity, 1)
         self.assertFalse(obj.is_singleton)
+
         obj = assets.get(pk=1300000001002)
         self.assertEqual(obj.owner, owner)
         self.assertEqual(obj.eve_type_id, 35894)
@@ -1066,3 +1069,11 @@ class TestOwnerAssetManager(NoSocketsTestCase):
         self.assertEqual(obj.location_type, "item")
         self.assertEqual(obj.quantity, 1)
         self.assertTrue(obj.is_singleton)
+
+        structure = owner.structures.get(id=1000000000001)
+        self.assertTrue(structure.has_fit)
+        self.assertTrue(structure.has_core)
+
+        structure = owner.structures.get(id=1000000000002)
+        self.assertTrue(structure.has_fit)
+        self.assertFalse(structure.has_core)

@@ -481,10 +481,9 @@ class OwnerAssetManager(models.Manager):
             for asset in assets
             if asset["location_id"] in structure_ids
             and asset["location_flag"]
-            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage"]
+            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
         ]
-
-        objs = []
+        objs_ids = []
         for asset in assets_in_structures:
             eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
             obj, _ = self.update_or_create(
@@ -500,33 +499,27 @@ class OwnerAssetManager(models.Manager):
                     "last_updated_at": now(),
                 },
             )
-            objs.append(obj)
+            objs_ids.append(obj.id)
 
-        objs_ids = [x.id for x in objs]
-
-        """Clean up assets not in structures anymore"""
+        # Clean up assets not in structures anymore
         objs_to_delete = self.filter(location_id__in=structure_ids).exclude(
             id__in=objs_ids
         )
         objs_to_delete.delete()
         for structure_id in structure_ids:
-            assets_in_structure = [
+            has_fitting = [
                 asset
                 for asset in assets_in_structures
                 if asset["location_id"] == structure_id
-                and asset["location_flag"]
-                not in [
-                    "CorpDeliveries",
-                    "OfficeFolder",
-                    "SecondaryStorage",
-                    "QuantumCoreRoom",
-                    "StructureFuel",
-                    "ServiceSlot0",
-                    "ServiceSlot1",
-                    "ServiceSlot2",
-                    "ServiceSlot3",
-                    "ServiceSlot4",
-                ]
+                and asset["location_flag"] != "QuantumCoreRoom"
             ]
-            has_fit = True if assets_in_structure else False
-            Structure.objects.filter(id=structure_id).update(has_fit=has_fit)
+            has_core = [
+                asset
+                for asset in assets_in_structures
+                if asset["location_id"] == structure_id
+                and asset["location_flag"] == "QuantumCoreRoom"
+            ]
+            structure = Structure.objects.get(id=structure_id)
+            structure.has_fit = bool(has_fitting)
+            structure.has_core = bool(has_core)
+            structure.save()

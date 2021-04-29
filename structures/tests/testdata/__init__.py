@@ -494,6 +494,15 @@ def esi_mock_client(version=1.6):
                     "quantity": 1,
                     "type_id": 35894,
                 },
+                {
+                    "is_singleton": True,
+                    "item_id": 1300000002001,
+                    "location_flag": "ServiceSlot0",
+                    "location_id": 1000000000002,
+                    "location_type": "item",
+                    "quantity": 1,
+                    "type_id": 35894,
+                },
             ]
         )
     )
