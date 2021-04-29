@@ -14,14 +14,14 @@
     <ul class="list-group">
         <li class="list-group-item list-group-item-custom">{% translate "Hull" %}</li>
         {% include "structures/modals/fitting_asset.html" with asset=structure %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="High Slots" asset_list=assets.high_slots %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Medium Slots" asset_list=assets.med_slots %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Low Slots" asset_list=assets.low_slots %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Rig Slots" asset_list=assets.rig_slots %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Service Slots" asset_list=assets.service_slots %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Structure Fuel" asset_list=fitting.StructureFuel %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Fighter Tubes" asset_list=fitting.fighter_tubes %}
-        {% include "structures/modals/fitting_asset_items.html" with slot_name="Fighter Bay" asset_list=fitting.FighterBay %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="High Slots" asset_list=assets.high_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Medium Slots" asset_list=assets.med_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Low Slots" asset_list=assets.low_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Rig Slots" asset_list=assets.rig_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Service Slots" asset_list=assets.service_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Structure Fuel" asset_list=fitting.StructureFuel %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Fighter Tubes" asset_list=fitting.fighter_tubes %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Fighter Bay" asset_list=fitting.FighterBay %}
     </ul>
     <p class="text-muted">Last updated {{ last_updated|naturaltime|default:"?" }}</p>
 </div>

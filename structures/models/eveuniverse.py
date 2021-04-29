@@ -334,6 +334,7 @@ class EveType(EveUniverse):
     STARBASE_LARGE = 3
 
     EVE_IMAGESERVER_BASE_URL = "https://images.evetech.net"
+    URL_PROFILE_TYPE = "https://www.kalkoken.org/apps/eveitems/"
 
     eve_group = models.ForeignKey(
         EveGroup, on_delete=models.CASCADE, related_name="eve_types"
@@ -395,6 +396,10 @@ class EveType(EveUniverse):
             return 10
         else:
             return None
+
+    @property
+    def profile_url(self) -> str:
+        return f"{self.URL_PROFILE_TYPE}?typeId={self.id}"
 
     @classmethod
     def generic_icon_url(cls, type_id: int, size: int = 64) -> str:

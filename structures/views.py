@@ -107,103 +107,6 @@ def main(request):
     return render(request, "structures/main.html", context)
 
 
-@login_required
-@permission_required("structures.view_structure_fit")
-def structure_fit(request, structure_id):
-    """Main view of the structure fit"""
-
-    class Slot(IntEnum):
-        HIGH = 14
-        MEDIUM = 13
-        LOW = 12
-        RIG = 1137
-        SERVICE = 2056
-
-        def image_url(self) -> str:
-            """Return url to image file for this slot variant"""
-            id_map = {
-                self.HIGH: "h",
-                self.MEDIUM: "m",
-                self.LOW: "l",
-                self.RIG: "r",
-                self.SERVICE: "s",
-            }
-            try:
-                slot_num = type_attributes[self.value]
-                return staticfiles_storage.url(
-                    f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
-                )
-            except KeyError:
-                return ""
-
-    def extract_slot_assets(fittings: list, slot_name: str) -> list:
-        """Return assets for slot sorted by slot number"""
-        return [
-            asset[0]
-            for asset in sorted(
-                [
-                    (asset, asset.location_flag[-1])
-                    for asset in fittings
-                    if asset.location_flag.startswith(slot_name)
-                ],
-                key=lambda x: x[1],
-            )
-        ]
-
-    structure = Structure.objects.select_related(
-        "owner", "eve_type", "eve_solar_system"
-    ).get(id=structure_id)
-    type_attributes = {
-        obj["eve_dogma_attribute_id"]: int(obj["value"])
-        for obj in EveTypeDogmaAttribute.objects.filter(
-            eve_type_id=structure.eve_type_id
-        ).values("eve_dogma_attribute_id", "value")
-    }
-    slot_image_urls = {
-        "high": Slot.HIGH.image_url(),
-        "med": Slot.MEDIUM.image_url(),
-        "low": Slot.LOW.image_url(),
-        "rig": Slot.RIG.image_url(),
-        "service": Slot.SERVICE.image_url(),
-    }
-    fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
-    fittings = OwnerAsset.objects.select_related("eve_type").filter(
-        location_id=structure_id
-    )
-    high_slots = extract_slot_assets(fittings, "HiSlot")
-    med_slots = extract_slot_assets(fittings, "MedSlot")
-    low_slots = extract_slot_assets(fittings, "LoSlot")
-    rig_slots = extract_slot_assets(fittings, "RigSlot")
-    service_slots = extract_slot_assets(fittings, "ServiceSlot")
-    fighter_tubes = extract_slot_assets(fittings, "FighterTube")
-    for fi in fittings:
-        if fi.location_flag == "Cargo":
-            fit_ob["Cargo"].append(fi)
-        elif fi.location_flag == "FighterBay":
-            fit_ob["FighterBay"].append(fi)
-        elif fi.location_flag == "StructureFuel":
-            fit_ob["StructureFuel"].append(fi)
-        else:
-            fit_ob[fi.location_flag] = fi
-
-    context = {
-        "page_title": gettext_lazy(__title__),
-        "slots": slot_image_urls,
-        "fitting": fit_ob,
-        "assets": {
-            "high_slots": high_slots,
-            "med_slots": med_slots,
-            "low_slots": low_slots,
-            "rig_slots": rig_slots,
-            "service_slots": service_slots,
-            "fighter_tubes": fighter_tubes,
-        },
-        "structure": structure,
-        "last_updated": structure.owner.assets_last_sync,
-    }
-    return render(request, "structures/modals/structure_fit.html", context)
-
-
 class StructuresRowBuilder:
     """This class build the HTML table rows from structure objects."""
 
@@ -298,7 +201,7 @@ class StructuresRowBuilder:
         self._row["type_name"] = structure_type.name_localized
         self._row["type"] = format_html(
             "{}<br><em>{}</em>",
-            no_wrap_html(self._row["type_name"]),
+            no_wrap_html(link_html(structure_type.profile_url, self._row["type_name"])),
             no_wrap_html(self._row["group_name"]),
         )
 
@@ -562,6 +465,103 @@ def _structures_query_for_user(request):
 
     structures_query = structures_query.prefetch_related("tags", "services")
     return structures_query
+
+
+@login_required
+@permission_required("structures.view_structure_fit")
+def structure_fit(request, structure_id):
+    """Main view of the structure fit"""
+
+    class Slot(IntEnum):
+        HIGH = 14
+        MEDIUM = 13
+        LOW = 12
+        RIG = 1137
+        SERVICE = 2056
+
+        def image_url(self) -> str:
+            """Return url to image file for this slot variant"""
+            id_map = {
+                self.HIGH: "h",
+                self.MEDIUM: "m",
+                self.LOW: "l",
+                self.RIG: "r",
+                self.SERVICE: "s",
+            }
+            try:
+                slot_num = type_attributes[self.value]
+                return staticfiles_storage.url(
+                    f"/structures/img/pannel/{slot_num}{id_map[self.value]}.png"
+                )
+            except KeyError:
+                return ""
+
+    def extract_slot_assets(fittings: list, slot_name: str) -> list:
+        """Return assets for slot sorted by slot number"""
+        return [
+            asset[0]
+            for asset in sorted(
+                [
+                    (asset, asset.location_flag[-1])
+                    for asset in fittings
+                    if asset.location_flag.startswith(slot_name)
+                ],
+                key=lambda x: x[1],
+            )
+        ]
+
+    structure = Structure.objects.select_related(
+        "owner", "eve_type", "eve_solar_system"
+    ).get(id=structure_id)
+    type_attributes = {
+        obj["eve_dogma_attribute_id"]: int(obj["value"])
+        for obj in EveTypeDogmaAttribute.objects.filter(
+            eve_type_id=structure.eve_type_id
+        ).values("eve_dogma_attribute_id", "value")
+    }
+    slot_image_urls = {
+        "high": Slot.HIGH.image_url(),
+        "med": Slot.MEDIUM.image_url(),
+        "low": Slot.LOW.image_url(),
+        "rig": Slot.RIG.image_url(),
+        "service": Slot.SERVICE.image_url(),
+    }
+    fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
+    fittings = OwnerAsset.objects.select_related("eve_type").filter(
+        location_id=structure_id
+    )
+    high_slots = extract_slot_assets(fittings, "HiSlot")
+    med_slots = extract_slot_assets(fittings, "MedSlot")
+    low_slots = extract_slot_assets(fittings, "LoSlot")
+    rig_slots = extract_slot_assets(fittings, "RigSlot")
+    service_slots = extract_slot_assets(fittings, "ServiceSlot")
+    fighter_tubes = extract_slot_assets(fittings, "FighterTube")
+    for fi in fittings:
+        if fi.location_flag == "Cargo":
+            fit_ob["Cargo"].append(fi)
+        elif fi.location_flag == "FighterBay":
+            fit_ob["FighterBay"].append(fi)
+        elif fi.location_flag == "StructureFuel":
+            fit_ob["StructureFuel"].append(fi)
+        else:
+            fit_ob[fi.location_flag] = fi
+
+    context = {
+        "page_title": gettext_lazy(__title__),
+        "slots": slot_image_urls,
+        "fitting": fit_ob,
+        "assets": {
+            "high_slots": high_slots,
+            "med_slots": med_slots,
+            "low_slots": low_slots,
+            "rig_slots": rig_slots,
+            "service_slots": service_slots,
+            "fighter_tubes": fighter_tubes,
+        },
+        "structure": structure,
+        "last_updated": structure.owner.assets_last_sync,
+    }
+    return render(request, "structures/modals/structure_fit.html", context)
 
 
 @login_required
