@@ -290,17 +290,21 @@ class StructuresRowBuilder:
             self._row["services"] = "-"
         else:
             services = list()
-            services_qs = self._structure.services.all().order_by("name")
-            for service in services_qs:
-                service_name = no_wrap_html(
+            for service in self._structure.services.all():
+                service_name_html = no_wrap_html(
                     format_html("<small>{}</small>", service.name_localized)
                 )
                 if service.state == StructureService.STATE_OFFLINE:
-                    service_name = format_html("<del>{}</del>", service_name)
+                    service_name_html = format_html("<del>{}</del>", service_name_html)
 
-                services.append(service_name)
-            services_str = "<br>".join(services) if services else "-"
-            self._row["services"] = services_str
+                services.append({"name": service.name, "html": service_name_html})
+            self._row["services"] = (
+                "<br>".join(
+                    map(lambda x: x["html"], sorted(services, key=lambda x: x["name"]))
+                )
+                if services
+                else "-"
+            )
 
     def _build_reinforcement_infos(self):
         self._row["is_reinforced"] = self._structure.is_reinforced
@@ -527,7 +531,7 @@ def _structures_query_for_user(request):
             owner__corporation__in=corporations
         )
 
-    structures_query = structures_query.prefetch_related("tags")
+    structures_query = structures_query.prefetch_related("tags", "services")
     return structures_query
 
 

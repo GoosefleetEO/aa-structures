@@ -1632,7 +1632,8 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         owner.update_asset_esi()
         # then
         self.assertSetEqual(
-            queryset_pks(OwnerAsset.objects.all()), {1300000001001, 1300000001002}
+            queryset_pks(OwnerAsset.objects.all()),
+            {1300000001001, 1300000001002, 1300000002001},
         )
         self.assertEqual(owner.assets_last_error, Owner.ERROR_NONE)
         self.assertTrue(owner.assets_last_sync)
