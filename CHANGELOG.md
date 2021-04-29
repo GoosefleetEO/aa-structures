@@ -5,28 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-
 ## [Unreleased] - yyyy-mm-dd
-With this release, django-eveuniverse is a dependency and requires you to run once this command on upgrade.
 
-run the command to load structures and thier dogmas
-```
+With this release, django-eveuniverse is a new dependency. Once it is installed and migrations are complete please run the following command once:
+
+```bash
 python manage.py structures_load_structures
 ```
 
 ### Added
-- Structure Fits
-- New config is required is the local.py
-- New permission for structure fits
 
-Name | Purpose | Code
--- | -- | --
-Can view structure fittings | User can view structure fittings |  `general.view_structure_fittings`
-
-### Changed
-- New dependency to django-eveuniverse
-
-## Changed
+- Ability to see current fitting and bay contents for all upwell structures
+- New permission for seeing structure fittings (see also Permissions in README)
+- Dependency to django-eveuniverse
 
 ## [1.9.4] - 2021-04-13
 

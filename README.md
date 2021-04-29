@@ -65,7 +65,11 @@ This is an example for a notification posted on Discord:
 
 ## Installation
 
-**Important**: This app is a plugin for Alliance Auth. If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
+### Step 0 - Prerequisites
+
+1. Member Audit is a plugin for Alliance Auth. If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
+
+2. Member Audit needs the app [django-eveuniverse](https://gitlab.com/ErikKalkoken/django-eveuniverse) to function. Please make sure it is installed, before before installing the app.
 
 ### Step 1 - Install app
 
@@ -148,7 +152,7 @@ If you already have run those commands previously you can skip this step.
 
 Load Eve Online structure types
 
-```
+```bash
 python manage.py structures_load_structures
 ```
 
