@@ -150,9 +150,9 @@ def structure_fit(request, structure_id):
             )
         ]
 
-    structure = Structure.objects.select_related("eve_type", "eve_solar_system").get(
-        id=structure_id
-    )
+    structure = Structure.objects.select_related(
+        "owner", "eve_type", "eve_solar_system"
+    ).get(id=structure_id)
     type_attributes = {
         obj["eve_dogma_attribute_id"]: int(obj["value"])
         for obj in EveTypeDogmaAttribute.objects.filter(
@@ -199,6 +199,7 @@ def structure_fit(request, structure_id):
             "fighter_tubes": fighter_tubes,
         },
         "structure": structure,
+        "last_updated": structure.owner.assets_last_sync,
     }
     return render(request, "structures/modals/structure_fit.html", context)
 

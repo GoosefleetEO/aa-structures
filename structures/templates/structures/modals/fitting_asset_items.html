@@ -1,0 +1,10 @@
+{% load i18n %}
+
+<li class="list-group-item list-group-item-custom">{% translate slot_name %}</li>
+{% if asset_list|length == 0 %}
+    <li class="list-group-item text-muted">{% translate "No Items" %}</li>
+{% else %}
+    {% for asset in asset_list %}
+        {% include "structures/modals/fitting_asset.html" %}
+    {% endfor %}
+{% endif %}
