@@ -27,7 +27,7 @@ from app_utils.django import app_labels
 from app_utils.logging import LoggerAddTag
 from app_utils.urls import static_file_absolute_url
 
-from .. import __title__
+from .. import __title__, constants
 from ..app_settings import (
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
@@ -37,7 +37,7 @@ from ..app_settings import (
 )
 from ..managers import EveEntityManager, NotificationManager
 from ..webhooks.models import WebhookBase
-from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
+from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
 
 if "timerboard" in app_labels():
@@ -355,10 +355,14 @@ class Notification(models.Model):
 
     # event type structure map
     MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
-        1: EveType.EVE_TYPE_ID_TCU,
-        2: EveType.EVE_TYPE_ID_IHUB,
+        1: constants.EVE_TYPE_ID_TCU,
+        2: constants.EVE_TYPE_ID_IHUB,
     }
-    MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {2233: "POCO", 32226: "TCU", 32458: "I-HUB"}
+    MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
+        constants.EVE_TYPE_ID_POCO: "POCO",
+        constants.EVE_TYPE_ID_TCU: "TCU",
+        constants.EVE_TYPE_ID_IHUB: "I-HUB",
+    }
 
     notification_id = models.PositiveBigIntegerField(verbose_name="id")
     owner = models.ForeignKey(
@@ -762,7 +766,7 @@ class Notification(models.Model):
                 id=parsed_text["solarSystemID"]
             )
             structure_type, _ = EveType2.objects.get_or_create_esi(
-                id=EveType.EVE_TYPE_ID_POCO
+                id=constants.EVE_TYPE_ID_POCO
             )
             visibility = (
                 Timer.VISIBILITY_CORPORATION

@@ -30,7 +30,7 @@ from app_utils.views import (
     yesno_str,
 )
 
-from . import __title__, tasks
+from . import __title__, constants, tasks
 from .app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEFAULT_PAGE_LENGTH,
@@ -40,7 +40,6 @@ from .app_settings import (
 )
 from .forms import TagsFilterForm
 from .models import (
-    EveCategory,
     Owner,
     OwnerAsset,
     Structure,
@@ -669,7 +668,7 @@ def poco_list_data(request) -> JsonResponse:
         "eve_type__eve_group",
         "eve_solar_system",
         "eve_solar_system__eve_constellation__eve_region",
-    ).filter(eve_type__eve_group__eve_category_id=EveCategory.EVE_CATEGORY_ID_ORBITAL)
+    ).filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
     data = list()
     for poco in pocos:
         if poco.eve_solar_system.is_low_sec:

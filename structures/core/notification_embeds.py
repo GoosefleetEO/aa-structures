@@ -13,6 +13,7 @@ from app_utils.datetime import (
 )
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
+from .. import constants
 from ..app_settings import (
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
@@ -713,7 +714,7 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
             self._parsed_text["planetID"]
         )
         self._structure_type, _ = EveType.objects.get_or_create_esi(
-            EveType.EVE_TYPE_ID_POCO
+            constants.EVE_TYPE_ID_POCO
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             self._parsed_text["solarSystemID"]
@@ -862,7 +863,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
                 self._parsed_text["campaignEventType"]
             )
         else:
-            structure_type_id = EveType.EVE_TYPE_ID_TCU
+            structure_type_id = constants.EVE_TYPE_ID_TCU
         structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
         self._structure_type_name = structure_type.name_localized
         self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
