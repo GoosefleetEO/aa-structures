@@ -68,83 +68,71 @@
             </div>
         </div>
     </div>
+
     <div id="fitting">
         <ul class="list-group">
+
             <li class="list-group-item list-group-item-custom">{% translate "Hull" %}</li>
-            <li class="list-group-item"><img src="{{ structure.eve_type_id|type_render_url:128 }}" style="height: 32px; width: 32px;" title="{{ structure.eve_type.name }}"> {{ structure.eve_type.name }}</li>
+            {% include "structures/partials/fitting_asset.html" with asset=structure %}
+
             <li class="list-group-item list-group-item-custom">{% translate "High Slots" %}</li>
             {% if fitting|empty_slots:'HiSlot' %}<li class="list-group-item text-muted">{% translate "No High Slot Items" %}</li>{% endif %}
-            {% if fitting.HiSlot0 %}<li class="list-group-item"><img src="{{ fitting.HiSlot0.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot0.eve_type.name }}"> {{fitting.HiSlot0.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot1 %}<li class="list-group-item"><img src="{{ fitting.HiSlot1.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot1.eve_type.name }}"> {{fitting.HiSlot1.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot2 %}<li class="list-group-item"><img src="{{ fitting.HiSlot2.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot2.eve_type.name }}"> {{fitting.HiSlot2.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot3 %}<li class="list-group-item"><img src="{{ fitting.HiSlot3.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot3.eve_type.name }}"> {{fitting.HiSlot3.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot4 %}<li class="list-group-item"><img src="{{ fitting.HiSlot4.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot4.eve_type.name }}"> {{fitting.HiSlot4.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot5 %}<li class="list-group-item"><img src="{{ fitting.HiSlot5.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot5.eve_type.name }}"> {{fitting.HiSlot5.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot6 %}<li class="list-group-item"><img src="{{ fitting.HiSlot6.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot6.eve_type.name }}"> {{fitting.HiSlot6.eve_type.name}}</li>{% endif %}
-            {% if fitting.HiSlot7 %}<li class="list-group-item"><img src="{{ fitting.HiSlot7.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.HiSlot7.eve_type.name }}"> {{fitting.HiSlot7.eve_type.name}}</li>{% endif %}
+            {% for asset in assets.high_slots %}
+                {% include "structures/partials/fitting_asset.html" %}
+            {% endfor %}
+
             <li class="list-group-item list-group-item-custom">{% translate "Medium Slots" %}</li>
             {% if fitting|empty_slots:'MedSlot' %}<li class="list-group-item text-muted"> {% translate "No Medium Slot Items" %}</li>{% endif %}
-            {% if fitting.MedSlot0 %}<li class="list-group-item"><img src="{{ fitting.MedSlot0.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot0.eve_type.name }}"> {{fitting.MedSlot0.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot1 %}<li class="list-group-item"><img src="{{ fitting.MedSlot1.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot1.eve_type.name }}"> {{fitting.MedSlot1.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot2 %}<li class="list-group-item"><img src="{{ fitting.MedSlot2.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot2.eve_type.name }}"> {{fitting.MedSlot2.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot3 %}<li class="list-group-item"><img src="{{ fitting.MedSlot3.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot3.eve_type.name }}"> {{fitting.MedSlot3.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot4 %}<li class="list-group-item"><img src="{{ fitting.MedSlot4.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot4.eve_type.name }}"> {{fitting.MedSlot4.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot5 %}<li class="list-group-item"><img src="{{ fitting.MedSlot5.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot5.eve_type.name }}"> {{fitting.MedSlot5.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot6 %}<li class="list-group-item"><img src="{{ fitting.MedSlot6.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot6.eve_type.name }}"> {{fitting.MedSlot6.eve_type.name}}</li>{% endif %}
-            {% if fitting.MedSlot7 %}<li class="list-group-item"><img src="{{ fitting.MedSlot7.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.MedSlot7.eve_type.name }}"> {{fitting.MedSlot7.eve_type.name}}</li>{% endif %}
+            {% for asset in assets.med_slots %}
+                {% include "structures/partials/fitting_asset.html" %}
+            {% endfor %}
+
             <li class="list-group-item list-group-item-custom">{% translate "Low Slots" %}</li>
             {% if fitting|empty_slots:'LoSlot' %}<li class="list-group-item text-muted">{% translate "No Low Slot Items" %}</li>{% endif %}
-            {% if fitting.LoSlot0 %}<li class="list-group-item"><img src="{{ fitting.LoSlot0.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot0.eve_type.name }}"> {{fitting.LoSlot0.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot1 %}<li class="list-group-item"><img src="{{ fitting.LoSlot1.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot1.eve_type.name }}"> {{fitting.LoSlot1.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot2 %}<li class="list-group-item"><img src="{{ fitting.LoSlot2.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot2.eve_type.name }}"> {{fitting.LoSlot2.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot3 %}<li class="list-group-item"><img src="{{ fitting.LoSlot3.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot3.eve_type.name }}"> {{fitting.LoSlot3.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot4 %}<li class="list-group-item"><img src="{{ fitting.LoSlot4.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot4.eve_type.name }}"> {{fitting.LoSlot4.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot5 %}<li class="list-group-item"><img src="{{ fitting.LoSlot5.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot5.eve_type.name }}"> {{fitting.LoSlot5.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot6 %}<li class="list-group-item"><img src="{{ fitting.LoSlot6.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot6.eve_type.name }}"> {{fitting.LoSlot6.eve_type.name}}</li>{% endif %}
-            {% if fitting.LoSlot7 %}<li class="list-group-item"><img src="{{ fitting.LoSlot7.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.LoSlot7.eve_type.name }}"> {{fitting.LoSlot7.eve_type.name}}</li>{% endif %}
+            {% for asset in assets.low_slots %}
+                {% include "structures/partials/fitting_asset.html" %}
+            {% endfor %}
+
             <li class="list-group-item list-group-item-custom">{% translate "Rig Slots" %}</li>
             {% if fitting|empty_slots:'RigSlot' %}<li class="list-group-item text-muted">{% translate "No Rig Slot Items" %}</li>{% endif %}
-            {% if fitting.RigSlot0 %}<li class="list-group-item"><img src="{{ fitting.RigSlot0.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.RigSlot0.eve_type.name }}"> {{fitting.RigSlot0.eve_type.name}}</li>{% endif %}
-            {% if fitting.RigSlot1 %}<li class="list-group-item"><img src="{{ fitting.RigSlot1.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.RigSlot1.eve_type.name }}"> {{fitting.RigSlot1.eve_type.name}}</li>{% endif %}
-            {% if fitting.RigSlot2 %}<li class="list-group-item"><img src="{{ fitting.RigSlot2.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.RigSlot2.eve_type.name }}"> {{fitting.RigSlot2.eve_type.name}}</li>{% endif %}
+            {% for asset in assets.rig_slots %}
+                {% include "structures/partials/fitting_asset.html" %}
+            {% endfor %}
+
             {% if not fitting|empty_slots:'ServiceSlot' %}
                 <li class="list-group-item list-group-item-custom">{% translate "Service Slots" %}</li>
-                {% if fitting.ServiceSlot0 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot0.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot0.eve_type.name }}"> {{fitting.ServiceSlot0.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot1 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot1.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot1.eve_type.name }}"> {{fitting.ServiceSlot1.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot2 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot2.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot2.eve_type.name }}"> {{fitting.ServiceSlot2.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot3 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot3.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot3.eve_type.name }}"> {{fitting.ServiceSlot3.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot4 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot4.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot4.eve_type.name }}"> {{fitting.ServiceSlot4.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot5 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot5.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot5.eve_type.name }}"> {{fitting.ServiceSlot5.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot6 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot6.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot6.eve_type.name }}"> {{fitting.ServiceSlot6.eve_type.name}}</li>{% endif %}
-                {% if fitting.ServiceSlot7 %}<li class="list-group-item"><img src="{{ fitting.ServiceSlot7.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.ServiceSlot7.eve_type.name }}"> {{fitting.ServiceSlot7.eve_type.name}}</li>{% endif %}
-            {% endif %}
-            {% if fitting.StructureFuel|length > 0 %}
-                <li class="list-group-item list-group-item-custom">{% translate "Structure Fuel" %}</li>
-                {% for fuel in fitting.StructureFuel %}
-                    <li class="list-group-item">
-                        <img src="{{ fuel.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fuel.eve_type.name }}"> {{fuel.eve_type.name}} x{{fuel.quantity}}
-                    </li>
+                {% for asset in assets.service_slots %}
+                    {% include "structures/partials/fitting_asset.html" %}
                 {% endfor %}
             {% endif %}
+
+            {% if fitting.StructureFuel|length > 0 %}
+                <li class="list-group-item list-group-item-custom">{% translate "Structure Fuel" %}</li>
+                {% for asset in fitting.StructureFuel %}
+                    {% include "structures/partials/fitting_asset.html" %}
+                {% endfor %}
+            {% endif %}
+
             {% if not fitting|empty_slots:'FighterTube' %}
                 <li class="list-group-item list-group-item-custom">{% translate "Fighter Tubes" %}</li>
-                {% if fitting.FighterTube0 %}<li class="list-group-item"><img src="{{ fitting.FighterTube0.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.FighterTube0.eve_type.name }}"> {{fitting.FighterTube0.eve_type.name}}</li>{% endif %}
-                {% if fitting.FighterTube1 %}<li class="list-group-item"><img src="{{ fitting.FighterTube1.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.FighterTube1.eve_type.name }}"> {{fitting.FighterTube1.eve_type.name}}</li>{% endif %}
-                {% if fitting.FighterTube2 %}<li class="list-group-item"><img src="{{ fitting.FighterTube2.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.FighterTube2.eve_type.name }}"> {{fitting.FighterTube2.eve_type.name}}</li>{% endif %}
-                {% if fitting.FighterTube3 %}<li class="list-group-item"><img src="{{ fitting.FighterTube3.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.FighterTube3.eve_type.name }}"> {{fitting.FighterTube3.eve_type.name}}</li>{% endif %}
-                {% if fitting.FighterTube4 %}<li class="list-group-item"><img src="{{ fitting.FighterTube4.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fitting.FighterTube4.eve_type.name }}"> {{fitting.FighterTube4.eve_type.name}}</li>{% endif %}
+                {% for asset in assets.fighter_tubes %}
+                    {% include "structures/partials/fitting_asset.html" %}
+                {% endfor %}
             {% endif %}
+
             {% if fitting.Cargo|length > 0 %}<li class="list-group-item list-group-item-custom">{% translate "Cargo Bay" %}</li>{% endif %}
-            {% for ammo in fitting.Cargo %}
-                <li class="list-group-item"> <li class="list-group-item"><img src="{{ ammo.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ ammo.eve_type.name }}"> {{ammo.eve_type.name}} x{{ammo.quantity}}</li>
+            {% for asset in fitting.Cargo %}
+                {% include "structures/partials/fitting_asset.html" %}
             {% endfor %}
+
             {% if fitting.DroneBay|length > 0 %}<li class="list-group-item list-group-item-custom">{% translate "Drone Bay" %}</li>{% endif %}
-            {% for drone in fitting.DroneBay %}
-                <li class="list-group-item"> <li class="list-group-item"><img src="{{ drone.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ drone.eve_type.name }}"> {{drone.eve_type.name}} x{{drone.quantity}}</li>
+            {% for asset in fitting.DroneBay %}
+                {% include "structures/partials/fitting_asset.html" %}
             {% endfor %}
+
             {% if fitting.FighterBay|length > 0 %}<li class="list-group-item list-group-item-custom">{% translate "Fighter Bay" %}</li>{% endif %}
-            {% for fighter in fitting.FighterBay %}
-                <li class="list-group-item"> <li class="list-group-item"><img src="{{ fighter.eve_type_id|type_icon_url:128 }}" style="height: 32px; width: 32px;" title="{{ fighter.eve_type.name }}"> {{fighter.eve_type.name}} x{{fighter.quantity}}</li>
+            {% for asset in fitting.FighterBay %}
+                {% include "structures/partials/fitting_asset.html" %}
             {% endfor %}
         </ul>
     </div>

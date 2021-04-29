@@ -136,6 +136,20 @@ def structure_fit(request, structure_id):
             except KeyError:
                 return ""
 
+    def extract_slot_assets(fittings: list, slot_name: str) -> list:
+        """Return assets for slot sorted by slot number"""
+        return [
+            asset[0]
+            for asset in sorted(
+                [
+                    (asset, asset.location_flag[-1])
+                    for asset in fittings
+                    if asset.location_flag.startswith(slot_name)
+                ],
+                key=lambda x: x[1],
+            )
+        ]
+
     structure = Structure.objects.select_related("eve_type", "eve_solar_system").get(
         id=structure_id
     )
@@ -156,6 +170,12 @@ def structure_fit(request, structure_id):
     fittings = OwnerAsset.objects.select_related("eve_type").filter(
         location_id=structure_id
     )
+    high_slots = extract_slot_assets(fittings, "HiSlot")
+    med_slots = extract_slot_assets(fittings, "MedSlot")
+    low_slots = extract_slot_assets(fittings, "LoSlot")
+    rig_slots = extract_slot_assets(fittings, "RigSlot")
+    service_slots = extract_slot_assets(fittings, "ServiceSlot")
+    fighter_tubes = extract_slot_assets(fittings, "FighterTube")
     for fi in fittings:
         if fi.location_flag == "Cargo":
             fit_ob["Cargo"].append(fi)
@@ -170,6 +190,14 @@ def structure_fit(request, structure_id):
         "page_title": gettext_lazy(__title__),
         "slots": slot_image_urls,
         "fitting": fit_ob,
+        "assets": {
+            "high_slots": high_slots,
+            "med_slots": med_slots,
+            "low_slots": low_slots,
+            "rig_slots": rig_slots,
+            "service_slots": service_slots,
+            "fighter_tubes": fighter_tubes,
+        },
         "structure": structure,
     }
     return render(request, "structures/modals/structure_fit.html", context)
