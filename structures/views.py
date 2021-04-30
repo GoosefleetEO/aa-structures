@@ -377,16 +377,17 @@ class StructuresRowBuilder:
     def _build_core_status(self):
         """Only enable view core for structure types"""
         if self._structure.eve_type.is_upwell_structure:
-            if self._structure.has_core:
-                self._row[
-                    "core_status"
-                ] = '<i class="fas fa-check" title="Core present"></i>'
+            if self._structure.has_core is True:
+                core_status = '<i class="fas fa-check" title="Core present"></i>'
+            elif self._structure.has_core is False:
+                core_status = (
+                    '<i class="fas fa-times text-danger title="Core absent"></i>'
+                )
             else:
-                self._row[
-                    "core_status"
-                ] = '<i class="fas fa-times text-danger title="Core absent"></i>'
+                core_status = '<i class="fas fa-question" title="Status unknown"></i>'
         else:
-            self._row["core_status"] = "-"
+            core_status = "-"
+        self._row["core_status"] = core_status
 
     def _build_view_fit(self):
         """Only enable view fit for structure types"""
