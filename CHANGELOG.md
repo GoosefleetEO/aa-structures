@@ -17,10 +17,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 🎉 **Structure fittings** 🎉
 
-> **Important update notes**:<br>With this release, django-eveuniverse is a new dependency. Once it is installed and migrations are complete please run the following command once. This is required for fitting to work:
+### Important update notes
+
+This release adds `django-eveuniverse` as new dependency. Once it is installed,  migrations are completed and you have restarted your supervisor please run the following command once. This is required for fittings to work:
 
 ```bash
 python manage.py structures_load_structures
+```
+
+After all tasks from that command have finished the app has to run a regular structures update before you will see the fittings. You can either wait for it or force it by running the following command (Assuming `myauth` is the name of your auth):
+
+```bash
+celery -A myauth call structures.tasks.update_all_structures
 ```
 
 ### Added
