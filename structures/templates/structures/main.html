@@ -90,14 +90,15 @@
                     { data: 'group_name' },
                     { data: 'is_reinforced_str' },
                     { data: 'state_str' },
-                    { data: 'power_mode_str' }
+                    { data: 'power_mode_str' },
+                    { data: 'core_status_str' }
                 ],
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 paging: dataTablesPaging,
                 pageLength: dataTablesPageLength,
                 columnDefs: [
                     { "sortable": false, "targets": [0, 3, 4, 6, 12] },
-                    { "visible": false, "targets": [13, 14, 15, 16, 17, 18, 19, 20, 21] }
+                    { "visible": false, "targets": [13, 14, 15, 16, 17, 18, 19, 20, 21, 22] }
                 ],
                 order: [[1, "asc"], [5, "asc"]],
                 filterDropDown:
@@ -106,17 +107,17 @@
                         {
                             idx: 13,
                             title: "{% translate 'Alliance' %}",
-                            maxWidth: "10em"
+                            maxWidth: "11em"
                         },
                         {
                             idx: 14,
                             title: "{% translate 'Corporation' %}",
-                            maxWidth: "13em"
+                            maxWidth: "11em"
                         },
                         {
                             idx: 15,
                             title: "{% translate 'Region' %}",
-                            maxWidth: "8em"
+                            maxWidth: "7em"
                         },
                         {
                             idx: 16,
@@ -147,6 +148,11 @@
                             idx: 21,
                             title: "{% translate 'Power Mode' %}",
                             maxWidth: "12em"
+                        },
+                        {
+                            idx: 22,
+                            title: "{% translate 'Core?' %}",
+                            maxWidth: "6em"
                         }
                     ],
                     autoSize: false,

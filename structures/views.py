@@ -29,6 +29,7 @@ from app_utils.views import (
     link_html,
     no_wrap_html,
     yesno_str,
+    yesnonone_str,
 )
 
 from . import __title__, constants, tasks
@@ -375,19 +376,23 @@ class StructuresRowBuilder:
             )
 
     def _build_core_status(self):
-        """Only enable view core for structure types"""
         if self._structure.eve_type.is_upwell_structure:
             if self._structure.has_core is True:
+                has_core = True
                 core_status = '<i class="fas fa-check" title="Core present"></i>'
             elif self._structure.has_core is False:
+                has_core = False
                 core_status = (
                     '<i class="fas fa-times text-danger title="Core absent"></i>'
                 )
             else:
+                has_core = None
                 core_status = '<i class="fas fa-question" title="Status unknown"></i>'
         else:
+            has_core = None
             core_status = "-"
         self._row["core_status"] = core_status
+        self._row["core_status_str"] = yesnonone_str(has_core)
 
     def _build_view_fit(self):
         """Only enable view fit for structure types"""
