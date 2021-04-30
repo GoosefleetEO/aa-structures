@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-With this release, django-eveuniverse is a new dependency. Once it is installed and migrations are complete please run the following command once:
+**Structure fittings**
+
+> **Important update notes**:<br>With this release, django-eveuniverse is a new dependency. Once it is installed and migrations are complete please run the following command once. This is required for fitting to work:
 
 ```bash
 python manage.py structures_load_structures
@@ -19,14 +21,18 @@ python manage.py structures_load_structures
 - New permission for seeing structure fittings (see also Permissions in README)
 - Dependency to django-eveuniverse
 - Links to structure type information webpage in structure list
+- Show on admin site for webhooks which owners have that webhook enabled
 
 ## Changed
 
 - Significantly reduced page load time for all admin site pages
+- Admin notifications are now created using the default language
 
 ## Fixed
 
 - Some parts did not yet use the extensions logger
+
+Big thanks to @huideaki for contributing the fitting feature and to @ppfeufer for contributing a fix.
 
 ## [1.9.4] - 2021-04-13
 

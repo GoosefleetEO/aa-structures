@@ -775,6 +775,7 @@ class WebhookAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "_ping_groups",
+        "_owners",
         "is_active",
         "_is_default",
         "_messages_in_queue",
@@ -784,7 +785,7 @@ class WebhookAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("ping_groups")
+        return qs.prefetch_related("ping_groups", "owner_set", "owner_set__corporation")
 
     def _default_pings(self, obj):
         return obj.has_default_pings_enabled
@@ -793,6 +794,11 @@ class WebhookAdmin(admin.ModelAdmin):
 
     def _ping_groups(self, obj):
         return sorted([ping_group.name for ping_group in obj.ping_groups.all()])
+
+    def _owners(self, obj):
+        return sorted([str(owner) for owner in obj.owner_set.all()])
+
+    _owners.short_description = "Enabled for Owners"
 
     def _is_default(self, obj):
         value = True if obj.is_default else None
