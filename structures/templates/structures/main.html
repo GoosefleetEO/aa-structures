@@ -162,9 +162,9 @@
             $('#modalStructureFit').on('show.bs.modal', function(event) {
                 $(this).find('.modal-title').html('Loading...');
                 {% if NIGHT_MODE %}
-                    $(this).find('.modal-body').html('<img src="{% static "/structures/img/Spinner-1s-64px-dark.gif" %}">');
+                    $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-dark.gif" %}">');
                 {% else %}
-                    $(this).find('.modal-body').html('<img src="{% static "/structures/img/Spinner-1s-64px-light.gif" %}">');
+                    $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-light.gif" %}">');
                 {% endif %}
 
                 const button = $(event.relatedTarget);
