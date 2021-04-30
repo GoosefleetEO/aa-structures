@@ -722,10 +722,10 @@ class TestStructureFittingModal(TestCase):
         )
         # when
         request = self.factory.get(
-            reverse("structures:structure_fit", args=[1000000000001])
+            reverse("structures:structure_details", args=[1000000000001])
         )
         request.user = user
-        response = views.structure_fit(request, 1000000000001)
+        response = views.structure_details(request, 1000000000001)
         # then
         self.assertEqual(response.status_code, 200)
 
@@ -735,9 +735,9 @@ class TestStructureFittingModal(TestCase):
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
         # when
         request = self.factory.get(
-            reverse("structures:structure_fit", args=[1000000000001])
+            reverse("structures:structure_details", args=[1000000000001])
         )
         request.user = user
-        response = views.structure_fit(request, 1000000000001)
+        response = views.structure_details(request, 1000000000001)
         # then
         self.assertEqual(response.status_code, 302)

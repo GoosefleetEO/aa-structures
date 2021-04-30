@@ -1,0 +1,28 @@
+{% load i18n %}
+{% load static %}
+{% load evelinks %}
+{% load humanize %}
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title">{{structure.eve_solar_system.name}} - {{structure.name}}</h4>
+</div>
+
+<div class="modal-body">
+    {% include "structures/modals/fitting_gfx.html" %}
+    <br>
+    <ul class="list-group">
+        <li class="list-group-item list-group-item-custom">{% translate "Hull" %}</li>
+        {% include "structures/modals/fitting_asset.html" with asset=structure %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="High Slots" asset_list=slot_assets.high_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Medium Slots" asset_list=slot_assets.med_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Low Slots" asset_list=slot_assets.low_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Rig Slots" asset_list=slot_assets.rig_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Service Slots" asset_list=slot_assets.service_slots %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Ammo Hold" asset_list=assets_grouped.ammo_hold %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Fuel Bay" asset_list=assets_grouped.fuel_bay %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Fighter Bay" asset_list=assets_grouped.fighter_bay %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Fighter Tubes" asset_list=slot_assets.fighter_tubes %}
+    </ul>
+    <p class="text-muted">Last updated {{ last_updated|naturaltime|default:"?" }}</p>
+</div>

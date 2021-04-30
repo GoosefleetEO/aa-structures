@@ -400,7 +400,7 @@ class StructuresRowBuilder:
             "structures.view_structure_fit"
         ):
             ajax_structure_fit = reverse(
-                "structures:structure_fit",
+                "structures:structure_details",
                 args=[self._row["structure_id"]],
             )
             self._row["view_fit"] = format_html(
@@ -476,7 +476,7 @@ def _structures_query_for_user(request):
 
 @login_required
 @permission_required("structures.view_structure_fit")
-def structure_fit(request, structure_id):
+def structure_details(request, structure_id):
     """Main view of the structure fit"""
 
     class Slot(IntEnum):
@@ -533,31 +533,30 @@ def structure_fit(request, structure_id):
         "rig": Slot.RIG.image_url(),
         "service": Slot.SERVICE.image_url(),
     }
-    fit_ob = {"Cargo": [], "FighterBay": [], "StructureFuel": []}
-    fittings = OwnerAsset.objects.select_related("eve_type").filter(
+    assets = OwnerAsset.objects.select_related("eve_type").filter(
         location_id=structure_id
     )
-    high_slots = extract_slot_assets(fittings, "HiSlot")
-    med_slots = extract_slot_assets(fittings, "MedSlot")
-    low_slots = extract_slot_assets(fittings, "LoSlot")
-    rig_slots = extract_slot_assets(fittings, "RigSlot")
-    service_slots = extract_slot_assets(fittings, "ServiceSlot")
-    fighter_tubes = extract_slot_assets(fittings, "FighterTube")
-    for fi in fittings:
-        if fi.location_flag == "Cargo":
-            fit_ob["Cargo"].append(fi)
-        elif fi.location_flag == "FighterBay":
-            fit_ob["FighterBay"].append(fi)
-        elif fi.location_flag == "StructureFuel":
-            fit_ob["StructureFuel"].append(fi)
+    high_slots = extract_slot_assets(assets, "HiSlot")
+    med_slots = extract_slot_assets(assets, "MedSlot")
+    low_slots = extract_slot_assets(assets, "LoSlot")
+    rig_slots = extract_slot_assets(assets, "RigSlot")
+    service_slots = extract_slot_assets(assets, "ServiceSlot")
+    fighter_tubes = extract_slot_assets(assets, "FighterTube")
+    assets_grouped = {"ammo_hold": [], "fighter_bay": [], "fuel_bay": []}
+    for asset in assets:
+        if asset.location_flag == "Cargo":
+            assets_grouped["ammo_hold"].append(asset)
+        elif asset.location_flag == "FighterBay":
+            assets_grouped["fighter_bay"].append(asset)
+        elif asset.location_flag == "StructureFuel":
+            assets_grouped["fuel_bay"].append(asset)
         else:
-            fit_ob[fi.location_flag] = fi
+            assets_grouped[asset.location_flag] = asset
 
     context = {
-        "page_title": gettext_lazy(__title__),
+        "fitting": assets,
         "slots": slot_image_urls,
-        "fitting": fit_ob,
-        "assets": {
+        "slot_assets": {
             "high_slots": high_slots,
             "med_slots": med_slots,
             "low_slots": low_slots,
@@ -565,10 +564,11 @@ def structure_fit(request, structure_id):
             "service_slots": service_slots,
             "fighter_tubes": fighter_tubes,
         },
+        "assets_grouped": assets_grouped,
         "structure": structure,
         "last_updated": structure.owner.assets_last_sync,
     }
-    return render(request, "structures/modals/structure_fit.html", context)
+    return render(request, "structures/modals/structure_details.html", context)
 
 
 @login_required

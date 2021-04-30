@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.10.2] - 2021-04-30
+
 ### Added
+
+- Show ammo hold in structure details modal ([#49](https://gitlab.com/ErikKalkoken/aa-structures/issues/49))
+- Filter for cores on structure list
 
 ### Changed
 
 ### Fixed
+
+- Incorrect URLs for spinner images
 
 ## [1.10.1] - 2021-04-30
 
@@ -41,7 +48,7 @@ Note that you also need to enable the new fittings permission so users can see f
 
 ### Added
 
-- Ability to see current fitting and bay contents for all upwell structures
+- Ability to see current fitting and bay contents for all upwell structures ([#42](https://gitlab.com/ErikKalkoken/aa-structures/issues/42))
 - Structure list shows if an upwell structure has a quantum core
 - New permission for seeing structure fittings (see also Permissions in README)
 - Dependency to django-eveuniverse

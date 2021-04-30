@@ -11,5 +11,9 @@ urlpatterns = [
     path("add_structure_owner", views.add_structure_owner, name="add_structure_owner"),
     path("poco_list_data", views.poco_list_data, name="poco_list_data"),
     path("service_status", views.service_status, name="service_status"),
-    path("<int:structure_id>/fit", views.structure_fit, name="structure_fit"),
+    path(
+        "<int:structure_id>/structure_details",
+        views.structure_details,
+        name="structure_details",
+    ),
 ]
