@@ -208,7 +208,7 @@ class TestStructureAdmin(TestCase):
 
     def test_tags_2(self):
         self.obj.tags.clear()
-        self.assertIsNone(self.modeladmin._tags(self.obj))
+        self.assertListEqual(self.modeladmin._tags(self.obj), [])
 
     @patch(MODULE_PATH + ".StructureAdmin.message_user", auto_spec=True)
     def test_action_add_default_tags(self, mock_message_user):

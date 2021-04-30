@@ -18,6 +18,15 @@ python manage.py structures_load_structures
 - Ability to see current fitting and bay contents for all upwell structures
 - New permission for seeing structure fittings (see also Permissions in README)
 - Dependency to django-eveuniverse
+- Links to structure type information webpage in structure list
+
+## Changed
+
+- Significantly reduced page load time for all admin site pages
+
+## Fixed
+
+- Some parts did not yet use the extensions logger
 
 ## [1.9.4] - 2021-04-13
 
