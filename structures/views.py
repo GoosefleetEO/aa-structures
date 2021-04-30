@@ -7,6 +7,7 @@ from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import translation
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
@@ -30,9 +31,10 @@ from app_utils.views import (
     yesno_str,
 )
 
-from . import __title__, tasks
+from . import __title__, constants, tasks
 from .app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
+    STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEFAULT_PAGE_LENGTH,
     STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED,
     STRUCTURES_PAGING_ENABLED,
@@ -40,7 +42,6 @@ from .app_settings import (
 )
 from .forms import TagsFilterForm
 from .models import (
-    EveCategory,
     Owner,
     OwnerAsset,
     Structure,
@@ -629,18 +630,20 @@ def add_structure_owner(request, token):
             ),
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
-            notify_admins(
-                message=gettext_lazy(
-                    "%(corporation)s was added as new " "structure owner by %(user)s."
+            with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                notify_admins(
+                    message=gettext_lazy(
+                        "%(corporation)s was added as new "
+                        "structure owner by %(user)s."
+                    )
+                    % {
+                        "corporation": owner.corporation.corporation_name,
+                        "user": request.user.username,
+                    },
+                    title="{}: Structure owner added: {}".format(
+                        __title__, owner.corporation.corporation_name
+                    ),
                 )
-                % {
-                    "corporation": owner.corporation.corporation_name,
-                    "user": request.user.username,
-                },
-                title="{}: Structure owner added: {}".format(
-                    __title__, owner.corporation.corporation_name
-                ),
-            )
     return redirect("structures:index")
 
 
@@ -669,7 +672,7 @@ def poco_list_data(request) -> JsonResponse:
         "eve_type__eve_group",
         "eve_solar_system",
         "eve_solar_system__eve_constellation__eve_region",
-    ).filter(eve_type__eve_group__eve_category_id=EveCategory.EVE_CATEGORY_ID_ORBITAL)
+    ).filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
     data = list()
     for poco in pocos:
         if poco.eve_solar_system.is_low_sec:

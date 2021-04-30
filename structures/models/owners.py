@@ -1,7 +1,6 @@
 """Owner related models"""
 
 import json
-import logging
 import math
 import os
 import re
@@ -21,11 +20,12 @@ from esi.models import Token
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
+from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag, make_logger_prefix
 
-from .. import __title__
+from .. import __title__, constants
 from ..app_settings import (
     STRUCTURES_ADD_TIMERS,
     STRUCTURES_DEFAULT_LANGUAGE,
@@ -40,18 +40,11 @@ from ..app_settings import (
 )
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerAssetManager
-from .eveuniverse import (
-    EveGroup,
-    EveMoon,
-    EvePlanet,
-    EveSolarSystem,
-    EveType,
-    EveUniverse,
-)
+from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
 from .notifications import EveEntity, Notification, NotificationType
 from .structures import Structure
 
-logger = LoggerAddTag(logging.getLogger(__name__), __title__)
+logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 class General(models.Model):
@@ -519,7 +512,7 @@ class Owner(models.Model):
                     reinforce_hour = reinforce_exit_start + timedelta(hours=1)
                     structure = {
                         "structure_id": office_id,
-                        "type_id": EveType.EVE_TYPE_ID_POCO,
+                        "type_id": constants.EVE_TYPE_ID_POCO,
                         "corporation_id": corporation_id,
                         "name": name if name else "",
                         "system_id": poco["system_id"],
@@ -899,7 +892,7 @@ class Owner(models.Model):
         """processes notifications for timers if any"""
         empty_refineries = Structure.objects.filter(
             owner=self,
-            eve_type__eve_group_id=EveGroup.EVE_GROUP_ID_REFINERY,
+            eve_type__eve_group_id=constants.EVE_GROUP_ID_REFINERY,
             eve_moon__isnull=True,
         )
         if empty_refineries:

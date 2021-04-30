@@ -128,16 +128,22 @@ class NotificationAdmin(admin.ModelAdmin):
     )
     ordering = ["-timestamp", "-notification_id"]
     list_filter = ("owner", RenderableNotificationFilter, "is_sent", "notif_type")
+    list_select_related = True
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related("owner__webhooks")
 
     def _webhooks(self, obj):
         if not obj.can_be_rendered:
             return format_html("<i>N/A</i>")
-        names = [
-            x.name
-            for x in obj.owner.webhooks.filter(
-                notification_types__contains=obj.notif_type
-            ).order_by("name")
-        ]
+        names = sorted(
+            [
+                webhook.name
+                for webhook in obj.owner.webhooks.all()
+                if obj.notif_type in webhook.notification_types
+            ]
+        )
         if names:
             return ", ".join(names)
         else:
@@ -263,7 +269,7 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
 
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
-    list_select_related = True
+    list_select_related = ("corporation", "corporation__alliance", "character")
     list_display = (
         "_corporation",
         "_alliance",
@@ -290,6 +296,10 @@ class OwnerAdmin(admin.ModelAdmin):
     ordering = ["corporation__corporation_name"]
     search_fields = ["corporation__corporation_name"]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related("ping_groups", "webhooks")
+
     def _has_default_pings_enabled(self, obj):
         return obj.has_default_pings_enabled
 
@@ -297,11 +307,7 @@ class OwnerAdmin(admin.ModelAdmin):
     _has_default_pings_enabled.boolean = True
 
     def _ping_groups(self, obj):
-        names = [x.name for x in obj.ping_groups.all().order_by("name")]
-        if names:
-            return names
-        else:
-            return None
+        return sorted([ping_group.name for ping_group in obj.ping_groups.all()])
 
     def _corporation(self, obj):
         return obj.corporation.corporation_name
@@ -317,7 +323,7 @@ class OwnerAdmin(admin.ModelAdmin):
     _alliance.admin_order_field = "corporation__alliance__alliance_name"
 
     def _webhooks(self, obj):
-        names = [x.name for x in obj.webhooks.all().order_by("name")]
+        names = sorted([webhook.name for webhook in obj.webhooks.all()])
         if names:
             return names
         else:
@@ -570,7 +576,18 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
     show_full_result_count = True
-    list_select_related = True
+    list_select_related = (
+        "owner",
+        "owner__corporation",
+        "owner__corporation__alliance",
+        "eve_solar_system",
+        "eve_solar_system__eve_constellation__eve_region",
+        "eve_type",
+        "eve_type__eve_group",
+        "eve_type__eve_group__eve_category",
+        "eve_planet",
+        "eve_moon",
+    )
     search_fields = [
         "name",
         "owner__corporation__corporation_name",
@@ -594,11 +611,16 @@ class StructureAdmin(admin.ModelAdmin):
 
     actions = ("add_default_tags", "remove_user_tags", "update_generated_tags")
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related("tags")
+
     def _owner(self, structure):
+        alliance = structure.owner.corporation.alliance
         return format_html(
             "{}<br>{}",
             structure.owner.corporation,
-            structure.owner.corporation.alliance,
+            alliance if alliance else "",
         )
 
     def _location(self, structure):
@@ -621,11 +643,7 @@ class StructureAdmin(admin.ModelAdmin):
         return structure.get_power_mode_display()
 
     def _tags(self, structure):
-        tag_names = [x.name for x in structure.tags.all()]
-        if tag_names:
-            return tag_names
-        else:
-            return None
+        return sorted([tag.name for tag in structure.tags.all()])
 
     _tags.short_description = "Tags"
 
@@ -757,6 +775,7 @@ class WebhookAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "_ping_groups",
+        "_owners",
         "is_active",
         "_is_default",
         "_messages_in_queue",
@@ -764,17 +783,22 @@ class WebhookAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     save_as = True
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related("ping_groups", "owner_set", "owner_set__corporation")
+
     def _default_pings(self, obj):
         return obj.has_default_pings_enabled
 
     _default_pings.boolean = True
 
     def _ping_groups(self, obj):
-        names = [x.name for x in obj.ping_groups.all().order_by("name")]
-        if names:
-            return names
-        else:
-            return None
+        return sorted([ping_group.name for ping_group in obj.ping_groups.all()])
+
+    def _owners(self, obj):
+        return sorted([str(owner) for owner in obj.owner_set.all()])
+
+    _owners.short_description = "Enabled for Owners"
 
     def _is_default(self, obj):
         value = True if obj.is_default else None

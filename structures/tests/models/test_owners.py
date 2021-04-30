@@ -516,7 +516,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.name, "Planet (Barren)")
         self.assertEqual(structure.eve_solar_system_id, 30002537)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
-        self.assertEqual(structure.eve_type_id, EveType.EVE_TYPE_ID_POCO)
+        self.assertEqual(structure.eve_type_id, 2233)
         self.assertEqual(structure.reinforce_hour, 20)
         self.assertEqual(structure.state, Structure.STATE_UNKNOWN)
         self.assertEqual(structure.eve_planet_id, 40161472)
