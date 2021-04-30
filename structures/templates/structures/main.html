@@ -15,12 +15,16 @@
     </span>
 
     <!-- Nav tabs -->
-    <ul id="myTabs" class="nav nav-tabs" role="tablist">
+    <ul id="structure-tabs" class="nav nav-tabs" role="tablist">
         {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
-            <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% translate "All Structures" %}</a></li>
-            <script id="active-tab" type="application/javascript">structures</script>
+            <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+            <script id="active-tab" type="application/javascript">
+                let activeTab = 'structures';
+            </script>
         {% else%}
-            <script id="active-tab" type="application/javascript">pocos</script>
+            <script id="active-tab" type="application/javascript">
+                let activeTab = 'pocos';
+            </script>
         {% endif %}
         <li role="presentation"><a href="#pocos" aria-controls="pocos" role="tab" data-toggle="tab">{% translate "Customs Offices" %}</a></li>
     </ul>
@@ -223,8 +227,7 @@
                 }
             });
 
-            tabName = document.getElementById('active-tab').textContent
-            $('#myTabs a[href="#' + tabName + '"]').tab('show')
+            $('#structure-tabs a[href="#' + activeTab + '"]').tab('show')
         });
     </script>
 {% endblock %}
