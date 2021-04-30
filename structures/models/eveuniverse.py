@@ -16,6 +16,8 @@ from ..managers import EveSovereigntyMapManager, EveUniverseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
+NAMES_MAX_LENGTH = 255
+
 
 class EsiNameLocalization(models.Model):
     """Base class for adding localization support for name field"""
@@ -37,16 +39,24 @@ class EsiNameLocalization(models.Model):
     ESI_DEFAULT_LANGUAGE = "en-us"
 
     name_de = models.CharField(
-        max_length=100, blank=True, help_text="Eve Online name localized for German"
+        max_length=NAMES_MAX_LENGTH,
+        blank=True,
+        help_text="Eve Online name localized for German",
     )
     name_ko = models.CharField(
-        max_length=100, blank=True, help_text="Eve Online name localized for Korean"
+        max_length=NAMES_MAX_LENGTH,
+        blank=True,
+        help_text="Eve Online name localized for Korean",
     )
     name_ru = models.CharField(
-        max_length=100, blank=True, help_text="Eve Online name localized for Russian"
+        max_length=NAMES_MAX_LENGTH,
+        blank=True,
+        help_text="Eve Online name localized for Russian",
     )
     name_zh = models.CharField(
-        max_length=100, blank=True, help_text="Eve Online name localized for Chinese"
+        max_length=NAMES_MAX_LENGTH,
+        blank=True,
+        help_text="Eve Online name localized for Chinese",
     )
 
     @property
@@ -122,7 +132,7 @@ class EveUniverse(EsiNameLocalization, models.Model):
     """
 
     id = models.PositiveIntegerField(primary_key=True, help_text="Eve Online ID")
-    name = models.CharField(max_length=100, help_text="Eve Online name")
+    name = models.CharField(max_length=NAMES_MAX_LENGTH, help_text="Eve Online name")
     last_updated = models.DateTimeField(
         default=None,
         null=True,

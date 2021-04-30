@@ -13,7 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-## [1.10.] - 2021-04-30
+## [1.10.1] - 2021-04-30
+
+### Fixed
+
+- Name for some EveTypes & EveGroups too short in Russian localization
+
+## [1.10.0] - 2021-04-30
 
 🎉 **Structure fittings** 🎉
 
@@ -31,9 +37,12 @@ After all tasks from that command have finished the app has to run a regular str
 celery -A myauth call structures.tasks.update_all_structures
 ```
 
+Note that you also need to enable the new fittings permission so users can see fittings.
+
 ### Added
 
 - Ability to see current fitting and bay contents for all upwell structures
+- Structure list shows if an upwell structure has a quantum core
 - New permission for seeing structure fittings (see also Permissions in README)
 - Dependency to django-eveuniverse
 - Links to structure type information webpage in structure list
