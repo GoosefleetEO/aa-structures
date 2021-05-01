@@ -511,7 +511,7 @@ class EveSolarSystem(EveUniverse):
 
 
 class EvePlanet(EveUniverse):
-    """"planet in Eve Online"""
+    """planet in Eve Online"""
 
     position_x = models.FloatField(
         null=True, default=None, blank=True, help_text="x position in the solar system"
@@ -549,7 +549,7 @@ class EvePlanet(EveUniverse):
 
 
 class EveMoon(EveUniverse):
-    """"moon in Eve Online"""
+    """ "moon in Eve Online"""
 
     position_x = models.FloatField(
         null=True, default=None, blank=True, help_text="x position in the solar system"

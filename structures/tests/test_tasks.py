@@ -54,7 +54,7 @@ class TestUpdateStructures(NoSocketsTestCase):
     def test_call_structure_update_with_owner_and_user(
         self, mock_update_structures_esi
     ):
-        """ TODO: Investigate how to call the top level method that contains the chains() """
+        """TODO: Investigate how to call the top level method that contains the chains()"""
         tasks.update_structures_esi_for_owner(self.owner.pk, self.user.pk)
         first, second = mock_update_structures_esi.call_args
         self.assertEqual(first[0], self.user)
@@ -63,7 +63,7 @@ class TestUpdateStructures(NoSocketsTestCase):
     def test_call_structure_update_with_owner_and_ignores_invalid_user(
         self, mock_update_structures_esi
     ):
-        """ TODO: Investigate how to call the top level method that contains the chains() """
+        """TODO: Investigate how to call the top level method that contains the chains()"""
         tasks.update_structures_esi_for_owner(self.owner.pk, generate_invalid_pk(User))
         first, second = mock_update_structures_esi.call_args
         self.assertIsNone(first[0])
@@ -71,7 +71,7 @@ class TestUpdateStructures(NoSocketsTestCase):
     @override_settings(CELERY_ALWAYS_EAGER=True)
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
-            """ TODO: Investigate how to call the top level method that contains the chains() """
+            """TODO: Investigate how to call the top level method that contains the chains()"""
             tasks.update_structures_esi_for_owner(owner_pk=generate_invalid_pk(Owner))
 
     @patch(MODULE_PATH + ".update_structures_for_owner")
@@ -141,7 +141,7 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
     def test_call_structure_asset_update_with_owner_and_user(
         self, mock_update_asset_esi
     ):
-        """ TODO: Investigate how to call the top level method that contains the chains() """
+        """TODO: Investigate how to call the top level method that contains the chains()"""
         tasks.update_structures_assets_for_owner(self.owner.pk, self.user.pk)
         first, second = mock_update_asset_esi.call_args
         self.assertEqual(first[0], self.user)
@@ -150,7 +150,7 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
     def test_call_structure_asset_update_with_owner_and_ignores_invalid_user(
         self, mock_update_asset_esi
     ):
-        """ TODO: Investigate how to call the top level method that contains the chains() """
+        """TODO: Investigate how to call the top level method that contains the chains()"""
         tasks.update_structures_assets_for_owner(
             self.owner.pk, generate_invalid_pk(User)
         )
@@ -160,7 +160,7 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
     @override_settings(CELERY_ALWAYS_EAGER=True)
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
-            """ TODO: Investigate how to call the top level method that contains the chains() """
+            """TODO: Investigate how to call the top level method that contains the chains()"""
             tasks.update_structures_assets_for_owner(
                 owner_pk=generate_invalid_pk(Owner)
             )

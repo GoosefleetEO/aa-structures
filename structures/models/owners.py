@@ -772,7 +772,7 @@ class Owner(models.Model):
         return success
 
     def _fetch_notifications_from_esi(self, token: Token) -> dict:
-        """ fetching all notifications from ESI for current owner"""
+        """fetching all notifications from ESI for current owner"""
         add_prefix = self._logger_prefix()
         notifications = esi_fetch(
             "Character.get_characters_character_id_notifications",

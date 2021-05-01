@@ -7,7 +7,7 @@ from . import __title__, urls
 
 
 class StructuresMenuItem(MenuItemHook):
-    """ This class ensures only authorized users will see the menu entry """
+    """This class ensures only authorized users will see the menu entry"""
 
     def __init__(self):
         # setup menu entry for sidebar
