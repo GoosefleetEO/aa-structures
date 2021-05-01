@@ -141,7 +141,7 @@ tags = list()
 for name in tag_names:
     tag, _ = StructureTag.objects.update_or_create(
         name=name,
-        defaults={"style": get_random([x[0] for x in StructureTag.STYLE_CHOICES])},
+        defaults={"style": get_random([x[0] for x in StructureTag.Style.CHOICES])},
     )
     tags.append(tag)
 

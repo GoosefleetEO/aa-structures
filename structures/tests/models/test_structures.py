@@ -258,21 +258,21 @@ class TestStructure2(NoSocketsTestCase):
         null_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
         self.assertIn(null_tag, list(obj.tags.all()))
         null_tag.order = 100
-        null_tag.style = StructureTag.STYLE_DARK_BLUE
+        null_tag.style = StructureTag.Style.DARK_BLUE
         null_tag.save()
 
         sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
         self.assertIn(sov_tag, list(obj.tags.all()))
         sov_tag.order = 100
-        sov_tag.style = StructureTag.STYLE_RED
+        sov_tag.style = StructureTag.Style.RED
         sov_tag.save()
 
         obj.update_generated_tags(recreate_tags=True)
         null_tag.refresh_from_db()
-        self.assertEqual(null_tag.style, StructureTag.STYLE_RED)
+        self.assertEqual(null_tag.style, StructureTag.Style.RED)
         self.assertEqual(null_tag.order, 50)
         sov_tag.refresh_from_db()
-        self.assertEqual(sov_tag.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(sov_tag.style, StructureTag.Style.DARK_BLUE)
         self.assertEqual(sov_tag.order, 20)
 
 

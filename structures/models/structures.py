@@ -30,29 +30,22 @@ class StructureTag(models.Model):
     NAME_NULLSEC_TAG = gettext_noop("nullsec")
     NAME_W_SPACE_TAG = gettext_noop("w_space")
 
-    # styles
-    STYLE_GREY = "default"
-    STYLE_DARK_BLUE = "primary"
-    STYLE_GREEN = "success"
-    STYLE_LIGHT_BLUE = "info"
-    STYLE_ORANGE = "warning"
-    STYLE_RED = "danger"
-    STYLE_CHOICES = [
-        (STYLE_GREY, "grey"),
-        (STYLE_DARK_BLUE, "dark blue"),
-        (STYLE_GREEN, "green"),
-        (STYLE_LIGHT_BLUE, "light blue"),
-        (STYLE_ORANGE, "orange"),
-        (STYLE_RED, "red"),
-    ]
+    class Style(models.TextChoices):
+        GREY = "default", "grey"
+        DARK_BLUE = "primary", "dark blue"
+        GREEN = "success", "green"
+        LIGHT_BLUE = "info", "light blue"
+        ORANGE = "warning", "orange"
+        RED = "danger", "red"
+        # TODO: add localization
 
     SPACE_TYPE_MAP = {
-        EveSolarSystem.TYPE_HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": STYLE_GREEN},
-        EveSolarSystem.TYPE_LOWSEC: {"name": NAME_LOWSEC_TAG, "style": STYLE_ORANGE},
-        EveSolarSystem.TYPE_NULLSEC: {"name": NAME_NULLSEC_TAG, "style": STYLE_RED},
+        EveSolarSystem.TYPE_HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": Style.GREEN},
+        EveSolarSystem.TYPE_LOWSEC: {"name": NAME_LOWSEC_TAG, "style": Style.ORANGE},
+        EveSolarSystem.TYPE_NULLSEC: {"name": NAME_NULLSEC_TAG, "style": Style.RED},
         EveSolarSystem.TYPE_W_SPACE: {
             "name": NAME_W_SPACE_TAG,
-            "style": STYLE_LIGHT_BLUE,
+            "style": Style.LIGHT_BLUE,
         },
     }
 
@@ -64,7 +57,7 @@ class StructureTag(models.Model):
     )
     style = models.CharField(
         max_length=16,
-        choices=STYLE_CHOICES,
+        choices=Style.choices,
         default="default",
         blank=True,
         help_text="color style of tag",

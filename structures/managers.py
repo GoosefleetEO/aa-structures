@@ -425,7 +425,7 @@ class StructureTagManager(models.Manager):
         obj, created = self.update_or_create(
             name=self.model.NAME_SOV_TAG,
             defaults={
-                "style": self.model.STYLE_DARK_BLUE,
+                "style": self.model.Style.DARK_BLUE,
                 "description": (
                     "Owner of this structure has sovereignty. system generated."
                 ),

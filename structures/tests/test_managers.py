@@ -897,7 +897,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         )
         self.assertTrue(created)
         self.assertEqual(structure.name, StructureTag.NAME_LOWSEC_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_ORANGE)
+        self.assertEqual(structure.style, StructureTag.Style.ORANGE)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
@@ -906,7 +906,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         solar_system = EveSolarSystem.objects.get(id=30002537)
         StructureTag.objects.create(
             name=StructureTag.NAME_LOWSEC_TAG,
-            style=StructureTag.STYLE_GREEN,
+            style=StructureTag.Style.GREEN,
             is_user_managed=True,
             is_default=True,
             order=100,
@@ -916,7 +916,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         )
         self.assertFalse(created)
         self.assertEqual(structure.name, StructureTag.NAME_LOWSEC_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_ORANGE)
+        self.assertEqual(structure.style, StructureTag.Style.ORANGE)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
@@ -928,7 +928,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         )
         self.assertTrue(created)
         self.assertEqual(structure.name, StructureTag.NAME_HIGHSEC_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_GREEN)
+        self.assertEqual(structure.style, StructureTag.Style.GREEN)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
@@ -940,7 +940,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         )
         self.assertTrue(created)
         self.assertEqual(structure.name, StructureTag.NAME_NULLSEC_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_RED)
+        self.assertEqual(structure.style, StructureTag.Style.RED)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
@@ -952,7 +952,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         )
         self.assertTrue(created)
         self.assertEqual(structure.name, StructureTag.NAME_W_SPACE_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_LIGHT_BLUE)
+        self.assertEqual(structure.style, StructureTag.Style.LIGHT_BLUE)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
@@ -967,7 +967,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         structure, created = StructureTag.objects.update_or_create_for_sov()
         self.assertTrue(created)
         self.assertEqual(structure.name, "sov")
-        self.assertEqual(structure.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(structure.style, StructureTag.Style.DARK_BLUE)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 20)
@@ -975,7 +975,7 @@ class TestStructureTagManager(NoSocketsTestCase):
     def test_can_update_sov_tag(self):
         StructureTag.objects.create(
             name="sov",
-            style=StructureTag.STYLE_GREEN,
+            style=StructureTag.Style.GREEN,
             is_user_managed=True,
             is_default=True,
             order=100,
@@ -983,7 +983,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         structure, created = StructureTag.objects.update_or_create_for_sov()
         self.assertFalse(created)
         self.assertEqual(structure.name, "sov")
-        self.assertEqual(structure.style, StructureTag.STYLE_DARK_BLUE)
+        self.assertEqual(structure.style, StructureTag.Style.DARK_BLUE)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 20)
@@ -994,12 +994,12 @@ class TestStructureTagManager(NoSocketsTestCase):
         structure, created = \
             StructureTag.objects.get_or_create_for_space_type(solar_system)
         self.assertEqual(structure.name, StructureTag.NAME_NULLSEC_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_RED)
+        self.assertEqual(structure.style, StructureTag.Style.RED)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
 
-        structure.style = StructureTag.STYLE_GREEN
+        structure.style = StructureTag.Style.GREEN
         structure.is_user_managed = True
         structure.order = 100
         structure.save()
@@ -1009,7 +1009,7 @@ class TestStructureTagManager(NoSocketsTestCase):
 
         self.assertFalse(created)
         self.assertEqual(structure.name, StructureTag.NAME_NULLSEC_TAG)
-        self.assertEqual(structure.style, StructureTag.STYLE_RED)
+        self.assertEqual(structure.style, StructureTag.Style.RED)
         self.assertEqual(structure.is_user_managed, False)
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
