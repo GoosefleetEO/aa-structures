@@ -195,46 +195,46 @@ class TestStructurePowerMode(NoSocketsTestCase):
     def test_full_power_mode(self):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=1)
-        self.assertEqual(structure.power_mode, Structure.MODE_FULL_POWER)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.FULL_POWER)
         self.assertEqual(structure.get_power_mode_display(), "Full Power")
 
     def test_low_power_mode(self):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() - timedelta(seconds=3)
         structure.last_online_at = now() - timedelta(days=3)
-        self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_POWER)
 
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = None
         structure.last_online_at = None
         structure.state = Structure.State.ANCHORING
-        self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_POWER)
 
         structure.fuel_expires_at = None
         structure.last_online_at = now() - timedelta(days=3)
-        self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_POWER)
         self.assertEqual(structure.get_power_mode_display(), "Low Power")
 
     def test_abandoned_mode(self):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() - timedelta(seconds=3)
         structure.last_online_at = now() - timedelta(days=7, seconds=1)
-        self.assertEqual(structure.power_mode, Structure.MODE_ABANDONED)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.ABANDONED)
 
         structure.fuel_expires_at = None
         structure.last_online_at = now() - timedelta(days=7, seconds=1)
-        self.assertEqual(structure.power_mode, Structure.MODE_ABANDONED)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.ABANDONED)
         self.assertEqual(structure.get_power_mode_display(), "Abandoned")
 
     def test_low_abandoned_mode(self):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() - timedelta(seconds=3)
         structure.last_online_at = None
-        self.assertEqual(structure.power_mode, Structure.MODE_LOW_ABANDONED)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_ABANDONED)
 
         structure.fuel_expires_at = None
         structure.last_online_at = None
-        self.assertEqual(structure.power_mode, Structure.MODE_LOW_ABANDONED)
+        self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_ABANDONED)
         self.assertEqual(structure.get_power_mode_display(), "Abandoned?")
 
 

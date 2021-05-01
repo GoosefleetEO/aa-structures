@@ -174,19 +174,12 @@ class Structure(models.Model):
                 else cls.UNKNOWN
             )
 
-    # power modes
-    MODE_FULL_POWER = "FU"
-    MODE_LOW_POWER = "LO"
-    MODE_ABANDONED = "AB"
-    MODE_LOW_ABANDONED = "LA"
-    MODE_UNKNOWN = "UN"
-    MODE_CHOICES = (
-        (MODE_FULL_POWER, _("Full Power")),
-        (MODE_LOW_POWER, _("Low Power")),
-        (MODE_ABANDONED, _("Abandoned")),
-        (MODE_LOW_ABANDONED, _("Abandoned?")),
-        (MODE_UNKNOWN, _("Unknown")),
-    )
+    class PowerMode(models.TextChoices):
+        FULL_POWER = "FU", _("Full Power")
+        LOW_POWER = "LO", _("Low Power")
+        ABANDONED = "AB", _("Abandoned")
+        LOW_ABANDONED = "LA", _("Abandoned?")
+        UNKNOWN = "UN", _("Unknown")
 
     id = models.BigIntegerField(
         primary_key=True, help_text="The Item ID of the structure"
@@ -346,7 +339,7 @@ class Structure(models.Model):
         if not power_mode:
             return None
         else:
-            return power_mode == self.MODE_FULL_POWER
+            return power_mode == self.PowerMode.FULL_POWER
 
     @property
     def is_low_power(self):
@@ -358,7 +351,7 @@ class Structure(models.Model):
         if not power_mode:
             return None
         else:
-            return power_mode == self.MODE_LOW_POWER
+            return power_mode == self.PowerMode.LOW_POWER
 
     @property
     def is_abandoned(self):
@@ -370,7 +363,7 @@ class Structure(models.Model):
         if not power_mode:
             return None
         else:
-            return power_mode == self.MODE_ABANDONED
+            return power_mode == self.PowerMode.ABANDONED
 
     @property
     def is_maybe_abandoned(self):
@@ -382,7 +375,7 @@ class Structure(models.Model):
         if not power_mode:
             return None
         else:
-            return power_mode == self.MODE_LOW_ABANDONED
+            return power_mode == self.PowerMode.LOW_ABANDONED
 
     @property
     def power_mode(self):
@@ -393,19 +386,19 @@ class Structure(models.Model):
             return None
 
         if self.fuel_expires_at and self.fuel_expires_at > now():
-            return self.MODE_FULL_POWER
+            return self.PowerMode.FULL_POWER
 
         elif self.last_online_at:
             if self.last_online_at >= now() - timedelta(days=7):
-                return self.MODE_LOW_POWER
+                return self.PowerMode.LOW_POWER
             else:
-                return self.MODE_ABANDONED
+                return self.PowerMode.ABANDONED
 
         elif self.state in {self.State.ANCHORING, self.State.ANCHOR_VULNERABLE}:
-            return self.MODE_LOW_POWER
+            return self.PowerMode.LOW_POWER
 
         else:
-            return self.MODE_LOW_ABANDONED
+            return self.PowerMode.LOW_ABANDONED
 
     @property
     def is_reinforced(self):
@@ -426,12 +419,7 @@ class Structure(models.Model):
         self.update_generated_tags()
 
     def get_power_mode_display(self):
-        power_mode = self.power_mode
-        for key, value in self.MODE_CHOICES:
-            if key == power_mode:
-                return value
-
-        return ""
+        return self.PowerMode(self.power_mode).label if self.power_mode else ""
 
     def update_generated_tags(self, recreate_tags=False):
         """updates all generated tags for this structure
