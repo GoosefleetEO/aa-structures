@@ -40,12 +40,14 @@ from structures.models import (
     StructureTag,
 )
 
+# TODO: Add data for assets, e.g. fittings
+
 print(
     "generate_structure - "
     "scripts generates large amount of random structures for load testing "
 )
 
-amount = 50
+amount = 20
 
 # random pick of most active corporations on zKillboard in Jan 2020
 corporation_ids = [
@@ -141,7 +143,7 @@ tags = list()
 for name in tag_names:
     tag, _ = StructureTag.objects.update_or_create(
         name=name,
-        defaults={"style": get_random([x[0] for x in StructureTag.Style.CHOICES])},
+        defaults={"style": get_random([x[0] for x in StructureTag.Style.choices])},
     )
     tags.append(tag)
 

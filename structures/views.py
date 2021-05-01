@@ -24,6 +24,7 @@ from app_utils.datetime import DATETIME_FORMAT, timeuntil_str
 from app_utils.logging import LoggerAddTag
 from app_utils.messages import messages_plus
 from app_utils.views import (
+    BootstrapStyle,
     bootstrap_label_html,
     format_html_lazy,
     link_html,
@@ -261,19 +262,21 @@ class StructuresRowBuilder:
         elif self._structure.is_low_power:
             fuel_expires_display = format_html_lazy(
                 bootstrap_label_html(
-                    self._structure.get_power_mode_display(), "warning"
+                    self._structure.get_power_mode_display(), BootstrapStyle.WARNING
                 )
             )
             fuel_expires_timestamp = None
         elif self._structure.is_abandoned:
             fuel_expires_display = format_html_lazy(
-                bootstrap_label_html(self._structure.get_power_mode_display(), "danger")
+                bootstrap_label_html(
+                    self._structure.get_power_mode_display(), BootstrapStyle.DANGER
+                )
             )
             fuel_expires_timestamp = None
         elif self._structure.is_maybe_abandoned:
             fuel_expires_display = format_html_lazy(
                 bootstrap_label_html(
-                    self._structure.get_power_mode_display(), "warning"
+                    self._structure.get_power_mode_display(), BootstrapStyle.WARNING
                 )
             )
             fuel_expires_timestamp = None
@@ -311,20 +314,22 @@ class StructuresRowBuilder:
         elif self._structure.is_full_power:
             last_online_at_display = format_html_lazy(
                 bootstrap_label_html(
-                    self._structure.get_power_mode_display(), "success"
+                    self._structure.get_power_mode_display(), BootstrapStyle.SUCCESS
                 )
             )
             last_online_at_timestamp = None
         elif self._structure.is_maybe_abandoned:
             last_online_at_display = format_html_lazy(
                 bootstrap_label_html(
-                    self._structure.get_power_mode_display(), "warning"
+                    self._structure.get_power_mode_display(), BootstrapStyle.WARNING
                 )
             )
             last_online_at_timestamp = None
         elif self._structure.is_abandoned:
             last_online_at_display = format_html_lazy(
-                bootstrap_label_html(self._structure.get_power_mode_display(), "danger")
+                bootstrap_label_html(
+                    self._structure.get_power_mode_display(), BootstrapStyle.DANGER
+                )
             )
             last_online_at_timestamp = None
         elif self._structure.last_online_at:
