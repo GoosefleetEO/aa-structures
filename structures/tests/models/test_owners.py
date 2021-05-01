@@ -221,6 +221,7 @@ class TestOwner(NoSocketsTestCase):
                 "esi-corporations.read_structures.v1",
                 "esi-universe.read_structures.v1",
                 "esi-characters.read_notifications.v1",
+                "esi-assets.read_corporation_assets.v1",
             },
         )
 
@@ -248,6 +249,7 @@ class TestOwner(NoSocketsTestCase):
                 "esi-universe.read_structures.v1",
                 "esi-characters.read_notifications.v1",
                 "esi-corporations.read_starbases.v1",
+                "esi-assets.read_corporation_assets.v1",
             },
         )
 
@@ -391,7 +393,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_solar_system_id, 30002537)
         self.assertEqual(structure.eve_type_id, 35832)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
-        self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)
+        self.assertEqual(structure.state, Structure.State.SHIELD_VULNERABLE)
         self.assertEqual(structure.reinforce_hour, 18)
         self.assertEqual(
             structure.fuel_expires_at, datetime(2020, 3, 5, 5, 0, 0, tzinfo=utc)
@@ -416,7 +418,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_ko": "Clone Bay_ko",
                     "name_ru": "Clone Bay_ru",
                     # "name_zh": "Clone Bay_zh",
-                    "state": StructureService.STATE_ONLINE,
+                    "state": StructureService.State.ONLINE,
                 }
             ),
             to_json(
@@ -426,7 +428,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_ko": "Market Hub_ko",
                     "name_ru": "Market Hub_ru",
                     # "name_zh": "Market Hub_zh",
-                    "state": StructureService.STATE_OFFLINE,
+                    "state": StructureService.State.OFFLINE,
                 }
             ),
         }
@@ -456,7 +458,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_ko": "Reprocessing_ko",
                     "name_ru": "Reprocessing_ru",
                     # "name_zh": "Reprocessing_zh",
-                    "state": StructureService.STATE_ONLINE,
+                    "state": StructureService.State.ONLINE,
                 }
             ),
             to_json(
@@ -466,7 +468,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                     "name_ko": "Moon Drilling_ko",
                     "name_ru": "Moon Drilling_ru",
                     # "name_zh": "Moon Drilling_zh",
-                    "state": StructureService.STATE_ONLINE,
+                    "state": StructureService.State.ONLINE,
                 }
             ),
         }
@@ -518,7 +520,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 2233)
         self.assertEqual(structure.reinforce_hour, 20)
-        self.assertEqual(structure.state, Structure.STATE_UNKNOWN)
+        self.assertEqual(structure.state, Structure.State.UNKNOWN)
         self.assertEqual(structure.eve_planet_id, 40161472)
 
         # structure = Structure.objects.get(id=1200000000006)
@@ -554,7 +556,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_solar_system_id, 30002537)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 16213)
-        self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
+        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
         self.assertEqual(structure.eve_moon_id, 40161465)
         self.assertEqual(
             structure.state_timer_end, datetime(2020, 4, 5, 7, 0, 0, tzinfo=utc)
@@ -573,7 +575,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_solar_system_id, 30002537)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 20061)
-        self.assertEqual(structure.state, Structure.STATE_POS_OFFLINE)
+        self.assertEqual(structure.state, Structure.State.POS_OFFLINE)
         self.assertEqual(structure.eve_moon_id, 40161466)
         self.assertEqual(
             structure.unanchors_at, datetime(2020, 5, 5, 7, 0, 0, tzinfo=utc)
@@ -585,7 +587,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_solar_system_id, 30000474)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 20062)
-        self.assertEqual(structure.state, Structure.STATE_POS_ONLINE)
+        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
         self.assertEqual(structure.eve_moon_id, 40029527)
         self.assertGreaterEqual(
             structure.fuel_expires_at,

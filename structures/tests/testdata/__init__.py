@@ -739,9 +739,7 @@ def create_structures(dont_load_entities: bool = False) -> object:
                 StructureService.objects.create(
                     structure=obj,
                     name=service["name"],
-                    state=StructureService.get_matching_state_for_esi_state(
-                        service["state"]
-                    ),
+                    state=StructureService.State.from_esi_name(service["state"]),
                 )
         obj.save()
 

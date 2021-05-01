@@ -228,7 +228,7 @@ class StructuresRowBuilder:
                 service_name_html = no_wrap_html(
                     format_html("<small>{}</small>", service.name_localized)
                 )
-                if service.state == StructureService.STATE_OFFLINE:
+                if service.state == StructureService.State.OFFLINE:
                     service_name_html = format_html("<del>{}</del>", service_name_html)
 
                 services.append({"name": service.name, "html": service_name_html})

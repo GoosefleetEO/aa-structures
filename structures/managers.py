@@ -298,9 +298,9 @@ class StructureManager(models.Manager):
             structure["reinforce_hour"] if "reinforce_hour" in structure else None
         )
         state = (
-            self.model.get_matching_state_for_esi_state(structure["state"])
+            self.model.State.from_esi_name(structure["state"])
             if "state" in structure
-            else self.model.STATE_UNKNOWN
+            else self.model.State.UNKNOWN
         )
         state_timer_start = (
             structure["state_timer_start"] if "state_timer_start" in structure else None
@@ -353,9 +353,7 @@ class StructureManager(models.Manager):
         StructureService.objects.filter(structure=obj).delete()
         if "services" in structure and structure["services"]:
             for service in structure["services"]:
-                state = StructureService.get_matching_state_for_esi_state(
-                    service["state"]
-                )
+                state = StructureService.State.from_esi_name(service["state"])
                 args = {"structure": obj, "name": service["name"], "state": state}
                 for lang in EveUniverse.ESI_LANGUAGES:
                     if lang != EveUniverse.ESI_DEFAULT_LANGUAGE:
@@ -365,7 +363,7 @@ class StructureManager(models.Manager):
 
                 StructureService.objects.create(**args)
 
-        if obj.services.filter(state=StructureService.STATE_ONLINE).exists():
+        if obj.services.filter(state=StructureService.State.ONLINE).exists():
             obj.last_online_at = now()
             obj.save()
 

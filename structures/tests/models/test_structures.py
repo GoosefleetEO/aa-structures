@@ -136,14 +136,14 @@ class TestStructure(NoSocketsTestCase):
     def test_is_reinforced(self):
         x = Structure.objects.get(id=1000000000001)
 
-        x.state = Structure.STATE_SHIELD_VULNERABLE
+        x.state = Structure.State.SHIELD_VULNERABLE
         self.assertFalse(x.is_reinforced)
 
         for state in [
-            Structure.STATE_ARMOR_REINFORCE,
-            Structure.STATE_HULL_REINFORCE,
-            Structure.STATE_ANCHOR_VULNERABLE,
-            Structure.STATE_HULL_VULNERABLE,
+            Structure.State.ARMOR_REINFORCE,
+            Structure.State.HULL_REINFORCE,
+            Structure.State.ANCHOR_VULNERABLE,
+            Structure.State.HULL_VULNERABLE,
         ]:
             x.state = state
             self.assertTrue(x.is_reinforced)
@@ -151,7 +151,7 @@ class TestStructure(NoSocketsTestCase):
     def test_structure_service_str(self):
         structure = Structure.objects.get(id=1000000000001)
         x = StructureService(
-            structure=structure, name="Dummy", state=StructureService.STATE_ONLINE
+            structure=structure, name="Dummy", state=StructureService.State.ONLINE
         )
         self.assertEqual(str(x), "Amamake - Test Structure Alpha - Dummy")
 
@@ -207,7 +207,7 @@ class TestStructurePowerMode(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = None
         structure.last_online_at = None
-        structure.state = Structure.STATE_ANCHORING
+        structure.state = Structure.State.ANCHORING
         self.assertEqual(structure.power_mode, Structure.MODE_LOW_POWER)
 
         structure.fuel_expires_at = None
@@ -291,7 +291,7 @@ class TestStructureSave(NoSocketsTestCase):
             owner=self.owner,
             eve_solar_system_id=30002537,
             name="Dummy",
-            state=Structure.STATE_SHIELD_VULNERABLE,
+            state=Structure.State.SHIELD_VULNERABLE,
             eve_type_id=35832,
         )
         lowsec_tag = StructureTag.objects.get(name=StructureTag.NAME_LOWSEC_TAG)
@@ -306,7 +306,7 @@ class TestStructureSave(NoSocketsTestCase):
             owner=self.owner,
             eve_solar_system_id=30000474,
             name="Dummy",
-            state=Structure.STATE_SHIELD_VULNERABLE,
+            state=Structure.State.SHIELD_VULNERABLE,
             eve_type_id=35832,
         )
         nullsec_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
@@ -318,26 +318,26 @@ class TestStructureSave(NoSocketsTestCase):
 class TestStructureNoSetup(NoSocketsTestCase):
     def test_structure_get_matching_state(self):
         self.assertEqual(
-            Structure.get_matching_state_for_esi_state("anchoring"),
-            Structure.STATE_ANCHORING,
+            Structure.State.from_esi_name("anchoring"),
+            Structure.State.ANCHORING,
         )
         self.assertEqual(
-            Structure.get_matching_state_for_esi_state("not matching name"),
-            Structure.STATE_UNKNOWN,
+            Structure.State.from_esi_name("not matching name"),
+            Structure.State.UNKNOWN,
         )
 
     def test_structure_service_get_matching_state(self):
         self.assertEqual(
-            StructureService.get_matching_state_for_esi_state("online"),
-            StructureService.STATE_ONLINE,
+            StructureService.State.from_esi_name("online"),
+            StructureService.State.ONLINE,
         )
         self.assertEqual(
-            StructureService.get_matching_state_for_esi_state("offline"),
-            StructureService.STATE_OFFLINE,
+            StructureService.State.from_esi_name("offline"),
+            StructureService.State.OFFLINE,
         )
         self.assertEqual(
-            StructureService.get_matching_state_for_esi_state("not matching"),
-            StructureService.STATE_OFFLINE,
+            StructureService.State.from_esi_name("not matching"),
+            StructureService.State.OFFLINE,
         )
 
 

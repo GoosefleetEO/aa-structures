@@ -152,18 +152,18 @@ with transaction.atomic():
     for i in range(1, amount + 1):
         state = get_random(
             [
-                Structure.STATE_SHIELD_VULNERABLE,
-                Structure.STATE_SHIELD_VULNERABLE,
-                Structure.STATE_SHIELD_VULNERABLE,
-                Structure.STATE_SHIELD_VULNERABLE,
-                Structure.STATE_SHIELD_VULNERABLE,
-                Structure.STATE_SHIELD_VULNERABLE,
-                Structure.STATE_ARMOR_REINFORCE,
-                Structure.STATE_HULL_REINFORCE,
+                Structure.State.SHIELD_VULNERABLE,
+                Structure.State.SHIELD_VULNERABLE,
+                Structure.State.SHIELD_VULNERABLE,
+                Structure.State.SHIELD_VULNERABLE,
+                Structure.State.SHIELD_VULNERABLE,
+                Structure.State.SHIELD_VULNERABLE,
+                Structure.State.ARMOR_REINFORCE,
+                Structure.State.HULL_REINFORCE,
             ]
         )
         is_low_power = (
-            get_random([True, False]) or state == Structure.STATE_HULL_REINFORCE
+            get_random([True, False]) or state == Structure.State.HULL_REINFORCE
         )
 
         unanchors_at = None
@@ -189,9 +189,9 @@ with transaction.atomic():
             unanchors_at=unanchors_at,
         )
         if is_low_power:
-            state = StructureService.STATE_OFFLINE
+            state = StructureService.State.OFFLINE
         else:
-            state = StructureService.STATE_ONLINE
+            state = StructureService.State.ONLINE
         for name in get_random_subset(services, 3):
             StructureService.objects.create(structure=structure, name=name, state=state)
         structure.tags.add(*get_random_subset(tags))

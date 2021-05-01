@@ -7,14 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+>**Important Update Notes**<br>If you did do have customs offices enabled you need to re-add the owners for your structures in order for fittings to work.
+
+### Changed
+
+- The scope for corporation assets is now required for all installation.
+
 ## [1.10.2] - 2021-04-30
 
 ### Added
 
 - Show ammo hold in structure details modal ([#49](https://gitlab.com/ErikKalkoken/aa-structures/issues/49))
 - Filter for cores on structure list
-
-### Changed
 
 ### Fixed
 

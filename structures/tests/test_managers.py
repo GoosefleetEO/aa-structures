@@ -717,7 +717,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         self.assertEqual(structure.position_y, 7310316270.0)
         self.assertEqual(structure.position_z, -163686684205.0)
         self.assertEqual(structure.reinforce_hour, 18)
-        self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)
+        self.assertEqual(structure.state, Structure.State.SHIELD_VULNERABLE)
         self.assertAlmostEqual(
             (now() - structure.created_at).total_seconds(), 0, delta=2
         )
@@ -747,7 +747,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
                     "name": "Clone Bay",
                     "name_de": "Clone Bay_de",
                     "name_ko": "Clone Bay_ko",
-                    "state": StructureService.STATE_ONLINE,
+                    "state": StructureService.State.ONLINE,
                 }
             ),
             to_json(
@@ -755,7 +755,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
                     "name": "Market Hub",
                     "name_de": "Market Hub_de",
                     "name_ko": "Market Hub_ko",
-                    "state": StructureService.STATE_OFFLINE,
+                    "state": StructureService.State.OFFLINE,
                 }
             ),
         }
@@ -813,7 +813,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         self.assertEqual(structure.position_y, 7310316270.0)
         self.assertEqual(structure.position_z, -163686684205.0)
         self.assertEqual(structure.reinforce_hour, 18)
-        self.assertEqual(structure.state, Structure.STATE_SHIELD_VULNERABLE)
+        self.assertEqual(structure.state, Structure.State.SHIELD_VULNERABLE)
         self.assertAlmostEqual(
             (now() - structure.last_updated_at).total_seconds(), 0, delta=2
         )

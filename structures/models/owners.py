@@ -258,12 +258,10 @@ class Owner(models.Model):
             "esi-corporations.read_structures.v1",
             "esi-universe.read_structures.v1",
             "esi-characters.read_notifications.v1",
+            "esi-assets.read_corporation_assets.v1",
         ]
         if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-            scopes += [
-                "esi-planets.read_customs_offices.v1",
-                "esi-assets.read_corporation_assets.v1",
-            ]
+            scopes += ["esi-planets.read_customs_offices.v1"]
         if STRUCTURES_FEATURE_STARBASES:
             scopes += ["esi-corporations.read_starbases.v1"]
         return scopes
@@ -517,7 +515,7 @@ class Owner(models.Model):
                         "name": name if name else "",
                         "system_id": poco["system_id"],
                         "reinforce_hour": reinforce_hour.hour,
-                        "state": Structure.STATE_UNKNOWN,
+                        "state": Structure.State.UNKNOWN,
                     }
                     if planet_id:
                         structure["planet_id"] = planet_id
