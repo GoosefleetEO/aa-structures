@@ -166,7 +166,7 @@ class EveEntityManager(models.Manager):
             )
             if len(response) > 0:
                 first = response[0]
-                category = self.model.get_matching_entity_category(first["category"])
+                category = self.model.Category.from_esi_name(first["category"])
                 obj, created = self.update_or_create(
                     id=eve_entity_id,
                     defaults={"category": category, "name": first["name"]},

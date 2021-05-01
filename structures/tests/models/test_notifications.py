@@ -44,27 +44,28 @@ class TestEveEntities(NoSocketsTestCase):
 
     def test_get_matching_entity_type(self):
         self.assertEqual(
-            EveEntity.get_matching_entity_category("character"),
-            EveEntity.CATEGORY_CHARACTER,
+            EveEntity.Category.from_esi_name("character"),
+            EveEntity.Category.CHARACTER,
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_category("corporation"),
-            EveEntity.CATEGORY_CORPORATION,
+            EveEntity.Category.from_esi_name("corporation"),
+            EveEntity.Category.CORPORATION,
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_category("alliance"),
-            EveEntity.CATEGORY_ALLIANCE,
+            EveEntity.Category.from_esi_name("alliance"),
+            EveEntity.Category.ALLIANCE,
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_category("faction"),
-            EveEntity.CATEGORY_FACTION,
+            EveEntity.Category.from_esi_name("faction"),
+            EveEntity.Category.FACTION,
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_category("other"), EveEntity.CATEGORY_OTHER
+            EveEntity.Category.from_esi_name("other"),
+            EveEntity.Category.OTHER,
         )
         self.assertEqual(
-            EveEntity.get_matching_entity_category("does not exist"),
-            EveEntity.CATEGORY_OTHER,
+            EveEntity.Category.from_esi_name("does not exist"),
+            EveEntity.Category.OTHER,
         )
 
     def test_profile_url(self):

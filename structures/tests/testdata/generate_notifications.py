@@ -139,10 +139,8 @@ for notification in notifications:
 with transaction.atomic():
     timestamp_start = now() - timedelta(hours=2)
     for notification in notifications:
-        sender_type = EveEntity.get_matching_entity_category(
-            notification["sender_type"]
-        )
-        if sender_type != EveEntity.CATEGORY_OTHER:
+        sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
+        if sender_type != EveEntity.Category.OTHER:
             sender, _ = EveEntity.objects.get_or_create_esi(notification["sender_id"])
         else:
             sender, _ = EveEntity.objects.get_or_create(

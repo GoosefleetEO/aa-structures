@@ -286,22 +286,23 @@ class Webhook(WebhookBase):
 class EveEntity(models.Model):
     """An EVE entity like a character or an alliance."""
 
-    CATEGORY_CHARACTER = 1
-    CATEGORY_CORPORATION = 2
-    CATEGORY_ALLIANCE = 3
-    CATEGORY_FACTION = 4
-    CATEGORY_OTHER = 5
+    class Category(models.IntegerChoices):
+        CHARACTER = 1, "character"
+        CORPORATION = 2, "corporation"
+        ALLIANCE = 3, "alliance"
+        FACTION = 4, "faction"
+        OTHER = 5, "other"
 
-    CATEGORY_CHOICES = [
-        (CATEGORY_CHARACTER, "character"),
-        (CATEGORY_CORPORATION, "corporation"),
-        (CATEGORY_ALLIANCE, "alliance"),
-        (CATEGORY_FACTION, "faction"),
-        (CATEGORY_OTHER, "other"),
-    ]
+        @classmethod
+        def from_esi_name(cls, esi_name: str) -> "EveEntity.Category":
+            """Returns category for given ESI name."""
+            for choice in cls.choices:
+                if esi_name == choice[1]:
+                    return cls(choice[0])
+            return cls.OTHER
 
     id = models.PositiveIntegerField(primary_key=True, help_text="Eve Online ID")
-    category = models.IntegerField(choices=CATEGORY_CHOICES)
+    category = models.IntegerField(choices=Category.choices)
     name = models.CharField(max_length=255, null=True, default=None, blank=True)
 
     objects = EveEntityManager()
@@ -316,36 +317,26 @@ class EveEntity(models.Model):
 
     def profile_url(self) -> str:
         """Returns link to website with profile info about this entity."""
-        if self.category == self.CATEGORY_CORPORATION:
+        if self.category == self.Category.CORPORATION:
             url = dotlan.corporation_url(self.name)
-        elif self.category == self.CATEGORY_ALLIANCE:
+        elif self.category == self.Category.ALLIANCE:
             url = dotlan.alliance_url(self.name)
         else:
             url = ""
         return url
 
     def icon_url(self, size: int = 32) -> str:
-        if self.category == self.CATEGORY_ALLIANCE:
+        if self.category == self.Category.ALLIANCE:
             return eveimageserver.alliance_logo_url(self.id, size)
         elif (
-            self.category == self.CATEGORY_CORPORATION
-            or self.category == self.CATEGORY_FACTION
+            self.category == self.Category.CORPORATION
+            or self.category == self.Category.FACTION
         ):
             return eveimageserver.corporation_logo_url(self.id, size)
-        elif self.category == self.CATEGORY_CHARACTER:
+        elif self.category == self.Category.CHARACTER:
             return eveimageserver.character_portrait_url(self.id, size)
         else:
             raise NotImplementedError()
-
-    @classmethod
-    def get_matching_entity_category(cls, type_name) -> int:
-        """Returns category for given ESI name."""
-        match = None
-        for x in cls.CATEGORY_CHOICES:
-            if type_name == x[1]:
-                match = x
-                break
-        return match[0] if match else cls.CATEGORY_OTHER
 
 
 class Notification(models.Model):

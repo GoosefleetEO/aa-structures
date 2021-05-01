@@ -80,7 +80,7 @@ class TestOwner(NoSocketsTestCase):
             EveEntity.objects.get_or_create(
                 id=corporation.corporation_id,
                 defaults={
-                    "category": EveEntity.CATEGORY_CORPORATION,
+                    "category": EveEntity.Category.CORPORATION,
                     "name": corporation.corporation_name,
                 },
             )
@@ -94,7 +94,7 @@ class TestOwner(NoSocketsTestCase):
             EveEntity.objects.get_or_create(
                 id=character.character_id,
                 defaults={
-                    "category": EveEntity.CATEGORY_CHARACTER,
+                    "category": EveEntity.Category.CHARACTER,
                     "name": character.character_name,
                 },
             )
