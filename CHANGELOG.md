@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
->**Important Update Notes**<br>If you did do have customs offices enabled you need to re-add the owners for your structures in order for fittings to work.
+## [1.10.3] - 2021-05-01
+
+>**Important Update Notes**<br>If you have customs offices **disabled** you need to re-add all structure owners. This is because fitting requires an additional ESI scope, which previously was used for customs offices only.
+<br>If you have customs offices enabled no action is required.
 
 ### Changed
 
 - The scope for corporation assets is now required for all installation.
+- Technical improvements (Enum refactoring)
 
 ## [1.10.2] - 2021-04-30
 
