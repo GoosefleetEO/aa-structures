@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 
+from django.test import override_settings
 from django.utils.timezone import now, utc
 from esi.errors import TokenExpiredError, TokenInvalidError
 
@@ -1383,10 +1384,11 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.assertEqual(self.owner.notifications_last_error, Owner.ERROR_UNKNOWN)
 
 
+@override_settings(DEBUG=True)
 @patch("structures.models.notifications.Webhook.send_message", spec=True)
 @patch(MODULE_PATH + ".Token", spec=True)
 @patch("structures.helpers.esi_fetch._esi_client")
-class TestSendNewNotifications(NoSocketsTestCase):
+class TestSendNewNotifications1(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -1477,7 +1479,8 @@ class TestSendNewNotifications(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         notifications_processed = {
-            args[0][0].notification_id for args in mock_send_message.call_args_list
+            int(args[1]["embeds"][0].footer.text[-10:])
+            for args in mock_send_message.call_args_list
         }
         notifications_expected = set(
             Notification.objects.filter(
@@ -1489,11 +1492,41 @@ class TestSendNewNotifications(NoSocketsTestCase):
         )
         self.assertSetEqual(notifications_processed, notifications_expected)
 
+
+class TestSendNewNotifications2(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.owner.is_alliance_main = True
+        cls.owner.save()
+        load_notification_entities(cls.owner)
+        my_webhook = Webhook.objects.create(
+            name="Dummy",
+            url="dummy-url",
+            is_active=True,
+            notification_types=NotificationType.values,
+        )
+        cls.owner.webhooks.add(my_webhook)
+
+    @staticmethod
+    def my_send_to_webhook_success(self, webhook):
+        """simulates successful sending of a notification"""
+        self.is_sent = True
+        self.save()
+        return True
+
+    @patch(MODULE_PATH + ".Token", spec=True)
+    @patch("structures.helpers.esi_fetch._esi_client")
+    @patch(
+        "structures.models.notifications.Notification.send_to_webhook", autospec=True
+    )
     def test_should_send_notifications_to_multiple_webhooks_but_same_owner(
-        self, mock_esi_client_factory, mock_token, mock_send_message
+        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
         # given
-        mock_send_message.return_value = True
+        mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
         self.user = AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
@@ -1523,7 +1556,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         notifications_per_webhook = {webhook_1.pk: set(), webhook_2.pk: set()}
-        for x in mock_send_message.call_args_list:
+        for x in mock_send_to_webhook.call_args_list:
             first = x[0]
             notification = first[0]
             hook = first[1]
@@ -1554,9 +1587,9 @@ class TestSendNewNotifications(NoSocketsTestCase):
     #     "structures.models.notifications.Notification.send_to_webhook", autospec=True
     # )
     # def test_can_send_notifications_to_multiple_owners(
-    #     self, mock_send_message, mock_esi_client_factory, mock_token
+    #     self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     # ):
-    #     mock_send_message.side_effect = self.my_send_to_webhook_success
+    #     mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
     #     AuthUtils.add_permission_to_user_by_name(
     #         "structures.add_structure_owner", self.user
     #     )
@@ -1599,7 +1632,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     #     # send notifications for 1st owner only
     #     self.assertTrue(self.owner.send_new_notifications())
     #     results = {wh_mining.pk: set(), wh_structures.pk: set()}
-    #     for x in mock_send_message.call_args_list:
+    #     for x in mock_send_to_webhook.call_args_list:
     #         first = x[0]
     #         notification = first[0]
     #         hook = first[1]
@@ -1614,9 +1647,7 @@ class TestSendNewNotifications(NoSocketsTestCase):
     #     self.assertSetEqual(results[wh_mining.pk], {1000000402})
 
     @patch(MODULE_PATH + ".Owner._send_notifications_to_webhook", spec=True)
-    def test_reports_unexpected_error(
-        self, mock_send, mock_esi_client_factory, mock_token, mock_send_message
-    ):
+    def test_reports_unexpected_error(self, mock_send):
         mock_send.side_effect = RuntimeError()
         self.assertFalse(self.owner.send_new_notifications())
         self.owner.refresh_from_db()

@@ -1,8 +1,6 @@
-from unittest.mock import patch
-
 import dhooks_lite
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils.timezone import now
 
 from ...core import notification_embeds as ne
@@ -140,7 +138,7 @@ class TestNotificationEmbeds(TestCase):
         # then
         self.assertEqual(notification_embed.ping_type, Webhook.PingType.NONE)
 
-    @patch(MODULE_PATH + ".STRUCTURES_DEVELOPER_MODE", True)
+    @override_settings(DEBUG=True)
     def test_should_set_footer_in_developer_mode(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)

@@ -68,7 +68,7 @@ class NotificationBaseEmbed:
         if self._description is None:
             raise ValueError(f"description not defined for {type(self)}")
         corporation = self.notification.owner.corporation
-        if self.notification.is_alliance_level:
+        if self.notification.is_alliance_level and corporation.alliance:
             author_name = corporation.alliance.alliance_name
             author_url = corporation.alliance.logo_url(size=self.ICON_DEFAULT_SIZE)
         else:

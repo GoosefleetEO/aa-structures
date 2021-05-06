@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Fixed
+
+- Not sending notifications requiring "alliance_main" for stand alone corporations
+
 ## [1.10.3] - 2021-05-01
 
 >**Important Update Notes**<br>If you have customs offices **disabled** you need to re-add all structure owners. This is because fitting requires an additional ESI scope, which previously was used for customs offices only.
