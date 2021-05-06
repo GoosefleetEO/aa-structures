@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.10.4] - 2021-05-03
+
 ### Fixed
 
 - Not sending notifications requiring "alliance_main" for stand alone corporations
