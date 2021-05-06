@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import dhooks_lite
 
+from django.conf import settings
 from django.utils.html import strip_tags
 from django.utils.translation import gettext
 
@@ -14,10 +15,7 @@ from app_utils.datetime import (
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
 from .. import constants
-from ..app_settings import (
-    STRUCTURES_DEVELOPER_MODE,
-    STRUCTURES_NOTIFICATION_SHOW_MOON_ORE,
-)
+from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
@@ -85,8 +83,8 @@ class NotificationBaseEmbed:
         else:
             self._ping_type = Webhook.PingType.NONE
         footer_text = "Eve Online"
-        if STRUCTURES_DEVELOPER_MODE:
-            footer_text = f"{footer_text} ID {self.notification.notification_id}"
+        if settings.DEBUG:
+            footer_text = f"{footer_text} #{self.notification.notification_id}"
         footer_icon_url = static_file_absolute_url("structures/img/eve_symbol_128.png")
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(

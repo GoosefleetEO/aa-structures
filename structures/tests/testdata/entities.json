@@ -457,6 +457,13 @@
             "alliance_name": "Wayne Enterprises"
         },
         {
+            "character_id": 1005,
+            "character_name": "Peter Parker",
+            "corporation_id": 2005,
+            "corporation_name": "Daily Bugle",
+            "corporation_ticker": "DB"
+        },
+        {
             "character_id": 1011,
             "character_name": "Lex Luther",
             "corporation_id": 2102,
@@ -464,11 +471,11 @@
             "corporation_ticker": "LEX"
         },
         {
-            "character_id": 1005,
-            "character_name": "Peter Parker",
-            "corporation_id": 2005,
-            "corporation_name": "Daily Bugle",
-            "corporation_ticker": "DB"
+            "character_id": 1102,
+            "character_name": "Harley Quinn",
+            "corporation_id": 2102,
+            "corporation_name": "Harley Quinn inc.",
+            "corporation_ticker": "HQ"
         }
     ],
     "EveEntity": [
