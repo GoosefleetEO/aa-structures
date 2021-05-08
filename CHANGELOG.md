@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.10.5] - 2021-05-08
+
+### Changed
+
+- Optimized performance of admin site pages
+- Improved logging during update process
+
 ## [1.10.4] - 2021-05-03
 
 ### Fixed

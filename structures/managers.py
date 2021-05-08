@@ -8,12 +8,16 @@ from django.utils.timezone import now
 from esi.models import Token
 
 from allianceauth.services.hooks import get_extension_logger
-from app_utils.logging import LoggerAddTag, make_logger_prefix
+from app_utils.logging import LoggerAddTag
 
 from . import __title__
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+
+def make_log_prefix(model_manager, id):
+    return f"{model_manager.model.__name__}(id={id})"
 
 
 class EveUniverseManager(models.Manager):
@@ -45,7 +49,7 @@ class EveUniverseManager(models.Manager):
         from .models import EsiNameLocalization
 
         eve_id = int(eve_id)
-        add_prefix = make_logger_prefix("%s(id=%d)" % (self.model.__name__, eve_id))
+        log_prefix = make_log_prefix(self, eve_id)
         try:
             esi_path = "Universe." + self.model.esi_method()
             args = {self.model.esi_pk(): eve_id}
@@ -54,12 +58,11 @@ class EveUniverseManager(models.Manager):
                     esi_path=esi_path,
                     languages=EsiNameLocalization.ESI_LANGUAGES,
                     args=args,
-                    logger_tag=add_prefix(),
                 )
             else:
                 eve_data_objects = dict()
                 eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = esi_fetch(
-                    esi_path=esi_path, args=args, logger_tag=add_prefix()
+                    esi_path=esi_path, args=args
                 )  # noqa E123
             defaults = self.model.map_esi_fields_to_model(eve_data_objects)
             obj, created = self.update_or_create(id=eve_id, defaults=defaults)
@@ -68,7 +71,7 @@ class EveUniverseManager(models.Manager):
             self._update_or_create_children(eve_data_objects)
 
         except Exception as ex:
-            logger.warn(add_prefix("Failed to update or create: %s" % ex))
+            logger.warn("%s: Failed to update or create", log_prefix)
             raise ex
 
         return obj, created
@@ -85,16 +88,17 @@ class EveUniverseManager(models.Manager):
     def update_all_esi(self) -> int:
         """update all objects from ESI. Returns count of updated  objects"""
         logger.info(
-            "%s: Updating %d objects from from ESI..."
-            % (self.model.__name__, self.count())
+            "%s: Updating %d objects from from ESI...",
+            self.model.__name__,
+            self.count(),
         )
         count_updated = 0
         for eve_obj in self.all().order_by("last_updated"):
             try:
                 self.update_or_create_esi(eve_obj.id)
                 count_updated += 1
-            except HTTPError as ex:
-                logger.exception("Update interrupted by exception: %s" % ex)
+            except HTTPError:
+                logger.exception("Update interrupted by exception")
 
         return count_updated
 
@@ -155,14 +159,11 @@ class EveEntityManager(models.Manager):
         Returns: object, created
         """
         eve_entity_id = int(eve_entity_id)
-        add_prefix = make_logger_prefix(
-            "%s(id=%s)" % (self.model.__name__, eve_entity_id)
-        )
+        log_prefix = make_log_prefix(self, eve_entity_id)
         try:
             response = esi_fetch(
                 esi_path="Universe.post_universe_names",
                 args={"ids": [eve_entity_id]},
-                logger_tag=add_prefix(),
             )
             if len(response) > 0:
                 first = response[0]
@@ -172,10 +173,10 @@ class EveEntityManager(models.Manager):
                     defaults={"category": category, "name": first["name"]},
                 )
             else:
-                raise ValueError(add_prefix("Did not find a match"))
+                raise ValueError(f"{log_prefix}: Did not find a match")
 
         except Exception as ex:
-            logger.warn(add_prefix("Failed to load eve entity: %s" % ex))
+            logger.warn("%s: Failed to load eve entity", log_prefix)
             raise ex
 
         return obj, created
@@ -227,11 +228,8 @@ class StructureManager(models.Manager):
         """
         from .models import Owner
 
-        add_prefix = make_logger_prefix(
-            "%s(id=%d)" % (self.model.__name__, structure_id)
-        )
-        logger.info(add_prefix("Trying to fetch structure from ESI"))
-
+        log_prefix = make_log_prefix(self, structure_id)
+        logger.info("%s: Trying to fetch structure from ESI", log_prefix)
         try:
             if token is None:
                 raise ValueError("Can not fetch structure without token")
@@ -240,7 +238,6 @@ class StructureManager(models.Manager):
                 esi_path="Universe.get_universe_structures_structure_id",
                 args={"structure_id": structure_id},
                 token=token,
-                logger_tag=add_prefix(),
             )
             structure = {
                 "structure_id": structure_id,
@@ -259,7 +256,7 @@ class StructureManager(models.Manager):
             )
 
         except Exception as ex:
-            logger.warn(add_prefix("Failed to load structure: {}".format(ex)))
+            logger.warn("%s: Failed to load structure", log_prefix)
             raise ex
 
         return obj, created
@@ -463,15 +460,11 @@ class OwnerAssetManager(models.Manager):
         """Fetch assets from esi for list of structures."""
         from .models import EveType, Owner, Structure
 
-        add_prefix = make_logger_prefix(
-            "%s(id=%d)" % (self.model.__name__, corporation_id)
-        )
         assets = esi_fetch(
             esi_path="Assets.get_corporations_corporation_id_assets",
             args={"corporation_id": corporation_id},
             token=token,
             has_pages=True,
-            logger_tag=add_prefix(),
         )
         owner = Owner.objects.get(corporation__corporation_id=corporation_id)
         assets_in_structures = [

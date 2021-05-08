@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db import models
+from django.db.models import Count
 from django.db.models.functions import Lower
 from django.utils.html import format_html
 
@@ -113,6 +114,28 @@ class RenderableNotificationFilter(admin.SimpleListFilter):
             return queryset
 
 
+class OwnerFilter(admin.SimpleListFilter):
+    title = "owner"
+    parameter_name = "owner_filter"
+
+    def lookups(self, request, model_admin):
+        return (
+            Notification.objects.values_list(
+                "owner__pk", "owner__corporation__corporation_name"
+            )
+            .distinct()
+            .order_by("owner__corporation__corporation_name")
+        )
+
+    def queryset(self, request, queryset):
+        """Return the filtered queryset"""
+        value = self.value()
+        if value:
+            return queryset.filter(owner__pk=self.value())
+        else:
+            return queryset
+
+
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = (
@@ -127,12 +150,19 @@ class NotificationAdmin(admin.ModelAdmin):
         "_is_timer_added",
     )
     ordering = ["-timestamp", "-notification_id"]
-    list_filter = ("owner", RenderableNotificationFilter, "is_sent", "notif_type")
-    list_select_related = True
+    list_filter = (
+        OwnerFilter,
+        # "owner",
+        RenderableNotificationFilter,
+        "is_sent",
+        "notif_type",
+    )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("owner__webhooks")
+        return qs.prefetch_related("owner__webhooks").select_related(
+            "owner", "owner__corporation", "sender"
+        )
 
     def _webhooks(self, obj):
         if not obj.can_be_rendered:
@@ -269,7 +299,6 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
 
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
-    list_select_related = ("corporation", "corporation__alliance", "character")
     list_display = (
         "_corporation",
         "_alliance",
@@ -298,7 +327,18 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("ping_groups", "webhooks")
+        return (
+            qs.select_related(
+                "corporation",
+                "corporation__alliance",
+                "character",
+                "character__user",
+                "character__character",
+            )
+            .prefetch_related("ping_groups", "webhooks")
+            .annotate(notifications_count=Count("notifications", distinct=True))
+            .annotate(structures_count=Count("structures", distinct=True))
+        )
 
     def _has_default_pings_enabled(self, obj):
         return obj.has_default_pings_enabled
@@ -381,12 +421,12 @@ class OwnerAdmin(admin.ModelAdmin):
     _is_asset_sync_ok.short_description = "assets sync"
 
     def _notifications_count(self, obj: Owner) -> int:
-        return obj.notifications.count()
+        return obj.notifications_count
 
     _notifications_count.short_description = "notifications"
 
     def _structures_count(self, obj: Owner) -> int:
-        return obj.structures.count()
+        return obj.structures_count
 
     _structures_count.short_description = "structures"
 
@@ -435,6 +475,8 @@ class OwnerAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
             return self.readonly_fields + (
+                "corporation",
+                "character",
                 "notifications_last_error",
                 "notifications_last_sync",
                 "structures_last_error",
@@ -488,6 +530,13 @@ class OwnerAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        """only show custom tags in dropdown"""
+        if db_field.name == "webhooks":
+            kwargs["queryset"] = Webhook.objects.filter(is_active=True)
+
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 @admin.register(StructureTag)
@@ -764,9 +813,7 @@ class StructureAdmin(admin.ModelAdmin):
         if db_field.name == "tags":
             kwargs["queryset"] = StructureTag.objects.filter(is_user_managed=True)
 
-        return super(StructureAdmin, self).formfield_for_manytomany(
-            db_field, request, **kwargs
-        )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 @admin.register(Webhook)
