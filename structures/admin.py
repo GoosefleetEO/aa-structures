@@ -114,15 +114,26 @@ class RenderableNotificationFilter(admin.SimpleListFilter):
             return queryset
 
 
-# class OwnerFilter(admin.RelatedFieldListFilter):
-#     def __init__(self, field, request, *args, **kwargs):
-#         owners = Owner.objects.all()
+class OwnerFilter(admin.SimpleListFilter):
+    title = "owner"
+    parameter_name = "owner_filter"
 
-#         # Limit the choices on the field
-#         field.rel.limit_choices_to = {"owner": owners}
+    def lookups(self, request, model_admin):
+        return (
+            Notification.objects.values_list(
+                "owner__pk", "owner__corporation__corporation_name"
+            )
+            .distinct()
+            .order_by("owner__corporation__corporation_name")
+        )
 
-#         # Let the RelatedFieldListFilter do its magic
-#         super().__init__(field, request, *args, **kwargs)
+    def queryset(self, request, queryset):
+        """Return the filtered queryset"""
+        value = self.value()
+        if value:
+            return queryset.filter(owner__pk=self.value())
+        else:
+            return queryset
 
 
 @admin.register(Notification)
@@ -140,8 +151,8 @@ class NotificationAdmin(admin.ModelAdmin):
     )
     ordering = ["-timestamp", "-notification_id"]
     list_filter = (
-        # ("owner", OwnerFilter),
-        "owner",
+        OwnerFilter,
+        # "owner",
         RenderableNotificationFilter,
         "is_sent",
         "notif_type",
