@@ -23,7 +23,7 @@ from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
-from app_utils.logging import LoggerAddTag, make_logger_prefix
+from app_utils.logging import LoggerAddTag
 
 from .. import __title__, constants
 from ..app_settings import (
@@ -269,7 +269,6 @@ class Owner(models.Model):
     def update_structures_esi(self, user: User = None):
         """updates all structures from ESI"""
 
-        add_prefix = self._logger_prefix()
         try:
             token, error = self.token()
             if error:
@@ -288,17 +287,12 @@ class Owner(models.Model):
 
                 if structures:
                     logger.info(
-                        add_prefix(
-                            "Storing updates for {:,} structures".format(
-                                len(structures)
-                            )
-                        )
+                        "%s: Storing updates for %d structures", self, len(structures)
                     )
                 else:
                     logger.info(
-                        add_prefix(
-                            "This corporation does not appear to have any structures"
-                        )
+                        "%s: This corporation does not appear to have any structures",
+                        self,
                     )
 
                 # remove structures no longer returned from ESI
@@ -319,9 +313,7 @@ class Owner(models.Model):
                 self.save()
 
             except Exception as ex:
-                logger.exception(
-                    add_prefix("An unexpected error ocurred {}".format(ex))
-                )
+                logger.exception("%s: An unexpected error ocurred", self)
                 self.structures_last_error = self.ERROR_UNKNOWN
                 self.structures_last_sync = now()
                 self.save()
@@ -345,7 +337,6 @@ class Owner(models.Model):
         """fetch Upwell structures from ESI for self"""
         from .eveuniverse import EsiNameLocalization
 
-        add_prefix = self._logger_prefix()
         corporation_id = self.corporation.corporation_id
         structures = list()
 
@@ -357,7 +348,6 @@ class Owner(models.Model):
                 token=token,
                 languages=EsiNameLocalization.ESI_LANGUAGES,
                 has_pages=True,
-                logger_tag=add_prefix(),
             )
 
             # reduce data
@@ -367,13 +357,12 @@ class Owner(models.Model):
 
             # fetch additional information for structures
             if not structures:
-                logger.info(add_prefix("No Upwell structures retrieved from ESI"))
+                logger.info("%s: No Upwell structures retrieved from ESI", self)
             else:
                 logger.info(
-                    add_prefix(
-                        "Fetching additional infos for {} "
-                        "Upwell structures from ESI".format(len(structures))
-                    )
+                    "%s: Fetching additional infos for %d Upwell structures from ESI",
+                    self,
+                    len(structures),
                 )
                 for structure in structures:
                     try:
@@ -381,7 +370,6 @@ class Owner(models.Model):
                             "Universe.get_universe_structures_structure_id",
                             args={"structure_id": structure["structure_id"]},
                             token=token,
-                            logger_tag=add_prefix(),
                         )
                         structure["name"] = Structure.extract_name_from_esi_respose(
                             structure_info["name"]
@@ -399,7 +387,7 @@ class Owner(models.Model):
                 self._store_raw_data("structures", structures, corporation_id)
 
         except (HTTPError, ConnectionError):
-            logger.exception(add_prefix("Failed to fetch upwell structures"))
+            logger.exception("%s: Failed to fetch upwell structures", self)
 
         return structures
 
@@ -460,7 +448,7 @@ class Owner(models.Model):
 
     def _fetch_custom_offices(self, token: Token) -> list:
         """fetch custom offices from ESI for self"""
-        add_prefix = self._logger_prefix()
+
         corporation_id = self.corporation.corporation_id
         structures = list()
         try:
@@ -469,10 +457,9 @@ class Owner(models.Model):
                 args={"corporation_id": corporation_id},
                 token=token,
                 has_pages=True,
-                logger_tag=add_prefix(),
             )
             if not pocos:
-                logger.info(add_prefix("No custom offices retrieved from ESI"))
+                logger.info("%s: No custom offices retrieved from ESI", self)
             else:
                 item_ids = [x["office_id"] for x in pocos]
                 positions = self._fetch_locations_for_pocos(
@@ -529,18 +516,13 @@ class Owner(models.Model):
                 self._store_raw_data("customs_offices", structures, corporation_id)
 
         except (HTTPError, ConnectionError):
-            logger.exception(add_prefix("Failed to fetch custom offices"))
+            logger.exception("%s: Failed to fetch custom offices", self)
 
         return structures
 
     def _fetch_locations_for_pocos(self, corporation_id, item_ids, token):
-        add_prefix = self._logger_prefix()
         logger.info(
-            add_prefix(
-                "Fetching locations for {} custom offices from ESI".format(
-                    len(item_ids)
-                )
-            )
+            "%s: Fetching locations for %d custom offices from ESI", self, len(item_ids)
         )
         locations_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
@@ -551,20 +533,17 @@ class Owner(models.Model):
                     "item_ids": item_ids_chunk,
                 },
                 token=token,
-                logger_tag=add_prefix(),
             )
             locations_data += locations_data_chunk
         positions = {x["item_id"]: x["position"] for x in locations_data}
         return positions
 
     def _fetch_names_for_pocos(self, corporation_id, item_ids, token):
-        add_prefix = self._logger_prefix()
+
         logger.info(
-            add_prefix(
-                "Fetching names for {} custom office names from ESI".format(
-                    len(item_ids)
-                )
-            )
+            "%s: Fetching names for %d custom office names from ESI",
+            self,
+            len(item_ids),
         )
         names_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
@@ -575,7 +554,6 @@ class Owner(models.Model):
                     "item_ids": item_ids_chunk,
                 },
                 token=token,
-                logger_tag=add_prefix(),
             )
             names_data += names_data_chunk
 
@@ -592,7 +570,6 @@ class Owner(models.Model):
     def _fetch_starbases(self, token: Token) -> list:
         """Fetch starbases from ESI for self."""
 
-        add_prefix = self._logger_prefix()
         structures = list()
         corporation_id = self.corporation.corporation_id
         try:
@@ -601,11 +578,10 @@ class Owner(models.Model):
                 args={"corporation_id": corporation_id},
                 token=token,
                 has_pages=True,
-                logger_tag=add_prefix(),
             )
 
             if not starbases:
-                logger.info(add_prefix("No starbases retrieved from ESI"))
+                logger.info("%s: No starbases retrieved from ESI", self)
             else:
                 names = self._fetch_starbases_names(corporation_id, starbases, token)
                 for starbase in starbases:
@@ -646,16 +622,14 @@ class Owner(models.Model):
                 self._store_raw_data("starbases", structures, corporation_id)
 
         except (HTTPError, ConnectionError):
-            logger.exception(add_prefix("Failed to fetch starbases"))
+            logger.exception("%s: Failed to fetch starbases")
 
         return structures
 
     def _fetch_starbases_names(self, corporation_id, starbases, token):
-        add_prefix = self._logger_prefix()
+
         logger.info(
-            add_prefix(
-                "Fetching names for {} starbases from ESI".format(len(starbases))
-            )
+            "%s: Fetching names for %d starbases from ESI", self, len(starbases)
         )
         item_ids = [x["starbase_id"] for x in starbases]
         names_data = list()
@@ -667,7 +641,6 @@ class Owner(models.Model):
                     "item_ids": item_ids_chunk,
                 },
                 token=token,
-                logger_tag=add_prefix(),
             )
             names_data += names_data_chunk
         names = {x["item_id"]: x["name"] for x in names_data}
@@ -681,7 +654,7 @@ class Owner(models.Model):
         return names
 
     def _calc_starbase_fuel_expires(self, corporation_id, starbase, token):
-        add_prefix = self._logger_prefix()
+
         fuel_expires_at = None
         if starbase["state"] != "offline":
             starbase_details = esi_fetch(
@@ -692,7 +665,6 @@ class Owner(models.Model):
                     "system_id": starbase["system_id"],
                 },
                 token=token,
-                logger_tag=add_prefix(),
             )
             fuel_quantity = None
             if "fuels" in starbase_details:
@@ -773,12 +745,11 @@ class Owner(models.Model):
 
     def _fetch_notifications_from_esi(self, token: Token) -> dict:
         """fetching all notifications from ESI for current owner"""
-        add_prefix = self._logger_prefix()
+
         notifications = esi_fetch(
             "Character.get_characters_character_id_notifications",
             args={"character_id": self.character.character.character_id},
             token=token,
-            logger_tag=add_prefix(),
         )
         if STRUCTURES_DEVELOPER_MODE:
             self._store_raw_data(
@@ -787,11 +758,9 @@ class Owner(models.Model):
         if STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED:
             self._store_raw_notifications(notifications)
         logger.debug(
-            add_prefix(
-                "Processing {:,} notifications received from ESI".format(
-                    len(notifications)
-                )
-            )
+            "%s: Processing %d notifications received from ESI",
+            self,
+            len(notifications),
         )
         return notifications
 
@@ -922,7 +891,6 @@ class Owner(models.Model):
     def send_new_notifications(self, user: User = None) -> bool:
         """forwards all new notification for this owner to Discord"""
 
-        add_prefix = self._logger_prefix()
         notifications_count = 0
         try:
             try:
@@ -949,21 +917,20 @@ class Owner(models.Model):
                     if len(new_notifications) > 0:
                         new_notifications_count += len(new_notifications)
                         logger.info(
-                            add_prefix(
-                                "Found {} new notifications for webhook {}".format(
-                                    len(new_notifications), webhook
-                                )
-                            )
+                            "%s: Found %d new notifications for webhook %s",
+                            self,
+                            len(new_notifications),
+                            webhook,
                         )
                         notifications_count += self._send_notifications_to_webhook(
                             new_notifications, webhook
                         )
 
                 if active_webhooks_count == 0:
-                    logger.info(add_prefix("No active webhooks"))
+                    logger.info("%s: No active webhooks", self)
 
                 if new_notifications_count == 0:
-                    logger.info(add_prefix("No new notifications found"))
+                    logger.info("%s: No new notifications found", self)
 
                 self.forwarding_last_error = self.ERROR_NONE
                 self.forwarding_last_sync = now()
@@ -973,9 +940,7 @@ class Owner(models.Model):
                 pass
 
             except Exception as ex:
-                logger.exception(
-                    add_prefix("An unexpected error ocurred {}".format(ex))
-                )
+                logger.exception("%s: An unexpected error ocurred", self)
                 self.forwarding_last_error = self.ERROR_UNKNOWN
                 self.forwarding_last_sync = now()
                 self.save()
@@ -1008,25 +973,20 @@ class Owner(models.Model):
 
         return sent_count
 
-    def _logger_prefix(self):
-        """returns standard logger prefix function"""
-        return make_logger_prefix(self.corporation.corporation_ticker)
-
     def token(self) -> Token:
         """returns a valid Token for the owner"""
         token = None
         error = None
-        add_prefix = self._logger_prefix()
 
         # abort if character is not configured
         if self.character is None:
-            logger.error(add_prefix("No character configured to sync"))
+            logger.error("%s: No character configured to sync", self)
             error = self.ERROR_NO_CHARACTER
 
         # abort if character does not have sufficient permissions
         elif not self.character.user.has_perm("structures.add_structure_owner"):
             logger.error(
-                add_prefix("self character does not have sufficient permission to sync")
+                "%s: self character does not have sufficient permission to sync", self
             )
             error = self.ERROR_INSUFFICIENT_PERMISSIONS
 
@@ -1043,14 +1003,14 @@ class Owner(models.Model):
                     .first()
                 )
             except TokenInvalidError:
-                logger.error(add_prefix("Invalid token for fetching structures"))
+                logger.error("%s: Invalid token for fetching structures", self)
                 error = self.ERROR_TOKEN_INVALID
             except TokenExpiredError:
-                logger.error(add_prefix("Token expired for fetching structures"))
+                logger.error("%s: Token expired for fetching structures", self)
                 error = self.ERROR_TOKEN_EXPIRED
             else:
                 if not token:
-                    logger.error(add_prefix("No token found with sufficient scopes"))
+                    logger.error("%s: No token found with sufficient scopes", self)
                     error = self.ERROR_TOKEN_INVALID
 
         return token, error
@@ -1058,7 +1018,7 @@ class Owner(models.Model):
     def _send_report_to_user(
         self, topic: str, topic_count: int, success: bool, error_code, user
     ):
-        add_prefix = self._logger_prefix()
+
         try:
             if success:
                 message_details = "%(count)s %(topic)s synced." % {
@@ -1091,11 +1051,8 @@ class Owner(models.Model):
                 level="success" if success else "danger",
             )
         except Exception as ex:
-            logger.error(
-                add_prefix(
-                    "An unexpected error ocurred while trying to "
-                    + "report to user: {}".format(ex)
-                )
+            logger.exception(
+                "%s: An unexpected error ocurred while trying to report to user", self
             )
             if settings.DEBUG:
                 raise ex
@@ -1103,14 +1060,12 @@ class Owner(models.Model):
     @staticmethod
     def _store_raw_data(name: str, data: list, corporation_id: int):
         """store raw data for debug purposes"""
-        with open(
-            "{}_raw_{}.json".format(name, corporation_id), "w", encoding="utf-8"
-        ) as f:
+        with open(f"{name}_raw_{corporation_id}.json", "w", encoding="utf-8") as f:
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
     def update_asset_esi(self, user: User = None):
         """Update all assets for owner where location_id is in the active structure list from esi"""
-        add_prefix = self._logger_prefix()
+
         try:
             token, error = self.token()
             if error:
@@ -1125,9 +1080,7 @@ class Owner(models.Model):
                     structure_ids, self.corporation.corporation_id, token
                 )
             except Exception as ex:
-                logger.exception(
-                    add_prefix("An unexpected error ocurred {}".format(ex))
-                )
+                logger.exception("%s: An unexpected error ocurred", self)
                 self.assets_last_error = self.ERROR_UNKNOWN
                 self.assets_last_sync = now()
                 self.save()
