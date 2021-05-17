@@ -1,4 +1,3 @@
-import json
 from datetime import timedelta
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
@@ -16,6 +15,7 @@ from allianceauth.eveonline.models import (
     EveCorporationInfo,
 )
 from allianceauth.tests.auth_utils import AuthUtils
+from app_utils.testing import json_response_to_dict, json_response_to_python
 
 from .. import views
 from ..app_settings import (
@@ -27,14 +27,6 @@ from ..models import Owner, Structure, Webhook
 from .testdata import create_structures, create_user, load_entities, set_owner_character
 
 MODULE_PATH = "structures.views"
-
-
-def _response_to_data(response):
-    return json.loads(response.content.decode("utf-8"))
-
-
-def _response_to_dict(response, key="id"):
-    return {row[key]: row for row in _response_to_data(response)}
 
 
 class TestStructureList(TestCase):
@@ -55,6 +47,28 @@ class TestStructureList(TestCase):
         # then
         self.assertEqual(response.status_code, 200)
 
+    def test_should_return_summary_data(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        request = self.factory.get(reverse("structures:structure_summary_data"))
+        request.user = user
+        response = views.structure_summary_data(request)
+        # then
+        self.assertEqual(response.status_code, 200)
+        data = json_response_to_dict(response)
+        obj = data[2001]
+        self.assertEqual(obj["corporation_name"], "Wayne Technologies")
+        self.assertEqual(obj["alliance_name"], "Wayne Enterprises")
+        self.assertEqual(obj["citadel_count"], 1)
+        self.assertEqual(obj["ec_count"], 0)
+        self.assertEqual(obj["refinery_count"], 1)
+        self.assertEqual(obj["other_count"], 0)
+        self.assertEqual(obj["poco_count"], 4)
+        self.assertEqual(obj["starbase_count"], 3)
+        self.assertEqual(obj["total"], 9)
+
 
 class TestStructureListDataPermissions(TestCase):
     @classmethod
@@ -71,7 +85,7 @@ class TestStructureListDataPermissions(TestCase):
         request.user = user
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
-        return _response_to_dict(response, "structure_id")
+        return json_response_to_dict(response, "structure_id")
 
     def test_should_show_no_structures(self):
         # given
@@ -251,9 +265,9 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = _response_to_data(response)
+        data = json_response_to_dict(response, key="structure_id")
         self.assertSetEqual(
-            {x["structure_id"] for x in data},
+            set(data.keys()),
             {
                 1000000000001,
                 1000000000002,
@@ -276,10 +290,8 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = _response_to_data(response)
-        self.assertSetEqual(
-            {x["structure_id"] for x in data}, {1000000000002, 1000000000003}
-        )
+        data = json_response_to_dict(response, key="structure_id")
+        self.assertSetEqual(set(data.keys()), {1000000000002, 1000000000003})
 
         # filter for tag_b
         request = self.factory.get(
@@ -289,8 +301,8 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = _response_to_data(response)
-        self.assertSetEqual({x["structure_id"] for x in data}, {1000000000003})
+        data = json_response_to_dict(response, key="structure_id")
+        self.assertSetEqual(set(data.keys()), {1000000000003})
 
         # filter for tag_c, tag_b
         request = self.factory.get(
@@ -300,10 +312,8 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = _response_to_data(response)
-        self.assertSetEqual(
-            {x["structure_id"] for x in data}, {1000000000002, 1000000000003}
-        )
+        data = json_response_to_dict(response, key="structure_id")
+        self.assertSetEqual(set(data.keys()), {1000000000002, 1000000000003})
 
     def test_call_with_raw_tags(self):
         request = self.factory.get(
@@ -354,7 +364,7 @@ class TestStructurePowerModes(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = _response_to_data(response)
+        data = json_response_to_python(response)
         for row in data:
             if row["structure_id"] == structure_id:
                 return row
@@ -693,7 +703,7 @@ class TestPocoList(TestCase):
         response = views.poco_list_data(request)
         # then
         self.assertEqual(response.status_code, 200)
-        data = _response_to_dict(response)
+        data = json_response_to_dict(response)
         self.assertSetEqual(
             set(data.keys()),
             {1200000000003, 1200000000004, 1200000000005, 1200000000006},

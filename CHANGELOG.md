@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.11.0] - 2021-05-17
+
+### Added
+
+- Summary tab showing total counts of structure variants for each corporation (#15)
+
 ## [1.10.6] - 2021-05-17
 
 ### Fixed

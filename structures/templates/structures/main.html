@@ -18,6 +18,7 @@
     <ul id="structure-tabs" class="nav nav-tabs" role="tablist">
         {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
             <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+            <li role="presentation"><a href="#summary" aria-controls="summary" role="tab" data-toggle="tab">{% trans "Summary" %}</a></li>
             <script id="active-tab" type="application/javascript">
                 let activeTab = 'structures';
             </script>
@@ -34,6 +35,7 @@
             <div class="tab-content">
                 {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
                     {% include "structures/partials/structure_list.html" %}
+                    {% include "structures/partials/structure_summary.html" %}
                 {% endif %}
                 {% include "structures/partials/poco_list.html" %}
             </div>
@@ -48,6 +50,33 @@
         $(document).ready(function () {
             var dataTablesPageLength = {{ data_tables_page_length }};
             var dataTablesPaging = ("{{ data_tables_paging }}" == 'True');
+
+            // sum numbers in column and write result in footer row
+            // Args:
+            // - api: current api object
+            // - columnIdx: Index number of columns to sum, starts with 0
+            // - format: format of output. either 'number' or 'isk'
+            function dataTableFooterSumColumn(api, columnIdx) {
+                // Remove the formatting to get integer data for summation
+                const intVal = function (i) {
+                    return typeof i === 'string' ?
+                        i.replace(/[\$,]/g, '') * 1 :
+                        typeof i === 'number' ?
+                            i : 0;
+                };
+
+                const columnTotal = api
+                    .column(columnIdx)
+                    .data()
+                    .reduce(function (a, b) {
+                            return intVal(a) + intVal(b);
+                        },
+                        0
+                    );
+                $(api.column(columnIdx).footer()).html(
+                    columnTotal.toLocaleString('en-US', {maximumFractionDigits: 0})
+                );
+            }
 
             /* structures */
             $('#tab_structures').DataTable({
@@ -233,7 +262,79 @@
                 }
             });
 
+            /* pocos */
+            $('#tab_summary').DataTable({
+                ajax: {
+                    url: "{% url 'structures:structure_summary_data' %}",
+                    dataSrc: '',
+                    cache: false
+                },
+                columns: [
+                    { data: 'corporation_icon' },
+                    { data: 'corporation_name' },
+                    { data: 'alliance_name' },
+                    {
+                        data: 'citadel_count',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    {
+                        data: 'ec_count',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    {
+                        data: 'refinery_count',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    {
+                        data: 'other_count',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    {
+                        data: 'poco_count',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    {
+                        data: 'starbase_count',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    {
+                        data: 'total',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                ],
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                paging: dataTablesPaging,
+                pageLength: dataTablesPageLength,
+                order: [ [ 1, "asc" ] ],
+                columnDefs: [
+                    { "sortable": false, "targets": [ 0 ] },
+                ],
+                filterDropDown:
+                {
+                    columns: [
+                        {
+                            idx: 2
+
+                        }
+                    ],
+                    autoSize: false,
+                    bootstrap: true
+                },
+                footerCallback: function (row, data, start, end, display) {
+                    var api = this.api(), data;
+
+                    dataTableFooterSumColumn(api, 3);
+                    dataTableFooterSumColumn(api, 4);
+                    dataTableFooterSumColumn(api, 5);
+                    dataTableFooterSumColumn(api, 6);
+                    dataTableFooterSumColumn(api, 7);
+                    dataTableFooterSumColumn(api, 8);
+                    dataTableFooterSumColumn(api, 9);
+                }
+            });
+
             $('#structure-tabs a[href="#' + activeTab + '"]').tab('show')
+
         });
     </script>
 {% endblock %}

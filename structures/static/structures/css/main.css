@@ -19,4 +19,26 @@
         background-color: rgb(70, 69, 69) !important;
         color: rgb(255, 255, 255) !important;
     }
+    #tab_summary tbody td:nth-child(4) {
+        text-align: right;
+    }
+    #tab_summary tbody td:nth-child(5) {
+        text-align: right;
+    }
+    #tab_summary tbody td:nth-child(6) {
+        text-align: right;
+    }
+    #tab_summary tbody td:nth-child(7) {
+        text-align: right;
+    }
+    #tab_summary tbody td:nth-child(8) {
+        text-align: right;
+    }
+    #tab_summary tbody td:nth-child(9) {
+        text-align: right;
+    }
+    #tab_summary tbody td:nth-child(10) {
+        text-align: right;
+    }
+
 }

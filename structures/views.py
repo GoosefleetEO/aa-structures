@@ -4,6 +4,7 @@ from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.db.models import Count, Q
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -13,6 +14,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext, gettext_lazy
 from esi.decorators import token_required
+from eveuniverse.core import eveimageserver
 from eveuniverse.models import EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -27,6 +29,7 @@ from app_utils.views import (
     BootstrapStyle,
     bootstrap_label_html,
     format_html_lazy,
+    image_html,
     link_html,
     no_wrap_html,
     yesno_str,
@@ -56,6 +59,13 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
 STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
 QUERY_PARAM_TAGS = "tags"
+
+
+def default_if_none(value, default=None):
+    """Return default if a value is None."""
+    if value is None:
+        return default
+    return value
 
 
 @login_required
@@ -740,6 +750,82 @@ def poco_list_data(request) -> JsonResponse:
                 "planet_type_icon": planet_type_icon,
                 "planet_type_name": planet_type_name,
                 "space_type": poco.eve_solar_system.space_type,
+            }
+        )
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+@permission_required("structures.basic_access")
+def structure_summary_data(request):
+    summary_qs = (
+        Structure.objects.values(
+            "owner__corporation__corporation_id",
+            "owner__corporation__corporation_name",
+            "owner__corporation__alliance__alliance_name",
+        )
+        .annotate(
+            ec_count=Count(
+                id,
+                filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_ENGINERING_COMPLEX),
+            )
+        )
+        .annotate(
+            refinery_count=Count(
+                id,
+                filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_REFINERY),
+            )
+        )
+        .annotate(
+            citadel_count=Count(
+                id,
+                filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_CITADEL),
+            )
+        )
+        .annotate(
+            upwell_count=Count(
+                id,
+                filter=Q(
+                    eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STRUCTURE
+                ),
+            )
+        )
+        .annotate(poco_count=Count(id, filter=Q(eve_type=constants.EVE_TYPE_ID_POCO)))
+        .annotate(
+            starbase_count=Count(
+                id,
+                filter=Q(
+                    eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STARBASE
+                ),
+            )
+        )
+    )
+    data = list()
+    for row in summary_qs:
+        data.append(
+            {
+                "id": int(row["owner__corporation__corporation_id"]),
+                "corporation_icon": image_html(
+                    eveimageserver.corporation_logo_url(
+                        row["owner__corporation__corporation_id"], size=32
+                    )
+                ),
+                "corporation_name": row["owner__corporation__corporation_name"],
+                "alliance_name": default_if_none(
+                    row["owner__corporation__alliance__alliance_name"], ""
+                ),
+                "citadel_count": row["citadel_count"],
+                "ec_count": row["ec_count"],
+                "refinery_count": row["refinery_count"],
+                "other_count": row["upwell_count"]
+                - row["ec_count"]
+                - row["refinery_count"]
+                - row["citadel_count"],
+                "poco_count": row["poco_count"],
+                "starbase_count": row["starbase_count"],
+                "total": row["upwell_count"]
+                + row["poco_count"]
+                + row["starbase_count"],
             }
         )
     return JsonResponse(data, safe=False)
