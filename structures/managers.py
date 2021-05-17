@@ -10,7 +10,7 @@ from esi.models import Token
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from . import __title__
+from . import __title__, constants
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -182,7 +182,24 @@ class EveEntityManager(models.Manager):
         return obj, created
 
 
-class StructureManager(models.Manager):
+class StructureQuerySet(models.QuerySet):
+    def filter_upwell_structures(self) -> models.QuerySet:
+        return self.filter(
+            eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STRUCTURE
+        )
+
+    def filter_customs_offices(self) -> models.QuerySet:
+        return self.filter(eve_type=constants.EVE_TYPE_ID_POCO)
+
+    def filter_starbases(self) -> models.QuerySet:
+        return self.filter(
+            eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STARBASE
+        )
+
+    def ids(self) -> set():
+        """Return ids as set."""
+        return set(self.values_list("id", flat=True))
+
     def select_related_defaults(self) -> models.QuerySet:
         """returns a QuerySet with the default select_related"""
         return self.select_related(
@@ -198,6 +215,8 @@ class StructureManager(models.Manager):
             "eve_type__eve_group__eve_category",
         )
 
+
+class StructureManagerBase(models.Manager):
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:
         """get or create a structure with data from ESI if needed
 
@@ -365,6 +384,9 @@ class StructureManager(models.Manager):
             obj.save()
 
         return obj, created
+
+
+StructureManager = StructureManagerBase.from_queryset(StructureQuerySet)
 
 
 class StructureTagManager(models.Manager):

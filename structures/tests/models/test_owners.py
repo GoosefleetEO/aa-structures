@@ -317,6 +317,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     def setUp(self):
         # reset data that might be overridden
         esi_get_corporations_corporation_id_structures.override_data = None
+        esi_get_corporations_corporation_id_starbases.override_data = None
         esi_get_corporations_corporation_id_customs_offices.override_data = None
 
     def test_returns_error_when_no_sync_char_defined(
@@ -381,9 +382,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
 
         # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # verify attributes for structure
         structure = Structure.objects.get(id=1000000000001)
@@ -502,7 +502,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
 
         # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {
             1000000000001,
             1000000000002,
@@ -512,7 +511,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000005,
             1200000000006,
         }
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # verify attributes for POCO
         structure = Structure.objects.get(id=1200000000003)
@@ -540,7 +539,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
 
         # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {
             1000000000001,
             1000000000002,
@@ -549,7 +547,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1300000000002,
             1300000000003,
         }
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # verify attributes for POS
         structure = Structure.objects.get(id=1300000000001)
@@ -612,7 +610,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
 
         # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {
             1000000000001,
             1000000000002,
@@ -625,7 +622,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1300000000002,
             1300000000003,
         }
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # user report has been sent
         self.assertTrue(mock_notify.called)
@@ -655,9 +652,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
 
         # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = set()
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # user report has been sent
         self.assertTrue(mock_notify.called)
@@ -699,7 +695,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
 
         # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {
             1200000000003,
             1200000000004,
@@ -709,14 +704,14 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1300000000002,
             1300000000003,
         }
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_will_not_break_on_http_error_when_fetching_custom_offices(
+    def test_should_not_break_on_http_error_when_fetching_custom_offices(
         self, mock_esi_client, mock_Token, mock_notify
     ):
-        # create our own esi_client
+        # given
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
             esi_post_corporations_corporation_id_assets_locations
         )
@@ -738,17 +733,15 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
             esi_get_universe_structures_structure_id
         )
-
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
         )
-        # run update task
+        # when
         self.assertTrue(owner.update_structures_esi(user=self.user))
+        # then
         owner.refresh_from_db()
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
-
-        # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
+        structure_ids = {x["id"] for x in owner.structures.values("id")}
         expected = {
             1000000000001,
             1000000000002,
@@ -761,10 +754,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_will_not_break_on_http_error_when_fetching_star_bases(
+    def test_should_not_break_on_http_error_when_fetching_star_bases(
         self, mock_esi_client, mock_Token, mock_notify
     ):
-        # create our own esi_client
+        # given
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
             esi_post_corporations_corporation_id_assets_locations
         )
@@ -786,17 +779,14 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
             esi_get_universe_structures_structure_id
         )
-
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
         )
-        # run update task
+        # when
         self.assertTrue(owner.update_structures_esi(user=self.user))
+        # then
         owner.refresh_from_db()
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
-
-        # must contain all expected structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {
             1000000000001,
             1000000000002,
@@ -806,7 +796,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000005,
             1200000000006,
         }
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
@@ -839,9 +829,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
 
         # should contain the right structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # run update task 2nd time with one less structure
         my_corp_structures_data = deepcopy(esi_corp_structures_data)
@@ -852,9 +841,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
 
         # should contain only the remaining structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
@@ -869,9 +857,8 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # run update task with all structures
         owner.update_structures_esi()
         # should contain the right structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # adding tags
         tag_a = StructureTag.objects.get(name="tag_a")
@@ -883,24 +870,26 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
 
         # should still contain alls structures
-        structure_ids = {x["id"] for x in Structure.objects.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
 
         # should still contain the tag
         s_new = Structure.objects.get(id=1000000000001)
         self.assertEqual(s_new.tags.get(name="tag_a"), tag_a)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_only_remove_structures_not_returned_from_esi(
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_remove_structures_not_returned_from_esi(
         self, mock_esi_client, mock_Token, mock_notify
     ):
         esi_get_corporations_corporation_id_structures.override_data = {"2001": []}
+        esi_get_corporations_corporation_id_starbases.override_data = {"2001": []}
+        esi_get_corporations_corporation_id_customs_offices.override_data = {"2001": []}
         mock_esi_client.side_effect = esi_mock_client
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
         owner.character = self.main_ownership
+        owner.save()
         self.assertGreater(owner.structures.count(), 0)
 
         # run update task
@@ -909,6 +898,43 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
         # must be empty
         self.assertEqual(owner.structures.count(), 0)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_delete_existing_structures_when_update_failed_with_http_error(
+        self, mock_esi_client, mock_Token, mock_notify
+    ):
+        # given
+        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = HTTPInternalServerError(
+            BravadoResponseStub(status_code=500, reason="Test")
+        )
+        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = HTTPInternalServerError(
+            BravadoResponseStub(status_code=500, reason="Test")
+        )
+        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices.side_effect = HTTPInternalServerError(
+            BravadoResponseStub(status_code=500, reason="Test")
+        )
+        create_structures(dont_load_entities=True)
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        owner.character = self.main_ownership
+        owner.save()
+        # when
+        result = owner.update_structures_esi(user=self.user)
+        # then
+        self.assertTrue(result)
+        self.assertEqual(owner.structures_last_error, Owner.ERROR_NONE)
+        expected = expected = {
+            1000000000001,
+            1000000000002,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".settings.DEBUG", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)

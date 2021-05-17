@@ -295,16 +295,6 @@ class Owner(models.Model):
                         self,
                     )
 
-                # remove structures no longer returned from ESI
-                ids_local = {x.id for x in Structure.objects.filter(owner=self)}
-                ids_from_esi = {x["structure_id"] for x in structures}
-                ids_to_remove = ids_local - ids_from_esi
-                if len(ids_to_remove) > 0:
-                    Structure.objects.filter(id__in=ids_to_remove).delete()
-                    logger.info(
-                        "Removed {} structures which apparently no longer "
-                        "exist.".format(len(ids_to_remove))
-                    )
                 # update structures
                 for structure in structures:
                     Structure.objects.update_or_create_from_dict(structure, self)
@@ -333,13 +323,26 @@ class Owner(models.Model):
 
         return success
 
+    def _remove_structures_not_returned_from_esi(
+        self, structures_qs: models.QuerySet, new_structures: list
+    ):
+        """Remove structures no longer returned from ESI."""
+        ids_local = {x.id for x in structures_qs}
+        ids_from_esi = {x["structure_id"] for x in new_structures}
+        ids_to_remove = ids_local - ids_from_esi
+        if len(ids_to_remove) > 0:
+            structures_qs.filter(id__in=ids_to_remove).delete()
+            logger.info(
+                "Removed %d structures which apparently no longer exist.",
+                len(ids_to_remove),
+            )
+
     def _fetch_upwell_structures(self, token: Token) -> list:
         """fetch Upwell structures from ESI for self"""
         from .eveuniverse import EsiNameLocalization
 
         corporation_id = self.corporation.corporation_id
         structures = list()
-
         try:
             # fetch all structures incl. localizations for services
             structures_w_lang = esi_fetch_with_localization(
@@ -388,7 +391,11 @@ class Owner(models.Model):
 
         except (HTTPError, ConnectionError):
             logger.exception("%s: Failed to fetch upwell structures", self)
-
+        else:
+            self._remove_structures_not_returned_from_esi(
+                structures_qs=self.structures.filter_upwell_structures(),
+                new_structures=structures,
+            )
         return structures
 
     @staticmethod
@@ -517,6 +524,11 @@ class Owner(models.Model):
 
         except (HTTPError, ConnectionError):
             logger.exception("%s: Failed to fetch custom offices", self)
+        else:
+            self._remove_structures_not_returned_from_esi(
+                structures_qs=self.structures.filter_customs_offices(),
+                new_structures=structures,
+            )
 
         return structures
 
@@ -579,7 +591,6 @@ class Owner(models.Model):
                 token=token,
                 has_pages=True,
             )
-
             if not starbases:
                 logger.info("%s: No starbases retrieved from ESI", self)
             else:
@@ -623,7 +634,11 @@ class Owner(models.Model):
 
         except (HTTPError, ConnectionError):
             logger.exception("%s: Failed to fetch starbases")
-
+        else:
+            self._remove_structures_not_returned_from_esi(
+                structures_qs=self.structures.filter_starbases(),
+                new_structures=structures,
+            )
         return structures
 
     def _fetch_starbases_names(self, corporation_id, starbases, token):

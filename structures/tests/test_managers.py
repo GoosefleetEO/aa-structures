@@ -649,6 +649,59 @@ class TestStructureManager(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             structure, created = Structure.objects.update_or_create_esi(987, None)
 
+    def test_should_return_ids_as_set(self):
+        # given
+        create_structures()
+        # when
+        ids = Structure.objects.ids()
+        # then
+        self.assertSetEqual(
+            ids,
+            {
+                1000000000001,
+                1000000000002,
+                1000000000003,
+                1200000000003,
+                1200000000004,
+                1200000000005,
+                1200000000006,
+                1300000000001,
+                1300000000002,
+                1300000000003,
+            },
+        )
+
+    def test_should_filter_upwell_structures(self):
+        # given
+        create_structures()
+        # when
+        result_qs = Structure.objects.filter_upwell_structures()
+        # then
+        self.assertSetEqual(
+            result_qs.ids(), {1000000000001, 1000000000002, 1000000000003}
+        )
+
+    def test_should_filter_customs_offices(self):
+        # given
+        create_structures()
+        # when
+        result_qs = Structure.objects.filter_customs_offices()
+        # then
+        self.assertSetEqual(
+            result_qs.ids(),
+            {1200000000003, 1200000000004, 1200000000005, 1200000000006},
+        )
+
+    def test_should_filter_starbases(self):
+        # given
+        create_structures()
+        # when
+        result_qs = Structure.objects.filter_starbases()
+        # then
+        self.assertSetEqual(
+            result_qs.ids(), {1300000000001, 1300000000002, 1300000000003}
+        )
+
 
 class TestStructureManagerCreateFromDict(NoSocketsTestCase):
     @classmethod

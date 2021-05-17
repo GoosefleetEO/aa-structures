@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.10.6] - 2021-05-17
+
+### Fixed
+
+- Structures are temporarily deleted when update process fails due to HTTP error (e.g. during downtime)
+
 ## [1.10.5] - 2021-05-08
 
 ### Changed
