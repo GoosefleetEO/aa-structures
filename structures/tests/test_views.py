@@ -700,6 +700,8 @@ class TestPocoList(TestCase):
         # given
         request = self.factory.get(reverse("structures:poco_list_data"))
         request.user = self.user
+        self.owner.are_pocos_public = True
+        self.owner.save()
         # when
         response = views.poco_list_data(request)
         # then
@@ -715,6 +717,19 @@ class TestPocoList(TestCase):
         self.assertEqual(obj["planet"], "Amamake V")
         self.assertEqual(obj["planet_type_name"], "Barren")
         self.assertEqual(obj["space_type"], "lowsec")
+
+    def test_should_return_no_pocos(self):
+        # given
+        request = self.factory.get(reverse("structures:poco_list_data"))
+        request.user = self.user
+        self.owner.are_pocos_public = False
+        self.owner.save()
+        # when
+        response = views.poco_list_data(request)
+        # then
+        self.assertEqual(response.status_code, 200)
+        data = json_response_to_dict(response)
+        self.assertFalse(data)
 
 
 class TestStructureFittingModal(TestCase):

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Details modal for customs offices showing tax settings etc.
 
+### Changed
+
+- Public POCO page now only lists POCOs from owners that have made theirs public through a new owner property
+
 ## [1.11.0] - 2021-05-17
 
 ### Added

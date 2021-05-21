@@ -732,14 +732,18 @@ def service_status(request):
 
 
 def poco_list_data(request) -> JsonResponse:
-    pocos = Structure.objects.select_related(
-        "eve_planet",
-        "eve_planet__eve_type",
-        "eve_type",
-        "eve_type__eve_group",
-        "eve_solar_system",
-        "eve_solar_system__eve_constellation__eve_region",
-    ).filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
+    pocos = (
+        Structure.objects.select_related(
+            "eve_planet",
+            "eve_planet__eve_type",
+            "eve_type",
+            "eve_type__eve_group",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation__eve_region",
+        )
+        .filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
+        .filter(owner__are_pocos_public=True)
+    )
     data = list()
     for poco in pocos:
         if poco.eve_solar_system.is_low_sec:
