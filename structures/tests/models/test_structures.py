@@ -2,9 +2,10 @@ from datetime import timedelta
 
 from django.utils.timezone import now
 
+from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
-from ...models import Structure, StructureService, StructureTag
+from ...models import PocoDetails, Structure, StructureService, StructureTag
 from ..testdata import create_structures, set_owner_character
 
 MODULE_PATH = "structures.models.structures"
@@ -359,3 +360,45 @@ class TestStructureService(NoSocketsTestCase):
         obj = StructureService.objects.get(structure=structure, name="Clone Bay")
         expected = "StructureService(structure_id=1000000000001, name='Clone Bay')"
         self.assertEqual(repr(obj), expected)
+
+
+class TestPocoDetails(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        poco = cls.owner.structures.get(id=1200000000003)
+        cls.details = PocoDetails.objects.create(
+            structure=poco,
+            alliance_tax_rate=0.02,
+            allow_access_with_standings=True,
+            allow_alliance_access=True,
+            corporation_tax_rate=0.01,
+            reinforce_exit_end=21,
+            reinforce_exit_start=18,
+        )
+
+    def test_should_return_tax_for_corporation_member(self):
+        # given
+        my_character = EveCharacter.objects.get(character_id=1001)
+        # when
+        result = self.details.tax_for_character(my_character)
+        # then
+        self.assertEqual(result, 0.01)
+
+    def test_should_return_tax_for_alliance_member(self):
+        # given
+        my_character = EveCharacter.objects.get(character_id=1003)
+        # when
+        result = self.details.tax_for_character(my_character)
+        # then
+        self.assertEqual(result, 0.02)
+
+    def test_should_return_tax_for_unknown(self):
+        # given
+        my_character = EveCharacter.objects.get(character_id=1011)
+        # when
+        result = self.details.tax_for_character(my_character)
+        # then
+        self.assertIsNone(result)

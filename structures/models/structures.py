@@ -1,6 +1,7 @@
 """Structure related models"""
 import re
 from datetime import timedelta
+from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -9,6 +10,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 
+from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
@@ -527,3 +529,32 @@ class PocoDetails(models.Model):
         max_length=2, choices=StandingLevel.choices, default=StandingLevel.NONE
     )
     terrible_standing_tax_rate = models.FloatField(null=True, default=None)
+
+    def __str__(self):
+        return f"{self.structure}"
+
+    def tax_for_character(self, character: EveCharacter) -> Optional[float]:
+        """Return the effective tax for this character or None if unknown."""
+        owner_corporation = self.structure.owner.corporation
+        if character.corporation_id == owner_corporation.corporation_id:
+            return self.corporation_tax_rate
+        if (
+            owner_corporation.alliance
+            and owner_corporation.alliance.alliance_id == character.alliance_id
+        ):
+            return self.alliance_tax_rate
+        else:
+            return None
+
+    def has_character_access(self, character: EveCharacter) -> Optional[bool]:
+        """Return Tru if this has access else False."""
+        owner_corporation = self.structure.owner.corporation
+        if character.corporation_id == owner_corporation.corporation_id:
+            return True
+        if (
+            owner_corporation.alliance
+            and owner_corporation.alliance.alliance_id == character.alliance_id
+        ):
+            return self.allow_alliance_access
+        else:
+            return None

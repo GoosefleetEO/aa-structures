@@ -4,6 +4,7 @@ from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Exists, OuterRef, Q
 from django.http import (
     HttpResponse,
@@ -740,11 +741,17 @@ def poco_list_data(request) -> JsonResponse:
             "eve_type__eve_group",
             "eve_solar_system",
             "eve_solar_system__eve_constellation__eve_region",
+            "poco_details",
+            "owner__corporation",
         )
         .filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
         .filter(owner__are_pocos_public=True)
     )
     data = list()
+    try:
+        main_character = request.user.profile.main_character
+    except (AttributeError, ObjectDoesNotExist):
+        main_character = None
     for poco in pocos:
         if poco.eve_solar_system.is_low_sec:
             space_badge_type = "warning"
@@ -786,6 +793,30 @@ def poco_list_data(request) -> JsonResponse:
                 STRUCTURE_LIST_ICON_OUTPUT_SIZE,
             )
 
+        tax = None
+        has_access = None
+        if main_character:
+            try:
+                details = poco.poco_details
+            except (AttributeError, ObjectDoesNotExist):
+                ...
+            else:
+                tax = details.tax_for_character(main_character)
+                has_access = details.has_character_access(main_character)
+                if has_access is True:
+                    has_access_html = (
+                        '<i class="fas fa-check text-success" title="Has access"></i>'
+                    )
+                    has_access_str = gettext_lazy("yes")
+                elif has_access is False:
+                    has_access_html = (
+                        '<i class="fas fa-times text-danger" title="No access"></i>'
+                    )
+                    has_access_str = gettext_lazy("no")
+                else:
+                    has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
+                    has_access_str = "?"
+
         data.append(
             {
                 "id": poco.id,
@@ -800,6 +831,9 @@ def poco_list_data(request) -> JsonResponse:
                 "planet_type_icon": planet_type_icon,
                 "planet_type_name": planet_type_name,
                 "space_type": poco.eve_solar_system.space_type,
+                "has_access_html": has_access_html,
+                "has_access_str": has_access_str,
+                "tax": f"{tax * 100:.0f} %" if tax else "?",
             }
         )
     return JsonResponse(data, safe=False)

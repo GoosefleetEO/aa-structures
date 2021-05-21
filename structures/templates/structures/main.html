@@ -258,35 +258,42 @@
                     { data: 'planet' },
                     { data: 'planet_type_icon' },
                     { data: 'planet_type_name' },
+                    { data: 'has_access_html' },
+                    { data: 'tax' },
                     /* hidden columns */
                     { data: 'solar_system' },
                     { data: 'space_type' },
+                    { data: 'has_access_str' },
                 ],
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 paging: dataTablesPaging,
                 pageLength: dataTablesPageLength,
                 columnDefs: [
                     { "sortable": false, "targets": [0, 4] },
-                    { "visible": false, "targets": [ 6, 7 ] },
+                    { "visible": false, "targets": [ 8, 9, 10 ] },
                 ],
                 order: [ [1, "asc"], [3, "asc"] ],
                 filterDropDown:
                 {
                     columns: [
                         {
-                            idx: 7,
+                            idx: 9,
                             title: "{% translate 'Space Type' %}"
                         },
                         {
                             idx: 1
                         },
                         {
-                            idx: 6,
+                            idx: 8,
                             title: "{% translate 'Solar System' %}"
                         },
                         {
                             idx: 5
-                        }
+                        },
+                        {
+                            idx: 10,
+                            title: "{% translate 'Access?' %}"
+                        },
                     ],
                     autoSize: false,
                     bootstrap: true

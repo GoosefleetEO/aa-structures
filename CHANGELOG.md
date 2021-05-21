@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Details modal for customs offices showing tax settings etc.
+- Show effective tax and access for main character on public poco page
 
 ### Changed
 
