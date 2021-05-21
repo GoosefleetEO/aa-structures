@@ -93,13 +93,26 @@ class Owner(models.Model):
         ),
         (ERROR_UNKNOWN, "Unknown error"),
     ]
-
+    # PK
     corporation = models.OneToOneField(
         EveCorporationInfo,
         primary_key=True,
         on_delete=models.CASCADE,
         related_name="structure_owner",
         help_text="Corporation owning structures",
+    )
+    # regular
+    are_pocos_public = models.BooleanField(
+        default=False,
+        help_text=("whether pocos of this owner are shown on public POCO page"),
+    )
+    assets_last_error = models.IntegerField(
+        choices=ERRORS_LIST,
+        default=ERROR_NONE,
+        help_text="error that occurred at the last sync atttempt (if any)",
+    )
+    assets_last_sync = models.DateTimeField(
+        null=True, default=None, blank=True, help_text="when the last sync happened"
     )
     character = models.ForeignKey(
         CharacterOwnership,
@@ -110,26 +123,7 @@ class Owner(models.Model):
         related_name="+",
         help_text="character used for syncing structures",
     )
-    structures_last_sync = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
-    )
-    structures_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
-    )
-    assets_last_sync = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
-    )
-    assets_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
-    )
-    notifications_last_sync = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
-    )
-    notifications_last_error = models.IntegerField(
+    forwarding_last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
         help_text="error that occurred at the last sync atttempt (if any)",
@@ -137,16 +131,12 @@ class Owner(models.Model):
     forwarding_last_sync = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
     )
-    forwarding_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
-    )
-    webhooks = models.ManyToManyField(
-        "Webhook",
-        default=None,
-        blank=True,
-        help_text="notifications are sent to these webhooks. ",
+    has_default_pings_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            "to enable or disable pinging of notifications for this owner "
+            "e.g. with @everyone and @here"
+        ),
     )
     is_active = models.BooleanField(
         default=True,
@@ -166,18 +156,33 @@ class Owner(models.Model):
             "the overall status of this services"
         ),
     )
-    has_default_pings_enabled = models.BooleanField(
-        default=True,
-        help_text=(
-            "to enable or disable pinging of notifications for this owner "
-            "e.g. with @everyone and @here"
-        ),
+    notifications_last_sync = models.DateTimeField(
+        null=True, default=None, blank=True, help_text="when the last sync happened"
+    )
+    notifications_last_error = models.IntegerField(
+        choices=ERRORS_LIST,
+        default=ERROR_NONE,
+        help_text="error that occurred at the last sync atttempt (if any)",
     )
     ping_groups = models.ManyToManyField(
         Group,
         default=None,
         blank=True,
         help_text="Groups to be pinged for each notification - ",
+    )
+    structures_last_error = models.IntegerField(
+        choices=ERRORS_LIST,
+        default=ERROR_NONE,
+        help_text="error that occurred at the last sync atttempt (if any)",
+    )
+    structures_last_sync = models.DateTimeField(
+        null=True, default=None, blank=True, help_text="when the last sync happened"
+    )
+    webhooks = models.ManyToManyField(
+        "Webhook",
+        default=None,
+        blank=True,
+        help_text="notifications are sent to these webhooks. ",
     )
 
     def __str__(self) -> str:
@@ -278,26 +283,18 @@ class Owner(models.Model):
                 raise TokenError(self.to_friendly_error_message(error))
 
             try:
-                structures = self._fetch_upwell_structures(token)
+                structure_count = self._fetch_upwell_structures(token)
                 if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-                    structures += self._fetch_custom_offices(token)
+                    structure_count += self._fetch_custom_offices(token)
 
                 if STRUCTURES_FEATURE_STARBASES:
-                    structures += self._fetch_starbases(token)
+                    structure_count += self._fetch_starbases(token)
 
-                if structures:
-                    logger.info(
-                        "%s: Storing updates for %d structures", self, len(structures)
-                    )
-                else:
+                if not structure_count:
                     logger.info(
                         "%s: This corporation does not appear to have any structures",
                         self,
                     )
-
-                # update structures
-                for structure in structures:
-                    Structure.objects.update_or_create_from_dict(structure, self)
                 self.structures_last_error = self.ERROR_NONE
                 self.structures_last_sync = now()
                 self.save()
@@ -337,7 +334,7 @@ class Owner(models.Model):
                 len(ids_to_remove),
             )
 
-    def _fetch_upwell_structures(self, token: Token) -> list:
+    def _fetch_upwell_structures(self, token: Token) -> int:
         """fetch Upwell structures from ESI for self"""
         from .eveuniverse import EsiNameLocalization
 
@@ -385,6 +382,13 @@ class Owner(models.Model):
                             % (structure["structure_id"], ex)
                         )
                         structure["name"] = "(no data)"
+                logger.info(
+                    "%s: Storing updates for %d upwell structures",
+                    self,
+                    len(structures),
+                )
+                for structure in structures:
+                    Structure.objects.update_or_create_from_dict(structure, self)
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("structures", structures, corporation_id)
@@ -396,7 +400,7 @@ class Owner(models.Model):
                 structures_qs=self.structures.filter_upwell_structures(),
                 new_structures=structures,
             )
-        return structures
+        return len(structures)
 
     @staticmethod
     def _compress_services_localization(
@@ -453,7 +457,7 @@ class Owner(models.Model):
                             service["name_" + lang] = name_loc
         return structures
 
-    def _fetch_custom_offices(self, token: Token) -> list:
+    def _fetch_custom_offices(self, token: Token) -> int:
         """fetch custom offices from ESI for self"""
 
         corporation_id = self.corporation.corporation_id
@@ -519,6 +523,12 @@ class Owner(models.Model):
 
                     structures.append(structure)
 
+                logger.info(
+                    "%s: Storing updates for %d customs offices", self, len(structure)
+                )
+                for structure in structures:
+                    Structure.objects.update_or_create_from_dict(structure, self)
+
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("customs_offices", structures, corporation_id)
 
@@ -530,7 +540,7 @@ class Owner(models.Model):
                 new_structures=structures,
             )
 
-        return structures
+        return len(structures)
 
     def _fetch_locations_for_pocos(self, corporation_id, item_ids, token):
         logger.info(
@@ -579,7 +589,7 @@ class Owner(models.Model):
         matches = reg_ex.match(text)
         return matches.group(1) if matches else ""
 
-    def _fetch_starbases(self, token: Token) -> list:
+    def _fetch_starbases(self, token: Token) -> int:
         """Fetch starbases from ESI for self."""
 
         structures = list()
@@ -629,6 +639,12 @@ class Owner(models.Model):
 
                     structures.append(structure)
 
+                logger.info(
+                    "%s: Storing updates for %d starbases", self, len(structures)
+                )
+                for structure in structures:
+                    Structure.objects.update_or_create_from_dict(structure, self)
+
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures, corporation_id)
 
@@ -639,7 +655,7 @@ class Owner(models.Model):
                 structures_qs=self.structures.filter_starbases(),
                 new_structures=structures,
             )
-        return structures
+        return len(structures)
 
     def _fetch_starbases_names(self, corporation_id, starbases, token):
 

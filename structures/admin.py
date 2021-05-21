@@ -498,6 +498,7 @@ class OwnerAdmin(admin.ModelAdmin):
                     "character",
                     "webhooks",
                     "is_alliance_main",
+                    "are_pocos_public",
                     "has_default_pings_enabled",
                     "ping_groups",
                     "is_included_in_service_status",

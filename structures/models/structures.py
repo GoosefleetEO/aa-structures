@@ -484,3 +484,31 @@ class StructureService(EsiNameLocalization, models.Model):
         return "{}(structure_id={}, name='{}')".format(
             self.__class__.__name__, self.structure.id, self.name
         )
+
+
+class PocoDetails(models.Model):
+    class StandingLevel(models.TextChoices):
+        NONE = "NN", "none"
+        BAD = "BD", "bad"
+        EXCELLECT = "EX", "excellent"
+        GOOD = "GD", "good"
+        NEUTRAL = "NT", "neutral"
+        TERRIBLE = "TR", "terrible"
+
+    structure = models.OneToOneField(
+        Structure, on_delete=models.CASCADE, related_name="poco_details"
+    )
+    alliance_tax_rate = models.FloatField(null=True, default=None)
+    allow_access_with_standings = models.BooleanField()
+    allow_alliance_access = models.BooleanField()
+    bad_standing_tax_rate = models.FloatField(null=True, default=None)
+    corporation_tax_rate = models.FloatField(null=True, default=None)
+    excellent_standing_tax_rate = models.FloatField(null=True, default=None)
+    good_standing_tax_rate = models.FloatField(null=True, default=None)
+    neutral_standing_tax_rate = models.FloatField(null=True, default=None)
+    reinforce_exit_end = models.PositiveIntegerField()
+    reinforce_exit_start = models.PositiveIntegerField()
+    standing_level = models.CharField(
+        max_length=2, choices=StandingLevel.choices, default=StandingLevel.NONE
+    )
+    terrible_standing_tax_rate = models.FloatField(null=True, default=None)
