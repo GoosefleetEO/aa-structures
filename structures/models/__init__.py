@@ -20,4 +20,4 @@ from .notifications import (
     get_default_notification_types,
 )
 from .owners import Owner, OwnerAsset
-from .structures import Structure, StructureService, StructureTag
+from .structures import PocoDetails, Structure, StructureService, StructureTag

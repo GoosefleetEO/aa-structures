@@ -488,12 +488,27 @@ class StructureService(EsiNameLocalization, models.Model):
 
 class PocoDetails(models.Model):
     class StandingLevel(models.TextChoices):
-        NONE = "NN", "none"
-        BAD = "BD", "bad"
-        EXCELLECT = "EX", "excellent"
-        GOOD = "GD", "good"
-        NEUTRAL = "NT", "neutral"
-        TERRIBLE = "TR", "terrible"
+        NONE = "NN", _("none")
+        BAD = "BD", _("bad")
+        EXCELLECT = "EX", _("excellent")
+        GOOD = "GD", _("good")
+        NEUTRAL = "NT", _("neutral")
+        TERRIBLE = "TR", _("terrible")
+
+        @classmethod
+        def from_esi(cls, value) -> "PocoDetails.StandingLevel":
+            """Return match from ESI value or NONE"""
+            my_map = {
+                "bad": cls.BAD,
+                "excellent": cls.EXCELLECT,
+                "good": cls.GOOD,
+                "neutral": cls.NEUTRAL,
+                "terrible": cls.TERRIBLE,
+            }
+            try:
+                return my_map[value]
+            except KeyError:
+                return cls.NONE
 
     structure = models.OneToOneField(
         Structure, on_delete=models.CASCADE, related_name="poco_details"

@@ -42,7 +42,7 @@ from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerAssetManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
 from .notifications import EveEntity, Notification, NotificationType
-from .structures import Structure
+from .structures import PocoDetails, Structure
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -461,7 +461,7 @@ class Owner(models.Model):
         """fetch custom offices from ESI for self"""
 
         corporation_id = self.corporation.corporation_id
-        structures = list()
+        structures = dict()
         try:
             pocos = esi_fetch(
                 "Planetary_Interaction.get_corporations_corporation_id_customs_offices",
@@ -472,11 +472,12 @@ class Owner(models.Model):
             if not pocos:
                 logger.info("%s: No custom offices retrieved from ESI", self)
             else:
-                item_ids = [x["office_id"] for x in pocos]
+                pocos_2 = {row["office_id"]: row for row in pocos}
+                office_ids = list(pocos_2.keys())
                 positions = self._fetch_locations_for_pocos(
-                    corporation_id, item_ids, token
+                    corporation_id, office_ids, token
                 )
-                names = self._fetch_names_for_pocos(corporation_id, item_ids, token)
+                names = self._fetch_names_for_pocos(corporation_id, office_ids, token)
 
                 # making sure we have all solar systems loaded
                 # incl. their planets for later name matching
@@ -484,8 +485,7 @@ class Owner(models.Model):
                     EveSolarSystem.objects.get_or_create_esi(solar_system_id)
 
                 # compile pocos into structures list
-                for poco in pocos:
-                    office_id = poco["office_id"]
+                for office_id, poco in pocos_2.items():
                     planet_name = names.get(office_id, "")
                     if planet_name:
                         try:
@@ -521,13 +521,60 @@ class Owner(models.Model):
                     if office_id in positions:
                         structure["position"] = positions[office_id]
 
-                    structures.append(structure)
+                    structures[office_id] = structure
 
                 logger.info(
                     "%s: Storing updates for %d customs offices", self, len(structure)
                 )
-                for structure in structures:
-                    Structure.objects.update_or_create_from_dict(structure, self)
+                for office_id, structure in structures.items():
+                    structure_obj, _ = Structure.objects.update_or_create_from_dict(
+                        structure, self
+                    )
+                    try:
+                        poco = pocos_2[office_id]
+                    except KeyError:
+                        logger.warning(
+                            "%s: No details found for this POCO: %d", self, office_id
+                        )
+                    else:
+                        standing_level = PocoDetails.StandingLevel.from_esi(
+                            poco.get("standing_level")
+                        )
+                        PocoDetails.objects.update_or_create(
+                            structure=structure_obj,
+                            defaults={
+                                "alliance_tax_rate": poco.get("alliance_tax_rate"),
+                                "allow_access_with_standings": poco.get(
+                                    "allow_access_with_standings"
+                                ),
+                                "allow_alliance_access": poco.get(
+                                    "allow_alliance_access"
+                                ),
+                                "bad_standing_tax_rate": poco.get(
+                                    "bad_standing_tax_rate"
+                                ),
+                                "corporation_tax_rate": poco.get(
+                                    "corporation_tax_rate"
+                                ),
+                                "excellent_standing_tax_rate": poco.get(
+                                    "excellent_standing_tax_rate"
+                                ),
+                                "good_standing_tax_rate": poco.get(
+                                    "good_standing_tax_rate"
+                                ),
+                                "neutral_standing_tax_rate": poco.get(
+                                    "neutral_standing_tax_rate"
+                                ),
+                                "reinforce_exit_end": poco.get("reinforce_exit_end"),
+                                "reinforce_exit_start": poco.get(
+                                    "reinforce_exit_start"
+                                ),
+                                "standing_level": standing_level,
+                                "terrible_standing_tax_rate": poco.get(
+                                    "terrible_standing_tax_rate"
+                                ),
+                            },
+                        )
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("customs_offices", structures, corporation_id)
@@ -537,7 +584,7 @@ class Owner(models.Model):
         else:
             self._remove_structures_not_returned_from_esi(
                 structures_qs=self.structures.filter_customs_offices(),
-                new_structures=structures,
+                new_structures=structures.values(),
             )
 
         return len(structures)
