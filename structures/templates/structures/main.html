@@ -110,7 +110,7 @@
                     { data: 'reinforcement' },
                     { data: 'state_details' },
                     { data: 'core_status' },
-                    { data: 'view_fit' },
+                    { data: 'details' },
                     { data: 'alliance_name' },
                     { data: 'corporation_name' },
                     { data: 'region_name' },
@@ -194,7 +194,7 @@
                 }
             });
 
-            $('#modalStructureFit').on('show.bs.modal', function(event) {
+            $('#modalUpwellDetails').on('show.bs.modal', function(event) {
                 $(this).find('.modal-title').html('Loading...');
                 {% if NIGHT_MODE %}
                     $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-dark.gif" %}">');
@@ -203,8 +203,39 @@
                 {% endif %}
 
                 const button = $(event.relatedTarget);
-                const ajax_structure_fit = button.data('ajax_structure_fit');
-                $("#modalStructureFitContent").load(ajax_structure_fit);
+                const ajax_url = button.data('ajax_url');
+                $("#modalUpwellDetailsContent").load(
+                    ajax_url, null, (response, status, xhr) => {
+                        if (status != 'success') {
+                            $(this).find('.modal-title').html('Error');
+                            $(this).find('.modal-body').html(
+                                `<p class="text-danger">${xhr.status} ${xhr.statusText}</p>`
+                            );
+                        }
+                    }
+                );
+            });
+
+            $('#modalPocoDetails').on('show.bs.modal', function(event) {
+                $(this).find('.modal-title').html('Loading...');
+                {% if NIGHT_MODE %}
+                    $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-dark.gif" %}">');
+                {% else %}
+                    $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-light.gif" %}">');
+                {% endif %}
+
+                const button = $(event.relatedTarget);
+                const ajax_url = button.data('ajax_url');
+                $("#modalPocoDetailsContent").load(
+                    ajax_url, null, (response, status, xhr) => {
+                        if (status != 'success') {
+                            $(this).find('.modal-title').html('Error');
+                            $(this).find('.modal-body').html(
+                                `<p class="text-danger">${xhr.status} ${xhr.statusText}</p>`
+                            );
+                        }
+                    }
+                );
             });
 
             /* pocos */

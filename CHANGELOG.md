@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Added
+
+- Details modal for customs offices showing tax settings etc.
+
 ## [1.11.0] - 2021-05-17
 
 ### Added

@@ -1,0 +1,36 @@
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title">{{poco.eve_planet.name}} - {{poco.name}}</h4>
+</div>
+
+<div class="modal-body">
+    <p class="text-center">
+        <img class="img-circle" src="{{ poco_image_url }}" style="width: 175px; height: 175px;">
+    </p>
+    <br>
+    <ul class="list-group">
+        <li class="list-group-item list-group-item-custom">{% translate "Reinforcement Exit" %}</li>
+        {% include "structures/modals/poco_details_item.html" with title="Start" value=details.reinforce_exit_start type="hour" %}
+        {% include "structures/modals/poco_details_item.html" with title="End" value=details.reinforce_exit_end type="hour" %}
+
+        <li class="list-group-item list-group-item-custom">{% translate "Tax for organization members" %}</li>
+        {% include "structures/modals/poco_details_item.html" with title="Corporation" value=details.corporation_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Alliance" value=details.alliance_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Allow alliance access" value=details.allow_alliance_access type="bool" %}
+
+        <li class="list-group-item list-group-item-custom">{% translate "Tax based on standing" %}</li>
+        {% include "structures/modals/poco_details_item.html" with title="Excellent" value=details.excellent_standing_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Good" value=details.good_standing_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Neutral" value=details.neutral_standing_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Bad" value=details.bad_standing_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Terrible" value=details.terrible_standing_tax_rate type="tax" %}
+        {% include "structures/modals/poco_details_item.html" with title="Allow  access with standings" value=details.allow_access_with_standings type="bool" %}
+        {% include "structures/modals/poco_details_item.html" with title="Worst standing with acess" value=details.get_standing_level_display %}
+
+    </ul>
+    <p class="text-muted">Last updated {{ last_updated|naturaltime|default:"?" }}</p>
+</div>

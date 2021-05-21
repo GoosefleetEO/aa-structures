@@ -1,0 +1,16 @@
+{% load i18n %}
+
+<li class="list-group-item">
+     <p class="list-group-item-text">
+        {% translate title %}:
+        {% if type == "tax" %}
+            <span class="pull-right">{% widthratio value 1 100 %} %</span>
+        {% elif type == "hour" %}
+            <span class="pull-right">{{ value }}:00</span>
+        {% elif type == "bool" %}
+            <span class="pull-right {% if value is True %}text-success{% else %}text-danger{% endif %}">{{ value|yesno }}</span>
+        {% else %}
+            <span class="pull-right">{{ value }}</span>
+        {% endif %}
+    </p>
+</li>
