@@ -42,10 +42,11 @@ Structures adds the following main features to Alliance Auth:
   - Starbases
   - Moon mining
   - Sovereignty
-  - Wars (*NEW!*)
-  - Corporation membership changes (*NEW!*)
+  - Wars
+  - Corporation membership changes
 - Automatically adds timers from relevant notifications to [Alliance Auth Structure Timers](https://allianceauth.readthedocs.io/en/v2.8.1/features/apps/timerboard.html) or [Structure Timers II](https://gitlab.com/ErikKalkoken/aa-structuretimers) app (if installed)
-- Structure fits (*NEW!*)
+- Fittings and contents of Upwell structures (e.g. fuel blocks and ammo)
+- Tax rates and access settings of Customs Offices
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
 - Interface for 3rd party monitoring of the services status
@@ -55,9 +56,15 @@ Structures adds the following main features to Alliance Auth:
 
 ## Screenshots
 
-Here is an example for the structure browser:
+Here is an example for the main list of structures:
 
-![StructureList](https://i.imgur.com/WtiRap3.png)
+![StructureList](https://i.imgur.com/m676Y0T.png)
+
+You can also see the fittings and contents of upwell structures:
+![Poco details](https://i.imgur.com/qSC5uql.png)
+
+The tax rate and access configuration of customs offices is visible too:
+![Poco details](https://i.imgur.com/5XXDCsQ.png)
 
 This is an example for a notification posted on Discord:
 
