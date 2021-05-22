@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Update notes
 
-POCOs will no longer be shown on the public POCO page unless explicitly enabled for an owner. To continue showing public POCOs please enable them for your owners on the admin site.
+1. POCOs will no longer be shown on the public POCO page unless explicitly enabled for an owner. To continue showing public POCOs please enable them for your owners on the admin site.
+
+2. The new POCO details will be visible after the next structure update (you can either wait for the automatic one or force it from the admin site).
 
 ### Added
 
