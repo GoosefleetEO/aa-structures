@@ -1,12 +1,10 @@
 @media all {
-    #tab_structures thead th
-    {
+    #tab_structures thead th {
         text-align: center;
         vertical-align: middle;
         white-space: nowrap;
     }
-    #tab_structures tbody td
-    {
+    #tab_structures tbody td {
         text-align: center;
         vertical-align: middle;
         word-wrap: break-word;
