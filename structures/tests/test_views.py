@@ -23,7 +23,7 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
-from ..models import Owner, Structure, Webhook
+from ..models import Owner, PocoDetails, Structure, Webhook
 from .testdata import create_structures, create_user, load_entities, set_owner_character
 
 MODULE_PATH = "structures.views"
@@ -767,3 +767,35 @@ class TestStructureFittingModal(TestCase):
         response = views.structure_details(request, 1000000000001)
         # then
         self.assertEqual(response.status_code, 302)
+
+
+class TestPocoDetailsModal(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        poco = cls.owner.structures.get(id=1200000000003)
+        cls.details = PocoDetails.objects.create(
+            structure=poco,
+            alliance_tax_rate=0.02,
+            allow_access_with_standings=True,
+            allow_alliance_access=True,
+            corporation_tax_rate=0.01,
+            reinforce_exit_end=21,
+            reinforce_exit_start=18,
+        )
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.basic_access", cls.user
+        )
+
+    def test_should_load_correctly(self):
+        # when
+        request = self.factory.get(
+            reverse("structures:poco_details", args=[1200000000003])
+        )
+        request.user = self.user
+        response = views.poco_details(request, 1200000000003)
+        # then
+        self.assertEqual(response.status_code, 200)

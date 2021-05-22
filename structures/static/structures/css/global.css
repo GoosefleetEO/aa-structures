@@ -39,6 +39,10 @@ Global styles shared by all Kalkoken apps - Version 0.2.0
     .nowrap {
         white-space: nowrap;
     }
+
+    .text-tooltip {
+        text-decoration: underline dotted;
+    }
 }
 
 @media (min-width: 768px) {

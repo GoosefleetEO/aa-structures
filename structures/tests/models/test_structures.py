@@ -402,3 +402,60 @@ class TestPocoDetails(NoSocketsTestCase):
         result = self.details.tax_for_character(my_character)
         # then
         self.assertIsNone(result)
+
+    def test_should_return_standing_map_for_neutral_1(self):
+        # given
+        self.details.standing_level = PocoDetails.StandingLevel.NEUTRAL
+        self.details.allow_access_with_standings = True
+        # when
+        result = self.details.standing_level_access_map()
+        # then
+        self.assertDictEqual(
+            result,
+            {
+                "NONE": False,
+                "TERRIBLE": False,
+                "BAD": False,
+                "NEUTRAL": True,
+                "GOOD": True,
+                "EXCELLENT": True,
+            },
+        )
+
+    def test_should_return_standing_map_for_neutral_2(self):
+        # given
+        self.details.standing_level = PocoDetails.StandingLevel.NEUTRAL
+        self.details.allow_access_with_standings = False
+        # when
+        result = self.details.standing_level_access_map()
+        # then
+        self.assertDictEqual(
+            result,
+            {
+                "NONE": False,
+                "TERRIBLE": False,
+                "BAD": False,
+                "NEUTRAL": False,
+                "GOOD": False,
+                "EXCELLENT": False,
+            },
+        )
+
+    def test_should_return_standing_map_for_terrible(self):
+        # given
+        self.details.standing_level = PocoDetails.StandingLevel.TERRIBLE
+        self.details.allow_access_with_standings = True
+        # when
+        result = self.details.standing_level_access_map()
+        # then
+        self.assertDictEqual(
+            result,
+            {
+                "NONE": False,
+                "TERRIBLE": True,
+                "BAD": True,
+                "NEUTRAL": True,
+                "GOOD": True,
+                "EXCELLENT": True,
+            },
+        )

@@ -17,20 +17,16 @@
         {% include "structures/modals/poco_details_item.html" with title="Start" value=details.reinforce_exit_start type="hour" %}
         {% include "structures/modals/poco_details_item.html" with title="End" value=details.reinforce_exit_end type="hour" %}
 
-        <li class="list-group-item list-group-item-custom">{% translate "Tax for organization members" %}</li>
-        {% include "structures/modals/poco_details_item.html" with title="Corporation" value=details.corporation_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Alliance" value=details.alliance_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Allow alliance access" value=details.allow_alliance_access type="bool" %}
+        <li class="list-group-item list-group-item-custom">{% translate "Tax & access for organization members" %}</li>
+        {% include "structures/modals/poco_details_item.html" with title="Corporation" value=details.corporation_tax_rate type="tax" has_access=True %}
+        {% include "structures/modals/poco_details_item.html" with title="Alliance" value=details.alliance_tax_rate type="tax" has_access=details.allow_alliance_access %}
 
-        <li class="list-group-item list-group-item-custom">{% translate "Tax based on standing" %}</li>
-        {% include "structures/modals/poco_details_item.html" with title="Excellent" value=details.excellent_standing_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Good" value=details.good_standing_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Neutral" value=details.neutral_standing_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Bad" value=details.bad_standing_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Terrible" value=details.terrible_standing_tax_rate type="tax" %}
-        {% include "structures/modals/poco_details_item.html" with title="Allow  access with standings" value=details.allow_access_with_standings type="bool" %}
-        {% include "structures/modals/poco_details_item.html" with title="Worst standing with acess" value=details.get_standing_level_display %}
-
+        <li class="list-group-item list-group-item-custom">{% translate "Tax & access based on standing" %}</li>
+        {% include "structures/modals/poco_details_item.html" with title="Terrible" value=details.terrible_standing_tax_rate type="tax" has_access=details.standing_level_access_map.TERRIBLE %}
+        {% include "structures/modals/poco_details_item.html" with title="Bad" value=details.bad_standing_tax_rate type="tax" has_access=details.standing_level_access_map.BAD %}
+        {% include "structures/modals/poco_details_item.html" with title="Neutral" value=details.neutral_standing_tax_rate type="tax" has_access=details.standing_level_access_map.NEUTRAL %}
+        {% include "structures/modals/poco_details_item.html" with title="Good" value=details.good_standing_tax_rate type="tax" has_access=details.standing_level_access_map.GOOD %}
+        {% include "structures/modals/poco_details_item.html" with title="Excellent" value=details.excellent_standing_tax_rate type="tax" has_access=details.standing_level_access_map.EXCELLENT %}
     </ul>
     <p class="text-muted">Last updated {{ last_updated|naturaltime|default:"?" }}</p>
 </div>

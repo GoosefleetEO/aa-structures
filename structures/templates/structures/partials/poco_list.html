@@ -12,8 +12,12 @@
                     <th>{% translate "Planet" %}</th>
                     <th></th>
                     <th>{% translate "Planet Type" %}</th>
-                    <th>{% translate "Access?" %}</th>
-                    <th>{% translate "Tax" %}</th>
+                    <th class="text-tooltip" title="For your main character {{ request.user.profile.main_character|default:'?' }}">
+                        {% translate "Access?" %}
+                    </th>
+                    <th class="text-tooltip" title="For your main character {{ request.user.profile.main_character|default:'?' }}">
+                        {% translate "Tax" %}
+                    </th>
                 </tr>
             </thead>
         </table>

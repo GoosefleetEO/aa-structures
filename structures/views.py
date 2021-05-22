@@ -621,6 +621,7 @@ def poco_details(request, structure_id):
             .get(id=structure_id)
         )
     except Structure.DoesNotExist:
+        logger.warning("Could not find poco details for structure %s", structure_id)
         return HttpResponseNotFound()
     context = {
         "poco": poco,
@@ -803,19 +804,20 @@ def poco_list_data(request) -> JsonResponse:
             else:
                 tax = details.tax_for_character(main_character)
                 has_access = details.has_character_access(main_character)
-                if has_access is True:
-                    has_access_html = (
-                        '<i class="fas fa-check text-success" title="Has access"></i>'
-                    )
-                    has_access_str = gettext_lazy("yes")
-                elif has_access is False:
-                    has_access_html = (
-                        '<i class="fas fa-times text-danger" title="No access"></i>'
-                    )
-                    has_access_str = gettext_lazy("no")
-                else:
-                    has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
-                    has_access_str = "?"
+
+        if has_access is True:
+            has_access_html = (
+                '<i class="fas fa-check text-success" title="Has access"></i>'
+            )
+            has_access_str = gettext_lazy("yes")
+        elif has_access is False:
+            has_access_html = (
+                '<i class="fas fa-times text-danger" title="No access"></i>'
+            )
+            has_access_str = gettext_lazy("no")
+        else:
+            has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
+            has_access_str = "?"
 
         data.append(
             {

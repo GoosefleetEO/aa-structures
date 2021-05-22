@@ -2,15 +2,20 @@
 
 <li class="list-group-item">
      <p class="list-group-item-text">
-        {% translate title %}:
-        {% if type == "tax" %}
-            <span class="pull-right">{% widthratio value 1 100 %} %</span>
-        {% elif type == "hour" %}
-            <span class="pull-right">{{ value }}:00</span>
-        {% elif type == "bool" %}
-            <span class="pull-right {% if value is True %}text-success{% else %}text-danger{% endif %}">{{ value|yesno }}</span>
-        {% else %}
-            <span class="pull-right">{{ value }}</span>
+        {% translate title %}
+        {% if has_access is False %}
+            <i class="fas fa-ban text-danger" title="No Access"></i>
+        {% elif has_access is True %}
+            <i class="fas fa-check text-success" title="Has Access"></i>
         {% endif %}
+        <span class="pull-right {% if has_access is False %}text-muted{% endif %}">
+            {% if type == "tax" %}
+                {% widthratio value 1 100 %} %
+            {% elif type == "hour" %}
+                {{ value }}:00
+            {% else %}
+                {{ value }}
+            {% endif %}
+        </span>
     </p>
 </li>
