@@ -1,6 +1,7 @@
 """Structure related models"""
 import re
 from datetime import timedelta
+from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -9,6 +10,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 
+from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
@@ -484,3 +486,92 @@ class StructureService(EsiNameLocalization, models.Model):
         return "{}(structure_id={}, name='{}')".format(
             self.__class__.__name__, self.structure.id, self.name
         )
+
+
+class PocoDetails(models.Model):
+    class StandingLevel(models.IntegerChoices):
+        NONE = -99, _("none")
+        TERRIBLE = -10, _("terrible")
+        BAD = -5, _("bad")
+        NEUTRAL = 0, _("neutral")
+        GOOD = 5, _("good")
+        EXCELLENT = 10, _("excellent")
+
+        @classmethod
+        def from_esi(cls, value) -> "PocoDetails.StandingLevel":
+            """Return match from ESI value or NONE"""
+            my_map = {
+                "bad": cls.BAD,
+                "excellent": cls.EXCELLENT,
+                "good": cls.GOOD,
+                "neutral": cls.NEUTRAL,
+                "terrible": cls.TERRIBLE,
+            }
+            try:
+                return my_map[value]
+            except KeyError:
+                return cls.NONE
+
+    structure = models.OneToOneField(
+        Structure, on_delete=models.CASCADE, related_name="poco_details"
+    )
+    alliance_tax_rate = models.FloatField(null=True, default=None)
+    allow_access_with_standings = models.BooleanField()
+    allow_alliance_access = models.BooleanField()
+    bad_standing_tax_rate = models.FloatField(null=True, default=None)
+    corporation_tax_rate = models.FloatField(null=True, default=None)
+    excellent_standing_tax_rate = models.FloatField(null=True, default=None)
+    good_standing_tax_rate = models.FloatField(null=True, default=None)
+    neutral_standing_tax_rate = models.FloatField(null=True, default=None)
+    reinforce_exit_end = models.PositiveIntegerField()
+    reinforce_exit_start = models.PositiveIntegerField()
+    standing_level = models.IntegerField(
+        choices=StandingLevel.choices, default=StandingLevel.NONE
+    )
+    terrible_standing_tax_rate = models.FloatField(null=True, default=None)
+
+    def __str__(self):
+        return f"{self.structure}"
+
+    def tax_for_character(self, character: EveCharacter) -> Optional[float]:
+        """Return the effective tax for this character or None if unknown."""
+        owner_corporation = self.structure.owner.corporation
+        if character.corporation_id == owner_corporation.corporation_id:
+            return self.corporation_tax_rate
+        if (
+            owner_corporation.alliance
+            and owner_corporation.alliance.alliance_id == character.alliance_id
+        ):
+            return self.alliance_tax_rate
+        else:
+            return None
+
+    def has_character_access(self, character: EveCharacter) -> Optional[bool]:
+        """Return Tru if this has access else False."""
+        owner_corporation = self.structure.owner.corporation
+        if character.corporation_id == owner_corporation.corporation_id:
+            return True
+        if (
+            owner_corporation.alliance
+            and owner_corporation.alliance.alliance_id == character.alliance_id
+        ):
+            return self.allow_alliance_access
+        else:
+            return None
+
+    def standing_level_access_map(self) -> dict:
+        """Return map of access per standing level with standing level names as key."""
+        names_map = {
+            self.StandingLevel.NONE: "NONE",
+            self.StandingLevel.TERRIBLE: "TERRIBLE",
+            self.StandingLevel.BAD: "BAD",
+            self.StandingLevel.NEUTRAL: "NEUTRAL",
+            self.StandingLevel.GOOD: "GOOD",
+            self.StandingLevel.EXCELLENT: "EXCELLENT",
+        }
+        return {
+            names_map[self.StandingLevel(level)]: (
+                self.allow_access_with_standings and level >= self.standing_level
+            )
+            for level in self.StandingLevel.values
+        }

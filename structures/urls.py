@@ -17,4 +17,9 @@ urlpatterns = [
         views.structure_details,
         name="structure_details",
     ),
+    path(
+        "<int:structure_id>/poco_details",
+        views.poco_details,
+        name="poco_details",
+    ),
 ]

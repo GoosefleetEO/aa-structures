@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.12.0] - 2021-05-22
+
+### Update notes
+
+POCOs will no longer be shown on the public POCO page unless explicitly enabled for an owner. To continue showing public POCOs please enable them for your owners on the admin site.
+
+### Added
+
+- New details window for customs offices showing reinforcement time, tax, and access settings.
+- Now shows effective tax rate and access for main character on public poco page
+
+### Changed
+
+- Public POCO page now only lists POCOs from owners that have made theirs public through a new owner property
+
 ## [1.11.0] - 2021-05-17
 
 ### Added

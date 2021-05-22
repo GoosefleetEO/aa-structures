@@ -32,6 +32,7 @@ from ...models import (
     Notification,
     Owner,
     OwnerAsset,
+    PocoDetails,
     Structure,
     StructureService,
     StructureTag,
@@ -512,6 +513,15 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000006,
         }
         self.assertSetEqual(owner.structures.ids(), expected)
+        self.assertSetEqual(
+            set(PocoDetails.objects.values_list("structure_id", flat=True)),
+            {
+                1200000000003,
+                1200000000004,
+                1200000000005,
+                1200000000006,
+            },
+        )
 
         # verify attributes for POCO
         structure = Structure.objects.get(id=1200000000003)
@@ -523,8 +533,20 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.state, Structure.State.UNKNOWN)
         self.assertEqual(structure.eve_planet_id, 40161472)
 
-        # structure = Structure.objects.get(id=1200000000006)
-        # self.assertEqual(structure.name, "Planet (Barren)")
+        # verify attributes for POCO details
+        details = structure.poco_details
+        self.assertEqual(details.alliance_tax_rate, 0.02)
+        self.assertTrue(details.allow_access_with_standings)
+        self.assertTrue(details.allow_alliance_access)
+        self.assertEqual(details.bad_standing_tax_rate, 0.3)
+        self.assertEqual(details.corporation_tax_rate, 0.02)
+        self.assertEqual(details.excellent_standing_tax_rate, 0.02)
+        self.assertEqual(details.good_standing_tax_rate, 0.02)
+        self.assertEqual(details.neutral_standing_tax_rate, 0.02)
+        self.assertEqual(details.reinforce_exit_end, 21)
+        self.assertEqual(details.reinforce_exit_start, 19)
+        self.assertEqual(details.standing_level, PocoDetails.StandingLevel.TERRIBLE)
+        self.assertEqual(details.terrible_standing_tax_rate, 0.5)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)

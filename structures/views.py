@@ -4,8 +4,14 @@ from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
-from django.db.models import Count, Q
-from django.http import HttpResponse, HttpResponseServerError, JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Count, Exists, OuterRef, Q
+from django.http import (
+    HttpResponse,
+    HttpResponseNotFound,
+    HttpResponseServerError,
+    JsonResponse,
+)
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import translation
@@ -49,6 +55,7 @@ from .forms import TagsFilterForm
 from .models import (
     Owner,
     OwnerAsset,
+    PocoDetails,
     Structure,
     StructureService,
     StructureTag,
@@ -141,7 +148,7 @@ class StructuresRowBuilder:
         self._build_online_infos()
         self._build_state()
         self._build_core_status()
-        self._build_view_fit()
+        self._build_details_widget()
         return self._row
 
     def _build_owner(self):
@@ -409,24 +416,36 @@ class StructuresRowBuilder:
         self._row["core_status"] = core_status
         self._row["core_status_str"] = yesnonone_str(has_core)
 
-    def _build_view_fit(self):
-        """Only enable view fit for structure types"""
+    def _build_details_widget(self):
+        """Add details widget when applicable"""
         if self._structure.has_fitting and self._request.user.has_perm(
             "structures.view_structure_fit"
         ):
-            ajax_structure_fit = reverse(
+            ajax_url = reverse(
                 "structures:structure_details",
                 args=[self._row["structure_id"]],
             )
-            self._row["view_fit"] = format_html(
+            self._row["details"] = format_html(
                 '<button type="button" class="btn btn-default" '
-                'data-toggle="modal" data-target="#modalStructureFit" '
-                f"data-ajax_structure_fit={ajax_structure_fit} "
+                'data-toggle="modal" data-target="#modalUpwellDetails" '
+                f"data-ajax_url={ajax_url} "
                 f'title="{gettext("Show fitting")}">'
                 '<i class="fas fa-search"></i></button>'
             )
+        elif self._structure.has_poco_details:
+            ajax_url = reverse(
+                "structures:poco_details",
+                args=[self._row["structure_id"]],
+            )
+            self._row["details"] = format_html(
+                '<button type="button" class="btn btn-default" '
+                'data-toggle="modal" data-target="#modalPocoDetails" '
+                f"data-ajax_url={ajax_url} "
+                f'title="{gettext("Show details")}">'
+                '<i class="fas fa-search"></i></button>'
+            )
         else:
-            self._row["view_fit"] = ""
+            self._row["details"] = ""
 
 
 @login_required
@@ -485,7 +504,9 @@ def _structures_query_for_user(request):
             owner__corporation__in=corporations
         )
 
-    structures_query = structures_query.prefetch_related("tags", "services")
+    structures_query = structures_query.prefetch_related("tags", "services").annotate(
+        has_poco_details=Exists(PocoDetails.objects.filter(structure_id=OuterRef("id")))
+    )
     return structures_query
 
 
@@ -584,6 +605,33 @@ def structure_details(request, structure_id):
         "last_updated": structure.owner.assets_last_sync,
     }
     return render(request, "structures/modals/structure_details.html", context)
+
+
+@login_required
+@permission_required("structures.basic_access")
+def poco_details(request, structure_id):
+    """Shows details modal for a POCO"""
+
+    try:
+        poco = (
+            Structure.objects.select_related(
+                "owner", "eve_type", "eve_solar_system", "poco_details"
+            )
+            .filter(eve_type=constants.EVE_TYPE_ID_POCO, poco_details__isnull=False)
+            .get(id=structure_id)
+        )
+    except Structure.DoesNotExist:
+        logger.warning("Could not find poco details for structure %s", structure_id)
+        return HttpResponseNotFound()
+    context = {
+        "poco": poco,
+        "details": poco.poco_details,
+        "poco_image_url": eveimageserver.type_render_url(
+            type_id=constants.EVE_TYPE_ID_POCO, size=256
+        ),
+        "last_updated": poco.last_updated_at,
+    }
+    return render(request, "structures/modals/poco_details.html", context)
 
 
 @login_required
@@ -686,15 +734,25 @@ def service_status(request):
 
 
 def poco_list_data(request) -> JsonResponse:
-    pocos = Structure.objects.select_related(
-        "eve_planet",
-        "eve_planet__eve_type",
-        "eve_type",
-        "eve_type__eve_group",
-        "eve_solar_system",
-        "eve_solar_system__eve_constellation__eve_region",
-    ).filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
+    pocos = (
+        Structure.objects.select_related(
+            "eve_planet",
+            "eve_planet__eve_type",
+            "eve_type",
+            "eve_type__eve_group",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation__eve_region",
+            "poco_details",
+            "owner__corporation",
+        )
+        .filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
+        .filter(owner__are_pocos_public=True)
+    )
     data = list()
+    try:
+        main_character = request.user.profile.main_character
+    except (AttributeError, ObjectDoesNotExist):
+        main_character = None
     for poco in pocos:
         if poco.eve_solar_system.is_low_sec:
             space_badge_type = "warning"
@@ -736,6 +794,31 @@ def poco_list_data(request) -> JsonResponse:
                 STRUCTURE_LIST_ICON_OUTPUT_SIZE,
             )
 
+        tax = None
+        has_access = None
+        if main_character:
+            try:
+                details = poco.poco_details
+            except (AttributeError, ObjectDoesNotExist):
+                ...
+            else:
+                tax = details.tax_for_character(main_character)
+                has_access = details.has_character_access(main_character)
+
+        if has_access is True:
+            has_access_html = (
+                '<i class="fas fa-check text-success" title="Has access"></i>'
+            )
+            has_access_str = gettext_lazy("yes")
+        elif has_access is False:
+            has_access_html = (
+                '<i class="fas fa-times text-danger" title="No access"></i>'
+            )
+            has_access_str = gettext_lazy("no")
+        else:
+            has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
+            has_access_str = "?"
+
         data.append(
             {
                 "id": poco.id,
@@ -750,6 +833,9 @@ def poco_list_data(request) -> JsonResponse:
                 "planet_type_icon": planet_type_icon,
                 "planet_type_name": planet_type_name,
                 "space_type": poco.eve_solar_system.space_type,
+                "has_access_html": has_access_html,
+                "has_access_str": has_access_str,
+                "tax": f"{tax * 100:.0f} %" if tax else "?",
             }
         )
     return JsonResponse(data, safe=False)

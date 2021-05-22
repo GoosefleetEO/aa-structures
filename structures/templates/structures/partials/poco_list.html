@@ -3,7 +3,6 @@
 
 <div role="tabpanel" class="tab-pane" id="pocos">
     <div class="table-responsive">
-        <!-- pocos list -->
         <table id="tab_pocos" style="width: 100%" class="table table-striped table-compact">
             <thead>
                 <tr>
@@ -13,6 +12,12 @@
                     <th>{% translate "Planet" %}</th>
                     <th></th>
                     <th>{% translate "Planet Type" %}</th>
+                    <th class="text-tooltip" title="For your main character {{ request.user.profile.main_character|default:'?' }}">
+                        {% translate "Access?" %}
+                    </th>
+                    <th class="text-tooltip" title="For your main character {{ request.user.profile.main_character|default:'?' }}">
+                        {% translate "Tax" %}
+                    </th>
                 </tr>
             </thead>
         </table>
