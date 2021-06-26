@@ -16,10 +16,35 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 TASK_PRIO_HIGH = 2
 
 
-@shared_task(base=QueueOnce)
-def send_messages_for_webhook(webhook_pk: int) -> None:
-    """sends all currently queued messages for given webhook to Discord"""
-    Webhook.objects.send_queued_messages_for_webhook(webhook_pk)
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_all_structures():
+    """main task for starting regular update of all structures
+    and related data from ESI
+    """
+    chain(update_sov_map.si(), update_structures.si()).delay()
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_sov_map():
+    """updates the sovereignty map"""
+    EveSovereigntyMap.objects.update_from_esi()
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_structures():
+    """fetches all structures for all active owner from ESI"""
+    for owner in Owner.objects.all():
+        if owner.is_active:
+            update_structures_for_owner.delay(owner.pk)
+
+    if (
+        Owner.objects.filter(is_active=True).count() > 0
+        and Owner.objects.filter(is_active=True, is_alliance_main=True).count() == 0
+    ):
+        logger.warning(
+            "No owner configured to process alliance wide notifications. "
+            "Please set 'is alliance main' to True for the designated owner."
+        )
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -44,34 +69,13 @@ def update_structures_assets_for_owner(owner_pk, user_pk=None):
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_structures():
-    """fetches all structures for all active owner from ESI"""
+def fetch_all_notifications():
+    """fetch notifications for all owners"""
     for owner in Owner.objects.all():
         if owner.is_active:
-            update_structures_for_owner.delay(owner.pk)
-
-    if (
-        Owner.objects.filter(is_active=True).count() > 0
-        and Owner.objects.filter(is_active=True, is_alliance_main=True).count() == 0
-    ):
-        logger.warning(
-            "No owner configured to process alliance wide notifications. "
-            "Please set 'is alliance main' to True for the designated owner."
-        )
-
-
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_sov_map():
-    """updates the sovereignty map"""
-    EveSovereigntyMap.objects.update_from_esi()
-
-
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_all_structures():
-    """main task for starting regular update of all structures
-    and related data from ESI
-    """
-    chain(update_sov_map.si(), update_structures.si()).delay()
+            process_notifications_for_owner.apply_async(
+                kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
+            )
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -84,16 +88,6 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
         if webhook.queue_size() > 0:
             send_messages_for_webhook.apply_async(
                 kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
-            )
-
-
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def fetch_all_notifications():
-    """fetch notifications for all owners"""
-    for owner in Owner.objects.all():
-        if owner.is_active:
-            process_notifications_for_owner.apply_async(
-                kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
             )
 
 
@@ -122,6 +116,12 @@ def send_notifications(notification_pks: list) -> None:
             send_messages_for_webhook.apply_async(
                 kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
             )
+
+
+@shared_task(base=QueueOnce)
+def send_messages_for_webhook(webhook_pk: int) -> None:
+    """sends all currently queued messages for given webhook to Discord"""
+    Webhook.objects.send_queued_messages_for_webhook(webhook_pk)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
