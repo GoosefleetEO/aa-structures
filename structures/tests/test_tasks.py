@@ -1,12 +1,11 @@
 from unittest.mock import patch
 
-from celery import Celery
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.test.utils import override_settings
 
 from allianceauth.eveonline.models import EveCorporationInfo
+from app_utils.esi import EsiStatus
 from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 
 from structures.models.notifications import Notification
@@ -17,8 +16,6 @@ from .testdata import create_structures, load_notification_entities, set_owner_c
 
 MODULE_PATH = "structures.tasks"
 MODULE_PATH_MODELS_OWNERS = "structures.models.owners"
-
-app = Celery("myauth")
 
 
 @patch(MODULE_PATH + ".Webhook.send_queued_messages", spec=True)
@@ -209,6 +206,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2001.pk)
 
 
+@patch(MODULE_PATH + ".fetch_esi_status", lambda: EsiStatus(True, 100, 60))
 class TestProcessNotificationsForOwner(TestCase):
     @classmethod
     def setUpClass(cls) -> None:

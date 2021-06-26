@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.12.1] - 2021-06-26
+
+### Changed
+
+- Will now check if ESI is available before updating structures or fetching notifications. This should signifanctly reduce the amount of ESI exception during the daily downtime.
+
 ## [1.12.0] - 2021-05-22
 
 ### Update notes
