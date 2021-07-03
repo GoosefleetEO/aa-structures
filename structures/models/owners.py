@@ -779,11 +779,18 @@ class Owner(models.Model):
         self.save()
         token = self.fetch_token()
 
-        # fetch notifications from ESI
         try:
             notifications = self._fetch_notifications_from_esi(token)
         except OSError as ex:
-            # TODO: Notify admins
+            message_id = (
+                f"{__title__}-fetch_notifications-{self.pk}-{type(ex).__name__}"
+            )
+            title = f"{__title__}: Failed to fetch notifications for {self}"
+            message = f"{self}: Failed to fetch notifications due to {ex}"
+            logger.exception(message)
+            notify_admins_throttled(
+                message_id=message_id, title=title, message=message, level="danger"
+            )
             raise ex
         else:
             notifications_count_new = self._store_notifications(notifications)

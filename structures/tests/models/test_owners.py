@@ -1240,6 +1240,8 @@ class TestUpdateStructuresEsiWithLocalization(NoSocketsTestCase):
         self.assertEqual(to_json(structures), to_json(excepted))
 
 
+@patch(MODULE_PATH + ".notify_admins_throttled")
+@patch("structures.helpers.esi_fetch._esi_client")
 class TestFetchNotificationsEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -1254,8 +1256,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         False,
     )
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_should_create_notifications_and_timers_from_scratch(self, mock_esi_client):
+    def test_should_create_notifications_and_timers_from_scratch(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         self.user = AuthUtils.add_permission_to_user_by_name(
@@ -1276,6 +1279,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # then
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.notifications_last_update_ok)
+        self.assertFalse(mock_notify_admins_throttled.called)
         # should only contain the right notifications
         notif_ids_current = set(
             Notification.objects.values_list("notification_id", flat=True)
@@ -1303,9 +1307,8 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".notify", spec=True)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    @patch("structures.helpers.esi_fetch._esi_client")
     def test_should_inform_user_about_successful_update(
-        self, mock_esi_client, mock_notify
+        self, mock_notify, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
@@ -1328,14 +1331,16 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.notifications_last_update_ok)
         self.assertTrue(mock_notify.called)
+        self.assertFalse(mock_notify_admins_throttled.called)
 
     @patch(
         "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
         False,
     )
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_should_create_new_notifications_only(self, mock_esi_client):
+    def test_should_create_new_notifications_only(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         self.user = AuthUtils.add_permission_to_user_by_name(
@@ -1358,6 +1363,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # then
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.notifications_last_update_ok)
+        self.assertFalse(mock_notify_admins_throttled.called)
         # should only contain the right notifications
         notif_ids_current = set(
             Notification.objects.values_list("notification_id", flat=True)
@@ -1379,8 +1385,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         False,
     )
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_should_set_moon_for_structure_if_missing(self, mock_esi_client):
+    def test_should_set_moon_for_structure_if_missing(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         self.user = AuthUtils.add_permission_to_user_by_name(
@@ -1408,8 +1415,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
     @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    def test_report_error_when_esi_returns_error_during_sync(self, mock_esi_client):
+    def test_report_error_when_esi_returns_error_during_sync(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         def get_characters_character_id_notifications_error(*args, **kwargs):
             raise HTTPBadGateway(
@@ -1428,6 +1436,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # then
         self.owner.refresh_from_db()
         self.assertIsNone(self.owner.notifications_last_update_ok)
+        self.assertTrue(mock_notify_admins_throttled.called)
 
 
 @override_settings(DEBUG=True)
