@@ -300,7 +300,7 @@ class OwnerAdmin(admin.ModelAdmin):
     list_display = (
         "_corporation",
         "_alliance",
-        "character",
+        "character_ownership",
         "_is_active",
         "_webhooks",
         "_has_default_pings_enabled",
@@ -329,9 +329,9 @@ class OwnerAdmin(admin.ModelAdmin):
             qs.select_related(
                 "corporation",
                 "corporation__alliance",
-                "character",
-                "character__user",
-                "character__character",
+                "character_ownership",
+                "character_ownership__user",
+                "character_ownership__character",
             )
             .prefetch_related("ping_groups", "webhooks")
             .annotate(notifications_count=Count("notifications", distinct=True))
@@ -476,7 +476,7 @@ class OwnerAdmin(admin.ModelAdmin):
                 "assets_last_update_at",
                 "assets_last_update_ok",
                 "corporation",
-                "character",
+                "character_ownership",
                 "forwarding_last_update_at",
                 "forwarding_last_update_ok",
                 "notifications_last_update_at",
@@ -493,7 +493,7 @@ class OwnerAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "corporation",
-                    "character",
+                    "character_ownership",
                     "webhooks",
                     "is_alliance_main",
                     "are_pocos_public",

@@ -478,8 +478,8 @@ def _structures_query_for_user(request):
             "structures.view_corporation_structures"
         ) or request.user.has_perm("structures.view_alliance_structures"):
             corporation_ids = {
-                character.character.corporation_id
-                for character in request.user.character_ownerships.all()
+                character_ownership.character.corporation_id
+                for character_ownership in request.user.character_ownerships.all()
             }
             corporations = list(
                 EveCorporationInfo.objects.select_related("alliance").filter(
@@ -670,7 +670,7 @@ def add_structure_owner(request, token):
             )
 
         owner, _ = Owner.objects.update_or_create(
-            corporation=corporation, defaults={"character": owned_char}
+            corporation=corporation, defaults={"character_ownership": owned_char}
         )
         default_webhooks = Webhook.objects.filter(is_default=True)
         if default_webhooks:
@@ -693,7 +693,8 @@ def add_structure_owner(request, token):
                 % {
                     "corporation": format_html("<strong>{}</strong>", owner),
                     "character": format_html(
-                        "<strong>{}</strong>", owner.character.character.character_name
+                        "<strong>{}</strong>",
+                        owner.character_ownership.character.character_name,
                     ),
                 }
             ),

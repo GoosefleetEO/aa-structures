@@ -497,7 +497,7 @@ class TestAddStructureOwner(TestCase):
         my_ownership = self.user.character_ownerships.get(
             character__character_id=self.character.character_id
         )
-        my_owner = Owner.objects.get(character=my_ownership)
+        my_owner = Owner.objects.get(character_ownership=my_ownership)
         self.assertEqual(my_owner.webhooks.first().name, "Test Webhook 1")
         self.assertTrue(mock_update_structures_for_owner.delay.called)
 
@@ -550,7 +550,7 @@ class TestAddStructureOwner(TestCase):
         my_ownership = self.user.character_ownerships.get(
             character__character_id=self.character.character_id
         )
-        my_owner = Owner.objects.get(character=my_ownership)
+        my_owner = Owner.objects.get(character_ownership=my_ownership)
         self.assertIsNone(my_owner.webhooks.first())
         self.assertTrue(mock_update_structures_for_owner.delay.called)
 

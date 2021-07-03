@@ -87,7 +87,7 @@ class Owner(models.Model):
     assets_last_update_ok = models.BooleanField(
         null=True, default=None, help_text="True if the last update was successful"
     )
-    character = models.ForeignKey(
+    character_ownership = models.ForeignKey(
         CharacterOwnership,
         on_delete=models.SET_DEFAULT,
         default=None,
@@ -226,15 +226,17 @@ class Owner(models.Model):
         Raises TokenError when no valid token can be found.
         """
         error = None
-        if self.character is None:
+        if self.character_ownership is None:
             error = f"{self}: No character configured to sync."
-        elif not self.character.user.has_perm("structures.add_structure_owner"):
+        elif not self.character_ownership.user.has_perm(
+            "structures.add_structure_owner"
+        ):
             error = f"{self}: Character does not have sufficient permission to sync."
         else:
             token = (
                 Token.objects.filter(
-                    user=self.character.user,
-                    character_id=self.character.character.character_id,
+                    user=self.character_ownership.user,
+                    character_id=self.character_ownership.character.character_id,
                 )
                 .require_scopes(self.get_esi_scopes())
                 .require_valid()
@@ -246,10 +248,10 @@ class Owner(models.Model):
         if error:
             message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
             title = f"{__title__}: Failed to fetch token for {self}"
-            if self.character:
+            if self.character_ownership:
                 notify_throttled(
                     message_id=message_id,
-                    user=self.character.user,
+                    user=self.character_ownership.user,
                     title=title,
                     message=error,
                     level="danger",
@@ -825,7 +827,7 @@ class Owner(models.Model):
 
         notifications = esi_fetch(
             "Character.get_characters_character_id_notifications",
-            args={"character_id": self.character.character.character_id},
+            args={"character_id": self.character_ownership.character.character_id},
             token=token,
         )
         if STRUCTURES_DEVELOPER_MODE:

@@ -267,7 +267,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         owner = Owner.objects.create(
-            corporation=self.corporation, character=character_ownership
+            corporation=self.corporation, character_ownership=character_ownership
         )
         # when
         token = owner.fetch_token()
@@ -301,7 +301,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             1001, scopes=Owner.get_esi_scopes()
         )
         owner = Owner.objects.create(
-            corporation=self.corporation, character=character_ownership
+            corporation=self.corporation, character_ownership=character_ownership
         )
         # when/then
         with self.assertRaises(TokenError):
@@ -323,7 +323,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
                 scopes=Owner.get_esi_scopes(),
             )
         owner = Owner.objects.create(
-            corporation=self.corporation, character=character_ownership
+            corporation=self.corporation, character_ownership=character_ownership
         )
         user.token_set.all().delete()
         # when/then
@@ -380,7 +380,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -508,7 +508,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -572,7 +572,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
 
         # when
@@ -652,7 +652,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
 
         # when
@@ -697,7 +697,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
         my_corporation = EveCorporationInfo.objects.get(corporation_id=2005)
         owner = Owner.objects.create(
-            corporation=my_corporation, character=my_main_ownership
+            corporation=my_corporation, character_ownership=my_main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -735,7 +735,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             esi_get_universe_structures_structure_id
         )
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -782,7 +782,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             esi_get_universe_structures_structure_id
         )
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -829,7 +829,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             esi_get_universe_structures_structure_id
         )
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -860,7 +860,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         del data["1000000000002"]
         esi_get_universe_structures_structure_id.override_data = data
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -879,7 +879,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
 
         # run update task with all structures
@@ -908,7 +908,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
 
         # run update task with all structures
@@ -946,7 +946,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
-        owner.character = self.main_ownership
+        owner.character_ownership = self.main_ownership
         owner.save()
         self.assertGreater(owner.structures.count(), 0)
         # when
@@ -973,7 +973,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
-        owner.character = self.main_ownership
+        owner.character_ownership = self.main_ownership
         owner.save()
         # when
         owner.update_structures_esi()
@@ -1000,7 +1000,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
 
         # run update task with all structures
@@ -1033,7 +1033,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         EvePlanet.objects.all().delete()
         # when
@@ -1051,7 +1051,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -1069,7 +1069,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         # when
         owner.update_structures_esi()
@@ -1087,7 +1087,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         esi_post_corporations_corporation_id_assets_names.override_data = {"2001": []}
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
-            corporation=self.corporation, character=self.main_ownership
+            corporation=self.corporation, character_ownership=self.main_ownership
         )
         EvePlanet.objects.all().delete()
         # when
