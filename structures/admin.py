@@ -41,11 +41,7 @@ if STRUCTURES_DEVELOPER_MODE:
 
     @admin.register(EveEntity)
     class EveEntityAdmin(admin.ModelAdmin):
-        list_display = (
-            "id",
-            "name",
-            "category",
-        )
+        list_display = ("id", "name", "category")
         list_filter = ("category",)
         list_display_links = None
 
@@ -283,15 +279,17 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
         """Return the filtered queryset"""
         if self.value() == "yes":
             return queryset.filter(
-                structures_last_error=Owner.ERROR_NONE,
-                notifications_last_error=Owner.ERROR_NONE,
-                forwarding_last_error=Owner.ERROR_NONE,
+                structures_last_update_ok=True,
+                notifications_last_update_ok=True,
+                forwarding_last_update_ok=True,
+                assets_last_update_ok=True,
             )
         elif self.value() == "no":
             return queryset.exclude(
-                structures_last_error=Owner.ERROR_NONE,
-                notifications_last_error=Owner.ERROR_NONE,
-                forwarding_last_error=Owner.ERROR_NONE,
+                structures_last_update_ok=True,
+                notifications_last_update_ok=True,
+                forwarding_last_update_ok=True,
+                assets_last_update_ok=True,
             )
         else:
             return queryset
@@ -302,7 +300,7 @@ class OwnerAdmin(admin.ModelAdmin):
     list_display = (
         "_corporation",
         "_alliance",
-        "character",
+        "character_ownership",
         "_is_active",
         "_webhooks",
         "_has_default_pings_enabled",
@@ -331,9 +329,9 @@ class OwnerAdmin(admin.ModelAdmin):
             qs.select_related(
                 "corporation",
                 "corporation__alliance",
-                "character",
-                "character__user",
-                "character__character",
+                "character_ownership",
+                "character_ownership__user",
+                "character_ownership__character",
             )
             .prefetch_related("ping_groups", "webhooks")
             .annotate(notifications_count=Count("notifications", distinct=True))
@@ -475,16 +473,16 @@ class OwnerAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
             return self.readonly_fields + (
+                "assets_last_update_at",
+                "assets_last_update_ok",
                 "corporation",
-                "character",
-                "notifications_last_error",
-                "notifications_last_sync",
-                "structures_last_error",
-                "structures_last_sync",
-                "forwarding_last_sync",
-                "forwarding_last_error",
-                "assets_last_sync",
-                "assets_last_error",
+                "character_ownership",
+                "forwarding_last_update_at",
+                "forwarding_last_update_ok",
+                "notifications_last_update_at",
+                "notifications_last_update_ok",
+                "structures_last_update_at",
+                "structures_last_update_ok",
             )
         return self.readonly_fields
 
@@ -495,7 +493,7 @@ class OwnerAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "corporation",
-                    "character",
+                    "character_ownership",
                     "webhooks",
                     "is_alliance_main",
                     "are_pocos_public",
@@ -512,20 +510,20 @@ class OwnerAdmin(admin.ModelAdmin):
                 "classes": ("collapse",),
                 "fields": (
                     (
-                        "structures_last_sync",
-                        "structures_last_error",
+                        "structures_last_update_at",
+                        "structures_last_update_ok",
                     ),
                     (
-                        "notifications_last_sync",
-                        "notifications_last_error",
+                        "notifications_last_update_at",
+                        "notifications_last_update_ok",
                     ),
                     (
-                        "forwarding_last_sync",
-                        "forwarding_last_error",
+                        "forwarding_last_update_at",
+                        "forwarding_last_update_ok",
                     ),
                     (
-                        "assets_last_sync",
-                        "assets_last_error",
+                        "assets_last_update_at",
+                        "assets_last_update_ok",
                     ),
                 ),
             },

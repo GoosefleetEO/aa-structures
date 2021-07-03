@@ -497,7 +497,7 @@ class TestAddStructureOwner(TestCase):
         my_ownership = self.user.character_ownerships.get(
             character__character_id=self.character.character_id
         )
-        my_owner = Owner.objects.get(character=my_ownership)
+        my_owner = Owner.objects.get(character_ownership=my_ownership)
         self.assertEqual(my_owner.webhooks.first().name, "Test Webhook 1")
         self.assertTrue(mock_update_structures_for_owner.delay.called)
 
@@ -550,7 +550,7 @@ class TestAddStructureOwner(TestCase):
         my_ownership = self.user.character_ownerships.get(
             character__character_id=self.character.character_id
         )
-        my_owner = Owner.objects.get(character=my_ownership)
+        my_owner = Owner.objects.get(character_ownership=my_ownership)
         self.assertIsNone(my_owner.webhooks.first())
         self.assertTrue(mock_update_structures_for_owner.delay.called)
 
@@ -584,97 +584,112 @@ class TestStatus(TestCase):
 
     def test_view_service_status_ok(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now()
-            owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now()
-            owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now()
-            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.structures_last_update_at = now()
+            owner.structures_last_update_ok = True
+            owner.notifications_last_update_at = now()
+            owner.notifications_last_update_ok = True
+            owner.forwarding_last_update_at = now()
+            owner.forwarding_last_update_ok = True
+            owner.assets_last_update_at = now()
+            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 200)
 
-    def test_view_service_status_fail(self):
+    def test_view_service_status_fail_structures(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now()
-            owner.structures_last_error = Owner.ERROR_UNKNOWN
-            owner.notifications_last_sync = now()
-            owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now()
-            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.structures_last_update_at = now()
+            owner.structures_last_update_ok = None
+            owner.notifications_last_update_at = now()
+            owner.notifications_last_update_ok = True
+            owner.forwarding_last_update_at = now()
+            owner.forwarding_last_update_ok = True
+            owner.assets_last_update_at = now()
+            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    def test_view_service_status_fail_notifications(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now()
-            owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now()
-            owner.notifications_last_error = Owner.ERROR_UNKNOWN
-            owner.forwarding_last_sync = now()
-            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.structures_last_update_at = now()
+            owner.structures_last_update_ok = True
+            owner.notifications_last_update_at = now()
+            owner.notifications_last_update_ok = None
+            owner.forwarding_last_update_at = now()
+            owner.forwarding_last_update_ok = True
+            owner.assets_last_update_at = now()
+            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    def test_view_service_status_fail_forwarding(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now()
-            owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now()
-            owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now()
-            owner.forwarding_last_error = Owner.ERROR_UNKNOWN
+            owner.structures_last_update_at = now()
+            owner.structures_last_update_ok = True
+            owner.notifications_last_update_at = now()
+            owner.notifications_last_update_ok = True
+            owner.forwarding_last_update_at = now()
+            owner.forwarding_last_update_ok = None
+            owner.assets_last_update_at = now()
+            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    def test_view_service_status_fail_assets(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now() - timedelta(
+            owner.structures_last_update_at = now() - timedelta(
                 minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES + 1
             )
-            owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now()
-            owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now()
-            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.structures_last_update_ok = True
+            owner.notifications_last_update_at = now()
+            owner.notifications_last_update_ok = True
+            owner.forwarding_last_update_at = now()
+            owner.forwarding_last_update_ok = True
+            owner.assets_last_update_at = now()
+            owner.assets_last_update_ok = None
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    def test_view_service_status_fail_notifications_2(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now()
-            owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now() - timedelta(
+            owner.structures_last_update_at = now()
+            owner.structures_last_update_ok = True
+            owner.notifications_last_update_at = now() - timedelta(
                 minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES + 1
             )
-            owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now()
-            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.notifications_last_update_ok = True
+            owner.forwarding_last_update_at = now()
+            owner.forwarding_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    def test_view_service_status_fail_forwarding_2(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_sync = now()
-            owner.structures_last_error = Owner.ERROR_NONE
-            owner.notifications_last_sync = now()
-            owner.notifications_last_error = Owner.ERROR_NONE
-            owner.forwarding_last_sync = now() - timedelta(
+            owner.structures_last_update_at = now()
+            owner.structures_last_update_ok = True
+            owner.notifications_last_update_at = now()
+            owner.notifications_last_update_ok = True
+            owner.forwarding_last_update_at = now() - timedelta(
                 minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES + 1
             )
-            owner.forwarding_last_error = Owner.ERROR_NONE
+            owner.forwarding_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
