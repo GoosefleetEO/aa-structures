@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.13.0] - 2021-07-03
 
+### Added
+
+- Automatically send notifications to users and admins when tokens become invalid
+- Automatically send notifications to admins when updates fail
+
 ### Changed
 
 - Reworked error handling and reporting for update processes

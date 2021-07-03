@@ -244,8 +244,8 @@ class Owner(models.Model):
                 error = f"{self}: No valid token found."
 
         if error:
-            title = f"{__title__}: Failed to fetch token for {self}"
             message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
+            title = f"{__title__}: Failed to fetch token for {self}"
             if self.character:
                 notify_throttled(
                     message_id=message_id,
@@ -317,7 +317,17 @@ class Owner(models.Model):
                 languages=EsiNameLocalization.ESI_LANGUAGES,
                 has_pages=True,
             )
-
+        except OSError as ex:
+            message_id = (
+                f"{__title__}-_fetch_upwell_structures-{self.pk}-{type(ex).__name__}"
+            )
+            title = f"{__title__}: Failed to fetch upwell structures for {self}"
+            message = f"{self}: Failed to fetch upwell structures for due to {ex}"
+            logger.exception(message)
+            notify_admins_throttled(
+                message_id=message_id, title=title, message=message, level="danger"
+            )
+        else:
             # reduce data
             structures = self._compress_services_localization(
                 structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
@@ -344,10 +354,24 @@ class Owner(models.Model):
                         )
                         structure["position"] = structure_info["position"]
                     except OSError as ex:
-                        logger.exception(
-                            "Failed to load details for structure with ID %d due "
-                            "to the following exception: %s"
-                            % (structure["structure_id"], ex)
+                        message_id = (
+                            f"{__title__}-_fetch_upwell_structures-details-"
+                            f"{self.pk}-{type(ex).__name__}"
+                        )
+                        title = (
+                            f"{__title__}: Failed to load details for "
+                            f"structure from {self}"
+                        )
+                        message = (
+                            f"{self}: Failed to load details for structure "
+                            "with ID {structure['structure_id']} du due to {ex}"
+                        )
+                        logger.warning(message, exc_info=True)
+                        notify_admins_throttled(
+                            message_id=message_id,
+                            title=title,
+                            message=message,
+                            level="warning",
                         )
                         structure["name"] = "(no data)"
                 logger.info(
@@ -361,9 +385,6 @@ class Owner(models.Model):
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("structures", structures, corporation_id)
 
-        except OSError:
-            logger.exception("%s: Failed to fetch upwell structures", self)
-        else:
             self._remove_structures_not_returned_from_esi(
                 structures_qs=self.structures.filter_upwell_structures(),
                 new_structures=structures,
@@ -547,8 +568,16 @@ class Owner(models.Model):
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("customs_offices", structures, corporation_id)
 
-        except OSError:
-            logger.exception("%s: Failed to fetch custom offices", self)
+        except OSError as ex:
+            message_id = (
+                f"{__title__}-_fetch_customs_offices-{self.pk}-{type(ex).__name__}"
+            )
+            title = f"{__title__}: Failed to fetch custom offices for {self}"
+            message = f"{self}: Failed to fetch custom offices due to {ex}"
+            logger.exception(message)
+            notify_admins_throttled(
+                message_id=message_id, title=title, message=message, level="danger"
+            )
         else:
             self._remove_structures_not_returned_from_esi(
                 structures_qs=self.structures.filter_customs_offices(),
@@ -663,8 +692,14 @@ class Owner(models.Model):
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures, corporation_id)
 
-        except OSError:
-            logger.exception("%s: Failed to fetch starbases")
+        except OSError as ex:
+            message_id = f"{__title__}-_fetch_starbases-{self.pk}-{type(ex).__name__}"
+            title = f"{__title__}: Failed to fetch starbases for {self}"
+            message = f"{self}: Failed to fetch starbases due to {ex}"
+            logger.exception(message)
+            notify_admins_throttled(
+                message_id=message_id, title=title, message=message, level="danger"
+            )
         else:
             self._remove_structures_not_returned_from_esi(
                 structures_qs=self.structures.filter_starbases(),

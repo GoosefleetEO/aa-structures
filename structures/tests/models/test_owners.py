@@ -351,6 +351,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertTrue(mock_notify_throttled.called)
 
 
+@patch(MODULE_PATH + ".notify_admins_throttled")
 @patch("structures.helpers.esi_fetch._esi_client")
 @patch("structures.helpers.esi_fetch.sleep", lambda x: None)
 class TestUpdateStructuresEsi(NoSocketsTestCase):
@@ -391,7 +392,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_can_sync_upwell_structures(self, mock_esi_client):
+    def test_can_sync_upwell_structures(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -514,9 +517,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         }
         self.assertEqual(services, expected)
 
+        # did not notify admins
+        self.assertFalse(mock_notify_admins_throttled.called)
+
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_can_sync_pocos(self, mock_esi_client):
+    def test_can_sync_pocos(self, mock_esi_client, mock_notify_admins_throttled):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -575,9 +581,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(details.standing_level, PocoDetails.StandingLevel.TERRIBLE)
         self.assertEqual(details.terrible_standing_tax_rate, 0.5)
 
+        # did not notify admins
+        self.assertFalse(mock_notify_admins_throttled.called)
+
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_can_sync_starbases(self, mock_esi_client):
+    def test_can_sync_starbases(self, mock_esi_client, mock_notify_admins_throttled):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -649,12 +658,14 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             structure.fuel_expires_at,
             now() + timedelta(hours=133) + timedelta(seconds=10),
         )
+        # did not notify admins
+        self.assertFalse(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".notify", spec=True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_can_sync_all_structures_and_notify_user(
-        self, mock_notify, mock_esi_client
+        self, mock_notify, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
@@ -687,9 +698,14 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # user report has been sent
         self.assertTrue(mock_notify.called)
 
+        # did not notify admins
+        self.assertFalse(mock_notify_admins_throttled.called)
+
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_can_handle_owner_without_structures(self, mock_esi_client):
+    def test_can_handle_owner_without_structures(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         my_user, my_main_ownership = create_user_from_evecharacter(
@@ -707,11 +723,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.refresh_from_db()
         self.assertTrue(owner.structures_last_update_ok)
         self.assertSetEqual(owner.structures.ids(), set())
+        self.assertFalse(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_break_on_http_error_when_fetching_upwell_structures(
-        self, mock_esi_client
+        self, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -738,15 +755,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
         )
-
         # when
         owner.update_structures_esi()
-
         # then
         owner.refresh_from_db()
         self.assertTrue(owner.structures_last_update_ok)
-
-        # must contain all expected structures
         expected = {
             1200000000003,
             1200000000004,
@@ -757,11 +770,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1300000000003,
         }
         self.assertSetEqual(owner.structures.ids(), expected)
+        self.assertTrue(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_break_on_http_error_when_fetching_custom_offices(
-        self, mock_esi_client
+        self, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -803,11 +817,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1300000000003,
         }
         self.assertSetEqual(structure_ids, expected)
+        self.assertTrue(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_break_on_http_error_when_fetching_star_bases(
-        self, mock_esi_client
+        self, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -849,11 +864,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000006,
         }
         self.assertSetEqual(owner.structures.ids(), expected)
+        self.assertTrue(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     def test_update_will_not_break_on_http_error_from_structure_info(
-        self, mock_esi_client
+        self, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
@@ -871,10 +887,13 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         esi_get_universe_structures_structure_id.override_data = None
         structure = Structure.objects.get(id=1000000000002)
         self.assertEqual(structure.name, "(no data)")
+        self.assertTrue(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_removes_old_structures(self, mock_esi_client):
+    def test_removes_old_structures(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -902,7 +921,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_tags_are_not_modified_by_update(self, mock_esi_client):
+    def test_tags_are_not_modified_by_update(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
             corporation=self.corporation, character=self.main_ownership
@@ -933,7 +954,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_should_remove_structures_not_returned_from_esi(self, mock_esi_client):
+    def test_should_remove_structures_not_returned_from_esi(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         esi_get_corporations_corporation_id_structures.override_data = {"2001": []}
         esi_get_corporations_corporation_id_starbases.override_data = {"2001": []}
@@ -954,7 +977,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_delete_existing_structures_when_update_failed_with_http_error(
-        self, mock_esi_client
+        self, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = HTTPInternalServerError(
@@ -989,7 +1012,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_removes_outdated_services(self, mock_esi_client):
+    def test_removes_outdated_services(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -1020,7 +1045,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_should_have_empty_name_if_not_match_with_planets(self, mock_esi_client):
+    def test_should_have_empty_name_if_not_match_with_planets(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -1036,7 +1063,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_define_poco_name_from_planet_type_if_found(self, mock_esi_client):
+    def test_define_poco_name_from_planet_type_if_found(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -1052,7 +1081,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "de")
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_define_poco_name_from_planet_type_localized(self, mock_esi_client):
+    def test_define_poco_name_from_planet_type_localized(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
         owner = Owner.objects.create(
@@ -1067,7 +1098,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_update_pocos_no_asset_name_match(self, mock_esi_client):
+    def test_update_pocos_no_asset_name_match(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         esi_post_corporations_corporation_id_assets_names.override_data = {"2001": []}
         mock_esi_client.side_effect = esi_mock_client
