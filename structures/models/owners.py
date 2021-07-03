@@ -321,8 +321,11 @@ class Owner(models.Model):
             message_id = (
                 f"{__title__}-_fetch_upwell_structures-{self.pk}-{type(ex).__name__}"
             )
-            title = f"{__title__}: Failed to fetch upwell structures for {self}"
-            message = f"{self}: Failed to fetch upwell structures for due to {ex}"
+            title = f"{__title__}: Failed to update upwell structures for {self}"
+            message = (
+                f"{self}: Failed to update upwell structures "
+                f"from ESI for due to: {ex}"
+            )
             logger.exception(message)
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
@@ -359,12 +362,12 @@ class Owner(models.Model):
                             f"{self.pk}-{type(ex).__name__}"
                         )
                         title = (
-                            f"{__title__}: Failed to load details for "
+                            f"{__title__}: Failed to update details for "
                             f"structure from {self}"
                         )
                         message = (
-                            f"{self}: Failed to load details for structure "
-                            "with ID {structure['structure_id']} du due to {ex}"
+                            f"{self}: Failed to update details for structure "
+                            "with ID {structure['structure_id']} from ESI due to: {ex}"
                         )
                         logger.warning(message, exc_info=True)
                         notify_admins_throttled(
@@ -572,8 +575,8 @@ class Owner(models.Model):
             message_id = (
                 f"{__title__}-_fetch_customs_offices-{self.pk}-{type(ex).__name__}"
             )
-            title = f"{__title__}: Failed to fetch custom offices for {self}"
-            message = f"{self}: Failed to fetch custom offices due to {ex}"
+            title = f"{__title__}: Failed to update custom offices for {self}"
+            message = f"{self}: Failed to update custom offices from ESI due to: {ex}"
             logger.exception(message)
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
@@ -695,7 +698,7 @@ class Owner(models.Model):
         except OSError as ex:
             message_id = f"{__title__}-_fetch_starbases-{self.pk}-{type(ex).__name__}"
             title = f"{__title__}: Failed to fetch starbases for {self}"
-            message = f"{self}: Failed to fetch starbases due to {ex}"
+            message = f"{self}: Failed to fetch starbases from ESI due to {ex}"
             logger.exception(message)
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
@@ -785,8 +788,8 @@ class Owner(models.Model):
             message_id = (
                 f"{__title__}-fetch_notifications-{self.pk}-{type(ex).__name__}"
             )
-            title = f"{__title__}: Failed to fetch notifications for {self}"
-            message = f"{self}: Failed to fetch notifications due to {ex}"
+            title = f"{__title__}: Failed to update notifications for {self}"
+            message = f"{self}: Failed to update notifications from ESI due to {ex}"
             logger.exception(message)
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
@@ -1067,16 +1070,27 @@ class Owner(models.Model):
 
         token = self.fetch_token()
         structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
-        OwnerAsset.objects.update_or_create_for_structures_esi(
-            structure_ids, self.corporation.corporation_id, token
-        )
-        self.assets_last_update_ok = True
-        self.save()
-
-        if user:
-            self._send_report_to_user(
-                topic="assets", topic_count=self.structures.count(), user=user
+        try:
+            OwnerAsset.objects.update_or_create_for_structures_esi(
+                structure_ids, self.corporation.corporation_id, token
             )
+        except OSError as ex:
+            message_id = f"{__title__}-fetch_assets-{self.pk}-{type(ex).__name__}"
+            title = f"{__title__}: Failed to update assets for {self}"
+            message = f"{self}: Failed to update assets from ESI due to {ex}"
+            logger.warning(message, exc_info=True)
+            notify_admins_throttled(
+                message_id=message_id, title=title, message=message, level="warning"
+            )
+            raise ex
+        else:
+            self.assets_last_update_ok = True
+            self.save()
+
+            if user:
+                self._send_report_to_user(
+                    topic="assets", topic_count=self.structures.count(), user=user
+                )
 
     @classmethod
     def get_esi_scopes(cls) -> list:

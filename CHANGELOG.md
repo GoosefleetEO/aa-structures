@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Automatically send notifications to users and admins when tokens become invalid
-- Automatically send notifications to admins when updates fail
+- Automatically send notifications to admins when updates from ESI fail
 
 ### Changed
 
