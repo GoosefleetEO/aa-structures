@@ -6,21 +6,19 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from bravado.exception import HTTPError
-
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from esi.errors import TokenError, TokenExpiredError, TokenInvalidError
+from esi.errors import TokenError
 from esi.models import Token
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
+from app_utils.allianceauth import notify_admins_throttled, notify_throttled
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag
@@ -70,29 +68,6 @@ class General(models.Model):
 class Owner(models.Model):
     """A corporation that owns structures"""
 
-    # errors
-    ERROR_NONE = 0
-    ERROR_TOKEN_INVALID = 1
-    ERROR_TOKEN_EXPIRED = 2
-    ERROR_INSUFFICIENT_PERMISSIONS = 3
-    ERROR_NO_CHARACTER = 4
-    ERROR_ESI_UNAVAILABLE = 5
-    ERROR_OPERATION_MODE_MISMATCH = 6
-    ERROR_UNKNOWN = 99
-
-    ERRORS_LIST = [
-        (ERROR_NONE, "No error"),
-        (ERROR_TOKEN_INVALID, "Invalid token"),
-        (ERROR_TOKEN_EXPIRED, "Expired token"),
-        (ERROR_INSUFFICIENT_PERMISSIONS, "Insufficient permissions"),
-        (ERROR_NO_CHARACTER, "No character set for fetching data from ESI"),
-        (ERROR_ESI_UNAVAILABLE, "ESI API is currently unavailable"),
-        (
-            ERROR_OPERATION_MODE_MISMATCH,
-            "Operaton mode does not match with current setting",
-        ),
-        (ERROR_UNKNOWN, "Unknown error"),
-    ]
     # PK
     corporation = models.OneToOneField(
         EveCorporationInfo,
@@ -106,13 +81,11 @@ class Owner(models.Model):
         default=False,
         help_text=("whether pocos of this owner are shown on public POCO page"),
     )
-    assets_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
+    assets_last_update_at = models.DateTimeField(
+        null=True, default=None, blank=True, help_text="when the last update happened"
     )
-    assets_last_sync = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
+    assets_last_update_ok = models.BooleanField(
+        null=True, default=None, help_text="True if the last update was successful"
     )
     character = models.ForeignKey(
         CharacterOwnership,
@@ -123,13 +96,11 @@ class Owner(models.Model):
         related_name="+",
         help_text="character used for syncing structures",
     )
-    forwarding_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
-    )
-    forwarding_last_sync = models.DateTimeField(
+    forwarding_last_update_at = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
+    )
+    forwarding_last_update_ok = models.BooleanField(
+        null=True, default=None, help_text="True if the last update was successful"
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
@@ -156,13 +127,11 @@ class Owner(models.Model):
             "the overall status of this services"
         ),
     )
-    notifications_last_sync = models.DateTimeField(
+    notifications_last_update_at = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
     )
-    notifications_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
+    notifications_last_update_ok = models.BooleanField(
+        null=True, default=None, help_text="True if the last update was successful"
     )
     ping_groups = models.ManyToManyField(
         Group,
@@ -170,13 +139,11 @@ class Owner(models.Model):
         blank=True,
         help_text="Groups to be pinged for each notification - ",
     )
-    structures_last_error = models.IntegerField(
-        choices=ERRORS_LIST,
-        default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
-    )
-    structures_last_sync = models.DateTimeField(
+    structures_last_update_at = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
+    )
+    structures_last_update_ok = models.BooleanField(
+        null=True, default=None, help_text="True if the last update was successful"
     )
     webhooks = models.ManyToManyField(
         "Webhook",
@@ -199,9 +166,9 @@ class Owner(models.Model):
         and last syncing occurred within alloted time
         """
         return (
-            self.structures_last_error == self.ERROR_NONE
-            and self.structures_last_sync
-            and self.structures_last_sync
+            self.structures_last_update_ok is True
+            and self.structures_last_update_at
+            and self.structures_last_update_at
             > (now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES))
         )
 
@@ -211,9 +178,9 @@ class Owner(models.Model):
         and last syncing occurred within alloted time
         """
         return (
-            self.notifications_last_error == self.ERROR_NONE
-            and self.notifications_last_sync
-            and self.notifications_last_sync
+            self.notifications_last_update_ok is True
+            and self.notifications_last_update_at
+            and self.notifications_last_update_at
             > (now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
         )
 
@@ -223,9 +190,9 @@ class Owner(models.Model):
         and last syncing occurred within alloted time
         """
         return (
-            self.forwarding_last_error == self.ERROR_NONE
-            and self.forwarding_last_sync
-            and self.forwarding_last_sync
+            self.forwarding_last_update_ok is True
+            and self.forwarding_last_update_at
+            and self.forwarding_last_update_at
             > (now() - timedelta(minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES))
         )
 
@@ -235,9 +202,9 @@ class Owner(models.Model):
         and last syncing occurred within alloted time
         """
         return (
-            self.assets_last_error == self.ERROR_NONE
-            and self.assets_last_sync
-            and self.assets_last_sync
+            self.assets_last_update_ok is True
+            and self.assets_last_update_at
+            and self.assets_last_update_at
             > (now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES))
         )
 
@@ -250,75 +217,76 @@ class Owner(models.Model):
             self.is_structure_sync_ok
             and self.is_notification_sync_ok
             and self.is_forwarding_sync_ok
+            and self.is_asset_sync_ok
         )
 
-    @classmethod
-    def to_friendly_error_message(cls, error) -> str:
-        msg = [(x, y) for x, y in cls.ERRORS_LIST if x == error]
-        return msg[0][1] if len(msg) > 0 else "Undefined error"
+    def fetch_token(self) -> Token:
+        """Fetch a valid token for the owner and return it.
 
-    @classmethod
-    def get_esi_scopes(cls) -> list:
-        scopes = [
-            "esi-corporations.read_structures.v1",
-            "esi-universe.read_structures.v1",
-            "esi-characters.read_notifications.v1",
-            "esi-assets.read_corporation_assets.v1",
-        ]
-        if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-            scopes += ["esi-planets.read_customs_offices.v1"]
-        if STRUCTURES_FEATURE_STARBASES:
-            scopes += ["esi-corporations.read_starbases.v1"]
-        return scopes
+        Raises TokenError when no valid token can be found.
+        """
+        error = None
+        if self.character is None:
+            error = f"{self}: No character configured to sync."
+        elif not self.character.user.has_perm("structures.add_structure_owner"):
+            error = f"{self}: Character does not have sufficient permission to sync."
+        else:
+            token = (
+                Token.objects.filter(
+                    user=self.character.user,
+                    character_id=self.character.character.character_id,
+                )
+                .require_scopes(self.get_esi_scopes())
+                .require_valid()
+                .first()
+            )
+            if not token:
+                error = f"{self}: No valid token found."
+
+        if error:
+            title = f"{__title__}: Failed to fetch token for {self}"
+            message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
+            if self.character:
+                notify_throttled(
+                    message_id=message_id,
+                    user=self.character.user,
+                    title=title,
+                    message=error,
+                    level="danger",
+                )
+            notify_admins_throttled(
+                message_id=message_id, title=title, message=error, level="danger"
+            )
+            raise TokenError(error)
+
+        return token
 
     def update_structures_esi(self, user: User = None):
-        """updates all structures from ESI"""
+        """Updates all structures from ESI."""
+        self.structures_last_update_ok = None
+        self.structures_last_update_at = now()
+        self.save()
+        token = self.fetch_token()
 
-        try:
-            token, error = self.token()
-            if error:
-                self.structures_last_error = error
-                self.structures_last_sync = now()
-                self.save()
-                raise TokenError(self.to_friendly_error_message(error))
+        structure_count = self._fetch_upwell_structures(token)
+        if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
+            structure_count += self._fetch_custom_offices(token)
 
-            try:
-                structure_count = self._fetch_upwell_structures(token)
-                if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-                    structure_count += self._fetch_custom_offices(token)
+        if STRUCTURES_FEATURE_STARBASES:
+            structure_count += self._fetch_starbases(token)
 
-                if STRUCTURES_FEATURE_STARBASES:
-                    structure_count += self._fetch_starbases(token)
-
-                if not structure_count:
-                    logger.info(
-                        "%s: This corporation does not appear to have any structures",
-                        self,
-                    )
-                self.structures_last_error = self.ERROR_NONE
-                self.structures_last_sync = now()
-                self.save()
-
-            except Exception as ex:
-                logger.exception("%s: An unexpected error ocurred", self)
-                self.structures_last_error = self.ERROR_UNKNOWN
-                self.structures_last_sync = now()
-                self.save()
-                raise ex
-
-        except Exception as ex:
-            success = False
-            error_code = str(ex)
-        else:
-            success = True
-            error_code = None
+        if not structure_count:
+            logger.info(
+                "%s: This corporation does not appear to have any structures",
+                self,
+            )
+        self.structures_last_update_ok = True
+        self.save()
 
         if user:
             self._send_report_to_user(
-                "structures", self.structures.count(), success, error_code, user
+                topic="structures", topic_count=self.structures.count(), user=user
             )
-
-        return success
 
     def _remove_structures_not_returned_from_esi(
         self, structures_qs: models.QuerySet, new_structures: list
@@ -375,7 +343,7 @@ class Owner(models.Model):
                             structure_info["name"]
                         )
                         structure["position"] = structure_info["position"]
-                    except HTTPError as ex:
+                    except OSError as ex:
                         logger.exception(
                             "Failed to load details for structure with ID %d due "
                             "to the following exception: %s"
@@ -393,7 +361,7 @@ class Owner(models.Model):
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("structures", structures, corporation_id)
 
-        except (HTTPError, ConnectionError):
+        except OSError:
             logger.exception("%s: Failed to fetch upwell structures", self)
         else:
             self._remove_structures_not_returned_from_esi(
@@ -579,7 +547,7 @@ class Owner(models.Model):
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("customs_offices", structures, corporation_id)
 
-        except (HTTPError, ConnectionError):
+        except OSError:
             logger.exception("%s: Failed to fetch custom offices", self)
         else:
             self._remove_structures_not_returned_from_esi(
@@ -695,7 +663,7 @@ class Owner(models.Model):
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures, corporation_id)
 
-        except (HTTPError, ConnectionError):
+        except OSError:
             logger.exception("%s: Failed to fetch starbases")
         else:
             self._remove_structures_not_returned_from_esi(
@@ -768,58 +736,44 @@ class Owner(models.Model):
 
         return fuel_expires_at
 
-    def fetch_notifications_esi(self, user: User = None) -> bool:
-        """fetches notification for the current owners and proceses them"""
+    def fetch_notifications_esi(self, user: User = None) -> None:
+        """Fetch notifications for this owner from ESI and proceses them."""
         notifications_count_all = 0
+        self.notifications_last_update_ok = None
+        self.notifications_last_update_at = now()
+        self.save()
+        token = self.fetch_token()
+
+        # fetch notifications from ESI
         try:
-            token, error = self.token()
-            if error:
-                self.notifications_last_error = error
-                self.notifications_last_sync = now()
-                self.save()
-                raise TokenError(self.to_friendly_error_message(error))
-
-            # fetch notifications from ESI
-            try:
-                notifications = self._fetch_notifications_from_esi(token)
-                notifications_count_new = self._store_notifications(notifications)
-                self._process_moon_notifications()
-                if notifications_count_new > 0:
-                    logger.info(
-                        "%s: Received %d new notifications from ESI",
-                        self,
-                        notifications_count_new,
-                    )
-                    self._process_timers_for_notifications(token)
-                    notifications_count_all += notifications_count_new
-
-                else:
-                    logger.info("%s: No new notifications received from ESI", self)
-
-                self.notifications_last_error = self.ERROR_NONE
-                self.notifications_last_sync = now()
-                self.save()
-
-            except Exception as ex:
-                logger.exception("%s: An unexpected error ocurred %s", self, ex)
-                self.notifications_last_error = self.ERROR_UNKNOWN
-                self.notifications_last_sync = now()
-                self.save()
-                raise ex
-
-        except Exception as ex:
-            success = False
-            error_code = str(ex)
+            notifications = self._fetch_notifications_from_esi(token)
+        except OSError as ex:
+            # TODO: Notify admins
+            raise ex
         else:
-            success = True
-            error_code = None
+            notifications_count_new = self._store_notifications(notifications)
+            self._process_moon_notifications()
+            if notifications_count_new > 0:
+                logger.info(
+                    "%s: Received %d new notifications from ESI",
+                    self,
+                    notifications_count_new,
+                )
+                self._process_timers_for_notifications(token)
+                notifications_count_all += notifications_count_new
 
-        if user:
-            self._send_report_to_user(
-                "notifications", notifications_count_all, success, error_code, user
-            )
+            else:
+                logger.info("%s: No new notifications received from ESI", self)
 
-        return success
+            self.notifications_last_update_ok = True
+            self.save()
+
+            if user:
+                self._send_report_to_user(
+                    topic="notifications",
+                    topic_count=notifications_count_all,
+                    user=user,
+                )
 
     def _fetch_notifications_from_esi(self, token: Token) -> dict:
         """fetching all notifications from ESI for current owner"""
@@ -907,8 +861,6 @@ class Owner(models.Model):
             )
 
         Notification.objects.bulk_create(new_notification_objects)
-        self.notifications_last_error = self.ERROR_NONE
-        self.save()
         return len(new_notification_objects)
 
     def _process_timers_for_notifications(self, token: Token):
@@ -927,7 +879,7 @@ class Owner(models.Model):
             )
             if notifications.exists():
                 if not token:
-                    token = self.token()
+                    token = self.fetch_token()
                 for notification in notifications:
                     notification.process_for_timerboard(token)
 
@@ -966,77 +918,58 @@ class Owner(models.Model):
                     refinery.eve_moon = eve_moon
                     refinery.save()
 
-    def send_new_notifications(self, user: User = None) -> bool:
-        """forwards all new notification for this owner to Discord"""
-
+    def send_new_notifications(self, user: User = None):
+        """Forward all new notification for this owner to Discord."""
         notifications_count = 0
-        try:
-            try:
-                cutoff_dt_for_stale = now() - timedelta(
-                    hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+        self.forwarding_last_update_ok = None
+        self.forwarding_last_update_at = now()
+        self.save()
+
+        cutoff_dt_for_stale = now() - timedelta(
+            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+        )
+        all_new_notifications = list(
+            Notification.objects.filter(owner=self)
+            .filter(notif_type__in=NotificationType.values)
+            .filter(is_sent=False)
+            .filter(timestamp__gte=cutoff_dt_for_stale)
+            .select_related()
+            .order_by("timestamp")
+        )
+        new_notifications_count = 0
+        active_webhooks_count = 0
+        for webhook in self.webhooks.filter(is_active=True):
+            active_webhooks_count += 1
+            new_notifications = [
+                notif
+                for notif in all_new_notifications
+                if str(notif.notif_type) in webhook.notification_types
+            ]
+            if len(new_notifications) > 0:
+                new_notifications_count += len(new_notifications)
+                logger.info(
+                    "%s: Found %d new notifications for webhook %s",
+                    self,
+                    len(new_notifications),
+                    webhook,
                 )
-                all_new_notifications = list(
-                    Notification.objects.filter(owner=self)
-                    .filter(notif_type__in=NotificationType.values)
-                    .filter(is_sent=False)
-                    .filter(timestamp__gte=cutoff_dt_for_stale)
-                    .select_related()
-                    .order_by("timestamp")
+                notifications_count += self._send_notifications_to_webhook(
+                    new_notifications, webhook
                 )
-                new_notifications_count = 0
-                active_webhooks_count = 0
-                for webhook in self.webhooks.filter(is_active=True):
-                    active_webhooks_count += 1
-                    new_notifications = [
-                        notif
-                        for notif in all_new_notifications
-                        if str(notif.notif_type) in webhook.notification_types
-                    ]
-                    if len(new_notifications) > 0:
-                        new_notifications_count += len(new_notifications)
-                        logger.info(
-                            "%s: Found %d new notifications for webhook %s",
-                            self,
-                            len(new_notifications),
-                            webhook,
-                        )
-                        notifications_count += self._send_notifications_to_webhook(
-                            new_notifications, webhook
-                        )
 
-                if active_webhooks_count == 0:
-                    logger.info("%s: No active webhooks", self)
+        if active_webhooks_count == 0:
+            logger.info("%s: No active webhooks", self)
 
-                if new_notifications_count == 0:
-                    logger.info("%s: No new notifications found", self)
+        if new_notifications_count == 0:
+            logger.info("%s: No new notifications found", self)
 
-                self.forwarding_last_error = self.ERROR_NONE
-                self.forwarding_last_sync = now()
-                self.save()
-
-            except TokenError:
-                pass
-
-            except Exception as ex:
-                logger.exception("%s: An unexpected error ocurred", self)
-                self.forwarding_last_error = self.ERROR_UNKNOWN
-                self.forwarding_last_sync = now()
-                self.save()
-                raise ex
-
-        except Exception as ex:
-            success = False
-            error_code = str(ex)
-        else:
-            success = True
-            error_code = None
+        self.forwarding_last_update_ok = True
+        self.save()
 
         if user:
             self._send_report_to_user(
-                "notifications", notifications_count, success, error_code, user
+                topic="notifications", topic_count=notifications_count, user=user
             )
-
-        return success
 
     def _send_notifications_to_webhook(self, new_notifications, webhook) -> int:
         """sends all notifications to given webhook"""
@@ -1051,89 +984,32 @@ class Owner(models.Model):
 
         return sent_count
 
-    def token(self) -> Token:
-        """returns a valid Token for the owner"""
-        token = None
-        error = None
+    def _send_report_to_user(self, topic: str, topic_count: int, user: User):
+        message_details = "%(count)s %(topic)s synced." % {
+            "count": topic_count,
+            "topic": topic,
+        }
+        message = _(
+            'Syncing of %(topic)s for "%(owner)s" %(result)s.\n' "%(message_details)s"
+        ) % {
+            "topic": topic,
+            "owner": self.corporation.corporation_name,
+            "result": _("completed successfully"),
+            "message_details": message_details,
+        }
 
-        # abort if character is not configured
-        if self.character is None:
-            logger.error("%s: No character configured to sync", self)
-            error = self.ERROR_NO_CHARACTER
-
-        # abort if character does not have sufficient permissions
-        elif not self.character.user.has_perm("structures.add_structure_owner"):
-            logger.error(
-                "%s: self character does not have sufficient permission to sync", self
-            )
-            error = self.ERROR_INSUFFICIENT_PERMISSIONS
-
-        else:
-            try:
-                # get token
-                token = (
-                    Token.objects.filter(
-                        user=self.character.user,
-                        character_id=self.character.character.character_id,
-                    )
-                    .require_scopes(self.get_esi_scopes())
-                    .require_valid()
-                    .first()
-                )
-            except TokenInvalidError:
-                logger.error("%s: Invalid token for fetching structures", self)
-                error = self.ERROR_TOKEN_INVALID
-            except TokenExpiredError:
-                logger.error("%s: Token expired for fetching structures", self)
-                error = self.ERROR_TOKEN_EXPIRED
-            else:
-                if not token:
-                    logger.error("%s: No token found with sufficient scopes", self)
-                    error = self.ERROR_TOKEN_INVALID
-
-        return token, error
-
-    def _send_report_to_user(
-        self, topic: str, topic_count: int, success: bool, error_code, user
-    ):
-
-        try:
-            if success:
-                message_details = "%(count)s %(topic)s synced." % {
-                    "count": topic_count,
-                    "topic": topic,
-                }
-            else:
-                message_details = _("Error: %s") % error_code
-
-            message = _(
-                'Syncing of %(topic)s for "%(owner)s" %(result)s.\n'
-                "%(message_details)s"
-            ) % {
+        notify(
+            user,
+            title=_("%(title)s: %(topic)s updated for " "%(owner)s: %(result)s")
+            % {
+                "title": _(__title__),
                 "topic": topic,
                 "owner": self.corporation.corporation_name,
-                "result": _("completed successfully") if success else _("has failed"),
-                "message_details": message_details,
-            }
-
-            notify(
-                user,
-                title=_("%(title)s: %(topic)s updated for " "%(owner)s: %(result)s")
-                % {
-                    "title": _(__title__),
-                    "topic": topic,
-                    "owner": self.corporation.corporation_name,
-                    "result": _("OK") if success else _("FAILED"),
-                },
-                message=message,
-                level="success" if success else "danger",
-            )
-        except Exception as ex:
-            logger.exception(
-                "%s: An unexpected error ocurred while trying to report to user", self
-            )
-            if settings.DEBUG:
-                raise ex
+                "result": _("OK"),
+            },
+            message=message,
+            level="success",
+        )
 
     @staticmethod
     def _store_raw_data(name: str, data: list, corporation_id: int):
@@ -1142,41 +1018,37 @@ class Owner(models.Model):
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
     def update_asset_esi(self, user: User = None):
-        """Update all assets for owner where location_id is in the active structure list from esi"""
+        """Update all assets from ESI related to active structure for this owner."""
+        self.assets_last_update_ok = None
+        self.assets_last_update_at = now()
+        self.save()
 
-        try:
-            token, error = self.token()
-            if error:
-                self.assets_last_error = error
-                self.assets_last_sync = now()
-                self.save()
-                raise TokenError(self.to_friendly_error_message(error))
-
-            try:
-                structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
-                OwnerAsset.objects.update_or_create_for_structures_esi(
-                    structure_ids, self.corporation.corporation_id, token
-                )
-            except Exception as ex:
-                logger.exception("%s: An unexpected error ocurred", self)
-                self.assets_last_error = self.ERROR_UNKNOWN
-                self.assets_last_sync = now()
-                self.save()
-                raise ex
-        except Exception as ex:
-            success = False
-            error_code = str(ex)
-        else:
-            success = True
-            error_code = None
-            self.assets_last_error = self.ERROR_NONE
-            self.assets_last_sync = now()
-            self.save()
+        token = self.fetch_token()
+        structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
+        OwnerAsset.objects.update_or_create_for_structures_esi(
+            structure_ids, self.corporation.corporation_id, token
+        )
+        self.assets_last_update_ok = True
+        self.save()
 
         if user:
             self._send_report_to_user(
-                "assets", self.structures.count(), success, error_code, user
+                topic="assets", topic_count=self.structures.count(), user=user
             )
+
+    @classmethod
+    def get_esi_scopes(cls) -> list:
+        scopes = [
+            "esi-corporations.read_structures.v1",
+            "esi-universe.read_structures.v1",
+            "esi-characters.read_notifications.v1",
+            "esi-assets.read_corporation_assets.v1",
+        ]
+        if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
+            scopes += ["esi-planets.read_customs_offices.v1"]
+        if STRUCTURES_FEATURE_STARBASES:
+            scopes += ["esi-corporations.read_starbases.v1"]
+        return scopes
 
 
 class OwnerAsset(models.Model):

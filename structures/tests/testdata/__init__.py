@@ -8,6 +8,7 @@ import os
 from copy import deepcopy
 from datetime import timedelta
 from random import randrange
+from typing import Tuple
 from unittest.mock import Mock
 
 from bravado.exception import HTTPNotFound
@@ -21,6 +22,7 @@ from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
 )
+from app_utils.testing import create_user_from_evecharacter
 
 from ...models import (
     EveCategory,
@@ -765,18 +767,20 @@ def create_user(character_id, load_data=False) -> User:
     return my_user
 
 
-def set_owner_character(character_id) -> list:
-    """sets owner character for the owner related to the given character ir
-    returns user, owner
+def set_owner_character(character_id: int) -> Tuple[User, Owner]:
+    """Set owner character for the owner related to the given character.
+    Creates a new user.
     """
-    my_user = create_user(character_id)
+    my_user, character_ownership = create_user_from_evecharacter(
+        character_id,
+        permissions=["structures.add_structure_owner"],
+        scopes=Owner.get_esi_scopes(),
+    )
     my_character = my_user.profile.main_character
     my_owner = Owner.objects.get(
         corporation__corporation_id=my_character.corporation_id
     )
-    my_owner.character = my_user.character_ownerships.get(
-        character__character_id=my_character.character_id
-    )
+    my_owner.character = character_ownership
     my_owner.save()
     return my_user, my_owner
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.13.0] - 2021-07-03
+
+### Changed
+
+- Reworked error handling and reporting for update processes
+
 ## [1.12.1] - 2021-06-26
 
 ### Changed

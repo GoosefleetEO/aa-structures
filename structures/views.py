@@ -602,7 +602,7 @@ def structure_details(request, structure_id):
         },
         "assets_grouped": assets_grouped,
         "structure": structure,
-        "last_updated": structure.owner.assets_last_sync,
+        "last_updated": structure.owner.assets_last_update_at,
     }
     return render(request, "structures/modals/structure_details.html", context)
 

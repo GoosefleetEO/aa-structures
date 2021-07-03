@@ -129,20 +129,34 @@ class TestOwnerAdmin(TestCase):
         self.assertEqual(mock_task.delay.call_count, 2)
         self.assertTrue(mock_message_user.called)
 
+
+class TestOwnerAdminFilter(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        cls.modeladmin = OwnerAdmin(model=Owner, admin_site=AdminSite())
+        create_structures()
+        cls.user, cls.obj = set_owner_character(character_id=1001)
+
     def test_owner_sync_status_filter(self):
         class OwnerAdminTest(admin.ModelAdmin):
             list_filter = (OwnerSyncStatusFilter,)
 
         owner_2001 = Owner.objects.get(corporation__corporation_id=2001)
-        owner_2001.structures_last_error = Owner.ERROR_TOKEN_EXPIRED
+        owner_2001.structures_last_update_ok = False
         owner_2001.save()
 
         owner_2002 = Owner.objects.get(corporation__corporation_id=2002)
-        owner_2002.notifications_last_error = Owner.ERROR_TOKEN_EXPIRED
+        owner_2002.notifications_last_update_ok = False
         owner_2002.save()
 
+        owner_2005 = Owner.objects.get(corporation__corporation_id=2002)
+        owner_2005.forwarding_last_update_ok = False
+        owner_2005.save()
+
         owner_2102 = Owner.objects.get(corporation__corporation_id=2102)
-        owner_2102.forwarding_last_error = Owner.ERROR_TOKEN_EXPIRED
+        owner_2102.assets_last_update_ok = False
         owner_2102.save()
 
         modeladmin = OwnerAdminTest(Owner, AdminSite())
@@ -160,7 +174,7 @@ class TestOwnerAdmin(TestCase):
         changelist = modeladmin.get_changelist_instance(request)
         queryset = changelist.get_queryset(request)
         expected = Owner.objects.exclude(
-            corporation__corporation_id__in=[2001, 2002, 2102]
+            corporation__corporation_id__in=[2001, 2002, 2005, 2102]
         )
         self.assertSetEqual(set(queryset), set(expected))
 
@@ -170,7 +184,7 @@ class TestOwnerAdmin(TestCase):
         changelist = modeladmin.get_changelist_instance(request)
         queryset = changelist.get_queryset(request)
         expected = Owner.objects.filter(
-            corporation__corporation_id__in=[2001, 2002, 2102]
+            corporation__corporation_id__in=[2001, 2002, 2005, 2102]
         )
         self.assertSetEqual(set(queryset), set(expected))
 
