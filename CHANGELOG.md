@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.13.0a1] - 2021-07-03
+## [1.13.0a1] - 2021-07-04
 
 ### Added
 
@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Reworked error handling and reporting for update processes
+- Consolidate sync ok indicator for owners on admin site
 
 ## [1.12.1] - 2021-06-26
 

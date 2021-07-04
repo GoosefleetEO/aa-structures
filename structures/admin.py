@@ -306,10 +306,7 @@ class OwnerAdmin(admin.ModelAdmin):
         "_has_default_pings_enabled",
         "_ping_groups",
         "_is_alliance_main",
-        "_is_structure_sync_ok",
-        "_is_notification_sync_ok",
-        "_is_forwarding_sync_ok",
-        "_is_asset_sync_ok",
+        "_is_sync_ok",
         "_structures_count",
         "_notifications_count",
     )
@@ -382,41 +379,14 @@ class OwnerAdmin(admin.ModelAdmin):
 
     _is_alliance_main.short_description = "alliance main"
 
-    def _is_structure_sync_ok(self, obj):
+    def _is_sync_ok(self, obj):
         if not obj.is_active:
             return None
         else:
-            return obj.is_structure_sync_ok
+            return obj.are_all_syncs_ok
 
-    _is_structure_sync_ok.boolean = True
-    _is_structure_sync_ok.short_description = "structure sync"
-
-    def _is_notification_sync_ok(self, obj):
-        if not obj.is_active:
-            return None
-        else:
-            return obj.is_notification_sync_ok
-
-    _is_notification_sync_ok.boolean = True
-    _is_notification_sync_ok.short_description = "notification sync"
-
-    def _is_forwarding_sync_ok(self, obj):
-        if not obj.is_active:
-            return None
-        else:
-            return obj.is_forwarding_sync_ok
-
-    _is_forwarding_sync_ok.boolean = True
-    _is_forwarding_sync_ok.short_description = "forwarding"
-
-    def _is_asset_sync_ok(self, obj):
-        if not obj.is_active:
-            return None
-        else:
-            return obj.is_asset_sync_ok
-
-    _is_asset_sync_ok.boolean = True
-    _is_asset_sync_ok.short_description = "assets sync"
+    _is_sync_ok.boolean = True
+    _is_sync_ok.short_description = "sync ok"
 
     def _notifications_count(self, obj: Owner) -> int:
         return obj.notifications_count
