@@ -171,8 +171,16 @@ class StructuresRowBuilder:
             corporation.corporation_name,
             alliance_name,
         )
+        if not self._structure.owner.is_structure_sync_ok:
+            update_warning_html = format_html(
+                '<i class="fas fa-exclamation-circle text-warning" '
+                'title="Sync has issues. Data may be outdated."></i>'
+            )
+        else:
+            update_warning_html = ""
         self._row["corporation_icon"] = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
+            '<span class="nowrap">{} <img src="{}" width="{}" height="{}"/></span>',
+            update_warning_html,
             corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
             STRUCTURE_LIST_ICON_OUTPUT_SIZE,
