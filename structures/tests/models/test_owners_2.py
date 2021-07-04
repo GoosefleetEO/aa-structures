@@ -350,7 +350,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             self.owner.fetch_notifications_esi()
         # then
         self.owner.refresh_from_db()
-        self.assertIsNone(self.owner.notifications_last_update_ok)
+        self.assertFalse(self.owner.notifications_last_update_ok)
         self.assertTrue(mock_notify_admins_throttled.called)
 
 

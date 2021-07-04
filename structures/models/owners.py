@@ -270,25 +270,19 @@ class Owner(models.Model):
         self.save()
         token = self.fetch_token()
 
-        structure_count = self._fetch_upwell_structures(token)
+        is_ok = self._fetch_upwell_structures(token)
         if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
-            structure_count += self._fetch_custom_offices(token)
-
+            is_ok &= self._fetch_custom_offices(token)
         if STRUCTURES_FEATURE_STARBASES:
-            structure_count += self._fetch_starbases(token)
+            is_ok &= self._fetch_starbases(token)
 
-        if not structure_count:
-            logger.info(
-                "%s: This corporation does not appear to have any structures",
-                self,
-            )
-        self.structures_last_update_ok = True
-        self.save()
-
-        if user:
-            self._send_report_to_user(
-                topic="structures", topic_count=self.structures.count(), user=user
-            )
+        if is_ok:
+            self.structures_last_update_ok = True
+            self.save()
+            if user:
+                self._send_report_to_user(
+                    topic="structures", topic_count=self.structures.count(), user=user
+                )
 
     def _remove_structures_not_returned_from_esi(
         self, structures_qs: models.QuerySet, new_structures: list
@@ -304,8 +298,11 @@ class Owner(models.Model):
                 len(ids_to_remove),
             )
 
-    def _fetch_upwell_structures(self, token: Token) -> int:
-        """fetch Upwell structures from ESI for self"""
+    def _fetch_upwell_structures(self, token: Token) -> bool:
+        """Fetch Upwell structures from ESI for self.
+
+        Return True if successful, else False.
+        """
         from .eveuniverse import EsiNameLocalization
 
         corporation_id = self.corporation.corporation_id
@@ -321,7 +318,7 @@ class Owner(models.Model):
             )
         except OSError as ex:
             message_id = (
-                f"{__title__}-_fetch_upwell_structures-{self.pk}-{type(ex).__name__}"
+                f"{__title__}-fetch_upwell_structures-{self.pk}-{type(ex).__name__}"
             )
             title = f"{__title__}: Failed to update upwell structures for {self}"
             message = (
@@ -332,69 +329,73 @@ class Owner(models.Model):
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
             )
+            return False
+
+        is_ok = True
+        # reduce data
+        structures = self._compress_services_localization(
+            structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
+        )
+
+        # fetch additional information for structures
+        if not structures:
+            logger.info("%s: No Upwell structures retrieved from ESI", self)
         else:
-            # reduce data
-            structures = self._compress_services_localization(
-                structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
+            logger.info(
+                "%s: Fetching additional infos for %d Upwell structures from ESI",
+                self,
+                len(structures),
             )
+            for structure in structures:
+                try:
+                    structure_info = esi_fetch(
+                        "Universe.get_universe_structures_structure_id",
+                        args={"structure_id": structure["structure_id"]},
+                        token=token,
+                    )
+                    structure["name"] = Structure.extract_name_from_esi_respose(
+                        structure_info["name"]
+                    )
+                    structure["position"] = structure_info["position"]
+                except OSError as ex:
+                    message_id = (
+                        f"{__title__}-fetch_upwell_structures-details-"
+                        f"{self.pk}-{type(ex).__name__}"
+                    )
+                    title = (
+                        f"{__title__}: Failed to update details for "
+                        f"structure from {self}"
+                    )
+                    message = (
+                        f"{self}: Failed to update details for structure "
+                        "with ID {structure['structure_id']} from ESI due to: {ex}"
+                    )
+                    logger.warning(message, exc_info=True)
+                    notify_admins_throttled(
+                        message_id=message_id,
+                        title=title,
+                        message=message,
+                        level="warning",
+                    )
+                    structure["name"] = "(no data)"
+                    is_ok = False
 
-            # fetch additional information for structures
-            if not structures:
-                logger.info("%s: No Upwell structures retrieved from ESI", self)
-            else:
-                logger.info(
-                    "%s: Fetching additional infos for %d Upwell structures from ESI",
-                    self,
-                    len(structures),
-                )
-                for structure in structures:
-                    try:
-                        structure_info = esi_fetch(
-                            "Universe.get_universe_structures_structure_id",
-                            args={"structure_id": structure["structure_id"]},
-                            token=token,
-                        )
-                        structure["name"] = Structure.extract_name_from_esi_respose(
-                            structure_info["name"]
-                        )
-                        structure["position"] = structure_info["position"]
-                    except OSError as ex:
-                        message_id = (
-                            f"{__title__}-_fetch_upwell_structures-details-"
-                            f"{self.pk}-{type(ex).__name__}"
-                        )
-                        title = (
-                            f"{__title__}: Failed to update details for "
-                            f"structure from {self}"
-                        )
-                        message = (
-                            f"{self}: Failed to update details for structure "
-                            "with ID {structure['structure_id']} from ESI due to: {ex}"
-                        )
-                        logger.warning(message, exc_info=True)
-                        notify_admins_throttled(
-                            message_id=message_id,
-                            title=title,
-                            message=message,
-                            level="warning",
-                        )
-                        structure["name"] = "(no data)"
-                logger.info(
-                    "%s: Storing updates for %d upwell structures",
-                    self,
-                    len(structures),
-                )
-                for structure in structures:
-                    Structure.objects.update_or_create_from_dict(structure, self)
-
-            if STRUCTURES_DEVELOPER_MODE:
-                self._store_raw_data("structures", structures, corporation_id)
-
-            self._remove_structures_not_returned_from_esi(
-                structures_qs=self.structures.filter_upwell_structures(),
-                new_structures=structures,
+            logger.info(
+                "%s: Storing updates for %d upwell structures",
+                self,
+                len(structures),
             )
-        return len(structures)
+            for structure in structures:
+                Structure.objects.update_or_create_from_dict(structure, self)
+
+        if STRUCTURES_DEVELOPER_MODE:
+            self._store_raw_data("structures", structures, corporation_id)
+
+        self._remove_structures_not_returned_from_esi(
+            structures_qs=self.structures.filter_upwell_structures(),
+            new_structures=structures,
+        )
+        return is_ok
 
     @staticmethod
     def _compress_services_localization(
@@ -451,8 +452,11 @@ class Owner(models.Model):
                             service["name_" + lang] = name_loc
         return structures
 
-    def _fetch_custom_offices(self, token: Token) -> int:
-        """fetch custom offices from ESI for self"""
+    def _fetch_custom_offices(self, token: Token) -> bool:
+        """Fetch custom offices from ESI for this owner.
+
+        Return True when successful, else False.
+        """
 
         corporation_id = self.corporation.corporation_id
         structures = dict()
@@ -583,13 +587,13 @@ class Owner(models.Model):
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
             )
-        else:
-            self._remove_structures_not_returned_from_esi(
-                structures_qs=self.structures.filter_customs_offices(),
-                new_structures=structures.values(),
-            )
+            return False
 
-        return len(structures)
+        self._remove_structures_not_returned_from_esi(
+            structures_qs=self.structures.filter_customs_offices(),
+            new_structures=structures.values(),
+        )
+        return True
 
     def _fetch_locations_for_pocos(self, corporation_id, item_ids, token):
         logger.info(
@@ -638,8 +642,11 @@ class Owner(models.Model):
         matches = reg_ex.match(text)
         return matches.group(1) if matches else ""
 
-    def _fetch_starbases(self, token: Token) -> int:
-        """Fetch starbases from ESI for self."""
+    def _fetch_starbases(self, token: Token) -> bool:
+        """Fetch starbases from ESI for this owner.
+
+        Return True when successful, else False.
+        """
 
         structures = list()
         corporation_id = self.corporation.corporation_id
@@ -705,12 +712,13 @@ class Owner(models.Model):
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
             )
-        else:
-            self._remove_structures_not_returned_from_esi(
-                structures_qs=self.structures.filter_starbases(),
-                new_structures=structures,
-            )
-        return len(structures)
+            return False
+
+        self._remove_structures_not_returned_from_esi(
+            structures_qs=self.structures.filter_starbases(),
+            new_structures=structures,
+        )
+        return True
 
     def _fetch_starbases_names(self, corporation_id, starbases, token):
 
@@ -796,6 +804,8 @@ class Owner(models.Model):
             notify_admins_throttled(
                 message_id=message_id, title=title, message=message, level="danger"
             )
+            self.notifications_last_update_ok = False
+            self.save()
             raise ex
         else:
             notifications_count_new = self._store_notifications(notifications)

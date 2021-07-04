@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 
 from allianceauth.services.hooks import get_extension_logger
+from app_utils.allianceauth import notify_admins_throttled
 from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 from app_utils.logging import LoggerAddTag
 
@@ -155,13 +156,20 @@ class DiscordWebhookMixin:
         logger.debug("content: %s", response.content)
         if response.status_ok:
             return True
-        else:
-            logger.warning(
-                "Failed to send message to Discord. HTTP status code: %d, response: %s",
-                response.status_code,
-                response.content,
-            )
-            return False
+        message_id = (
+            f"{__title__}-send_message_to_webhook-{self.pk}-{response.status_code}"
+        )
+        title = f"{__title__}: Webhook {self} failed to send message to Discord"
+        message = (
+            f"Webhook {self} failed to send message to Discord.\n"
+            f"HTTP status code: {response.status_code}\n"
+            f"API response: {response.content}"
+        )
+        logger.warning(message, exc_info=True)
+        notify_admins_throttled(
+            message_id=message_id, title=title, message=message, level="warning"
+        )
+        return False
 
     @classmethod
     def create_link(cls, name: str, url: str) -> str:

@@ -690,7 +690,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        my_user, my_main_ownership = create_user_from_evecharacter(
+        _, my_main_ownership = create_user_from_evecharacter(
             1005,
             permissions=["structures.add_structure_owner"],
             scopes=Owner.get_esi_scopes(),
@@ -741,7 +741,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertFalse(owner.structures_last_update_ok)
         expected = {
             1200000000003,
             1200000000004,
@@ -788,7 +788,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertFalse(owner.structures_last_update_ok)
         structure_ids = {x["id"] for x in owner.structures.values("id")}
         expected = {
             1000000000001,
@@ -835,7 +835,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertFalse(owner.structures_last_update_ok)
         expected = {
             1000000000001,
             1000000000002,
@@ -865,7 +865,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # when
         owner.update_structures_esi()
         # then
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertFalse(owner.structures_last_update_ok)
         esi_get_universe_structures_structure_id.override_data = None
         structure = Structure.objects.get(id=1000000000002)
         self.assertEqual(structure.name, "(no data)")
@@ -978,7 +978,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # when
         owner.update_structures_esi()
         # then
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertFalse(owner.structures_last_update_ok)
         expected = expected = {
             1000000000001,
             1000000000002,

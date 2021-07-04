@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Automatically send notifications to users and admins when tokens become invalid
 - Automatically send notifications to admins when updates from ESI fail
+- Automatically send notifications to admins when sending notifications to Discord fails
 
 ### Changed
 
