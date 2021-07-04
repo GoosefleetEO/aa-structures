@@ -135,13 +135,14 @@ class TestDiscordWebhookMixin(TestCase):
         self.assertEqual(result, "[test-name](test-url)")
 
 
+@patch(MODULE_PATH + ".notify_admins_throttled")
 @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute")
 class TestSendTestMessage(TestCase):
     def setUp(self) -> None:
         self.webhook = Webhook("Dummy 1", "dummy-1-url")
         self.user = AuthUtils.create_user("Bruce Wayne")
 
-    def test_normal_no_user(self, mock_execute):
+    def test_normal_no_user(self, mock_execute, mock_notify_admins_throttled):
         mock_response = dhooks_lite.WebhookResponse(
             {}, status_code=200, content={"dummy": True}
         )
@@ -152,7 +153,7 @@ class TestSendTestMessage(TestCase):
         self.assertTrue(result_2)
         self.assertTrue(mock_execute.called)
 
-    def test_normal_with_user(self, mock_execute):
+    def test_normal_with_user(self, mock_execute, mock_notify_admins_throttled):
         mock_response = dhooks_lite.WebhookResponse(
             {}, status_code=200, content={"dummy": True}
         )
@@ -162,8 +163,9 @@ class TestSendTestMessage(TestCase):
         self.assertEqual(result_1, "(no info)")
         self.assertTrue(result_2)
         self.assertTrue(mock_execute.called)
+        self.assertFalse(mock_notify_admins_throttled.called)
 
-    def test_error_1(self, mock_execute):
+    def test_error_1(self, mock_execute, mock_notify_admins_throttled):
         mock_response = dhooks_lite.WebhookResponse(
             {}, status_code=404, content={"dummy": True}
         )
@@ -173,11 +175,13 @@ class TestSendTestMessage(TestCase):
         self.assertEqual(result_1, "(no info)")
         self.assertFalse(result_2)
         self.assertTrue(mock_execute.called)
+        self.assertTrue(mock_notify_admins_throttled.called)
 
-    def test_error_2(self, mock_execute):
+    def test_error_2(self, mock_execute, mock_notify_admins_throttled):
         mock_execute.side_effect = RuntimeError
 
         result_1, result_2 = self.webhook.send_test_message()
         self.assertEqual(result_1, "RuntimeError")
         self.assertFalse(result_2)
         self.assertTrue(mock_execute.called)
+        self.assertFalse(mock_notify_admins_throttled.called)
