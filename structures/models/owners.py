@@ -162,9 +162,7 @@ class Owner(models.Model):
 
     @property
     def is_structure_sync_ok(self) -> bool:
-        """returns true if they have been no errors
-        and last syncing occurred within alloted time
-        """
+        """True if last sync was ok and happend recently, else False."""
         return (
             self.structures_last_update_ok is True
             and self.structures_last_update_at
@@ -174,9 +172,7 @@ class Owner(models.Model):
 
     @property
     def is_notification_sync_ok(self) -> bool:
-        """returns true if they have been no errors
-        and last syncing occurred within alloted time
-        """
+        """True if last sync was ok and happend recently, else False."""
         return (
             self.notifications_last_update_ok is True
             and self.notifications_last_update_at
@@ -186,9 +182,7 @@ class Owner(models.Model):
 
     @property
     def is_forwarding_sync_ok(self) -> bool:
-        """returns true if they have been no errors
-        and last syncing occurred within alloted time
-        """
+        """True if last sync was ok and happend recently, else False."""
         return (
             self.forwarding_last_update_ok is True
             and self.forwarding_last_update_at
@@ -198,9 +192,7 @@ class Owner(models.Model):
 
     @property
     def is_asset_sync_ok(self) -> bool:
-        """returns true if they have been no errors
-        and last syncing occurred within alloted time
-        """
+        """True if last sync was ok and happend recently, else False."""
         return (
             self.assets_last_update_ok is True
             and self.assets_last_update_at

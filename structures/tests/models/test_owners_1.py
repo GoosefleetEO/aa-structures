@@ -123,6 +123,11 @@ class TestOwner(NoSocketsTestCase):
         x.structures_last_update_at = now()
         self.assertFalse(x.is_structure_sync_ok)
 
+        # recent sync error
+        x.structures_last_update_ok = False
+        x.structures_last_update_at = now()
+        self.assertFalse(x.is_structure_sync_ok)
+
         # no error, but no sync within grace period
         x.structures_last_update_ok = True
         x.structures_last_update_at = now() - timedelta(minutes=31)
@@ -143,6 +148,11 @@ class TestOwner(NoSocketsTestCase):
 
         # recent sync error
         x.notifications_last_update_ok = None
+        x.notifications_last_update_at = now()
+        self.assertFalse(x.is_notification_sync_ok)
+
+        # recent sync error
+        x.notifications_last_update_ok = False
         x.notifications_last_update_at = now()
         self.assertFalse(x.is_notification_sync_ok)
 
@@ -169,10 +179,43 @@ class TestOwner(NoSocketsTestCase):
         x.forwarding_last_update_at = now()
         self.assertFalse(x.is_forwarding_sync_ok)
 
+        # recent sync error
+        x.forwarding_last_update_ok = False
+        x.forwarding_last_update_at = now()
+        self.assertFalse(x.is_forwarding_sync_ok)
+
         # no error, but no sync within grace period
         x.forwarding_last_update_ok = True
         x.forwarding_last_update_at = now() - timedelta(minutes=31)
         self.assertFalse(x.is_forwarding_sync_ok)
+
+    @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
+    def test_is_asset_sync_ok(self):
+        x = Owner.objects.get(corporation__corporation_id=2001)
+        # no errors and recent sync
+        x.assets_last_update_ok = True
+        x.assets_last_update_at = now()
+        self.assertTrue(x.is_asset_sync_ok)
+
+        # no errors and sync within grace period
+        x.assets_last_update_ok = True
+        x.assets_last_update_at = now() - timedelta(minutes=29)
+        self.assertTrue(x.is_asset_sync_ok)
+
+        # recent sync error
+        x.assets_last_update_ok = None
+        x.assets_last_update_at = now()
+        self.assertFalse(x.is_asset_sync_ok)
+
+        # recent sync error
+        x.assets_last_update_ok = False
+        x.assets_last_update_at = now()
+        self.assertFalse(x.is_asset_sync_ok)
+
+        # no error, but no sync within grace period
+        x.assets_last_update_ok = True
+        x.assets_last_update_at = now() - timedelta(minutes=31)
+        self.assertFalse(x.is_asset_sync_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
