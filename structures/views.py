@@ -116,6 +116,12 @@ def main(request):
 
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
+    last_updated = (
+        Owner.objects.filter(is_active=True)
+        .order_by("-structures_last_update_at")
+        .first()
+        .structures_last_update_at
+    )
     context = {
         "page_title": gettext_lazy(__title__),
         "active_tags": active_tags,
@@ -123,6 +129,7 @@ def main(request):
         "tags_exist": StructureTag.objects.exists(),
         "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
         "data_tables_paging": STRUCTURES_PAGING_ENABLED,
+        "last_updated": last_updated,
     }
     return render(request, "structures/main.html", context)
 
