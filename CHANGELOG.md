@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Reworked error handling and reporting for update processes
 - Consolidate sync ok indicator for owners on admin site
+- Removed obsolete setting STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES
 
 ## [1.12.1] - 2021-06-26
 

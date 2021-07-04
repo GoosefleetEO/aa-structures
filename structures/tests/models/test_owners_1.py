@@ -161,7 +161,7 @@ class TestOwner(NoSocketsTestCase):
         x.notifications_last_update_at = now() - timedelta(minutes=31)
         self.assertFalse(x.is_notification_sync_ok)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES", 30)
+    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_is_forwarding_sync_ok(self):
         x = Owner.objects.get(corporation__corporation_id=2001)
         # no errors and recent sync
@@ -219,7 +219,7 @@ class TestOwner(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
-    @patch(MODULE_PATH + ".STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES", 30)
+    @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_is_all_syncs_ok(self):
         x = Owner.objects.get(corporation__corporation_id=2001)
         x.structures_last_update_ok = True

@@ -33,11 +33,6 @@ STRUCTURES_FEATURE_CUSTOMS_OFFICES = clean_setting(
 # Whether the starbases / POSes feature is active
 STRUCTURES_FEATURE_STARBASES = clean_setting("STRUCTURES_FEATURE_STARBASES", True)
 
-# Max time in minutes since last successful notification forwarding
-# before service is reported as down
-STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES = clean_setting(
-    "STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES", 5
-)
 
 # defines after how many hours a notification becomes stale
 # stale notification will no longer be sent automatically
@@ -59,7 +54,7 @@ STRUCTURES_NOTIFICATION_MAX_RETRIES = clean_setting(
 # Max time in minutes since last successful notification sync
 # before service is reported as down
 STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES = clean_setting(
-    "STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 15
+    "STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 20
 )
 
 # Default wait time in seconds before retrying to send a notification

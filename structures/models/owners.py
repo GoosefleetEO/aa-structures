@@ -30,7 +30,6 @@ from ..app_settings import (
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
     STRUCTURES_FEATURE_STARBASES,
-    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES,
     STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
@@ -187,7 +186,7 @@ class Owner(models.Model):
             self.forwarding_last_update_ok is True
             and self.forwarding_last_update_at
             and self.forwarding_last_update_at
-            > (now() - timedelta(minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES))
+            > (now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
         )
 
     @property

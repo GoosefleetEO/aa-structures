@@ -19,7 +19,6 @@ from app_utils.testing import json_response_to_dict, json_response_to_python
 
 from .. import views
 from ..app_settings import (
-    STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
@@ -687,7 +686,7 @@ class TestStatus(TestCase):
             owner.notifications_last_update_at = now()
             owner.notifications_last_update_ok = True
             owner.forwarding_last_update_at = now() - timedelta(
-                minutes=STRUCTURES_FORWARDING_SYNC_GRACE_MINUTES + 1
+                minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES + 1
             )
             owner.forwarding_last_update_ok = True
             owner.save()
