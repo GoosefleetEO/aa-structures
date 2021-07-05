@@ -68,7 +68,10 @@
                     "type_id": 35832,
                     "unanchors_at": null
                 }
-            ]
+            ],
+            "2002": [],
+            "2005": [],
+            "2102": []
         },
         "get_corporations_corporation_id_starbases": {
             "2001": [
@@ -95,7 +98,10 @@
                     "system_id": 30000474,
                     "type_id": 20062
                 }
-            ]
+            ],
+            "2002": [],
+            "2005": [],
+            "2102": []
         },
         "get_corporations_corporation_id_starbases_starbase_id": {
             "1300000000001": {
@@ -202,7 +208,10 @@
                         "z": -47.4
                     }
                 }
-            ]
+            ],
+            "2002": [],
+            "2005": [],
+            "2102": []
         },
         "post_corporations_corporation_id_assets_names": {
             "2001": [
@@ -304,7 +313,10 @@
                     "system_id": 30000474,
                     "terrible_standing_tax_rate": 0.02
                 }
-            ]
+            ],
+            "2002": [],
+            "2005": [],
+            "2102": []
         }
     },
     "Sovereignty": {

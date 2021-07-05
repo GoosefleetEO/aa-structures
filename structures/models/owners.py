@@ -359,7 +359,7 @@ class Owner(models.Model):
                     )
                     message = (
                         f"{self}: Failed to update details for structure "
-                        "with ID {structure['structure_id']} from ESI due to: {ex}"
+                        f"with ID {structure['structure_id']} from ESI due to: {ex}"
                     )
                     logger.warning(message, exc_info=True)
                     notify_admins_throttled(

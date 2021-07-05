@@ -188,5 +188,5 @@ def _get_user(user_pk: int) -> Optional[User]:
         try:
             user = User.objects.get(pk=user_pk)
         except User.DoesNotExist:
-            logger.warning("Ignoring non-existing user with pk {}".format(user_pk))
+            logger.warning("Ignoring non-existing user with pk %s", user_pk)
     return user
