@@ -49,10 +49,11 @@ Structures adds the following main features to Alliance Auth:
 - Tax rates and access settings of Customs Offices
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
+- Automatically sends notifications to users and admin when token become invalid or sync from ESI fails
 - Interface for 3rd party monitoring of the services status
 - Chinese :cn:, English :us: and German :de: localization
 
-*We are looking for help with translating Structures for more languages incl. French, Korean, Russian, and Spanish. If you are interested please sign up on our [Transifex project](https://www.transifex.com/kalkoken-apps/aa-structures/).*
+Please also check out [Discord Notify](https://gitlab.com/ErikKalkoken/aa-discordnotify) that will automatically forward auth notifications to the respective users on Discord.
 
 ## Screenshots
 
@@ -321,6 +322,7 @@ Note that all settings are optional and the app will use the documented default 
 
 Name | Description | Default
 -- | -- | --
+`APP_UTILS_NOTIFY_THROTTLED_TIMEOUT`| Timeout for throttled issue notifications to users and admins in seconds. | Please see [allianceauth-app-utils](https://allianceauth-app-utils.readthedocs.io/en/latest/settings.html#app_utils._app_settings.APP_UTILS_NOTIFY_THROTTLED_TIMEOUT) for details.
 `STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed). Will create timers from anchoring, lost shield and lost armor notifications  | `True`
 `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`| Whether admins will get notifications about import events like when someone adds a structure owner. Does not affect admin reporting for errors. | `True`
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | `False`

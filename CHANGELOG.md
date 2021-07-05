@@ -7,14 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.13.0a1] - 2021-07-04
+## [1.13.0] - 2021-07-05
 
 ### Added
 
-- Automatically send notifications to users and admins when tokens become invalid
-- Automatically send notifications to admins when updates from ESI fail
-- Automatically send notifications to admins when sending notifications to Discord fails
-- Show warning indicator for structures that may be outdated due to sync errors
+- Users and admins automatically receive notifications when tokens become invalid
+- Admins automatically receive notifications when updates from ESI fail
+- Admins automatically receive notifications when sending notifications to Discord fails
+- User and admin notifications are throttled (e.g once per day)
+- Inform users that data may be outdated for structures that have not been synced for a while
 
 ### Changed
 
