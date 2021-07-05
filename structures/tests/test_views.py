@@ -1,5 +1,5 @@
 from datetime import timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -7,7 +7,6 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
-from esi.models import Token
 
 from allianceauth.eveonline.models import (
     EveAllianceInfo,
@@ -27,13 +26,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..models import Owner, PocoDetails, Structure, Webhook
-from .testdata import (
-    create_structures,
-    create_user,
-    load_entities,
-    load_entity,
-    set_owner_character,
-)
+from .testdata import create_structures, load_entities, load_entity, set_owner_character
 
 MODULE_PATH = "structures.views"
 
@@ -476,51 +469,51 @@ class TestStructurePowerModes(TestCase):
 
 
 class TestAddStructureOwner(TestCase):
-    @staticmethod
-    def _create_test_user(character_id):
-        """create test user with all permission from character ID"""
-        my_user = create_user(character_id)
-        AuthUtils.add_permission_to_user_by_name("structures.basic_access", my_user)
-        AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", my_user
-        )
-        return my_user
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         load_entities([EveCorporationInfo, EveAllianceInfo, EveCharacter, Webhook])
-        cls.user = cls._create_test_user(1001)
-        cls.character = cls.user.profile.main_character
+        cls.user, cls.character_ownership = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.basic_access", "structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        cls.character = cls.character_ownership.character
         cls.factory = RequestFactory()
 
     def setUp(self):
         Owner.objects.all().delete()
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
-    @patch(MODULE_PATH + ".notify_admins")
-    @patch(MODULE_PATH + ".messages_plus")
-    def test_view_add_structure_owner_normal(
-        self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
-    ):
-        token = Mock(spec=Token)
-        token.character_id = self.character.character_id
+    def _add_structure_owner(self, token=None):
+        # given
         request = self.factory.get(reverse("structures:add_structure_owner"))
+        if not token:
+            token = self.user.token_set.first()
         request.user = self.user
         request.token = token
         middleware = SessionMiddleware()
         middleware.process_request(request)
         orig_view = views.add_structure_owner.__wrapped__.__wrapped__.__wrapped__
-        response = orig_view(request, token)
+        # when
+        return orig_view(request, token)
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
+    @patch(MODULE_PATH + ".notify_admins")
+    @patch(MODULE_PATH + ".messages_plus")
+    def test_should_add_new_structure_owner_and_notify_admins(
+        self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
+    ):
+        # when
+        response = self._add_structure_owner()
+        # then
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("structures:index"))
         self.assertTrue(mock_messages.info.called)
         self.assertTrue(mock_notify_admins.called)
-        my_ownership = self.user.character_ownerships.get(
-            character__character_id=self.character.character_id
+        my_owner = Owner.objects.get(
+            characters__character_ownership=self.character_ownership
         )
-        my_owner = Owner.objects.get(character_ownership=my_ownership)
         self.assertEqual(my_owner.webhooks.first().name, "Test Webhook 1")
         self.assertTrue(mock_update_structures_for_owner.delay.called)
 
@@ -528,18 +521,12 @@ class TestAddStructureOwner(TestCase):
     @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
     @patch(MODULE_PATH + ".notify_admins")
     @patch(MODULE_PATH + ".messages_plus")
-    def test_view_add_structure_owner_normal_no_admins_notify(
+    def test_should_add_new_structure_owner_and_not_notify_admins(
         self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
     ):
-        token = Mock(spec=Token)
-        token.character_id = self.user.profile.main_character.character_id
-        request = self.factory.get(reverse("structures:add_structure_owner"))
-        request.user = self.user
-        request.token = token
-        middleware = SessionMiddleware()
-        middleware.process_request(request)
-        orig_view = views.add_structure_owner.__wrapped__.__wrapped__.__wrapped__
-        response = orig_view(request, token)
+        # when
+        response = self._add_structure_owner()
+        # then
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("structures:index"))
         self.assertTrue(mock_messages.info.called)
@@ -550,47 +537,41 @@ class TestAddStructureOwner(TestCase):
     @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
     @patch(MODULE_PATH + ".notify_admins")
     @patch(MODULE_PATH + ".messages_plus")
-    def test_view_add_structure_owner_normal_no_default_webhook(
+    def test_should_add_structure_owner_with_no_default_webhook(
         self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
     ):
-        webhook = Webhook.objects.filter(name="Test Webhook 1").first()
-        webhook.is_default = False
-        webhook.save()
-
-        token = Mock(spec=Token)
-        token.character_id = self.user.profile.main_character.character_id
-        request = self.factory.get(reverse("structures:add_structure_owner"))
-        request.user = self.user
-        request.token = token
-        middleware = SessionMiddleware()
-        middleware.process_request(request)
-        orig_view = views.add_structure_owner.__wrapped__.__wrapped__.__wrapped__
-        response = orig_view(request, token)
+        # given
+        Webhook.objects.filter(name="Test Webhook 1").update(is_default=False)
+        # when
+        response = self._add_structure_owner()
+        # then
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("structures:index"))
         self.assertTrue(mock_messages.info.called)
         self.assertFalse(mock_notify_admins.called)
-        my_ownership = self.user.character_ownerships.get(
-            character__character_id=self.character.character_id
+        my_owner = Owner.objects.get(
+            characters__character_ownership=self.character_ownership
         )
-        my_owner = Owner.objects.get(character_ownership=my_ownership)
         self.assertIsNone(my_owner.webhooks.first())
         self.assertTrue(mock_update_structures_for_owner.delay.called)
 
-        webhook.is_default = True
-        webhook.save()
+        # webhook.is_default = True
+        # webhook.save()
 
     @patch(MODULE_PATH + ".messages_plus")
-    def test_view_add_structure_owner_wrong_ownership(self, mock_messages):
-        token = Mock(spec=Token)
-        token.character_id = 1011
-        request = self.factory.get(reverse("structures:add_structure_owner"))
-        request.user = self.user
-        request.token = token
-        middleware = SessionMiddleware()
-        middleware.process_request(request)
-        orig_view = views.add_structure_owner.__wrapped__.__wrapped__.__wrapped__
-        response = orig_view(request, token)
+    def test_should_report_error_when_token_does_not_belong_to_user(
+        self, mock_messages
+    ):
+        # given
+        other_user, _ = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.basic_access", "structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        my_token = other_user.token_set.first()
+        response = self._add_structure_owner(token=my_token)
+        # then
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("structures:index"))
         self.assertTrue(mock_messages.error.called)

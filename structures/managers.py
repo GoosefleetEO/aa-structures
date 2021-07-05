@@ -3,7 +3,7 @@ from pydoc import locate
 from bravado.exception import HTTPError
 
 from django.db import models, transaction
-from django.db.models import Case, Value, When
+from django.db.models import Case, Count, Q, Value, When
 from django.utils.timezone import now
 from esi.models import Token
 
@@ -470,9 +470,29 @@ class NotificationQuerySet(models.QuerySet):
         )
 
 
-class NotificationManager(models.Manager):
-    def get_queryset(self) -> models.QuerySet:
-        return NotificationQuerySet(self.model, using=self._db)
+class NotificationManagerBase(models.Manager):
+    pass
+
+
+NotificationManager = NotificationManagerBase.from_queryset(NotificationQuerySet)
+
+
+class OwnerQuerySet(models.QuerySet):
+    def annotate_characters_count(self) -> models.QuerySet:
+        return self.annotate(
+            x_characters_count=Count(
+                "characters",
+                filter=Q(characters__character_ownership__isnull=False),
+                distinct=True,
+            )
+        )
+
+
+class OwnerManagerBase(models.Manager):
+    pass
+
+
+OwnerManager = OwnerManagerBase.from_queryset(OwnerQuerySet)
 
 
 class OwnerAssetManager(models.Manager):

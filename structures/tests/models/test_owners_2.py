@@ -1,20 +1,31 @@
+import datetime as dt
 from unittest.mock import patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
+from pytz import UTC
 
 from django.test import override_settings
+from esi.models import Token
 
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
-from app_utils.testing import BravadoResponseStub, NoSocketsTestCase, queryset_pks
+from app_utils.testing import (
+    BravadoOperationStub,
+    BravadoResponseStub,
+    NoSocketsTestCase,
+    queryset_pks,
+)
 
 from ...models import EveMoon, Notification, Owner, OwnerAsset, Structure, Webhook
 from ...models.notifications import NotificationType
 from .. import to_json
 from ..testdata import (
     create_structures,
+    create_user_from_evecharacter,
     entities_testdata,
     esi_mock_client,
+    load_entities,
     load_notification_entities,
     set_owner_character,
 )
@@ -29,6 +40,7 @@ else:
 
 
 MODULE_PATH = "structures.models.owners"
+MODELS_NOTIFICATIONS = "structures.models.notifications"
 
 
 class TestUpdateStructuresEsiWithLocalization(NoSocketsTestCase):
@@ -166,10 +178,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         cls.owner.is_alliance_main = True
         cls.owner.save()
 
-    @patch(
-        "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
-        False,
-    )
+    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
     def test_should_create_notifications_and_timers_from_scratch(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -215,11 +224,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             # should not have more timers
             self.assertEqual(AuthTimer.objects.count(), 4)
 
-    patch(
-        "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
-        False,
-    )
-
+    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
     @patch(MODULE_PATH + ".notify", spec=True)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
     def test_should_inform_user_about_successful_update(
@@ -248,10 +253,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.assertTrue(mock_notify.called)
         self.assertFalse(mock_notify_admins_throttled.called)
 
-    @patch(
-        "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
-        False,
-    )
+    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
     def test_should_create_new_notifications_only(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -295,10 +297,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         )
         self.assertSetEqual(created_ids, {1000000803})
 
-    @patch(
-        "structures.models.notifications.STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
-        False,
-    )
+    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
     def test_should_set_moon_for_structure_if_missing(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -353,9 +352,50 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.assertFalse(self.owner.notifications_last_update_ok)
         self.assertTrue(mock_notify_admins_throttled.called)
 
+    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
+    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    def test_should_fetch_notifications_with_subsequent_characters(
+        self, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        esi_call = (
+            mock_esi_client.return_value.Character.get_characters_character_id_notifications
+        )
+        esi_call.return_value = BravadoOperationStub([])
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=UTC)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=UTC)
+        my_character.save()
+        # when
+        owner.fetch_notifications_esi()
+        owner.fetch_notifications_esi()
+        owner.fetch_notifications_esi()
+        owner.fetch_notifications_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.notifications_last_update_ok)
+        called_character_ids_on_order = [
+            obj[1]["character_id"] for obj in esi_call.call_args_list
+        ]
+        self.assertListEqual(called_character_ids_on_order, [1102, 1011, 1102, 1011])
+
 
 @override_settings(DEBUG=True)
-@patch("structures.models.notifications.Webhook.send_message", spec=True)
+@patch(MODELS_NOTIFICATIONS + ".Webhook.send_message", spec=True)
 class TestSendNewNotifications1(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -484,9 +524,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".Token", spec=True)
     @patch("structures.helpers.esi_fetch._esi_client")
-    @patch(
-        "structures.models.notifications.Notification.send_to_webhook", autospec=True
-    )
+    @patch(MODELS_NOTIFICATIONS + ".Notification.send_to_webhook", autospec=True)
     def test_should_send_notifications_to_multiple_webhooks_but_same_owner(
         self, mock_send_to_webhook, mock_esi_client_factory, mock_token
     ):
@@ -550,7 +588,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     # @patch(MODULE_PATH + ".Token", spec=True)
     # @patch("structures.helpers.esi_fetch._esi_client")
     # @patch(
-    #     "structures.models.notifications.Notification.send_to_webhook", autospec=True
+    #     MODELS_NOTIFICATIONS + ".Notification.send_to_webhook", autospec=True
     # )
     # def test_can_send_notifications_to_multiple_owners(
     #     self, mock_send_to_webhook, mock_esi_client_factory, mock_token
@@ -676,3 +714,51 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertTrue(mock_notify_admins_throttled.called)
 
     # TODO: Add tests for error cases
+
+
+class TestOwnerToken(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities([EveCorporationInfo, EveCharacter])
+        cls.character = EveCharacter.objects.get(character_id=1001)
+        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+
+    def test_should_return_str(self):
+        # given
+        _, character_ownership = create_user_from_evecharacter(
+            1001, scopes=Owner.get_esi_scopes()
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.add_character(character_ownership)
+        # when
+        result = str(owner.characters.first())
+        # then
+        self.assertEqual(result, "Wayne Technologies-Bruce Wayne")
+
+    def test_should_return_valid_token(self):
+        # given
+        user, character_ownership = create_user_from_evecharacter(
+            1001, scopes=Owner.get_esi_scopes()
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.add_character(character_ownership)
+        # when
+        token = owner.characters.first().valid_token()
+        # then
+        self.assertIsInstance(token, Token)
+        self.assertEqual(token.user, user)
+        self.assertEqual(token.character_id, 1001)
+
+    def test_should_return_none_if_no_valid_token_found(self):
+        # given
+        user, character_ownership = create_user_from_evecharacter(
+            1001, scopes=Owner.get_esi_scopes()
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.add_character(character_ownership)
+        user.token_set.first().scopes.clear()
+        # when
+        token = owner.characters.first().valid_token()
+        # then
+        self.assertIsNone(token)

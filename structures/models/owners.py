@@ -5,6 +5,7 @@ import math
 import os
 import re
 from datetime import datetime, timedelta
+from typing import Optional
 
 from django.contrib.auth.models import Group, User
 from django.core.serializers.json import DjangoJSONEncoder
@@ -36,7 +37,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
-from ..managers import OwnerAssetManager
+from ..managers import OwnerAssetManager, OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
 from .notifications import EveEntity, Notification, NotificationType
 from .structures import PocoDetails, Structure
@@ -93,7 +94,7 @@ class Owner(models.Model):
         null=True,
         blank=True,
         related_name="+",
-        help_text="character used for syncing structures",
+        help_text="OUTDATED. Has been replaced by OwnerCharacter",
     )
     forwarding_last_update_at = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
@@ -150,6 +151,8 @@ class Owner(models.Model):
         blank=True,
         help_text="notifications are sent to these webhooks. ",
     )
+
+    objects = OwnerManager()
 
     def __str__(self) -> str:
         return str(self.corporation.corporation_name)
@@ -224,38 +227,65 @@ class Owner(models.Model):
             and self.is_assets_sync_ok
         )
 
-    def fetch_token(self) -> Token:
+    def add_character(
+        self, character_ownership: CharacterOwnership
+    ) -> "OwnerCharacter":
+        """Add character to this owner.
+
+        Raises ValueError when character does not belong to owner's corporation.
+        """
+        if (
+            character_ownership.character.corporation_id
+            != self.corporation.corporation_id
+        ):
+            raise ValueError(
+                f"Character {character_ownership.character} does not belong "
+                "to owner corporation."
+            )
+        obj, _ = OwnerCharacter.objects.get_or_create(
+            owner=self, character_ownership=character_ownership
+        )
+        return obj
+
+    def characters_count(self) -> int:
+        """Count of valid owner characters."""
+        return OwnerCharacter.objects.filter(
+            owner=self, character_ownership__isnull=False
+        ).count()
+
+    def fetch_token(self, record_usage: bool = False) -> Token:
         """Fetch a valid token for the owner and return it.
 
-        Raises TokenError when no valid token can be found.
+        Args:
+            record_usage: record now as last usage for the owner character
+
+        Raises TokenError when no valid token can be provided.
         """
         error = None
-        if self.character_ownership is None:
+        try:
+            owner_token = OwnerCharacter.objects.filter(
+                owner=self, character_ownership__isnull=False
+            ).earliest("last_used_at")
+        except OwnerCharacter.DoesNotExist:
+            owner_token = None
             error = f"{self}: No character configured to sync."
-        elif not self.character_ownership.user.has_perm(
-            "structures.add_structure_owner"
-        ):
-            error = f"{self}: Character does not have sufficient permission to sync."
         else:
-            token = (
-                Token.objects.filter(
-                    user=self.character_ownership.user,
-                    character_id=self.character_ownership.character.character_id,
-                )
-                .require_scopes(self.get_esi_scopes())
-                .require_valid()
-                .first()
-            )
-            if not token:
-                error = f"{self}: No valid token found."
+            if not owner_token.character_ownership.user.has_perm(
+                "structures.add_structure_owner"
+            ):
+                error = f"{owner_token.character_ownership}: Character does not have sufficient permission to sync."
+            else:
+                token = owner_token.valid_token()
+                if not token:
+                    error = f"{self}: No valid token found."
 
         if error:
             message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
             title = f"{__title__}: Failed to fetch token for {self}"
-            if self.character_ownership:
+            if owner_token and owner_token.character_ownership:
                 notify_throttled(
                     message_id=message_id,
-                    user=self.character_ownership.user,
+                    user=owner_token.character_ownership.user,
                     title=title,
                     message=error,
                     level="danger",
@@ -265,6 +295,9 @@ class Owner(models.Model):
             )
             raise TokenError(error)
 
+        if record_usage:
+            owner_token.last_used_at = now()
+            owner_token.save()
         return token
 
     def update_structures_esi(self, user: User = None):
@@ -794,7 +827,7 @@ class Owner(models.Model):
         self.notifications_last_update_ok = None
         self.notifications_last_update_at = now()
         self.save()
-        token = self.fetch_token()
+        token = self.fetch_token(record_usage=True)
 
         try:
             notifications = self._fetch_notifications_from_esi(token)
@@ -841,7 +874,7 @@ class Owner(models.Model):
 
         notifications = esi_fetch(
             "Character.get_characters_character_id_notifications",
-            args={"character_id": self.character_ownership.character.character_id},
+            args={"character_id": token.character_id},
             token=token,
         )
         if STRUCTURES_DEVELOPER_MODE:
@@ -1121,6 +1154,55 @@ class Owner(models.Model):
         if STRUCTURES_FEATURE_STARBASES:
             scopes += ["esi-corporations.read_starbases.v1"]
         return scopes
+
+
+class OwnerCharacter(models.Model):
+    """Character for syncing owner data with ESI."""
+
+    owner = models.ForeignKey(
+        "Owner", on_delete=models.CASCADE, related_name="characters"
+    )
+    character_ownership = models.ForeignKey(
+        CharacterOwnership,
+        on_delete=models.SET_DEFAULT,
+        default=None,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="character used for syncing",
+    )
+    last_used_at = models.DateTimeField(
+        null=True,
+        default=None,
+        editable=False,
+        db_index=True,
+        help_text="when this character was last used for sync",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "character_ownership"], name="functional_pk_ownertoken"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f"{self.owner.corporation.corporation_name}-"
+            f"{self.character_ownership.character.character_name}"
+        )
+
+    def valid_token(self) -> Optional[Token]:
+        """Provide a valid token or None if none can be found."""
+        return (
+            Token.objects.filter(
+                user=self.character_ownership.user,
+                character_id=self.character_ownership.character.character_id,
+            )
+            .require_scopes(Owner.get_esi_scopes())
+            .require_valid()
+            .first()
+        )
 
 
 class OwnerAsset(models.Model):
