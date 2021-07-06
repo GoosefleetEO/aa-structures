@@ -195,27 +195,27 @@ class TestOwner(NoSocketsTestCase):
         # no errors and recent sync
         x.assets_last_update_ok = True
         x.assets_last_update_at = now()
-        self.assertTrue(x.is_asset_sync_ok)
+        self.assertTrue(x.is_assets_sync_ok)
 
         # no errors and sync within grace period
         x.assets_last_update_ok = True
         x.assets_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_asset_sync_ok)
+        self.assertTrue(x.is_assets_sync_ok)
 
         # recent sync error
         x.assets_last_update_ok = None
         x.assets_last_update_at = now()
-        self.assertFalse(x.is_asset_sync_ok)
+        self.assertFalse(x.is_assets_sync_ok)
 
         # recent sync error
         x.assets_last_update_ok = False
         x.assets_last_update_at = now()
-        self.assertFalse(x.is_asset_sync_ok)
+        self.assertFalse(x.is_assets_sync_ok)
 
         # no error, but no sync within grace period
         x.assets_last_update_ok = True
         x.assets_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_asset_sync_ok)
+        self.assertFalse(x.is_assets_sync_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)

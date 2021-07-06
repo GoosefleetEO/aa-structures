@@ -162,11 +162,13 @@ class Owner(models.Model):
     @property
     def is_structure_sync_ok(self) -> bool:
         """True if last sync was ok and happend recently, else False."""
-        return (
-            self.structures_last_update_ok is True
-            and self.structures_last_update_at
-            and self.structures_last_update_at
-            > (now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES))
+        return self.structures_last_update_ok is True and self.is_structure_sync_fresh
+
+    @property
+    def is_structure_sync_fresh(self) -> bool:
+        """True if last sync happened with grace time, else False."""
+        return self.structures_last_update_at and self.structures_last_update_at > (
+            now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
     @property
@@ -174,7 +176,14 @@ class Owner(models.Model):
         """True if last sync was ok and happend recently, else False."""
         return (
             self.notifications_last_update_ok is True
-            and self.notifications_last_update_at
+            and self.is_notification_sync_fresh
+        )
+
+    @property
+    def is_notification_sync_fresh(self) -> bool:
+        """True if last sync happened with grace time, else False."""
+        return (
+            self.notifications_last_update_at
             and self.notifications_last_update_at
             > (now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
         )
@@ -182,21 +191,25 @@ class Owner(models.Model):
     @property
     def is_forwarding_sync_ok(self) -> bool:
         """True if last sync was ok and happend recently, else False."""
-        return (
-            self.forwarding_last_update_ok is True
-            and self.forwarding_last_update_at
-            and self.forwarding_last_update_at
-            > (now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
+        return self.forwarding_last_update_ok is True and self.is_forwarding_sync_fresh
+
+    @property
+    def is_forwarding_sync_fresh(self) -> bool:
+        """True if last sync happened with grace time, else False."""
+        return self.forwarding_last_update_at and self.forwarding_last_update_at > (
+            now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
 
     @property
-    def is_asset_sync_ok(self) -> bool:
+    def is_assets_sync_ok(self) -> bool:
         """True if last sync was ok and happend recently, else False."""
-        return (
-            self.assets_last_update_ok is True
-            and self.assets_last_update_at
-            and self.assets_last_update_at
-            > (now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES))
+        return self.assets_last_update_ok is True and self.is_assets_sync_fresh
+
+    @property
+    def is_assets_sync_fresh(self) -> bool:
+        """True if last sync happened with grace time, else False."""
+        return self.assets_last_update_at and self.assets_last_update_at > (
+            now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
     @property
@@ -208,7 +221,7 @@ class Owner(models.Model):
             self.is_structure_sync_ok
             and self.is_notification_sync_ok
             and self.is_forwarding_sync_ok
-            and self.is_asset_sync_ok
+            and self.is_assets_sync_ok
         )
 
     def fetch_token(self) -> Token:

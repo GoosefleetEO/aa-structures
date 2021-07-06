@@ -362,6 +362,7 @@ class Notification(models.Model):
         related_name="notifications",
         help_text="Corporation that received this notification",
     )
+
     sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
     timestamp = models.DateTimeField()
     notif_type = models.CharField(

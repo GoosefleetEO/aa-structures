@@ -130,6 +130,7 @@ def main(request):
     return render(request, "structures/main.html", context)
 
 
+# TODO: Move to manager
 def _last_updated() -> Optional[dt.datetime]:
     """Date/time when structures were last updated."""
     active_owners = Owner.objects.filter(is_active=True)

@@ -111,3 +111,26 @@ STRUCTURES_DEFAULT_PAGE_LENGTH = clean_setting("STRUCTURES_DEFAULT_PAGE_LENGTH",
 
 # Wether paging is enabled for the structure list
 STRUCTURES_PAGING_ENABLED = clean_setting("STRUCTURES_PAGING_ENABLED", True)
+
+# INTERNAL SETTINGS
+
+# Number of notifications to count for short mean turnaround time
+STRUCTURES_NOTIFICATION_TURNAROUND_SHORT = clean_setting(
+    "STRUCTURES_NOTIFICATION_TURNAROUND_SHORT", 5
+)
+
+# Number of notifications to count for medium mean turnaround time
+STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM = clean_setting(
+    "STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM", 15
+)
+
+# Number of notifications to count for long mean turnaround time
+STRUCTURES_NOTIFICATION_TURNAROUND_LONG = clean_setting(
+    "STRUCTURES_NOTIFICATION_TURNAROUND_LONG", 50
+)
+
+# Turnaround duration with more than x seconds are regarded as outliers
+# and will be ignored when calculating the averages
+STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID = clean_setting(
+    "STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID", 3600
+)

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.13.2] - tbd
+
+### Added
+
+- Further improve information about sync status for owners
+- Show average turnaround times for notifications on admin site
+
 ## [1.13.1] - 2021-07-06
 
 ### Fixed

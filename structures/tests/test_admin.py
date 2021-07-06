@@ -1,8 +1,10 @@
+import datetime as dt
 from unittest.mock import patch
 
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
+from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
@@ -15,7 +17,7 @@ from ..admin import (
     StructureAdmin,
     WebhookAdmin,
 )
-from ..models import Notification, Owner, Structure, StructureTag, Webhook
+from ..models import EveEntity, Notification, Owner, Structure, StructureTag, Webhook
 from .testdata import (
     create_structures,
     create_user,
@@ -128,6 +130,48 @@ class TestOwnerAdmin(TestCase):
         self.modeladmin.fetch_notifications(MockRequest(self.user), owner_qs)
         self.assertEqual(mock_task.delay.call_count, 2)
         self.assertTrue(mock_message_user.called)
+
+    def test_should_return_empty_turnaround_times(self):
+        # given
+        my_owner = Owner.objects.get(corporation__corporation_id=2001)
+        # when
+        result = self.modeladmin._avg_turnaround_time(my_owner)
+        # then
+        self.assertEqual(result, "- | - | -")
+
+    @patch(MODULE_PATH + ".app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_SHORT", 5)
+    @patch(MODULE_PATH + ".app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM", 15)
+    @patch(MODULE_PATH + ".app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_LONG", 50)
+    @patch(
+        MODULE_PATH + ".app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID", 3600
+    )
+    def test_should_return_correct_turnaround_times(self):
+        # given
+        my_owner = Owner.objects.get(corporation__corporation_id=2001)
+        my_sender = EveEntity.objects.get(id=1001)
+        my_now = now()
+        Notification.objects.create(
+            owner=my_owner,
+            notification_id=1,
+            sender=my_sender,
+            last_updated=my_now,
+            timestamp=my_now,
+            created=my_now + dt.timedelta(seconds=3601),
+        )
+        for i in range(50):
+            timestamp = my_now + dt.timedelta(minutes=i)
+            Notification.objects.create(
+                owner=my_owner,
+                notification_id=2 + i,
+                sender=my_sender,
+                last_updated=my_now,
+                timestamp=timestamp,
+                created=timestamp + dt.timedelta(seconds=2),
+            )
+        # when
+        result = self.modeladmin._avg_turnaround_time(my_owner)
+        # then
+        self.assertEqual(result, "2 | 2 | 2")
 
 
 class TestOwnerAdminFilter(TestCase):

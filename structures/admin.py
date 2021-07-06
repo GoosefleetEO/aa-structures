@@ -1,3 +1,5 @@
+import statistics
+
 from django.contrib import admin
 from django.db import models
 from django.db.models import Count
@@ -9,19 +11,8 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.django import admin_boolean_icon_html
 from app_utils.logging import LoggerAddTag
 
-from . import __title__, tasks
-from .app_settings import STRUCTURES_DEVELOPER_MODE
+from . import __title__, app_settings, tasks
 from .models import (
-    EveCategory,
-    EveConstellation,
-    EveEntity,
-    EveGroup,
-    EveMoon,
-    EvePlanet,
-    EveRegion,
-    EveSolarSystem,
-    EveSovereigntyMap,
-    EveType,
     Notification,
     Owner,
     Structure,
@@ -31,62 +22,6 @@ from .models import (
 )
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
-
-
-if STRUCTURES_DEVELOPER_MODE:
-
-    @admin.register(EveConstellation)
-    class EveConstellationAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveEntity)
-    class EveEntityAdmin(admin.ModelAdmin):
-        list_display = ("id", "name", "category")
-        list_filter = ("category",)
-        list_display_links = None
-
-    @admin.register(EveCategory)
-    class EveCategoryAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveGroup)
-    class EveGroupAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveMoon)
-    class EveMoonAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EvePlanet)
-    class EvePlanetAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveRegion)
-    class EveRegionAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveSolarSystem)
-    class EveSolarSystemAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveType)
-    class EveTypeAdmin(admin.ModelAdmin):
-        pass
-
-    @admin.register(EveSovereigntyMap)
-    class EveSovereigntyMapAdmin(admin.ModelAdmin):
-        list_display = (
-            "solar_system_id",
-            "alliance_id",
-            "corporation_id",
-            "faction_id",
-        )
-        search_fields = [
-            "solar_system_id",
-            "alliance_id",
-            "corporation_id",
-            "faction_id",
-        ]
 
 
 class RenderableNotificationFilter(admin.SimpleListFilter):
@@ -257,10 +192,10 @@ class NotificationAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
     def has_change_permission(self, request, obj=None):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
 
 class OwnerSyncStatusFilter(admin.SimpleListFilter):
@@ -438,7 +373,7 @@ class OwnerAdmin(admin.ModelAdmin):
     fetch_notifications.short_description = "Fetch notifications from EVE server"
 
     def has_add_permission(self, request):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
@@ -453,6 +388,12 @@ class OwnerAdmin(admin.ModelAdmin):
                 "notifications_last_update_ok",
                 "structures_last_update_at",
                 "structures_last_update_ok",
+                "_avg_turnaround_time",
+                "_are_all_syncs_ok",
+                "_structures_last_update_fresh",
+                "_notifications_last_update_fresh",
+                "_forwarding_last_update_fresh",
+                "_assets_last_update_fresh",
             )
         return self.readonly_fields
 
@@ -479,21 +420,27 @@ class OwnerAdmin(admin.ModelAdmin):
             {
                 "classes": ("collapse",),
                 "fields": (
+                    "_are_all_syncs_ok",
                     (
-                        "structures_last_update_at",
                         "structures_last_update_ok",
+                        "_structures_last_update_fresh",
+                        "structures_last_update_at",
                     ),
                     (
-                        "notifications_last_update_at",
                         "notifications_last_update_ok",
+                        "_notifications_last_update_fresh",
+                        "notifications_last_update_at",
+                        "_avg_turnaround_time",
                     ),
                     (
-                        "forwarding_last_update_at",
                         "forwarding_last_update_ok",
+                        "_forwarding_last_update_fresh",
+                        "forwarding_last_update_at",
                     ),
                     (
-                        "assets_last_update_at",
                         "assets_last_update_ok",
+                        "_assets_last_update_fresh",
+                        "assets_last_update_at",
                     ),
                 ),
             },
@@ -506,6 +453,96 @@ class OwnerAdmin(admin.ModelAdmin):
             kwargs["queryset"] = Webhook.objects.filter(is_active=True)
 
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def _are_all_syncs_ok(self, obj):
+        return obj.are_all_syncs_ok
+
+    _are_all_syncs_ok.boolean = True
+    _are_all_syncs_ok.short_description = "All syncs OK"
+
+    def _avg_turnaround_time(self, obj) -> str:
+        """Average time between timestamp of notifications an when they are received."""
+
+        def my_format(value) -> str:
+            return f"{value:,.0f}" if value else "-"
+
+        max_short = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_SHORT
+        max_medium = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM
+        max_long = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_LONG
+        max_valid = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID
+        notifications = obj.notifications.filter(created__isnull=False).order_by(
+            "-timestamp"
+        )
+        data = [
+            (rec[0] - rec[1]).total_seconds()
+            for rec in notifications.values_list("created", "timestamp")
+            if (rec[0] - rec[1]).total_seconds() < max_valid
+        ]
+        short = statistics.mean(data[:max_short]) if len(data) >= max_short else None
+        medium = statistics.mean(data[:max_medium]) if len(data) >= max_medium else None
+        long = statistics.mean(data[:max_long]) if len(data) >= max_long else None
+        return f"{my_format(short)} | {my_format(medium)} | {my_format(long)}"
+
+    _avg_turnaround_time.short_description = "Avg. turnaround time"
+
+    def _structures_last_update_fresh(self, obj) -> int:
+        return obj.is_structure_sync_fresh
+
+    _structures_last_update_fresh.boolean = True
+    _structures_last_update_fresh.short_description = "Last update fresh"
+
+    def _notifications_last_update_fresh(self, obj) -> int:
+        return obj.is_notification_sync_fresh
+
+    _notifications_last_update_fresh.boolean = True
+    _notifications_last_update_fresh.short_description = "Last update fresh"
+
+    def _forwarding_last_update_fresh(self, obj) -> int:
+        return obj.is_forwarding_sync_fresh
+
+    _forwarding_last_update_fresh.boolean = True
+    _forwarding_last_update_fresh.short_description = "Last update fresh"
+
+    def _assets_last_update_fresh(self, obj) -> int:
+        return obj.is_assets_sync_fresh
+
+    _assets_last_update_fresh.boolean = True
+    _assets_last_update_fresh.short_description = "Last update fresh"
+
+    def get_form(self, *args, **kwargs):
+        """Add help text to custom field."""
+        help_texts = {
+            "_avg_turnaround_time": (
+                "For last %d | %d | %d notifications"
+                % (
+                    app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_SHORT,
+                    app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM,
+                    app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_LONG,
+                )
+            ),
+            "_are_all_syncs_ok": (
+                "True when all syncs were successful and not older then "
+                "the respective grace period."
+            ),
+            "_structures_last_update_fresh": (
+                "True when last sync within %s minutes."
+                % app_settings.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES
+            ),
+            "_notifications_last_update_fresh": (
+                "True when last sync within %s minutes."
+                % app_settings.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES
+            ),
+            "_forwarding_last_update_fresh": (
+                "True when last sync within %s minutes."
+                % app_settings.STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES
+            ),
+            "_assets_last_update_fresh": (
+                "True when last sync within %s minutes."
+                % app_settings.STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES
+            ),
+        }
+        kwargs.update({"help_texts": help_texts})
+        return super().get_form(*args, **kwargs)
 
 
 @admin.register(StructureTag)
@@ -536,13 +573,13 @@ class StructureAdminInline(admin.TabularInline):
     model = StructureService
 
     def has_add_permission(self, request, obj=None):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
     def has_change_permission(self, request, obj=None):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
     def has_delete_permission(self, request, obj=None):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
 
 class OwnerCorporationsFilter(admin.SimpleListFilter):
@@ -666,7 +703,7 @@ class StructureAdmin(admin.ModelAdmin):
     _tags.short_description = "Tags"
 
     def has_add_permission(self, request):
-        return True if STRUCTURES_DEVELOPER_MODE else False
+        return False
 
     def add_default_tags(self, request, queryset):
         structure_count = 0
@@ -714,15 +751,13 @@ class StructureAdmin(admin.ModelAdmin):
         "Update generated tags for selected structures"
     )
 
-    if not STRUCTURES_DEVELOPER_MODE:
-        readonly_fields = tuple(
-            [
-                x.name
-                for x in Structure._meta.get_fields()
-                if isinstance(x, models.fields.Field) and x.name not in ["tags"]
-            ]
-        )
-
+    readonly_fields = tuple(
+        [
+            x.name
+            for x in Structure._meta.get_fields()
+            if isinstance(x, models.fields.Field) and x.name not in ["tags"]
+        ]
+    )
     fieldsets = (
         (None, {"fields": ("name", "owner", "eve_solar_system", "eve_type", "tags")}),
         (
