@@ -15,7 +15,11 @@ from allianceauth.eveonline.models import (
     EveCorporationInfo,
 )
 from allianceauth.tests.auth_utils import AuthUtils
-from app_utils.testing import json_response_to_dict, json_response_to_python
+from app_utils.testing import (
+    create_user_from_evecharacter,
+    json_response_to_dict,
+    json_response_to_python,
+)
 
 from .. import views
 from ..app_settings import (
@@ -23,7 +27,13 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..models import Owner, PocoDetails, Structure, Webhook
-from .testdata import create_structures, create_user, load_entities, set_owner_character
+from .testdata import (
+    create_structures,
+    create_user,
+    load_entities,
+    load_entity,
+    set_owner_character,
+)
 
 MODULE_PATH = "structures.views"
 
@@ -68,6 +78,20 @@ class TestStructureList(TestCase):
     #     self.assertEqual(obj["poco_count"], 4)
     #     self.assertEqual(obj["starbase_count"], 3)
     #     self.assertEqual(obj["total"], 9)
+
+
+class TestStructureListSpecial(TestCase):
+    def test_should_show_empty_list(self):
+        # given
+        load_entity(EveCharacter)
+        user, _ = create_user_from_evecharacter(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        request = RequestFactory().get(reverse("structures:main"))
+        request.user = user
+        response = views.main(request)
+        # then
+        self.assertEqual(response.status_code, 200)
 
 
 class TestStructureListDataPermissions(TestCase):

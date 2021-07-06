@@ -1,6 +1,8 @@
+import datetime as dt
 import re
 import urllib
 from enum import IntEnum
+from typing import Optional
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
@@ -116,12 +118,6 @@ def main(request):
 
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
-    last_updated = (
-        Owner.objects.filter(is_active=True)
-        .order_by("-structures_last_update_at")
-        .first()
-        .structures_last_update_at
-    )
     context = {
         "page_title": gettext_lazy(__title__),
         "active_tags": active_tags,
@@ -129,9 +125,23 @@ def main(request):
         "tags_exist": StructureTag.objects.exists(),
         "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
         "data_tables_paging": STRUCTURES_PAGING_ENABLED,
-        "last_updated": last_updated,
+        "last_updated": _last_updated(),
     }
     return render(request, "structures/main.html", context)
+
+
+def _last_updated() -> Optional[dt.datetime]:
+    """Date/time when structures were last updated."""
+    active_owners = Owner.objects.filter(is_active=True)
+    return (
+        (
+            active_owners.order_by("-structures_last_update_at")
+            .first()
+            .structures_last_update_at
+        )
+        if active_owners
+        else None
+    )
 
 
 class StructuresRowBuilder:
