@@ -259,41 +259,72 @@ class Owner(models.Model):
 
         Raises TokenError when no valid token can be provided.
         """
-        error = None
-        try:
-            owner_token = self.characters.earliest("last_used_at")
-        except OwnerCharacter.DoesNotExist:
-            owner_token = None
-            error = f"{self}: No character configured to sync."
-        else:
-            if not owner_token.character_ownership.user.has_perm(
-                "structures.add_structure_owner"
-            ):
-                error = f"{owner_token.character_ownership}: Character does not have sufficient permission to sync."
-            else:
-                token = owner_token.valid_token()
-                if not token:
-                    error = f"{self}: No valid token found."
 
-        if error:
+        def notify_error(
+            error: str, character: CharacterOwnership = None, level="warning"
+        ) -> None:
+            """Notify admin and users about an error with the owner characters."""
             message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
             title = f"{__title__}: Failed to fetch token for {self}"
-            if owner_token and owner_token.character_ownership:
+            error = f"{error} Please add a new character to restore service level."
+            if character and character.character_ownership:
                 notify_throttled(
                     message_id=message_id,
-                    user=owner_token.character_ownership.user,
+                    user=character.character_ownership.user,
                     title=title,
                     message=error,
-                    level="danger",
+                    level=level,
                 )
+                title = f"FYI: {title}"
             notify_admins_throttled(
-                message_id=message_id, title=title, message=error, level="danger"
+                message_id=message_id, title=title, message=error, level=level
             )
+
+        token = None
+        characters = list(self.characters.order_by("-last_used_at"))
+        while characters:
+            character = characters.pop()
+            if (
+                character.character_ownership.character.corporation_id
+                != self.corporation.corporation_id
+            ):
+                notify_error(
+                    f"{character.character_ownership}: Character does no longer belong to the owner's corporation and has been removed. ",
+                    character,
+                )
+                character.delete()
+                continue
+            elif not character.character_ownership.user.has_perm(
+                "structures.add_structure_owner"
+            ):
+                notify_error(
+                    f"{character.character_ownership}: "
+                    "Character does not have sufficient permission to sync "
+                    "and has been removed."
+                )
+                character.delete()
+                continue
+            token = character.valid_token()
+            if not token:
+                notify_error(
+                    f"{character.character_ownership}: Character has no valid token "
+                    "for sync and has been removed. ",
+                    character,
+                )
+                character.delete()
+                continue
+
+        if not token:
+            error = (
+                f"{self}: No valid character found for sync. "
+                "Service down for this owner."
+            )
+            notify_error(error, level="danger")
             raise TokenError(error)
 
         if record_usage:
-            owner_token.last_used_at = now()
-            owner_token.save()
+            character.last_used_at = now()
+            character.save()
         return token
 
     def update_structures_esi(self, user: User = None):

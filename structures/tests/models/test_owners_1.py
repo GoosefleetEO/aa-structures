@@ -1,3 +1,4 @@
+import datetime as dt
 from copy import deepcopy
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -407,7 +408,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
-        user, character_ownership = create_user_from_evecharacter(
+        _, character_ownership = create_user_from_evecharacter(
             1001, scopes=Owner.get_esi_scopes()
         )
         owner = Owner.objects.create(corporation=self.corporation)
@@ -416,9 +417,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         with self.assertRaises(TokenError):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
-        self.assertTrue(mock_notify_throttled.called)
-        _, kwargs = mock_notify_throttled.call_args
-        self.assertEqual(kwargs["user"], user)
+        self.assertFalse(mock_notify_throttled.called)
 
     def test_raise_error_when_token_not_found(
         self, mock_notify_admins_throttled, mock_notify_throttled
@@ -439,6 +438,52 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertTrue(mock_notify_throttled.called)
+
+    def test_raise_error_when_character_no_longer_a_corporation_member(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        _, character_ownership = create_user_from_evecharacter(
+            1011,
+            scopes=Owner.get_esi_scopes(),
+            permissions=["structures.add_structure_owner"],
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.characters.create(character_ownership=character_ownership)
+        # when/then
+        with self.assertRaises(TokenError):
+            owner.fetch_token()
+        self.assertTrue(mock_notify_admins_throttled.called)
+        self.assertTrue(mock_notify_throttled.called)
+
+    def test_should_ignore_invalid_characters_and_return_token_from_valid_char(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        user, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102, scopes=Owner.get_esi_scopes()
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=utc)
+        my_character.save()
+        # when
+        token = owner.fetch_token()
+        # then
+        self.assertIsInstance(token, Token)
+        self.assertEqual(token.user, user)
+        self.assertTrue(mock_notify_admins_throttled.called)
+        self.assertFalse(mock_notify_throttled.called)
 
 
 @patch(MODULE_PATH + ".notify_admins_throttled")
