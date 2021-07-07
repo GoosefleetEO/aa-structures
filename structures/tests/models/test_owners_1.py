@@ -392,6 +392,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         )
         self.assertFalse(mock_notify_admins_throttled.called)
         self.assertFalse(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 1)
 
     def test_raise_error_when_no_sync_char_defined(
         self, mock_notify_admins_throttled, mock_notify_throttled
@@ -404,7 +405,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertFalse(mock_notify_throttled.called)
 
-    def test_raise_error_when_user_has_no_permission(
+    def test_raise_error_when_user_has_no_permission_and_delete_character(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -418,8 +419,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertFalse(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 0)
 
-    def test_raise_error_when_token_not_found(
+    def test_raise_error_when_token_not_found_and_delete_character(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -438,8 +440,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertTrue(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 0)
 
-    def test_raise_error_when_character_no_longer_a_corporation_member(
+    def test_raise_error_when_character_no_longer_a_corporation_member_and_delete_it(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -455,8 +458,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertTrue(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 0)
 
-    def test_should_ignore_invalid_characters_and_return_token_from_valid_char(
+    def test_should_delete_invalid_characters_and_return_token_from_valid_char(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -484,6 +488,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertEqual(token.user, user)
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertFalse(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 1)
 
 
 @patch(MODULE_PATH + ".notify_admins_throttled")
