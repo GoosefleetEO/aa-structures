@@ -249,9 +249,7 @@ class Owner(models.Model):
 
     def characters_count(self) -> int:
         """Count of valid owner characters."""
-        return OwnerCharacter.objects.filter(
-            owner=self, character_ownership__isnull=False
-        ).count()
+        return self.characters.count()
 
     def fetch_token(self, record_usage: bool = False) -> Token:
         """Fetch a valid token for the owner and return it.
@@ -263,9 +261,7 @@ class Owner(models.Model):
         """
         error = None
         try:
-            owner_token = OwnerCharacter.objects.filter(
-                owner=self, character_ownership__isnull=False
-            ).earliest("last_used_at")
+            owner_token = self.characters.earliest("last_used_at")
         except OwnerCharacter.DoesNotExist:
             owner_token = None
             error = f"{self}: No character configured to sync."
@@ -1164,10 +1160,7 @@ class OwnerCharacter(models.Model):
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,
-        on_delete=models.SET_DEFAULT,
-        default=None,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name="+",
         help_text="character used for syncing",
     )
@@ -1178,6 +1171,7 @@ class OwnerCharacter(models.Model):
         db_index=True,
         help_text="when this character was last used for sync",
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [

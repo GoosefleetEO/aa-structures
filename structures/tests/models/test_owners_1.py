@@ -328,6 +328,34 @@ class TestOwner(NoSocketsTestCase):
         expected_pks = {character_ownership_1011.pk, character_ownership_1102.pk}
         self.assertSetEqual(token_pks, expected_pks)
 
+    def test_should_count_characters(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1011)
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1102)
+        # when
+        result = owner.characters_count()
+        # then
+        self.assertEqual(result, 2)
+
+    def test_should_count_characters_when_empty(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        # when
+        result = owner.characters_count()
+        # then
+        self.assertEqual(result, 0)
+
 
 @patch(MODULE_PATH + ".notify_throttled")
 @patch(MODULE_PATH + ".notify_admins_throttled")
