@@ -368,7 +368,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             1011,
             permissions=["structures.add_structure_owner"],
             scopes=Owner.get_esi_scopes(),
-        )
+        )  # Lex
         my_character = owner.add_character(character_ownership_1011)
         my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=UTC)
         my_character.save()
@@ -376,7 +376,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             1102,
             permissions=["structures.add_structure_owner"],
             scopes=Owner.get_esi_scopes(),
-        )
+        )  # Harley
         my_character = owner.add_character(character_ownership_1102)
         my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=UTC)
         my_character.save()

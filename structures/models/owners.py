@@ -242,9 +242,7 @@ class Owner(models.Model):
                 f"Character {character_ownership.character} does not belong "
                 "to owner corporation."
             )
-        obj, _ = OwnerCharacter.objects.get_or_create(
-            owner=self, character_ownership=character_ownership
-        )
+        obj, _ = self.characters.get_or_create(character_ownership=character_ownership)
         return obj
 
     def characters_count(self) -> int:
@@ -281,9 +279,7 @@ class Owner(models.Model):
             )
 
         token = None
-        characters = list(self.characters.order_by("-last_used_at"))
-        while characters:
-            character = characters.pop()
+        for character in self.characters.order_by("last_used_at"):
             if (
                 character.character_ownership.character.corporation_id
                 != self.corporation.corporation_id
@@ -313,7 +309,7 @@ class Owner(models.Model):
                 )
                 character.delete()
                 continue
-
+            break  # leave the for loop if we have found a valid token
         if not token:
             error = (
                 f"{self}: No valid character found for sync. "

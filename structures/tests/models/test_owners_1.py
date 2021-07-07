@@ -265,7 +265,7 @@ class TestOwner(NoSocketsTestCase):
             },
         )
 
-    def test_should_add_new_token(self):
+    def test_should_add_new_character(self):
         # given
         owner = Owner.objects.get(corporation__corporation_id=2002)
         _, character_ownership = create_user_from_evecharacter(
@@ -281,18 +281,18 @@ class TestOwner(NoSocketsTestCase):
         self.assertEqual(result.character_ownership, character_ownership)
         self.assertIsNone(result.last_used_at)
 
-    def test_should_not_overwrite_existing_token(self):
+    def test_should_not_overwrite_existing_characters(self):
         # given
-        token = self.owner.characters.first()
+        character = self.owner.characters.first()
         my_dt = datetime(year=2021, month=2, day=11, hour=12, tzinfo=utc)
-        token.last_used_at = my_dt
-        token.save()
+        character.last_used_at = my_dt
+        character.save()
         # when
-        result = self.owner.add_character(token.character_ownership)
+        result = self.owner.add_character(character.character_ownership)
         # then
         self.assertIsInstance(result, OwnerCharacter)
         self.assertEqual(result.owner, self.owner)
-        self.assertEqual(result.character_ownership, token.character_ownership)
+        self.assertEqual(result.character_ownership, character.character_ownership)
         self.assertEqual(result.last_used_at, my_dt)
 
     def test_should_prevent_adding_character_from_other_corporation(self):
@@ -306,7 +306,7 @@ class TestOwner(NoSocketsTestCase):
         with self.assertRaises(ValueError):
             self.owner.add_character(character_ownership)
 
-    def test_should_add_token_to_existing_set(self):
+    def test_should_add_character_to_existing_set(self):
         # given
         owner = Owner.objects.get(corporation__corporation_id=2102)
         _, character_ownership_1011 = create_user_from_evecharacter(
@@ -323,11 +323,11 @@ class TestOwner(NoSocketsTestCase):
         # when
         owner.add_character(character_ownership_1102)
         # then
-        token_pks = set(
+        owner_character_pks = set(
             owner.characters.values_list("character_ownership__pk", flat=True)
         )
         expected_pks = {character_ownership_1011.pk, character_ownership_1102.pk}
-        self.assertSetEqual(token_pks, expected_pks)
+        self.assertSetEqual(owner_character_pks, expected_pks)
 
     def test_should_count_characters(self):
         # given

@@ -781,9 +781,7 @@ def set_owner_character(character_id: int) -> Tuple[User, Owner]:
     my_owner = Owner.objects.get(
         corporation__corporation_id=my_character.corporation_id
     )
-    OwnerCharacter.objects.create(
-        owner=my_owner, character_ownership=character_ownership
-    )
+    my_owner.characters.create(character_ownership=character_ownership)
     return my_user, my_owner
 
 
