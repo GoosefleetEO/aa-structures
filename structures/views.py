@@ -697,43 +697,56 @@ def add_structure_owner(request, token):
 
         owner = Owner.objects.update_or_create(corporation=corporation)[0]
         owner.add_character(character_ownership)
-        default_webhooks = Webhook.objects.filter(is_default=True)
-        if default_webhooks:
-            for webhook in default_webhooks:
-                owner.webhooks.add(webhook)
-            owner.save()
+        if owner.characters.count() == 1:
+            default_webhooks = Webhook.objects.filter(is_default=True)
+            if default_webhooks:
+                for webhook in default_webhooks:
+                    owner.webhooks.add(webhook)
+                owner.save()
 
-        tasks.update_structures_for_owner.delay(
-            owner_pk=owner.pk, user_pk=request.user.pk
-        )
-        messages_plus.info(
-            request,
-            format_html(
-                _(
-                    "%(corporation)s has been added with %(character)s "
-                    "as sync character. You now have %(characters_count)d "
-                    "sync character(s) configured.<br>"
-                    "We have started fetching structures "
-                    "for this corporation and you will receive a report once "
-                    "the process is finished."
-                )
-                % {
-                    "corporation": format_html("<strong>{}</strong>", owner),
-                    "character": format_html("<strong>{}</strong>", token_char),
-                    "characters_count": owner.characters_count(),
-                }
-            ),
-        )
-        if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
-            with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
-                notify_admins(
-                    message=_(
-                        "%(corporation)s was added as new "
-                        "structure owner by %(user)s."
+            tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)
+            messages_plus.info(
+                request,
+                format_html(
+                    _(
+                        "%(corporation)s has been added with %(character)s "
+                        "as sync character. "
+                        "We have started fetching structures and notifications "
+                        "for this corporation and you will receive a report once "
+                        "the process is finished."
                     )
-                    % {"corporation": owner, "user": request.user.username},
-                    title="{}: Structure owner added: {}".format(__title__, owner),
-                )
+                    % {
+                        "corporation": format_html("<strong>{}</strong>", owner),
+                        "character": format_html("<strong>{}</strong>", token_char),
+                    }
+                ),
+            )
+            if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
+                with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                    notify_admins(
+                        message=_(
+                            "%(corporation)s was added as new "
+                            "structure owner by %(user)s."
+                        )
+                        % {"corporation": owner, "user": request.user.username},
+                        title="{}: Structure owner added: {}".format(__title__, owner),
+                    )
+        else:
+            messages_plus.info(
+                request,
+                format_html(
+                    _(
+                        "%(character)s has been added to %(corporation)s "
+                        "as sync character. You now have %(characters_count)d "
+                        "sync character(s) configured."
+                    )
+                    % {
+                        "corporation": format_html("<strong>{}</strong>", owner),
+                        "character": format_html("<strong>{}</strong>", token_char),
+                        "characters_count": owner.characters_count(),
+                    }
+                ),
+            )
     return redirect("structures:index")
 
 

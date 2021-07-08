@@ -1,7 +1,5 @@
 import statistics
 
-from celery import chain
-
 from django.contrib import admin
 from django.db import models
 from django.db.models import Count
@@ -368,10 +366,7 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def update_all(self, request, queryset):
         for obj in queryset:
-            chain(
-                tasks.update_structures_for_owner.si(obj.pk, request.user.pk),
-                tasks.process_notifications_for_owner.si(obj.pk, request.user.pk),
-            ).delay()
+            tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)
             text = (
                 f"Started updating structures and notifications for {obj}. "
                 "You will receive a notification once it is completed."

@@ -481,15 +481,14 @@ class TestAddStructureOwner(TestCase):
         cls.character = cls.character_ownership.character
         cls.factory = RequestFactory()
 
-    def setUp(self):
-        Owner.objects.all().delete()
-
-    def _add_structure_owner(self, token=None):
+    def _add_structure_owner(self, token=None, user=None):
         # given
         request = self.factory.get(reverse("structures:add_structure_owner"))
+        if not user:
+            user = self.user
         if not token:
-            token = self.user.token_set.first()
-        request.user = self.user
+            token = user.token_set.first()
+        request.user = user
         request.token = token
         middleware = SessionMiddleware()
         middleware.process_request(request)
@@ -498,11 +497,11 @@ class TestAddStructureOwner(TestCase):
         return orig_view(request, token)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
+    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
     @patch(MODULE_PATH + ".notify_admins")
     @patch(MODULE_PATH + ".messages_plus")
     def test_should_add_new_structure_owner_and_notify_admins(
-        self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
+        self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
         # when
         response = self._add_structure_owner()
@@ -511,34 +510,76 @@ class TestAddStructureOwner(TestCase):
         self.assertEqual(response.url, reverse("structures:index"))
         self.assertTrue(mock_messages.info.called)
         self.assertTrue(mock_notify_admins.called)
-        my_owner = Owner.objects.get(
-            characters__character_ownership=self.character_ownership
+        owner = Owner.objects.first()
+        self.assertSetEqual(
+            {self.character_ownership.pk},
+            set(owner.characters.values_list("character_ownership", flat=True)),
         )
-        self.assertEqual(my_owner.webhooks.first().name, "Test Webhook 1")
-        self.assertTrue(mock_update_structures_for_owner.delay.called)
+        self.assertEqual(owner.webhooks.first().name, "Test Webhook 1")
+        self.assertTrue(mock_update_all_for_owner.delay.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
+    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
+    @patch(MODULE_PATH + ".notify_admins")
+    @patch(MODULE_PATH + ".messages_plus")
+    def test_should_add_character_to_existing_structure_owner(
+        self, mock_messages, mock_notify_admins, mock_update_all_for_owner
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1011)
+        user_1102, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        response = self._add_structure_owner(user=user_1102)
+        # then
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("structures:index"))
+        self.assertTrue(mock_messages.info.called)
+        self.assertFalse(mock_update_all_for_owner.delay.called)
+        owner.refresh_from_db()
+        self.assertSetEqual(
+            {character_ownership_1011.pk, character_ownership_1102.pk},
+            set(owner.characters.values_list("character_ownership", flat=True)),
+        )
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
+    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
     @patch(MODULE_PATH + ".notify_admins")
     @patch(MODULE_PATH + ".messages_plus")
     def test_should_add_new_structure_owner_and_not_notify_admins(
-        self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
+        self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
         # when
         response = self._add_structure_owner()
         # then
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("structures:index"))
+        owner = Owner.objects.first()
+        self.assertSetEqual(
+            {self.character_ownership.pk},
+            set(owner.characters.values_list("character_ownership", flat=True)),
+        )
         self.assertTrue(mock_messages.info.called)
         self.assertFalse(mock_notify_admins.called)
-        self.assertTrue(mock_update_structures_for_owner.delay.called)
+        self.assertTrue(mock_update_all_for_owner.delay.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
+    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
     @patch(MODULE_PATH + ".notify_admins")
     @patch(MODULE_PATH + ".messages_plus")
     def test_should_add_structure_owner_with_no_default_webhook(
-        self, mock_messages, mock_notify_admins, mock_update_structures_for_owner
+        self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
         # given
         Webhook.objects.filter(name="Test Webhook 1").update(is_default=False)
@@ -553,7 +594,7 @@ class TestAddStructureOwner(TestCase):
             characters__character_ownership=self.character_ownership
         )
         self.assertIsNone(my_owner.webhooks.first())
-        self.assertTrue(mock_update_structures_for_owner.delay.called)
+        self.assertTrue(mock_update_all_for_owner.delay.called)
 
         # webhook.is_default = True
         # webhook.save()
