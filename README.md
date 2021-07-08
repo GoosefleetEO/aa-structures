@@ -218,6 +218,7 @@ In this section you find a detailed description of the following key features:
 - [Power Modes](#power-modes)
 - [Structure tags](#structure-tags)
 - [Timers](#timers)
+- [Multiple sync characters](#multiple-sync-characters)
 
 ### Localization
 
@@ -314,6 +315,27 @@ Timers can be created from the following notification types:
 - StructureAnchoring (excluding structures anchored in null sec)
 - StructureLostArmor
 - StructureLostShields
+
+## Multiple sync characters
+
+It is possible to add multiple sync characters for a structure owner / corporation. This serves two purposes:
+
+- Reduced reaction time for notifications
+- Increased resilence against character becoming invalid
+
+### Reduced reaction time for notifications
+
+One of the most popular features of Structures is it's ability to automatically forward notications from the Eve server to Discord. However, there is a significant delay between the time a notification is create in game and it apearing on Discord, which on average is about 10 minutes.
+
+That delay is caused by the API of the Eve Server (ESI), which is caching all notification requests for 10 minutes.
+
+People interested in getting notifications more quickly, can add multiple sync characters for every owner. Structures will automatically rotate through all characters when updating notifications. And since the 10 min cache is per character (and not per owner) this approach will significantly reduce the delay. Please also remember to reduce the update time of the related periodic task (`structures_fetch_all_notifications`) accordingly. E.g. if you have 5 sync characters you want to run the periodic update task every 1-2 minutes.
+
+Since peridoc tasks can at most run every minute the maximum number of sync characters for the purpose of reducing the notification delay is 10.
+
+### Increased resilence against character becoming invalid
+
+Another benefit of having multple sync characters is that it increases the resilence of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for tha towner until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but it notify admins about it) and use any of the remaining valid characters to complete the update.
 
 ## Settings
 

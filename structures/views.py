@@ -14,7 +14,7 @@ from django.http import (
     HttpResponseServerError,
     JsonResponse,
 )
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import translation
 from django.utils.html import escape, format_html
@@ -664,15 +664,13 @@ def poco_details(request, structure_id):
 @permission_required("structures.add_structure_owner")
 @token_required(scopes=Owner.get_esi_scopes())
 def add_structure_owner(request, token):
-    token_char = EveCharacter.objects.get(character_id=token.character_id)
-    success = True
+    token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     try:
         character_ownership = CharacterOwnership.objects.get(
             user=request.user, character=token_char
         )
     except CharacterOwnership.DoesNotExist:
         character_ownership = None
-        success = False
         messages_plus.error(
             request,
             format_html(
@@ -684,69 +682,86 @@ def add_structure_owner(request, token):
                 % format_html("<strong>{}</strong>", token_char.character_name)
             ),
         )
+        return redirect("structures:index")
 
-    if success:
-        try:
-            corporation = EveCorporationInfo.objects.get(
-                corporation_id=token_char.corporation_id
-            )
-        except EveCorporationInfo.DoesNotExist:
-            corporation = EveCorporationInfo.objects.create_corporation(
-                token_char.corporation_id
-            )
+    try:
+        corporation = EveCorporationInfo.objects.get(
+            corporation_id=token_char.corporation_id
+        )
+    except EveCorporationInfo.DoesNotExist:
+        corporation = EveCorporationInfo.objects.create_corporation(
+            token_char.corporation_id
+        )
 
-        owner = Owner.objects.update_or_create(corporation=corporation)[0]
-        owner.add_character(character_ownership)
-        if owner.characters.count() == 1:
-            default_webhooks = Webhook.objects.filter(is_default=True)
-            if default_webhooks:
-                for webhook in default_webhooks:
-                    owner.webhooks.add(webhook)
-                owner.save()
+    owner, created = Owner.objects.update_or_create(corporation=corporation)
+    owner.add_character(character_ownership)
+    if created:
+        default_webhooks = Webhook.objects.filter(is_default=True)
+        if default_webhooks:
+            for webhook in default_webhooks:
+                owner.webhooks.add(webhook)
+            owner.save()
 
-            tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)
-            messages_plus.info(
-                request,
-                format_html(
-                    _(
-                        "%(corporation)s has been added with %(character)s "
-                        "as sync character. "
-                        "We have started fetching structures and notifications "
-                        "for this corporation and you will receive a report once "
-                        "the process is finished."
+    if owner.characters.count() == 1:
+        tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)
+        messages_plus.info(
+            request,
+            format_html(
+                _(
+                    "%(corporation)s has been added with %(character)s "
+                    "as sync character. "
+                    "We have started fetching structures and notifications "
+                    "for this corporation and you will receive a report once "
+                    "the process is finished."
+                )
+                % {
+                    "corporation": format_html("<strong>{}</strong>", owner),
+                    "character": format_html("<strong>{}</strong>", token_char),
+                }
+            ),
+        )
+        if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
+            with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                notify_admins(
+                    message=_(
+                        "%(corporation)s was added as new "
+                        "structure owner by %(user)s."
+                    )
+                    % {"corporation": owner, "user": request.user.username},
+                    title=_("%s: Structure owner added: %s") % (__title__, owner),
+                )
+    else:
+        messages_plus.info(
+            request,
+            format_html(
+                _(
+                    "%(character)s has been added to %(corporation)s "
+                    "as sync character. "
+                    "You now have %(characters_count)d sync character(s) configured."
+                )
+                % {
+                    "corporation": format_html("<strong>{}</strong>", owner),
+                    "character": format_html("<strong>{}</strong>", token_char),
+                    "characters_count": owner.characters_count(),
+                }
+            ),
+        )
+        if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
+            with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                notify_admins(
+                    message=_(
+                        "%(character)s was added as sync character to "
+                        "%(corporation)s by %(user)s.\n"
+                        "We now have %(characters_count)d sync character(s) configured."
                     )
                     % {
-                        "corporation": format_html("<strong>{}</strong>", owner),
-                        "character": format_html("<strong>{}</strong>", token_char),
-                    }
-                ),
-            )
-            if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
-                with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
-                    notify_admins(
-                        message=_(
-                            "%(corporation)s was added as new "
-                            "structure owner by %(user)s."
-                        )
-                        % {"corporation": owner, "user": request.user.username},
-                        title="{}: Structure owner added: {}".format(__title__, owner),
-                    )
-        else:
-            messages_plus.info(
-                request,
-                format_html(
-                    _(
-                        "%(character)s has been added to %(corporation)s "
-                        "as sync character. You now have %(characters_count)d "
-                        "sync character(s) configured."
-                    )
-                    % {
-                        "corporation": format_html("<strong>{}</strong>", owner),
-                        "character": format_html("<strong>{}</strong>", token_char),
+                        "character": token_char,
+                        "corporation": owner,
+                        "user": request.user.username,
                         "characters_count": owner.characters_count(),
-                    }
-                ),
-            )
+                    },
+                    title=_("%s: Character added to: %s") % (__title__, owner),
+                )
     return redirect("structures:index")
 
 

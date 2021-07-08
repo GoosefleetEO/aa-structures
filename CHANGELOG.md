@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Increased response time for new notification when using multiple sync characters per owner
-- Increased resilence of structure and notification sync when using multiple characters per owner
+- Improved response time for new notifications when using multiple sync characters per owner
+- Improved resilence of structure and notification sync when using multiple characters per owner
 
 ## Change
 

@@ -8,9 +8,8 @@
 
     <span class="pull-right">
         {% if perms.structures.add_structure_owner %}
-            <a class="btn btn-success btn-tabs"
-                href="{% url 'structures:add_structure_owner' %}">
-                {% translate "Add Structure Owner" %}
+            <a class="btn btn-success btn-tabs" href="{% url 'structures:add_structure_owner' %}" title="{% translate 'Add new structure owner or add new sync character to an existing structure owner' %}">
+                {% translate "Add Owner / Sync Character" %}
             </a>
         {% endif %}
     </span>
