@@ -1,8 +1,6 @@
-import datetime as dt
 from unittest.mock import patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
-from pytz import UTC
 
 from django.test import override_settings
 from esi.models import Token
@@ -10,12 +8,7 @@ from esi.models import Token
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
-from app_utils.testing import (
-    BravadoOperationStub,
-    BravadoResponseStub,
-    NoSocketsTestCase,
-    queryset_pks,
-)
+from app_utils.testing import BravadoResponseStub, NoSocketsTestCase, queryset_pks
 
 from ...models import EveMoon, Notification, Owner, OwnerAsset, Structure, Webhook
 from ...models.notifications import NotificationType
@@ -351,47 +344,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.owner.refresh_from_db()
         self.assertFalse(self.owner.notifications_last_update_ok)
         self.assertTrue(mock_notify_admins_throttled.called)
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    def test_should_fetch_notifications_with_subsequent_characters(
-        self, mock_esi_client, mock_notify_admins_throttled
-    ):
-        # given
-        esi_call = (
-            mock_esi_client.return_value.Character.get_characters_character_id_notifications
-        )
-        esi_call.return_value = BravadoOperationStub([])
-        # given
-        owner = Owner.objects.get(corporation__corporation_id=2102)
-        _, character_ownership_1011 = create_user_from_evecharacter(
-            1011,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )  # Lex
-        my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=UTC)
-        my_character.save()
-        _, character_ownership_1102 = create_user_from_evecharacter(
-            1102,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )  # Harley
-        my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=UTC)
-        my_character.save()
-        # when
-        owner.fetch_notifications_esi()
-        owner.fetch_notifications_esi()
-        owner.fetch_notifications_esi()
-        owner.fetch_notifications_esi()
-        # then
-        owner.refresh_from_db()
-        self.assertTrue(owner.notifications_last_update_ok)
-        called_character_ids_on_order = [
-            obj[1]["character_id"] for obj in esi_call.call_args_list
-        ]
-        self.assertListEqual(called_character_ids_on_order, [1102, 1011, 1102, 1011])
 
 
 @override_settings(DEBUG=True)

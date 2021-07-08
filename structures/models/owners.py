@@ -1,5 +1,4 @@
 """Owner related models"""
-
 import json
 import math
 import os
@@ -67,6 +66,8 @@ class General(models.Model):
 
 class Owner(models.Model):
     """A corporation that owns structures"""
+
+    ESI_CHARACTER_NOTIFICATION_CACHE_DURATION = 600
 
     # PK
     corporation = models.OneToOneField(
@@ -249,11 +250,14 @@ class Owner(models.Model):
         """Count of valid owner characters."""
         return self.characters.count()
 
-    def fetch_token(self, record_usage: bool = False) -> Token:
+    def fetch_token(
+        self, rotate_characters: bool = False, ignore_schedule: bool = False
+    ) -> Token:
         """Fetch a valid token for the owner and return it.
 
         Args:
-            record_usage: record now as last usage for the owner character
+            rotate_characters: rotate through characters with every new call
+            ignore_schedule: Ignore current schedule when rotating
 
         Raises TokenError when no valid token can be provided.
         """
@@ -310,6 +314,7 @@ class Owner(models.Model):
                 character.delete()
                 continue
             break  # leave the for loop if we have found a valid token
+
         if not token:
             error = (
                 f"{self}: No valid character found for sync. "
@@ -317,11 +322,38 @@ class Owner(models.Model):
             )
             notify_error(error, level="danger")
             raise TokenError(error)
+        if rotate_characters:
+            self._rotate_character(character, ignore_schedule)
+        return token
 
-        if record_usage:
+    def _rotate_character(
+        self, character: "OwnerCharacter", ignore_schedule: bool
+    ) -> None:
+        """Rotate this character such that all are spread evently
+        accross the ESI cache duration for fetching notifications.
+        """
+        time_since_last_used = (
+            (now() - character.last_used_at).total_seconds()
+            if character.last_used_at
+            else None
+        )
+        try:
+            minimum_time_between_rotations = max(
+                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
+                / self.characters.count(),
+                60,
+            )
+        except ZeroDivisionError:
+            minimum_time_between_rotations = (
+                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
+            )
+        if (
+            ignore_schedule
+            or not time_since_last_used
+            or time_since_last_used >= minimum_time_between_rotations
+        ):
             character.last_used_at = now()
             character.save()
-        return token
 
     def update_structures_esi(self, user: User = None):
         """Updates all structures from ESI."""
@@ -850,7 +882,7 @@ class Owner(models.Model):
         self.notifications_last_update_ok = None
         self.notifications_last_update_at = now()
         self.save()
-        token = self.fetch_token(record_usage=True)
+        token = self.fetch_token(rotate_characters=True)
 
         try:
             notifications = self._fetch_notifications_from_esi(token)

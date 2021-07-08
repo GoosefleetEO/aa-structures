@@ -490,6 +490,78 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertFalse(mock_notify_throttled.called)
         self.assertEqual(owner.characters.count(), 1)
 
+    def test_should_rotate_through_characters(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 5, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.save()
+        tokens_reveiced = list()
+        # when
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        # then
+        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1011])
+
+    def test_should_rotate_through_characters_based_on_schedule(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 1, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.save()
+        tokens_reveiced = list()
+        # when
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        # then
+        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1102])
+
 
 @patch(MODULE_PATH + ".notify_admins_throttled")
 @patch("structures.helpers.esi_fetch._esi_client")

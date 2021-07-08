@@ -57,6 +57,11 @@ STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES = clean_setting(
     "STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 20
 )
 
+# Duration of period in minutes when notifications are synced
+STRUCTURES_NOTIFICATION_SYNC_PERIOD_MINUTES = clean_setting(
+    "STRUCTURES_NOTIFICATION_SYNC_PERIOD_MINUTES", 2
+)
+
 # Default wait time in seconds before retrying to send a notification
 # to Discord after an error occurred
 STRUCTURES_NOTIFICATION_WAIT_SEC = clean_setting("STRUCTURES_NOTIFICATION_WAIT_SEC", 5)
