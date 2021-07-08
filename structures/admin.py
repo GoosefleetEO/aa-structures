@@ -1,5 +1,7 @@
 import statistics
 
+from celery import chain
+
 from django.contrib import admin
 from django.db import models
 from django.db.models import Count
@@ -345,6 +347,7 @@ class OwnerAdmin(admin.ModelAdmin):
     _structures_count.short_description = "structures"
 
     actions = (
+        "update_all",
         "update_structures",
         "fetch_notifications",
         "deactivate_owners",
@@ -363,12 +366,27 @@ class OwnerAdmin(admin.ModelAdmin):
 
     deactivate_owners.short_description = "Deactivate selected owners"
 
+    def update_all(self, request, queryset):
+        for obj in queryset:
+            chain(
+                tasks.update_structures_for_owner.si(obj.pk, request.user.pk),
+                tasks.process_notifications_for_owner.si(obj.pk, request.user.pk),
+            ).delay()
+            text = (
+                f"Started updating structures and notifications for {obj}. "
+                "You will receive a notification once it is completed."
+            )
+            self.message_user(request, text)
+
+    update_all.short_description = "Update all from EVE server"
+
     def update_structures(self, request, queryset):
         for obj in queryset:
             tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = "Started updating structures for: {}. ".format(obj)
-            text += "You will receive a notification once it is completed."
-
+            text = (
+                f"Started updating structures for {obj}. "
+                "You will receive a notification once it is completed."
+            )
             self.message_user(request, text)
 
     update_structures.short_description = "Update structures from EVE server"
@@ -376,9 +394,10 @@ class OwnerAdmin(admin.ModelAdmin):
     def fetch_notifications(self, request, queryset):
         for obj in queryset:
             tasks.process_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = "Started fetching notifications for: {}. ".format(obj)
-            text += "You will receive a notification once it is completed."
-
+            text = (
+                f"Started fetching notifications for {obj}. "
+                "You will receive a notification once it is completed."
+            )
             self.message_user(request, text)
 
     fetch_notifications.short_description = "Fetch notifications from EVE server"
