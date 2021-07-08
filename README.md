@@ -49,6 +49,7 @@ Structures adds the following main features to Alliance Auth:
 - Tax rates and access settings of Customs Offices
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
+- Ability to increase notification response time and sync resilence with multiple sync characters per structure owner
 - Automatically sends notifications to users and admin when token become invalid or sync from ESI fails
 - Interface for 3rd party monitoring of the services status
 - Chinese :cn:, English :us: and German :de: localization
@@ -322,7 +323,6 @@ Note that all settings are optional and the app will use the documented default 
 
 Name | Description | Default
 -- | -- | --
-`APP_UTILS_NOTIFY_THROTTLED_TIMEOUT`| Timeout for throttled issue notifications to users and admins in seconds. | Please see [allianceauth-app-utils](https://allianceauth-app-utils.readthedocs.io/en/latest/settings.html#app_utils._app_settings.APP_UTILS_NOTIFY_THROTTLED_TIMEOUT) for details.
 `STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed). Will create timers from anchoring, lost shield and lost armor notifications  | `True`
 `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`| Whether admins will get notifications about import events like when someone adds a structure owner. Does not affect admin reporting for errors. | `True`
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | `False`
@@ -337,6 +337,7 @@ Name | Description | Default
 `STRUCTURES_NOTIFICATION_SHOW_MOON_ORE`| Wether ore details are shown on moon notifications | `True`
 `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | `15`
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | `5`
+`STRUCTURES_NOTIFY_THROTTLED_TIMEOUT`| Timeout for throttled issue notifications to users and admins in seconds. | `3600`
 `STRUCTURES_PAGING_ENABLED`| Wether paging is enabled for the structure list. | `True`
 `STRUCTURES_REPORT_NPC_ATTACKS`| Enable / disable sending notifications for attacks by NPCs (structure reinforcements are still reported) | `True`
 `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE`| Enable / disable whether fuel expire is shown as relative figure | `True`

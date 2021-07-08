@@ -33,6 +33,7 @@ from ..app_settings import (
     STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
+    STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
@@ -279,7 +280,11 @@ class Owner(models.Model):
                 )
                 title = f"FYI: {title}"
             notify_admins_throttled(
-                message_id=message_id, title=title, message=error, level=level
+                message_id=message_id,
+                title=title,
+                message=error,
+                level=level,
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
 
         token = None
@@ -419,7 +424,11 @@ class Owner(models.Model):
             )
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             return False
 
@@ -468,6 +477,7 @@ class Owner(models.Model):
                         title=title,
                         message=message,
                         level="warning",
+                        timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
                     )
                     structure["name"] = "(no data)"
                     is_ok = False
@@ -677,7 +687,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to update custom offices from ESI due to: {ex}"
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             return False
 
@@ -802,7 +816,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to fetch starbases from ESI due to {ex}"
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             return False
 
@@ -894,7 +912,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to update notifications from ESI due to {ex}"
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             self.notifications_last_update_ok = False
             self.save()
@@ -1184,7 +1206,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to update assets from ESI due to {ex}"
             logger.warning(message, exc_info=True)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="warning"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="warning",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             raise ex
         else:

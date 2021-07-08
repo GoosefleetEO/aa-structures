@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.13.2] - tbd
+## [1.14.0] - tbd
+
+### Added
+
+- Increased response time for new notification when using multiple sync characters per owner
+- Increased resilence of structure and notification sync when using multiple characters per owner
+
+## Change
+
+- New setting STRUCTURES_NOTIFY_THROTTLED_TIMEOUT to configure how often issue related auth notifications are sent
+- Default for repearting issue related auth notifications to users and admins reduced to 1 hour
+
+## [1.13.2] - 2021-07-06
 
 ### Added
 
