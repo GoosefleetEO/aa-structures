@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.14.1] - 2021-07-10
+
+## Fixed
+
+- Pinned dependency to app-utils incorrect
+
 ## [1.14.0] - 2021-07-10
 
 **Quicker notifications**
