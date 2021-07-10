@@ -14,13 +14,13 @@ from django.http import (
     HttpResponseServerError,
     JsonResponse,
 )
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import translation
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import gettext, gettext_lazy
+from django.utils.translation import gettext as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
 from eveuniverse.models import EveTypeDogmaAttribute
@@ -119,7 +119,7 @@ def main(request):
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
-        "page_title": gettext_lazy(__title__),
+        "page_title": _(__title__),
         "active_tags": active_tags,
         "tags_filter_form": form,
         "tags_exist": StructureTag.objects.exists(),
@@ -455,7 +455,7 @@ class StructuresRowBuilder:
                 '<button type="button" class="btn btn-default" '
                 'data-toggle="modal" data-target="#modalUpwellDetails" '
                 f"data-ajax_url={ajax_url} "
-                f'title="{gettext("Show fitting")}">'
+                f'title="{_("Show fitting")}">'
                 '<i class="fas fa-search"></i></button>'
             )
         elif self._structure.has_poco_details:
@@ -467,7 +467,7 @@ class StructuresRowBuilder:
                 '<button type="button" class="btn btn-default" '
                 'data-toggle="modal" data-target="#modalPocoDetails" '
                 f"data-ajax_url={ajax_url} "
-                f'title="{gettext("Show details")}">'
+                f'title="{_("Show details")}">'
                 '<i class="fas fa-search"></i></button>'
             )
         else:
@@ -664,17 +664,17 @@ def poco_details(request, structure_id):
 @permission_required("structures.add_structure_owner")
 @token_required(scopes=Owner.get_esi_scopes())
 def add_structure_owner(request, token):
-    token_char = EveCharacter.objects.get(character_id=token.character_id)
-    success = True
+    token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     try:
-        owned_char = CharacterOwnership.objects.get(
+        character_ownership = CharacterOwnership.objects.get(
             user=request.user, character=token_char
         )
     except CharacterOwnership.DoesNotExist:
+        character_ownership = None
         messages_plus.error(
             request,
             format_html(
-                gettext_lazy(
+                _(
                     "You can only use your main or alt characters "
                     "to add corporations. "
                     "However, character %s is neither. "
@@ -682,63 +682,85 @@ def add_structure_owner(request, token):
                 % format_html("<strong>{}</strong>", token_char.character_name)
             ),
         )
-        success = False
-        owned_char = None
+        return redirect("structures:index")
 
-    if success:
-        try:
-            corporation = EveCorporationInfo.objects.get(
-                corporation_id=token_char.corporation_id
-            )
-        except EveCorporationInfo.DoesNotExist:
-            corporation = EveCorporationInfo.objects.create_corporation(
-                token_char.corporation_id
-            )
-
-        owner, _ = Owner.objects.update_or_create(
-            corporation=corporation, defaults={"character_ownership": owned_char}
+    try:
+        corporation = EveCorporationInfo.objects.get(
+            corporation_id=token_char.corporation_id
         )
+    except EveCorporationInfo.DoesNotExist:
+        corporation = EveCorporationInfo.objects.create_corporation(
+            token_char.corporation_id
+        )
+
+    owner, created = Owner.objects.update_or_create(corporation=corporation)
+    owner.add_character(character_ownership)
+    if created:
         default_webhooks = Webhook.objects.filter(is_default=True)
         if default_webhooks:
             for webhook in default_webhooks:
                 owner.webhooks.add(webhook)
             owner.save()
 
-        tasks.update_structures_for_owner.delay(
-            owner_pk=owner.pk, user_pk=request.user.pk
-        )
+    if owner.characters.count() == 1:
+        tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)
         messages_plus.info(
             request,
             format_html(
-                gettext_lazy(
+                _(
                     "%(corporation)s has been added with %(character)s "
-                    "as sync character. We have started fetching structures "
-                    "for this corporation. You will receive a report once "
+                    "as sync character. "
+                    "We have started fetching structures and notifications "
+                    "for this corporation and you will receive a report once "
                     "the process is finished."
                 )
                 % {
                     "corporation": format_html("<strong>{}</strong>", owner),
-                    "character": format_html(
-                        "<strong>{}</strong>",
-                        owner.character_ownership.character.character_name,
-                    ),
+                    "character": format_html("<strong>{}</strong>", token_char),
                 }
             ),
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
             with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
                 notify_admins(
-                    message=gettext_lazy(
+                    message=_(
                         "%(corporation)s was added as new "
                         "structure owner by %(user)s."
                     )
+                    % {"corporation": owner, "user": request.user.username},
+                    title=_("%s: Structure owner added: %s") % (__title__, owner),
+                )
+    else:
+        messages_plus.info(
+            request,
+            format_html(
+                _(
+                    "%(character)s has been added to %(corporation)s "
+                    "as sync character. "
+                    "You now have %(characters_count)d sync character(s) configured."
+                )
+                % {
+                    "corporation": format_html("<strong>{}</strong>", owner),
+                    "character": format_html("<strong>{}</strong>", token_char),
+                    "characters_count": owner.characters_count(),
+                }
+            ),
+        )
+        if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
+            with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                notify_admins(
+                    message=_(
+                        "%(character)s was added as sync character to "
+                        "%(corporation)s by %(user)s.\n"
+                        "We now have %(characters_count)d sync character(s) configured."
+                    )
                     % {
-                        "corporation": owner.corporation.corporation_name,
+                        "character": token_char,
+                        "corporation": owner,
                         "user": request.user.username,
+                        "characters_count": owner.characters_count(),
                     },
-                    title="{}: Structure owner added: {}".format(
-                        __title__, owner.corporation.corporation_name
-                    ),
+                    title=_("%s: Character added to: %s") % (__title__, owner),
                 )
     return redirect("structures:index")
 
@@ -755,9 +777,9 @@ def service_status(request):
         status_ok = status_ok and owner.are_all_syncs_ok
 
     if status_ok:
-        return HttpResponse(gettext_lazy("service is up"))
+        return HttpResponse(_("service is up"))
     else:
-        return HttpResponseServerError(gettext_lazy("service is down"))
+        return HttpResponseServerError(_("service is down"))
 
 
 def poco_list_data(request) -> JsonResponse:
@@ -836,12 +858,12 @@ def poco_list_data(request) -> JsonResponse:
             has_access_html = (
                 '<i class="fas fa-check text-success" title="Has access"></i>'
             )
-            has_access_str = gettext_lazy("yes")
+            has_access_str = _("yes")
         elif has_access is False:
             has_access_html = (
                 '<i class="fas fa-times text-danger" title="No access"></i>'
             )
-            has_access_str = gettext_lazy("no")
+            has_access_str = _("no")
         else:
             has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
             has_access_str = "?"

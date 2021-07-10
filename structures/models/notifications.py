@@ -364,7 +364,7 @@ class Notification(models.Model):
     )
 
     sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(db_index=True)
     notif_type = models.CharField(
         max_length=100,
         default="",

@@ -49,6 +49,7 @@ Structures adds the following main features to Alliance Auth:
 - Tax rates and access settings of Customs Offices
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
+- Ability to increase notification response time and sync resilence with multiple sync characters per structure owner
 - Automatically sends notifications to users and admin when token become invalid or sync from ESI fails
 - Interface for 3rd party monitoring of the services status
 - Chinese :cn:, English :us: and German :de: localization
@@ -217,6 +218,7 @@ In this section you find a detailed description of the following key features:
 - [Power Modes](#power-modes)
 - [Structure tags](#structure-tags)
 - [Timers](#timers)
+- [Multiple sync characters](#multiple-sync-characters)
 
 ### Localization
 
@@ -314,6 +316,31 @@ Timers can be created from the following notification types:
 - StructureLostArmor
 - StructureLostShields
 
+## Multiple sync characters
+
+It is possible to add multiple sync characters for a structure owner / corporation. This serves two purposes:
+
+- Improved reaction time for notifications
+- Improved resilence against character becoming invalid
+
+### Improved reaction time for notifications
+
+One of the most popular features of Structures is it's ability to automatically forward notications from the Eve server to Discord. However, there is a significant delay between the time a notification is create in game and it apearing on Discord, which on average is about 10 minutes.
+
+That delay is caused by the API of the Eve Server (ESI), which is caching all notification requests for 10 minutes.
+
+You can reduce the reaction time by adding multiple sync characters for every owner. Structures will automatically rotate through all configured sync characters when updating notifications. Please also remember to reduce the update time of the related periodic task (`structures_fetch_all_notifications`) accordingly. E.g. if you have 5 sync characters you want to run the periodic update task every 1-2 minutes.
+
+Every added sync character will reduce the delay up to a maximum of 10, which brings the average reaction time down to about 1 minute.
+
+### Improved resilence against character becoming invalid
+
+Another benefit of having multple sync characters is that it increases the resilence of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for tha towner until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but it notify admins about it) and use any of the remaining valid characters to complete the update.
+
+### Measuring notification delay
+
+Structures has the ability to measure the average notification delay of your system. You can find that information on the admin site / owners / [Your owner] / Sync status / Avg. turnaround time. This will show the current average delay in seconds between a notification being created in game and it being received by Structures for the last 5, 15 and 50 notifications.
+
 ## Settings
 
 Here is a list of available settings for this app. They can be configured by adding them to your AA settings file (`local.py`).
@@ -322,7 +349,6 @@ Note that all settings are optional and the app will use the documented default 
 
 Name | Description | Default
 -- | -- | --
-`APP_UTILS_NOTIFY_THROTTLED_TIMEOUT`| Timeout for throttled issue notifications to users and admins in seconds. | Please see [allianceauth-app-utils](https://allianceauth-app-utils.readthedocs.io/en/latest/settings.html#app_utils._app_settings.APP_UTILS_NOTIFY_THROTTLED_TIMEOUT) for details.
 `STRUCTURES_ADD_TIMERS`| Whether to automatically add timers for certain notifications on the timerboard (will have no effect if [aa-timerboard](https://allianceauth.readthedocs.io/en/latest/features/timerboard/) app is not installed). Will create timers from anchoring, lost shield and lost armor notifications  | `True`
 `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`| Whether admins will get notifications about import events like when someone adds a structure owner. Does not affect admin reporting for errors. | `True`
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | `False`
@@ -337,6 +363,7 @@ Name | Description | Default
 `STRUCTURES_NOTIFICATION_SHOW_MOON_ORE`| Wether ore details are shown on moon notifications | `True`
 `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | `15`
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | `5`
+`STRUCTURES_NOTIFY_THROTTLED_TIMEOUT`| Timeout for throttled issue notifications to users and admins in seconds. | `3600`
 `STRUCTURES_PAGING_ENABLED`| Wether paging is enabled for the structure list. | `True`
 `STRUCTURES_REPORT_NPC_ATTACKS`| Enable / disable sending notifications for attacks by NPCs (structure reinforcements are still reported) | `True`
 `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE`| Enable / disable whether fuel expire is shown as relative figure | `True`

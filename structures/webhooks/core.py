@@ -14,6 +14,7 @@ from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 from app_utils.logging import LoggerAddTag
 
 from .. import __title__
+from ..app_settings import STRUCTURES_NOTIFY_THROTTLED_TIMEOUT
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -167,7 +168,11 @@ class DiscordWebhookMixin:
         )
         logger.warning(message, exc_info=True)
         notify_admins_throttled(
-            message_id=message_id, title=title, message=message, level="warning"
+            message_id=message_id,
+            title=title,
+            message=message,
+            level="warning",
+            timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
         )
         return False
 

@@ -57,6 +57,11 @@ STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES = clean_setting(
     "STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 20
 )
 
+# Duration of period in minutes when notifications are synced
+STRUCTURES_NOTIFICATION_SYNC_PERIOD_MINUTES = clean_setting(
+    "STRUCTURES_NOTIFICATION_SYNC_PERIOD_MINUTES", 2
+)
+
 # Default wait time in seconds before retrying to send a notification
 # to Discord after an error occurred
 STRUCTURES_NOTIFICATION_WAIT_SEC = clean_setting("STRUCTURES_NOTIFICATION_WAIT_SEC", 5)
@@ -133,4 +138,9 @@ STRUCTURES_NOTIFICATION_TURNAROUND_LONG = clean_setting(
 # and will be ignored when calculating the averages
 STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID = clean_setting(
     "STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID", 3600
+)
+
+# Timeout for throttled issue notifications to users and admins in seconds.
+STRUCTURES_NOTIFY_THROTTLED_TIMEOUT = clean_setting(
+    "STRUCTURES_NOTIFY_THROTTLED_TIMEOUT", 3600
 )

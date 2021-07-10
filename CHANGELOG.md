@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.13.2] - tbd
+## [1.14.0] - 2021-07-10
+
+**Quicker notifications**
+
+### Added
+
+- Improved response time for new notifications when using multiple sync characters per owner (#53)
+- Improved resilence of structure and notification sync when using multiple characters per owner
+
+## Change
+
+- New setting STRUCTURES_NOTIFY_THROTTLED_TIMEOUT to configure how often issue related auth notifications are sent
+- Default for repearting issue related auth notifications to users and admins reduced to 1 hour
+
+## Fixed
+
+- Only one owner can be alliance_main
+
+## [1.13.2] - 2021-07-06
 
 ### Added
 
@@ -21,6 +39,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Error when loading main page without structures
 
 ## [1.13.0] - 2021-07-05
+
+**Improved monitoring and reporting of sync issues**
 
 ### Added
 

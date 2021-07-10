@@ -1,3 +1,4 @@
+import datetime as dt
 from copy import deepcopy
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -8,11 +9,8 @@ from django.utils.timezone import now, utc
 from esi.errors import TokenError
 from esi.models import Token
 
-from allianceauth.eveonline.models import (
-    EveAllianceInfo,
-    EveCharacter,
-    EveCorporationInfo,
-)
+from allianceauth.authentication.models import CharacterOwnership
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import (
     BravadoResponseStub,
     NoSocketsTestCase,
@@ -22,7 +20,6 @@ from app_utils.testing import (
 from ...models import (
     EveCategory,
     EveConstellation,
-    EveEntity,
     EveGroup,
     EveMoon,
     EvePlanet,
@@ -31,6 +28,7 @@ from ...models import (
     EveSovereigntyMap,
     EveType,
     Owner,
+    OwnerCharacter,
     PocoDetails,
     Structure,
     StructureService,
@@ -58,179 +56,158 @@ from ..testdata.load_eveuniverse import load_eveuniverse
 MODULE_PATH = "structures.models.owners"
 
 
+def create_owner(
+    corporation: EveCorporationInfo, character_ownership: CharacterOwnership
+):
+    owner = Owner.objects.create(corporation=corporation)
+    owner.add_character(character_ownership)
+    return owner
+
+
 class TestOwner(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        load_entities([EveAllianceInfo, EveCorporationInfo, EveCharacter])
-
-        for corporation in EveCorporationInfo.objects.all():
-            EveEntity.objects.get_or_create(
-                id=corporation.corporation_id,
-                defaults={
-                    "category": EveEntity.Category.CORPORATION,
-                    "name": corporation.corporation_name,
-                },
-            )
-            Owner.objects.create(corporation=corporation)
-            if int(corporation.corporation_id) in [2001, 2002]:
-                alliance = EveAllianceInfo.objects.get(alliance_id=3001)
-                corporation.alliance = alliance
-                corporation.save()
-
-        for character in EveCharacter.objects.all():
-            EveEntity.objects.get_or_create(
-                id=character.character_id,
-                defaults={
-                    "category": EveEntity.Category.CHARACTER,
-                    "name": character.character_name,
-                },
-            )
-            corporation = EveCorporationInfo.objects.get(
-                corporation_id=character.corporation_id
-            )
-            if corporation.alliance:
-                character.alliance_id = corporation.alliance.alliance_id
-                character.alliance_name = corporation.alliance.alliance_name
-                character.save()
-
-        set_owner_character(character_id=1001)
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.owner.is_alliance_main = True
+        cls.owner.save()
 
     def test_str(self):
-        obj = Owner.objects.get(corporation__corporation_id=2001)
-        self.assertEqual(str(obj), "Wayne Technologies")
+        # when
+        result = str(self.owner)
+        # then
+        self.assertEqual(result, "Wayne Technologies")
 
     def test_repr(self):
-        obj = Owner.objects.get(corporation__corporation_id=2001)
-        expected = "Owner(pk=%d, corporation='Wayne Technologies')" % obj.pk
-        self.assertEqual(repr(obj), expected)
+        # when
+        result = repr(self.owner)
+        # then
+        self.assertEqual(
+            result, f"Owner(pk={self.owner.pk}, corporation='Wayne Technologies')"
+        )
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     def test_is_structure_sync_ok(self):
-        x = Owner.objects.get(corporation__corporation_id=2001)
         # no errors and recent sync
-        x.structures_last_update_ok = True
-        x.structures_last_update_at = now()
-        self.assertTrue(x.is_structure_sync_ok)
+        self.owner.structures_last_update_ok = True
+        self.owner.structures_last_update_at = now()
+        self.assertTrue(self.owner.is_structure_sync_ok)
 
         # no errors and sync within grace period
-        x.structures_last_update_ok = True
-        x.structures_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_structure_sync_ok)
+        self.owner.structures_last_update_ok = True
+        self.owner.structures_last_update_at = now() - timedelta(minutes=29)
+        self.assertTrue(self.owner.is_structure_sync_ok)
 
         # recent sync error
-        x.structures_last_update_ok = None
-        x.structures_last_update_at = now()
-        self.assertFalse(x.is_structure_sync_ok)
+        self.owner.structures_last_update_ok = None
+        self.owner.structures_last_update_at = now()
+        self.assertFalse(self.owner.is_structure_sync_ok)
 
         # recent sync error
-        x.structures_last_update_ok = False
-        x.structures_last_update_at = now()
-        self.assertFalse(x.is_structure_sync_ok)
+        self.owner.structures_last_update_ok = False
+        self.owner.structures_last_update_at = now()
+        self.assertFalse(self.owner.is_structure_sync_ok)
 
         # no error, but no sync within grace period
-        x.structures_last_update_ok = True
-        x.structures_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_structure_sync_ok)
+        self.owner.structures_last_update_ok = True
+        self.owner.structures_last_update_at = now() - timedelta(minutes=31)
+        self.assertFalse(self.owner.is_structure_sync_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_is_notification_sync_ok(self):
-        x = Owner.objects.get(corporation__corporation_id=2001)
         # no errors and recent sync
-        x.notifications_last_update_ok = True
-        x.notifications_last_update_at = now()
-        self.assertTrue(x.is_notification_sync_ok)
+        self.owner.notifications_last_update_ok = True
+        self.owner.notifications_last_update_at = now()
+        self.assertTrue(self.owner.is_notification_sync_ok)
 
         # no errors and sync within grace period
-        x.notifications_last_update_ok = True
-        x.notifications_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_notification_sync_ok)
+        self.owner.notifications_last_update_ok = True
+        self.owner.notifications_last_update_at = now() - timedelta(minutes=29)
+        self.assertTrue(self.owner.is_notification_sync_ok)
 
         # recent sync error
-        x.notifications_last_update_ok = None
-        x.notifications_last_update_at = now()
-        self.assertFalse(x.is_notification_sync_ok)
+        self.owner.notifications_last_update_ok = None
+        self.owner.notifications_last_update_at = now()
+        self.assertFalse(self.owner.is_notification_sync_ok)
 
         # recent sync error
-        x.notifications_last_update_ok = False
-        x.notifications_last_update_at = now()
-        self.assertFalse(x.is_notification_sync_ok)
+        self.owner.notifications_last_update_ok = False
+        self.owner.notifications_last_update_at = now()
+        self.assertFalse(self.owner.is_notification_sync_ok)
 
         # no error, but no sync within grace period
-        x.notifications_last_update_ok = True
-        x.notifications_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_notification_sync_ok)
+        self.owner.notifications_last_update_ok = True
+        self.owner.notifications_last_update_at = now() - timedelta(minutes=31)
+        self.assertFalse(self.owner.is_notification_sync_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_is_forwarding_sync_ok(self):
-        x = Owner.objects.get(corporation__corporation_id=2001)
         # no errors and recent sync
-        x.forwarding_last_update_ok = True
-        x.forwarding_last_update_at = now()
-        self.assertTrue(x.is_forwarding_sync_ok)
+        self.owner.forwarding_last_update_ok = True
+        self.owner.forwarding_last_update_at = now()
+        self.assertTrue(self.owner.is_forwarding_sync_ok)
 
         # no errors and sync within grace period
-        x.forwarding_last_update_ok = True
-        x.forwarding_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_forwarding_sync_ok)
+        self.owner.forwarding_last_update_ok = True
+        self.owner.forwarding_last_update_at = now() - timedelta(minutes=29)
+        self.assertTrue(self.owner.is_forwarding_sync_ok)
 
         # recent sync error
-        x.forwarding_last_update_ok = None
-        x.forwarding_last_update_at = now()
-        self.assertFalse(x.is_forwarding_sync_ok)
+        self.owner.forwarding_last_update_ok = None
+        self.owner.forwarding_last_update_at = now()
+        self.assertFalse(self.owner.is_forwarding_sync_ok)
 
         # recent sync error
-        x.forwarding_last_update_ok = False
-        x.forwarding_last_update_at = now()
-        self.assertFalse(x.is_forwarding_sync_ok)
+        self.owner.forwarding_last_update_ok = False
+        self.owner.forwarding_last_update_at = now()
+        self.assertFalse(self.owner.is_forwarding_sync_ok)
 
         # no error, but no sync within grace period
-        x.forwarding_last_update_ok = True
-        x.forwarding_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_forwarding_sync_ok)
+        self.owner.forwarding_last_update_ok = True
+        self.owner.forwarding_last_update_at = now() - timedelta(minutes=31)
+        self.assertFalse(self.owner.is_forwarding_sync_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
-    def test_is_asset_sync_ok(self):
-        x = Owner.objects.get(corporation__corporation_id=2001)
+    def test_is_assets_sync_ok(self):
         # no errors and recent sync
-        x.assets_last_update_ok = True
-        x.assets_last_update_at = now()
-        self.assertTrue(x.is_assets_sync_ok)
+        self.owner.assets_last_update_ok = True
+        self.owner.assets_last_update_at = now()
+        self.assertTrue(self.owner.is_assets_sync_ok)
 
         # no errors and sync within grace period
-        x.assets_last_update_ok = True
-        x.assets_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(x.is_assets_sync_ok)
+        self.owner.assets_last_update_ok = True
+        self.owner.assets_last_update_at = now() - timedelta(minutes=29)
+        self.assertTrue(self.owner.is_assets_sync_ok)
 
         # recent sync error
-        x.assets_last_update_ok = None
-        x.assets_last_update_at = now()
-        self.assertFalse(x.is_assets_sync_ok)
+        self.owner.assets_last_update_ok = None
+        self.owner.assets_last_update_at = now()
+        self.assertFalse(self.owner.is_assets_sync_ok)
 
         # recent sync error
-        x.assets_last_update_ok = False
-        x.assets_last_update_at = now()
-        self.assertFalse(x.is_assets_sync_ok)
+        self.owner.assets_last_update_ok = False
+        self.owner.assets_last_update_at = now()
+        self.assertFalse(self.owner.is_assets_sync_ok)
 
         # no error, but no sync within grace period
-        x.assets_last_update_ok = True
-        x.assets_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(x.is_assets_sync_ok)
+        self.owner.assets_last_update_ok = True
+        self.owner.assets_last_update_at = now() - timedelta(minutes=31)
+        self.assertFalse(self.owner.is_assets_sync_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_is_all_syncs_ok(self):
-        x = Owner.objects.get(corporation__corporation_id=2001)
-        x.structures_last_update_ok = True
-        x.structures_last_update_at = now()
-        x.notifications_last_update_ok = True
-        x.notifications_last_update_at = now()
-        x.forwarding_last_update_ok = True
-        x.forwarding_last_update_at = now()
-        x.assets_last_update_ok = True
-        x.assets_last_update_at = now()
-        self.assertTrue(x.are_all_syncs_ok)
+        self.owner.structures_last_update_ok = True
+        self.owner.structures_last_update_at = now()
+        self.owner.notifications_last_update_ok = True
+        self.owner.notifications_last_update_at = now()
+        self.owner.forwarding_last_update_ok = True
+        self.owner.forwarding_last_update_at = now()
+        self.owner.assets_last_update_ok = True
+        self.owner.assets_last_update_at = now()
+        self.assertTrue(self.owner.are_all_syncs_ok)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
@@ -288,6 +265,111 @@ class TestOwner(NoSocketsTestCase):
             },
         )
 
+    def test_should_add_new_character(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2002)
+        _, character_ownership = create_user_from_evecharacter(
+            1003,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        result = owner.add_character(character_ownership)
+        # then
+        self.assertIsInstance(result, OwnerCharacter)
+        self.assertEqual(result.owner, owner)
+        self.assertEqual(result.character_ownership, character_ownership)
+        self.assertIsNone(result.last_used_at)
+
+    def test_should_not_overwrite_existing_characters(self):
+        # given
+        character = self.owner.characters.first()
+        my_dt = datetime(year=2021, month=2, day=11, hour=12, tzinfo=utc)
+        character.last_used_at = my_dt
+        character.save()
+        # when
+        result = self.owner.add_character(character.character_ownership)
+        # then
+        self.assertIsInstance(result, OwnerCharacter)
+        self.assertEqual(result.owner, self.owner)
+        self.assertEqual(result.character_ownership, character.character_ownership)
+        self.assertEqual(result.last_used_at, my_dt)
+
+    def test_should_prevent_adding_character_from_other_corporation(self):
+        # given
+        _, character_ownership = create_user_from_evecharacter(
+            1003,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        with self.assertRaises(ValueError):
+            self.owner.add_character(character_ownership)
+
+    def test_should_add_character_to_existing_set(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1011)
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        owner.add_character(character_ownership_1102)
+        # then
+        owner_character_pks = set(
+            owner.characters.values_list("character_ownership__pk", flat=True)
+        )
+        expected_pks = {character_ownership_1011.pk, character_ownership_1102.pk}
+        self.assertSetEqual(owner_character_pks, expected_pks)
+
+    def test_should_count_characters(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1011)
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1102)
+        # when
+        result = owner.characters_count()
+        # then
+        self.assertEqual(result, 2)
+
+    def test_should_count_characters_when_empty(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        # when
+        result = owner.characters_count()
+        # then
+        self.assertEqual(result, 0)
+
+    def test_should_ensur_only_one_owner_is_alliance_main(self):
+        # given
+        self.assertTrue(self.owner.is_alliance_main)
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        # when
+        owner.is_alliance_main = True
+        owner.save()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_alliance_main)
+        self.owner.refresh_from_db()
+        self.assertFalse(self.owner.is_alliance_main)
+
 
 @patch(MODULE_PATH + ".notify_throttled")
 @patch(MODULE_PATH + ".notify_admins_throttled")
@@ -309,9 +391,8 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             permissions=["structures.add_structure_owner"],
             scopes=Owner.get_esi_scopes(),
         )
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=character_ownership
-        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.add_character(character_ownership)
         # when
         token = owner.fetch_token()
         # then
@@ -324,6 +405,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         )
         self.assertFalse(mock_notify_admins_throttled.called)
         self.assertFalse(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 1)
 
     def test_raise_error_when_no_sync_char_defined(
         self, mock_notify_admins_throttled, mock_notify_throttled
@@ -336,25 +418,23 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertFalse(mock_notify_throttled.called)
 
-    def test_raise_error_when_user_has_no_permission(
+    def test_raise_error_when_user_has_no_permission_and_delete_character(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
-        user, character_ownership = create_user_from_evecharacter(
+        _, character_ownership = create_user_from_evecharacter(
             1001, scopes=Owner.get_esi_scopes()
         )
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=character_ownership
-        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.add_character(character_ownership)
         # when/then
         with self.assertRaises(TokenError):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
-        self.assertTrue(mock_notify_throttled.called)
-        _, kwargs = mock_notify_throttled.call_args
-        self.assertEqual(kwargs["user"], user)
+        self.assertFalse(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 0)
 
-    def test_raise_error_when_token_not_found(
+    def test_raise_error_when_token_not_found_and_delete_character(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -365,15 +445,135 @@ class TestOwnerFetchToken(NoSocketsTestCase):
                 permissions=["structures.add_structure_owner"],
                 scopes=Owner.get_esi_scopes(),
             )
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=character_ownership
-        )
-        user.token_set.all().delete()
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.add_character(character_ownership)
+        user.token_set.first().scopes.clear()
         # when/then
         with self.assertRaises(TokenError):
             owner.fetch_token()
         self.assertTrue(mock_notify_admins_throttled.called)
         self.assertTrue(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 0)
+
+    def test_raise_error_when_character_no_longer_a_corporation_member_and_delete_it(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        _, character_ownership = create_user_from_evecharacter(
+            1011,
+            scopes=Owner.get_esi_scopes(),
+            permissions=["structures.add_structure_owner"],
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        owner.characters.create(character_ownership=character_ownership)
+        # when/then
+        with self.assertRaises(TokenError):
+            owner.fetch_token()
+        self.assertTrue(mock_notify_admins_throttled.called)
+        self.assertTrue(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 0)
+
+    def test_should_delete_invalid_characters_and_return_token_from_valid_char(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        user, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102, scopes=Owner.get_esi_scopes()
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=utc)
+        my_character.save()
+        # when
+        token = owner.fetch_token()
+        # then
+        self.assertIsInstance(token, Token)
+        self.assertEqual(token.user, user)
+        self.assertTrue(mock_notify_admins_throttled.called)
+        self.assertFalse(mock_notify_throttled.called)
+        self.assertEqual(owner.characters.count(), 1)
+
+    def test_should_rotate_through_characters(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 5, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.save()
+        tokens_reveiced = list()
+        # when
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        tokens_reveiced.append(
+            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        )
+        # then
+        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1011])
+
+    def test_should_rotate_through_characters_based_on_schedule(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 1, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.save()
+        tokens_reveiced = list()
+        # when
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        # then
+        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1102])
 
 
 @patch(MODULE_PATH + ".notify_admins_throttled")
@@ -422,9 +622,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -550,9 +748,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     def test_can_sync_pocos(self, mock_esi_client, mock_notify_admins_throttled):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
 
@@ -614,10 +810,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     def test_can_sync_starbases(self, mock_esi_client, mock_notify_admins_throttled):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
-
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
 
@@ -694,9 +887,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
 
         # when
         owner.update_structures_esi(user=self.user)
@@ -739,9 +930,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_corporation = EveCorporationInfo.objects.get(corporation_id=2005)
-        owner = Owner.objects.create(
-            corporation=my_corporation, character_ownership=my_main_ownership
-        )
+        owner = create_owner(my_corporation, my_main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -777,9 +966,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
             esi_get_universe_structures_structure_id
         )
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -824,9 +1011,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
             esi_get_universe_structures_structure_id
         )
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -871,9 +1056,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
             esi_get_universe_structures_structure_id
         )
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -902,9 +1085,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         data = deepcopy(esi_data["Universe"]["get_universe_structures_structure_id"])
         del data["1000000000002"]
         esi_get_universe_structures_structure_id.override_data = data
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -921,9 +1102,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
 
         # run update task with all structures
         owner.update_structures_esi()
@@ -950,9 +1129,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self, mock_esi_client, mock_notify_admins_throttled
     ):
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
 
         # run update task with all structures
         owner.update_structures_esi()
@@ -989,8 +1166,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
-        owner.character_ownership = self.main_ownership
-        owner.save()
+        owner.add_character(self.main_ownership)
         self.assertGreater(owner.structures.count(), 0)
         # when
         owner.update_structures_esi()
@@ -1016,8 +1192,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
-        owner.character_ownership = self.main_ownership
-        owner.save()
+        owner.add_character(self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -1042,9 +1217,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
 
         # run update task with all structures
         owner.update_structures_esi()
@@ -1075,9 +1248,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         EvePlanet.objects.all().delete()
         # when
         owner.update_structures_esi()
@@ -1093,9 +1264,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -1111,9 +1280,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
@@ -1129,9 +1296,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # given
         esi_post_corporations_corporation_id_assets_names.override_data = {"2001": []}
         mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.create(
-            corporation=self.corporation, character_ownership=self.main_ownership
-        )
+        owner = create_owner(self.corporation, self.main_ownership)
         EvePlanet.objects.all().delete()
         # when
         owner.update_structures_esi()

@@ -15,6 +15,7 @@ from . import __title__, app_settings, tasks
 from .models import (
     Notification,
     Owner,
+    OwnerCharacter,
     Structure,
     StructureService,
     StructureTag,
@@ -230,12 +231,22 @@ class OwnerSyncStatusFilter(admin.SimpleListFilter):
             return queryset
 
 
+class OwnerCharacterAdminInline(admin.TabularInline):
+    model = OwnerCharacter
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
     list_display = (
         "_corporation",
         "_alliance",
-        "character_ownership",
+        "_characters",
         "_is_active",
         "_webhooks",
         "_has_default_pings_enabled",
@@ -258,17 +269,17 @@ class OwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return (
-            qs.select_related(
-                "corporation",
-                "corporation__alliance",
-                "character_ownership",
-                "character_ownership__user",
-                "character_ownership__character",
-            )
+            qs.select_related("corporation", "corporation__alliance")
             .prefetch_related("ping_groups", "webhooks")
             .annotate(notifications_count=Count("notifications", distinct=True))
             .annotate(structures_count=Count("structures", distinct=True))
+            .annotate_characters_count()
         )
+
+    def _characters(self, obj) -> int:
+        return obj.x_characters_count
+
+    _characters.admin_order_field = "x_characters_count"
 
     def _has_default_pings_enabled(self, obj):
         return obj.has_default_pings_enabled
@@ -334,6 +345,7 @@ class OwnerAdmin(admin.ModelAdmin):
     _structures_count.short_description = "structures"
 
     actions = (
+        "update_all",
         "update_structures",
         "fetch_notifications",
         "deactivate_owners",
@@ -352,12 +364,24 @@ class OwnerAdmin(admin.ModelAdmin):
 
     deactivate_owners.short_description = "Deactivate selected owners"
 
+    def update_all(self, request, queryset):
+        for obj in queryset:
+            tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            text = (
+                f"Started updating structures and notifications for {obj}. "
+                "You will receive a notification once it is completed."
+            )
+            self.message_user(request, text)
+
+    update_all.short_description = "Update all from EVE server"
+
     def update_structures(self, request, queryset):
         for obj in queryset:
             tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = "Started updating structures for: {}. ".format(obj)
-            text += "You will receive a notification once it is completed."
-
+            text = (
+                f"Started updating structures for {obj}. "
+                "You will receive a notification once it is completed."
+            )
             self.message_user(request, text)
 
     update_structures.short_description = "Update structures from EVE server"
@@ -365,9 +389,10 @@ class OwnerAdmin(admin.ModelAdmin):
     def fetch_notifications(self, request, queryset):
         for obj in queryset:
             tasks.process_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = "Started fetching notifications for: {}. ".format(obj)
-            text += "You will receive a notification once it is completed."
-
+            text = (
+                f"Started fetching notifications for {obj}. "
+                "You will receive a notification once it is completed."
+            )
             self.message_user(request, text)
 
     fetch_notifications.short_description = "Fetch notifications from EVE server"
@@ -381,7 +406,6 @@ class OwnerAdmin(admin.ModelAdmin):
                 "assets_last_update_at",
                 "assets_last_update_ok",
                 "corporation",
-                "character_ownership",
                 "forwarding_last_update_at",
                 "forwarding_last_update_ok",
                 "notifications_last_update_at",
@@ -397,6 +421,7 @@ class OwnerAdmin(admin.ModelAdmin):
             )
         return self.readonly_fields
 
+    inlines = (OwnerCharacterAdminInline,)
     filter_horizontal = ("ping_groups",)
     fieldsets = (
         (
@@ -404,7 +429,6 @@ class OwnerAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "corporation",
-                    "character_ownership",
                     "webhooks",
                     "is_alliance_main",
                     "are_pocos_public",

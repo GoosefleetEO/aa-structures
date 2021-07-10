@@ -56,6 +56,15 @@ def update_structures():
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_all_for_owner(owner_pk, user_pk=None):
+    """Update structures and notifications for owner from ESI."""
+    chain(
+        update_structures_for_owner.si(owner_pk, user_pk),
+        process_notifications_for_owner.si(owner_pk, user_pk),
+    ).delay()
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_structures_for_owner(owner_pk, user_pk=None):
     """Fetch all structures for owner and update related corp assets from ESI."""
     if not fetch_esi_status().is_ok:

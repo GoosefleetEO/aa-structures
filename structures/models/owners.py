@@ -1,10 +1,10 @@
 """Owner related models"""
-
 import json
 import math
 import os
 import re
 from datetime import datetime, timedelta
+from typing import Optional
 
 from django.contrib.auth.models import Group, User
 from django.core.serializers.json import DjangoJSONEncoder
@@ -33,10 +33,11 @@ from ..app_settings import (
     STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
+    STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
-from ..managers import OwnerAssetManager
+from ..managers import OwnerAssetManager, OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
 from .notifications import EveEntity, Notification, NotificationType
 from .structures import PocoDetails, Structure
@@ -67,6 +68,8 @@ class General(models.Model):
 class Owner(models.Model):
     """A corporation that owns structures"""
 
+    ESI_CHARACTER_NOTIFICATION_CACHE_DURATION = 600
+
     # PK
     corporation = models.OneToOneField(
         EveCorporationInfo,
@@ -93,7 +96,7 @@ class Owner(models.Model):
         null=True,
         blank=True,
         related_name="+",
-        help_text="character used for syncing structures",
+        help_text="OUTDATED. Has been replaced by OwnerCharacter",
     )
     forwarding_last_update_at = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
@@ -151,6 +154,8 @@ class Owner(models.Model):
         help_text="notifications are sent to these webhooks. ",
     )
 
+    objects = OwnerManager()
+
     def __str__(self) -> str:
         return str(self.corporation.corporation_name)
 
@@ -158,6 +163,11 @@ class Owner(models.Model):
         return "{}(pk={}, corporation='{}')".format(
             self.__class__.__name__, self.pk, self.corporation
         )
+
+    def save(self, *args, **kwargs) -> None:
+        if self.is_alliance_main:
+            Owner.objects.update(is_alliance_main=False)
+        super().save(*args, **kwargs)
 
     @property
     def is_structure_sync_ok(self) -> bool:
@@ -224,48 +234,136 @@ class Owner(models.Model):
             and self.is_assets_sync_ok
         )
 
-    def fetch_token(self) -> Token:
+    def add_character(
+        self, character_ownership: CharacterOwnership
+    ) -> "OwnerCharacter":
+        """Add character to this owner.
+
+        Raises ValueError when character does not belong to owner's corporation.
+        """
+        if (
+            character_ownership.character.corporation_id
+            != self.corporation.corporation_id
+        ):
+            raise ValueError(
+                f"Character {character_ownership.character} does not belong "
+                "to owner corporation."
+            )
+        obj, _ = self.characters.get_or_create(character_ownership=character_ownership)
+        return obj
+
+    def characters_count(self) -> int:
+        """Count of valid owner characters."""
+        return self.characters.count()
+
+    def fetch_token(
+        self, rotate_characters: bool = False, ignore_schedule: bool = False
+    ) -> Token:
         """Fetch a valid token for the owner and return it.
 
-        Raises TokenError when no valid token can be found.
-        """
-        error = None
-        if self.character_ownership is None:
-            error = f"{self}: No character configured to sync."
-        elif not self.character_ownership.user.has_perm(
-            "structures.add_structure_owner"
-        ):
-            error = f"{self}: Character does not have sufficient permission to sync."
-        else:
-            token = (
-                Token.objects.filter(
-                    user=self.character_ownership.user,
-                    character_id=self.character_ownership.character.character_id,
-                )
-                .require_scopes(self.get_esi_scopes())
-                .require_valid()
-                .first()
-            )
-            if not token:
-                error = f"{self}: No valid token found."
+        Args:
+            rotate_characters: rotate through characters with every new call
+            ignore_schedule: Ignore current schedule when rotating
 
-        if error:
+        Raises TokenError when no valid token can be provided.
+        """
+
+        def notify_error(
+            error: str, character: CharacterOwnership = None, level="warning"
+        ) -> None:
+            """Notify admin and users about an error with the owner characters."""
             message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
             title = f"{__title__}: Failed to fetch token for {self}"
-            if self.character_ownership:
+            error = f"{error} Please add a new character to restore service level."
+            if character and character.character_ownership:
                 notify_throttled(
                     message_id=message_id,
-                    user=self.character_ownership.user,
+                    user=character.character_ownership.user,
                     title=title,
                     message=error,
-                    level="danger",
+                    level=level,
                 )
+                title = f"FYI: {title}"
             notify_admins_throttled(
-                message_id=message_id, title=title, message=error, level="danger"
+                message_id=message_id,
+                title=title,
+                message=error,
+                level=level,
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
-            raise TokenError(error)
 
+        token = None
+        for character in self.characters.order_by("last_used_at"):
+            if (
+                character.character_ownership.character.corporation_id
+                != self.corporation.corporation_id
+            ):
+                notify_error(
+                    f"{character.character_ownership}: Character does no longer belong to the owner's corporation and has been removed. ",
+                    character,
+                )
+                character.delete()
+                continue
+            elif not character.character_ownership.user.has_perm(
+                "structures.add_structure_owner"
+            ):
+                notify_error(
+                    f"{character.character_ownership}: "
+                    "Character does not have sufficient permission to sync "
+                    "and has been removed."
+                )
+                character.delete()
+                continue
+            token = character.valid_token()
+            if not token:
+                notify_error(
+                    f"{character.character_ownership}: Character has no valid token "
+                    "for sync and has been removed. ",
+                    character,
+                )
+                character.delete()
+                continue
+            break  # leave the for loop if we have found a valid token
+
+        if not token:
+            error = (
+                f"{self}: No valid character found for sync. "
+                "Service down for this owner."
+            )
+            notify_error(error, level="danger")
+            raise TokenError(error)
+        if rotate_characters:
+            self._rotate_character(character, ignore_schedule)
         return token
+
+    def _rotate_character(
+        self, character: "OwnerCharacter", ignore_schedule: bool
+    ) -> None:
+        """Rotate this character such that all are spread evently
+        accross the ESI cache duration for fetching notifications.
+        """
+        time_since_last_used = (
+            (now() - character.last_used_at).total_seconds()
+            if character.last_used_at
+            else None
+        )
+        try:
+            minimum_time_between_rotations = max(
+                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
+                / self.characters.count(),
+                60,
+            )
+        except ZeroDivisionError:
+            minimum_time_between_rotations = (
+                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
+            )
+        if (
+            ignore_schedule
+            or not time_since_last_used
+            or time_since_last_used >= minimum_time_between_rotations
+        ):
+            character.last_used_at = now()
+            character.save()
 
     def update_structures_esi(self, user: User = None):
         """Updates all structures from ESI."""
@@ -331,7 +429,11 @@ class Owner(models.Model):
             )
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             return False
 
@@ -380,6 +482,7 @@ class Owner(models.Model):
                         title=title,
                         message=message,
                         level="warning",
+                        timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
                     )
                     structure["name"] = "(no data)"
                     is_ok = False
@@ -589,7 +692,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to update custom offices from ESI due to: {ex}"
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             return False
 
@@ -714,7 +821,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to fetch starbases from ESI due to {ex}"
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             return False
 
@@ -794,7 +905,7 @@ class Owner(models.Model):
         self.notifications_last_update_ok = None
         self.notifications_last_update_at = now()
         self.save()
-        token = self.fetch_token()
+        token = self.fetch_token(rotate_characters=True)
 
         try:
             notifications = self._fetch_notifications_from_esi(token)
@@ -806,7 +917,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to update notifications from ESI due to {ex}"
             logger.exception(message)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="danger"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="danger",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             self.notifications_last_update_ok = False
             self.save()
@@ -841,7 +956,7 @@ class Owner(models.Model):
 
         notifications = esi_fetch(
             "Character.get_characters_character_id_notifications",
-            args={"character_id": self.character_ownership.character.character_id},
+            args={"character_id": token.character_id},
             token=token,
         )
         if STRUCTURES_DEVELOPER_MODE:
@@ -1096,7 +1211,11 @@ class Owner(models.Model):
             message = f"{self}: Failed to update assets from ESI due to {ex}"
             logger.warning(message, exc_info=True)
             notify_admins_throttled(
-                message_id=message_id, title=title, message=message, level="warning"
+                message_id=message_id,
+                title=title,
+                message=message,
+                level="warning",
+                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
             )
             raise ex
         else:
@@ -1121,6 +1240,53 @@ class Owner(models.Model):
         if STRUCTURES_FEATURE_STARBASES:
             scopes += ["esi-corporations.read_starbases.v1"]
         return scopes
+
+
+class OwnerCharacter(models.Model):
+    """Character for syncing owner data with ESI."""
+
+    owner = models.ForeignKey(
+        "Owner", on_delete=models.CASCADE, related_name="characters"
+    )
+    character_ownership = models.ForeignKey(
+        CharacterOwnership,
+        on_delete=models.CASCADE,
+        related_name="+",
+        help_text="character used for syncing",
+    )
+    last_used_at = models.DateTimeField(
+        null=True,
+        default=None,
+        editable=False,
+        db_index=True,
+        help_text="when this character was last used for sync",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "character_ownership"], name="functional_pk_ownertoken"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f"{self.owner.corporation.corporation_name}-"
+            f"{self.character_ownership.character.character_name}"
+        )
+
+    def valid_token(self) -> Optional[Token]:
+        """Provide a valid token or None if none can be found."""
+        return (
+            Token.objects.filter(
+                user=self.character_ownership.user,
+                character_id=self.character_ownership.character.character_id,
+            )
+            .require_scopes(Owner.get_esi_scopes())
+            .require_valid()
+            .first()
+        )
 
 
 class OwnerAsset(models.Model):
