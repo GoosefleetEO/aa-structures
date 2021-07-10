@@ -357,6 +357,19 @@ class TestOwner(NoSocketsTestCase):
         # then
         self.assertEqual(result, 0)
 
+    def test_should_ensur_only_one_owner_is_alliance_main(self):
+        # given
+        self.assertTrue(self.owner.is_alliance_main)
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        # when
+        owner.is_alliance_main = True
+        owner.save()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_alliance_main)
+        self.owner.refresh_from_db()
+        self.assertFalse(self.owner.is_alliance_main)
+
 
 @patch(MODULE_PATH + ".notify_throttled")
 @patch(MODULE_PATH + ".notify_admins_throttled")

@@ -164,6 +164,11 @@ class Owner(models.Model):
             self.__class__.__name__, self.pk, self.corporation
         )
 
+    def save(self, *args, **kwargs) -> None:
+        if self.is_alliance_main:
+            Owner.objects.update(is_alliance_main=False)
+        super().save(*args, **kwargs)
+
     @property
     def is_structure_sync_ok(self) -> bool:
         """True if last sync was ok and happend recently, else False."""
