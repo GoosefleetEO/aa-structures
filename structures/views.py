@@ -683,7 +683,6 @@ def add_structure_owner(request, token):
             ),
         )
         return redirect("structures:index")
-
     try:
         corporation = EveCorporationInfo.objects.get(
             corporation_id=token_char.corporation_id
@@ -692,8 +691,9 @@ def add_structure_owner(request, token):
         corporation = EveCorporationInfo.objects.create_corporation(
             token_char.corporation_id
         )
-
-    owner, created = Owner.objects.update_or_create(corporation=corporation)
+    owner, created = Owner.objects.update_or_create(
+        corporation=corporation, defaults={"is_active": True}
+    )
     owner.add_character(character_ownership)
     if created:
         default_webhooks = Webhook.objects.filter(is_default=True)

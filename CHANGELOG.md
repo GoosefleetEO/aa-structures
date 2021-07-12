@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## Change
+
+- Inactive owners will be re-activated when a sync character is added
+
 ## [1.14.1] - 2021-07-10
 
 ## Fixed

@@ -522,12 +522,13 @@ class TestAddStructureOwner(TestCase):
     @patch(MODULE_PATH + ".tasks.update_all_for_owner")
     @patch(MODULE_PATH + ".notify_admins")
     @patch(MODULE_PATH + ".messages_plus")
-    def test_should_add_character_to_existing_structure_owner(
+    def test_should_add_character_to_existing_structure_owner_and_reactive(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
         # given
         owner = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102),
+            is_active=False,
         )
         _, character_ownership_1011 = create_user_from_evecharacter(
             1011,
@@ -552,6 +553,7 @@ class TestAddStructureOwner(TestCase):
             {character_ownership_1011.pk, character_ownership_1102.pk},
             set(owner.characters.values_list("character_ownership", flat=True)),
         )
+        self.assertTrue(owner.is_active)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
     @patch(MODULE_PATH + ".tasks.update_all_for_owner")
