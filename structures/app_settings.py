@@ -142,5 +142,5 @@ STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID = clean_setting(
 
 # Timeout for throttled issue notifications to users and admins in seconds.
 STRUCTURES_NOTIFY_THROTTLED_TIMEOUT = clean_setting(
-    "STRUCTURES_NOTIFY_THROTTLED_TIMEOUT", 3600
+    "STRUCTURES_NOTIFY_THROTTLED_TIMEOUT", 86400
 )

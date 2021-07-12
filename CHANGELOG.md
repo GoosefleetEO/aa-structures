@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] - yyyy-mm-dd
+## [1.14.2] - 2021-07-12
 
 ## Change
 
-- Inactive owners will be re-activated when a sync character is added
+- Default for repeating issue notifications changed to 1 day
+- Inactive owners will be re-activated once a new sync character is added
 
 ## [1.14.1] - 2021-07-10
 

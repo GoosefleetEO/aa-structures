@@ -363,7 +363,7 @@ Name | Description | Default
 `STRUCTURES_NOTIFICATION_SHOW_MOON_ORE`| Wether ore details are shown on moon notifications | `True`
 `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | `15`
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | `5`
-`STRUCTURES_NOTIFY_THROTTLED_TIMEOUT`| Timeout for throttled issue notifications to users and admins in seconds. | `3600`
+`STRUCTURES_NOTIFY_THROTTLED_TIMEOUT`| Issue notifications to users and admins will be repeated after this timeout in seconds, e.g. once per day. if they are still not fixed. | `86400`
 `STRUCTURES_PAGING_ENABLED`| Wether paging is enabled for the structure list. | `True`
 `STRUCTURES_REPORT_NPC_ATTACKS`| Enable / disable sending notifications for attacks by NPCs (structure reinforcements are still reported) | `True`
 `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE`| Enable / disable whether fuel expire is shown as relative figure | `True`

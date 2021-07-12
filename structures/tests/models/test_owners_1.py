@@ -1304,3 +1304,20 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure = Structure.objects.get(id=1200000000003)
         self.assertEqual(structure.name, "")
         esi_post_corporations_corporation_id_assets_names.override_data = None
+
+    # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    # def test_should_notify_admins_when_service_is_restored(
+    #     self, mock_esi_client, mock_notify_admins_throttled
+    # ):
+    #     # given
+    #     mock_esi_client.side_effect = esi_mock_client
+    #     owner = create_owner(self.corporation, self.main_ownership)
+    #     owner.structures_last_update_ok = False
+    #     owner.save()
+    #     # when
+    #     owner.update_structures_esi()
+    #     # then
+    #     owner.refresh_from_db()
+    #     self.assertTrue(owner.structures_last_update_ok)
+    #     self.assertTrue(mock_notify_admins_throttled.called)
