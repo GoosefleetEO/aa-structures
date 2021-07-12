@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Improved response time for new notifications when using multiple sync characters per owner (#53)
 - Improved resilence of structure and notification sync when using multiple characters per owner
 
+> Hint:<br>For more details on how to setup multiple sync characters please check out: [Multiple Sync Characters](https://gitlab.com/ErikKalkoken/aa-structures#multiple-sync-characters)
+
 ## Change
 
 - New setting STRUCTURES_NOTIFY_THROTTLED_TIMEOUT to configure how often issue related auth notifications are sent
