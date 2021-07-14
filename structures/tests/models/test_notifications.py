@@ -462,6 +462,10 @@ if "timerboard" in app_labels():
 
     from allianceauth.timerboard.models import Timer as AuthTimer
 
+    @patch(
+        "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+        Mock(),
+    )
     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
     class TestNotificationAddToTimerboard(NoSocketsTestCase):
         @classmethod
@@ -549,10 +553,14 @@ if "timerboard" in app_labels():
 
         @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False)
         def test_corp_restriction_1(self):
-            x = Notification.objects.get(notification_id=1000000504)
-            self.assertTrue(x.process_for_timerboard())
-            t = AuthTimer.objects.first()
-            self.assertFalse(t.corp_timer)
+            # given
+            notif = Notification.objects.get(notification_id=1000000504)
+            # when
+            result = notif.process_for_timerboard()
+            # then
+            self.assertTrue(result)
+            timer = AuthTimer.objects.first()
+            self.assertFalse(timer.corp_timer)
 
         @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", True)
         def test_corp_restriction_2(self):
@@ -569,6 +577,10 @@ if "structuretimers" in app_labels():
     from eveuniverse.models import EveSolarSystem as EveSolarSystem2
     from eveuniverse.models import EveType as EveType2
 
+    @patch(
+        "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+        Mock(),
+    )
     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
     class TestNotificationAddToTimerboard2(NoSocketsTestCase):
