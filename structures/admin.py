@@ -13,7 +13,7 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (
-    FuelAlertConfig,
+    FuelNotificationConfig,
     Notification,
     Owner,
     OwnerCharacter,
@@ -26,29 +26,40 @@ from .models import (
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
-@admin.register(FuelAlertConfig)
-class FuelAlertConfigAdmin(admin.ModelAdmin):
+@admin.register(FuelNotificationConfig)
+class FuelNotificationConfigAdmin(admin.ModelAdmin):
     list_display = ("__str__", "category", "start", "end", "is_enabled")
     list_select_related = True
     list_filter = ("category", "is_enabled")
 
-    filter_horizontal = (
-        "ping_groups",
-        "webhooks",
+    def _id(self, obj):
+        return f"#{obj.pk}"
+
+    actions = ("send_new_notifications",)
+
+    def send_new_notifications(self, request, queryset):
+        item_count = 0
+        for obj in queryset:
+            obj.send_new_notifications()
+            item_count += 1
+
+        self.message_user(
+            request, f"Send new notifications for {item_count} configurations"
+        )
+
+    send_new_notifications.short_description = (
+        "Sent new notifications for selected configuration"
     )
+
     fieldsets = (
         (None, {"fields": ("category", "is_enabled")}),
         (
             "Timeing",
-            {
-                "fields": ("start", "end", "frequency"),
-            },
+            {"fields": ("start", "end", "frequency")},
         ),
         (
-            "Webhook",
-            {
-                "fields": ("webhooks", "channel_ping_type", "ping_groups"),
-            },
+            "Discord",
+            {"fields": ("channel_ping_type", "level")},
         ),
     )
 
@@ -285,11 +296,11 @@ class OwnerAdmin(admin.ModelAdmin):
         "_notifications_count",
     )
     list_filter = (
+        "is_active",
+        OwnerSyncStatusFilter,
         ("corporation__alliance", admin.RelatedOnlyFieldListFilter),
         "has_default_pings_enabled",
-        "is_active",
         "is_alliance_main",
-        OwnerSyncStatusFilter,
     )
     ordering = ["corporation__corporation_name"]
     search_fields = ["corporation__corporation_name"]
@@ -910,7 +921,13 @@ class WebhookAdmin(admin.ModelAdmin):
     def _messages_in_queue(self, obj):
         return obj.queue_size()
 
-    actions = ("test_notification", "activate", "deactivate", "purge_messages")
+    actions = (
+        "test_notification",
+        "activate",
+        "deactivate",
+        "purge_messages",
+        "send_messages",
+    )
 
     def test_notification(self, request, queryset):
         for obj in queryset:
@@ -957,8 +974,19 @@ class WebhookAdmin(admin.ModelAdmin):
 
     purge_messages.short_description = "Purge queued messages from selected webhooks"
 
-    filter_horizontal = ("ping_groups",)
+    def send_messages(self, request, queryset):
+        items_count = 0
+        for webhook in queryset:
+            tasks.send_messages_for_webhook.delay(webhook.pk)
+            items_count += 1
 
+        self.message_user(
+            request, f"Started sending queued messages for {items_count} webhooks."
+        )
+
+    send_messages.short_description = "Send queued messages from selected webhooks"
+
+    filter_horizontal = ("ping_groups",)
     fieldsets = (
         (
             None,

@@ -314,8 +314,11 @@ class NotificationStructureOnline(NotificationStructureEmbed):
 class NotificationStructureFuelAlert(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
+        hours_left = self._parsed_text.get("hoursFuelLeft", 24)
         self._title = gettext("Structure fuel alert")
-        self._description += gettext("has less then 24hrs fuel left.")
+        self._description += gettext(
+            "has less then **%d** hours fuel left." % hours_left
+        )
         self._color = self.COLOR_WARNING
 
 

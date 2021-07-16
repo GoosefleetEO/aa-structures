@@ -16,6 +16,7 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
+from ..helpers.general import hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
 
@@ -324,6 +325,11 @@ class Structure(models.Model):
             self.__class__.__name__, self.id, self.name
         )
 
+    def save(self, *args, **kwargs):
+        """make sure related objects are saved whenever structure is saved"""
+        super().save(*args, **kwargs)
+        self.update_generated_tags()
+
     @property
     def is_full_power(self):
         """return True if structure is full power, False if not.
@@ -408,10 +414,12 @@ class Structure(models.Model):
     def owner_has_sov(self):
         return self.eve_solar_system.corporation_has_sov(self.owner.corporation)
 
-    def save(self, *args, **kwargs):
-        """make sure related objects are saved whenever structure is saved"""
-        super().save(*args, **kwargs)
-        self.update_generated_tags()
+    @property
+    def hours_fuel_expires(self) -> Optional[float]:
+        """Hours until fuel expires."""
+        if self.fuel_expires_at:
+            return hours_until_deadline(self.fuel_expires_at)
+        return None
 
     def get_power_mode_display(self):
         return self.PowerMode(self.power_mode).label if self.power_mode else ""

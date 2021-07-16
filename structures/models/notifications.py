@@ -11,7 +11,8 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.db import models
 from django.utils import translation
-from django.utils.functional import classproperty
+from django.utils.functional import cached_property, classproperty
+from django.utils.timezone import now
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from esi.models import Token
@@ -35,7 +36,7 @@ from ..app_settings import (
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from ..managers import EveEntityManager, NotificationManager
+from ..managers import EveEntityManager, FuelAlertConfigManager, NotificationManager
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
@@ -340,7 +341,82 @@ class EveEntity(models.Model):
             raise NotImplementedError()
 
 
-class Notification(models.Model):
+class AbstractNotification(models.Model):
+    """Shared functionality for notifications and fuel alerts."""
+
+    class Meta:
+        abstract = True
+
+    def send_to_webhook(self, webhook: Webhook) -> bool:
+        """Sends this notification to the configured webhook.
+
+        returns True if successful, else False
+        """
+        logger.info("%s: Trying to sent to webhook: %s", self, webhook)
+        success = False
+        try:
+            embed, ping_type = self._generate_embed(webhook.language_code)
+        except OSError as ex:
+            logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
+            return False
+
+        if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
+            if ping_type == Webhook.PingType.EVERYONE:
+                content = "@everyone"
+            elif ping_type == Webhook.PingType.HERE:
+                content = "@here"
+            else:
+                content = ""
+        else:
+            content = ""
+
+        if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
+            if "discord" in app_labels():
+                DiscordUser = self._import_discord()
+
+                groups = set(self.owner.ping_groups.all()) | set(
+                    webhook.ping_groups.all()
+                )
+                for group in groups:
+                    try:
+                        role = DiscordUser.objects.group_to_role(group)
+                    except HTTPError:
+                        logger.warning("Failed to get Discord roles", exc_info=True)
+                    else:
+                        if role:
+                            content += f" <@&{role['id']}>"
+
+        username, avatar_url = self._gen_avatar()
+        success = webhook.send_message(
+            content=content,
+            embeds=[embed],
+            username=username,
+            avatar_url=avatar_url,
+        )
+        if success:
+            self.is_sent = True
+            self.save()
+
+        return success
+
+    @staticmethod
+    def _import_discord() -> object:
+        from allianceauth.services.modules.discord.models import DiscordUser
+
+        return DiscordUser
+
+    def _gen_avatar(self) -> Tuple[str, str]:
+        if STRUCTURES_NOTIFICATION_SET_AVATAR:
+            username = "Notifications"
+            avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
+        else:
+            username = None
+            avatar_url = None
+
+        return username, avatar_url
+
+
+class Notification(AbstractNotification):
     """An EVE Online notification about structures."""
 
     HTTP_CODE_TOO_MANY_REQUESTS = 429
@@ -471,74 +547,6 @@ class Notification(models.Model):
     def filter_for_alliance_level(self) -> bool:
         """True when notification to be filtered out due to alliance level."""
         return self.is_alliance_level and not self.owner.is_alliance_main
-
-    def send_to_webhook(self, webhook: Webhook) -> bool:
-        """Sends this notification to the configured webhook.
-
-        returns True if successful, else False
-        """
-        logger.info("%s: Trying to sent to webhook: %s", self, webhook)
-        success = False
-        try:
-            embed, ping_type = self._generate_embed(webhook.language_code)
-        except Exception as ex:
-            logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
-            return False
-
-        if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
-            if ping_type == Webhook.PingType.EVERYONE:
-                content = "@everyone"
-            elif ping_type == Webhook.PingType.HERE:
-                content = "@here"
-            else:
-                content = ""
-        else:
-            content = ""
-
-        if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
-            if "discord" in app_labels():
-                DiscordUser = self._import_discord()
-
-                groups = set(self.owner.ping_groups.all()) | set(
-                    webhook.ping_groups.all()
-                )
-                for group in groups:
-                    try:
-                        role = DiscordUser.objects.group_to_role(group)
-                    except HTTPError:
-                        logger.warning("Failed to get Discord roles", exc_info=True)
-                    else:
-                        if role:
-                            content += f" <@&{role['id']}>"
-
-        username, avatar_url = self._gen_avatar()
-        success = webhook.send_message(
-            content=content,
-            embeds=[embed],
-            username=username,
-            avatar_url=avatar_url,
-        )
-        if success:
-            self.is_sent = True
-            self.save()
-
-        return success
-
-    def _gen_avatar(self) -> Tuple[str, str]:
-        if STRUCTURES_NOTIFICATION_SET_AVATAR:
-            username = "Notifications"
-            avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
-        else:
-            username = None
-            avatar_url = None
-
-        return username, avatar_url
-
-    @staticmethod
-    def _import_discord() -> object:
-        from allianceauth.services.modules.discord.models import DiscordUser
-
-        return DiscordUser
 
     def _generate_embed(
         self, language_code: str
@@ -917,17 +925,90 @@ class Notification(models.Model):
         )
 
 
-class FuelAlertConfig(models.Model):
-    """Configuration for a fuel alert."""
+class FuelNotification(AbstractNotification):
+    """A generated notification alerting about fuel getting low in structures."""
 
-    class Category(models.TextChoices):
-        STRUCTURE = "ST", _("Structure")
-        STARBASE = "SB", _("Starbase")
+    structure = models.ForeignKey(
+        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts_sent"
+    )
+    config = models.ForeignKey(
+        "FuelNotificationConfig",
+        on_delete=models.CASCADE,
+        related_name="fuel_alerts_sent",
+    )
+    hours = models.PositiveIntegerField(
+        help_text="number of hours before fuel expiration this alert was sent"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.structure}-{self.config}-{self.hours}"
+
+    @cached_property
+    def owner(self) -> models.Model:
+        return self.structure.owner
+
+    def _generate_embed(
+        self, language_code: str
+    ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
+        """Generates a Discord embed for this notification."""
+        from ..core.notification_embeds import NotificationBaseEmbed
+
+        logger.info("Creating embed with language = %s" % language_code)
+        with translation.override(language_code):
+            sender, _ = EveEntity.objects.get_or_create_esi(
+                eve_entity_id=self.owner.corporation.corporation_id
+            )
+            if self.config.category == FuelNotificationConfig.Category.STRUCTURE:
+                notif_type = NotificationType.STRUCTURE_FUEL_ALERT
+                data = {
+                    "solarsystemID": self.structure.eve_solar_system_id,
+                    "structureID": self.structure.id,
+                    "structureTypeID": self.structure.eve_type_id,
+                    "hoursFuelLeft": self.hours,
+                }
+            elif self.config.category == FuelNotificationConfig.Category.STARBASE:
+                notif_type = NotificationType.TOWER_RESOURCE_ALERT_MSG
+                data = {
+                    "solarsystemID": self.structure.eve_solar_system_id,
+                    "structureID": self.structure.id,
+                    "structureTypeID": self.structure.eve_type_id,
+                    "hoursFuelLeft": self.hours,
+                }
+            else:
+                raise NotImplementedError("Undefined category type.")
+            notification = Notification(
+                notification_id=1,
+                owner=self.owner,
+                sender=sender,
+                timestamp=now(),
+                notif_type=notif_type,
+                text=yaml.dump(data),
+                last_updated=now(),
+            )
+            notification_embed = NotificationBaseEmbed.create(notification)
+            return notification_embed.generate_embed(), notification_embed.ping_type
+
+
+class FuelNotificationConfig(models.Model):
+    """Configuration of fuel notifications."""
+
+    class Category(models.IntegerChoices):
+        STRUCTURE = constants.EVE_CATEGORY_ID_STRUCTURE, _("Structure")
+        STARBASE = constants.EVE_CATEGORY_ID_STARBASE, _("Starbase")
 
     class ChannelPingType(models.TextChoices):
         NONE = "PN", _("(none)")
         HERE = "PH", "@here"
         EVERYBODY = "PE", "@everybody"
+
+    class Level(models.TextChoices):
+        DANGER = "danger", _("danger")
+        DEFAULT = "default", _("default")
+        INFO = "info", _("info")
+        PRIMARY = "primary", _("primary")
+        SUCCESS = "success", _("success")
+        WARNING = "warning", _("warning")
 
     channel_ping_type = models.CharField(
         max_length=2,
@@ -936,43 +1017,37 @@ class FuelAlertConfig(models.Model):
         verbose_name="channel pings",
         help_text="Option to ping every member of the channel",
     )
-    category = models.CharField(max_length=2, choices=Category.choices)
+    category = models.PositiveIntegerField(choices=Category.choices)
     end = models.PositiveIntegerField(
         help_text="End of alerts in hours before fuel expires"
     )
     frequency = models.PositiveIntegerField(help_text="Frequency of alerts in hours")
-    is_enabled = models.BooleanField(default=True)
-    ping_groups = models.ManyToManyField(
-        Group,
-        default=None,
-        blank=True,
-        related_name="+",
-        help_text="Groups to be pinged for each alert - ",
+    level = models.CharField(
+        max_length=10, choices=Level.choices, default=Level.WARNING
     )
+    is_enabled = models.BooleanField(default=True)
     start = models.PositiveIntegerField(
         help_text="Start of alerts in hours before fuel expires"
     )
-    webhooks = models.ManyToManyField(Webhook, related_name="fuel_alert_configs")
+    objects = FuelAlertConfigManager()
 
     def __str__(self) -> str:
-        return f"{self.category}-{self.start}-{self.end}-{self.pk}"
+        return f"#{self.pk}"
 
-
-class FuelAlertSend(models.Model):
-
-    owner = models.ForeignKey(
-        "Owner", on_delete=models.CASCADE, related_name="fuel_alerts_sent"
-    )
-    structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts_sent"
-    )
-    config = models.ForeignKey(
-        FuelAlertConfig, on_delete=models.CASCADE, related_name="fuel_alerts_sent"
-    )
-    hours = models.PositiveIntegerField(
-        help_text="number of hours before fuel expiration this alert was sent"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return f"{self.owner}-{self.structure}-{self.config}-{self.hours}"
+    def send_new_notifications(self):
+        """Send new fuel notifications based on this config."""
+        for structure in Structure.objects.filter(
+            eve_type__eve_group__eve_category_id=self.category,
+            fuel_expires_at__isnull=False,
+        ):
+            hours_left = structure.hours_fuel_expires
+            if self.start >= hours_left >= self.end:
+                hours_last_alert = self.start - (
+                    round((self.start - hours_left) / self.frequency) * self.frequency
+                )
+                notif, created = FuelNotification.objects.get_or_create(
+                    structure=structure, config=self, hours=hours_last_alert
+                )
+                if created:
+                    for webhook in structure.owner.webhooks.filter(is_active=True):
+                        notif.send_to_webhook(webhook)

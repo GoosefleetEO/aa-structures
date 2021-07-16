@@ -176,6 +176,24 @@ class TestStructure(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         self.assertFalse(structure.owner_has_sov)
 
+    def test_should_return_hours_when_fuel_expires(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        # when
+        result = structure.hours_fuel_expires
+        # then
+        self.assertAlmostEqual(result, 2.0, delta=0.1)
+
+    def test_should_return_none_when_not_fuel_info(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        # when
+        result = structure.hours_fuel_expires
+        # then
+        self.assertIsNone(result)
+
 
 class TestStructurePowerMode(NoSocketsTestCase):
     @classmethod

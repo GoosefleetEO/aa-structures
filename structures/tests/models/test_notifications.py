@@ -12,7 +12,15 @@ from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from app_utils.django import app_labels
 from app_utils.testing import NoSocketsTestCase
 
-from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
+from ...models import (
+    EveEntity,
+    FuelNotification,
+    FuelNotificationConfig,
+    Notification,
+    NotificationType,
+    Structure,
+    Webhook,
+)
 from ..testdata import (
     create_structures,
     load_entities,
@@ -746,3 +754,57 @@ class TestNotificationType(NoSocketsTestCase):
 
 class TestWebhook(NoSocketsTestCase):
     pass
+
+
+class TestFuelNotifications(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        load_notification_entities(cls.owner)
+        cls.webhook = Webhook.objects.create(
+            name="Test", url="http://www.example.com/dummy/"
+        )
+        cls.owner.webhooks.add(cls.webhook)
+        Structure.objects.update(fuel_expires_at=None)
+
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_should_send_fuel_notification(self, mock_send_message):
+        # given
+        config = FuelNotificationConfig.objects.create(
+            category=FuelNotificationConfig.Category.STRUCTURE,
+            start=48,
+            end=0,
+            frequency=12,
+        )
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelNotification.objects.first()
+        self.assertEqual(obj.hours, 24)
+
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_should_not_send_fuel_notification_that_already_exists(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelNotificationConfig.objects.create(
+            category=FuelNotificationConfig.Category.STRUCTURE,
+            start=48,
+            end=0,
+            frequency=12,
+        )
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        FuelNotification.objects.create(structure=structure, config=config, hours=24)
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+        self.assertEqual(FuelNotification.objects.count(), 1)
