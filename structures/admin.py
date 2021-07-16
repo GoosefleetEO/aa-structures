@@ -13,6 +13,7 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (
+    FuelAlertConfig,
     Notification,
     Owner,
     OwnerCharacter,
@@ -23,6 +24,33 @@ from .models import (
 )
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+
+@admin.register(FuelAlertConfig)
+class FuelAlertConfigAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "category", "start", "end", "is_enabled")
+    list_select_related = True
+    list_filter = ("category", "is_enabled")
+
+    filter_horizontal = (
+        "ping_groups",
+        "webhooks",
+    )
+    fieldsets = (
+        (None, {"fields": ("category", "is_enabled")}),
+        (
+            "Timeing",
+            {
+                "fields": ("start", "end", "frequency"),
+            },
+        ),
+        (
+            "Webhook",
+            {
+                "fields": ("webhooks", "channel_ping_type", "ping_groups"),
+            },
+        ),
+    )
 
 
 class RenderableNotificationFilter(admin.SimpleListFilter):

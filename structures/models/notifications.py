@@ -279,6 +279,7 @@ class Webhook(WebhookBase):
         Group,
         default=None,
         blank=True,
+        related_name="+",
         help_text="Groups to be pinged for each notification - ",
     )
 
@@ -914,3 +915,64 @@ class Notification(models.Model):
             "Automatically created from structure notification for "
             f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
         )
+
+
+class FuelAlertConfig(models.Model):
+    """Configuration for a fuel alert."""
+
+    class Category(models.TextChoices):
+        STRUCTURE = "ST", _("Structure")
+        STARBASE = "SB", _("Starbase")
+
+    class ChannelPingType(models.TextChoices):
+        NONE = "PN", _("(none)")
+        HERE = "PH", "@here"
+        EVERYBODY = "PE", "@everybody"
+
+    channel_ping_type = models.CharField(
+        max_length=2,
+        choices=ChannelPingType.choices,
+        default=ChannelPingType.HERE,
+        verbose_name="channel pings",
+        help_text="Option to ping every member of the channel",
+    )
+    category = models.CharField(max_length=2, choices=Category.choices)
+    end = models.PositiveIntegerField(
+        help_text="End of alerts in hours before fuel expires"
+    )
+    frequency = models.PositiveIntegerField(help_text="Frequency of alerts in hours")
+    is_enabled = models.BooleanField(default=True)
+    ping_groups = models.ManyToManyField(
+        Group,
+        default=None,
+        blank=True,
+        related_name="+",
+        help_text="Groups to be pinged for each alert - ",
+    )
+    start = models.PositiveIntegerField(
+        help_text="Start of alerts in hours before fuel expires"
+    )
+    webhooks = models.ManyToManyField(Webhook, related_name="fuel_alert_configs")
+
+    def __str__(self) -> str:
+        return f"{self.category}-{self.start}-{self.end}-{self.pk}"
+
+
+class FuelAlertSend(models.Model):
+
+    owner = models.ForeignKey(
+        "Owner", on_delete=models.CASCADE, related_name="fuel_alerts_sent"
+    )
+    structure = models.ForeignKey(
+        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts_sent"
+    )
+    config = models.ForeignKey(
+        FuelAlertConfig, on_delete=models.CASCADE, related_name="fuel_alerts_sent"
+    )
+    hours = models.PositiveIntegerField(
+        help_text="number of hours before fuel expiration this alert was sent"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.owner}-{self.structure}-{self.config}-{self.hours}"
