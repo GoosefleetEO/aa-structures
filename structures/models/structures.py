@@ -326,9 +326,27 @@ class Structure(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        """make sure related objects are saved whenever structure is saved"""
+        self._remove_obsolete_fuel_notifications()
         super().save(*args, **kwargs)
+        # make sure related objects are saved whenever structure is saved
         self.update_generated_tags()
+
+    def _remove_obsolete_fuel_notifications(self):
+        """Remove fuel notifications if structure has been refueled."""
+        if self.pk and self.fuel_expires_at:
+            try:
+                old_instance = Structure.objects.get(pk=self.pk)
+            except Structure.DoesNotExist:
+                return
+            else:
+                if (
+                    not old_instance.fuel_expires_at
+                    or old_instance.fuel_expires_at < self.fuel_expires_at
+                ):
+                    logger.info(
+                        "Structure has been refueled. Removing old fuel notifications."
+                    )
+                    self.fuel_notifications.all().delete()
 
     @property
     def is_full_power(self):

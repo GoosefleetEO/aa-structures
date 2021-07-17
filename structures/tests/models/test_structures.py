@@ -5,7 +5,13 @@ from django.utils.timezone import now
 from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
-from ...models import PocoDetails, Structure, StructureService, StructureTag
+from ...models import (
+    FuelNotificationConfig,
+    PocoDetails,
+    Structure,
+    StructureService,
+    StructureTag,
+)
 from ..testdata import create_structures, set_owner_character
 
 MODULE_PATH = "structures.models.structures"
@@ -193,6 +199,45 @@ class TestStructure(NoSocketsTestCase):
         result = structure.hours_fuel_expires
         # then
         self.assertIsNone(result)
+
+    def test_should_reset_fuel_notifications_when_refueled_1(self):
+        # given
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        structure.fuel_notifications.create(config=config, hours=12)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=13)
+        structure.save()
+        # then
+        self.assertEqual(structure.fuel_notifications.count(), 0)
+
+    def test_should_reset_fuel_notifications_when_refueled_2(self):
+        # given
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        structure.save()
+        structure.fuel_notifications.create(config=config, hours=12)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=13)
+        structure.save()
+        # then
+        self.assertEqual(structure.fuel_notifications.count(), 0)
+
+    def test_should_not_reset_fuel_notifications_when_fuel_is_dropping(self):
+        # given
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        structure.fuel_notifications.create(config=config, hours=12)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=11)
+        structure.save()
+        # then
+        self.assertEqual(structure.fuel_notifications.count(), 1)
 
 
 class TestStructurePowerMode(NoSocketsTestCase):

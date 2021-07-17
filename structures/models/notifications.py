@@ -930,12 +930,12 @@ class FuelNotification(AbstractNotification):
     """A generated notification alerting about fuel getting low in structures."""
 
     structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts_sent"
+        "Structure", on_delete=models.CASCADE, related_name="fuel_notifications"
     )
     config = models.ForeignKey(
         "FuelNotificationConfig",
         on_delete=models.CASCADE,
-        related_name="fuel_alerts_sent",
+        related_name="fuel_notifications",
     )
     hours = models.PositiveIntegerField(
         help_text="number of hours before fuel expiration this alert was sent"

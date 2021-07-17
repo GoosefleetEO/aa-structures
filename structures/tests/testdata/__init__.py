@@ -1,4 +1,3 @@
-# flake8: noqa
 """functions for loading test data and for building mocks"""
 
 import inspect
@@ -14,6 +13,7 @@ from unittest.mock import Mock
 from bravado.exception import HTTPNotFound
 
 from django.contrib.auth.models import User
+from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -38,7 +38,6 @@ from ...models import (
     Notification,
     NotificationType,
     Owner,
-    OwnerCharacter,
     Structure,
     StructureService,
     StructureTag,
@@ -194,6 +193,14 @@ def esi_get_corporations_corporation_id_structures(
                     if language != "en-us":
                         service["name"] += "_%s" % language
 
+    # convert datetime
+    for obj in corp_data:
+        for key in obj:
+            if isinstance(obj[key], str):
+                my_dt = parse_datetime(obj[key])
+                if my_dt:
+                    obj[key] = my_dt
+
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
@@ -259,6 +266,11 @@ def esi_get_corporations_corporation_id_structures_2(
                 for service in obj["services"]:
                     if language != "en-us":
                         service["name"] += "_%s" % language
+
+    # convert datetime
+    for obj in corp_data:
+        if "fuel_expires" in obj and obj["fuel_expires"]:
+            obj["fuel_expires"] = parse_datetime(obj["fuel_expires"])
 
     start = (page - 1) * page_size
     stop = start + page_size
