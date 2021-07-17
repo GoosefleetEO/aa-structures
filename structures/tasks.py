@@ -12,7 +12,13 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
-from .models import EveSovereigntyMap, Notification, Owner, Webhook
+from .models import (
+    EveSovereigntyMap,
+    FuelNotificationConfig,
+    Notification,
+    Owner,
+    Webhook,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -90,12 +96,16 @@ def update_structures_assets_for_owner(owner_pk, user_pk=None):
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def fetch_all_notifications():
-    """Fetch notifications for all owners."""
+    """Fetch notifications for all owners and send new fuel notifications."""
     for owner in Owner.objects.all():
         if owner.is_active:
             process_notifications_for_owner.apply_async(
                 kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
             )
+    for config_pk in FuelNotificationConfig.objects.filter(is_enabled=True).values_list(
+        "pk", flat=True
+    ):
+        send_fuel_notifications_for_config.delay(config_pk)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -112,6 +122,11 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
                 send_messages_for_webhook.apply_async(
                     kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
                 )
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def send_fuel_notifications_for_config(config_pk: int):
+    FuelNotificationConfig.objects.get(pk=config_pk).send_new_notifications()
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

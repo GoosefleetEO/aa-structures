@@ -11,7 +11,7 @@ from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 from structures.models.notifications import Notification
 
 from .. import tasks
-from ..models import Owner, Webhook
+from ..models import FuelNotificationConfig, Owner, Webhook
 from .testdata import create_structures, load_notification_entities, set_owner_character
 
 MODULE_PATH = "structures.tasks"
@@ -163,47 +163,50 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
             )
 
 
+@patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
+@patch(MODULE_PATH + ".send_fuel_notifications_for_config")
+@patch(MODULE_PATH + ".process_notifications_for_owner")
 class TestFetchAllNotifications(NoSocketsTestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         create_structures()
-        self.user, self.owner = set_owner_character(character_id=1001)
+        cls.user, cls.owner = set_owner_character(character_id=1001)
 
-    @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
-    @patch(MODULE_PATH + ".process_notifications_for_owner")
-    def test_fetch_all_notifications(self, mock_fetch_notifications_owner):
-        Owner.objects.all().delete()
-        owner_2001 = Owner.objects.create(
+    def test_fetch_all_notifications(
+        self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
+    ):
+        # given
+        owner_2001 = Owner.objects.get(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
-        owner_2002 = Owner.objects.create(
+        owner_2002 = Owner.objects.get(
             corporation=EveCorporationInfo.objects.get(corporation_id=2002)
         )
+        Owner.objects.exclude(pk__in=[owner_2001.pk, owner_2002.pk]).update(
+            is_active=False
+        )
+        # when
         tasks.fetch_all_notifications()
+        # then
         self.assertEqual(mock_fetch_notifications_owner.apply_async.call_count, 2)
         call_args_list = mock_fetch_notifications_owner.apply_async.call_args_list
-        args, kwargs = call_args_list[0]
+        _, kwargs = call_args_list[0]
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2001.pk)
-        args, kwargs = call_args_list[1]
+        _, kwargs = call_args_list[1]
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2002.pk)
 
-    @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
-    @patch(MODULE_PATH + ".process_notifications_for_owner")
-    def test_fetch_all_notifications_not_active(self, mock_fetch_notifications_owner):
-        """test that not active owners are not synced"""
-        Owner.objects.all().delete()
-        owner_2001 = Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2001),
-            is_active=True,
-        )
-        Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002),
-            is_active=False,
-        )
+    def test_send_new_fuel_notifications(
+        self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
+    ):
+        # given
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        # when
         tasks.fetch_all_notifications()
-        self.assertEqual(mock_fetch_notifications_owner.apply_async.call_count, 1)
-        call_args_list = mock_fetch_notifications_owner.apply_async.call_args_list
-        args, kwargs = call_args_list[0]
-        self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2001.pk)
+        # then
+        self.assertEqual(mock_send_fuel_notifications_for_config.delay.call_count, 1)
+        args, _ = mock_send_fuel_notifications_for_config.delay.call_args
+        self.assertEqual(args[0], config.pk)
 
 
 @patch(MODULE_PATH + ".fetch_esi_status", lambda: EsiStatus(True, 100, 60))

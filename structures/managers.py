@@ -182,13 +182,6 @@ class EveEntityManager(models.Manager):
         return obj, created
 
 
-class FuelAlertConfigManager(models.Manager):
-    def send_new_notifications(self):
-        """Send new notifications for all active configurations."""
-        for config in self.filter(is_active=True):
-            config.send_new_notifications()
-
-
 class StructureQuerySet(models.QuerySet):
     def filter_upwell_structures(self) -> models.QuerySet:
         return self.filter(

@@ -37,7 +37,7 @@ from ..app_settings import (
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from ..managers import EveEntityManager, FuelAlertConfigManager, NotificationManager
+from ..managers import EveEntityManager, NotificationManager
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
@@ -1022,7 +1022,6 @@ class FuelNotificationConfig(models.Model):
     start = models.PositiveIntegerField(
         help_text="Start of alerts in hours before fuel expires"
     )
-    objects = FuelAlertConfigManager()
 
     def __str__(self) -> str:
         return f"#{self.pk}"
