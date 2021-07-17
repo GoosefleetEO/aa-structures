@@ -9,6 +9,7 @@ from requests.exceptions import HTTPError
 
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import translation
 from django.utils.functional import cached_property, classproperty
@@ -356,7 +357,7 @@ class AbstractNotification(models.Model):
         success = False
         try:
             embed, ping_type = self._generate_embed(webhook.language_code)
-        except OSError as ex:
+        except (OSError, NotImplementedError) as ex:
             logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
             return False
 
@@ -959,24 +960,21 @@ class FuelNotification(AbstractNotification):
             sender, _ = EveEntity.objects.get_or_create_esi(
                 eve_entity_id=self.owner.corporation.corporation_id
             )
-            if self.config.category == FuelNotificationConfig.Category.STRUCTURE:
+            if self.structure.eve_type.is_upwell_structure:
                 notif_type = NotificationType.STRUCTURE_FUEL_ALERT
                 data = {
                     "solarsystemID": self.structure.eve_solar_system_id,
                     "structureID": self.structure.id,
                     "structureTypeID": self.structure.eve_type_id,
-                    "hoursFuelLeft": self.hours,
                 }
-            elif self.config.category == FuelNotificationConfig.Category.STARBASE:
+            elif self.structure.eve_type.is_starbase:
                 notif_type = NotificationType.TOWER_RESOURCE_ALERT_MSG
                 data = {
-                    "solarsystemID": self.structure.eve_solar_system_id,
-                    "structureID": self.structure.id,
-                    "structureTypeID": self.structure.eve_type_id,
-                    "hoursFuelLeft": self.hours,
+                    "moonID": self.structure.eve_moon_id,
+                    "typeID": self.structure.eve_type_id,
                 }
             else:
-                raise NotImplementedError("Undefined category type.")
+                raise NotImplementedError("Undefined structure type.")
             notification = Notification(
                 notification_id=1,
                 owner=self.owner,
@@ -992,10 +990,6 @@ class FuelNotification(AbstractNotification):
 
 class FuelNotificationConfig(models.Model):
     """Configuration of fuel notifications."""
-
-    class Category(models.IntegerChoices):
-        STRUCTURE = constants.EVE_CATEGORY_ID_STRUCTURE, _("Structure")
-        STARBASE = constants.EVE_CATEGORY_ID_STARBASE, _("Starbase")
 
     class ChannelPingType(models.TextChoices):
         NONE = "PN", _("(none)")
@@ -1017,7 +1011,6 @@ class FuelNotificationConfig(models.Model):
         verbose_name="channel pings",
         help_text="Option to ping every member of the channel",
     )
-    category = models.PositiveIntegerField(choices=Category.choices)
     end = models.PositiveIntegerField(
         help_text="End of alerts in hours before fuel expires"
     )
@@ -1034,12 +1027,30 @@ class FuelNotificationConfig(models.Model):
     def __str__(self) -> str:
         return f"#{self.pk}"
 
-    def send_new_notifications(self):
+    def clean(self) -> None:
+        if self.start <= self.end:
+            raise ValidationError(
+                _("Start must be before end, i.e. have a larger value.")
+            )
+        if self.frequency > self.start:
+            raise ValidationError(
+                {"frequency": _("Frequency can not be larger that start.")}
+            )
+        new = range(self.end, self.start)
+        for config in FuelNotificationConfig.objects.exclude(pk=self.pk):
+            current = range(config.end, config.start)
+            overlap = range(max(new[0], current[0]), min(new[-1], current[-1]) + 1)
+            if len(overlap) > 0:
+                raise ValidationError(
+                    _(
+                        "This configuration may not overlap with an "
+                        "existing configuration."
+                    )
+                )
+
+    def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
-        for structure in Structure.objects.filter(
-            eve_type__eve_group__eve_category_id=self.category,
-            fuel_expires_at__isnull=False,
-        ):
+        for structure in self._structures_queryset():
             hours_left = structure.hours_fuel_expires
             if self.start >= hours_left >= self.end:
                 hours_last_alert = self.start - (
@@ -1048,6 +1059,17 @@ class FuelNotificationConfig(models.Model):
                 notif, created = FuelNotification.objects.get_or_create(
                     structure=structure, config=self, hours=hours_last_alert
                 )
-                if created:
+                if created or force:
                     for webhook in structure.owner.webhooks.filter(is_active=True):
                         notif.send_to_webhook(webhook)
+
+    @staticmethod
+    def _structures_queryset():
+        """Queryset of all relevant structures."""
+        return Structure.objects.filter(
+            eve_type__eve_group__eve_category_id__in=[
+                constants.EVE_CATEGORY_ID_STARBASE,
+                constants.EVE_CATEGORY_ID_STRUCTURE,
+            ],
+            fuel_expires_at__isnull=False,
+        )

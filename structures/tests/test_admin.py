@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
+from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
@@ -17,7 +19,15 @@ from ..admin import (
     StructureAdmin,
     WebhookAdmin,
 )
-from ..models import EveEntity, Notification, Owner, Structure, StructureTag, Webhook
+from ..models import (
+    EveEntity,
+    FuelNotificationConfig,
+    Notification,
+    Owner,
+    Structure,
+    StructureTag,
+    Webhook,
+)
 from .testdata import (
     create_structures,
     create_user,
@@ -32,6 +42,87 @@ MODULE_PATH = "structures.admin"
 class MockRequest(object):
     def __init__(self, user=None):
         self.user = user
+
+
+class TestFuelNotificationConfigAdmin(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.defaults = {
+            "is_enabled": True,
+            "channel_ping_type": FuelNotificationConfig.ChannelPingType.HERE,
+            "level": FuelNotificationConfig.Level.DANGER,
+        }
+        cls.user = User.objects.create_superuser("Clark Kent")
+
+    def test_should_create_new_config(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_add"),
+            data={**self.defaults, **{"start": 12, "end": 5, "frequency": 2}},
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelnotificationconfig_changelist")
+        )
+        self.assertEqual(FuelNotificationConfig.objects.count(), 1)
+
+    def test_should_update_existing_config(self):
+        # given
+        self.client.force_login(self.user)
+        config = FuelNotificationConfig.objects.create(start=48, end=24, frequency=12)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_change", args=[config.pk]),
+            data={**self.defaults, **{"start": 48, "end": 0, "frequency": 2}},
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelnotificationconfig_changelist")
+        )
+        self.assertEqual(FuelNotificationConfig.objects.count(), 1)
+
+    def test_should_not_allow_end_before_start(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_add"),
+            data={**self.defaults, **{"start": 1, "end": 2, "frequency": 1}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelNotificationConfig.objects.count(), 0)
+
+    def test_should_not_allow_invalid_frequency(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_add"),
+            data={**self.defaults, **{"start": 24, "end": 0, "frequency": 25}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelNotificationConfig.objects.count(), 0)
+
+    def test_should_not_allow_creating_overlapping(self):
+        # given
+        self.client.force_login(self.user)
+        FuelNotificationConfig.objects.create(start=48, end=24, frequency=12)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_add"),
+            data={**self.defaults, **{"start": 36, "end": 0, "frequency": 8}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelNotificationConfig.objects.count(), 1)
 
 
 class TestNotificationAdmin(TestCase):

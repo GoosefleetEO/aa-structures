@@ -770,14 +770,9 @@ class TestFuelNotifications(NoSocketsTestCase):
         Structure.objects.update(fuel_expires_at=None)
 
     @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-    def test_should_send_fuel_notification(self, mock_send_message):
+    def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
-        config = FuelNotificationConfig.objects.create(
-            category=FuelNotificationConfig.Category.STRUCTURE,
-            start=48,
-            end=0,
-            frequency=12,
-        )
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
@@ -793,12 +788,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
-        config = FuelNotificationConfig.objects.create(
-            category=FuelNotificationConfig.Category.STRUCTURE,
-            start=48,
-            end=0,
-            frequency=12,
-        )
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
@@ -808,3 +798,17 @@ class TestFuelNotifications(NoSocketsTestCase):
         # then
         self.assertFalse(mock_send_message.called)
         self.assertEqual(FuelNotification.objects.count(), 1)
+
+    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+    def test_should_send_fuel_notification_for_starbase(self, mock_send_message):
+        # given
+        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        structure = Structure.objects.get(id=1300000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelNotification.objects.first()
+        self.assertEqual(obj.hours, 24)

@@ -3,6 +3,7 @@ from collections import namedtuple
 import dhooks_lite
 
 from django.conf import settings
+from django.template import Context, Template
 from django.utils.html import strip_tags
 from django.utils.translation import gettext
 
@@ -314,11 +315,14 @@ class NotificationStructureOnline(NotificationStructureEmbed):
 class NotificationStructureFuelAlert(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        hours_left = self._parsed_text.get("hoursFuelLeft", 24)
+        if self._structure and self._structure.fuel_expires_at:
+            template = Template("{{ fuel_expires_at|timeuntil }}")
+            context = Context({"fuel_expires_at": self._structure.fuel_expires_at})
+            hours_left = template.render(context)
+        else:
+            hours_left = "?"
         self._title = gettext("Structure fuel alert")
-        self._description += gettext(
-            "has less then **%d** hours fuel left." % hours_left
-        )
+        self._description += gettext("is running out of fuel in **%s**." % hours_left)
         self._color = self.COLOR_WARNING
 
 
@@ -784,9 +788,9 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
             self.eve_moon.eve_solar_system
         )
         self._owner_link = self._gen_corporation_link(str(notification.owner))
-        qs_structures = Structure.objects.filter(eve_moon=self.eve_moon)
-        if qs_structures.exists():
-            self._structure_name = qs_structures.first().name
+        self._structure = Structure.objects.filter(eve_moon=self.eve_moon).first()
+        if self._structure:
+            self._structure_name = self._structure.name
         else:
             self._structure_name = structure_type.name_localized
 
@@ -832,18 +836,23 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
 class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        quantity = self._parsed_text["wants"][0]["quantity"]
-        self._title = gettext("Starbase low on fuel")
+        if self._structure and self._structure.fuel_expires_at:
+            template = Template("{{ fuel_expires_at|timeuntil }}")
+            context = Context({"fuel_expires_at": self._structure.fuel_expires_at})
+            hours_left = template.render(context)
+        else:
+            hours_left = "?"
+        self._title = gettext("Starbase fuel alert")
         self._description = gettext(
             "The starbase %(structure_name)s at %(moon)s "
-            "in %(solar_system)s belonging to %(owner_link)s is low on fuel. "
-            "It has %(quantity)d fuel blocks left."
+            "in %(solar_system)s belonging to %(owner_link)s "
+            "is running out of fuel in **%(hours_left)s**."
         ) % {
             "structure_name": "**%s**" % self._structure_name,
             "moon": self.eve_moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
-            "quantity": quantity,
+            "hours_left": hours_left,
         }
         self._color = self.COLOR_WARNING
 

@@ -28,9 +28,9 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 @admin.register(FuelNotificationConfig)
 class FuelNotificationConfigAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "category", "start", "end", "is_enabled")
+    list_display = ("__str__", "start", "end", "frequency", "is_enabled")
     list_select_related = True
-    list_filter = ("category", "is_enabled")
+    list_filter = ("is_enabled",)
 
     def _id(self, obj):
         return f"#{obj.pk}"
@@ -40,8 +40,10 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
     def send_new_notifications(self, request, queryset):
         item_count = 0
         for obj in queryset:
-            obj.send_new_notifications()
+            obj.send_new_notifications(force=True)
             item_count += 1
+        for webhook in Webhook.objects.filter(is_active=True):
+            tasks.send_messages_for_webhook(webhook.pk)
 
         self.message_user(
             request, f"Send new notifications for {item_count} configurations"
@@ -52,7 +54,6 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
     )
 
     fieldsets = (
-        (None, {"fields": ("category", "is_enabled")}),
         (
             "Timeing",
             {"fields": ("start", "end", "frequency")},
@@ -61,6 +62,7 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
             "Discord",
             {"fields": ("channel_ping_type", "level")},
         ),
+        (None, {"fields": ("is_enabled",)}),
     )
 
 
