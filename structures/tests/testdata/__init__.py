@@ -22,6 +22,7 @@ from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
 )
+from app_utils.esi_testing import BravadoOperationStub
 from app_utils.testing import create_user_from_evecharacter
 
 from ...models import (
@@ -116,20 +117,6 @@ ESI_LANGUAGES = {
 }
 
 
-class EsiOperation:
-    def __init__(self, data, headers: dict = None, also_return_response: bool = False):
-        self._data = data
-        self._headers = headers if headers else {"x-pages": 1}
-        self.also_return_response = also_return_response
-
-    def result(self, **kwargs):
-        if self.also_return_response:
-            mock_response = Mock(**{"headers": self._headers})
-            return [self._data, mock_response]
-        else:
-            return self._data
-
-
 def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -153,7 +140,7 @@ def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs
     if language in ESI_LANGUAGES.difference({"en-us"}):
         entity["name"] += "_" + language
 
-    return EsiOperation(data=entity)
+    return BravadoOperationStub(data=entity)
 
 
 def esi_get_corporations_corporation_id_structures(
@@ -205,7 +192,9 @@ def esi_get_corporations_corporation_id_structures(
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
 
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 esi_get_corporations_corporation_id_structures.override_data = None
@@ -225,7 +214,7 @@ def esi_get_corporations_corporation_id_structures_2(
         def __init__(self, also_return_response):
             self.also_return_response = also_return_response
 
-    class EsiOperation:
+    class BravadoOperationStub:
         def __init__(self, headers, data, also_return_response=False):
             self._headers = headers
             self._data = data
@@ -276,7 +265,9 @@ def esi_get_corporations_corporation_id_structures_2(
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
 
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 def esi_get_corporations_corporation_id_starbases(
@@ -312,7 +303,9 @@ def esi_get_corporations_corporation_id_starbases(
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 esi_get_corporations_corporation_id_starbases.override_data = None
@@ -327,7 +320,7 @@ def esi_get_corporations_corporation_id_starbases_starbase_id(
         "get_corporations_corporation_id_starbases_starbase_id"
     ]  # noqa
     if str(starbase_id) in corporation_starbase_details:
-        return EsiOperation(data=corporation_starbase_details[str(starbase_id)])
+        return BravadoOperationStub(data=corporation_starbase_details[str(starbase_id)])
 
     else:
         mock_response = Mock()
@@ -349,7 +342,7 @@ def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
         )
 
     if str(structure_id) in universe_structures_data:
-        return EsiOperation(data=universe_structures_data[str(structure_id)])
+        return BravadoOperationStub(data=universe_structures_data[str(structure_id)])
 
     else:
         mock_response = Mock()
@@ -364,7 +357,7 @@ esi_get_universe_structures_structure_id.override_data = None
 def esi_get_characters_character_id_notifications(character_id, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
 
-    return EsiOperation(data=entities_testdata["Notification"])
+    return BravadoOperationStub(data=entities_testdata["Notification"])
 
 
 def esi_get_corporations_corporation_id_customs_offices(
@@ -403,7 +396,9 @@ def esi_get_corporations_corporation_id_customs_offices(
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 esi_get_corporations_corporation_id_customs_offices.override_data = None
@@ -424,7 +419,7 @@ def _esi_post_corporations_corporation_id_assets(
             )
         )
     else:
-        return EsiOperation(data=my_esi_data[str(corporation_id)])
+        return BravadoOperationStub(data=my_esi_data[str(corporation_id)])
 
 
 def esi_post_corporations_corporation_id_assets_locations(
@@ -460,7 +455,7 @@ def esi_get_universe_categories_category_id(category_id, language=None):
     if language in ESI_LANGUAGES.difference({"en-us"}):
         obj_data["name"] += "_" + language
 
-    return EsiOperation(data=obj_data)
+    return BravadoOperationStub(data=obj_data)
 
 
 def esi_get_universe_moons_moon_id(moon_id, language=None):
@@ -473,11 +468,11 @@ def esi_get_universe_moons_moon_id(moon_id, language=None):
     if language in ESI_LANGUAGES.difference({"en-us"}):
         obj_data["name"] += "_" + language
 
-    return EsiOperation(data=obj_data)
+    return BravadoOperationStub(data=obj_data)
 
 
 def esi_return_data(data):
-    return lambda **kwargs: EsiOperation(data=data)
+    return lambda **kwargs: BravadoOperationStub(data=data)
 
 
 def esi_mock_client(version=1.6):

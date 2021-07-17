@@ -1046,8 +1046,9 @@ class Owner(models.Model):
                 hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
             )
             notifications = (
-                Notification.objects.filter(owner=self)
-                .filter(notif_type__in=NotificationType.relevant_for_timerboard)
+                self.notifications.filter(
+                    notif_type__in=NotificationType.relevant_for_timerboard
+                )
                 .exclude(is_timer_added=True)
                 .filter(timestamp__gte=cutoff_dt_for_stale)
                 .select_related("owner", "sender")
@@ -1073,8 +1074,9 @@ class Owner(models.Model):
                 empty_refineries.count(),
             )
             notifications = (
-                Notification.objects.filter(owner=self)
-                .filter(notif_type__in=NotificationType.relevant_for_moonmining)
+                self.notifications.filter(
+                    notif_type__in=NotificationType.relevant_for_moonmining
+                )
                 .select_related("owner", "sender")
                 .order_by("timestamp")
             )
@@ -1105,8 +1107,9 @@ class Owner(models.Model):
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
         all_new_notifications = list(
-            Notification.objects.filter(owner=self)
-            .filter(notif_type__in=NotificationType.values)
+            self.notifications.filter(
+                notif_type__in=NotificationType.relevant_for_forwarding
+            )
             .filter(is_sent=False)
             .filter(timestamp__gte=cutoff_dt_for_stale)
             .select_related()
@@ -1200,7 +1203,7 @@ class Owner(models.Model):
         self.save()
 
         token = self.fetch_token()
-        structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
+        structure_ids = list(self.structures.values_list("id", flat=True))
         try:
             OwnerAsset.objects.update_or_create_for_structures_esi(
                 structure_ids, self.corporation.corporation_id, token

@@ -33,6 +33,7 @@ from .. import __title__, constants
 from ..app_settings import (
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
+    STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_NOTIFICATION_SET_AVATAR,
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
@@ -238,6 +239,14 @@ class NotificationType(models.TextChoices):
             cls.MOONMINING_EXTRACTION_FINISHED,
             cls.MOONMINING_AUTOMATIC_FRACTURE,
         ]
+
+    @classproperty
+    def relevant_for_forwarding(cls) -> list:
+        all = set(cls.values)
+        if STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS:
+            all.discard(cls.STRUCTURE_FUEL_ALERT)
+            all.discard(cls.TOWER_RESOURCE_ALERT_MSG)
+        return list(all)
 
 
 def get_default_notification_types():

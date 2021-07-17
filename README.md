@@ -358,6 +358,7 @@ Name | Description | Default
 `STRUCTURES_FEATURE_STARBASES`| Enable / disable starbases feature | `True`
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | `24`
 `STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | `True`
+`STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS`| This allows you to turn off ESI fuel alert notifications to use the Structure's generated fuel notifications exclusively.  | `False`
 `STRUCTURES_NOTIFICATION_MAX_RETRIES`| Max number of retries after a HTTP error occurred incl. rate limiting  | `3`
 `STRUCTURES_NOTIFICATION_SET_AVATAR`| Wether structures sets the name and avatar icon of a webhook. When `False` the webhook will use it's own values as set on the platform | `True`
 `STRUCTURES_NOTIFICATION_SHOW_MOON_ORE`| Wether ore details are shown on moon notifications | `True`

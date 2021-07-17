@@ -512,7 +512,7 @@ class OwnerAssetManager(models.Manager):
         assets_in_structures = [
             asset
             for asset in assets
-            if asset["location_id"] in structure_ids
+            if asset["location_id"] in set(structure_ids)
             and asset["location_flag"]
             not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
         ]
@@ -535,7 +535,7 @@ class OwnerAssetManager(models.Manager):
             objs_ids.append(obj.id)
 
         # Clean up assets not in structures anymore
-        objs_to_delete = self.filter(location_id__in=structure_ids).exclude(
+        objs_to_delete = self.filter(location_id__in=list(structure_ids)).exclude(
             id__in=objs_ids
         )
         objs_to_delete.delete()
