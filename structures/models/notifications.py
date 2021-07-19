@@ -955,7 +955,13 @@ class FuelNotification(AbstractNotification):
     def __str__(self) -> str:
         return f"{self.structure}-{self.config}-{self.hours}"
 
-    # TODO: Add unique constraint for structure, config, hours
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["structure", "config", "hours"],
+                name="functional_pk_fuelnotification",
+            )
+        ]
 
     @cached_property
     def owner(self) -> models.Model:
@@ -1013,7 +1019,8 @@ class FuelNotificationConfig(models.Model):
         verbose_name="channel pings",
         help_text=(
             "Option to ping every member of the channel. "
-            "This setting can be overruled by owner or webhook configuration"
+            "This setting can be overruled by the respective owner "
+            "or webhook configuration"
         ),
     )
     end = models.PositiveIntegerField(
