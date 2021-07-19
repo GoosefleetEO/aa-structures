@@ -947,12 +947,15 @@ class FuelNotification(AbstractNotification):
         related_name="fuel_notifications",
     )
     hours = models.PositiveIntegerField(
-        help_text="number of hours before fuel expiration this alert was sent"
+        db_index=True,
+        help_text="number of hours before fuel expiration this alert was sent",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return f"{self.structure}-{self.config}-{self.hours}"
+
+    # TODO: Add unique constraint for structure, config, hours
 
     @cached_property
     def owner(self) -> models.Model:

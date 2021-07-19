@@ -13,6 +13,7 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (
+    FuelNotification,
     FuelNotificationConfig,
     Notification,
     Owner,
@@ -26,14 +27,59 @@ from .models import (
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
+@admin.register(FuelNotification)
+class FuelNotificationAdmin(admin.ModelAdmin):
+    list_display = ("config", "_owner", "structure", "hours", "created_at")
+    list_select_related = (
+        "config",
+        "structure",
+        "structure__owner",
+        "structure__eve_solar_system",
+        "structure__owner__corporation",
+    )
+    list_filter = (
+        ("config", admin.RelatedOnlyFieldListFilter),
+        ("structure", admin.RelatedOnlyFieldListFilter),
+        ("structure__owner", admin.RelatedOnlyFieldListFilter),
+    )
+    ordering = ("config", "structure", "-hours")
+
+    def _owner(self, obj):
+        return obj.structure.owner
+
+    def has_add_permission(self, *args, **kwargs) -> bool:
+        return False
+
+    def has_change_permission(self, *args, **kwargs) -> bool:
+        return False
+
+
 @admin.register(FuelNotificationConfig)
 class FuelNotificationConfigAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "start", "end", "frequency", "is_enabled")
+    list_display = (
+        "__str__",
+        "start",
+        "end",
+        "frequency",
+        "channel_ping_type",
+        "_color",
+        "is_enabled",
+    )
     list_select_related = True
     list_filter = ("is_enabled",)
 
     def _id(self, obj):
         return f"#{obj.pk}"
+
+    def _color(self, obj):
+        color = Webhook.Color(obj.color)
+        return format_html(
+            '<span style="color: {};">&#9646;</span>{}',
+            color.css_color,
+            color.label,
+        )
+
+    _color.admin_order_field = "color"
 
     actions = ("send_fuel_notifications",)
 

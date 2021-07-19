@@ -19,6 +19,10 @@ class WebhookBase(DiscordWebhookMixin, models.Model):
         SUCCESS = 0x5CB85C, _("success")
         WARNING = 0xF0AD4E, _("warning")
 
+        @property
+        def css_color(self) -> str:
+            return f"#{self.value:X}"
+
     TYPE_DISCORD = 1
 
     TYPE_CHOICES = [
