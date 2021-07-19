@@ -1,3 +1,4 @@
+import datetime as dt
 from collections import namedtuple
 
 import dhooks_lite
@@ -20,6 +21,21 @@ from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
+
+
+def timeuntil(target_datetime: dt.datetime) -> str:
+    """Render timeuntil template tag for given datetime to string."""
+    template = Template("{{ my_datetime|timeuntil }}")
+    context = Context({"my_datetime": target_datetime})
+    return template.render(context)
+
+
+def target_datetime_formatted(target_datetime: dt.datetime) -> str:
+    """Formatted Discord string for a target datetime."""
+    return (
+        f"{Webhook.text_bold(target_datetime.strftime(DATETIME_FORMAT))} "
+        f"({timeuntil(target_datetime)})"
+    )
 
 
 class NotificationBaseEmbed:
@@ -319,9 +335,7 @@ class NotificationStructureFuelAlert(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         if self._structure and self._structure.fuel_expires_at:
-            template = Template("{{ fuel_expires_at|timeuntil }}")
-            context = Context({"fuel_expires_at": self._structure.fuel_expires_at})
-            hours_left = template.render(context)
+            hours_left = timeuntil(self._structure.fuel_expires_at)
         else:
             hours_left = "?"
         self._title = gettext("Structure fuel alert")
@@ -367,8 +381,8 @@ class NotificationStructureUnanchoring(NotificationStructureEmbed):
             self._parsed_text["timeLeft"]
         )
         self._description += gettext(
-            "has started un-anchoring. " "It will be fully un-anchored at: %s"
-        ) % unanchored_at.strftime(DATETIME_FORMAT)
+            "has started un-anchoring. It will be fully un-anchored at: %s"
+        ) % target_datetime_formatted(unanchored_at)
         self._color = Webhook.Color.INFO
 
 
@@ -399,7 +413,7 @@ class NotificationStructureLostShield(NotificationStructureEmbed):
         )
         self._description += gettext(
             "has lost its shields. Armor timer end at: %s"
-        ) % timer_ends_at.strftime(DATETIME_FORMAT)
+        ) % target_datetime_formatted(timer_ends_at)
         self._color = Webhook.Color.DANGER
 
 
@@ -412,7 +426,7 @@ class NotificationStructureLostArmor(NotificationStructureEmbed):
         )
         self._description += gettext(
             "has lost its armor. Hull timer end at: %s"
-        ) % timer_ends_at.strftime(DATETIME_FORMAT)
+        ) % target_datetime_formatted(timer_ends_at)
         self._color = Webhook.Color.DANGER
 
 
@@ -542,7 +556,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
 
         self._description += gettext(
             "\n\nChange becomes effective at %s."
-        ) % Webhook.text_bold(change_effective.strftime(DATETIME_FORMAT))
+        ) % target_datetime_formatted(change_effective)
         self._color = Webhook.Color.INFO
 
 
@@ -606,8 +620,8 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": started_by,
-            "ready_time": ready_time.strftime(DATETIME_FORMAT),
-            "auto_time": auto_time.strftime(DATETIME_FORMAT),
+            "ready_time": target_datetime_formatted(ready_time),
+            "auto_time": target_datetime_formatted(auto_time),
             "ore_text": gettext(
                 "\nEstimated ore composition: %s" % self._ore_composition_text()
             )
@@ -634,7 +648,7 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
-            "auto_time": auto_time.strftime(DATETIME_FORMAT),
+            "auto_time": target_datetime_formatted(auto_time),
             "ore_text": gettext("\nOre composition: %s" % self._ore_composition_text())
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else "",
@@ -770,7 +784,7 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "aggressor": self._aggressor_link,
-            "date": reinforce_exit_time.strftime(DATETIME_FORMAT),
+            "date": target_datetime_formatted(reinforce_exit_time),
         }
         self._color = Webhook.Color.DANGER
 
@@ -839,9 +853,7 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         if self._structure and self._structure.fuel_expires_at:
-            template = Template("{{ fuel_expires_at|timeuntil }}")
-            context = Context({"fuel_expires_at": self._structure.fuel_expires_at})
-            hours_left = template.render(context)
+            hours_left = timeuntil(self._structure.fuel_expires_at)
         else:
             hours_left = "?"
         self._title = gettext("Starbase fuel alert")
@@ -995,7 +1007,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
-            "date": timer_starts.strftime(DATETIME_FORMAT),
+            "date": target_datetime_formatted(timer_starts),
         }
         self._color = Webhook.Color.DANGER
 
@@ -1177,7 +1189,7 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
             "aggressor": self._gen_eveentity_link(aggressor),
             "ally": self._gen_eveentity_link(ally),
             "defender": self._gen_eveentity_link(defender),
-            "start_time": Webhook.text_bold(start_time.strftime(DATETIME_FORMAT)),
+            "start_time": target_datetime_formatted(start_time),
         }
         self._thumbnail = dhooks_lite.Thumbnail(
             ally.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -1300,7 +1312,7 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
-            "end_date": Webhook.text_bold(war_ends.strftime(DATETIME_FORMAT)),
+            "end_date": target_datetime_formatted(war_ends),
         }
         self._color = Webhook.Color.WARNING
 
