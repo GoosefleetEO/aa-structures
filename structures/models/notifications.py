@@ -994,29 +994,16 @@ class FuelNotification(AbstractNotification):
                 last_updated=now(),
             )
             notification_embed = NotificationBaseEmbed.create(notification)
-            return notification_embed.generate_embed(), notification_embed.ping_type
+            return notification_embed.generate_embed(), self.config.channel_ping_type
 
 
 class FuelNotificationConfig(models.Model):
     """Configuration of fuel notifications."""
 
-    class ChannelPingType(models.TextChoices):
-        NONE = "PN", _("(none)")
-        HERE = "PH", "@here"
-        EVERYBODY = "PE", "@everybody"
-
-    class Level(models.TextChoices):
-        DANGER = "danger", _("danger")
-        DEFAULT = "default", _("default")
-        INFO = "info", _("info")
-        PRIMARY = "primary", _("primary")
-        SUCCESS = "success", _("success")
-        WARNING = "warning", _("warning")
-
     channel_ping_type = models.CharField(
         max_length=2,
-        choices=ChannelPingType.choices,
-        default=ChannelPingType.HERE,
+        choices=Webhook.PingType.choices,
+        default=Webhook.PingType.HERE,
         verbose_name="channel pings",
         help_text="Option to ping every member of the channel",
     )
@@ -1024,8 +1011,11 @@ class FuelNotificationConfig(models.Model):
         help_text="End of alerts in hours before fuel expires"
     )
     frequency = models.PositiveIntegerField(help_text="Frequency of alerts in hours")
-    level = models.CharField(
-        max_length=10, choices=Level.choices, default=Level.WARNING
+    color = models.IntegerField(
+        choices=Webhook.Color.choices,
+        default=Webhook.Color.WARNING,
+        blank=True,
+        null=True,
     )
     is_enabled = models.BooleanField(default=True)
     start = models.PositiveIntegerField(

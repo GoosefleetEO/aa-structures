@@ -50,8 +50,8 @@ class TestFuelNotificationConfigAdmin(TestCase):
         super().setUpClass()
         cls.defaults = {
             "is_enabled": True,
-            "channel_ping_type": FuelNotificationConfig.ChannelPingType.HERE,
-            "level": FuelNotificationConfig.Level.DANGER,
+            "channel_ping_type": Webhook.PingType.HERE,
+            "color": Webhook.Color.WARNING,
         }
         cls.user = User.objects.create_superuser("Clark Kent")
         create_structures()

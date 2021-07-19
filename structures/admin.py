@@ -60,7 +60,7 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
         ),
         (
             "Discord",
-            {"fields": ("channel_ping_type", "level")},
+            {"fields": ("channel_ping_type", "color")},
         ),
         (None, {"fields": ("is_enabled",)}),
     )

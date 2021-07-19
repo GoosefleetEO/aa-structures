@@ -13,6 +13,12 @@ class WebhookBase(DiscordWebhookMixin, models.Model):
         HERE = "HE", _("here")
         EVERYONE = "EV", _("everyone")
 
+    class Color(models.IntegerChoices):
+        DANGER = 0xD9534F, _("danger")
+        INFO = 0x5BC0DE, _("info")
+        SUCCESS = 0x5CB85C, _("success")
+        WARNING = 0xF0AD4E, _("warning")
+
     TYPE_DISCORD = 1
 
     TYPE_CHOICES = [

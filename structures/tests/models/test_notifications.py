@@ -756,6 +756,7 @@ class TestWebhook(NoSocketsTestCase):
     pass
 
 
+@patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestFuelNotifications(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -769,7 +770,6 @@ class TestFuelNotifications(NoSocketsTestCase):
         cls.owner.webhooks.add(cls.webhook)
         Structure.objects.update(fuel_expires_at=None)
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
@@ -783,7 +783,6 @@ class TestFuelNotifications(NoSocketsTestCase):
         obj = FuelNotification.objects.first()
         self.assertEqual(obj.hours, 24)
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_should_not_send_fuel_notification_that_already_exists(
         self, mock_send_message
     ):
@@ -799,7 +798,6 @@ class TestFuelNotifications(NoSocketsTestCase):
         self.assertFalse(mock_send_message.called)
         self.assertEqual(FuelNotification.objects.count(), 1)
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_should_send_fuel_notification_for_starbase(self, mock_send_message):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
@@ -812,3 +810,40 @@ class TestFuelNotifications(NoSocketsTestCase):
         self.assertTrue(mock_send_message.called)
         obj = FuelNotification.objects.first()
         self.assertEqual(obj.hours, 24)
+
+    def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
+        # given
+        config = FuelNotificationConfig.objects.create(
+            start=48,
+            end=0,
+            frequency=12,
+            channel_ping_type=Webhook.PingType.EVERYONE,
+        )
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertIn("@everyone", kwargs["content"])
+
+    # def test_should_use_configured_level_for_notifications(self, mock_send_message):
+    #     # given
+    #     config = FuelNotificationConfig.objects.create(
+    #         start=48,
+    #         end=0,
+    #         frequency=12,
+    #         color=Webhook.Color.SUCCESS,
+    #     )
+    #     structure = Structure.objects.get(id=1000000000001)
+    #     structure.fuel_expires_at = now() + timedelta(hours=25)
+    #     structure.save()
+    #     # when
+    #     config.send_new_notifications()
+    #     # then
+    #     self.assertTrue(mock_send_message.called)
+    #     _, kwargs = mock_send_message.call_args
+    #     embed = kwargs["embeds"][0]
+    #     ...
