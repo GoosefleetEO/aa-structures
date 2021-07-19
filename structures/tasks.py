@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 from celery import chain, shared_task
 
@@ -117,16 +117,13 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
         owner = _get_owner(owner_pk)
         owner.fetch_notifications_esi(_get_user(user_pk))
         owner.send_new_notifications()
-        for webhook in owner.webhooks.filter(is_active=True):
-            if webhook.queue_size() > 0:
-                send_messages_for_webhook.apply_async(
-                    kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
-                )
+        send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_fuel_notifications_for_config(config_pk: int):
     FuelNotificationConfig.objects.get(pk=config_pk).send_new_notifications()
+    send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -149,8 +146,13 @@ def send_notifications(notification_pks: list) -> None:
                     and not notif.filter_for_alliance_level()
                 ):
                     notif.send_to_webhook(webhook)
+        send_queued_messages_for_webhooks(webhooks)
 
-        for webhook in webhooks:
+
+def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):
+    """Send queued message for given webhooks."""
+    for webhook in webhooks:
+        if webhook.queue_size() > 0:
             send_messages_for_webhook.apply_async(
                 kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
             )

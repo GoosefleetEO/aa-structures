@@ -88,9 +88,7 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.send_new_notifications(force=True)
             item_count += 1
-        for webhook in Webhook.objects.filter(is_active=True):
-            tasks.send_messages_for_webhook(webhook.pk)
-
+        tasks.send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
         self.message_user(
             request,
             f"Started sending fuel notifications for {item_count} configurations",

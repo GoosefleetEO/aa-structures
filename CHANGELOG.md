@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
-## Change
+## Added
+
+- Fuel notifications to warn about fuel running out in structures and POSes at configurable times and frequencies, e.g. 3 days before fuel runs out and repeated every 12 hours
+
+## Changed
 
 - Fix tests to work with aa-structuretimers 1.1.0
 
 ## [1.14.2] - 2021-07-12
 
-## Change
+## Changed
 
 - Default for repeating issue notifications changed to 1 day
 - Inactive owners will be re-activated once a new sync character is added

@@ -46,6 +46,7 @@ Structures adds the following main features to Alliance Auth:
   - Corporation membership changes
 - Automatically adds timers from relevant notifications to [Alliance Auth Structure Timers](https://allianceauth.readthedocs.io/en/v2.8.1/features/apps/timerboard.html) or [Structure Timers II](https://gitlab.com/ErikKalkoken/aa-structuretimers) app (if installed)
 - Fittings and contents of Upwell structures (e.g. fuel blocks and ammo)
+- Configurable fuel notifications to warn about fuel running at in structures and POSes
 - Tax rates and access settings of Customs Offices
 - Permissions define which structures are visible to a user based on organization membership
 - Self-defined tags help to better organize structures
