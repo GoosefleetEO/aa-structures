@@ -1056,6 +1056,19 @@ class FuelNotificationConfig(models.Model):
                     )
                 )
 
+    def save(self, *args, **kwargs) -> None:
+        try:
+            old_instance = FuelNotificationConfig.objects.get(pk=self.pk)
+        except FuelNotificationConfig.DoesNotExist:
+            old_instance = None
+        super().save(*args, **kwargs)
+        if old_instance and (
+            old_instance.start != self.start
+            or old_instance.end != self.end
+            or old_instance.frequency != self.frequency
+        ):
+            self.fuel_notifications.all().delete()
+
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
         for structure in self._structures_queryset():

@@ -54,6 +54,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
             "level": FuelNotificationConfig.Level.DANGER,
         }
         cls.user = User.objects.create_superuser("Clark Kent")
+        create_structures()
 
     def test_should_create_new_config(self):
         # given
@@ -83,6 +84,43 @@ class TestFuelNotificationConfigAdmin(TestCase):
             response, reverse("admin:structures_fuelnotificationconfig_changelist")
         )
         self.assertEqual(FuelNotificationConfig.objects.count(), 1)
+
+    def test_should_remove_existing_fuel_notifications_when_timing_changed(self):
+        # given
+        self.client.force_login(self.user)
+        config = FuelNotificationConfig.objects.create(start=48, end=24, frequency=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_notifications.create(config=config, structure=structure, hours=5)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_change", args=[config.pk]),
+            data={**self.defaults, **{"start": 48, "end": 0, "frequency": 2}},
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelnotificationconfig_changelist")
+        )
+        self.assertEqual(structure.fuel_notifications.count(), 0)
+
+    def test_should_not_remove_existing_fuel_notifications_on_other_changes(self):
+        # given
+        self.client.force_login(self.user)
+        config = FuelNotificationConfig.objects.create(start=48, end=24, frequency=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_notifications.create(config=config, structure=structure, hours=5)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelnotificationconfig_change", args=[config.pk]),
+            data={
+                **self.defaults,
+                **{"start": 48, "end": 24, "frequency": 12, "is_enabled": False},
+            },
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelnotificationconfig_changelist")
+        )
+        self.assertEqual(structure.fuel_notifications.count(), 1)
 
     def test_should_not_allow_end_before_start(self):
         # given
