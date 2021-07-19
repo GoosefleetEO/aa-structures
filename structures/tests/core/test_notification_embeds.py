@@ -102,7 +102,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_DANGER
+        notification_embed._color = Webhook.Color.DANGER
         # when
         notification_embed.generate_embed()
         # then
@@ -112,7 +112,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_WARNING
+        notification_embed._color = Webhook.Color.WARNING
         # when
         notification_embed.generate_embed()
         # then
@@ -122,7 +122,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_INFO
+        notification_embed._color = Webhook.Color.INFO
         # when
         notification_embed.generate_embed()
         # then
@@ -132,7 +132,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_SUCCESS
+        notification_embed._color = Webhook.Color.SUCCESS
         # when
         notification_embed.generate_embed()
         # then
