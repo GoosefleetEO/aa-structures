@@ -2,11 +2,13 @@ from pydoc import locate
 
 from bravado.exception import HTTPError
 
+from django.contrib.auth.models import User
 from django.db import models, transaction
-from django.db.models import Case, Count, Q, Value, When
+from django.db.models import Case, Count, Exists, OuterRef, Q, Value, When
 from django.utils.timezone import now
 from esi.models import Token
 
+from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
@@ -182,10 +184,6 @@ class EveEntityManager(models.Manager):
         return obj, created
 
 
-class FuelNotificationConfigManager(models.Manager):
-    ...
-
-
 class StructureQuerySet(models.QuerySet):
     def filter_upwell_structures(self) -> models.QuerySet:
         return self.filter(
@@ -218,6 +216,57 @@ class StructureQuerySet(models.QuerySet):
             "eve_type__eve_group",
             "eve_type__eve_group__eve_category",
         )
+
+    # TODO: Add specific tests
+    def visible_for_user(self, user: User, tags: list = None) -> models.QuerySet:
+        from .models import PocoDetails
+
+        if user.has_perm("structures.view_all_structures"):
+            structures_query = self.select_related_defaults()
+            if tags:
+                structures_query = structures_query.filter(
+                    tags__name__in=tags
+                ).distinct()
+
+        else:
+            if user.has_perm("structures.view_corporation_structures") or user.has_perm(
+                "structures.view_alliance_structures"
+            ):
+                corporation_ids = {
+                    character_ownership.character.corporation_id
+                    for character_ownership in user.character_ownerships.all()
+                }
+                corporations = list(
+                    EveCorporationInfo.objects.select_related("alliance").filter(
+                        corporation_id__in=corporation_ids
+                    )
+                )
+            else:
+                corporations = []
+
+            if user.has_perm("structures.view_alliance_structures"):
+                alliances = {
+                    corporation.alliance
+                    for corporation in corporations
+                    if corporation.alliance
+                }
+                for alliance in alliances:
+                    corporations += alliance.evecorporationinfo_set.all()
+
+                corporations = list(set(corporations))
+
+            structures_query = self.select_related_defaults().filter(
+                owner__corporation__in=corporations
+            )
+
+        structures_query = structures_query.prefetch_related(
+            "tags", "services"
+        ).annotate(
+            has_poco_details=Exists(
+                PocoDetails.objects.filter(structure_id=OuterRef("id"))
+            )
+        )
+        return structures_query
 
 
 class StructureManagerBase(models.Manager):
@@ -489,6 +538,19 @@ class OwnerQuerySet(models.QuerySet):
                 filter=Q(characters__character_ownership__isnull=False),
                 distinct=True,
             )
+        )
+
+    def structures_last_updated(self):
+        """Date/time when structures were last updated for any of the active owners."""
+        active_owners = self.filter(is_active=True)
+        return (
+            (
+                active_owners.order_by("-structures_last_update_at")
+                .first()
+                .structures_last_update_at
+            )
+            if active_owners
+            else None
         )
 
 

@@ -862,8 +862,10 @@ class Owner(models.Model):
 
         return names
 
-    def _calc_starbase_fuel_expires(self, corporation_id, starbase, token):
-
+    def _calc_starbase_fuel_expires(
+        self, corporation_id: int, starbase: dict, token: Token
+    ) -> datetime:
+        """Calculate when fuel will expire for this starbase."""
         fuel_expires_at = None
         if starbase["state"] != "offline":
             starbase_details = esi_fetch(
