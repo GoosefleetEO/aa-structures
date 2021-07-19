@@ -200,7 +200,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
     ):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         # when
         tasks.fetch_all_notifications()
         # then

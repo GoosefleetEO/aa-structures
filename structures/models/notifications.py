@@ -1019,7 +1019,11 @@ class FuelNotificationConfig(models.Model):
     end = models.PositiveIntegerField(
         help_text="End of alerts in hours before fuel expires"
     )
-    frequency = models.PositiveIntegerField(help_text="Frequency of alerts in hours")
+    repeat = models.PositiveIntegerField(
+        help_text=(
+            "Notifications will be repeated every x hours. Set to 0 for no repeats"
+        )
+    )
     color = models.IntegerField(
         choices=Webhook.Color.choices,
         default=Webhook.Color.WARNING,
@@ -1039,9 +1043,9 @@ class FuelNotificationConfig(models.Model):
             raise ValidationError(
                 _("Start must be before end, i.e. have a larger value.")
             )
-        if self.frequency > self.start:
+        if self.repeat >= self.start - self.end:
             raise ValidationError(
-                {"frequency": _("Frequency can not be larger that start.")}
+                {"repeat": _("Repeat can not be larger that the interval size.")}
             )
         new = range(self.end, self.start)
         for config in FuelNotificationConfig.objects.exclude(pk=self.pk):
@@ -1064,7 +1068,7 @@ class FuelNotificationConfig(models.Model):
         if old_instance and (
             old_instance.start != self.start
             or old_instance.end != self.end
-            or old_instance.frequency != self.frequency
+            or old_instance.repeat != self.repeat
         ):
             self.fuel_notifications.all().delete()
 
@@ -1073,8 +1077,11 @@ class FuelNotificationConfig(models.Model):
         for structure in self._structures_queryset():
             hours_left = structure.hours_fuel_expires
             if self.start >= hours_left >= self.end:
-                hours_last_alert = self.start - (
-                    round((self.start - hours_left) / self.frequency) * self.frequency
+                hours_last_alert = (
+                    self.start
+                    - (round((self.start - hours_left) / self.repeat) * self.repeat)
+                    if self.repeat
+                    else self.start
                 )
                 notif, created = FuelNotification.objects.get_or_create(
                     structure=structure, config=self, hours=hours_last_alert

@@ -202,7 +202,7 @@ class TestStructure(NoSocketsTestCase):
 
     def test_should_reset_fuel_notifications_when_refueled_1(self):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
@@ -215,7 +215,7 @@ class TestStructure(NoSocketsTestCase):
 
     def test_should_reset_fuel_notifications_when_refueled_2(self):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = None
         structure.save()
@@ -228,7 +228,7 @@ class TestStructure(NoSocketsTestCase):
 
     def test_should_not_reset_fuel_notifications_when_fuel_is_dropping(self):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()

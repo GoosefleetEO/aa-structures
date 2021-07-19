@@ -772,7 +772,7 @@ class TestFuelNotifications(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
@@ -787,7 +787,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
@@ -800,7 +800,7 @@ class TestFuelNotifications(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_for_starbase(self, mock_send_message):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1300000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
@@ -816,7 +816,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         config = FuelNotificationConfig.objects.create(
             start=48,
             end=0,
-            frequency=12,
+            repeat=12,
             channel_ping_type=Webhook.PingType.EVERYONE,
         )
         structure = Structure.objects.get(id=1000000000001)
@@ -834,7 +834,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         config = FuelNotificationConfig.objects.create(
             start=48,
             end=0,
-            frequency=12,
+            repeat=12,
             color=Webhook.Color.SUCCESS,
         )
         structure = Structure.objects.get(id=1000000000001)
@@ -850,7 +850,7 @@ class TestFuelNotifications(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_at_start(self, mock_send_message):
         # given
-        config = FuelNotificationConfig.objects.create(start=12, end=0, frequency=12)
+        config = FuelNotificationConfig.objects.create(start=12, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=11, minutes=59, seconds=59)
         structure.save()
@@ -863,7 +863,7 @@ class TestFuelNotifications(NoSocketsTestCase):
 
     def test_should_not_send_fuel_notifications_before_start(self, mock_send_message):
         # given
-        config = FuelNotificationConfig.objects.create(start=12, end=6, frequency=1)
+        config = FuelNotificationConfig.objects.create(start=12, end=6, repeat=1)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12, minutes=0, seconds=1)
         structure.save()
@@ -874,7 +874,7 @@ class TestFuelNotifications(NoSocketsTestCase):
 
     def test_should_not_send_fuel_notifications_after_end(self, mock_send_message):
         # given
-        config = FuelNotificationConfig.objects.create(start=12, end=6, frequency=1)
+        config = FuelNotificationConfig.objects.create(start=12, end=6, repeat=1)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=5, minutes=59, seconds=59)
         structure.save()
@@ -882,3 +882,18 @@ class TestFuelNotifications(NoSocketsTestCase):
         config.send_new_notifications()
         # then
         self.assertFalse(mock_send_message.called)
+
+    def test_should_send_fuel_notification_at_start_when_repeat_is_0(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelNotificationConfig.objects.create(start=12, end=0, repeat=0)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=11, minutes=59, seconds=59)
+        structure.save()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelNotification.objects.first()
+        self.assertEqual(obj.hours, 12)

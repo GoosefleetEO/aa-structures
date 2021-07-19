@@ -60,7 +60,7 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
         "__str__",
         "start",
         "end",
-        "frequency",
+        "repeat",
         "channel_ping_type",
         "_color",
         "is_enabled",
@@ -103,12 +103,12 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
             "Timeing",
             {
                 "description": (
-                    "Timing for sending fuel notifications. "
+                    "Timing configuration for sending fuel notifications. "
                     "Note that the first notification will be sent at the exact "
-                    "start hour, and the last notification will be sent one period "
+                    "start hour, and the last notification will be sent one repeat "
                     "before the end hour."
                 ),
-                "fields": ("start", "end", "frequency"),
+                "fields": ("start", "end", "repeat"),
             },
         ),
         (
