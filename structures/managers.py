@@ -182,6 +182,10 @@ class EveEntityManager(models.Manager):
         return obj, created
 
 
+class FuelNotificationConfigManager(models.Manager):
+    ...
+
+
 class StructureQuerySet(models.QuerySet):
     def filter_upwell_structures(self) -> models.QuerySet:
         return self.filter(

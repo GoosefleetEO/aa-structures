@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils import translation
 from django.utils.functional import cached_property, classproperty
 from django.utils.timezone import now
@@ -38,7 +39,11 @@ from ..app_settings import (
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from ..managers import EveEntityManager, NotificationManager
+from ..managers import (
+    EveEntityManager,
+    FuelNotificationConfigManager,
+    NotificationManager,
+)
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
@@ -293,6 +298,11 @@ class Webhook(WebhookBase):
         related_name="+",
         help_text="Groups to be pinged for each notification - ",
     )
+
+    @staticmethod
+    def text_bold(text) -> str:
+        """Format the given text in bold."""
+        return f"**{text}**" if text else ""
 
 
 class EveEntity(models.Model):
@@ -967,6 +977,31 @@ class FuelNotification(AbstractNotification):
     def owner(self) -> models.Model:
         return self.structure.owner
 
+    @property
+    def notif_type(self) -> NotificationType:
+        if self.structure.eve_type.is_upwell_structure:
+            return NotificationType.STRUCTURE_FUEL_ALERT
+        elif self.structure.eve_type.is_starbase:
+            return NotificationType.TOWER_RESOURCE_ALERT_MSG
+        raise NotImplementedError("Undefined structure type.")
+
+    @cached_property
+    def text(self) -> str:
+        if self.structure.eve_type.is_upwell_structure:
+            data = {
+                "solarsystemID": self.structure.eve_solar_system_id,
+                "structureID": self.structure.id,
+                "structureTypeID": self.structure.eve_type_id,
+            }
+        elif self.structure.eve_type.is_starbase:
+            data = {
+                "moonID": self.structure.eve_moon_id,
+                "typeID": self.structure.eve_type_id,
+            }
+        else:
+            raise NotImplementedError("Undefined structure type.")
+        return yaml.dump(data)
+
     def _generate_embed(
         self, language_code: str
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
@@ -978,28 +1013,13 @@ class FuelNotification(AbstractNotification):
             sender, _ = EveEntity.objects.get_or_create_esi(
                 eve_entity_id=self.owner.corporation.corporation_id
             )
-            if self.structure.eve_type.is_upwell_structure:
-                notif_type = NotificationType.STRUCTURE_FUEL_ALERT
-                data = {
-                    "solarsystemID": self.structure.eve_solar_system_id,
-                    "structureID": self.structure.id,
-                    "structureTypeID": self.structure.eve_type_id,
-                }
-            elif self.structure.eve_type.is_starbase:
-                notif_type = NotificationType.TOWER_RESOURCE_ALERT_MSG
-                data = {
-                    "moonID": self.structure.eve_moon_id,
-                    "typeID": self.structure.eve_type_id,
-                }
-            else:
-                raise NotImplementedError("Undefined structure type.")
             notification = Notification(
                 notification_id=1,
                 owner=self.owner,
                 sender=sender,
                 timestamp=now(),
-                notif_type=notif_type,
-                text=yaml.dump(data),
+                notif_type=self.notif_type,
+                text=self.text,
                 last_updated=now(),
             )
             notification_embed = NotificationBaseEmbed.create(notification)
@@ -1041,6 +1061,8 @@ class FuelNotificationConfig(models.Model):
     start = models.PositiveIntegerField(
         help_text="Start of alerts in hours before fuel expires"
     )
+
+    objects = FuelNotificationConfigManager()
 
     def __str__(self) -> str:
         return f"#{self.pk}"
@@ -1094,7 +1116,9 @@ class FuelNotificationConfig(models.Model):
                     structure=structure, config=self, hours=hours_last_alert
                 )
                 if created or force:
-                    for webhook in structure.owner.webhooks.filter(is_active=True):
+                    for webhook in structure.owner.webhooks.filter(
+                        is_active=True, notification_types__contains=notif.notif_type
+                    ):
                         notif.send_to_webhook(webhook)
 
     @staticmethod
@@ -1106,4 +1130,19 @@ class FuelNotificationConfig(models.Model):
                 constants.EVE_CATEGORY_ID_STRUCTURE,
             ],
             fuel_expires_at__isnull=False,
+        )
+
+    @staticmethod
+    def relevant_webhooks() -> models.QuerySet:
+        """Webhooks relevant for processing fuel notifications based on this config."""
+        return (
+            Webhook.objects.filter(owner__isnull=False)
+            .filter(is_active=True)
+            .filter(
+                Q(notification_types__contains=NotificationType.STRUCTURE_FUEL_ALERT)
+                | Q(
+                    notification_types__contains=NotificationType.TOWER_RESOURCE_ALERT_MSG
+                )
+            )
+            .distinct()
         )

@@ -123,7 +123,7 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_fuel_notifications_for_config(config_pk: int):
     FuelNotificationConfig.objects.get(pk=config_pk).send_new_notifications()
-    send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
+    send_queued_messages_for_webhooks(FuelNotificationConfig.relevant_webhooks())
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

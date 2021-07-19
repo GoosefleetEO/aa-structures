@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fuel notifications to warn about fuel running out in structures and POSes at configurable times and frequencies, e.g. 3 days before fuel runs out and repeated every 12 hours
 
-## Changed
+## Fix
 
+- POS notifications formatted all bold when POS has no name
 - Fix tests to work with aa-structuretimers 1.1.0
 
 ## [1.14.2] - 2021-07-12

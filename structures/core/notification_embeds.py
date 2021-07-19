@@ -297,7 +297,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             "belonging to %(owner_link)s "
         ) % {
             "structure_type": structure_type.name_localized,
-            "structure_name": "**%s**" % structure_name,
+            "structure_name": Webhook.text_bold(structure_name),
             "location": location,
             "solar_system": self._gen_solar_system_text(structure_solar_system),
             "owner_link": owner_link,
@@ -325,7 +325,9 @@ class NotificationStructureFuelAlert(NotificationStructureEmbed):
         else:
             hours_left = "?"
         self._title = gettext("Structure fuel alert")
-        self._description += gettext("is running out of fuel in **%s**." % hours_left)
+        self._description += gettext(
+            "is running out of fuel in %s." % Webhook.text_bold(hours_left)
+        )
         self._color = Webhook.Color.WARNING
 
 
@@ -435,7 +437,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             "The %(structure_type)s %(structure_name)s " "in %(solar_system)s "
         ) % {
             "structure_type": structure_type.name,
-            "structure_name": "**%s**" % self._parsed_text["structureName"],
+            "structure_name": Webhook.text_bold(self._parsed_text["structureName"]),
             "solar_system": self._gen_solar_system_text(solar_system),
         }
         from_corporation, _ = EveEntity.objects.get_or_create_esi(
@@ -521,20 +523,17 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
 
         self._title = gettext("Structure reinforcement time changed")
         change_effective = ldap_time_2_datetime(self._parsed_text["timestamp"])
-        self._description = (
-            gettext(
-                "Reinforcement hour has been changed to **%s** "
-                "for the following structures:\n"
-            )
-            % self._parsed_text["hour"]
-        )
+        self._description = gettext(
+            "Reinforcement hour has been changed to %s "
+            "for the following structures:\n"
+        ) % Webhook.text_bold(self._parsed_text["hour"])
         for structure_info in all_structure_info:
             self._description += gettext(
                 "- %(structure_type)s %(structure_name)s in %(solar_system)s "
                 "belonging to %(owner_link)s"
             ) % {
                 "structure_type": structure_info.eve_type.name_localized,
-                "structure_name": "**%s**" % structure_info.name,
+                "structure_name": Webhook.text_bold(structure_info.name),
                 "solar_system": self._gen_solar_system_text(
                     structure_info.eve_solar_system
                 ),
@@ -542,8 +541,8 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
             }
 
         self._description += gettext(
-            "\n\nChange becomes effective at **%s**."
-        ) % change_effective.strftime(DATETIME_FORMAT)
+            "\n\nChange becomes effective at %s."
+        ) % Webhook.text_bold(change_effective.strftime(DATETIME_FORMAT))
         self._color = Webhook.Color.INFO
 
 
@@ -602,7 +601,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "and will autofracture on %(auto_time)s.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -631,7 +630,7 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
             "The chunk will automatically fracture on %(auto_time)s.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -654,7 +653,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
             "and the moon products are ready to be harvested.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -680,7 +679,7 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been cancelled by %(character)s."
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -701,7 +700,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
             "and the moon products are ready to be harvested.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -826,7 +825,7 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
             "is under attack by %(aggressor)s.\n"
             "%(damage_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self.eve_moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -849,13 +848,13 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
         self._description = gettext(
             "The starbase %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
-            "is running out of fuel in **%(hours_left)s**."
+            "is running out of fuel in %(hours_left)s."
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self.eve_moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
-            "hours_left": hours_left,
+            "hours_left": Webhook.text_bold(hours_left),
         }
         self._color = Webhook.Color.WARNING
 
@@ -891,7 +890,7 @@ class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s is being captured"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -913,7 +912,7 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
             "Command nodes for %(structure_type)s in %(solar_system)s "
             "have begun to decloak"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -921,7 +920,7 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
             "belonging to %(owner)s can now be found throughout "
             "the %(constellation)s constellation"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
             "constellation": self._solar_system.eve_constellation.name_localized,
@@ -984,7 +983,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -993,7 +992,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
             "hostile forces and command nodes "
             "will begin decloaking at %(date)s"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
             "date": timer_starts.strftime(DATETIME_FORMAT),
@@ -1007,7 +1006,7 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s has been destroyed"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -1015,7 +1014,7 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
             "in %(solar_system)s belonging to %(owner)s have been "
             "destroyed by hostile forces."
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
         }
@@ -1172,12 +1171,13 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
         )
         start_time = ldap_time_2_datetime(self._parsed_text["startTime"])
         self._description = (
-            "%(ally)s has joined %(defender)s in a war against %(aggressor)s. Their participation in the war will start at **%(start_time)s**."
+            "%(ally)s has joined %(defender)s in a war against %(aggressor)s. "
+            "Their participation in the war will start at %(start_time)s."
         ) % {
             "aggressor": self._gen_eveentity_link(aggressor),
             "ally": self._gen_eveentity_link(ally),
             "defender": self._gen_eveentity_link(defender),
-            "start_time": start_time.strftime(DATETIME_FORMAT),
+            "start_time": Webhook.text_bold(start_time.strftime(DATETIME_FORMAT)),
         }
         self._thumbnail = dhooks_lite.Thumbnail(
             ally.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -1245,13 +1245,15 @@ class NotificationWarDeclared(NotificationWarEmbed):
             "against": self._against.name,
         }
         self._description = (
-            "%(declared_by)s has declared war on %(against)s with **%(war_hq)s** "
-            "as the designated war headquarters.\nWithin **%(delay_hours)s** hours fighting can legally occur between those involved."
+            "%(declared_by)s has declared war on %(against)s with %(war_hq)s "
+            "as the designated war headquarters.\n"
+            "Within %(delay_hours)s hours fighting can legally occur "
+            "between those involved."
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
-            "war_hq": strip_tags(self._parsed_text["warHQ"]),
-            "delay_hours": self._parsed_text["delayHours"],
+            "war_hq": Webhook.text_bold(strip_tags(self._parsed_text["warHQ"])),
+            "delay_hours": Webhook.text_bold(self._parsed_text["delayHours"]),
         }
         self._color = Webhook.Color.DANGER
 
@@ -1274,7 +1276,8 @@ class NotificationWarInherited(NotificationWarEmbed):
         }
         self._description = (
             "%(alliance)s has inherited the war between %(declared_by)s and "
-            "%(against)s from newly joined %(quitter)s. Within **24** hours fighting can legally occur with %(alliance)s."
+            "%(against)s from newly joined %(quitter)s. "
+            "Within **24** hours fighting can legally occur with %(alliance)s."
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
@@ -1290,12 +1293,14 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
         self._title = "CONCORD invalidates war"
         war_ends = ldap_time_2_datetime(self._parsed_text["endDate"])
         self._description = (
-            "The war between %(declared_by)s and %(against)s has been retracted by CONCORD.\n"
-            "After **%(end_date)s** CONCORD will again respond to any hostilities between those involved with full force."
+            "The war between %(declared_by)s and %(against)s "
+            "has been retracted by CONCORD.\n"
+            "After %(end_date)s CONCORD will again respond to any hostilities "
+            "between those involved with full force."
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
-            "end_date": war_ends.strftime(DATETIME_FORMAT),
+            "end_date": Webhook.text_bold(war_ends.strftime(DATETIME_FORMAT)),
         }
         self._color = Webhook.Color.WARNING
 

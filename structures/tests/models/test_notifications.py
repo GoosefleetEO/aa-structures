@@ -764,10 +764,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
-        cls.owner.webhooks.add(cls.webhook)
+        cls.webhook = Webhook.objects.get(name="Test Webhook 1")
         Structure.objects.update(fuel_expires_at=None)
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
@@ -897,3 +894,55 @@ class TestFuelNotifications(NoSocketsTestCase):
         self.assertTrue(mock_send_message.called)
         obj = FuelNotification.objects.first()
         self.assertEqual(obj.hours, 12)
+
+    @patch(MODULE_PATH + ".FuelNotification.send_to_webhook")
+    def test_should_send_structure_fuel_notification_to_configured_webhook_only(
+        self, mock_send_to_webhook, mock_send_message
+    ):
+        # given
+        webhook_2 = Webhook.objects.create(
+            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        )
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.TOWER_RESOURCE_ALERT_MSG,
+        ]
+        webhook_2.save()
+        self.owner.webhooks.add(webhook_2)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertEqual(config.fuel_notifications.count(), 1)
+        self.assertEqual(mock_send_to_webhook.call_count, 1)
+        args, _ = mock_send_to_webhook.call_args
+        self.assertEqual(args[0], self.webhook)
+
+    @patch(MODULE_PATH + ".FuelNotification.send_to_webhook")
+    def test_should_send_starbase_fuel_notification_to_configured_webhook_only(
+        self, mock_send_to_webhook, mock_send_message
+    ):
+        # given
+        webhook_2 = Webhook.objects.create(
+            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        )
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.STRUCTURE_FUEL_ALERT,
+        ]
+        webhook_2.save()
+        self.owner.webhooks.add(webhook_2)
+        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1300000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertEqual(config.fuel_notifications.count(), 1)
+        self.assertEqual(mock_send_to_webhook.call_count, 1)
+        args, _ = mock_send_to_webhook.call_args
+        self.assertEqual(args[0], self.webhook)
