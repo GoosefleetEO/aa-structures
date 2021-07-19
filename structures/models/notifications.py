@@ -994,7 +994,10 @@ class FuelNotification(AbstractNotification):
                 last_updated=now(),
             )
             notification_embed = NotificationBaseEmbed.create(notification)
-            return notification_embed.generate_embed(), self.config.channel_ping_type
+            embed = notification_embed.generate_embed(
+                use_custom_color=True, custom_color=self.config.color
+            )
+            return embed, self.config.channel_ping_type
 
 
 class FuelNotificationConfig(models.Model):
@@ -1005,7 +1008,10 @@ class FuelNotificationConfig(models.Model):
         choices=Webhook.PingType.choices,
         default=Webhook.PingType.HERE,
         verbose_name="channel pings",
-        help_text="Option to ping every member of the channel",
+        help_text=(
+            "Option to ping every member of the channel. "
+            "This setting can be overruled by owner or webhook configuration"
+        ),
     )
     end = models.PositiveIntegerField(
         help_text="End of alerts in hours before fuel expires"

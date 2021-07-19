@@ -35,9 +35,9 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
     def _id(self, obj):
         return f"#{obj.pk}"
 
-    actions = ("send_new_notifications",)
+    actions = ("send_fuel_notifications",)
 
-    def send_new_notifications(self, request, queryset):
+    def send_fuel_notifications(self, request, queryset):
         item_count = 0
         for obj in queryset:
             obj.send_new_notifications(force=True)
@@ -46,23 +46,32 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
             tasks.send_messages_for_webhook(webhook.pk)
 
         self.message_user(
-            request, f"Send new notifications for {item_count} configurations"
+            request,
+            f"Started sending fuel notifications for {item_count} configurations",
         )
 
-    send_new_notifications.short_description = (
-        "Sent new notifications for selected configuration"
+    send_fuel_notifications.short_description = (
+        "Sent fuel notifications for selected configuration"
     )
 
     fieldsets = (
         (
             "Timeing",
-            {"fields": ("start", "end", "frequency")},
+            {
+                "description": (
+                    "Timing for sending fuel notifications. "
+                    "Note that the first notification will be sent at the exact "
+                    "start hour, and the last notification will be sent one period "
+                    "before the end hour."
+                ),
+                "fields": ("start", "end", "frequency"),
+            },
         ),
         (
             "Discord",
             {"fields": ("channel_ping_type", "color")},
         ),
-        (None, {"fields": ("is_enabled",)}),
+        ("General", {"fields": ("is_enabled",)}),
     )
 
 

@@ -53,6 +53,30 @@ class TestNotificationEmbeds(TestCase):
         self.assertIsInstance(discord_embed, dhooks_lite.Embed)
         self.assertTrue(discord_embed.footer)
 
+    def test_should_generate_embed_from_notification_with_custom_color(self):
+        # given
+        notification = Notification.objects.get(notification_id=1000000403)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed(
+            use_custom_color=True, custom_color=Webhook.Color.SUCCESS
+        )
+        # then
+        self.assertIsInstance(discord_embed, dhooks_lite.Embed)
+        self.assertEqual(discord_embed.color, Webhook.Color.SUCCESS)
+
+    def test_should_generate_embed_from_notification_without_custom_color(self):
+        # given
+        notification = Notification.objects.get(notification_id=1000000403)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed(
+            custom_color=Webhook.Color.SUCCESS
+        )
+        # then
+        self.assertIsInstance(discord_embed, dhooks_lite.Embed)
+        self.assertNotEqual(discord_embed.color, Webhook.Color.SUCCESS)
+
     def test_should_generate_embed_for_all_supported_notification_types(self):
         types_tested = set()
         for notification in Notification.objects.select_related(

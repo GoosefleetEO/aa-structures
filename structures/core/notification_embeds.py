@@ -56,8 +56,15 @@ class NotificationBaseEmbed:
     def ping_type(self) -> Webhook.PingType:
         return self._ping_type
 
-    def generate_embed(self) -> dhooks_lite.Embed:
-        """Returns generated Discord embed for this object."""
+    def generate_embed(
+        self, use_custom_color: bool = False, custom_color: int = None
+    ) -> dhooks_lite.Embed:
+        """Returns generated Discord embed for this object.
+
+        Args:
+            use_custom_color: set True to use a custom color
+            custom_color: color to use instead of generated color
+        """
         if self._title is None:
             raise ValueError(f"title not defined for {type(self)}")
         if self._description is None:
@@ -71,6 +78,8 @@ class NotificationBaseEmbed:
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
+        if use_custom_color:
+            self._color = custom_color
         if self._color == Webhook.Color.DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == Webhook.Color.WARNING:
