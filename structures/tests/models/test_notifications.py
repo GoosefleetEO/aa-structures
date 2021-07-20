@@ -778,7 +778,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         # then
         self.assertTrue(mock_send_message.called)
         obj = FuelNotification.objects.first()
-        self.assertEqual(obj.hours, 24)
+        self.assertEqual(obj.hours, 36)
 
     def test_should_not_send_fuel_notification_that_already_exists(
         self, mock_send_message
@@ -788,7 +788,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
-        FuelNotification.objects.create(structure=structure, config=config, hours=24)
+        FuelNotification.objects.create(structure=structure, config=config, hours=36)
         # when
         config.send_new_notifications()
         # then
@@ -806,7 +806,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         # then
         self.assertTrue(mock_send_message.called)
         obj = FuelNotification.objects.first()
-        self.assertEqual(obj.hours, 24)
+        self.assertEqual(obj.hours, 36)
 
     def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
         # given

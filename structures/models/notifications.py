@@ -1,5 +1,6 @@
 """Notification related models"""
 
+import math
 from typing import Tuple
 
 import dhooks_lite
@@ -1102,7 +1103,10 @@ class FuelNotificationConfig(models.Model):
             if self.start >= hours_left >= self.end:
                 hours_last_alert = (
                     self.start
-                    - (round((self.start - hours_left) / self.repeat) * self.repeat)
+                    - (
+                        math.floor((self.start - hours_left) / self.repeat)
+                        * self.repeat
+                    )
                     if self.repeat
                     else self.start
                 )

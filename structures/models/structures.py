@@ -341,10 +341,11 @@ class Structure(models.Model):
             else:
                 if (
                     not old_instance.fuel_expires_at
-                    or old_instance.fuel_expires_at < self.fuel_expires_at
+                    or old_instance.fuel_expires_at != self.fuel_expires_at
                 ):
                     logger.info(
-                        "Structure has been refueled. Removing old fuel notifications."
+                        "Structure fuel level has changed. "
+                        "Therefore removing current fuel notifications."
                     )
                     self.fuel_notifications.all().delete()
 

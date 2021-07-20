@@ -213,7 +213,7 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertEqual(structure.fuel_notifications.count(), 0)
 
-    def test_should_reset_fuel_notifications_when_refueled_2(self):
+    def test_should_reset_fuel_notifications_when_fuel_exirey_date_has_changed_1(self):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
@@ -226,7 +226,7 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertEqual(structure.fuel_notifications.count(), 0)
 
-    def test_should_not_reset_fuel_notifications_when_fuel_is_dropping(self):
+    def test_should_reset_fuel_notifications_when_fuel_exirey_date_has_changed_2(self):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
@@ -237,7 +237,7 @@ class TestStructure(NoSocketsTestCase):
         structure.fuel_expires_at = now() + timedelta(hours=11)
         structure.save()
         # then
-        self.assertEqual(structure.fuel_notifications.count(), 1)
+        self.assertEqual(structure.fuel_notifications.count(), 0)
 
 
 class TestStructurePowerMode(NoSocketsTestCase):
