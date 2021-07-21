@@ -68,7 +68,29 @@ class General(models.Model):
 class Owner(models.Model):
     """A corporation that owns structures"""
 
-    ESI_CHARACTER_NOTIFICATION_CACHE_DURATION = 600
+    class RotateCharactersType(models.TextChoices):
+        """Type of sync to rotate characters for."""
+
+        STRUCTURES = "structures"
+        NOTIFICATIONS = "notifications"
+
+        @property
+        def last_used_at_name(self) -> str:
+            """Name of last used at property."""
+            if self is self.STRUCTURES:
+                return "structures_last_used_at"
+            elif self is self.NOTIFICATIONS:
+                return "notifications_last_used_at"
+            raise NotImplementedError(f"Not defined for: {self}")
+
+        @property
+        def esi_cache_duration(self) -> int:
+            """ESI cache duration in seconds."""
+            if self is self.STRUCTURES:
+                return 3600
+            elif self is self.NOTIFICATIONS:
+                return 600
+            raise NotImplementedError(f"Not defined for: {self}")
 
     # PK
     corporation = models.OneToOneField(
@@ -257,12 +279,15 @@ class Owner(models.Model):
         return self.characters.count()
 
     def fetch_token(
-        self, rotate_characters: bool = False, ignore_schedule: bool = False
+        self,
+        rotate_characters: RotateCharactersType = None,
+        ignore_schedule: bool = False,
     ) -> Token:
         """Fetch a valid token for the owner and return it.
 
         Args:
-            rotate_characters: rotate through characters with every new call
+            rotate_characters: For which sync type to rotate through characters \
+                with every new call
             ignore_schedule: Ignore current schedule when rotating
 
         Raises TokenError when no valid token can be provided.
@@ -293,7 +318,12 @@ class Owner(models.Model):
             )
 
         token = None
-        for character in self.characters.order_by("last_used_at"):
+        order_by_last_used = (
+            rotate_characters.last_used_at_name
+            if rotate_characters
+            else "notifications_last_used_at"
+        )
+        for character in self.characters.order_by(order_by_last_used):
             if (
                 character.character_ownership.character.corporation_id
                 != self.corporation.corporation_id
@@ -333,36 +363,42 @@ class Owner(models.Model):
             notify_error(error, level="danger")
             raise TokenError(error)
         if rotate_characters:
-            self._rotate_character(character, ignore_schedule)
+            self._rotate_character(
+                character=character,
+                ignore_schedule=ignore_schedule,
+                rotate_characters=rotate_characters,
+            )
         return token
 
     def _rotate_character(
-        self, character: "OwnerCharacter", ignore_schedule: bool
+        self,
+        character: "OwnerCharacter",
+        ignore_schedule: bool,
+        rotate_characters: RotateCharactersType,
     ) -> None:
         """Rotate this character such that all are spread evently
-        accross the ESI cache duration for fetching notifications.
+        accross the ESI cache duration for each ESI call.
         """
         time_since_last_used = (
-            (now() - character.last_used_at).total_seconds()
-            if character.last_used_at
+            (
+                now() - getattr(character, rotate_characters.last_used_at_name)
+            ).total_seconds()
+            if getattr(character, rotate_characters.last_used_at_name)
             else None
         )
         try:
             minimum_time_between_rotations = max(
-                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
-                / self.characters.count(),
+                rotate_characters.esi_cache_duration / self.characters.count(),
                 60,
             )
         except ZeroDivisionError:
-            minimum_time_between_rotations = (
-                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
-            )
+            minimum_time_between_rotations = rotate_characters.esi_cache_duration
         if (
             ignore_schedule
             or not time_since_last_used
             or time_since_last_used >= minimum_time_between_rotations
         ):
-            character.last_used_at = now()
+            setattr(character, rotate_characters.last_used_at_name, now())
             character.save()
 
     def update_structures_esi(self, user: User = None):
@@ -370,7 +406,7 @@ class Owner(models.Model):
         self.structures_last_update_ok = None
         self.structures_last_update_at = now()
         self.save()
-        token = self.fetch_token()
+        token = self.fetch_token(rotate_characters=self.RotateCharactersType.STRUCTURES)
 
         is_ok = self._fetch_upwell_structures(token)
         if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
@@ -907,7 +943,9 @@ class Owner(models.Model):
         self.notifications_last_update_ok = None
         self.notifications_last_update_at = now()
         self.save()
-        token = self.fetch_token(rotate_characters=True)
+        token = self.fetch_token(
+            rotate_characters=self.RotateCharactersType.NOTIFICATIONS
+        )
 
         try:
             notifications = self._fetch_notifications_from_esi(token)
@@ -1259,12 +1297,19 @@ class OwnerCharacter(models.Model):
         related_name="+",
         help_text="character used for syncing",
     )
-    last_used_at = models.DateTimeField(
+    structures_last_used_at = models.DateTimeField(
         null=True,
         default=None,
         editable=False,
         db_index=True,
-        help_text="when this character was last used for sync",
+        help_text="when this character was last used for syncing structures",
+    )
+    notifications_last_used_at = models.DateTimeField(
+        null=True,
+        default=None,
+        editable=False,
+        db_index=True,
+        help_text="when this character was last used for syncing notifications",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

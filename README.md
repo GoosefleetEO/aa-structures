@@ -336,7 +336,7 @@ Every added sync character will reduce the delay up to a maximum of 10, which br
 
 ### Improved resilence against character becoming invalid
 
-Another benefit of having multple sync characters is that it increases the resilence of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for tha towner until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but it notify admins about it) and use any of the remaining valid characters to complete the update.
+Another benefit of having multple sync characters is that it increases the resilence of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for tha towner until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but notify admins about it) and use any of the remaining valid characters to complete the update.
 
 ### Measuring notification delay
 

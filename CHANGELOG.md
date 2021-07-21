@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fuel notifications to warn about fuel running out in structures and POSes at configurable times and frequencies, e.g. 3 days before fuel runs out and repeated every 12 hours
 
+- Rotate tokens for structures sync to get more frequent updates
+
 ## Fix
 
 - POS notifications formatted all bold when POS has no name

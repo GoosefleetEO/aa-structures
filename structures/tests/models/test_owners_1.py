@@ -279,13 +279,13 @@ class TestOwner(NoSocketsTestCase):
         self.assertIsInstance(result, OwnerCharacter)
         self.assertEqual(result.owner, owner)
         self.assertEqual(result.character_ownership, character_ownership)
-        self.assertIsNone(result.last_used_at)
+        self.assertIsNone(result.notifications_last_used_at)
 
     def test_should_not_overwrite_existing_characters(self):
         # given
         character = self.owner.characters.first()
         my_dt = datetime(year=2021, month=2, day=11, hour=12, tzinfo=utc)
-        character.last_used_at = my_dt
+        character.notifications_last_used_at = my_dt
         character.save()
         # when
         result = self.owner.add_character(character.character_ownership)
@@ -293,7 +293,7 @@ class TestOwner(NoSocketsTestCase):
         self.assertIsInstance(result, OwnerCharacter)
         self.assertEqual(result.owner, self.owner)
         self.assertEqual(result.character_ownership, character.character_ownership)
-        self.assertEqual(result.last_used_at, my_dt)
+        self.assertEqual(result.notifications_last_used_at, my_dt)
 
     def test_should_prevent_adding_character_from_other_corporation(self):
         # given
@@ -486,13 +486,17 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 1, 2, tzinfo=utc
+        )
         my_character.save()
         _, character_ownership_1102 = create_user_from_evecharacter(
             1102, scopes=Owner.get_esi_scopes()
         )
         my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 1, 1, tzinfo=utc
+        )
         my_character.save()
         # when
         token = owner.fetch_token()
@@ -503,7 +507,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertFalse(mock_notify_throttled.called)
         self.assertEqual(owner.characters.count(), 1)
 
-    def test_should_rotate_through_characters(
+    def test_should_rotate_through_characters_for_notification(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -516,7 +520,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 5, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 5, tzinfo=utc
+        )
         my_character.save()
         _, character_ownership_1102 = create_user_from_evecharacter(
             1102,
@@ -524,24 +530,90 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 0, tzinfo=utc
+        )
         my_character.save()
-        tokens_reveiced = list()
+        tokens_received = list()
         # when
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
         # then
-        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1011])
+        self.assertListEqual(tokens_received, [1102, 1011, 1102, 1011])
+
+    def test_should_rotate_through_characters_for_structures(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.structures_last_used_at = dt.datetime(2021, 1, 1, 0, 5, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.structures_last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.save()
+        tokens_received = list()
+        # when
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        # then
+        self.assertListEqual(tokens_received, [1102, 1011, 1102, 1011])
 
     def test_should_rotate_through_characters_based_on_schedule(
         self, mock_notify_admins_throttled, mock_notify_throttled
@@ -556,7 +628,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 1, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 1, tzinfo=utc
+        )
         my_character.save()
         _, character_ownership_1102 = create_user_from_evecharacter(
             1102,
@@ -564,16 +638,34 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 0, tzinfo=utc
+        )
         my_character.save()
-        tokens_reveiced = list()
+        tokens_received = list()
         # when
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
         # then
-        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1102])
+        self.assertListEqual(tokens_received, [1102, 1011, 1102, 1102])
 
 
 @patch(MODULE_PATH + ".notify_admins_throttled")
