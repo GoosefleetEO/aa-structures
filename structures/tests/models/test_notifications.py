@@ -176,6 +176,67 @@ class TestNotification(NoSocketsTestCase):
         self.assertFalse(x1.filter_for_alliance_level())
 
 
+class TestNotificationCreateFromStructure(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+
+    def test_should_create_notification_for_structure_fuel_alerts(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when
+        notif = Notification.create_from_structure(
+            structure, notif_type=NotificationType.STRUCTURE_FUEL_ALERT
+        )
+        # then
+        self.assertIsInstance(notif, Notification)
+        self.assertEqual(notif.notification_id, 1)
+        self.assertAlmostEqual(notif.timestamp, now(), delta=timedelta(seconds=10))
+        self.assertAlmostEqual(notif.last_updated, now(), delta=timedelta(seconds=10))
+        self.assertEqual(notif.owner, structure.owner)
+        self.assertEqual(notif.sender_id, 1000137)
+        self.assertEqual(notif.notif_type, NotificationType.STRUCTURE_FUEL_ALERT)
+
+    def test_should_create_notification_for_tower_fuel_alerts(self):
+        # given
+        structure = Structure.objects.get(id=1300000000001)
+        # when
+        notif = Notification.create_from_structure(
+            structure, notif_type=NotificationType.TOWER_RESOURCE_ALERT_MSG
+        )
+        # then
+        self.assertIsInstance(notif, Notification)
+        self.assertEqual(notif.notification_id, 1)
+        self.assertAlmostEqual(notif.timestamp, now(), delta=timedelta(seconds=10))
+        self.assertAlmostEqual(notif.last_updated, now(), delta=timedelta(seconds=10))
+        self.assertEqual(notif.owner, structure.owner)
+        self.assertEqual(notif.sender_id, 1000137)
+        self.assertEqual(notif.notif_type, NotificationType.TOWER_RESOURCE_ALERT_MSG)
+
+    def test_should_create_notification_with_additional_params(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when
+        notif = Notification.create_from_structure(
+            structure, notif_type=NotificationType.STRUCTURE_FUEL_ALERT, is_read=True
+        )
+        # then
+        self.assertIsInstance(notif, Notification)
+        self.assertEqual(notif.notif_type, NotificationType.STRUCTURE_FUEL_ALERT)
+        self.assertTrue(notif.is_read)
+
+    def test_should_raise_error_when_text_is_missing(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when/then
+        with self.assertRaises(ValueError):
+            Notification.create_from_structure(
+                structure, notif_type=NotificationType.STRUCTURE_LOST_ARMOR
+            )
+
+
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestNotificationSendMessage(NoSocketsTestCase):
     @classmethod

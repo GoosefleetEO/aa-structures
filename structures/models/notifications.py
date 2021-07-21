@@ -1,7 +1,7 @@
 """Notification related models"""
 
 import math
-from typing import Tuple
+from typing import Optional, Tuple
 
 import dhooks_lite
 import yaml
@@ -576,13 +576,6 @@ class Notification(AbstractNotification):
             notification_embed = NotificationBaseEmbed.create(self)
             return notification_embed.generate_embed(), notification_embed.ping_type
 
-    @classmethod
-    def type_id_from_event_type(cls, event_type: int) -> int:
-        if event_type in cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
-            return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
-        else:
-            return None
-
     def process_for_timerboard(self, token: Token = None) -> bool:
         """Add/removes a timer related to this notification for some types
 
@@ -941,6 +934,47 @@ class Notification(AbstractNotification):
             f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
         )
 
+    @classmethod
+    def type_id_from_event_type(cls, event_type: int) -> Optional[int]:
+        if event_type in cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
+            return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
+        return None
+
+    @classmethod
+    def create_from_structure(
+        cls, structure: Structure, notif_type: NotificationType, **kwargs
+    ) -> "Notification":
+        """Create new notification from given structure."""
+        if "notification_id" not in kwargs:
+            kwargs["notification_id"] = 1
+        if "timestamp" not in kwargs:
+            kwargs["timestamp"] = now()
+        if "last_updated" not in kwargs:
+            kwargs["last_updated"] = now()
+        if "text" not in kwargs:
+            if notif_type is NotificationType.STRUCTURE_FUEL_ALERT:
+                data = {
+                    "solarsystemID": structure.eve_solar_system_id,
+                    "structureID": structure.id,
+                    "structureTypeID": structure.eve_type_id,
+                }
+            elif notif_type is NotificationType.TOWER_RESOURCE_ALERT_MSG:
+                data = {
+                    "moonID": structure.eve_moon_id,
+                    "typeID": structure.eve_type_id,
+                }
+            else:
+                raise ValueError("text property not provided and can not be generated.")
+            kwargs["text"] = yaml.dump(data)
+        if "sender" not in kwargs:
+            sender, _ = EveEntity.objects.get_or_create_esi(
+                eve_entity_id=constants.EVE_CORPORATION_ID_DED
+            )
+            kwargs["sender"] = sender
+        kwargs["owner"] = structure.owner
+        kwargs["notif_type"] = notif_type
+        return cls(**kwargs)
+
 
 class FuelNotification(AbstractNotification):
     """A generated notification alerting about fuel getting low in structures."""
@@ -959,9 +993,6 @@ class FuelNotification(AbstractNotification):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self) -> str:
-        return f"{self.structure}-{self.config}-{self.hours}"
-
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -970,11 +1001,15 @@ class FuelNotification(AbstractNotification):
             )
         ]
 
+    def __str__(self) -> str:
+        return f"{self.structure}-{self.config}-{self.hours}"
+
     @cached_property
     def owner(self) -> models.Model:
+        """send_to_webhook() requires this property."""
         return self.structure.owner
 
-    @property
+    @cached_property
     def notif_type(self) -> NotificationType:
         if self.structure.eve_type.is_upwell_structure:
             return NotificationType.STRUCTURE_FUEL_ALERT
@@ -982,48 +1017,22 @@ class FuelNotification(AbstractNotification):
             return NotificationType.TOWER_RESOURCE_ALERT_MSG
         raise NotImplementedError("Undefined structure type.")
 
-    @cached_property
-    def text(self) -> str:
-        if self.structure.eve_type.is_upwell_structure:
-            data = {
-                "solarsystemID": self.structure.eve_solar_system_id,
-                "structureID": self.structure.id,
-                "structureTypeID": self.structure.eve_type_id,
-            }
-        elif self.structure.eve_type.is_starbase:
-            data = {
-                "moonID": self.structure.eve_moon_id,
-                "typeID": self.structure.eve_type_id,
-            }
-        else:
-            raise NotImplementedError("Undefined structure type.")
-        return yaml.dump(data)
-
     def _generate_embed(
         self, language_code: str
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
-        """Generates a Discord embed for this notification."""
+        """Generates a Discord embed for a generated fuel notification."""
         from ..core.notification_embeds import NotificationBaseEmbed
 
         logger.info("Creating embed with language = %s" % language_code)
+        notification = Notification.create_from_structure(
+            structure=self.structure, notif_type=self.notif_type
+        )
+        notification_embed = NotificationBaseEmbed.create(notification)
         with translation.override(language_code):
-            sender, _ = EveEntity.objects.get_or_create_esi(
-                eve_entity_id=self.owner.corporation.corporation_id
-            )
-            notification = Notification(
-                notification_id=1,
-                owner=self.owner,
-                sender=sender,
-                timestamp=now(),
-                notif_type=self.notif_type,
-                text=self.text,
-                last_updated=now(),
-            )
-            notification_embed = NotificationBaseEmbed.create(notification)
             embed = notification_embed.generate_embed(
                 use_custom_color=True, custom_color=self.config.color
             )
-            return embed, self.config.channel_ping_type
+        return embed, self.config.channel_ping_type
 
 
 class FuelNotificationConfig(models.Model):
