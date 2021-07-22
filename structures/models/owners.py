@@ -401,6 +401,20 @@ class Owner(models.Model):
             setattr(character, rotate_characters.last_used_at_name, now())
             character.save()
 
+    def _report_esi_issue(self, action: str, ex: Exception, token: Token):
+        """Report an ESI issue to admins."""
+        message_id = f"{__title__}-{action}-{self.pk}-{type(ex).__name__}"
+        title = f"{__title__}: Failed to {action} for {self}"
+        message = f"{self}: Failed to {action} from ESI with token {token} due to {ex}"
+        logger.warning(message, exc_info=True)
+        notify_admins_throttled(
+            message_id=message_id,
+            title=title,
+            message=message,
+            level="warning",
+            timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
+        )
+
     def update_structures_esi(self, user: User = None):
         """Updates all structures from ESI."""
         self.structures_last_update_ok = None
@@ -455,22 +469,7 @@ class Owner(models.Model):
                 has_pages=True,
             )
         except OSError as ex:
-            message_id = (
-                f"{__title__}-fetch_upwell_structures-{self.pk}-{type(ex).__name__}"
-            )
-            title = f"{__title__}: Failed to update upwell structures for {self}"
-            message = (
-                f"{self}: Failed to update upwell structures "
-                f"from ESI for due to: {ex}"
-            )
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch corporation structures", ex, token)
             return False
 
         is_ok = True
@@ -500,25 +499,8 @@ class Owner(models.Model):
                     )
                     structure["position"] = structure_info["position"]
                 except OSError as ex:
-                    message_id = (
-                        f"{__title__}-fetch_upwell_structures-details-"
-                        f"{self.pk}-{type(ex).__name__}"
-                    )
-                    title = (
-                        f"{__title__}: Failed to update details for "
-                        f"structure from {self}"
-                    )
-                    message = (
-                        f"{self}: Failed to update details for structure "
-                        f"with ID {structure['structure_id']} from ESI due to: {ex}"
-                    )
-                    logger.warning(message, exc_info=True)
-                    notify_admins_throttled(
-                        message_id=message_id,
-                        title=title,
-                        message=message,
-                        level="warning",
-                        timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
+                    self._report_esi_issue(
+                        f"fetch structure #{structure['structure_id']}", ex, token
                     )
                     structure["name"] = "(no data)"
                     is_ok = False
@@ -721,19 +703,7 @@ class Owner(models.Model):
                 self._store_raw_data("customs_offices", structures, corporation_id)
 
         except OSError as ex:
-            message_id = (
-                f"{__title__}-_fetch_customs_offices-{self.pk}-{type(ex).__name__}"
-            )
-            title = f"{__title__}: Failed to update custom offices for {self}"
-            message = f"{self}: Failed to update custom offices from ESI due to: {ex}"
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch custom offices", ex, token)
             return False
 
         self._remove_structures_not_returned_from_esi(
@@ -852,17 +822,7 @@ class Owner(models.Model):
                 self._store_raw_data("starbases", structures, corporation_id)
 
         except OSError as ex:
-            message_id = f"{__title__}-_fetch_starbases-{self.pk}-{type(ex).__name__}"
-            title = f"{__title__}: Failed to fetch starbases for {self}"
-            message = f"{self}: Failed to fetch starbases from ESI due to {ex}"
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch starbases", ex, token)
             return False
 
         self._remove_structures_not_returned_from_esi(
@@ -950,19 +910,7 @@ class Owner(models.Model):
         try:
             notifications = self._fetch_notifications_from_esi(token)
         except OSError as ex:
-            message_id = (
-                f"{__title__}-fetch_notifications-{self.pk}-{type(ex).__name__}"
-            )
-            title = f"{__title__}: Failed to update notifications for {self}"
-            message = f"{self}: Failed to update notifications from ESI due to {ex}"
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch notifications", ex, token)
             self.notifications_last_update_ok = False
             self.save()
             raise ex
@@ -1249,17 +1197,7 @@ class Owner(models.Model):
                 structure_ids, self.corporation.corporation_id, token
             )
         except OSError as ex:
-            message_id = f"{__title__}-fetch_assets-{self.pk}-{type(ex).__name__}"
-            title = f"{__title__}: Failed to update assets for {self}"
-            message = f"{self}: Failed to update assets from ESI due to {ex}"
-            logger.warning(message, exc_info=True)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="warning",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch assets", ex, token)
             raise ex
         else:
             self.assets_last_update_ok = True

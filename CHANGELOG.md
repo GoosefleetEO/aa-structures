@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Rotate tokens for structures sync to get more frequent updates
 
+## Changed
+
+- Show name of token's character when reporting ESI issues (#55)
+
 ## Fix
 
 - POS notifications formatted all bold when POS has no name
