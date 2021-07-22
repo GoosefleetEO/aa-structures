@@ -302,8 +302,32 @@ class TestNotificationSendMessage(NoSocketsTestCase):
                 self.assertTrue(notif.send_to_webhook(self.webhook))
                 types_tested.add(notif.notif_type)
 
-        # make sure we have tested all existing notification types
-        self.assertSetEqual(set(NotificationType.values), types_tested)
+        # make sure we have tested all existing esi notification types
+        self.assertSetEqual(NotificationType.esi_notifications, types_tested)
+
+    def test_should_create_notification_for_structure_refueled(self, mock_send_message):
+        # given
+        mock_send_message.return_value = True
+        structure = Structure.objects.get(id=1000000000001)
+        notif = Notification.create_from_structure(
+            structure, NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhook(self.webhook)
+        # then
+        self.assertTrue(result)
+
+    def test_should_create_notification_for_tower_refueled(self, mock_send_message):
+        # given
+        mock_send_message.return_value = True
+        structure = Structure.objects.get(id=1300000000001)
+        notif = Notification.create_from_structure(
+            structure, NotificationType.TOWER_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhook(self.webhook)
+        # then
+        self.assertTrue(result)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
@@ -956,7 +980,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         obj = FuelNotification.objects.first()
         self.assertEqual(obj.hours, 12)
 
-    @patch(MODULE_PATH + ".FuelNotification.send_to_webhook")
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
     def test_should_send_structure_fuel_notification_to_configured_webhook_only(
         self, mock_send_to_webhook, mock_send_message
     ):
@@ -982,7 +1006,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         args, _ = mock_send_to_webhook.call_args
         self.assertEqual(args[0], self.webhook)
 
-    @patch(MODULE_PATH + ".FuelNotification.send_to_webhook")
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
     def test_should_send_starbase_fuel_notification_to_configured_webhook_only(
         self, mock_send_to_webhook, mock_send_message
     ):

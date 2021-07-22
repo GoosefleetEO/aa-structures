@@ -338,16 +338,34 @@ class Structure(models.Model):
                 old_instance = Structure.objects.get(pk=self.pk)
             except Structure.DoesNotExist:
                 return
-            else:
+            if (
+                not old_instance.fuel_expires_at
+                or old_instance.fuel_expires_at != self.fuel_expires_at
+            ):
+                logger.info(
+                    "Structure fuel level has changed. "
+                    "Therefore removing current fuel notifications."
+                )
+                self.fuel_notifications.all().delete()
                 if (
-                    not old_instance.fuel_expires_at
-                    or old_instance.fuel_expires_at != self.fuel_expires_at
+                    old_instance.fuel_expires_at
+                    and self.fuel_expires_at
+                    and old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
-                    logger.info(
-                        "Structure fuel level has changed. "
-                        "Therefore removing current fuel notifications."
-                    )
-                    self.fuel_notifications.all().delete()
+                    self.send_refueled_notification()
+
+    def send_refueled_notification(self):
+        """Send a refueled notifications for this structure."""
+        from .notifications import Notification, NotificationType
+
+        notif_type = (
+            NotificationType.TOWER_REFUELED_EXTRA
+            if self.eve_type.is_starbase
+            else NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        Notification.send_generated_from_structure(
+            structure=self, notif_type=notif_type
+        )
 
     @property
     def is_full_power(self):

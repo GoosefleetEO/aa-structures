@@ -16,7 +16,7 @@ from app_utils.datetime import (
 )
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
-from .. import constants
+from .. import __title__, constants
 from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
@@ -72,14 +72,15 @@ class NotificationBaseEmbed:
     def ping_type(self) -> Webhook.PingType:
         return self._ping_type
 
-    def generate_embed(
-        self, use_custom_color: bool = False, custom_color: int = None
-    ) -> dhooks_lite.Embed:
+    def generate_embed(self) -> dhooks_lite.Embed:
         """Returns generated Discord embed for this object.
 
-        Args:
-            use_custom_color: set True to use a custom color
-            custom_color: color to use instead of generated color
+        Will use custom color for embeds if self.notification has the \
+            property "color_override" defined
+
+        Will use custom ping type if self.notification has the \
+            property "ping_type_override" defined
+
         """
         if self._title is None:
             raise ValueError(f"title not defined for {type(self)}")
@@ -94,18 +95,28 @@ class NotificationBaseEmbed:
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
-        if use_custom_color:
-            self._color = custom_color
-        if self._color == Webhook.Color.DANGER:
+        if hasattr(self.notification, "color_override"):
+            self._color = self.notification.color_override
+        if hasattr(self.notification, "ping_type_override"):
+            self._ping_type = self.notification.ping_type_override
+        elif self._color == Webhook.Color.DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == Webhook.Color.WARNING:
             self._ping_type = Webhook.PingType.HERE
         else:
             self._ping_type = Webhook.PingType.NONE
-        footer_text = "Eve Online"
+        if self.notification.is_generated:
+            footer_text = __title__
+            footer_icon_url = static_file_absolute_url(
+                "structures/img/structures_logo.png"
+            )
+        else:
+            footer_text = "Eve Online"
+            footer_icon_url = static_file_absolute_url(
+                "structures/img/eve_symbol_128.png"
+            )
         if settings.DEBUG:
-            footer_text = f"{footer_text} #{self.notification.notification_id}"
-        footer_icon_url = static_file_absolute_url("structures/img/eve_symbol_128.png")
+            footer_text += f" #{self.notification.notification_id}"
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,
@@ -155,6 +166,8 @@ class NotificationBaseEmbed:
             return NotificationStructureOnline(notification)
         elif notif_type == NotificationType.STRUCTURE_FUEL_ALERT:
             return NotificationStructureFuelAlert(notification)
+        elif notif_type == NotificationType.STRUCTURE_REFUELED_EXTRA:
+            return NotificationStructureRefuledExtra(notification)
         elif notif_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
             return NotificationStructureServicesOffline(notification)
         elif notif_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
@@ -189,6 +202,8 @@ class NotificationBaseEmbed:
             return NotificationTowerAlertMsg(notification)
         elif notif_type == NotificationType.TOWER_RESOURCE_ALERT_MSG:
             return NotificationTowerResourceAlertMsg(notification)
+        elif notif_type == NotificationType.TOWER_REFUELED_EXTRA:
+            return NotificationTowerRefueledExtra(notification)
 
         # Sov
         elif notif_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
@@ -343,6 +358,20 @@ class NotificationStructureFuelAlert(NotificationStructureEmbed):
             "is running out of fuel in %s." % Webhook.text_bold(hours_left)
         )
         self._color = Webhook.Color.WARNING
+
+
+class NotificationStructureRefuledExtra(NotificationStructureEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        if self._structure and self._structure.fuel_expires_at:
+            target_date = target_datetime_formatted(self._structure.fuel_expires_at)
+        else:
+            target_date = "?"
+        self._title = gettext("Structure refueled")
+        self._description += gettext(
+            "has been refueled. Fuel will last until %s." % target_date
+        )
+        self._color = Webhook.Color.INFO
 
 
 class NotificationStructureServicesOffline(NotificationStructureEmbed):
@@ -800,19 +829,24 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         structure_type, _ = EveType.objects.get_or_create_esi(
             self._parsed_text["typeID"]
         )
-        self._solar_system_link = self._gen_solar_system_text(
-            self.eve_moon.eve_solar_system
-        )
-        self._owner_link = self._gen_corporation_link(str(notification.owner))
         self._structure = Structure.objects.filter(eve_moon=self.eve_moon).first()
         if self._structure:
-            self._structure_name = self._structure.name
+            structure_name = self._structure.name
         else:
-            self._structure_name = structure_type.name_localized
+            structure_name = structure_type.name_localized
 
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
+        self._description = gettext(
+            "The starbase %(structure_name)s at %(moon)s "
+            "in %(solar_system)s belonging to %(owner_link)s "
+        ) % {
+            "structure_name": Webhook.text_bold(structure_name),
+            "moon": self.eve_moon.name_localized,
+            "solar_system": self._gen_solar_system_text(self.eve_moon.eve_solar_system),
+            "owner_link": self._gen_corporation_link(str(notification.owner)),
+        }
 
 
 class NotificationTowerAlertMsg(NotificationTowerEmbed):
@@ -833,19 +867,9 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
                 )
         damage_text = " | ".join(damage_parts)
         self._title = gettext("Starbase under attack")
-        self._description = gettext(
-            "The starbase %(structure_name)s at %(moon)s "
-            "in %(solar_system)s belonging to %(owner_link)s "
-            "is under attack by %(aggressor)s.\n"
-            "%(damage_text)s"
-        ) % {
-            "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self.eve_moon.name_localized,
-            "solar_system": self._solar_system_link,
-            "owner_link": self._owner_link,
-            "aggressor": aggressor_link,
-            "damage_text": damage_text,
-        }
+        self._description += gettext(
+            "is under attack by %(aggressor)s.\n%(damage_text)s"
+        ) % {"aggressor": aggressor_link, "damage_text": damage_text}
         self._color = Webhook.Color.WARNING
 
 
@@ -857,18 +881,24 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
         else:
             hours_left = "?"
         self._title = gettext("Starbase fuel alert")
-        self._description = gettext(
-            "The starbase %(structure_name)s at %(moon)s "
-            "in %(solar_system)s belonging to %(owner_link)s "
-            "is running out of fuel in %(hours_left)s."
-        ) % {
-            "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self.eve_moon.name_localized,
-            "solar_system": self._solar_system_link,
-            "owner_link": self._owner_link,
-            "hours_left": Webhook.text_bold(hours_left),
-        }
+        self._description += gettext(
+            "is running out of fuel in %s."
+        ) % Webhook.text_bold(hours_left)
         self._color = Webhook.Color.WARNING
+
+
+class NotificationTowerRefueledExtra(NotificationTowerEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        if self._structure and self._structure.fuel_expires_at:
+            target_date = target_datetime_formatted(self._structure.fuel_expires_at)
+        else:
+            target_date = "?"
+        self._title = gettext("Starbase fuel alert")
+        self._description += gettext(
+            "has been refueled. Fuel will last until %s." % target_date
+        )
+        self._color = Webhook.Color.INFO
 
 
 class NotificationSovEmbed(NotificationBaseEmbed):
