@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Added
 
-- Fuel notifications to warn about fuel running out in structures and POSes at configurable times and frequencies, e.g. 3 days before fuel runs out and repeated every 12 hours
-
-- Rotate tokens for structures sync to get more frequent updates
+- New notifications are generated to warn about fuel running out in structures and POSes at configurable times and frequencies, e.g. 3 days before fuel runs out and repeated every 12 hours (BETA)
+- New notifications are generated to inform when a structure or POS has been refueled
+- Tokens will now also be rotated when fetching structures from ESI to reduce latency
 
 ## Changed
 
-- Show name of token's character when reporting ESI issues (#55)
+- Will now show name of token's character for ESI issues to make it easier to identify the culprit (#55)
 
 ## Fix
 

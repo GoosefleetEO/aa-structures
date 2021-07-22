@@ -116,7 +116,11 @@ class NotificationBaseEmbed:
                 "structures/img/eve_symbol_128.png"
             )
         if settings.DEBUG:
-            footer_text += f" #{self.notification.notification_id}"
+            footer_text += " #{}".format(
+                self.notification.notification_id
+                if not self.is_generated
+                else "GENERATED"
+            )
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,

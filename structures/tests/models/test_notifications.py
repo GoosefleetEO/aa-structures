@@ -192,7 +192,7 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
         )
         # then
         self.assertIsInstance(notif, Notification)
-        self.assertEqual(notif.notification_id, 1)
+        self.assertTrue(notif.is_generated)
         self.assertAlmostEqual(notif.timestamp, now(), delta=timedelta(seconds=10))
         self.assertAlmostEqual(notif.last_updated, now(), delta=timedelta(seconds=10))
         self.assertEqual(notif.owner, structure.owner)
@@ -208,7 +208,7 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
         )
         # then
         self.assertIsInstance(notif, Notification)
-        self.assertEqual(notif.notification_id, 1)
+        self.assertTrue(notif.is_generated)
         self.assertAlmostEqual(notif.timestamp, now(), delta=timedelta(seconds=10))
         self.assertAlmostEqual(notif.last_updated, now(), delta=timedelta(seconds=10))
         self.assertEqual(notif.owner, structure.owner)
@@ -858,6 +858,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -873,6 +874,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_message.reset_mock()
         FuelNotification.objects.create(structure=structure, config=config, hours=36)
         # when
         config.send_new_notifications()
@@ -886,6 +888,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1300000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -904,6 +907,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -922,6 +926,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -936,6 +941,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=11, minutes=59, seconds=59)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -949,6 +955,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12, minutes=0, seconds=1)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -960,6 +967,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=5, minutes=59, seconds=59)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -973,6 +981,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=11, minutes=59, seconds=59)
         structure.save()
+        mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -998,6 +1007,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_to_webhook.reset_mock()
         # when
         config.send_new_notifications()
         # then
@@ -1024,6 +1034,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         structure = Structure.objects.get(id=1300000000001)
         structure.fuel_expires_at = now() + timedelta(hours=25)
         structure.save()
+        mock_send_to_webhook.reset_mock()
         # when
         config.send_new_notifications()
         # then

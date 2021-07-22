@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.utils.timezone import now
 
@@ -7,6 +8,7 @@ from app_utils.testing import NoSocketsTestCase
 
 from ...models import (
     FuelNotificationConfig,
+    NotificationType,
     PocoDetails,
     Structure,
     StructureService,
@@ -14,7 +16,8 @@ from ...models import (
 )
 from ..testdata import create_structures, set_owner_character
 
-MODULE_PATH = "structures.models.structures"
+STRUCTURES_PATH = "structures.models.structures"
+NOTIFICATIONS_PATH = "structures.models.notifications"
 
 
 class TestStructureTag(NoSocketsTestCase):
@@ -200,6 +203,10 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertIsNone(result)
 
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure",
+        lambda *args, **kwargs: None,
+    )
     def test_should_reset_fuel_notifications_when_refueled_1(self):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
@@ -213,7 +220,11 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertEqual(structure.fuel_notifications.count(), 0)
 
-    def test_should_reset_fuel_notifications_when_fuel_exirey_date_has_changed_1(self):
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure",
+        lambda *args, **kwargs: None,
+    )
+    def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed_1(self):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
@@ -226,7 +237,11 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertEqual(structure.fuel_notifications.count(), 0)
 
-    def test_should_reset_fuel_notifications_when_fuel_exirey_date_has_changed_2(self):
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure",
+        lambda *args, **kwargs: None,
+    )
+    def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed_2(self):
         # given
         config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
@@ -238,6 +253,85 @@ class TestStructure(NoSocketsTestCase):
         structure.save()
         # then
         self.assertEqual(structure.fuel_notifications.count(), 0)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure")
+    def test_should_generate_refueled_notif_when_fuel_level_increased_1(
+        self, mock_send_generated_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.save()
+        # then
+        self.assertTrue(mock_send_generated_from_structure.called)
+        _, kwargs = mock_send_generated_from_structure.call_args
+        self.assertEqual(
+            kwargs["notif_type"], NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure")
+    def test_should_generate_refueled_notif_when_fuel_level_increased_2(
+        self, mock_send_generated_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        structure.save()
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.save()
+        # then
+        self.assertTrue(mock_send_generated_from_structure.called)
+        _, kwargs = mock_send_generated_from_structure.call_args
+        self.assertEqual(
+            kwargs["notif_type"], NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure")
+    def test_should_not_generate_refueled_notif_when_fuel_level_unchanged(
+        self, mock_send_generated_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        target_date = now() + timedelta(hours=2)
+        structure.fuel_expires_at = target_date
+        structure.save()
+        # when
+        structure.fuel_expires_at = target_date
+        structure.save()
+        # then
+        self.assertFalse(mock_send_generated_from_structure.called)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure")
+    def test_should_not_generate_refueled_notif_fuel_level_decreased_1(
+        self, mock_send_generated_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.save()
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()
+        # then
+        self.assertFalse(mock_send_generated_from_structure.called)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_generated_from_structure")
+    def test_should_not_generate_refueled_notif_fuel_level_decreased_2(
+        self, mock_send_generated_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.save()
+        # when
+        structure.fuel_expires_at = None
+        structure.save()
+        # then
+        self.assertFalse(mock_send_generated_from_structure.called)
 
 
 class TestStructurePowerMode(NoSocketsTestCase):
