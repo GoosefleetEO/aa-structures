@@ -7,7 +7,7 @@ from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
 from ...models import (
-    FuelNotificationConfig,
+    FuelAlertConfig,
     NotificationType,
     PocoDetails,
     Structure,
@@ -209,16 +209,16 @@ class TestStructure(NoSocketsTestCase):
     )
     def test_should_reset_fuel_notifications_when_refueled_1(self):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
-        structure.fuel_notifications.create(config=config, hours=12)
+        structure.fuel_alerts.create(config=config, hours=12)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=13)
         structure.save()
         # then
-        self.assertEqual(structure.fuel_notifications.count(), 0)
+        self.assertEqual(structure.fuel_alerts.count(), 0)
 
     @patch(
         NOTIFICATIONS_PATH + ".Notification.send_to_webhooks",
@@ -226,16 +226,16 @@ class TestStructure(NoSocketsTestCase):
     )
     def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed_1(self):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = None
         structure.save()
-        structure.fuel_notifications.create(config=config, hours=12)
+        structure.fuel_alerts.create(config=config, hours=12)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=13)
         structure.save()
         # then
-        self.assertEqual(structure.fuel_notifications.count(), 0)
+        self.assertEqual(structure.fuel_alerts.count(), 0)
 
     @patch(
         NOTIFICATIONS_PATH + ".Notification.send_to_webhooks",
@@ -243,16 +243,16 @@ class TestStructure(NoSocketsTestCase):
     )
     def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed_2(self):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
-        structure.fuel_notifications.create(config=config, hours=12)
+        structure.fuel_alerts.create(config=config, hours=12)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=11)
         structure.save()
         # then
-        self.assertEqual(structure.fuel_notifications.count(), 0)
+        self.assertEqual(structure.fuel_alerts.count(), 0)
 
     @patch(NOTIFICATIONS_PATH + ".Notification.create_from_structure")
     def test_should_generate_structure_refueled_notif_when_fuel_level_increased(

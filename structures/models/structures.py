@@ -348,7 +348,7 @@ class Structure(models.Model):
                     "Structure fuel level has changed. "
                     "Therefore removing current fuel notifications."
                 )
-                self.fuel_notifications.all().delete()
+                self.fuel_alerts.all().delete()
                 if self.fuel_expires_at and (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at

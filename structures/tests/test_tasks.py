@@ -11,7 +11,7 @@ from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 from structures.models.notifications import Notification
 
 from .. import tasks
-from ..models import FuelNotificationConfig, Owner, Webhook
+from ..models import FuelAlertConfig, Owner, Webhook
 from .testdata import create_structures, load_notification_entities, set_owner_character
 
 MODULE_PATH = "structures.tasks"
@@ -200,7 +200,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
     ):
         # given
-        config = FuelNotificationConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         # when
         tasks.fetch_all_notifications()
         # then

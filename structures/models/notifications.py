@@ -1033,16 +1033,14 @@ class Notification(models.Model):
         return cls(**kwargs)
 
 
-class FuelNotification(models.Model):
+class FuelAlert(models.Model):
     """A generated notification alerting about fuel getting low in structures."""
 
     structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="fuel_notifications"
+        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts"
     )
     config = models.ForeignKey(
-        "FuelNotificationConfig",
-        on_delete=models.CASCADE,
-        related_name="fuel_notifications",
+        "FuelAlertConfig", on_delete=models.CASCADE, related_name="fuel_alerts"
     )
     hours = models.PositiveIntegerField(
         db_index=True,
@@ -1054,7 +1052,7 @@ class FuelNotification(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["structure", "config", "hours"],
-                name="functional_pk_fuelnotification",
+                name="functional_pk_fuelalert",
             )
         ]
 
@@ -1077,7 +1075,7 @@ class FuelNotification(models.Model):
         )
 
 
-class FuelNotificationConfig(models.Model):
+class FuelAlertConfig(models.Model):
     """Configuration of fuel notifications."""
 
     channel_ping_type = models.CharField(
@@ -1123,7 +1121,7 @@ class FuelNotificationConfig(models.Model):
                 {"repeat": _("Repeat can not be larger that the interval size.")}
             )
         new = range(self.end, self.start)
-        for config in FuelNotificationConfig.objects.exclude(pk=self.pk):
+        for config in FuelAlertConfig.objects.exclude(pk=self.pk):
             current = range(config.end, config.start)
             overlap = range(max(new[0], current[0]), min(new[-1], current[-1]) + 1)
             if len(overlap) > 0:
@@ -1136,8 +1134,8 @@ class FuelNotificationConfig(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         try:
-            old_instance = FuelNotificationConfig.objects.get(pk=self.pk)
-        except FuelNotificationConfig.DoesNotExist:
+            old_instance = FuelAlertConfig.objects.get(pk=self.pk)
+        except FuelAlertConfig.DoesNotExist:
             old_instance = None
         super().save(*args, **kwargs)
         if old_instance and (
@@ -1145,7 +1143,7 @@ class FuelNotificationConfig(models.Model):
             or old_instance.end != self.end
             or old_instance.repeat != self.repeat
         ):
-            self.fuel_notifications.all().delete()
+            self.fuel_alerts.all().delete()
 
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
@@ -1161,7 +1159,7 @@ class FuelNotificationConfig(models.Model):
                     if self.repeat
                     else self.start
                 )
-                notif, created = FuelNotification.objects.get_or_create(
+                notif, created = FuelAlert.objects.get_or_create(
                     structure=structure, config=self, hours=hours_last_alert
                 )
                 if created or force:
