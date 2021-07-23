@@ -8,7 +8,6 @@ import yaml
 from multiselectfield import MultiSelectField
 from requests.exceptions import HTTPError
 
-from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -576,14 +575,13 @@ class Notification(models.Model):
                 self.is_timer_added = timer_created
                 self.save()
 
-            except Exception as ex:
-                logger.exception(
-                    "{}: Failed to add timer from notification: {}".format(
-                        self.notification_id, ex
-                    )
+            except OSError as ex:
+                logger.warning(
+                    "%s: Failed to add timer from notification: %s",
+                    self,
+                    ex,
+                    exc_info=True,
                 )
-                if settings.DEBUG:
-                    raise ex
 
         return timer_created
 

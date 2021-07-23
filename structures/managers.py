@@ -51,31 +51,24 @@ class EveUniverseManager(models.Manager):
         from .models import EsiNameLocalization
 
         eve_id = int(eve_id)
-        log_prefix = make_log_prefix(self, eve_id)
-        try:
-            esi_path = "Universe." + self.model.esi_method()
-            args = {self.model.esi_pk(): eve_id}
-            if self.model.has_esi_localization():
-                eve_data_objects = esi_fetch_with_localization(
-                    esi_path=esi_path,
-                    languages=EsiNameLocalization.ESI_LANGUAGES,
-                    args=args,
-                )
-            else:
-                eve_data_objects = dict()
-                eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = esi_fetch(
-                    esi_path=esi_path, args=args
-                )  # noqa E123
-            defaults = self.model.map_esi_fields_to_model(eve_data_objects)
-            obj, created = self.update_or_create(id=eve_id, defaults=defaults)
-            obj.set_generated_translations()
-            obj.save()
-            self._update_or_create_children(eve_data_objects)
-
-        except Exception as ex:
-            logger.warn("%s: Failed to update or create", log_prefix)
-            raise ex
-
+        esi_path = "Universe." + self.model.esi_method()
+        args = {self.model.esi_pk(): eve_id}
+        if self.model.has_esi_localization():
+            eve_data_objects = esi_fetch_with_localization(
+                esi_path=esi_path,
+                languages=EsiNameLocalization.ESI_LANGUAGES,
+                args=args,
+            )
+        else:
+            eve_data_objects = dict()
+            eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = esi_fetch(
+                esi_path=esi_path, args=args
+            )  # noqa E123
+        defaults = self.model.map_esi_fields_to_model(eve_data_objects)
+        obj, created = self.update_or_create(id=eve_id, defaults=defaults)
+        obj.set_generated_translations()
+        obj.save()
+        self._update_or_create_children(eve_data_objects)
         return obj, created
 
     def _update_or_create_children(self, eve_data_objects: dict) -> None:
@@ -162,24 +155,19 @@ class EveEntityManager(models.Manager):
         """
         eve_entity_id = int(eve_entity_id)
         log_prefix = make_log_prefix(self, eve_entity_id)
-        try:
-            response = esi_fetch(
-                esi_path="Universe.post_universe_names",
-                args={"ids": [eve_entity_id]},
+        response = esi_fetch(
+            esi_path="Universe.post_universe_names",
+            args={"ids": [eve_entity_id]},
+        )
+        if len(response) > 0:
+            first = response[0]
+            category = self.model.Category.from_esi_name(first["category"])
+            obj, created = self.update_or_create(
+                id=eve_entity_id,
+                defaults={"category": category, "name": first["name"]},
             )
-            if len(response) > 0:
-                first = response[0]
-                category = self.model.Category.from_esi_name(first["category"])
-                obj, created = self.update_or_create(
-                    id=eve_entity_id,
-                    defaults={"category": category, "name": first["name"]},
-                )
-            else:
-                raise ValueError(f"{log_prefix}: Did not find a match")
-
-        except Exception as ex:
-            logger.warn("%s: Failed to load eve entity", log_prefix)
-            raise ex
+        else:
+            raise ValueError(f"{log_prefix}: Did not find a match")
 
         return obj, created
 
@@ -302,35 +290,25 @@ class StructureManagerBase(models.Manager):
 
         log_prefix = make_log_prefix(self, structure_id)
         logger.info("%s: Trying to fetch structure from ESI", log_prefix)
-        try:
-            if token is None:
-                raise ValueError("Can not fetch structure without token")
+        if token is None:
+            raise ValueError("Can not fetch structure without token")
 
-            structure_info = esi_fetch(
-                esi_path="Universe.get_universe_structures_structure_id",
-                args={"structure_id": structure_id},
-                token=token,
-            )
-            structure = {
-                "structure_id": structure_id,
-                "name": self.model.extract_name_from_esi_respose(
-                    structure_info["name"]
-                ),
-                "position": structure_info["position"],
-                "type_id": structure_info["type_id"],
-                "system_id": structure_info["solar_system_id"],
-            }
-            owner = Owner.objects.get(
-                corporation__corporation_id=structure_info["corporation_id"]
-            )
-            obj, created = self.update_or_create_from_dict(
-                structure=structure, owner=owner
-            )
-
-        except Exception as ex:
-            logger.warn("%s: Failed to load structure", log_prefix)
-            raise ex
-
+        structure_info = esi_fetch(
+            esi_path="Universe.get_universe_structures_structure_id",
+            args={"structure_id": structure_id},
+            token=token,
+        )
+        structure = {
+            "structure_id": structure_id,
+            "name": self.model.extract_name_from_esi_respose(structure_info["name"]),
+            "position": structure_info["position"],
+            "type_id": structure_info["type_id"],
+            "system_id": structure_info["solar_system_id"],
+        }
+        owner = Owner.objects.get(
+            corporation__corporation_id=structure_info["corporation_id"]
+        )
+        obj, created = self.update_or_create_from_dict(structure=structure, owner=owner)
         return obj, created
 
     def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:

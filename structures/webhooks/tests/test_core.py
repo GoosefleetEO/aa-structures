@@ -178,10 +178,10 @@ class TestSendTestMessage(TestCase):
         self.assertTrue(mock_notify_admins_throttled.called)
 
     def test_error_2(self, mock_execute, mock_notify_admins_throttled):
-        mock_execute.side_effect = RuntimeError
+        mock_execute.side_effect = OSError
 
         result_1, result_2 = self.webhook.send_test_message()
-        self.assertEqual(result_1, "RuntimeError")
+        self.assertEqual(result_1, "OSError")
         self.assertFalse(result_2)
         self.assertTrue(mock_execute.called)
         self.assertFalse(mock_notify_admins_throttled.called)

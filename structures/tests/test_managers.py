@@ -1098,8 +1098,8 @@ class TestOwnerAssetManager(NoSocketsTestCase):
                 structure_ids, owner.corporation.corporation_id, mock_token
             )
         # then
-        except Exception:
-            self.fail("Test failed due to exception")
+        except Exception as ex:
+            self.fail(f"Test failed due to exception: {ex}")
 
         assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
         self.assertSetEqual(
