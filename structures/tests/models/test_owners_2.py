@@ -160,10 +160,6 @@ class TestUpdateStructuresEsiWithLocalization(NoSocketsTestCase):
         self.assertEqual(to_json(structures), to_json(excepted))
 
 
-@patch(
-    "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-    lambda: Mock(),
-)
 @patch(MODULE_PATH + ".notify_admins_throttled")
 @patch("structures.helpers.esi_fetch._esi_client")
 class TestFetchNotificationsEsi(NoSocketsTestCase):
@@ -192,6 +188,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             load_eveuniverse()
             with patch(
                 "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ), patch(
+                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+                lambda: Mock(),
             ):
                 self.owner.fetch_notifications_esi()
         else:
@@ -239,6 +238,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             load_eveuniverse()
             with patch(
                 "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ), patch(
+                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+                lambda: Mock(),
             ):
                 self.owner.fetch_notifications_esi(user=self.user)
         else:
@@ -270,6 +272,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             load_eveuniverse()
             with patch(
                 "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ), patch(
+                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+                lambda: Mock(),
             ):
                 self.owner.fetch_notifications_esi()
         else:
@@ -314,6 +319,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             load_eveuniverse()
             with patch(
                 "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
+            ), patch(
+                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+                lambda: Mock(),
             ):
                 self.owner.fetch_notifications_esi()
         else:

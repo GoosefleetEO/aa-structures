@@ -79,13 +79,15 @@ def update_structures_for_owner(owner_pk, user_pk=None):
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_structures_esi_for_owner(owner_pk, user_pk=None):
     """Update all structures for owner for ESI."""
-    _get_owner(owner_pk).update_structures_esi(_get_user(user_pk))
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.update_structures_esi(_get_user(user_pk))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_structures_assets_for_owner(owner_pk, user_pk=None):
     """Update all related assets for owner."""
-    _get_owner(owner_pk).update_asset_esi(_get_user(user_pk))
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.update_asset_esi(_get_user(user_pk))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -108,7 +110,7 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
     if not fetch_esi_status().is_ok:
         logger.warning("ESI currently not available. Aborting.")
     else:
-        owner = _get_owner(owner_pk)
+        owner = Owner.objects.get(pk=owner_pk)
         owner.fetch_notifications_esi(_get_user(user_pk))
         owner.send_new_notifications()
         send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))
@@ -125,11 +127,7 @@ def send_notifications(notification_pks: list) -> None:
     """Send notifications defined by list of pks (used for admin action)."""
     notifications = Notification.objects.filter(pk__in=notification_pks)
     if notifications:
-        logger.info(
-            "Trying to send {} notifications to webhooks...".format(
-                len(notification_pks)
-            )
-        )
+        logger.info("Trying to send %s notifications to webhooks...", notification_pks)
         webhooks = set()
         for notif in notifications:
             for webhook in notif.owner.webhooks.filter(is_active=True):
@@ -188,17 +186,6 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
                 message=message,
                 level="success" if send_success else "danger",
             )
-
-
-def _get_owner(owner_pk: int) -> Owner:
-    """Fetch the owner or raise exception."""
-    try:
-        owner = Owner.objects.get(pk=owner_pk)
-    except Owner.DoesNotExist:
-        raise Owner.DoesNotExist(
-            "Requested owner with pk {} does not exist".format(owner_pk)
-        )
-    return owner
 
 
 def _get_user(user_pk: int) -> Optional[User]:

@@ -272,7 +272,7 @@ def _execute_esi_request(
     pages = 0
     for retry_count in range(ESI_MAX_RETRIES + 1):
         if retry_count > 0:
-            logger.warn(
+            logger.warning(
                 add_prefix(
                     "{} - Retry {} / {}".format(
                         log_message_base, retry_count, ESI_MAX_RETRIES
@@ -307,7 +307,7 @@ def _execute_esi_request(
             break
 
         except (HTTPBadGateway, HTTPGatewayTimeout, HTTPServiceUnavailable) as ex:
-            logger.warn(
+            logger.warning(
                 add_prefix(
                     "HTTP error while trying to "
                     "fetch response_object from ESI: {}".format(ex)
