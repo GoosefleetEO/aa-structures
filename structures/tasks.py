@@ -128,17 +128,9 @@ def send_notifications(notification_pks: list) -> None:
     notifications = Notification.objects.filter(pk__in=notification_pks)
     if notifications:
         logger.info("Trying to send %s notifications to webhooks...", notification_pks)
-        webhooks = set()
         for notif in notifications:
-            for webhook in notif.owner.webhooks.filter(is_active=True):
-                webhooks.add(webhook)
-                if (
-                    str(notif.notif_type) in webhook.notification_types
-                    and not notif.filter_for_npc_attacks()
-                    and not notif.filter_for_alliance_level()
-                ):
-                    notif.send_to_webhook(webhook)
-        send_queued_messages_for_webhooks(webhooks)
+            notif.send_to_webhooks()
+        send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
 
 
 def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):
