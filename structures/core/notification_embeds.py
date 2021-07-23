@@ -118,7 +118,7 @@ class NotificationBaseEmbed:
         if settings.DEBUG:
             footer_text += " #{}".format(
                 self.notification.notification_id
-                if not self.is_generated
+                if not self.notification.is_generated
                 else "GENERATED"
             )
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)

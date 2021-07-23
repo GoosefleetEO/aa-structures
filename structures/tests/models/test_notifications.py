@@ -237,6 +237,149 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
             )
 
 
+class TestNotificationSendToWebhooks(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        cls.structure = Structure.objects.get(id=1000000000001)
+        webhook_2 = Webhook.objects.create(name="Dummy 2", url="dummy-2")
+        cls.owner.webhooks.add(webhook_2)
+
+    def setUp(self) -> None:
+        Webhook.objects.update(is_active=False, notification_types=[])
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_send_to_wehook(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhooks()
+        # then
+        self.assertTrue(result)
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertEqual(kwargs["content"], "")
+
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
+    def test_should_send_to_multiple_webhooks(self, mock_send_to_webhook):
+        # given
+        Webhook.objects.update(is_active=True)
+        webhook_1 = self.owner.webhooks.first()
+        webhook_1.notification_types = [
+            NotificationType.STRUCTURE_REFUELED_EXTRA,
+            NotificationType.STRUCTURE_ANCHORING,
+        ]
+        webhook_1.save()
+        webhook_2 = self.owner.webhooks.last()
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_REFUELED_EXTRA,
+            NotificationType.STRUCTURE_DESTROYED,
+        ]
+        webhook_2.save()
+        self.owner
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhooks()
+        # then
+        self.assertTrue(result)
+        self.assertEqual(mock_send_to_webhook.call_count, 2)
+        webhook_pks = {call[0][0].pk for call in mock_send_to_webhook.call_args_list}
+        self.assertSetEqual(webhook_pks, {webhook_1.pk, webhook_2.pk})
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_not_send_when_webhooks_are_inactive(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhooks()
+        # then
+        self.assertIsNone(result)
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_not_send_when_notif_types_dont_match(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhooks()
+        # then
+        self.assertIsNone(result)
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_override_ping_type(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        notif.send_to_webhooks(ping_type_override=Webhook.PingType.HERE)
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertIn("@here", kwargs["content"])
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_override_color(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        notif.send_to_webhooks(
+            use_color_override=True, color_override=Webhook.Color.DANGER
+        )
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertEqual(kwargs["embeds"][0].color, Webhook.Color.DANGER)
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_return_false_when_sending_failed(self, mock_send_message):
+        # given
+        mock_send_message.return_value = False
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhooks()
+        # then
+        self.assertFalse(result)
+        self.assertTrue(mock_send_message.called)
+
+
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestNotificationSendMessage(NoSocketsTestCase):
     @classmethod

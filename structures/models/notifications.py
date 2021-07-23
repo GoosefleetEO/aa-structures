@@ -888,6 +888,36 @@ class Notification(models.Model):
             f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
         )
 
+    def send_to_webhooks(
+        self,
+        ping_type_override: Webhook.PingType = None,
+        use_color_override: bool = False,
+        color_override: int = None,
+    ) -> Optional[bool]:
+        """Send this notification to all active webhooks which have this
+        notification type configured
+        and apply filter for NPC attacks and alliance level if needed.
+
+        Returns True, if notifications has been successfully send to webhooks
+        Returns None, if owner has no fitting webhook
+        Returns False, if sending to any webhooks failed
+        """
+        if self.filter_for_npc_attacks() or self.filter_for_alliance_level():
+            return None
+        webhooks = self.owner.webhooks.filter(
+            notification_types__contains=self.notif_type, is_active=True
+        )
+        if not webhooks.exists():
+            return None
+        if ping_type_override:
+            self.ping_type_override = ping_type_override
+        if use_color_override:
+            self.color_override = color_override
+        success = True
+        for webhook in webhooks:
+            success &= self.send_to_webhook(webhook)
+        return success
+
     def send_to_webhook(self, webhook: Webhook) -> bool:
         """Sends this notification to the configured webhook.
 
@@ -1002,33 +1032,6 @@ class Notification(models.Model):
         kwargs["notif_type"] = notif_type
         return cls(**kwargs)
 
-    @classmethod
-    def send_generated_from_structure(
-        cls,
-        structure: Structure,
-        notif_type: NotificationType,
-        ping_type_override: Webhook.PingType = None,
-        use_color_override: bool = False,
-        color_override: int = None,
-        **kwargs,
-    ):
-        """Generate a notification from given structure
-        and send it to configured webhooks.
-        """
-        webhooks = structure.owner.webhooks.filter(
-            notification_types__contains=notif_type, is_active=True
-        )
-        if webhooks.exists():
-            notif = cls.create_from_structure(
-                structure=structure, notif_type=notif_type, **kwargs
-            )
-            if ping_type_override:
-                notif.ping_type_override = ping_type_override
-            if use_color_override:
-                notif.color_override = color_override
-            for webhook in webhooks:
-                notif.send_to_webhook(webhook)
-
 
 class FuelNotification(models.Model):
     """A generated notification alerting about fuel getting low in structures."""
@@ -1064,9 +1067,10 @@ class FuelNotification(models.Model):
             if self.structure.eve_type.is_starbase
             else NotificationType.STRUCTURE_FUEL_ALERT
         )
-        Notification.send_generated_from_structure(
-            structure=self.structure,
-            notif_type=notif_type,
+        notif = Notification.create_from_structure(
+            structure=self.structure, notif_type=notif_type
+        )
+        notif.send_to_webhooks(
             ping_type_override=self.config.channel_ping_type,
             use_color_override=True,
             color_override=self.config.color,

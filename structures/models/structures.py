@@ -364,9 +364,10 @@ class Structure(models.Model):
             if self.eve_type.is_starbase
             else NotificationType.STRUCTURE_REFUELED_EXTRA
         )
-        Notification.send_generated_from_structure(
+        notif = Notification.create_from_structure(
             structure=self, notif_type=notif_type
         )
+        notif.send_to_webhooks()
 
     @property
     def is_full_power(self):
