@@ -261,7 +261,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        result = notif.send_to_webhooks()
+        result = notif.send_to_configured_webhooks()
         # then
         self.assertTrue(result)
         self.assertTrue(mock_send_message.called)
@@ -289,7 +289,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        result = notif.send_to_webhooks()
+        result = notif.send_to_configured_webhooks()
         # then
         self.assertTrue(result)
         self.assertEqual(mock_send_to_webhook.call_count, 2)
@@ -306,7 +306,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        result = notif.send_to_webhooks()
+        result = notif.send_to_configured_webhooks()
         # then
         self.assertIsNone(result)
         self.assertFalse(mock_send_message.called)
@@ -321,7 +321,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        result = notif.send_to_webhooks()
+        result = notif.send_to_configured_webhooks()
         # then
         self.assertIsNone(result)
         self.assertFalse(mock_send_message.called)
@@ -337,7 +337,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        notif.send_to_webhooks(ping_type_override=Webhook.PingType.HERE)
+        notif.send_to_configured_webhooks(ping_type_override=Webhook.PingType.HERE)
         # then
         self.assertTrue(mock_send_message.called)
         _, kwargs = mock_send_message.call_args
@@ -354,7 +354,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        notif.send_to_webhooks(
+        notif.send_to_configured_webhooks(
             use_color_override=True, color_override=Webhook.Color.DANGER
         )
         # then
@@ -374,7 +374,7 @@ class TestNotificationSendToWebhooks(NoSocketsTestCase):
             self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         # when
-        result = notif.send_to_webhooks()
+        result = notif.send_to_configured_webhooks()
         # then
         self.assertFalse(result)
         self.assertTrue(mock_send_message.called)

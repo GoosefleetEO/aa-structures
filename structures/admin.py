@@ -218,7 +218,7 @@ class NotificationAdmin(admin.ModelAdmin):
     actions = (
         "mark_as_sent",
         "mark_as_unsent",
-        "send_to_webhooks",
+        "send_to_configured_webhooks",
         "process_for_timerboard",
     )
 
@@ -248,7 +248,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
     mark_as_unsent.short_description = "Mark selected notifications as unsent"
 
-    def send_to_webhooks(self, request, queryset):
+    def send_to_configured_webhooks(self, request, queryset):
         obj_pks = [obj.pk for obj in queryset if obj.can_be_rendered]
         ignored_count = len([obj for obj in queryset if not obj.can_be_rendered])
         tasks.send_notifications.delay(obj_pks)
@@ -262,7 +262,7 @@ class NotificationAdmin(admin.ModelAdmin):
             )
         self.message_user(request, message)
 
-    send_to_webhooks.short_description = (
+    send_to_configured_webhooks.short_description = (
         "Send selected notifications to configured webhooks"
     )
 

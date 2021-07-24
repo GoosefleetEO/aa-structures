@@ -887,7 +887,7 @@ class Notification(models.Model):
             f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
         )
 
-    def send_to_webhooks(
+    def send_to_configured_webhooks(
         self,
         ping_type_override: Webhook.PingType = None,
         use_color_override: bool = False,
@@ -1067,7 +1067,7 @@ class FuelAlert(models.Model):
         notif = Notification.create_from_structure(
             structure=self.structure, notif_type=notif_type
         )
-        notif.send_to_webhooks(
+        notif.send_to_configured_webhooks(
             ping_type_override=self.config.channel_ping_type,
             use_color_override=True,
             color_override=self.config.color,

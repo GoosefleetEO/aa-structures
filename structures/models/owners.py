@@ -1106,7 +1106,7 @@ class Owner(models.Model):
             .order_by("timestamp")
         )
         for notif in all_new_notifications:
-            notif.send_to_webhooks()
+            notif.send_to_configured_webhooks()
         if not all_new_notifications:
             logger.info("%s: No new notifications found for forwarding", self)
         self.forwarding_last_update_ok = True

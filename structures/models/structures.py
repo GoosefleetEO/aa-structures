@@ -367,7 +367,7 @@ class Structure(models.Model):
         notif = Notification.create_from_structure(
             structure=self, notif_type=notif_type
         )
-        notif.send_to_webhooks()
+        notif.send_to_configured_webhooks()
 
     @property
     def is_full_power(self):

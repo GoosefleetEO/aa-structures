@@ -204,7 +204,7 @@ class TestStructure(NoSocketsTestCase):
         self.assertIsNone(result)
 
     @patch(
-        NOTIFICATIONS_PATH + ".Notification.send_to_webhooks",
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
         lambda *args, **kwargs: None,
     )
     def test_should_reset_fuel_notifications_when_refueled_1(self):
@@ -221,7 +221,7 @@ class TestStructure(NoSocketsTestCase):
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
     @patch(
-        NOTIFICATIONS_PATH + ".Notification.send_to_webhooks",
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
         lambda *args, **kwargs: None,
     )
     def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed_1(self):
@@ -238,7 +238,7 @@ class TestStructure(NoSocketsTestCase):
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
     @patch(
-        NOTIFICATIONS_PATH + ".Notification.send_to_webhooks",
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
         lambda *args, **kwargs: None,
     )
     def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed_2(self):

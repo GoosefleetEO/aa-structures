@@ -129,7 +129,7 @@ def send_notifications(notification_pks: list) -> None:
     if notifications:
         logger.info("Trying to send %s notifications to webhooks...", notification_pks)
         for notif in notifications:
-            notif.send_to_webhooks()
+            notif.send_to_configured_webhooks()
         send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
 
 

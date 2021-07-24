@@ -205,7 +205,7 @@ class TestNotificationAdmin(TestCase):
     @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
     @patch(MODULE_PATH + ".tasks.send_notifications")
     def test_action_send_to_webhook(self, mock_task, mock_message_user):
-        self.modeladmin.send_to_webhooks(MockRequest(self.user), self.obj_qs)
+        self.modeladmin.send_to_configured_webhooks(MockRequest(self.user), self.obj_qs)
         self.assertEqual(mock_task.delay.call_count, 1)
         self.assertTrue(mock_message_user.called)
 
