@@ -19,11 +19,13 @@ from ..models import (
     EveSolarSystem,
     EveSovereigntyMap,
     EveType,
+    NotificationType,
     Owner,
     OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
+    Webhook,
 )
 from . import to_json
 from .testdata import create_structures, esi_mock_client, load_entities, load_entity
@@ -1130,3 +1132,50 @@ class TestOwnerAssetManager(NoSocketsTestCase):
         structure = owner.structures.get(id=1000000000002)
         self.assertTrue(structure.has_fitting)
         self.assertFalse(structure.has_core)
+
+
+class TestWebhookManager(NoSocketsTestCase):
+    def test_should_return_enabled_notification_types(self):
+        # given
+        Webhook.objects.create(
+            name="w1",
+            url="w1",
+            is_active=True,
+            notification_types=[
+                NotificationType.STRUCTURE_ANCHORING,
+                NotificationType.STRUCTURE_REFUELED_EXTRA,
+            ],
+        )
+        Webhook.objects.create(
+            name="w2",
+            url="w2",
+            is_active=True,
+            notification_types=[
+                NotificationType.STRUCTURE_LOST_ARMOR,
+                NotificationType.STRUCTURE_LOST_SHIELD,
+            ],
+        )
+        Webhook.objects.create(
+            name="w3",
+            url="w3",
+            is_active=False,
+            notification_types=[NotificationType.TOWER_ALERT_MSG],
+        )
+        # when
+        result = Webhook.objects.enabled_notification_types()
+        # then
+        self.assertSetEqual(
+            result,
+            {
+                NotificationType.STRUCTURE_LOST_ARMOR,
+                NotificationType.STRUCTURE_LOST_SHIELD,
+                NotificationType.STRUCTURE_ANCHORING,
+                NotificationType.STRUCTURE_REFUELED_EXTRA,
+            },
+        )
+
+    def test_should_return_empty_set(self):
+        # when
+        result = Webhook.objects.enabled_notification_types()
+        # then
+        self.assertSetEqual(result, set())

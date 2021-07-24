@@ -1,3 +1,4 @@
+import itertools
 from pydoc import locate
 
 from bravado.exception import HTTPError
@@ -14,6 +15,7 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, constants
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -600,3 +602,12 @@ class OwnerAssetManager(models.Manager):
             structure.has_fitting = bool(has_fitting)
             structure.has_core = bool(has_core)
             structure.save()
+
+
+class WebhookManager(WebhookBaseManager):
+    def enabled_notification_types(self) -> set:
+        """Set of all currently enabled notification types."""
+        notif_types_list = list(
+            self.filter(is_active=True).values_list("notification_types", flat=True)
+        )
+        return set(itertools.chain(*notif_types_list))

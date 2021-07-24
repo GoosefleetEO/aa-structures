@@ -39,7 +39,7 @@ from ..app_settings import (
 from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerAssetManager, OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
-from .notifications import EveEntity, Notification, NotificationType
+from .notifications import EveEntity, Notification, NotificationType, Webhook
 from .structures import PocoDetails, Structure
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -1085,71 +1085,36 @@ class Owner(models.Model):
                     refinery.save()
 
     def send_new_notifications(self, user: User = None):
-        """Forward all new notification for this owner to Discord."""
+        """Forward all new notification of this owner to configured webhooks."""
         notifications_count = 0
         self.forwarding_last_update_ok = None
         self.forwarding_last_update_at = now()
         self.save()
-
         cutoff_dt_for_stale = now() - timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
-        all_new_notifications = list(
+        all_new_notifications = (
             self.notifications.filter(
-                notif_type__in=NotificationType.relevant_for_forwarding
+                notif_type__in=(
+                    Webhook.objects.enabled_notification_types()
+                    & NotificationType.relevant_for_forwarding
+                )
             )
             .filter(is_sent=False)
             .filter(timestamp__gte=cutoff_dt_for_stale)
-            .select_related()
+            .select_related("owner", "sender", "owner__corporation")
             .order_by("timestamp")
         )
-        new_notifications_count = 0
-        active_webhooks_count = 0
-        for webhook in self.webhooks.filter(is_active=True):
-            active_webhooks_count += 1
-            new_notifications = [
-                notif
-                for notif in all_new_notifications
-                if str(notif.notif_type) in webhook.notification_types
-            ]
-            if len(new_notifications) > 0:
-                new_notifications_count += len(new_notifications)
-                logger.info(
-                    "%s: Found %d new notifications for webhook %s",
-                    self,
-                    len(new_notifications),
-                    webhook,
-                )
-                notifications_count += self._send_notifications_to_webhook(
-                    new_notifications, webhook
-                )
-
-        if active_webhooks_count == 0:
-            logger.info("%s: No active webhooks", self)
-
-        if new_notifications_count == 0:
-            logger.info("%s: No new notifications found", self)
-
+        for notif in all_new_notifications:
+            notif.send_to_webhooks()
+        if not all_new_notifications:
+            logger.info("%s: No new notifications found for forwarding", self)
         self.forwarding_last_update_ok = True
         self.save()
-
         if user:
             self._send_report_to_user(
                 topic="notifications", topic_count=notifications_count, user=user
             )
-
-    def _send_notifications_to_webhook(self, new_notifications, webhook) -> int:
-        """sends all notifications to given webhook"""
-        sent_count = 0
-        for notification in new_notifications:
-            if (
-                not notification.filter_for_npc_attacks()
-                and not notification.filter_for_alliance_level()
-            ):
-                if notification.send_to_webhook(webhook):
-                    sent_count += 1
-
-        return sent_count
 
     def _send_report_to_user(self, topic: str, topic_count: int, user: User):
         message_details = "%(count)s %(topic)s synced." % {

@@ -39,7 +39,7 @@ from ..app_settings import (
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
-from ..managers import EveEntityManager, NotificationManager
+from ..managers import EveEntityManager, NotificationManager, WebhookManager
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
@@ -308,6 +308,7 @@ class Webhook(WebhookBase):
         related_name="+",
         help_text="Groups to be pinged for each notification - ",
     )
+    objects = WebhookManager()
 
     @staticmethod
     def text_bold(text) -> str:
