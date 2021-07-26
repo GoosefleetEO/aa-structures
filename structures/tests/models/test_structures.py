@@ -203,6 +203,15 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertIsNone(result)
 
+
+@patch(STRUCTURES_PATH + ".STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD", 900)
+class TestStructureFuelLevels(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        set_owner_character(character_id=1001)
+
     @patch(
         NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
         lambda *args, **kwargs: None,
@@ -254,6 +263,23 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
+        lambda *args, **kwargs: None,
+    )
+    def test_should_not_reset_fuel_notifications_when_fuel_expiry_dates_unchanged(self):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        structure.fuel_alerts.create(config=config, hours=12)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=12, minutes=5)
+        structure.save()
+        # then
+        self.assertEqual(structure.fuel_alerts.count(), 1)
+
     @patch(NOTIFICATIONS_PATH + ".Notification.create_from_structure")
     def test_should_generate_structure_refueled_notif_when_fuel_level_increased(
         self, mock_create_from_structure
@@ -263,7 +289,7 @@ class TestStructure(NoSocketsTestCase):
         structure.fuel_expires_at = now() + timedelta(hours=1)
         structure.save()
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = now() + timedelta(hours=6)
         structure.save()
         # then
         self.assertTrue(mock_create_from_structure.called)
@@ -289,7 +315,7 @@ class TestStructure(NoSocketsTestCase):
         self.assertEqual(kwargs["notif_type"], NotificationType.TOWER_REFUELED_EXTRA)
 
     @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
-    def test_should_generate_refueled_notif_when_fuel_level_increased_1(
+    def test_should_generate_refueled_notif_when_fuel_level_increased(
         self, mock_send_to_webhook
     ):
         # given
@@ -297,13 +323,13 @@ class TestStructure(NoSocketsTestCase):
         structure.fuel_expires_at = now() + timedelta(hours=1)
         structure.save()
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
         # then
         self.assertTrue(mock_send_to_webhook.called)
 
     @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
-    def test_should_generate_refueled_notif_when_fuel_level_increased_2(
+    def test_should_generate_refueled_notif_when_fuel_was_added(
         self, mock_send_to_webhook
     ):
         # given
@@ -317,27 +343,28 @@ class TestStructure(NoSocketsTestCase):
         self.assertTrue(mock_send_to_webhook.called)
 
     @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
-    def test_should_not_generate_refueled_notif_when_fuel_level_unchanged(
+    def test_should_not_generate_refueled_notif_when_fuel_level_almost_unchanged(
         self, mock_send_to_webhook
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        target_date = now() + timedelta(hours=2)
-        structure.fuel_expires_at = target_date
+        target_date_1 = now() + timedelta(hours=2)
+        target_date_1 = now() + timedelta(hours=2, minutes=15)
+        structure.fuel_expires_at = target_date_1
         structure.save()
         # when
-        structure.fuel_expires_at = target_date
+        structure.fuel_expires_at = target_date_1
         structure.save()
         # then
         self.assertFalse(mock_send_to_webhook.called)
 
     @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
-    def test_should_not_generate_refueled_notif_fuel_level_decreased_1(
+    def test_should_not_generate_refueled_notif_fuel_level_decreased(
         self, mock_send_to_webhook
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
         # when
         structure.fuel_expires_at = now() + timedelta(hours=1)
@@ -346,7 +373,7 @@ class TestStructure(NoSocketsTestCase):
         self.assertFalse(mock_send_to_webhook.called)
 
     @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
-    def test_should_not_generate_refueled_notif_fuel_level_decreased_2(
+    def test_should_not_generate_refueled_notif_fuel_is_removed(
         self, mock_send_to_webhook
     ):
         # given

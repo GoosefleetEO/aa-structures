@@ -898,7 +898,7 @@ class NotificationTowerRefueledExtra(NotificationTowerEmbed):
             target_date = target_datetime_formatted(self._structure.fuel_expires_at)
         else:
             target_date = "?"
-        self._title = gettext("Starbase fuel alert")
+        self._title = gettext("Starbase refueled")
         self._description += gettext(
             "has been refueled. Fuel will last until %s." % target_date
         )

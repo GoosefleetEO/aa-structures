@@ -16,7 +16,8 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
-from ..helpers.general import hours_until_deadline
+from ..app_settings import STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD
+from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
 
@@ -340,16 +341,13 @@ class Structure(models.Model):
                 old_instance = Structure.objects.get(pk=self.pk)
             except Structure.DoesNotExist:
                 return
-            if (
-                not old_instance.fuel_expires_at
-                or old_instance.fuel_expires_at != self.fuel_expires_at
-            ):
+            if self.is_fuel_expiry_date_different(old_instance):
                 logger.info(
                     "Structure fuel level has changed. "
                     "Therefore removing current fuel notifications."
                 )
                 self.fuel_alerts.all().delete()
-                if self.fuel_expires_at and (
+                if (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
@@ -459,6 +457,17 @@ class Structure(models.Model):
         if self.fuel_expires_at:
             return hours_until_deadline(self.fuel_expires_at)
         return None
+
+    def is_fuel_expiry_date_different(self, other: "Structure") -> True:
+        """True when fuel expiry date from other structure is different.
+
+        Will compare using treshold setting.
+        """
+        return not other.fuel_expires_at or not datetime_almost_equal(
+            other.fuel_expires_at,
+            self.fuel_expires_at,
+            STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD,
+        )
 
     def get_power_mode_display(self):
         return self.PowerMode(self.power_mode).label if self.power_mode else ""
