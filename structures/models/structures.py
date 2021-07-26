@@ -341,16 +341,28 @@ class Structure(models.Model):
                 old_instance = Structure.objects.get(pk=self.pk)
             except Structure.DoesNotExist:
                 return
+            logger.info(
+                "%s: Fuel notifications: Fuel expiry dates old|now: %s|%s",
+                self,
+                old_instance.fuel_expires_at.isoformat()
+                if old_instance.fuel_expires_at
+                else None,
+                self.fuel_expires_at.isoformat(),
+            )
             if self.is_fuel_expiry_date_different(old_instance):
                 logger.info(
-                    "Structure fuel level has changed. "
-                    "Therefore removing current fuel notifications."
+                    "%s: Fuel notifications: Structure fuel level has changed. "
+                    "Therefore removing current fuel notifications.",
+                    self,
                 )
                 self.fuel_alerts.all().delete()
                 if (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
+                    logger.info(
+                        "%s: Fuel notifications: Structure has been refueled.", self
+                    )
                     self.send_refueled_notification()
 
     def send_refueled_notification(self):
