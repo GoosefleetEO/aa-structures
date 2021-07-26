@@ -767,7 +767,7 @@ class StructureAdmin(admin.ModelAdmin):
         "eve_solar_system__name",
     ]
     ordering = ["name"]
-    list_display = ("name", "_owner", "_location", "_type", "_power_mode", "_tags")
+    list_display = ("_name", "_owner", "_location", "_type", "_power_mode", "_tags")
     list_filter = (
         OwnerCorporationsFilter,
         OwnerAllianceFilter,
@@ -788,7 +788,14 @@ class StructureAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.prefetch_related("tags")
 
-    def _owner(self, structure):
+    def _name(self, structure) -> str:
+        if structure.name:
+            return structure.name
+        return structure.location_name
+
+    _name.admin_order_field = "name"
+
+    def _owner(self, structure) -> str:
         alliance = structure.owner.corporation.alliance
         return format_html(
             "{}<br>{}",
@@ -796,26 +803,26 @@ class StructureAdmin(admin.ModelAdmin):
             alliance if alliance else "",
         )
 
-    def _location(self, structure):
-        if structure.eve_moon:
-            location_name = structure.eve_moon.name
-        elif structure.eve_planet:
-            location_name = structure.eve_planet.name
-        else:
-            location_name = structure.eve_solar_system.name
+    _owner.admin_order_field = "owner__corporation__corporation_name"
+
+    def _location(self, structure) -> str:
         return format_html(
             "{}<br>{}",
-            location_name,
+            structure.location_name,
             structure.eve_solar_system.eve_constellation.eve_region,
         )
+
+    _location.admin_order_field = "eve_solar_system__name"
 
     def _type(self, structure):
         return format_html("{}<br>{}", structure.eve_type, structure.eve_type.eve_group)
 
-    def _power_mode(self, structure):
+    _owner.admin_order_field = "eve_type__name"
+
+    def _power_mode(self, structure) -> str:
         return structure.get_power_mode_display()
 
-    def _tags(self, structure):
+    def _tags(self, structure) -> str:
         return sorted([tag.name for tag in structure.tags.all()])
 
     _tags.short_description = "Tags"

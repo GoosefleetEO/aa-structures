@@ -5,6 +5,7 @@ from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -362,9 +363,9 @@ class Structure(models.Model):
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
                     logger.info("%s: Structure has been refueled.", logger_tag)
-                    self.send_refueled_notification()
+                    self._send_refueled_notification()
 
-    def send_refueled_notification(self):
+    def _send_refueled_notification(self):
         """Send a refueled notifications for this structure."""
         from .notifications import Notification, NotificationType
 
@@ -458,9 +459,18 @@ class Structure(models.Model):
             self.State.HULL_VULNERABLE,
         ]
 
-    @property
-    def owner_has_sov(self):
+    @cached_property
+    def owner_has_sov(self) -> bool:
         return self.eve_solar_system.corporation_has_sov(self.owner.corporation)
+
+    @cached_property
+    def location_name(self) -> str:
+        """Name of this structures's location."""
+        if self.eve_moon:
+            return self.eve_moon.name
+        if self.eve_planet:
+            return self.eve_planet.name
+        return self.eve_solar_system.name
 
     @property
     def hours_fuel_expires(self) -> Optional[float]:

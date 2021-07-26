@@ -205,6 +205,24 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertIsNone(result)
 
+    def test_should_return_moon_location(self):
+        # given
+        starbase = Structure.objects.get(id=1300000000001)
+        # when/then
+        self.assertEqual(starbase.location_name, "Amamake II - Moon 1")
+
+    def test_should_return_planet_location(self):
+        # given
+        poco = Structure.objects.get(id=1200000000003)
+        # when/then
+        self.assertEqual(poco.location_name, "Amamake V")
+
+    def test_should_return_solar_system_location(self):
+        # given
+        starbase = Structure.objects.get(id=1000000000001)
+        # when/then
+        self.assertEqual(starbase.location_name, "Amamake")
+
 
 @patch(STRUCTURES_PATH + ".STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD", 900)
 class TestStructureFuelLevels(NoSocketsTestCase):
