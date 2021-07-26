@@ -344,12 +344,21 @@ class Structure(models.Model):
                 return
             logger_tag = "%s: Fuel notifications" % self
             logger.info(
-                "%s: Fuel expiry dates old|now: %s|%s",
+                "%s: Fuel expiry dates old|current|delta: %s|%s|%s",
                 logger_tag,
                 old_instance.fuel_expires_at.isoformat()
                 if old_instance.fuel_expires_at
                 else None,
                 self.fuel_expires_at.isoformat(),
+                int(
+                    abs(
+                        (
+                            self.fuel_expires_at - old_instance.fuel_expires_at
+                        ).total_seconds()
+                    )
+                )
+                if old_instance.fuel_expires_at
+                else "-",
             )
             if self.is_fuel_expiry_date_different(old_instance):
                 logger.info(
