@@ -861,7 +861,10 @@ class Owner(models.Model):
     def _calc_starbase_fuel_expires(
         self, corporation_id: int, starbase: dict, token: Token
     ) -> datetime:
-        """Calculate when fuel will expire for this starbase."""
+        """Estimate when fuel will expire for this starbase.
+
+        Estimate will vary due to server caching of remaining fuel blocks.
+        """
         fuel_expires_at = None
         if starbase["state"] != "offline":
             starbase_details = esi_fetch(
@@ -889,11 +892,12 @@ class Owner(models.Model):
                 sov_discount = (
                     0.25 if solar_system.corporation_has_sov(self.corporation) else 0
                 )
-                hours = math.floor(
-                    fuel_quantity
+                seconds = math.floor(
+                    3600
+                    * fuel_quantity
                     / (starbase_type.starbase_fuel_per_hour * (1 - sov_discount))
                 )
-                fuel_expires_at = now() + timedelta(hours=hours)
+                fuel_expires_at = now() + timedelta(seconds=seconds)
 
         return fuel_expires_at
 

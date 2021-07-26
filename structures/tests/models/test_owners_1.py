@@ -932,13 +932,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(
             structure.state_timer_end, datetime(2020, 4, 5, 7, 0, 0, tzinfo=utc)
         )
-        self.assertGreaterEqual(
+        self.assertAlmostEqual(
             structure.fuel_expires_at,
-            now() + timedelta(hours=24) - timedelta(seconds=10),
-        )
-        self.assertLessEqual(
-            structure.fuel_expires_at,
-            now() + timedelta(hours=24) + timedelta(seconds=10),
+            now() + timedelta(hours=24),
+            delta=timedelta(seconds=30),
         )
 
         structure = Structure.objects.get(id=1300000000002)
@@ -960,13 +957,18 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_type_id, 20062)
         self.assertEqual(structure.state, Structure.State.POS_ONLINE)
         self.assertEqual(structure.eve_moon_id, 40029527)
-        self.assertGreaterEqual(
+        # self.assertGreaterEqual(
+        #     structure.fuel_expires_at,
+        #     now() + timedelta(hours=133) - timedelta(seconds=10),
+        # )
+        # self.assertLessEqual(
+        #     structure.fuel_expires_at,
+        #     now() + timedelta(hours=133) + timedelta(seconds=10),
+        # )
+        self.assertAlmostEqual(
             structure.fuel_expires_at,
-            now() + timedelta(hours=133) - timedelta(seconds=10),
-        )
-        self.assertLessEqual(
-            structure.fuel_expires_at,
-            now() + timedelta(hours=133) + timedelta(seconds=10),
+            now() + timedelta(hours=133, minutes=20),
+            delta=timedelta(seconds=30),
         )
         # did not notify admins
         self.assertFalse(mock_notify_admins_throttled.called)
