@@ -61,7 +61,7 @@ class TestStructure(NoSocketsTestCase):
 
     def test_str(self):
         x = Structure.objects.get(id=1000000000001)
-        expected = "Amamake - Test Structure Alpha"
+        expected = "1000000000001 - Amamake - Test Structure Alpha"
         self.assertEqual(str(x), expected)
 
     def test_repr(self):
@@ -163,7 +163,9 @@ class TestStructure(NoSocketsTestCase):
         x = StructureService(
             structure=structure, name="Dummy", state=StructureService.State.ONLINE
         )
-        self.assertEqual(str(x), "Amamake - Test Structure Alpha - Dummy")
+        self.assertEqual(
+            str(x), "1000000000001 - Amamake - Test Structure Alpha - Dummy"
+        )
 
     def test_extract_name_from_esi_respose(self):
         expected = "Alpha"
@@ -562,7 +564,7 @@ class TestStructureService(NoSocketsTestCase):
     def test_str(self):
         structure = Structure.objects.get(id=1000000000001)
         obj = StructureService.objects.get(structure=structure, name="Clone Bay")
-        expected = "Amamake - Test Structure Alpha - Clone Bay"
+        expected = "1000000000001 - Amamake - Test Structure Alpha - Clone Bay"
         self.assertEqual(str(obj), expected)
 
     def test_repr(self):

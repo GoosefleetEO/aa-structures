@@ -318,10 +318,10 @@ class Structure(models.Model):
 
     objects = StructureManager()
 
-    def __str__(self):
-        return "{} - {}".format(self.eve_solar_system, self.name)
+    def __str__(self) -> str:
+        return f"{self.id} - {self.eve_solar_system} - {self.name}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}(id={}, name='{}')".format(
             self.__class__.__name__, self.id, self.name
         )
@@ -341,9 +341,10 @@ class Structure(models.Model):
                 old_instance = Structure.objects.get(pk=self.pk)
             except Structure.DoesNotExist:
                 return
+            logger_tag = "%s: Fuel notifications" % self
             logger.info(
-                "%s: Fuel notifications: Fuel expiry dates old|now: %s|%s",
-                self,
+                "%s: Fuel expiry dates old|now: %s|%s",
+                logger_tag,
                 old_instance.fuel_expires_at.isoformat()
                 if old_instance.fuel_expires_at
                 else None,
@@ -351,18 +352,16 @@ class Structure(models.Model):
             )
             if self.is_fuel_expiry_date_different(old_instance):
                 logger.info(
-                    "%s: Fuel notifications: Structure fuel level has changed. "
+                    "%s: Structure fuel level has changed. "
                     "Therefore removing current fuel notifications.",
-                    self,
+                    logger_tag,
                 )
                 self.fuel_alerts.all().delete()
                 if (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
-                    logger.info(
-                        "%s: Fuel notifications: Structure has been refueled.", self
-                    )
+                    logger.info("%s: Structure has been refueled.", logger_tag)
                     self.send_refueled_notification()
 
     def send_refueled_notification(self):
