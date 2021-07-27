@@ -1,11 +1,11 @@
 """functions for loading test data and for building mocks"""
 
+import datetime as dt
 import inspect
 import json
 import math
 import os
 from copy import deepcopy
-from datetime import timedelta
 from random import randrange
 from typing import Tuple
 from unittest.mock import Mock
@@ -73,24 +73,24 @@ def _load_testdata_entities() -> dict:
 
     # update timestamp to current
     for notification in entities["Notification"]:
-        notification["timestamp"] = now() - timedelta(
+        notification["timestamp"] = now() - dt.timedelta(
             hours=randrange(3), minutes=randrange(60), seconds=randrange(60)
         )
 
     # update timestamps on structures
     for structure in entities["Structure"]:
         if "fuel_expires_at" in structure:
-            fuel_expires_at = now() + timedelta(days=1 + randrange(5))
+            fuel_expires_at = now() + dt.timedelta(days=1 + randrange(5))
             structure["fuel_expires_at"] = fuel_expires_at
 
         if "state_timer_start" in structure:
-            state_timer_start = now() + timedelta(days=1 + randrange(3))
+            state_timer_start = now() + dt.timedelta(days=1 + randrange(3))
             structure["state_timer_start"] = state_timer_start
-            state_timer_end = state_timer_start + timedelta(minutes=15)
+            state_timer_end = state_timer_start + dt.timedelta(minutes=15)
             structure["state_timer_end"] = state_timer_end
 
         if "unanchors_at" in structure:
-            unanchors_at = now() + timedelta(days=3 + randrange(5))
+            unanchors_at = now() + dt.timedelta(days=3 + randrange(5))
             structure["unanchors_at"] = unanchors_at
 
     return entities
@@ -319,14 +319,18 @@ def esi_get_corporations_corporation_id_starbases_starbase_id(
     corporation_starbase_details = esi_data["Corporation"][
         "get_corporations_corporation_id_starbases_starbase_id"
     ]  # noqa
-    if str(starbase_id) in corporation_starbase_details:
-        return BravadoOperationStub(data=corporation_starbase_details[str(starbase_id)])
-
-    else:
+    if str(starbase_id) not in corporation_starbase_details:
         mock_response = Mock()
         mock_response.status_code = 404
         message = "Can not find starbase with ID %s" % starbase_id
         raise HTTPNotFound(mock_response, message=message)
+
+    return BravadoOperationStub(
+        data=corporation_starbase_details[str(starbase_id)],
+        headers={
+            "Last-Modified": dt.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        },
+    )
 
 
 def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
@@ -733,8 +737,8 @@ def create_structures(dont_load_entities: bool = False) -> object:
 
         obj = Structure.objects.create(**x)
         if obj.state != 11:
-            obj.state_timer_start = now() - timedelta(days=randrange(3) + 1)
-            obj.state_timer_start = obj.state_timer_start + timedelta(
+            obj.state_timer_start = now() - dt.timedelta(days=randrange(3) + 1)
+            obj.state_timer_start = obj.state_timer_start + dt.timedelta(
                 days=randrange(4) + 1
             )
 
@@ -793,7 +797,7 @@ def set_owner_character(character_id: int) -> Tuple[User, Owner]:
 
 
 def load_notification_entities(owner: Owner):
-    timestamp_start = now() - timedelta(hours=2)
+    timestamp_start = now() - dt.timedelta(hours=2)
     for notification in entities_testdata["Notification"]:
         notification_id = notification["notification_id"]
         notif_type = notification["type"]
@@ -801,7 +805,7 @@ def load_notification_entities(owner: Owner):
         sender = EveEntity.objects.get(id=notification["sender_id"])
         text = notification["text"] if "text" in notification else None
         is_read = notification["is_read"] if "is_read" in notification else None
-        timestamp_start = timestamp_start + timedelta(minutes=5)
+        timestamp_start = timestamp_start + dt.timedelta(minutes=5)
         Notification.objects.update_or_create(
             notification_id=notification_id,
             owner=owner,

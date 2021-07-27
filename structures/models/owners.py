@@ -4,6 +4,7 @@ import math
 import os
 import re
 from datetime import datetime, timedelta
+from email.utils import format_datetime, parsedate_to_datetime
 from typing import Optional
 
 from django.contrib.auth.models import Group, User
@@ -867,16 +868,14 @@ class Owner(models.Model):
         """
         if starbase["state"] == "offline":
             return None
-        starbase_details = (
-            _esi_client()
-            .Corporation.get_corporations_corporation_id_starbases_starbase_id(
-                corporation_id=corporation_id,
-                starbase_id=starbase["starbase_id"],
-                system_id=starbase["system_id"],
-                token=token,
-            )
-            .result()
+        operation = _esi_client().Corporation.get_corporations_corporation_id_starbases_starbase_id(
+            corporation_id=corporation_id,
+            starbase_id=starbase["starbase_id"],
+            system_id=starbase["system_id"],
+            token=token,
         )
+        operation.request_config.also_return_response = True
+        starbase_details, response = operation.result()
         fuel_quantity = None
         if "fuels" in starbase_details:
             for fuel in starbase_details["fuels"]:
@@ -896,7 +895,10 @@ class Owner(models.Model):
                 * fuel_quantity
                 / (starbase_type.starbase_fuel_per_hour * (1 - sov_discount))
             )
-            fuel_expires_at = now() + timedelta(seconds=seconds)
+            last_modified = parsedate_to_datetime(
+                response.headers.get("Last-Modified", format_datetime(now()))
+            )
+            fuel_expires_at = last_modified + timedelta(seconds=seconds)
 
         return fuel_expires_at
 
