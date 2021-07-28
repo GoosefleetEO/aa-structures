@@ -371,6 +371,10 @@ class StructureManagerBase(models.Manager):
             eve_moon, _ = EveMoon.objects.get_or_create_esi(structure["moon_id"])
         else:
             eve_moon = None
+        try:
+            old_obj = self.get(id=structure["structure_id"])
+        except self.model.DoesNotExist:
+            old_obj = None
         obj, created = self.update_or_create(
             id=structure["structure_id"],
             defaults={
@@ -394,6 +398,8 @@ class StructureManagerBase(models.Manager):
                 "last_updated_at": now(),
             },
         )
+        if old_obj:
+            obj.handle_fuel_notifications(old_obj)
         # Make sure we have dogmas loaded for this type for fittings
         EveUniverseType.objects.get_or_create_esi(
             id=structure["type_id"], enabled_sections=[EveUniverseType.Section.DOGMAS]

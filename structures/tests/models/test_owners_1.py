@@ -27,12 +27,15 @@ from ...models import (
     EveSolarSystem,
     EveSovereigntyMap,
     EveType,
+    FuelAlertConfig,
+    NotificationType,
     Owner,
     OwnerCharacter,
     PocoDetails,
     Structure,
     StructureService,
     StructureTag,
+    Webhook,
 )
 from .. import to_json
 from ..testdata import (
@@ -1388,6 +1391,80 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure = Structure.objects.get(id=1200000000003)
         self.assertEqual(structure.name, "")
         esi_post_corporations_corporation_id_assets_names.override_data = None
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_send_refueled_notification_when_fuel_level_increased(
+        self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
+        structure.save()
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertTrue(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
+        self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_remove_outdated_fuel_alerts_when_fuel_level_changed(
+        self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
+        structure.save()
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure.fuel_alerts.create(config=config, hours=12)
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertEqual(structure.fuel_alerts.count(), 0)
 
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)

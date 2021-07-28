@@ -872,7 +872,7 @@ class Owner(models.Model):
             corporation_id=corporation_id,
             starbase_id=starbase["starbase_id"],
             system_id=starbase["system_id"],
-            token=token,
+            token=token.valid_access_token(),
         )
         operation.request_config.also_return_response = True
         starbase_details, response = operation.result()

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -244,9 +245,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
         structure.fuel_alerts.create(config=config, hours=12)
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=13)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
@@ -261,9 +263,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure.fuel_expires_at = None
         structure.save()
         structure.fuel_alerts.create(config=config, hours=12)
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=13)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
@@ -277,10 +280,11 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
+        old_instance = deepcopy(structure)
         structure.fuel_alerts.create(config=config, hours=12)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=11)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
@@ -295,9 +299,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
         structure.fuel_alerts.create(config=config, hours=12)
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=12, minutes=5)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.fuel_alerts.count(), 1)
 
@@ -309,9 +314,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=1)
         structure.save()
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=6)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_create_from_structure.called)
         _, kwargs = mock_create_from_structure.call_args
@@ -327,9 +333,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1300000000001)
         structure.fuel_expires_at = now() + timedelta(hours=1)
         structure.save()
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=2)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_create_from_structure.called)
         _, kwargs = mock_create_from_structure.call_args
@@ -343,9 +350,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=1)
         structure.save()
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=12)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_send_to_webhook.called)
 
@@ -357,10 +365,12 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = None
         structure.save()
+        old_instance = deepcopy(structure)
         new_fuel_date = now() + timedelta(hours=2)
         # when
         structure.fuel_expires_at = new_fuel_date
         structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_send_message.called)
         _, kwargs = mock_send_message.call_args
@@ -378,9 +388,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         target_date_1 = now() + timedelta(hours=2, minutes=15)
         structure.fuel_expires_at = target_date_1
         structure.save()
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = target_date_1
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertFalse(mock_send_to_webhook.called)
 
@@ -392,9 +403,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = now() + timedelta(hours=1)
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertFalse(mock_send_to_webhook.called)
 
@@ -406,9 +418,10 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=2)
         structure.save()
+        old_instance = deepcopy(structure)
         # when
         structure.fuel_expires_at = None
-        structure.save()
+        structure.handle_fuel_notifications(old_instance)
         # then
         self.assertFalse(mock_send_to_webhook.called)
 

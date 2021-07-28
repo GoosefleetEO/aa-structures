@@ -328,24 +328,15 @@ class Structure(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        is_refueled = self._handle_fuel_notifications()
         super().save(*args, **kwargs)
-        if is_refueled:
-            self._send_refueled_notification()
         # make sure related objects are saved whenever structure is saved
         self.update_generated_tags()
 
-    def _handle_fuel_notifications(self) -> bool:
+    def handle_fuel_notifications(self, old_instance: "Structure"):
         """Remove fuel notifications if fuel levels have changed
         and sent refueled notifications if structure has been refueled.
-
-        Returns True if a refueled notification needs to be sent.
         """
-        if self.pk and self.fuel_expires_at:
-            try:
-                old_instance = Structure.objects.get(pk=self.pk)
-            except Structure.DoesNotExist:
-                return False
+        if old_instance and self.pk and self.fuel_expires_at:
             logger_tag = "%s: Fuel notifications" % self
             if self.fuel_expires_at != old_instance.fuel_expires_at:
                 logger.info(
@@ -377,8 +368,7 @@ class Structure(models.Model):
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
                     logger.info("%s: Structure has been refueled.", logger_tag)
-                    return True
-            return False
+                    self._send_refueled_notification()
 
     def _send_refueled_notification(self):
         """Send a refueled notifications for this structure."""
