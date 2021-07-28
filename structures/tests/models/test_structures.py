@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter
+from app_utils.datetime import DATETIME_FORMAT
 from app_utils.testing import NoSocketsTestCase
 
 from ...models import (
@@ -348,19 +349,24 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         # then
         self.assertTrue(mock_send_to_webhook.called)
 
-    @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
+    @patch(NOTIFICATIONS_PATH + ".Webhook.send_message")
     def test_should_generate_refueled_notif_when_fuel_was_added(
-        self, mock_send_to_webhook
+        self, mock_send_message
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = None
         structure.save()
+        new_fuel_date = now() + timedelta(hours=2)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = new_fuel_date
         structure.save()
         # then
-        self.assertTrue(mock_send_to_webhook.called)
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertIn(
+            new_fuel_date.strftime(DATETIME_FORMAT), kwargs["embeds"][0].description
+        )
 
     @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
     def test_should_not_generate_refueled_notif_when_fuel_level_almost_unchanged(

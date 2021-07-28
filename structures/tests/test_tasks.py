@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
 
@@ -296,11 +297,14 @@ class TestSendNotifications(TestCase):
         super().setUpClass()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
+        cache.clear()
 
     @patch(MODULE_PATH + ".send_messages_for_webhook")
     def test_normal(self, mock_send_messages_for_webhook):
+        # given
         load_notification_entities(self.owner)
-
         notification_pk = Notification.objects.get(notification_id=1000000509).pk
+        # when
         tasks.send_notifications([notification_pk])
+        # then
         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
