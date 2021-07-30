@@ -212,7 +212,7 @@ class StructuresRowBuilder:
         try:
             my_category = my_group.eve_category
             self._row["category_name"] = my_category.name_localized
-            self._row["is_starbase"] = my_category.is_starbase
+            self._row["is_starbase"] = self._structure.is_starbase
         except AttributeError:
             self._row["category_name"] = ""
             self._row["is_starbase"] = None
@@ -234,7 +234,7 @@ class StructuresRowBuilder:
         )
 
         # poco
-        self._row["is_poco"] = structure_type.is_poco
+        self._row["is_poco"] = self._structure.is_poco
 
     def _build_name(self):
         self._row["structure_name"] = escape(self._structure.name)
@@ -281,7 +281,7 @@ class StructuresRowBuilder:
                 self._row["reinforcement"] = ""
 
     def _build_fuel_infos(self):
-        if self._structure.eve_type.is_poco:
+        if self._structure.is_poco:
             fuel_expires_display = "-"
             fuel_expires_timestamp = None
         elif self._structure.is_low_power:
@@ -333,7 +333,7 @@ class StructuresRowBuilder:
 
     def _build_online_infos(self):
         self._row["power_mode_str"] = self._structure.get_power_mode_display()
-        if self._structure.eve_type.is_poco:
+        if self._structure.is_poco:
             last_online_at_display = "-"
             last_online_at_timestamp = None
         elif self._structure.is_full_power:
@@ -387,7 +387,7 @@ class StructuresRowBuilder:
 
         self._row["state_str"] = (
             cap_first(self._structure.get_state_display())
-            if not self._structure.eve_type.is_poco
+            if not self._structure.is_poco
             else "-"
         )
         self._row["state_details"] = self._row["state_str"]
@@ -406,7 +406,7 @@ class StructuresRowBuilder:
             )
 
     def _build_core_status(self):
-        if self._structure.eve_type.is_upwell_structure:
+        if self._structure.is_upwell_structure:
             if self._structure.has_core is True:
                 has_core = True
                 core_status = '<i class="fas fa-check" title="Core present"></i>'

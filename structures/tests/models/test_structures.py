@@ -221,12 +221,43 @@ class TestStructure(NoSocketsTestCase):
 
     def test_should_return_solar_system_location(self):
         # given
-        starbase = Structure.objects.get(id=1000000000001)
+        structure = Structure.objects.get(id=1000000000001)
         # when/then
-        self.assertEqual(starbase.location_name, "Amamake")
+        self.assertEqual(structure.location_name, "Amamake")
+
+    def test_is_poco(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        starbase = Structure.objects.get(id=1300000000001)
+        # then
+        self.assertFalse(structure.is_poco)
+        self.assertTrue(poco.is_poco)
+        self.assertFalse(starbase.is_poco)
+
+    def test_is_starbase(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        starbase = Structure.objects.get(id=1300000000001)
+        # then
+        self.assertFalse(structure.is_starbase)
+        self.assertFalse(poco.is_starbase)
+        self.assertTrue(starbase.is_starbase)
+
+    def test_is_upwell_structure(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        starbase = Structure.objects.get(id=1300000000001)
+        # then
+        self.assertTrue(structure.is_upwell_structure)
+        self.assertFalse(poco.is_upwell_structure)
+        self.assertFalse(starbase.is_upwell_structure)
 
 
-@patch(STRUCTURES_PATH + ".STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD", 900)
+@patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_UPWELL", 900)
+@patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_STARBASE", 7200)
 class TestStructureFuelLevels(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -335,7 +366,7 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         structure.save()
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = now() + timedelta(hours=4)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_create_from_structure.called)

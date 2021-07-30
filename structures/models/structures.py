@@ -17,7 +17,6 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
-from ..app_settings import STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
@@ -117,6 +116,10 @@ class StructureTag(models.Model):
 
 class Structure(models.Model):
     """structure of a corporation"""
+
+    # Threshold in seconds when two fuel expiry dates will be judged as different
+    FUEL_DATES_EQUAL_THRESHOLD_UPWELL = 1800
+    FUEL_DATES_EQUAL_THRESHOLD_STARBASE = 7200  # high fluctuation due to estimating
 
     class State(models.IntegerChoices):
         """State of a structure"""
@@ -376,7 +379,7 @@ class Structure(models.Model):
 
         notif_type = (
             NotificationType.TOWER_REFUELED_EXTRA
-            if self.eve_type.is_starbase
+            if self.is_starbase
             else NotificationType.STRUCTURE_REFUELED_EXTRA
         )
         notif = Notification.create_from_structure(
@@ -385,7 +388,19 @@ class Structure(models.Model):
         notif.send_to_configured_webhooks()
 
     @property
-    def is_full_power(self):
+    def is_upwell_structure(self) -> bool:
+        return self.eve_type.is_upwell_structure
+
+    @property
+    def is_poco(self) -> bool:
+        return self.eve_type.is_poco
+
+    @property
+    def is_starbase(self) -> bool:
+        return self.eve_type.is_starbase
+
+    @property
+    def is_full_power(self) -> bool:
         """return True if structure is full power, False if not.
 
         Returns None if state can not be determined
@@ -397,7 +412,7 @@ class Structure(models.Model):
             return power_mode == self.PowerMode.FULL_POWER
 
     @property
-    def is_low_power(self):
+    def is_low_power(self) -> bool:
         """return True if structure is low power, False if not.
 
         Returns None if state can not be determined
@@ -409,7 +424,7 @@ class Structure(models.Model):
             return power_mode == self.PowerMode.LOW_POWER
 
     @property
-    def is_abandoned(self):
+    def is_abandoned(self) -> bool:
         """return True if structure is abandoned, False if not.
 
         Returns None if state can not be determined
@@ -421,7 +436,7 @@ class Structure(models.Model):
             return power_mode == self.PowerMode.ABANDONED
 
     @property
-    def is_maybe_abandoned(self):
+    def is_maybe_abandoned(self) -> bool:
         """return True if structure is maybe abandoned, False if not.
 
         Returns None if state can not be determined
@@ -433,11 +448,11 @@ class Structure(models.Model):
             return power_mode == self.PowerMode.LOW_ABANDONED
 
     @property
-    def power_mode(self):
+    def power_mode(self) -> Optional["PowerMode"]:
         """returns the calculated power mode of this structure, e.g. low power
         returns None for non upwell structures
         """
-        if not self.eve_type.is_upwell_structure:
+        if not self.is_upwell_structure:
             return None
 
         if self.fuel_expires_at and self.fuel_expires_at > now():
@@ -456,7 +471,7 @@ class Structure(models.Model):
             return self.PowerMode.LOW_ABANDONED
 
     @property
-    def is_reinforced(self):
+    def is_reinforced(self) -> bool:
         return self.state in [
             self.State.ARMOR_REINFORCE,
             self.State.HULL_REINFORCE,
@@ -489,13 +504,16 @@ class Structure(models.Model):
 
         Will compare using treshold setting.
         """
+        change_threshold = (
+            self.FUEL_DATES_EQUAL_THRESHOLD_UPWELL
+            if self.is_upwell_structure
+            else self.FUEL_DATES_EQUAL_THRESHOLD_STARBASE
+        )
         return not other.fuel_expires_at or not datetime_almost_equal(
-            other.fuel_expires_at,
-            self.fuel_expires_at,
-            STRUCTURES_NOTIFICATION_FUEL_DATES_EQUAL_THRESHOLD,
+            other.fuel_expires_at, self.fuel_expires_at, change_threshold
         )
 
-    def get_power_mode_display(self):
+    def get_power_mode_display(self) -> str:
         return self.PowerMode(self.power_mode).label if self.power_mode else ""
 
     def update_generated_tags(self, recreate_tags=False):

@@ -1061,7 +1061,7 @@ class FuelAlert(models.Model):
     def send_generated_notification(self):
         notif_type = (
             NotificationType.TOWER_RESOURCE_ALERT_MSG
-            if self.structure.eve_type.is_starbase
+            if self.structure.is_starbase
             else NotificationType.STRUCTURE_FUEL_ALERT
         )
         notif = Notification.create_from_structure(
