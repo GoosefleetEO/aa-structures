@@ -408,8 +408,7 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.FULL_POWER
+        return power_mode == self.PowerMode.FULL_POWER
 
     @property
     def is_low_power(self) -> bool:
@@ -420,8 +419,7 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.LOW_POWER
+        return power_mode == self.PowerMode.LOW_POWER
 
     @property
     def is_abandoned(self) -> bool:
@@ -432,8 +430,7 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.ABANDONED
+        return power_mode == self.PowerMode.ABANDONED
 
     @property
     def is_maybe_abandoned(self) -> bool:
@@ -444,8 +441,7 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.LOW_ABANDONED
+        return power_mode == self.PowerMode.LOW_ABANDONED
 
     @property
     def power_mode(self) -> Optional["PowerMode"]:
@@ -454,21 +450,16 @@ class Structure(models.Model):
         """
         if not self.is_upwell_structure:
             return None
-
         if self.fuel_expires_at and self.fuel_expires_at > now():
             return self.PowerMode.FULL_POWER
-
         elif self.last_online_at:
             if self.last_online_at >= now() - timedelta(days=7):
                 return self.PowerMode.LOW_POWER
             else:
                 return self.PowerMode.ABANDONED
-
         elif self.state in {self.State.ANCHORING, self.State.ANCHOR_VULNERABLE}:
             return self.PowerMode.LOW_POWER
-
-        else:
-            return self.PowerMode.LOW_ABANDONED
+        return self.PowerMode.LOW_ABANDONED
 
     @property
     def is_reinforced(self) -> bool:
