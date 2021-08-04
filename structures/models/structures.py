@@ -335,58 +335,6 @@ class Structure(models.Model):
         # make sure related objects are saved whenever structure is saved
         self.update_generated_tags()
 
-    def handle_fuel_notifications(self, old_instance: "Structure"):
-        """Remove fuel notifications if fuel levels have changed
-        and sent refueled notifications if structure has been refueled.
-        """
-        if old_instance and self.pk and self.fuel_expires_at:
-            logger_tag = "%s: Fuel notifications" % self
-            if self.fuel_expires_at != old_instance.fuel_expires_at:
-                logger.info(
-                    "%s: Fuel expiry dates changed: old|current|delta: %s|%s|%s",
-                    logger_tag,
-                    old_instance.fuel_expires_at.isoformat()
-                    if old_instance.fuel_expires_at
-                    else None,
-                    self.fuel_expires_at.isoformat(),
-                    int(
-                        abs(
-                            (
-                                self.fuel_expires_at - old_instance.fuel_expires_at
-                            ).total_seconds()
-                        )
-                    )
-                    if old_instance.fuel_expires_at
-                    else "-",
-                )
-            if self.is_fuel_expiry_date_different(old_instance):
-                logger.info(
-                    "%s: Structure fuel level has changed. "
-                    "Therefore removing current fuel notifications.",
-                    logger_tag,
-                )
-                self.fuel_alerts.all().delete()
-                if (
-                    not old_instance.fuel_expires_at
-                    or old_instance.fuel_expires_at < self.fuel_expires_at
-                ):
-                    logger.info("%s: Structure has been refueled.", logger_tag)
-                    self._send_refueled_notification()
-
-    def _send_refueled_notification(self):
-        """Send a refueled notifications for this structure."""
-        from .notifications import Notification, NotificationType
-
-        notif_type = (
-            NotificationType.TOWER_REFUELED_EXTRA
-            if self.is_starbase
-            else NotificationType.STRUCTURE_REFUELED_EXTRA
-        )
-        notif = Notification.create_from_structure(
-            structure=self, notif_type=notif_type
-        )
-        notif.send_to_configured_webhooks()
-
     @property
     def is_upwell_structure(self) -> bool:
         return self.eve_type.is_upwell_structure
@@ -470,6 +418,19 @@ class Structure(models.Model):
             self.State.HULL_VULNERABLE,
         ]
 
+    @property
+    def is_burning_fuel(self) -> bool:
+        """True when this structure is currently burning fuel, else False."""
+        if self.is_upwell_structure and self.is_full_power:
+            return True
+        if self.is_starbase and self.state in [
+            self.State.POS_ONLINE,
+            self.State.POS_REINFORCED,
+            self.State.POS_UNANCHORING,
+        ]:
+            return True
+        return False
+
     @cached_property
     def owner_has_sov(self) -> bool:
         return self.eve_solar_system.corporation_has_sov(self.owner.corporation)
@@ -503,6 +464,58 @@ class Structure(models.Model):
         return not other.fuel_expires_at or not datetime_almost_equal(
             other.fuel_expires_at, self.fuel_expires_at, change_threshold
         )
+
+    def handle_fuel_notifications(self, old_instance: "Structure"):
+        """Remove fuel notifications if fuel levels have changed
+        and sent refueled notifications if structure has been refueled.
+        """
+        if old_instance and self.pk and self.fuel_expires_at:
+            logger_tag = "%s: Fuel notifications" % self
+            if self.fuel_expires_at != old_instance.fuel_expires_at:
+                logger.info(
+                    "%s: Fuel expiry dates changed: old|current|delta: %s|%s|%s",
+                    logger_tag,
+                    old_instance.fuel_expires_at.isoformat()
+                    if old_instance.fuel_expires_at
+                    else None,
+                    self.fuel_expires_at.isoformat(),
+                    int(
+                        abs(
+                            (
+                                self.fuel_expires_at - old_instance.fuel_expires_at
+                            ).total_seconds()
+                        )
+                    )
+                    if old_instance.fuel_expires_at
+                    else "-",
+                )
+            if self.is_fuel_expiry_date_different(old_instance):
+                logger.info(
+                    "%s: Structure fuel level has changed. "
+                    "Therefore removing current fuel notifications.",
+                    logger_tag,
+                )
+                self.fuel_alerts.all().delete()
+                if (
+                    not old_instance.fuel_expires_at
+                    or old_instance.fuel_expires_at < self.fuel_expires_at
+                ):
+                    logger.info("%s: Structure has been refueled.", logger_tag)
+                    self._send_refueled_notification()
+
+    def _send_refueled_notification(self):
+        """Send a refueled notifications for this structure."""
+        from .notifications import Notification, NotificationType
+
+        notif_type = (
+            NotificationType.TOWER_REFUELED_EXTRA
+            if self.is_starbase
+            else NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        notif = Notification.create_from_structure(
+            structure=self, notif_type=notif_type
+        )
+        notif.send_to_configured_webhooks()
 
     def get_power_mode_display(self) -> str:
         return self.PowerMode(self.power_mode).label if self.power_mode else ""

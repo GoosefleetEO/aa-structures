@@ -256,6 +256,53 @@ class TestStructure(NoSocketsTestCase):
         self.assertFalse(starbase.is_upwell_structure)
 
 
+class TestStructureIsBurningFuel(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        set_owner_character(character_id=1001)
+
+    def test_should_return_true_for_structure(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when/then
+        self.assertTrue(structure.is_burning_fuel)
+
+    def test_should_return_false_for_structure(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        # when/then
+        self.assertFalse(structure.is_burning_fuel)
+
+    def test_should_return_true_for_starbase(self):
+        # given
+        starbase = Structure.objects.get(id=1300000000001)
+        for state in [
+            Structure.State.POS_ONLINE,
+            Structure.State.POS_REINFORCED,
+            Structure.State.POS_UNANCHORING,
+        ]:
+            starbase.state = state
+            # when/then
+            self.assertTrue(starbase.is_burning_fuel)
+
+    def test_should_return_false_for_starbase(self):
+        # given
+        starbase = Structure.objects.get(id=1300000000001)
+        for state in [Structure.State.POS_OFFLINE, Structure.State.POS_ONLINING]:
+            starbase.state = state
+            # when/then
+            self.assertFalse(starbase.is_burning_fuel)
+
+    def test_should_return_false_for_poco(self):
+        # given
+        poco = Structure.objects.get(id=1200000000003)
+        # when/then
+        self.assertFalse(poco.is_burning_fuel)
+
+
 @patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_UPWELL", 900)
 @patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_STARBASE", 7200)
 class TestStructureFuelLevels(NoSocketsTestCase):
