@@ -469,7 +469,7 @@ class Structure(models.Model):
         """Remove fuel notifications if fuel levels have changed
         and sent refueled notifications if structure has been refueled.
         """
-        if old_instance and self.pk and self.fuel_expires_at:
+        if self.fuel_expires_at and old_instance and self.pk == old_instance.pk:
             logger_tag = "%s: Fuel notifications" % self
             if self.fuel_expires_at != old_instance.fuel_expires_at:
                 logger.info(
@@ -489,7 +489,11 @@ class Structure(models.Model):
                     if old_instance.fuel_expires_at
                     else "-",
                 )
-            if self.is_fuel_expiry_date_different(old_instance):
+            if (
+                self.is_burning_fuel
+                and old_instance.is_burning_fuel
+                and self.is_fuel_expiry_date_different(old_instance)
+            ):
                 logger.info(
                     "%s: Structure fuel level has changed. "
                     "Therefore removing current fuel notifications.",

@@ -1413,7 +1413,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
         structure.save()
         # when
-        owner.update_structures_esi()
+        with patch("structures.models.structures.now") as now:
+            now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
         # then
         self.assertTrue(mock_send_message.called)
 
@@ -1433,9 +1435,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
         owner = create_owner(self.corporation, self.main_ownership)
         owner.webhooks.add(webhook)
-        owner.update_structures_esi()
-        # when
-        owner.update_structures_esi()
+        with patch("structures.models.structures.now") as now:
+            now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
+            # when
+            owner.update_structures_esi()
         # then
         self.assertFalse(mock_send_message.called)
 
@@ -1462,7 +1466,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure.fuel_alerts.create(config=config, hours=12)
         # when
-        owner.update_structures_esi()
+        with patch("structures.models.structures.now") as now:
+            now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
         # then
         self.assertEqual(structure.fuel_alerts.count(), 0)
 
