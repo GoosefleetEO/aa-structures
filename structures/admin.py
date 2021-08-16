@@ -16,6 +16,7 @@ from .models import (
     FuelAlert,
     FuelAlertConfig,
     Notification,
+    NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
@@ -958,6 +959,13 @@ class WebhookAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active",)
     save_as = True
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields[
+            "notification_types"
+        ].choices = NotificationType.choices_enabled
+        return form
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

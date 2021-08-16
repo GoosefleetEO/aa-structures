@@ -1394,6 +1394,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+    )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_send_refueled_notification_when_fuel_level_increased(
         self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
@@ -1421,6 +1424,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+    )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
         self, mock_send_message, mock_esi_client, mock_notify_admins_throttled

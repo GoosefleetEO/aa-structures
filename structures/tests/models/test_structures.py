@@ -302,6 +302,7 @@ class TestStructureIsBurningFuel(NoSocketsTestCase):
         self.assertFalse(poco.is_burning_fuel)
 
 
+@patch(STRUCTURES_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True)
 @patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_UPWELL", 900)
 @patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_STARBASE", 7200)
 class TestStructureFuelLevels(NoSocketsTestCase):

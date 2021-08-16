@@ -965,19 +965,23 @@ if "structuretimers" in app_labels():
 
 
 class TestNotificationType(NoSocketsTestCase):
-    pass
-    # def test_should_return_extract(self):
-    #     # when
-    #     result = choices_subset(
-    #         NotificationType.MOONMINING_EXTRACTION_FINISHED,
-    #         NotificationType.MOONMINING_EXTRACTION_STARTED,
-    #     )
-    #     # then
-    #     expected = (
-    #         ("MoonminingExtractionFinished", "Moonmining Extraction Finished"),
-    #         ("MoonminingExtractionStarted", "Moonmining Extraction Started"),
-    #     )
-    #     self.assertEqual(result, expected)
+    def test_should_return_enabled_choices_only(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+            choices = NotificationType.choices_enabled
+        # then
+        types = {choice[0] for choice in choices}
+        self.assertNotIn(NotificationType.STRUCTURE_REFUELED_EXTRA, types)
+        self.assertNotIn(NotificationType.TOWER_REFUELED_EXTRA, types)
+
+    def test_should_return_all_choices(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+            choices = NotificationType.choices_enabled
+        # then
+        types = {choice[0] for choice in choices}
+        self.assertIn(NotificationType.STRUCTURE_REFUELED_EXTRA, types)
+        self.assertIn(NotificationType.TOWER_REFUELED_EXTRA, types)
 
 
 class TestWebhook(NoSocketsTestCase):

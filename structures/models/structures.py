@@ -17,6 +17,7 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
+from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
@@ -500,7 +501,7 @@ class Structure(models.Model):
                     logger_tag,
                 )
                 self.fuel_alerts.all().delete()
-                if (
+                if STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS and (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
