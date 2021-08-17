@@ -5,6 +5,7 @@ from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +17,8 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
+from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
+from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
 
@@ -114,6 +117,10 @@ class StructureTag(models.Model):
 
 class Structure(models.Model):
     """structure of a corporation"""
+
+    # Threshold in seconds when two fuel expiry dates will be judged as different
+    FUEL_DATES_EQUAL_THRESHOLD_UPWELL = 1800
+    FUEL_DATES_EQUAL_THRESHOLD_STARBASE = 7200  # high fluctuation due to estimating
 
     class State(models.IntegerChoices):
         """State of a structure"""
@@ -316,16 +323,33 @@ class Structure(models.Model):
 
     objects = StructureManager()
 
-    def __str__(self):
-        return "{} - {}".format(self.eve_solar_system, self.name)
+    def __str__(self) -> str:
+        return f"{self.id} - {self.eve_solar_system} - {self.name}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}(id={}, name='{}')".format(
             self.__class__.__name__, self.id, self.name
         )
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # make sure related objects are saved whenever structure is saved
+        self.update_generated_tags()
+
     @property
-    def is_full_power(self):
+    def is_upwell_structure(self) -> bool:
+        return self.eve_type.is_upwell_structure
+
+    @property
+    def is_poco(self) -> bool:
+        return self.eve_type.is_poco
+
+    @property
+    def is_starbase(self) -> bool:
+        return self.eve_type.is_starbase
+
+    @property
+    def is_full_power(self) -> bool:
         """return True if structure is full power, False if not.
 
         Returns None if state can not be determined
@@ -333,11 +357,10 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.FULL_POWER
+        return power_mode == self.PowerMode.FULL_POWER
 
     @property
-    def is_low_power(self):
+    def is_low_power(self) -> bool:
         """return True if structure is low power, False if not.
 
         Returns None if state can not be determined
@@ -345,11 +368,10 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.LOW_POWER
+        return power_mode == self.PowerMode.LOW_POWER
 
     @property
-    def is_abandoned(self):
+    def is_abandoned(self) -> bool:
         """return True if structure is abandoned, False if not.
 
         Returns None if state can not be determined
@@ -357,11 +379,10 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.ABANDONED
+        return power_mode == self.PowerMode.ABANDONED
 
     @property
-    def is_maybe_abandoned(self):
+    def is_maybe_abandoned(self) -> bool:
         """return True if structure is maybe abandoned, False if not.
 
         Returns None if state can not be determined
@@ -369,34 +390,28 @@ class Structure(models.Model):
         power_mode = self.power_mode
         if not power_mode:
             return None
-        else:
-            return power_mode == self.PowerMode.LOW_ABANDONED
+        return power_mode == self.PowerMode.LOW_ABANDONED
 
     @property
-    def power_mode(self):
+    def power_mode(self) -> Optional["PowerMode"]:
         """returns the calculated power mode of this structure, e.g. low power
         returns None for non upwell structures
         """
-        if not self.eve_type.is_upwell_structure:
+        if not self.is_upwell_structure:
             return None
-
         if self.fuel_expires_at and self.fuel_expires_at > now():
             return self.PowerMode.FULL_POWER
-
         elif self.last_online_at:
             if self.last_online_at >= now() - timedelta(days=7):
                 return self.PowerMode.LOW_POWER
             else:
                 return self.PowerMode.ABANDONED
-
         elif self.state in {self.State.ANCHORING, self.State.ANCHOR_VULNERABLE}:
             return self.PowerMode.LOW_POWER
-
-        else:
-            return self.PowerMode.LOW_ABANDONED
+        return self.PowerMode.LOW_ABANDONED
 
     @property
-    def is_reinforced(self):
+    def is_reinforced(self) -> bool:
         return self.state in [
             self.State.ARMOR_REINFORCE,
             self.State.HULL_REINFORCE,
@@ -405,15 +420,109 @@ class Structure(models.Model):
         ]
 
     @property
-    def owner_has_sov(self):
+    def is_burning_fuel(self) -> bool:
+        """True when this structure is currently burning fuel, else False."""
+        if self.is_upwell_structure and self.is_full_power:
+            return True
+        if self.is_starbase and self.state in [
+            self.State.POS_ONLINE,
+            self.State.POS_REINFORCED,
+            self.State.POS_UNANCHORING,
+        ]:
+            return True
+        return False
+
+    @cached_property
+    def owner_has_sov(self) -> bool:
         return self.eve_solar_system.corporation_has_sov(self.owner.corporation)
 
-    def save(self, *args, **kwargs):
-        """make sure related objects are saved whenever structure is saved"""
-        super().save(*args, **kwargs)
-        self.update_generated_tags()
+    @cached_property
+    def location_name(self) -> str:
+        """Name of this structures's location."""
+        if self.eve_moon:
+            return self.eve_moon.name
+        if self.eve_planet:
+            return self.eve_planet.name
+        return self.eve_solar_system.name
 
-    def get_power_mode_display(self):
+    @property
+    def hours_fuel_expires(self) -> Optional[float]:
+        """Hours until fuel expires."""
+        if self.fuel_expires_at:
+            return hours_until_deadline(self.fuel_expires_at)
+        return None
+
+    def is_fuel_expiry_date_different(self, other: "Structure") -> True:
+        """True when fuel expiry date from other structure is different.
+
+        Will compare using treshold setting.
+        """
+        change_threshold = (
+            self.FUEL_DATES_EQUAL_THRESHOLD_UPWELL
+            if self.is_upwell_structure
+            else self.FUEL_DATES_EQUAL_THRESHOLD_STARBASE
+        )
+        return not other.fuel_expires_at or not datetime_almost_equal(
+            other.fuel_expires_at, self.fuel_expires_at, change_threshold
+        )
+
+    def handle_fuel_notifications(self, old_instance: "Structure"):
+        """Remove fuel notifications if fuel levels have changed
+        and sent refueled notifications if structure has been refueled.
+        """
+        if self.fuel_expires_at and old_instance and self.pk == old_instance.pk:
+            logger_tag = "%s: Fuel notifications" % self
+            if self.fuel_expires_at != old_instance.fuel_expires_at:
+                logger.info(
+                    "%s: Fuel expiry dates changed: old|current|delta: %s|%s|%s",
+                    logger_tag,
+                    old_instance.fuel_expires_at.isoformat()
+                    if old_instance.fuel_expires_at
+                    else None,
+                    self.fuel_expires_at.isoformat(),
+                    int(
+                        abs(
+                            (
+                                self.fuel_expires_at - old_instance.fuel_expires_at
+                            ).total_seconds()
+                        )
+                    )
+                    if old_instance.fuel_expires_at
+                    else "-",
+                )
+            if (
+                self.is_burning_fuel
+                and old_instance.is_burning_fuel
+                and self.is_fuel_expiry_date_different(old_instance)
+            ):
+                logger.info(
+                    "%s: Structure fuel level has changed. "
+                    "Therefore removing current fuel notifications.",
+                    logger_tag,
+                )
+                self.fuel_alerts.all().delete()
+                if STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS and (
+                    not old_instance.fuel_expires_at
+                    or old_instance.fuel_expires_at < self.fuel_expires_at
+                ):
+                    logger.info("%s: Structure has been refueled.", logger_tag)
+                    self._send_refueled_notification()
+
+    def _send_refueled_notification(self):
+        """Send a refueled notifications for this structure."""
+        from .notifications import Notification, NotificationType
+
+        notif_type = (
+            NotificationType.TOWER_REFUELED_EXTRA
+            if self.is_starbase
+            else NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        notif = Notification.create_from_structure(
+            structure=self, notif_type=notif_type
+        )
+        notif.send_to_configured_webhooks()
+
+    def get_power_mode_display(self) -> str:
         return self.PowerMode(self.power_mode).label if self.power_mode else ""
 
     def update_generated_tags(self, recreate_tags=False):

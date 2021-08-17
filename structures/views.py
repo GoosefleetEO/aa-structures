@@ -1,13 +1,11 @@
-import datetime as dt
 import re
 import urllib
 from enum import IntEnum
-from typing import Optional
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Q
 from django.http import (
     HttpResponse,
     HttpResponseNotFound,
@@ -57,7 +55,6 @@ from .forms import TagsFilterForm
 from .models import (
     Owner,
     OwnerAsset,
-    PocoDetails,
     Structure,
     StructureService,
     StructureTag,
@@ -125,24 +122,9 @@ def main(request):
         "tags_exist": StructureTag.objects.exists(),
         "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
         "data_tables_paging": STRUCTURES_PAGING_ENABLED,
-        "last_updated": _last_updated(),
+        "last_updated": Owner.objects.structures_last_updated(),
     }
     return render(request, "structures/main.html", context)
-
-
-# TODO: Move to manager
-def _last_updated() -> Optional[dt.datetime]:
-    """Date/time when structures were last updated."""
-    active_owners = Owner.objects.filter(is_active=True)
-    return (
-        (
-            active_owners.order_by("-structures_last_update_at")
-            .first()
-            .structures_last_update_at
-        )
-        if active_owners
-        else None
-    )
 
 
 class StructuresRowBuilder:
@@ -230,7 +212,7 @@ class StructuresRowBuilder:
         try:
             my_category = my_group.eve_category
             self._row["category_name"] = my_category.name_localized
-            self._row["is_starbase"] = my_category.is_starbase
+            self._row["is_starbase"] = self._structure.is_starbase
         except AttributeError:
             self._row["category_name"] = ""
             self._row["is_starbase"] = None
@@ -252,7 +234,7 @@ class StructuresRowBuilder:
         )
 
         # poco
-        self._row["is_poco"] = structure_type.is_poco
+        self._row["is_poco"] = self._structure.is_poco
 
     def _build_name(self):
         self._row["structure_name"] = escape(self._structure.name)
@@ -299,7 +281,7 @@ class StructuresRowBuilder:
                 self._row["reinforcement"] = ""
 
     def _build_fuel_infos(self):
-        if self._structure.eve_type.is_poco:
+        if self._structure.is_poco:
             fuel_expires_display = "-"
             fuel_expires_timestamp = None
         elif self._structure.is_low_power:
@@ -351,7 +333,7 @@ class StructuresRowBuilder:
 
     def _build_online_infos(self):
         self._row["power_mode_str"] = self._structure.get_power_mode_display()
-        if self._structure.eve_type.is_poco:
+        if self._structure.is_poco:
             last_online_at_display = "-"
             last_online_at_timestamp = None
         elif self._structure.is_full_power:
@@ -405,7 +387,7 @@ class StructuresRowBuilder:
 
         self._row["state_str"] = (
             cap_first(self._structure.get_state_display())
-            if not self._structure.eve_type.is_poco
+            if not self._structure.is_poco
             else "-"
         )
         self._row["state_details"] = self._row["state_str"]
@@ -424,7 +406,7 @@ class StructuresRowBuilder:
             )
 
     def _build_core_status(self):
-        if self._structure.eve_type.is_upwell_structure:
+        if self._structure.is_upwell_structure:
             if self._structure.has_core is True:
                 has_core = True
                 core_status = '<i class="fas fa-check" title="Core present"></i>'
@@ -478,62 +460,15 @@ class StructuresRowBuilder:
 @permission_required("structures.basic_access")
 def structure_list_data(request):
     """returns structure list in JSON for AJAX call in structure_list view"""
-    structure_rows = list()
+    tags_raw = request.GET.get(QUERY_PARAM_TAGS)
+    tags = tags_raw.split(",") if tags_raw else None
     row_converter = StructuresRowBuilder(request)
-    for structure in _structures_query_for_user(request):
-        structure_rows.append(row_converter.convert(structure))
+    structure_rows = [
+        row_converter.convert(structure)
+        for structure in Structure.objects.visible_for_user(request.user, tags)
+    ]
 
     return JsonResponse(structure_rows, safe=False)
-
-
-def _structures_query_for_user(request):
-    """Returns query according to users permissions and current tags."""
-    tags_raw = request.GET.get(QUERY_PARAM_TAGS)
-    if tags_raw:
-        tags = tags_raw.split(",")
-    else:
-        tags = None
-
-    if request.user.has_perm("structures.view_all_structures"):
-        structures_query = Structure.objects.select_related_defaults()
-        if tags:
-            structures_query = structures_query.filter(tags__name__in=tags).distinct()
-
-    else:
-        if request.user.has_perm(
-            "structures.view_corporation_structures"
-        ) or request.user.has_perm("structures.view_alliance_structures"):
-            corporation_ids = {
-                character_ownership.character.corporation_id
-                for character_ownership in request.user.character_ownerships.all()
-            }
-            corporations = list(
-                EveCorporationInfo.objects.select_related("alliance").filter(
-                    corporation_id__in=corporation_ids
-                )
-            )
-        else:
-            corporations = []
-
-        if request.user.has_perm("structures.view_alliance_structures"):
-            alliances = {
-                corporation.alliance
-                for corporation in corporations
-                if corporation.alliance
-            }
-            for alliance in alliances:
-                corporations += alliance.evecorporationinfo_set.all()
-
-            corporations = list(set(corporations))
-
-        structures_query = Structure.objects.select_related_defaults().filter(
-            owner__corporation__in=corporations
-        )
-
-    structures_query = structures_query.prefetch_related("tags", "services").annotate(
-        has_poco_details=Exists(PocoDetails.objects.filter(structure_id=OuterRef("id")))
-    )
-    return structures_query
 
 
 @login_required

@@ -183,14 +183,14 @@ class DiscordWebhookMixin:
 
     def send_test_message(self, user: User = None) -> Tuple[str, bool]:
         """Sends a test notification to this webhook and returns send report"""
+        user_text = f" sent by **{user}**" if user else ""
+        message = {
+            "content": f"Test message for webhook **{self.name}**{user_text}",
+            "username": __title__,
+        }
         try:
-            user_text = f" sent by **{user}**" if user else ""
-            message = {
-                "content": f"Test message for webhook **{self.name}**{user_text}",
-                "username": __title__,
-            }
             success = self._send_message_to_webhook(message)
-        except Exception as ex:
+        except OSError as ex:
             logger.warning(
                 "Failed to send test notification to webhook %s: %s",
                 self,

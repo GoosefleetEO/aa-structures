@@ -538,6 +538,11 @@
             "id": 1000134,
             "category": 2,
             "name": "NPC Corp"
+        },
+        {
+            "id": 1000137,
+            "category": 2,
+            "name": "NPC Corp DED"
         }
     ],
     "EveSovereigntyMap": [

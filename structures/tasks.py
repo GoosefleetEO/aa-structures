@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 from celery import chain, shared_task
 
@@ -12,7 +12,7 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
-from .models import EveSovereigntyMap, Notification, Owner, Webhook
+from .models import EveSovereigntyMap, FuelAlertConfig, Notification, Owner, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -79,23 +79,29 @@ def update_structures_for_owner(owner_pk, user_pk=None):
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_structures_esi_for_owner(owner_pk, user_pk=None):
     """Update all structures for owner for ESI."""
-    _get_owner(owner_pk).update_structures_esi(_get_user(user_pk))
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.update_structures_esi(_get_user(user_pk))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_structures_assets_for_owner(owner_pk, user_pk=None):
     """Update all related assets for owner."""
-    _get_owner(owner_pk).update_asset_esi(_get_user(user_pk))
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.update_asset_esi(_get_user(user_pk))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def fetch_all_notifications():
-    """Fetch notifications for all owners."""
+    """Fetch notifications for all owners and send new fuel notifications."""
     for owner in Owner.objects.all():
         if owner.is_active:
             process_notifications_for_owner.apply_async(
                 kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
             )
+    for config_pk in FuelAlertConfig.objects.filter(is_enabled=True).values_list(
+        "pk", flat=True
+    ):
+        send_fuel_notifications_for_config.delay(config_pk)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -104,14 +110,16 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
     if not fetch_esi_status().is_ok:
         logger.warning("ESI currently not available. Aborting.")
     else:
-        owner = _get_owner(owner_pk)
+        owner = Owner.objects.get(pk=owner_pk)
         owner.fetch_notifications_esi(_get_user(user_pk))
         owner.send_new_notifications()
-        for webhook in owner.webhooks.filter(is_active=True):
-            if webhook.queue_size() > 0:
-                send_messages_for_webhook.apply_async(
-                    kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
-                )
+        send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def send_fuel_notifications_for_config(config_pk: int):
+    FuelAlertConfig.objects.get(pk=config_pk).send_new_notifications()
+    send_queued_messages_for_webhooks(FuelAlertConfig.relevant_webhooks())
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -119,23 +127,16 @@ def send_notifications(notification_pks: list) -> None:
     """Send notifications defined by list of pks (used for admin action)."""
     notifications = Notification.objects.filter(pk__in=notification_pks)
     if notifications:
-        logger.info(
-            "Trying to send {} notifications to webhooks...".format(
-                len(notification_pks)
-            )
-        )
-        webhooks = set()
+        logger.info("Trying to send %s notifications to webhooks...", notification_pks)
         for notif in notifications:
-            for webhook in notif.owner.webhooks.filter(is_active=True):
-                webhooks.add(webhook)
-                if (
-                    str(notif.notif_type) in webhook.notification_types
-                    and not notif.filter_for_npc_attacks()
-                    and not notif.filter_for_alliance_level()
-                ):
-                    notif.send_to_webhook(webhook)
+            notif.send_to_configured_webhooks()
+        send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
 
-        for webhook in webhooks:
+
+def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):
+    """Send queued message for given webhooks."""
+    for webhook in webhooks:
+        if webhook.queue_size() > 0:
             send_messages_for_webhook.apply_async(
                 kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
             )
@@ -177,17 +178,6 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
                 message=message,
                 level="success" if send_success else "danger",
             )
-
-
-def _get_owner(owner_pk: int) -> Owner:
-    """Fetch the owner or raise exception."""
-    try:
-        owner = Owner.objects.get(pk=owner_pk)
-    except Owner.DoesNotExist:
-        raise Owner.DoesNotExist(
-            "Requested owner with pk {} does not exist".format(owner_pk)
-        )
-    return owner
 
 
 def _get_user(user_pk: int) -> Optional[User]:

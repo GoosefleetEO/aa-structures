@@ -7,13 +7,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
-## Change
+## [1.15.0] - 2021-08-17
 
+## Added
+
+- Fuel alert notifications for structures and POSes can now be configured freely, e.g. to appear 3 days before fuel runs out and repeated every 12 hours
+- Default fuel alert notifications from ESI can be turned off with the setting: `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS` (so they don't interfere with the custom fuel alerts)
+- EXPERIMENTAL: A new notification can be generated to inform when a structure or POS has been refueled. This is an experimental feature that can be enabled with this feature flag in your local settings: `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = True`. Note that this feature currently does not work properly for POSes.
+- Tokens will now also be rotated when fetching structures from ESI to reduce latency
+
+## Changed
+
+- Will now show name of token's character for ESI issues to make it easier to identify the culprit (#55)
+
+## Fix
+
+- POS notifications formatted all bold when POS has no name
 - Fix tests to work with aa-structuretimers 1.1.0
 
 ## [1.14.2] - 2021-07-12
 
-## Change
+## Changed
 
 - Default for repeating issue notifications changed to 1 day
 - Inactive owners will be re-activated once a new sync character is added

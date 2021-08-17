@@ -1,12 +1,11 @@
-# flake8: noqa
 """functions for loading test data and for building mocks"""
 
+import datetime as dt
 import inspect
 import json
 import math
 import os
 from copy import deepcopy
-from datetime import timedelta
 from random import randrange
 from typing import Tuple
 from unittest.mock import Mock
@@ -14,6 +13,7 @@ from unittest.mock import Mock
 from bravado.exception import HTTPNotFound
 
 from django.contrib.auth.models import User
+from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -22,6 +22,7 @@ from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
 )
+from app_utils.esi_testing import BravadoOperationStub
 from app_utils.testing import create_user_from_evecharacter
 
 from ...models import (
@@ -38,7 +39,6 @@ from ...models import (
     Notification,
     NotificationType,
     Owner,
-    OwnerCharacter,
     Structure,
     StructureService,
     StructureTag,
@@ -73,24 +73,24 @@ def _load_testdata_entities() -> dict:
 
     # update timestamp to current
     for notification in entities["Notification"]:
-        notification["timestamp"] = now() - timedelta(
+        notification["timestamp"] = now() - dt.timedelta(
             hours=randrange(3), minutes=randrange(60), seconds=randrange(60)
         )
 
     # update timestamps on structures
     for structure in entities["Structure"]:
         if "fuel_expires_at" in structure:
-            fuel_expires_at = now() + timedelta(days=1 + randrange(5))
+            fuel_expires_at = now() + dt.timedelta(days=1 + randrange(5))
             structure["fuel_expires_at"] = fuel_expires_at
 
         if "state_timer_start" in structure:
-            state_timer_start = now() + timedelta(days=1 + randrange(3))
+            state_timer_start = now() + dt.timedelta(days=1 + randrange(3))
             structure["state_timer_start"] = state_timer_start
-            state_timer_end = state_timer_start + timedelta(minutes=15)
+            state_timer_end = state_timer_start + dt.timedelta(minutes=15)
             structure["state_timer_end"] = state_timer_end
 
         if "unanchors_at" in structure:
-            unanchors_at = now() + timedelta(days=3 + randrange(5))
+            unanchors_at = now() + dt.timedelta(days=3 + randrange(5))
             structure["unanchors_at"] = unanchors_at
 
     return entities
@@ -117,20 +117,6 @@ ESI_LANGUAGES = {
 }
 
 
-class EsiOperation:
-    def __init__(self, data, headers: dict = None, also_return_response: bool = False):
-        self._data = data
-        self._headers = headers if headers else {"x-pages": 1}
-        self.also_return_response = also_return_response
-
-    def result(self, **kwargs):
-        if self.also_return_response:
-            mock_response = Mock(**{"headers": self._headers})
-            return [self._data, mock_response]
-        else:
-            return self._data
-
-
 def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -154,17 +140,18 @@ def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs
     if language in ESI_LANGUAGES.difference({"en-us"}):
         entity["name"] += "_" + language
 
-    return EsiOperation(data=entity)
+    return BravadoOperationStub(data=entity)
 
 
 def esi_get_corporations_corporation_id_structures(
-    corporation_id, page=None, language=None, *args, **kwargs
+    corporation_id, token, page=None, language=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
     unless the function property override_data is set
     """
-
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
         page = 1
@@ -194,18 +181,28 @@ def esi_get_corporations_corporation_id_structures(
                     if language != "en-us":
                         service["name"] += "_%s" % language
 
+    # convert datetime
+    for obj in corp_data:
+        for key in obj:
+            if isinstance(obj[key], str):
+                my_dt = parse_datetime(obj[key])
+                if my_dt:
+                    obj[key] = my_dt
+
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
 
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 esi_get_corporations_corporation_id_structures.override_data = None
 
 
 def esi_get_corporations_corporation_id_structures_2(
-    corporation_id, page=None, language=None, *args, **kwargs
+    corporation_id, token, page=None, language=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -218,7 +215,7 @@ def esi_get_corporations_corporation_id_structures_2(
         def __init__(self, also_return_response):
             self.also_return_response = also_return_response
 
-    class EsiOperation:
+    class BravadoOperationStub:
         def __init__(self, headers, data, also_return_response=False):
             self._headers = headers
             self._data = data
@@ -230,6 +227,9 @@ def esi_get_corporations_corporation_id_structures_2(
                 return [self._data, mock_response]
             else:
                 return self._data
+
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
 
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
@@ -260,20 +260,29 @@ def esi_get_corporations_corporation_id_structures_2(
                     if language != "en-us":
                         service["name"] += "_%s" % language
 
+    # convert datetime
+    for obj in corp_data:
+        if "fuel_expires" in obj and obj["fuel_expires"]:
+            obj["fuel_expires"] = parse_datetime(obj["fuel_expires"])
+
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
 
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 def esi_get_corporations_corporation_id_starbases(
-    corporation_id, page=None, *args, **kwargs
+    corporation_id, token, page=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
     unless the function property override_data is set
     """
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
         page = 1
@@ -300,33 +309,41 @@ def esi_get_corporations_corporation_id_starbases(
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 esi_get_corporations_corporation_id_starbases.override_data = None
 
 
 def esi_get_corporations_corporation_id_starbases_starbase_id(
-    corporation_id, starbase_id, system_id, *args, **kwargs
+    corporation_id, starbase_id, system_id, token, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test"""
-
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     corporation_starbase_details = esi_data["Corporation"][
         "get_corporations_corporation_id_starbases_starbase_id"
     ]  # noqa
-    if str(starbase_id) in corporation_starbase_details:
-        return EsiOperation(data=corporation_starbase_details[str(starbase_id)])
-
-    else:
+    if str(starbase_id) not in corporation_starbase_details:
         mock_response = Mock()
         mock_response.status_code = 404
         message = "Can not find starbase with ID %s" % starbase_id
         raise HTTPNotFound(mock_response, message=message)
 
+    return BravadoOperationStub(
+        data=corporation_starbase_details[str(starbase_id)],
+        headers={
+            "Last-Modified": dt.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        },
+    )
 
-def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
+
+def esi_get_universe_structures_structure_id(structure_id, token, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
-
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     if not esi_get_universe_structures_structure_id.override_data:
         universe_structures_data = esi_data["Universe"][
             "get_universe_structures_structure_id"
@@ -337,7 +354,7 @@ def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
         )
 
     if str(structure_id) in universe_structures_data:
-        return EsiOperation(data=universe_structures_data[str(structure_id)])
+        return BravadoOperationStub(data=universe_structures_data[str(structure_id)])
 
     else:
         mock_response = Mock()
@@ -349,19 +366,22 @@ def esi_get_universe_structures_structure_id(structure_id, *args, **kwargs):
 esi_get_universe_structures_structure_id.override_data = None
 
 
-def esi_get_characters_character_id_notifications(character_id, *args, **kwargs):
+def esi_get_characters_character_id_notifications(character_id, token, *args, **kwargs):
     """simulates ESI endpoint of same name for mock test"""
-
-    return EsiOperation(data=entities_testdata["Notification"])
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
+    return BravadoOperationStub(data=entities_testdata["Notification"])
 
 
 def esi_get_corporations_corporation_id_customs_offices(
-    corporation_id, page=None, *args, **kwargs
+    corporation_id, token, page=None, *args, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
     unless the function property override_data is set
     """
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     page_size = ESI_CORP_STRUCTURES_PAGE_SIZE
     if not page:
         page = 1
@@ -391,7 +411,9 @@ def esi_get_corporations_corporation_id_customs_offices(
     start = (page - 1) * page_size
     stop = start + page_size
     pages_count = int(math.ceil(len(corp_data) / page_size))
-    return EsiOperation(data=corp_data[start:stop], headers={"x-pages": pages_count})
+    return BravadoOperationStub(
+        data=corp_data[start:stop], headers={"x-pages": pages_count}
+    )
 
 
 esi_get_corporations_corporation_id_customs_offices.override_data = None
@@ -412,12 +434,14 @@ def _esi_post_corporations_corporation_id_assets(
             )
         )
     else:
-        return EsiOperation(data=my_esi_data[str(corporation_id)])
+        return BravadoOperationStub(data=my_esi_data[str(corporation_id)])
 
 
 def esi_post_corporations_corporation_id_assets_locations(
-    corporation_id: int, item_ids: list, *args, **kwargs
+    corporation_id: int, item_ids: list, token, *args, **kwargs
 ) -> list:
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     return _esi_post_corporations_corporation_id_assets(
         "post_corporations_corporation_id_assets_locations",
         corporation_id,
@@ -430,8 +454,10 @@ esi_post_corporations_corporation_id_assets_locations.override_data = None
 
 
 def esi_post_corporations_corporation_id_assets_names(
-    corporation_id: int, item_ids: list, *args, **kwargs
+    corporation_id: int, item_ids: list, token: str, *args, **kwargs
 ) -> list:
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
     return _esi_post_corporations_corporation_id_assets(
         "post_corporations_corporation_id_assets_names",
         corporation_id,
@@ -448,7 +474,7 @@ def esi_get_universe_categories_category_id(category_id, language=None):
     if language in ESI_LANGUAGES.difference({"en-us"}):
         obj_data["name"] += "_" + language
 
-    return EsiOperation(data=obj_data)
+    return BravadoOperationStub(data=obj_data)
 
 
 def esi_get_universe_moons_moon_id(moon_id, language=None):
@@ -461,11 +487,11 @@ def esi_get_universe_moons_moon_id(moon_id, language=None):
     if language in ESI_LANGUAGES.difference({"en-us"}):
         obj_data["name"] += "_" + language
 
-    return EsiOperation(data=obj_data)
+    return BravadoOperationStub(data=obj_data)
 
 
 def esi_return_data(data):
-    return lambda **kwargs: EsiOperation(data=data)
+    return lambda **kwargs: BravadoOperationStub(data=data)
 
 
 def esi_mock_client(version=1.6):
@@ -726,8 +752,8 @@ def create_structures(dont_load_entities: bool = False) -> object:
 
         obj = Structure.objects.create(**x)
         if obj.state != 11:
-            obj.state_timer_start = now() - timedelta(days=randrange(3) + 1)
-            obj.state_timer_start = obj.state_timer_start + timedelta(
+            obj.state_timer_start = now() - dt.timedelta(days=randrange(3) + 1)
+            obj.state_timer_start = obj.state_timer_start + dt.timedelta(
                 days=randrange(4) + 1
             )
 
@@ -786,7 +812,7 @@ def set_owner_character(character_id: int) -> Tuple[User, Owner]:
 
 
 def load_notification_entities(owner: Owner):
-    timestamp_start = now() - timedelta(hours=2)
+    timestamp_start = now() - dt.timedelta(hours=2)
     for notification in entities_testdata["Notification"]:
         notification_id = notification["notification_id"]
         notif_type = notification["type"]
@@ -794,7 +820,7 @@ def load_notification_entities(owner: Owner):
         sender = EveEntity.objects.get(id=notification["sender_id"])
         text = notification["text"] if "text" in notification else None
         is_read = notification["is_read"] if "is_read" in notification else None
-        timestamp_start = timestamp_start + timedelta(minutes=5)
+        timestamp_start = timestamp_start + dt.timedelta(minutes=5)
         Notification.objects.update_or_create(
             notification_id=notification_id,
             owner=owner,

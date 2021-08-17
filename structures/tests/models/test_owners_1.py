@@ -27,12 +27,15 @@ from ...models import (
     EveSolarSystem,
     EveSovereigntyMap,
     EveType,
+    FuelAlertConfig,
+    NotificationType,
     Owner,
     OwnerCharacter,
     PocoDetails,
     Structure,
     StructureService,
     StructureTag,
+    Webhook,
 )
 from .. import to_json
 from ..testdata import (
@@ -279,13 +282,13 @@ class TestOwner(NoSocketsTestCase):
         self.assertIsInstance(result, OwnerCharacter)
         self.assertEqual(result.owner, owner)
         self.assertEqual(result.character_ownership, character_ownership)
-        self.assertIsNone(result.last_used_at)
+        self.assertIsNone(result.notifications_last_used_at)
 
     def test_should_not_overwrite_existing_characters(self):
         # given
         character = self.owner.characters.first()
         my_dt = datetime(year=2021, month=2, day=11, hour=12, tzinfo=utc)
-        character.last_used_at = my_dt
+        character.notifications_last_used_at = my_dt
         character.save()
         # when
         result = self.owner.add_character(character.character_ownership)
@@ -293,7 +296,7 @@ class TestOwner(NoSocketsTestCase):
         self.assertIsInstance(result, OwnerCharacter)
         self.assertEqual(result.owner, self.owner)
         self.assertEqual(result.character_ownership, character.character_ownership)
-        self.assertEqual(result.last_used_at, my_dt)
+        self.assertEqual(result.notifications_last_used_at, my_dt)
 
     def test_should_prevent_adding_character_from_other_corporation(self):
         # given
@@ -486,13 +489,17 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 2, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 1, 2, tzinfo=utc
+        )
         my_character.save()
         _, character_ownership_1102 = create_user_from_evecharacter(
             1102, scopes=Owner.get_esi_scopes()
         )
         my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 1, 1, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 1, 1, tzinfo=utc
+        )
         my_character.save()
         # when
         token = owner.fetch_token()
@@ -503,7 +510,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertFalse(mock_notify_throttled.called)
         self.assertEqual(owner.characters.count(), 1)
 
-    def test_should_rotate_through_characters(
+    def test_should_rotate_through_characters_for_notification(
         self, mock_notify_admins_throttled, mock_notify_throttled
     ):
         # given
@@ -516,7 +523,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 5, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 5, tzinfo=utc
+        )
         my_character.save()
         _, character_ownership_1102 = create_user_from_evecharacter(
             1102,
@@ -524,24 +533,90 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 0, tzinfo=utc
+        )
         my_character.save()
-        tokens_reveiced = list()
+        tokens_received = list()
         # when
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
-        tokens_reveiced.append(
-            owner.fetch_token(rotate_characters=True, ignore_schedule=True).character_id
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS,
+                ignore_schedule=True,
+            ).character_id
         )
         # then
-        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1011])
+        self.assertListEqual(tokens_received, [1102, 1011, 1102, 1011])
+
+    def test_should_rotate_through_characters_for_structures(
+        self, mock_notify_admins_throttled, mock_notify_throttled
+    ):
+        # given
+        owner = Owner.objects.create(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
+        )
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1011)
+        my_character.structures_last_used_at = dt.datetime(2021, 1, 1, 0, 5, tzinfo=utc)
+        my_character.save()
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        my_character = owner.add_character(character_ownership_1102)
+        my_character.structures_last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.save()
+        tokens_received = list()
+        # when
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.STRUCTURES,
+                ignore_schedule=True,
+            ).character_id
+        )
+        # then
+        self.assertListEqual(tokens_received, [1102, 1011, 1102, 1011])
 
     def test_should_rotate_through_characters_based_on_schedule(
         self, mock_notify_admins_throttled, mock_notify_throttled
@@ -556,7 +631,9 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1011)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 1, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 1, tzinfo=utc
+        )
         my_character.save()
         _, character_ownership_1102 = create_user_from_evecharacter(
             1102,
@@ -564,16 +641,34 @@ class TestOwnerFetchToken(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         my_character = owner.add_character(character_ownership_1102)
-        my_character.last_used_at = dt.datetime(2021, 1, 1, 0, 0, tzinfo=utc)
+        my_character.notifications_last_used_at = dt.datetime(
+            2021, 1, 1, 0, 0, tzinfo=utc
+        )
         my_character.save()
-        tokens_reveiced = list()
+        tokens_received = list()
         # when
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
-        tokens_reveiced.append(owner.fetch_token(rotate_characters=True).character_id)
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
+        tokens_received.append(
+            owner.fetch_token(
+                rotate_characters=Owner.RotateCharactersType.NOTIFICATIONS
+            ).character_id
+        )
         # then
-        self.assertListEqual(tokens_reveiced, [1102, 1011, 1102, 1102])
+        self.assertListEqual(tokens_received, [1102, 1011, 1102, 1102])
 
 
 @patch(MODULE_PATH + ".notify_admins_throttled")
@@ -807,9 +902,13 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_can_sync_starbases(self, mock_esi_client, mock_notify_admins_throttled):
+    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
+    def test_can_sync_starbases(
+        self, mock_esi_client_2, mock_esi_client, mock_notify_admins_throttled
+    ):
         # given
         mock_esi_client.side_effect = esi_mock_client
+        mock_esi_client_2.side_effect = esi_mock_client
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -840,13 +939,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(
             structure.state_timer_end, datetime(2020, 4, 5, 7, 0, 0, tzinfo=utc)
         )
-        self.assertGreaterEqual(
+        self.assertAlmostEqual(
             structure.fuel_expires_at,
-            now() + timedelta(hours=24) - timedelta(seconds=10),
-        )
-        self.assertLessEqual(
-            structure.fuel_expires_at,
-            now() + timedelta(hours=24) + timedelta(seconds=10),
+            now() + timedelta(hours=24),
+            delta=timedelta(seconds=30),
         )
 
         structure = Structure.objects.get(id=1300000000002)
@@ -868,25 +964,36 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_type_id, 20062)
         self.assertEqual(structure.state, Structure.State.POS_ONLINE)
         self.assertEqual(structure.eve_moon_id, 40029527)
-        self.assertGreaterEqual(
+        # self.assertGreaterEqual(
+        #     structure.fuel_expires_at,
+        #     now() + timedelta(hours=133) - timedelta(seconds=10),
+        # )
+        # self.assertLessEqual(
+        #     structure.fuel_expires_at,
+        #     now() + timedelta(hours=133) + timedelta(seconds=10),
+        # )
+        self.assertAlmostEqual(
             structure.fuel_expires_at,
-            now() + timedelta(hours=133) - timedelta(seconds=10),
-        )
-        self.assertLessEqual(
-            structure.fuel_expires_at,
-            now() + timedelta(hours=133) + timedelta(seconds=10),
+            now() + timedelta(hours=133, minutes=20),
+            delta=timedelta(seconds=30),
         )
         # did not notify admins
         self.assertFalse(mock_notify_admins_throttled.called)
 
-    @patch(MODULE_PATH + ".notify", spec=True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
+    @patch(MODULE_PATH + ".notify", spec=True)
     def test_can_sync_all_structures_and_notify_user(
-        self, mock_notify, mock_esi_client, mock_notify_admins_throttled
+        self,
+        mock_notify,
+        mock_esi_client_2,
+        mock_esi_client,
+        mock_notify_admins_throttled,
     ):
         # given
         mock_esi_client.side_effect = esi_mock_client
+        mock_esi_client_2.side_effect = esi_mock_client
         owner = create_owner(self.corporation, self.main_ownership)
 
         # when
@@ -917,7 +1024,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # did not notify admins
         self.assertFalse(mock_notify_admins_throttled.called)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_can_handle_owner_without_structures(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -939,7 +1046,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertSetEqual(owner.structures.ids(), set())
         self.assertFalse(mock_notify_admins_throttled.called)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_break_on_http_error_when_fetching_upwell_structures(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -972,19 +1079,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # then
         owner.refresh_from_db()
         self.assertFalse(owner.structures_last_update_ok)
-        expected = {
-            1200000000003,
-            1200000000004,
-            1200000000005,
-            1200000000006,
-            1300000000001,
-            1300000000002,
-            1300000000003,
-        }
+        expected = {1200000000003, 1200000000004, 1200000000005, 1200000000006}
         self.assertSetEqual(owner.structures.ids(), expected)
         self.assertTrue(mock_notify_admins_throttled.called)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_break_on_http_error_when_fetching_custom_offices(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -1018,21 +1117,15 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.refresh_from_db()
         self.assertFalse(owner.structures_last_update_ok)
         structure_ids = {x["id"] for x in owner.structures.values("id")}
-        expected = {
-            1000000000001,
-            1000000000002,
-            1000000000003,
-            1300000000001,
-            1300000000002,
-            1300000000003,
-        }
+        expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(structure_ids, expected)
         self.assertTrue(mock_notify_admins_throttled.called)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
     def test_should_not_break_on_http_error_when_fetching_star_bases(
-        self, mock_esi_client, mock_notify_admins_throttled
+        self, mock_esi_client_2, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
@@ -1050,7 +1143,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = HTTPInternalServerError(
             BravadoResponseStub(status_code=500, reason="Test")
         )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
+        mock_esi_client_2.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
             esi_get_corporations_corporation_id_starbases_starbase_id
         )
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
@@ -1062,15 +1155,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # then
         owner.refresh_from_db()
         self.assertFalse(owner.structures_last_update_ok)
-        expected = {
-            1000000000001,
-            1000000000002,
-            1000000000003,
-            1200000000003,
-            1200000000004,
-            1200000000005,
-            1200000000006,
-        }
+        expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(owner.structures.ids(), expected)
         self.assertTrue(mock_notify_admins_throttled.called)
 
@@ -1156,14 +1241,16 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
     def test_should_remove_structures_not_returned_from_esi(
-        self, mock_esi_client, mock_notify_admins_throttled
+        self, mock_esi_client_2, mock_esi_client, mock_notify_admins_throttled
     ):
         # given
         esi_get_corporations_corporation_id_structures.override_data = {"2001": []}
         esi_get_corporations_corporation_id_starbases.override_data = {"2001": []}
         esi_get_corporations_corporation_id_customs_offices.override_data = {"2001": []}
         mock_esi_client.side_effect = esi_mock_client
+        mock_esi_client_2.side_effect = esi_mock_client
         create_structures(dont_load_entities=True)
         owner = Owner.objects.get(corporation__corporation_id=2001)
         owner.add_character(self.main_ownership)
@@ -1175,7 +1262,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertTrue(owner.structures_last_update_ok)
         self.assertEqual(owner.structures.count(), 0)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_delete_existing_structures_when_update_failed_with_http_error(
         self, mock_esi_client, mock_notify_admins_throttled
@@ -1304,6 +1391,92 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure = Structure.objects.get(id=1200000000003)
         self.assertEqual(structure.name, "")
         esi_post_corporations_corporation_id_assets_names.override_data = None
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+    )
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_send_refueled_notification_when_fuel_level_increased(
+        self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
+        structure.save()
+        # when
+        with patch("structures.models.structures.now") as now:
+            now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
+        # then
+        self.assertTrue(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+    )
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
+        self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        owner.webhooks.add(webhook)
+        with patch("structures.models.structures.now") as now:
+            now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
+            # when
+            owner.update_structures_esi()
+        # then
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_remove_outdated_fuel_alerts_when_fuel_level_changed(
+        self, mock_send_message, mock_esi_client, mock_notify_admins_throttled
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
+        structure.save()
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure.fuel_alerts.create(config=config, hours=12)
+        # when
+        with patch("structures.models.structures.now") as now:
+            now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
+        # then
+        self.assertEqual(structure.fuel_alerts.count(), 0)
 
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)

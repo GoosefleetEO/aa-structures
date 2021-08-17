@@ -1,14 +1,24 @@
+from copy import deepcopy
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
-from ...models import PocoDetails, Structure, StructureService, StructureTag
+from ...models import (
+    FuelAlertConfig,
+    NotificationType,
+    PocoDetails,
+    Structure,
+    StructureService,
+    StructureTag,
+)
 from ..testdata import create_structures, set_owner_character
 
-MODULE_PATH = "structures.models.structures"
+STRUCTURES_PATH = "structures.models.structures"
+NOTIFICATIONS_PATH = "structures.models.notifications"
 
 
 class TestStructureTag(NoSocketsTestCase):
@@ -52,7 +62,7 @@ class TestStructure(NoSocketsTestCase):
 
     def test_str(self):
         x = Structure.objects.get(id=1000000000001)
-        expected = "Amamake - Test Structure Alpha"
+        expected = "1000000000001 - Amamake - Test Structure Alpha"
         self.assertEqual(str(x), expected)
 
     def test_repr(self):
@@ -154,7 +164,9 @@ class TestStructure(NoSocketsTestCase):
         x = StructureService(
             structure=structure, name="Dummy", state=StructureService.State.ONLINE
         )
-        self.assertEqual(str(x), "Amamake - Test Structure Alpha - Dummy")
+        self.assertEqual(
+            str(x), "1000000000001 - Amamake - Test Structure Alpha - Dummy"
+        )
 
     def test_extract_name_from_esi_respose(self):
         expected = "Alpha"
@@ -175,6 +187,282 @@ class TestStructure(NoSocketsTestCase):
         # Wayne Tech has no sov in Amamake
         structure = Structure.objects.get(id=1000000000001)
         self.assertFalse(structure.owner_has_sov)
+
+    def test_should_return_hours_when_fuel_expires(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        # when
+        result = structure.hours_fuel_expires
+        # then
+        self.assertAlmostEqual(result, 2.0, delta=0.1)
+
+    def test_should_return_none_when_not_fuel_info(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        # when
+        result = structure.hours_fuel_expires
+        # then
+        self.assertIsNone(result)
+
+    def test_should_return_moon_location(self):
+        # given
+        starbase = Structure.objects.get(id=1300000000001)
+        # when/then
+        self.assertEqual(starbase.location_name, "Amamake II - Moon 1")
+
+    def test_should_return_planet_location(self):
+        # given
+        poco = Structure.objects.get(id=1200000000003)
+        # when/then
+        self.assertEqual(poco.location_name, "Amamake V")
+
+    def test_should_return_solar_system_location(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when/then
+        self.assertEqual(structure.location_name, "Amamake")
+
+    def test_is_poco(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        starbase = Structure.objects.get(id=1300000000001)
+        # then
+        self.assertFalse(structure.is_poco)
+        self.assertTrue(poco.is_poco)
+        self.assertFalse(starbase.is_poco)
+
+    def test_is_starbase(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        starbase = Structure.objects.get(id=1300000000001)
+        # then
+        self.assertFalse(structure.is_starbase)
+        self.assertFalse(poco.is_starbase)
+        self.assertTrue(starbase.is_starbase)
+
+    def test_is_upwell_structure(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        poco = Structure.objects.get(id=1200000000003)
+        starbase = Structure.objects.get(id=1300000000001)
+        # then
+        self.assertTrue(structure.is_upwell_structure)
+        self.assertFalse(poco.is_upwell_structure)
+        self.assertFalse(starbase.is_upwell_structure)
+
+
+class TestStructureIsBurningFuel(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        set_owner_character(character_id=1001)
+
+    def test_should_return_true_for_structure(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when/then
+        self.assertTrue(structure.is_burning_fuel)
+
+    def test_should_return_false_for_structure(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = None
+        # when/then
+        self.assertFalse(structure.is_burning_fuel)
+
+    def test_should_return_true_for_starbase(self):
+        # given
+        starbase = Structure.objects.get(id=1300000000001)
+        for state in [
+            Structure.State.POS_ONLINE,
+            Structure.State.POS_REINFORCED,
+            Structure.State.POS_UNANCHORING,
+        ]:
+            starbase.state = state
+            # when/then
+            self.assertTrue(starbase.is_burning_fuel)
+
+    def test_should_return_false_for_starbase(self):
+        # given
+        starbase = Structure.objects.get(id=1300000000001)
+        for state in [Structure.State.POS_OFFLINE, Structure.State.POS_ONLINING]:
+            starbase.state = state
+            # when/then
+            self.assertFalse(starbase.is_burning_fuel)
+
+    def test_should_return_false_for_poco(self):
+        # given
+        poco = Structure.objects.get(id=1200000000003)
+        # when/then
+        self.assertFalse(poco.is_burning_fuel)
+
+
+@patch(STRUCTURES_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True)
+@patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_UPWELL", 900)
+@patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_STARBASE", 7200)
+class TestStructureFuelLevels(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        set_owner_character(character_id=1001)
+
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
+        lambda *args, **kwargs: None,
+    )
+    def test_should_reset_fuel_notifications_when_refueled_1(self):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        structure.fuel_alerts.create(config=config, hours=12)
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=13)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertEqual(structure.fuel_alerts.count(), 0)
+
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
+        lambda *args, **kwargs: None,
+    )
+    def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed(self):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        old_instance = deepcopy(structure)
+        structure.fuel_alerts.create(config=config, hours=12)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=11)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertEqual(structure.fuel_alerts.count(), 0)
+
+    @patch(
+        NOTIFICATIONS_PATH + ".Notification.send_to_configured_webhooks",
+        lambda *args, **kwargs: None,
+    )
+    def test_should_not_reset_fuel_notifications_when_fuel_expiry_dates_unchanged(self):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        structure.fuel_alerts.create(config=config, hours=12)
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=12, minutes=5)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertEqual(structure.fuel_alerts.count(), 1)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.create_from_structure")
+    def test_should_generate_structure_refueled_notif_when_fuel_level_increased(
+        self, mock_create_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=6)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertTrue(mock_create_from_structure.called)
+        _, kwargs = mock_create_from_structure.call_args
+        self.assertEqual(
+            kwargs["notif_type"], NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.create_from_structure")
+    def test_should_generate_tower_refueled_notif_when_fuel_level_increased(
+        self, mock_create_from_structure
+    ):
+        # given
+        structure = Structure.objects.get(id=1300000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=4)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertTrue(mock_create_from_structure.called)
+        _, kwargs = mock_create_from_structure.call_args
+        self.assertEqual(kwargs["notif_type"], NotificationType.TOWER_REFUELED_EXTRA)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
+    def test_should_generate_refueled_notif_when_fuel_level_increased(
+        self, mock_send_to_webhook
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.save()
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertTrue(mock_send_to_webhook.called)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
+    def test_should_not_generate_refueled_notif_when_fuel_level_almost_unchanged(
+        self, mock_send_to_webhook
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        target_date_1 = now() + timedelta(hours=2)
+        target_date_1 = now() + timedelta(hours=2, minutes=15)
+        structure.fuel_expires_at = target_date_1
+        structure.save()
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = target_date_1
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertFalse(mock_send_to_webhook.called)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
+    def test_should_not_generate_refueled_notif_fuel_level_decreased(
+        self, mock_send_to_webhook
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.save()
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertFalse(mock_send_to_webhook.called)
+
+    @patch(NOTIFICATIONS_PATH + ".Notification.send_to_webhook")
+    def test_should_not_generate_refueled_notif_fuel_is_removed(
+        self, mock_send_to_webhook
+    ):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.save()
+        old_instance = deepcopy(structure)
+        # when
+        structure.fuel_expires_at = None
+        structure.handle_fuel_notifications(old_instance)
+        # then
+        self.assertFalse(mock_send_to_webhook.called)
 
 
 class TestStructurePowerMode(NoSocketsTestCase):
@@ -352,7 +640,7 @@ class TestStructureService(NoSocketsTestCase):
     def test_str(self):
         structure = Structure.objects.get(id=1000000000001)
         obj = StructureService.objects.get(structure=structure, name="Clone Bay")
-        expected = "Amamake - Test Structure Alpha - Clone Bay"
+        expected = "1000000000001 - Amamake - Test Structure Alpha - Clone Bay"
         self.assertEqual(str(obj), expected)
 
     def test_repr(self):

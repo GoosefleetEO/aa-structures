@@ -4,7 +4,13 @@ from django.test import TestCase, override_settings
 from django.utils.timezone import now
 
 from ...core import notification_embeds as ne
-from ...models.notifications import EveEntity, Notification, NotificationType, Webhook
+from ...models.notifications import (
+    EveEntity,
+    Notification,
+    NotificationType,
+    Structure,
+    Webhook,
+)
 from ..testdata import (
     create_structures,
     load_notification_entities,
@@ -51,9 +57,41 @@ class TestNotificationEmbeds(TestCase):
         discord_embed = notification_embed.generate_embed()
         # then
         self.assertIsInstance(discord_embed, dhooks_lite.Embed)
-        self.assertTrue(discord_embed.footer)
+        self.assertEqual(discord_embed.footer.text, "Eve Online")
+        self.assertIn("eve_symbol_128.png", discord_embed.footer.icon_url)
 
-    def test_should_generate_embed_for_all_supported_notification_types(self):
+    def test_should_generate_embed_from_notification_with_custom_color(self):
+        # given
+        notification = Notification.objects.get(notification_id=1000000403)
+        notification.color_override = Webhook.Color.SUCCESS
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed()
+        # then
+        self.assertIsInstance(discord_embed, dhooks_lite.Embed)
+        self.assertEqual(discord_embed.color, Webhook.Color.SUCCESS)
+
+    def test_should_generate_embed_from_notification_without_custom_color(self):
+        # given
+        notification = Notification.objects.get(notification_id=1000000403)
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed()
+        # then
+        self.assertIsInstance(discord_embed, dhooks_lite.Embed)
+        self.assertNotEqual(discord_embed.color, Webhook.Color.SUCCESS)
+
+    def test_should_generate_embed_from_notification_with_ping_type_override(self):
+        # given
+        notification = Notification.objects.get(notification_id=1000000403)
+        notification.ping_type_override = Webhook.PingType.EVERYONE
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        notification_embed.generate_embed()
+        # then
+        self.assertEqual(notification_embed.ping_type, Webhook.PingType.EVERYONE)
+
+    def test_should_generate_embed_for_all_supported_esi_notification_types(self):
         types_tested = set()
         for notification in Notification.objects.select_related(
             "owner", "sender"
@@ -66,7 +104,7 @@ class TestNotificationEmbeds(TestCase):
                 # then
                 self.assertIsInstance(discord_embed, dhooks_lite.Embed)
                 types_tested.add(notification.notif_type)
-        self.assertSetEqual(set(NotificationType.values), types_tested)
+        self.assertSetEqual(NotificationType.esi_notifications, types_tested)
 
     def test_should_raise_exception_for_unsupported_notif_types(self):
         # given
@@ -102,7 +140,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_DANGER
+        notification_embed._color = Webhook.Color.DANGER
         # when
         notification_embed.generate_embed()
         # then
@@ -112,7 +150,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_WARNING
+        notification_embed._color = Webhook.Color.WARNING
         # when
         notification_embed.generate_embed()
         # then
@@ -122,7 +160,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_INFO
+        notification_embed._color = Webhook.Color.INFO
         # when
         notification_embed.generate_embed()
         # then
@@ -132,7 +170,7 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
         notification_embed = ne.NotificationBaseEmbed.create(notification)
-        notification_embed._color = notification_embed.COLOR_SUCCESS
+        notification_embed._color = Webhook.Color.SUCCESS
         # when
         notification_embed.generate_embed()
         # then
@@ -147,3 +185,16 @@ class TestNotificationEmbeds(TestCase):
         discord_embed = notification_embed.generate_embed()
         # then
         self.assertTrue(discord_embed.footer)
+
+    def test_should_set_special_footer_for_generated_notifications(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        notification = Notification.create_from_structure(
+            structure, notif_type=NotificationType.STRUCTURE_FUEL_ALERT
+        )
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed()
+        # then
+        self.assertEqual(discord_embed.footer.text, "Structures")
+        self.assertIn("structures_logo.png", discord_embed.footer.icon_url)

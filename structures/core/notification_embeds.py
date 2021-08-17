@@ -1,8 +1,10 @@
+import datetime as dt
 from collections import namedtuple
 
 import dhooks_lite
 
 from django.conf import settings
+from django.template import Context, Template
 from django.utils.html import strip_tags
 from django.utils.translation import gettext
 
@@ -14,11 +16,26 @@ from app_utils.datetime import (
 )
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
-from .. import constants
+from .. import __title__, constants
 from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
+
+
+def timeuntil(target_datetime: dt.datetime) -> str:
+    """Render timeuntil template tag for given datetime to string."""
+    template = Template("{{ my_datetime|timeuntil }}")
+    context = Context({"my_datetime": target_datetime})
+    return template.render(context)
+
+
+def target_datetime_formatted(target_datetime: dt.datetime) -> str:
+    """Formatted Discord string for a target datetime."""
+    return (
+        f"{Webhook.text_bold(target_datetime.strftime(DATETIME_FORMAT))} "
+        f"({timeuntil(target_datetime)})"
+    )
 
 
 class NotificationBaseEmbed:
@@ -27,12 +44,6 @@ class NotificationBaseEmbed:
     You must subclass this class to create an embed for a notification type.
     At least title and description must be defined in the subclass.
     """
-
-    # embed colors
-    COLOR_INFO = 0x5BC0DE
-    COLOR_SUCCESS = 0x5CB85C
-    COLOR_WARNING = 0xF0AD4E
-    COLOR_DANGER = 0xD9534F
 
     ICON_DEFAULT_SIZE = 64
 
@@ -62,7 +73,15 @@ class NotificationBaseEmbed:
         return self._ping_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
-        """Returns generated Discord embed for this object."""
+        """Returns generated Discord embed for this object.
+
+        Will use custom color for embeds if self.notification has the \
+            property "color_override" defined
+
+        Will use custom ping type if self.notification has the \
+            property "ping_type_override" defined
+
+        """
         if self._title is None:
             raise ValueError(f"title not defined for {type(self)}")
         if self._description is None:
@@ -76,16 +95,32 @@ class NotificationBaseEmbed:
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
-        if self._color == self.COLOR_DANGER:
+        if hasattr(self.notification, "color_override"):
+            self._color = self.notification.color_override
+        if hasattr(self.notification, "ping_type_override"):
+            self._ping_type = self.notification.ping_type_override
+        elif self._color == Webhook.Color.DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
-        elif self._color == self.COLOR_WARNING:
+        elif self._color == Webhook.Color.WARNING:
             self._ping_type = Webhook.PingType.HERE
         else:
             self._ping_type = Webhook.PingType.NONE
-        footer_text = "Eve Online"
+        if self.notification.is_generated:
+            footer_text = __title__
+            footer_icon_url = static_file_absolute_url(
+                "structures/img/structures_logo.png"
+            )
+        else:
+            footer_text = "Eve Online"
+            footer_icon_url = static_file_absolute_url(
+                "structures/img/eve_symbol_128.png"
+            )
         if settings.DEBUG:
-            footer_text = f"{footer_text} #{self.notification.notification_id}"
-        footer_icon_url = static_file_absolute_url("structures/img/eve_symbol_128.png")
+            footer_text += " #{}".format(
+                self.notification.notification_id
+                if not self.notification.is_generated
+                else "GENERATED"
+            )
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,
@@ -135,6 +170,8 @@ class NotificationBaseEmbed:
             return NotificationStructureOnline(notification)
         elif notif_type == NotificationType.STRUCTURE_FUEL_ALERT:
             return NotificationStructureFuelAlert(notification)
+        elif notif_type == NotificationType.STRUCTURE_REFUELED_EXTRA:
+            return NotificationStructureRefuledExtra(notification)
         elif notif_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
             return NotificationStructureServicesOffline(notification)
         elif notif_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
@@ -169,6 +206,8 @@ class NotificationBaseEmbed:
             return NotificationTowerAlertMsg(notification)
         elif notif_type == NotificationType.TOWER_RESOURCE_ALERT_MSG:
             return NotificationTowerResourceAlertMsg(notification)
+        elif notif_type == NotificationType.TOWER_REFUELED_EXTRA:
+            return NotificationTowerRefueledExtra(notification)
 
         # Sov
         elif notif_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
@@ -293,7 +332,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             "belonging to %(owner_link)s "
         ) % {
             "structure_type": structure_type.name_localized,
-            "structure_name": "**%s**" % structure_name,
+            "structure_name": Webhook.text_bold(structure_name),
             "location": location,
             "solar_system": self._gen_solar_system_text(structure_solar_system),
             "owner_link": owner_link,
@@ -308,15 +347,35 @@ class NotificationStructureOnline(NotificationStructureEmbed):
         super().__init__(notification)
         self._title = gettext("Structure online")
         self._description += gettext("is now online.")
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationStructureFuelAlert(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
+        if self._structure and self._structure.fuel_expires_at:
+            hours_left = timeuntil(self._structure.fuel_expires_at)
+        else:
+            hours_left = "?"
         self._title = gettext("Structure fuel alert")
-        self._description += gettext("has less then 24hrs fuel left.")
-        self._color = self.COLOR_WARNING
+        self._description += gettext(
+            "is running out of fuel in %s." % Webhook.text_bold(hours_left)
+        )
+        self._color = Webhook.Color.WARNING
+
+
+class NotificationStructureRefuledExtra(NotificationStructureEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        if self._structure and self._structure.fuel_expires_at:
+            target_date = target_datetime_formatted(self._structure.fuel_expires_at)
+        else:
+            target_date = "?"
+        self._title = gettext("Structure refueled")
+        self._description += gettext(
+            "has been refueled. Fuel will last until %s." % target_date
+        )
+        self._color = Webhook.Color.INFO
 
 
 class NotificationStructureServicesOffline(NotificationStructureEmbed):
@@ -328,7 +387,7 @@ class NotificationStructureServicesOffline(NotificationStructureEmbed):
             qs = self._structure.services.all().order_by("name")
             services_list = "\n".join([x.name for x in qs])
             self._description += "\n*{}*".format(services_list)
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationStructureWentLowPower(NotificationStructureEmbed):
@@ -336,7 +395,7 @@ class NotificationStructureWentLowPower(NotificationStructureEmbed):
         super().__init__(notification)
         self._title = gettext("Structure low power")
         self._description += gettext("went to low power mode.")
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationStructureWentHighPower(NotificationStructureEmbed):
@@ -344,7 +403,7 @@ class NotificationStructureWentHighPower(NotificationStructureEmbed):
         super().__init__(notification)
         self._title = gettext("Structure full power")
         self._description += gettext("went to full power mode.")
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationStructureUnanchoring(NotificationStructureEmbed):
@@ -355,9 +414,9 @@ class NotificationStructureUnanchoring(NotificationStructureEmbed):
             self._parsed_text["timeLeft"]
         )
         self._description += gettext(
-            "has started un-anchoring. " "It will be fully un-anchored at: %s"
-        ) % unanchored_at.strftime(DATETIME_FORMAT)
-        self._color = self.COLOR_INFO
+            "has started un-anchoring. It will be fully un-anchored at: %s"
+        ) % target_datetime_formatted(unanchored_at)
+        self._color = Webhook.Color.INFO
 
 
 class NotificationStructureUnderAttack(NotificationStructureEmbed):
@@ -367,7 +426,7 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         self._description += (
             gettext("is under attack by %s") % self._get_attacker_link()
         )
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
     def _get_attacker_link(self) -> str:
         """Returns the attacker link from a parsed_text for Upwell structures only."""
@@ -387,8 +446,8 @@ class NotificationStructureLostShield(NotificationStructureEmbed):
         )
         self._description += gettext(
             "has lost its shields. Armor timer end at: %s"
-        ) % timer_ends_at.strftime(DATETIME_FORMAT)
-        self._color = self.COLOR_DANGER
+        ) % target_datetime_formatted(timer_ends_at)
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationStructureLostArmor(NotificationStructureEmbed):
@@ -400,8 +459,8 @@ class NotificationStructureLostArmor(NotificationStructureEmbed):
         )
         self._description += gettext(
             "has lost its armor. Hull timer end at: %s"
-        ) % timer_ends_at.strftime(DATETIME_FORMAT)
-        self._color = self.COLOR_DANGER
+        ) % target_datetime_formatted(timer_ends_at)
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationStructureDestroyed(NotificationStructureEmbed):
@@ -409,7 +468,7 @@ class NotificationStructureDestroyed(NotificationStructureEmbed):
         super().__init__(notification)
         self._title = gettext("Structure destroyed")
         self._description += gettext("has been destroyed.")
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
@@ -425,7 +484,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             "The %(structure_type)s %(structure_name)s " "in %(solar_system)s "
         ) % {
             "structure_type": structure_type.name,
-            "structure_name": "**%s**" % self._parsed_text["structureName"],
+            "structure_name": Webhook.text_bold(self._parsed_text["structureName"]),
             "solar_system": self._gen_solar_system_text(solar_system),
         }
         from_corporation, _ = EveEntity.objects.get_or_create_esi(
@@ -444,7 +503,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             "character": character.name,
         }
         self._title = gettext("Ownership transferred")
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
@@ -471,7 +530,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
             "solar_system": self._gen_solar_system_text(solar_system),
         }
         self._title = gettext("Structure anchoring")
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
@@ -511,20 +570,17 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
 
         self._title = gettext("Structure reinforcement time changed")
         change_effective = ldap_time_2_datetime(self._parsed_text["timestamp"])
-        self._description = (
-            gettext(
-                "Reinforcement hour has been changed to **%s** "
-                "for the following structures:\n"
-            )
-            % self._parsed_text["hour"]
-        )
+        self._description = gettext(
+            "Reinforcement hour has been changed to %s "
+            "for the following structures:\n"
+        ) % Webhook.text_bold(self._parsed_text["hour"])
         for structure_info in all_structure_info:
             self._description += gettext(
                 "- %(structure_type)s %(structure_name)s in %(solar_system)s "
                 "belonging to %(owner_link)s"
             ) % {
                 "structure_type": structure_info.eve_type.name_localized,
-                "structure_name": "**%s**" % structure_info.name,
+                "structure_name": Webhook.text_bold(structure_info.name),
                 "solar_system": self._gen_solar_system_text(
                     structure_info.eve_solar_system
                 ),
@@ -532,9 +588,9 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
             }
 
         self._description += gettext(
-            "\n\nChange becomes effective at **%s**."
-        ) % change_effective.strftime(DATETIME_FORMAT)
-        self._color = self.COLOR_INFO
+            "\n\nChange becomes effective at %s."
+        ) % target_datetime_formatted(change_effective)
+        self._color = Webhook.Color.INFO
 
 
 class NotificationMoonminingEmbed(NotificationBaseEmbed):
@@ -592,20 +648,20 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "and will autofracture on %(auto_time)s.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": started_by,
-            "ready_time": ready_time.strftime(DATETIME_FORMAT),
-            "auto_time": auto_time.strftime(DATETIME_FORMAT),
+            "ready_time": target_datetime_formatted(ready_time),
+            "auto_time": target_datetime_formatted(auto_time),
             "ore_text": gettext(
                 "\nEstimated ore composition: %s" % self._ore_composition_text()
             )
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else "",
         }
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
@@ -621,16 +677,16 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
             "The chunk will automatically fracture on %(auto_time)s.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
-            "auto_time": auto_time.strftime(DATETIME_FORMAT),
+            "auto_time": target_datetime_formatted(auto_time),
             "ore_text": gettext("\nOre composition: %s" % self._ore_composition_text())
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else "",
         }
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
@@ -644,7 +700,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
             "and the moon products are ready to be harvested.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -652,7 +708,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else "",
         }
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
@@ -670,13 +726,13 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been cancelled by %(character)s."
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": cancelled_by,
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
@@ -691,7 +747,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
             "and the moon products are ready to be harvested.\n"
             "%(ore_text)s"
         ) % {
-            "structure_name": "**%s**" % self._structure_name,
+            "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name_localized,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
@@ -700,7 +756,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else "",
         }
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationOrbitalEmbed(NotificationBaseEmbed):
@@ -740,7 +796,7 @@ class NotificationOrbitalAttacked(NotificationOrbitalEmbed):
             "owner_link": self._owner_link,
             "aggressor": self._aggressor_link,
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
@@ -761,9 +817,9 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "aggressor": self._aggressor_link,
-            "date": reinforce_exit_time.strftime(DATETIME_FORMAT),
+            "date": target_datetime_formatted(reinforce_exit_time),
         }
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationTowerEmbed(NotificationBaseEmbed):
@@ -777,19 +833,24 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         structure_type, _ = EveType.objects.get_or_create_esi(
             self._parsed_text["typeID"]
         )
-        self._solar_system_link = self._gen_solar_system_text(
-            self.eve_moon.eve_solar_system
-        )
-        self._owner_link = self._gen_corporation_link(str(notification.owner))
-        qs_structures = Structure.objects.filter(eve_moon=self.eve_moon)
-        if qs_structures.exists():
-            self._structure_name = qs_structures.first().name
+        self._structure = Structure.objects.filter(eve_moon=self.eve_moon).first()
+        if self._structure:
+            structure_name = self._structure.name
         else:
-            self._structure_name = structure_type.name_localized
+            structure_name = structure_type.name_localized
 
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
+        self._description = gettext(
+            "The starbase %(structure_name)s at %(moon)s "
+            "in %(solar_system)s belonging to %(owner_link)s "
+        ) % {
+            "structure_name": Webhook.text_bold(structure_name),
+            "moon": self.eve_moon.name_localized,
+            "solar_system": self._gen_solar_system_text(self.eve_moon.eve_solar_system),
+            "owner_link": self._gen_corporation_link(str(notification.owner)),
+        }
 
 
 class NotificationTowerAlertMsg(NotificationTowerEmbed):
@@ -810,39 +871,38 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
                 )
         damage_text = " | ".join(damage_parts)
         self._title = gettext("Starbase under attack")
-        self._description = gettext(
-            "The starbase %(structure_name)s at %(moon)s "
-            "in %(solar_system)s belonging to %(owner_link)s "
-            "is under attack by %(aggressor)s.\n"
-            "%(damage_text)s"
-        ) % {
-            "structure_name": "**%s**" % self._structure_name,
-            "moon": self.eve_moon.name_localized,
-            "solar_system": self._solar_system_link,
-            "owner_link": self._owner_link,
-            "aggressor": aggressor_link,
-            "damage_text": damage_text,
-        }
-        self._color = self.COLOR_WARNING
+        self._description += gettext(
+            "is under attack by %(aggressor)s.\n%(damage_text)s"
+        ) % {"aggressor": aggressor_link, "damage_text": damage_text}
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        quantity = self._parsed_text["wants"][0]["quantity"]
-        self._title = gettext("Starbase low on fuel")
-        self._description = gettext(
-            "The starbase %(structure_name)s at %(moon)s "
-            "in %(solar_system)s belonging to %(owner_link)s is low on fuel. "
-            "It has %(quantity)d fuel blocks left."
-        ) % {
-            "structure_name": "**%s**" % self._structure_name,
-            "moon": self.eve_moon.name_localized,
-            "solar_system": self._solar_system_link,
-            "owner_link": self._owner_link,
-            "quantity": quantity,
-        }
-        self._color = self.COLOR_WARNING
+        if self._structure and self._structure.fuel_expires_at:
+            hours_left = timeuntil(self._structure.fuel_expires_at)
+        else:
+            hours_left = "?"
+        self._title = gettext("Starbase fuel alert")
+        self._description += gettext(
+            "is running out of fuel in %s."
+        ) % Webhook.text_bold(hours_left)
+        self._color = Webhook.Color.WARNING
+
+
+class NotificationTowerRefueledExtra(NotificationTowerEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        if self._structure and self._structure.fuel_expires_at:
+            target_date = target_datetime_formatted(self._structure.fuel_expires_at)
+        else:
+            target_date = "?"
+        self._title = gettext("Starbase refueled")
+        self._description += gettext(
+            "has been refueled. Fuel will last until %s." % target_date
+        )
+        self._color = Webhook.Color.INFO
 
 
 class NotificationSovEmbed(NotificationBaseEmbed):
@@ -876,7 +936,7 @@ class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s is being captured"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -888,7 +948,7 @@ class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
@@ -898,7 +958,7 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
             "Command nodes for %(structure_type)s in %(solar_system)s "
             "have begun to decloak"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -906,12 +966,12 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
             "belonging to %(owner)s can now be found throughout "
             "the %(constellation)s constellation"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
             "constellation": self._solar_system.eve_constellation.name_localized,
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
@@ -936,7 +996,7 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
             "alliance": self._gen_alliance_link(alliance.name),
             "solar_system": self._solar_system_link,
         }
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
@@ -959,7 +1019,7 @@ class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
             "alliance": self._gen_alliance_link(alliance.name),
             "solar_system": self._solar_system_link,
         }
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationSovStructureReinforced(NotificationSovEmbed):
@@ -969,7 +1029,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -978,12 +1038,12 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
             "hostile forces and command nodes "
             "will begin decloaking at %(date)s"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
-            "date": timer_starts.strftime(DATETIME_FORMAT),
+            "date": target_datetime_formatted(timer_starts),
         }
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationSovStructureDestroyed(NotificationSovEmbed):
@@ -992,7 +1052,7 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
         self._title = gettext(
             "%(structure_type)s in %(solar_system)s has been destroyed"
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name_localized,
         }
         self._description = gettext(
@@ -1000,11 +1060,11 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
             "in %(solar_system)s belonging to %(owner)s have been "
             "destroyed by hostile forces."
         ) % {
-            "structure_type": "**%s**" % self._structure_type_name,
+            "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
         }
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationCorpCharEmbed(NotificationBaseEmbed):
@@ -1039,7 +1099,7 @@ class NotificationCorpAppNewMsg(NotificationCorpCharEmbed):
                 "application_text": self._application_text,
             }
         )
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
@@ -1065,7 +1125,7 @@ class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
                 "application_text": self._application_text,
             }
         )
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationCorpAppRejectCustomMsg(NotificationCorpCharEmbed):
@@ -1086,7 +1146,7 @@ class NotificationCorpAppRejectCustomMsg(NotificationCorpCharEmbed):
                 "customMessage": self._parsed_text.get("customMessage", ""),
             }
         )
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationCharAppWithdrawMsg(NotificationCorpCharEmbed):
@@ -1105,7 +1165,7 @@ class NotificationCharAppWithdrawMsg(NotificationCorpCharEmbed):
                 "application_text": self._application_text,
             }
         )
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationCharAppAcceptMsg(NotificationCorpCharEmbed):
@@ -1122,7 +1182,7 @@ class NotificationCharAppAcceptMsg(NotificationCorpCharEmbed):
                 "corporation_name": self._corporation_link,
             }
         )
-        self._color = self.COLOR_SUCCESS
+        self._color = Webhook.Color.SUCCESS
 
 
 class NotificationCharLeftCorpMsg(NotificationCorpCharEmbed):
@@ -1139,7 +1199,7 @@ class NotificationCharLeftCorpMsg(NotificationCorpCharEmbed):
                 "corporation_name": self._corporation_link,
             }
         )
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO
 
 
 class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
@@ -1157,17 +1217,18 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
         )
         start_time = ldap_time_2_datetime(self._parsed_text["startTime"])
         self._description = (
-            "%(ally)s has joined %(defender)s in a war against %(aggressor)s. Their participation in the war will start at **%(start_time)s**."
+            "%(ally)s has joined %(defender)s in a war against %(aggressor)s. "
+            "Their participation in the war will start at %(start_time)s."
         ) % {
             "aggressor": self._gen_eveentity_link(aggressor),
             "ally": self._gen_eveentity_link(ally),
             "defender": self._gen_eveentity_link(defender),
-            "start_time": start_time.strftime(DATETIME_FORMAT),
+            "start_time": target_datetime_formatted(start_time),
         }
         self._thumbnail = dhooks_lite.Thumbnail(
             ally.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationWarEmbed(NotificationBaseEmbed):
@@ -1196,7 +1257,7 @@ class NotificationCorpWarSurrenderMsg(NotificationWarEmbed):
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationWarAdopted(NotificationWarEmbed):
@@ -1219,7 +1280,7 @@ class NotificationWarAdopted(NotificationWarEmbed):
             "against": self._gen_eveentity_link(self._against),
             "alliance": self._gen_eveentity_link(alliance),
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationWarDeclared(NotificationWarEmbed):
@@ -1230,15 +1291,17 @@ class NotificationWarDeclared(NotificationWarEmbed):
             "against": self._against.name,
         }
         self._description = (
-            "%(declared_by)s has declared war on %(against)s with **%(war_hq)s** "
-            "as the designated war headquarters.\nWithin **%(delay_hours)s** hours fighting can legally occur between those involved."
+            "%(declared_by)s has declared war on %(against)s with %(war_hq)s "
+            "as the designated war headquarters.\n"
+            "Within %(delay_hours)s hours fighting can legally occur "
+            "between those involved."
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
-            "war_hq": strip_tags(self._parsed_text["warHQ"]),
-            "delay_hours": self._parsed_text["delayHours"],
+            "war_hq": Webhook.text_bold(strip_tags(self._parsed_text["warHQ"])),
+            "delay_hours": Webhook.text_bold(self._parsed_text["delayHours"]),
         }
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationWarInherited(NotificationWarEmbed):
@@ -1259,14 +1322,15 @@ class NotificationWarInherited(NotificationWarEmbed):
         }
         self._description = (
             "%(alliance)s has inherited the war between %(declared_by)s and "
-            "%(against)s from newly joined %(quitter)s. Within **24** hours fighting can legally occur with %(alliance)s."
+            "%(against)s from newly joined %(quitter)s. "
+            "Within **24** hours fighting can legally occur with %(alliance)s."
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
             "alliance": self._gen_eveentity_link(alliance),
             "quitter": self._gen_eveentity_link(quitter),
         }
-        self._color = self.COLOR_DANGER
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationWarRetractedByConcord(NotificationWarEmbed):
@@ -1275,14 +1339,16 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
         self._title = "CONCORD invalidates war"
         war_ends = ldap_time_2_datetime(self._parsed_text["endDate"])
         self._description = (
-            "The war between %(declared_by)s and %(against)s has been retracted by CONCORD.\n"
-            "After **%(end_date)s** CONCORD will again respond to any hostilities between those involved with full force."
+            "The war between %(declared_by)s and %(against)s "
+            "has been retracted by CONCORD.\n"
+            "After %(end_date)s CONCORD will again respond to any hostilities "
+            "between those involved with full force."
         ) % {
             "declared_by": self._gen_eveentity_link(self._declared_by),
             "against": self._gen_eveentity_link(self._against),
-            "end_date": war_ends.strftime(DATETIME_FORMAT),
+            "end_date": target_datetime_formatted(war_ends),
         }
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationWarCorporationBecameEligible(NotificationBaseEmbed):
@@ -1297,7 +1363,7 @@ class NotificationWarCorporationBecameEligible(NotificationBaseEmbed):
             "and/or one of the corporations in your alliance owns a structure "
             "deployed in space."
         )
-        self._color = self.COLOR_WARNING
+        self._color = Webhook.Color.WARNING
 
 
 class NotificationWarCorporationNoLongerEligible(NotificationBaseEmbed):
@@ -1314,4 +1380,4 @@ class NotificationWarCorporationNoLongerEligible(NotificationBaseEmbed):
             "If your corporation or alliance is currently involved in a formal war, "
             "that war will end in 24 hours."
         )
-        self._color = self.COLOR_INFO
+        self._color = Webhook.Color.INFO

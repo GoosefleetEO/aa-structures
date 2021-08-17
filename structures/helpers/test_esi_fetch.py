@@ -8,7 +8,7 @@ from bravado.exception import (
 )
 
 from app_utils.logging import make_logger_prefix
-from app_utils.testing import NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase, add_new_token, create_fake_user
 
 from structures.helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from structures.models.eveuniverse import EsiNameLocalization
@@ -22,6 +22,12 @@ MODULE_PATH = __package__ + ".esi_fetch"
 
 
 class TestEsiFetch(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        user = create_fake_user(1001, "Bruce Wayne")
+        cls.token = add_new_token(user, user.profile.main_character, ["dummy"])
+
     def setUp(self):
         self.add_prefix = make_logger_prefix("Test")
         esi_get_corporations_corporation_id_structures.override_data = None
@@ -220,15 +226,17 @@ class TestEsiFetch(NoSocketsTestCase):
         self.assertEqual(retry_counter, 1)
 
     def test_can_fetch_multiple_pages(self):
+        # given
         mock_client = esi_mock_client()
-
+        # when
         structures = esi_fetch(
             "Corporation.get_corporations_corporation_id_structures",
             args={"corporation_id": 2001},
             esi_client=mock_client,
             has_pages=True,
+            token=self.token,
         )
-
+        # then
         # has all structures
         structure_ids = {x["structure_id"] for x in structures}
         expected = {1000000000001, 1000000000002, 1000000000003}
@@ -251,6 +259,7 @@ class TestEsiFetch(NoSocketsTestCase):
             args={"corporation_id": 2001},
             esi_client=mock_client,
             has_pages=True,
+            token=self.token,
         )
 
         # has all structures
@@ -276,6 +285,7 @@ class TestEsiFetch(NoSocketsTestCase):
             has_pages=True,
             languages=EsiNameLocalization.ESI_LANGUAGES,
             logger_tag="dummy",
+            token=self.token,
         )
 
         for language, structures in structures_list.items():

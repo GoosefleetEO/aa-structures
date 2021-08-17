@@ -6,7 +6,12 @@ from bravado.exception import HTTPError
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from app_utils.testing import NoSocketsTestCase, queryset_pks
+from app_utils.testing import (
+    NoSocketsTestCase,
+    add_new_token,
+    create_fake_user,
+    queryset_pks,
+)
 
 from ..models import (
     EveCategory,
@@ -19,11 +24,13 @@ from ..models import (
     EveSolarSystem,
     EveSovereigntyMap,
     EveType,
+    NotificationType,
     Owner,
     OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
+    Webhook,
 )
 from . import to_json
 from .testdata import create_structures, esi_mock_client, load_entities, load_entity
@@ -574,6 +581,8 @@ class TestStructureManager(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_eveuniverse()
+        user = create_fake_user(1001, "Bruce Wayne")
+        cls.token = add_new_token(user, user.profile.main_character, ["dummy"])
 
     def test_can_get_stored_object(self):
         mock_client = Mock(side_effect=RuntimeError)
@@ -587,8 +596,8 @@ class TestStructureManager(NoSocketsTestCase):
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
+        # given
         mock_esi_client.side_effect = esi_mock_client
-        mock_token = Mock()
         load_entities(
             [
                 EveCategory,
@@ -603,10 +612,11 @@ class TestStructureManager(NoSocketsTestCase):
         Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
-
+        # when
         structure, created = Structure.objects.get_or_create_esi(
-            1000000000001, mock_token
+            1000000000001, self.token
         )
+        # then
         self.assertTrue(created)
         self.assertEqual(structure.id, 1000000000001)
         self.assertEqual(structure.name, "Test Structure Alpha")
@@ -619,31 +629,32 @@ class TestStructureManager(NoSocketsTestCase):
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_can_update_object_from_esi(self, mock_esi_client):
+        # given
         mock_esi_client.side_effect = esi_mock_client
-        mock_token = Mock()
         create_structures()
         structure = Structure.objects.get(id=1000000000001)
         structure.name = "Batcave"
         structure.save()
         structure.refresh_from_db()
         self.assertEqual(structure.name, "Batcave")
-
+        # when
         structure, created = Structure.objects.update_or_create_esi(
-            1000000000001, mock_token
+            1000000000001, self.token
         )
+        # then
         self.assertFalse(created)
         self.assertEqual(structure.id, 1000000000001)
         self.assertEqual(structure.name, "Test Structure Alpha")
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_raises_exception_when_create_fails(self, mock_esi_client):
-        mock_token = Mock()
+        # given
         mock_esi_client.return_value.Universe.get_universe_structures_structure_id.return_value.result.side_effect = (
             RuntimeError()
         )
-
+        # when/then
         with self.assertRaises(RuntimeError):
-            Structure.objects.update_or_create_esi(1000000000001, mock_token)
+            Structure.objects.update_or_create_esi(1000000000001, self.token)
 
     def test_raises_exception_when_create_without_token(self):
         with self.assertRaises(ValueError):
@@ -1083,23 +1094,24 @@ class TestOwnerAssetManager(NoSocketsTestCase):
                 EveSolarSystem,
             ]
         )
+        user = create_fake_user(1001, "Bruce Wayne")
+        cls.token = add_new_token(user, user.profile.main_character, ["dummy"])
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_can_create_or_update_asset_from_esi_1(self, mock_esi_client):
         # given
         mock_esi_client.side_effect = esi_mock_client
-        mock_token = Mock()
         create_structures()
         owner = Owner.objects.get(corporation__corporation_id=2001)
         structure_ids = set(owner.structures.values_list("id", flat=True))
         # when
         try:
             OwnerAsset.objects.update_or_create_for_structures_esi(
-                structure_ids, owner.corporation.corporation_id, mock_token
+                structure_ids, owner.corporation.corporation_id, self.token
             )
         # then
-        except Exception:
-            self.fail("Test failed due to exception")
+        except Exception as ex:
+            self.fail(f"Test failed due to exception: {ex}")
 
         assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
         self.assertSetEqual(
@@ -1130,3 +1142,50 @@ class TestOwnerAssetManager(NoSocketsTestCase):
         structure = owner.structures.get(id=1000000000002)
         self.assertTrue(structure.has_fitting)
         self.assertFalse(structure.has_core)
+
+
+class TestWebhookManager(NoSocketsTestCase):
+    def test_should_return_enabled_notification_types(self):
+        # given
+        Webhook.objects.create(
+            name="w1",
+            url="w1",
+            is_active=True,
+            notification_types=[
+                NotificationType.STRUCTURE_ANCHORING,
+                NotificationType.STRUCTURE_REFUELED_EXTRA,
+            ],
+        )
+        Webhook.objects.create(
+            name="w2",
+            url="w2",
+            is_active=True,
+            notification_types=[
+                NotificationType.STRUCTURE_LOST_ARMOR,
+                NotificationType.STRUCTURE_LOST_SHIELD,
+            ],
+        )
+        Webhook.objects.create(
+            name="w3",
+            url="w3",
+            is_active=False,
+            notification_types=[NotificationType.TOWER_ALERT_MSG],
+        )
+        # when
+        result = Webhook.objects.enabled_notification_types()
+        # then
+        self.assertSetEqual(
+            result,
+            {
+                NotificationType.STRUCTURE_LOST_ARMOR,
+                NotificationType.STRUCTURE_LOST_SHIELD,
+                NotificationType.STRUCTURE_ANCHORING,
+                NotificationType.STRUCTURE_REFUELED_EXTRA,
+            },
+        )
+
+    def test_should_return_empty_set(self):
+        # when
+        result = Webhook.objects.enabled_notification_types()
+        # then
+        self.assertSetEqual(result, set())

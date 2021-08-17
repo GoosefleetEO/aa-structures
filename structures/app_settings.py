@@ -144,3 +144,14 @@ STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID = clean_setting(
 STRUCTURES_NOTIFY_THROTTLED_TIMEOUT = clean_setting(
     "STRUCTURES_NOTIFY_THROTTLED_TIMEOUT", 86400
 )
+
+# This allows you to turn off ESI fuel alert notifications
+# to use the Structure's generated fuel notifications exclusively.
+STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS = clean_setting(
+    "STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", False
+)
+
+# Feature flag to enable refueled notifications
+STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = clean_setting(
+    "STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False
+)

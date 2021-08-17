@@ -12,7 +12,15 @@ from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from app_utils.django import app_labels
 from app_utils.testing import NoSocketsTestCase
 
-from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
+from ...models import (
+    EveEntity,
+    FuelAlert,
+    FuelAlertConfig,
+    Notification,
+    NotificationType,
+    Structure,
+    Webhook,
+)
 from ..testdata import (
     create_structures,
     load_entities,
@@ -168,6 +176,210 @@ class TestNotification(NoSocketsTestCase):
         self.assertFalse(x1.filter_for_alliance_level())
 
 
+class TestNotificationCreateFromStructure(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+
+    def test_should_create_notification_for_structure_fuel_alerts(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when
+        notif = Notification.create_from_structure(
+            structure, notif_type=NotificationType.STRUCTURE_FUEL_ALERT
+        )
+        # then
+        self.assertIsInstance(notif, Notification)
+        self.assertTrue(notif.is_generated)
+        self.assertAlmostEqual(notif.timestamp, now(), delta=timedelta(seconds=10))
+        self.assertAlmostEqual(notif.last_updated, now(), delta=timedelta(seconds=10))
+        self.assertEqual(notif.owner, structure.owner)
+        self.assertEqual(notif.sender_id, 1000137)
+        self.assertEqual(notif.notif_type, NotificationType.STRUCTURE_FUEL_ALERT)
+
+    def test_should_create_notification_for_tower_fuel_alerts(self):
+        # given
+        structure = Structure.objects.get(id=1300000000001)
+        # when
+        notif = Notification.create_from_structure(
+            structure, notif_type=NotificationType.TOWER_RESOURCE_ALERT_MSG
+        )
+        # then
+        self.assertIsInstance(notif, Notification)
+        self.assertTrue(notif.is_generated)
+        self.assertAlmostEqual(notif.timestamp, now(), delta=timedelta(seconds=10))
+        self.assertAlmostEqual(notif.last_updated, now(), delta=timedelta(seconds=10))
+        self.assertEqual(notif.owner, structure.owner)
+        self.assertEqual(notif.sender_id, 1000137)
+        self.assertEqual(notif.notif_type, NotificationType.TOWER_RESOURCE_ALERT_MSG)
+
+    def test_should_create_notification_with_additional_params(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when
+        notif = Notification.create_from_structure(
+            structure, notif_type=NotificationType.STRUCTURE_FUEL_ALERT, is_read=True
+        )
+        # then
+        self.assertIsInstance(notif, Notification)
+        self.assertEqual(notif.notif_type, NotificationType.STRUCTURE_FUEL_ALERT)
+        self.assertTrue(notif.is_read)
+
+    def test_should_raise_error_when_text_is_missing(self):
+        # given
+        structure = Structure.objects.get(id=1000000000001)
+        # when/then
+        with self.assertRaises(ValueError):
+            Notification.create_from_structure(
+                structure, notif_type=NotificationType.STRUCTURE_LOST_ARMOR
+            )
+
+
+class TestNotificationSendToWebhooks(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        cls.structure = Structure.objects.get(id=1000000000001)
+        webhook_2 = Webhook.objects.create(name="Dummy 2", url="dummy-2")
+        cls.owner.webhooks.add(webhook_2)
+
+    def setUp(self) -> None:
+        Webhook.objects.update(is_active=False, notification_types=[])
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_send_to_wehook(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertTrue(result)
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertEqual(kwargs["content"], "")
+
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
+    def test_should_send_to_multiple_webhooks(self, mock_send_to_webhook):
+        # given
+        Webhook.objects.update(is_active=True)
+        webhook_1 = self.owner.webhooks.first()
+        webhook_1.notification_types = [
+            NotificationType.STRUCTURE_REFUELED_EXTRA,
+            NotificationType.STRUCTURE_ANCHORING,
+        ]
+        webhook_1.save()
+        webhook_2 = self.owner.webhooks.last()
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_REFUELED_EXTRA,
+            NotificationType.STRUCTURE_DESTROYED,
+        ]
+        webhook_2.save()
+        self.owner
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertTrue(result)
+        self.assertEqual(mock_send_to_webhook.call_count, 2)
+        webhook_pks = {call[0][0].pk for call in mock_send_to_webhook.call_args_list}
+        self.assertSetEqual(webhook_pks, {webhook_1.pk, webhook_2.pk})
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_not_send_when_webhooks_are_inactive(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertIsNone(result)
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_not_send_when_notif_types_dont_match(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertIsNone(result)
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_override_ping_type(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        notif.send_to_configured_webhooks(ping_type_override=Webhook.PingType.HERE)
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertIn("@here", kwargs["content"])
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_override_color(self, mock_send_message):
+        # given
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        notif.send_to_configured_webhooks(
+            use_color_override=True, color_override=Webhook.Color.DANGER
+        )
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertEqual(kwargs["embeds"][0].color, Webhook.Color.DANGER)
+
+    @patch(MODULE_PATH + ".Webhook.send_message")
+    def test_should_return_false_when_sending_failed(self, mock_send_message):
+        # given
+        mock_send_message.return_value = False
+        webhook = self.owner.webhooks.first()
+        webhook.is_active = True
+        webhook.notification_types = [NotificationType.STRUCTURE_REFUELED_EXTRA]
+        webhook.save()
+        notif = Notification.create_from_structure(
+            self.structure, notif_type=NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertFalse(result)
+        self.assertTrue(mock_send_message.called)
+
+
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestNotificationSendMessage(NoSocketsTestCase):
     @classmethod
@@ -233,8 +445,32 @@ class TestNotificationSendMessage(NoSocketsTestCase):
                 self.assertTrue(notif.send_to_webhook(self.webhook))
                 types_tested.add(notif.notif_type)
 
-        # make sure we have tested all existing notification types
-        self.assertSetEqual(set(NotificationType.values), types_tested)
+        # make sure we have tested all existing esi notification types
+        self.assertSetEqual(NotificationType.esi_notifications, types_tested)
+
+    def test_should_create_notification_for_structure_refueled(self, mock_send_message):
+        # given
+        mock_send_message.return_value = True
+        structure = Structure.objects.get(id=1000000000001)
+        notif = Notification.create_from_structure(
+            structure, NotificationType.STRUCTURE_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhook(self.webhook)
+        # then
+        self.assertTrue(result)
+
+    def test_should_create_notification_for_tower_refueled(self, mock_send_message):
+        # given
+        mock_send_message.return_value = True
+        structure = Structure.objects.get(id=1300000000001)
+        notif = Notification.create_from_structure(
+            structure, NotificationType.TOWER_REFUELED_EXTRA
+        )
+        # when
+        result = notif.send_to_webhook(self.webhook)
+        # then
+        self.assertTrue(result)
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
@@ -729,20 +965,243 @@ if "structuretimers" in app_labels():
 
 
 class TestNotificationType(NoSocketsTestCase):
-    pass
-    # def test_should_return_extract(self):
-    #     # when
-    #     result = choices_subset(
-    #         NotificationType.MOONMINING_EXTRACTION_FINISHED,
-    #         NotificationType.MOONMINING_EXTRACTION_STARTED,
-    #     )
-    #     # then
-    #     expected = (
-    #         ("MoonminingExtractionFinished", "Moonmining Extraction Finished"),
-    #         ("MoonminingExtractionStarted", "Moonmining Extraction Started"),
-    #     )
-    #     self.assertEqual(result, expected)
+    def test_should_return_enabled_values_only(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+            values = NotificationType.values_enabled
+        # then
+        self.assertNotIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
+        self.assertNotIn(NotificationType.TOWER_REFUELED_EXTRA, values)
+
+    def test_should_return_all_values(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+            values = NotificationType.values_enabled
+        # then
+        self.assertIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
+        self.assertIn(NotificationType.TOWER_REFUELED_EXTRA, values)
+
+    def test_should_return_enabled_choices_only(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+            choices = NotificationType.choices_enabled
+        # then
+        types = {choice[0] for choice in choices}
+        self.assertNotIn(NotificationType.STRUCTURE_REFUELED_EXTRA, types)
+        self.assertNotIn(NotificationType.TOWER_REFUELED_EXTRA, types)
+
+    def test_should_return_all_choices(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+            choices = NotificationType.choices_enabled
+        # then
+        types = {choice[0] for choice in choices}
+        self.assertIn(NotificationType.STRUCTURE_REFUELED_EXTRA, types)
+        self.assertIn(NotificationType.TOWER_REFUELED_EXTRA, types)
 
 
 class TestWebhook(NoSocketsTestCase):
     pass
+
+
+@patch(MODULE_PATH + ".Webhook.send_message", spec=True)
+class TestFuelNotifications(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        load_notification_entities(cls.owner)
+        cls.webhook = Webhook.objects.get(name="Test Webhook 1")
+        Structure.objects.update(fuel_expires_at=None)
+
+    def test_should_send_fuel_notification_for_structure(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelAlert.objects.first()
+        self.assertEqual(obj.hours, 36)
+
+    def test_should_not_send_fuel_notification_that_already_exists(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_message.reset_mock()
+        FuelAlert.objects.create(structure=structure, config=config, hours=36)
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+        self.assertEqual(FuelAlert.objects.count(), 1)
+
+    def test_should_send_fuel_notification_for_starbase(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1300000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelAlert.objects.first()
+        self.assertEqual(obj.hours, 36)
+
+    def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(
+            start=48,
+            end=0,
+            repeat=12,
+            channel_ping_type=Webhook.PingType.EVERYONE,
+        )
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        self.assertIn("@everyone", kwargs["content"])
+
+    def test_should_use_configured_level_for_notifications(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(
+            start=48,
+            end=0,
+            repeat=12,
+            color=Webhook.Color.SUCCESS,
+        )
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        _, kwargs = mock_send_message.call_args
+        embed = kwargs["embeds"][0]
+        self.assertEqual(embed.color, Webhook.Color.SUCCESS)
+
+    def test_should_send_fuel_notification_at_start(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=12, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=11, minutes=59, seconds=59)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelAlert.objects.first()
+        self.assertEqual(obj.hours, 12)
+
+    def test_should_not_send_fuel_notifications_before_start(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=12, end=6, repeat=1)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=12, minutes=0, seconds=1)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+
+    def test_should_not_send_fuel_notifications_after_end(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=12, end=6, repeat=1)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=5, minutes=59, seconds=59)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+
+    def test_should_send_fuel_notification_at_start_when_repeat_is_0(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelAlertConfig.objects.create(start=12, end=0, repeat=0)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=11, minutes=59, seconds=59)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertTrue(mock_send_message.called)
+        obj = FuelAlert.objects.first()
+        self.assertEqual(obj.hours, 12)
+
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
+    def test_should_send_structure_fuel_notification_to_configured_webhook_only(
+        self, mock_send_to_webhook, mock_send_message
+    ):
+        # given
+        webhook_2 = Webhook.objects.create(
+            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        )
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.TOWER_RESOURCE_ALERT_MSG,
+        ]
+        webhook_2.save()
+        self.owner.webhooks.add(webhook_2)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_to_webhook.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertEqual(config.fuel_alerts.count(), 1)
+        self.assertEqual(mock_send_to_webhook.call_count, 1)
+        args, _ = mock_send_to_webhook.call_args
+        self.assertEqual(args[0], self.webhook)
+
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
+    def test_should_send_starbase_fuel_notification_to_configured_webhook_only(
+        self, mock_send_to_webhook, mock_send_message
+    ):
+        # given
+        webhook_2 = Webhook.objects.create(
+            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        )
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.STRUCTURE_FUEL_ALERT,
+        ]
+        webhook_2.save()
+        self.owner.webhooks.add(webhook_2)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1300000000001)
+        structure.fuel_expires_at = now() + timedelta(hours=25)
+        structure.save()
+        mock_send_to_webhook.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertEqual(config.fuel_alerts.count(), 1)
+        self.assertEqual(mock_send_to_webhook.call_count, 1)
+        args, _ = mock_send_to_webhook.call_args
+        self.assertEqual(args[0], self.webhook)

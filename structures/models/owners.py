@@ -4,6 +4,7 @@ import math
 import os
 import re
 from datetime import datetime, timedelta
+from email.utils import format_datetime, parsedate_to_datetime
 from typing import Optional
 
 from django.contrib.auth.models import Group, User
@@ -36,10 +37,10 @@ from ..app_settings import (
     STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
-from ..helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerAssetManager, OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
-from .notifications import EveEntity, Notification, NotificationType
+from .notifications import EveEntity, Notification, NotificationType, Webhook
 from .structures import PocoDetails, Structure
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -68,7 +69,29 @@ class General(models.Model):
 class Owner(models.Model):
     """A corporation that owns structures"""
 
-    ESI_CHARACTER_NOTIFICATION_CACHE_DURATION = 600
+    class RotateCharactersType(models.TextChoices):
+        """Type of sync to rotate characters for."""
+
+        STRUCTURES = "structures"
+        NOTIFICATIONS = "notifications"
+
+        @property
+        def last_used_at_name(self) -> str:
+            """Name of last used at property."""
+            if self is self.STRUCTURES:
+                return "structures_last_used_at"
+            elif self is self.NOTIFICATIONS:
+                return "notifications_last_used_at"
+            raise NotImplementedError(f"Not defined for: {self}")
+
+        @property
+        def esi_cache_duration(self) -> int:
+            """ESI cache duration in seconds."""
+            if self is self.STRUCTURES:
+                return 3600
+            elif self is self.NOTIFICATIONS:
+                return 600
+            raise NotImplementedError(f"Not defined for: {self}")
 
     # PK
     corporation = models.OneToOneField(
@@ -257,12 +280,15 @@ class Owner(models.Model):
         return self.characters.count()
 
     def fetch_token(
-        self, rotate_characters: bool = False, ignore_schedule: bool = False
+        self,
+        rotate_characters: RotateCharactersType = None,
+        ignore_schedule: bool = False,
     ) -> Token:
         """Fetch a valid token for the owner and return it.
 
         Args:
-            rotate_characters: rotate through characters with every new call
+            rotate_characters: For which sync type to rotate through characters \
+                with every new call
             ignore_schedule: Ignore current schedule when rotating
 
         Raises TokenError when no valid token can be provided.
@@ -293,7 +319,12 @@ class Owner(models.Model):
             )
 
         token = None
-        for character in self.characters.order_by("last_used_at"):
+        order_by_last_used = (
+            rotate_characters.last_used_at_name
+            if rotate_characters
+            else "notifications_last_used_at"
+        )
+        for character in self.characters.order_by(order_by_last_used):
             if (
                 character.character_ownership.character.corporation_id
                 != self.corporation.corporation_id
@@ -333,44 +364,64 @@ class Owner(models.Model):
             notify_error(error, level="danger")
             raise TokenError(error)
         if rotate_characters:
-            self._rotate_character(character, ignore_schedule)
+            self._rotate_character(
+                character=character,
+                ignore_schedule=ignore_schedule,
+                rotate_characters=rotate_characters,
+            )
         return token
 
     def _rotate_character(
-        self, character: "OwnerCharacter", ignore_schedule: bool
+        self,
+        character: "OwnerCharacter",
+        ignore_schedule: bool,
+        rotate_characters: RotateCharactersType,
     ) -> None:
         """Rotate this character such that all are spread evently
-        accross the ESI cache duration for fetching notifications.
+        accross the ESI cache duration for each ESI call.
         """
         time_since_last_used = (
-            (now() - character.last_used_at).total_seconds()
-            if character.last_used_at
+            (
+                now() - getattr(character, rotate_characters.last_used_at_name)
+            ).total_seconds()
+            if getattr(character, rotate_characters.last_used_at_name)
             else None
         )
         try:
             minimum_time_between_rotations = max(
-                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
-                / self.characters.count(),
+                rotate_characters.esi_cache_duration / self.characters.count(),
                 60,
             )
         except ZeroDivisionError:
-            minimum_time_between_rotations = (
-                self.ESI_CHARACTER_NOTIFICATION_CACHE_DURATION
-            )
+            minimum_time_between_rotations = rotate_characters.esi_cache_duration
         if (
             ignore_schedule
             or not time_since_last_used
             or time_since_last_used >= minimum_time_between_rotations
         ):
-            character.last_used_at = now()
+            setattr(character, rotate_characters.last_used_at_name, now())
             character.save()
+
+    def _report_esi_issue(self, action: str, ex: Exception, token: Token):
+        """Report an ESI issue to admins."""
+        message_id = f"{__title__}-{action}-{self.pk}-{type(ex).__name__}"
+        title = f"{__title__}: Failed to {action} for {self}"
+        message = f"{self}: Failed to {action} from ESI with token {token} due to {ex}"
+        logger.warning(message, exc_info=True)
+        notify_admins_throttled(
+            message_id=message_id,
+            title=title,
+            message=message,
+            level="warning",
+            timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
+        )
 
     def update_structures_esi(self, user: User = None):
         """Updates all structures from ESI."""
         self.structures_last_update_ok = None
         self.structures_last_update_at = now()
         self.save()
-        token = self.fetch_token()
+        token = self.fetch_token(rotate_characters=self.RotateCharactersType.STRUCTURES)
 
         is_ok = self._fetch_upwell_structures(token)
         if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
@@ -419,22 +470,7 @@ class Owner(models.Model):
                 has_pages=True,
             )
         except OSError as ex:
-            message_id = (
-                f"{__title__}-fetch_upwell_structures-{self.pk}-{type(ex).__name__}"
-            )
-            title = f"{__title__}: Failed to update upwell structures for {self}"
-            message = (
-                f"{self}: Failed to update upwell structures "
-                f"from ESI for due to: {ex}"
-            )
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch corporation structures", ex, token)
             return False
 
         is_ok = True
@@ -464,25 +500,8 @@ class Owner(models.Model):
                     )
                     structure["position"] = structure_info["position"]
                 except OSError as ex:
-                    message_id = (
-                        f"{__title__}-fetch_upwell_structures-details-"
-                        f"{self.pk}-{type(ex).__name__}"
-                    )
-                    title = (
-                        f"{__title__}: Failed to update details for "
-                        f"structure from {self}"
-                    )
-                    message = (
-                        f"{self}: Failed to update details for structure "
-                        f"with ID {structure['structure_id']} from ESI due to: {ex}"
-                    )
-                    logger.warning(message, exc_info=True)
-                    notify_admins_throttled(
-                        message_id=message_id,
-                        title=title,
-                        message=message,
-                        level="warning",
-                        timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
+                    self._report_esi_issue(
+                        f"fetch structure #{structure['structure_id']}", ex, token
                     )
                     structure["name"] = "(no data)"
                     is_ok = False
@@ -685,19 +704,7 @@ class Owner(models.Model):
                 self._store_raw_data("customs_offices", structures, corporation_id)
 
         except OSError as ex:
-            message_id = (
-                f"{__title__}-_fetch_customs_offices-{self.pk}-{type(ex).__name__}"
-            )
-            title = f"{__title__}: Failed to update custom offices for {self}"
-            message = f"{self}: Failed to update custom offices from ESI due to: {ex}"
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch custom offices", ex, token)
             return False
 
         self._remove_structures_not_returned_from_esi(
@@ -816,17 +823,7 @@ class Owner(models.Model):
                 self._store_raw_data("starbases", structures, corporation_id)
 
         except OSError as ex:
-            message_id = f"{__title__}-_fetch_starbases-{self.pk}-{type(ex).__name__}"
-            title = f"{__title__}: Failed to fetch starbases for {self}"
-            message = f"{self}: Failed to fetch starbases from ESI due to {ex}"
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch starbases", ex, token)
             return False
 
         self._remove_structures_not_returned_from_esi(
@@ -862,40 +859,46 @@ class Owner(models.Model):
 
         return names
 
-    def _calc_starbase_fuel_expires(self, corporation_id, starbase, token):
+    def _calc_starbase_fuel_expires(
+        self, corporation_id: int, starbase: dict, token: Token
+    ) -> datetime:
+        """Estimate when fuel will expire for this starbase.
 
-        fuel_expires_at = None
-        if starbase["state"] != "offline":
-            starbase_details = esi_fetch(
-                "Corporation.get_corporations_corporation_id_starbases_starbase_id",
-                args={
-                    "corporation_id": corporation_id,
-                    "starbase_id": starbase["starbase_id"],
-                    "system_id": starbase["system_id"],
-                },
-                token=token,
+        Estimate will vary due to server caching of remaining fuel blocks.
+        """
+        if starbase["state"] == "offline":
+            return None
+        operation = _esi_client().Corporation.get_corporations_corporation_id_starbases_starbase_id(
+            corporation_id=corporation_id,
+            starbase_id=starbase["starbase_id"],
+            system_id=starbase["system_id"],
+            token=token.valid_access_token(),
+        )
+        operation.request_config.also_return_response = True
+        starbase_details, response = operation.result()
+        fuel_quantity = None
+        if "fuels" in starbase_details:
+            for fuel in starbase_details["fuels"]:
+                fuel_type, _ = EveType.objects.get_or_create_esi(fuel["type_id"])
+                if fuel_type.is_fuel_block:
+                    fuel_quantity = fuel["quantity"]
+        if fuel_quantity:
+            starbase_type, _ = EveType.objects.get_or_create_esi(starbase["type_id"])
+            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                starbase["system_id"]
             )
-            fuel_quantity = None
-            if "fuels" in starbase_details:
-                for fuel in starbase_details["fuels"]:
-                    fuel_type, _ = EveType.objects.get_or_create_esi(fuel["type_id"])
-                    if fuel_type.is_fuel_block:
-                        fuel_quantity = fuel["quantity"]
-            if fuel_quantity:
-                starbase_type, _ = EveType.objects.get_or_create_esi(
-                    starbase["type_id"]
-                )
-                solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    starbase["system_id"]
-                )
-                sov_discount = (
-                    0.25 if solar_system.corporation_has_sov(self.corporation) else 0
-                )
-                hours = math.floor(
-                    fuel_quantity
-                    / (starbase_type.starbase_fuel_per_hour * (1 - sov_discount))
-                )
-                fuel_expires_at = now() + timedelta(hours=hours)
+            sov_discount = (
+                0.25 if solar_system.corporation_has_sov(self.corporation) else 0
+            )
+            seconds = math.floor(
+                3600
+                * fuel_quantity
+                / (starbase_type.starbase_fuel_per_hour * (1 - sov_discount))
+            )
+            last_modified = parsedate_to_datetime(
+                response.headers.get("Last-Modified", format_datetime(now()))
+            )
+            fuel_expires_at = last_modified + timedelta(seconds=seconds)
 
         return fuel_expires_at
 
@@ -905,24 +908,14 @@ class Owner(models.Model):
         self.notifications_last_update_ok = None
         self.notifications_last_update_at = now()
         self.save()
-        token = self.fetch_token(rotate_characters=True)
+        token = self.fetch_token(
+            rotate_characters=self.RotateCharactersType.NOTIFICATIONS
+        )
 
         try:
             notifications = self._fetch_notifications_from_esi(token)
         except OSError as ex:
-            message_id = (
-                f"{__title__}-fetch_notifications-{self.pk}-{type(ex).__name__}"
-            )
-            title = f"{__title__}: Failed to update notifications for {self}"
-            message = f"{self}: Failed to update notifications from ESI due to {ex}"
-            logger.exception(message)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="danger",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch notifications", ex, token)
             self.notifications_last_update_ok = False
             self.save()
             raise ex
@@ -1046,8 +1039,9 @@ class Owner(models.Model):
                 hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
             )
             notifications = (
-                Notification.objects.filter(owner=self)
-                .filter(notif_type__in=NotificationType.relevant_for_timerboard)
+                self.notifications.filter(
+                    notif_type__in=NotificationType.relevant_for_timerboard
+                )
                 .exclude(is_timer_added=True)
                 .filter(timestamp__gte=cutoff_dt_for_stale)
                 .select_related("owner", "sender")
@@ -1073,8 +1067,9 @@ class Owner(models.Model):
                 empty_refineries.count(),
             )
             notifications = (
-                Notification.objects.filter(owner=self)
-                .filter(notif_type__in=NotificationType.relevant_for_moonmining)
+                self.notifications.filter(
+                    notif_type__in=NotificationType.relevant_for_moonmining
+                )
                 .select_related("owner", "sender")
                 .order_by("timestamp")
             )
@@ -1095,70 +1090,36 @@ class Owner(models.Model):
                     refinery.save()
 
     def send_new_notifications(self, user: User = None):
-        """Forward all new notification for this owner to Discord."""
+        """Forward all new notification of this owner to configured webhooks."""
         notifications_count = 0
         self.forwarding_last_update_ok = None
         self.forwarding_last_update_at = now()
         self.save()
-
         cutoff_dt_for_stale = now() - timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
-        all_new_notifications = list(
-            Notification.objects.filter(owner=self)
-            .filter(notif_type__in=NotificationType.values)
+        all_new_notifications = (
+            self.notifications.filter(
+                notif_type__in=(
+                    Webhook.objects.enabled_notification_types()
+                    & NotificationType.relevant_for_forwarding
+                )
+            )
             .filter(is_sent=False)
             .filter(timestamp__gte=cutoff_dt_for_stale)
-            .select_related()
+            .select_related("owner", "sender", "owner__corporation")
             .order_by("timestamp")
         )
-        new_notifications_count = 0
-        active_webhooks_count = 0
-        for webhook in self.webhooks.filter(is_active=True):
-            active_webhooks_count += 1
-            new_notifications = [
-                notif
-                for notif in all_new_notifications
-                if str(notif.notif_type) in webhook.notification_types
-            ]
-            if len(new_notifications) > 0:
-                new_notifications_count += len(new_notifications)
-                logger.info(
-                    "%s: Found %d new notifications for webhook %s",
-                    self,
-                    len(new_notifications),
-                    webhook,
-                )
-                notifications_count += self._send_notifications_to_webhook(
-                    new_notifications, webhook
-                )
-
-        if active_webhooks_count == 0:
-            logger.info("%s: No active webhooks", self)
-
-        if new_notifications_count == 0:
-            logger.info("%s: No new notifications found", self)
-
+        for notif in all_new_notifications:
+            notif.send_to_configured_webhooks()
+        if not all_new_notifications:
+            logger.info("%s: No new notifications found for forwarding", self)
         self.forwarding_last_update_ok = True
         self.save()
-
         if user:
             self._send_report_to_user(
                 topic="notifications", topic_count=notifications_count, user=user
             )
-
-    def _send_notifications_to_webhook(self, new_notifications, webhook) -> int:
-        """sends all notifications to given webhook"""
-        sent_count = 0
-        for notification in new_notifications:
-            if (
-                not notification.filter_for_npc_attacks()
-                and not notification.filter_for_alliance_level()
-            ):
-                if notification.send_to_webhook(webhook):
-                    sent_count += 1
-
-        return sent_count
 
     def _send_report_to_user(self, topic: str, topic_count: int, user: User):
         message_details = "%(count)s %(topic)s synced." % {
@@ -1200,23 +1161,13 @@ class Owner(models.Model):
         self.save()
 
         token = self.fetch_token()
-        structure_ids = {x.id for x in Structure.objects.filter(owner=self)}
+        structure_ids = list(self.structures.values_list("id", flat=True))
         try:
             OwnerAsset.objects.update_or_create_for_structures_esi(
                 structure_ids, self.corporation.corporation_id, token
             )
         except OSError as ex:
-            message_id = f"{__title__}-fetch_assets-{self.pk}-{type(ex).__name__}"
-            title = f"{__title__}: Failed to update assets for {self}"
-            message = f"{self}: Failed to update assets from ESI due to {ex}"
-            logger.warning(message, exc_info=True)
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=message,
-                level="warning",
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            self._report_esi_issue("fetch assets", ex, token)
             raise ex
         else:
             self.assets_last_update_ok = True
@@ -1254,12 +1205,19 @@ class OwnerCharacter(models.Model):
         related_name="+",
         help_text="character used for syncing",
     )
-    last_used_at = models.DateTimeField(
+    structures_last_used_at = models.DateTimeField(
         null=True,
         default=None,
         editable=False,
         db_index=True,
-        help_text="when this character was last used for sync",
+        help_text="when this character was last used for syncing structures",
+    )
+    notifications_last_used_at = models.DateTimeField(
+        null=True,
+        default=None,
+        editable=False,
+        db_index=True,
+        help_text="when this character was last used for syncing notifications",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

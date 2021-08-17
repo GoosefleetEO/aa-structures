@@ -13,7 +13,10 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (
+    FuelAlert,
+    FuelAlertConfig,
     Notification,
+    NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
@@ -23,6 +26,98 @@ from .models import (
 )
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+
+@admin.register(FuelAlert)
+class FuelAlertAdmin(admin.ModelAdmin):
+    list_display = ("config", "_owner", "structure", "hours", "created_at")
+    list_select_related = (
+        "config",
+        "structure",
+        "structure__owner",
+        "structure__eve_solar_system",
+        "structure__owner__corporation",
+    )
+    list_filter = (
+        ("config", admin.RelatedOnlyFieldListFilter),
+        ("structure", admin.RelatedOnlyFieldListFilter),
+        ("structure__owner", admin.RelatedOnlyFieldListFilter),
+    )
+    ordering = ("config", "structure", "-hours")
+
+    def _owner(self, obj):
+        return obj.structure.owner
+
+    def has_add_permission(self, *args, **kwargs) -> bool:
+        return False
+
+    def has_change_permission(self, *args, **kwargs) -> bool:
+        return False
+
+
+@admin.register(FuelAlertConfig)
+class FuelNotificationConfigAdmin(admin.ModelAdmin):
+    list_display = (
+        "__str__",
+        "start",
+        "end",
+        "repeat",
+        "channel_ping_type",
+        "_color",
+        "is_enabled",
+    )
+    list_select_related = True
+    list_filter = ("is_enabled",)
+
+    def _id(self, obj):
+        return f"#{obj.pk}"
+
+    def _color(self, obj):
+        color = Webhook.Color(obj.color)
+        return format_html(
+            '<span style="color: {};">&#9646;</span>{}',
+            color.css_color,
+            color.label,
+        )
+
+    _color.admin_order_field = "color"
+
+    actions = ("send_fuel_notifications",)
+
+    def send_fuel_notifications(self, request, queryset):
+        item_count = 0
+        for obj in queryset:
+            obj.send_new_notifications(force=True)
+            item_count += 1
+        tasks.send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
+        self.message_user(
+            request,
+            f"Started sending fuel notifications for {item_count} configurations",
+        )
+
+    send_fuel_notifications.short_description = (
+        "Sent fuel notifications for selected configuration"
+    )
+
+    fieldsets = (
+        (
+            "Timeing",
+            {
+                "description": (
+                    "Timing configuration for sending fuel notifications. "
+                    "Note that the first notification will be sent at the exact "
+                    "start hour, and the last notification will be sent one repeat "
+                    "before the end hour."
+                ),
+                "fields": ("start", "end", "repeat"),
+            },
+        ),
+        (
+            "Discord",
+            {"fields": ("channel_ping_type", "color")},
+        ),
+        ("General", {"fields": ("is_enabled",)}),
+    )
 
 
 class RenderableNotificationFilter(admin.SimpleListFilter):
@@ -124,7 +219,7 @@ class NotificationAdmin(admin.ModelAdmin):
     actions = (
         "mark_as_sent",
         "mark_as_unsent",
-        "send_to_webhooks",
+        "send_to_configured_webhooks",
         "process_for_timerboard",
     )
 
@@ -154,7 +249,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
     mark_as_unsent.short_description = "Mark selected notifications as unsent"
 
-    def send_to_webhooks(self, request, queryset):
+    def send_to_configured_webhooks(self, request, queryset):
         obj_pks = [obj.pk for obj in queryset if obj.can_be_rendered]
         ignored_count = len([obj for obj in queryset if not obj.can_be_rendered])
         tasks.send_notifications.delay(obj_pks)
@@ -168,7 +263,7 @@ class NotificationAdmin(admin.ModelAdmin):
             )
         self.message_user(request, message)
 
-    send_to_webhooks.short_description = (
+    send_to_configured_webhooks.short_description = (
         "Send selected notifications to configured webhooks"
     )
 
@@ -257,11 +352,11 @@ class OwnerAdmin(admin.ModelAdmin):
         "_notifications_count",
     )
     list_filter = (
+        "is_active",
+        OwnerSyncStatusFilter,
         ("corporation__alliance", admin.RelatedOnlyFieldListFilter),
         "has_default_pings_enabled",
-        "is_active",
         "is_alliance_main",
-        OwnerSyncStatusFilter,
     )
     ordering = ["corporation__corporation_name"]
     search_fields = ["corporation__corporation_name"]
@@ -673,7 +768,7 @@ class StructureAdmin(admin.ModelAdmin):
         "eve_solar_system__name",
     ]
     ordering = ["name"]
-    list_display = ("name", "_owner", "_location", "_type", "_power_mode", "_tags")
+    list_display = ("_name", "_owner", "_location", "_type", "_power_mode", "_tags")
     list_filter = (
         OwnerCorporationsFilter,
         OwnerAllianceFilter,
@@ -694,7 +789,14 @@ class StructureAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.prefetch_related("tags")
 
-    def _owner(self, structure):
+    def _name(self, structure) -> str:
+        if structure.name:
+            return structure.name
+        return structure.location_name
+
+    _name.admin_order_field = "name"
+
+    def _owner(self, structure) -> str:
         alliance = structure.owner.corporation.alliance
         return format_html(
             "{}<br>{}",
@@ -702,26 +804,26 @@ class StructureAdmin(admin.ModelAdmin):
             alliance if alliance else "",
         )
 
-    def _location(self, structure):
-        if structure.eve_moon:
-            location_name = structure.eve_moon.name
-        elif structure.eve_planet:
-            location_name = structure.eve_planet.name
-        else:
-            location_name = structure.eve_solar_system.name
+    _owner.admin_order_field = "owner__corporation__corporation_name"
+
+    def _location(self, structure) -> str:
         return format_html(
             "{}<br>{}",
-            location_name,
+            structure.location_name,
             structure.eve_solar_system.eve_constellation.eve_region,
         )
+
+    _location.admin_order_field = "eve_solar_system__name"
 
     def _type(self, structure):
         return format_html("{}<br>{}", structure.eve_type, structure.eve_type.eve_group)
 
-    def _power_mode(self, structure):
+    _owner.admin_order_field = "eve_type__name"
+
+    def _power_mode(self, structure) -> str:
         return structure.get_power_mode_display()
 
-    def _tags(self, structure):
+    def _tags(self, structure) -> str:
         return sorted([tag.name for tag in structure.tags.all()])
 
     _tags.short_description = "Tags"
@@ -858,6 +960,13 @@ class WebhookAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     save_as = True
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields[
+            "notification_types"
+        ].choices = NotificationType.choices_enabled
+        return form
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related("ping_groups", "owner_set", "owner_set__corporation")
@@ -882,7 +991,13 @@ class WebhookAdmin(admin.ModelAdmin):
     def _messages_in_queue(self, obj):
         return obj.queue_size()
 
-    actions = ("test_notification", "activate", "deactivate", "purge_messages")
+    actions = (
+        "test_notification",
+        "activate",
+        "deactivate",
+        "purge_messages",
+        "send_messages",
+    )
 
     def test_notification(self, request, queryset):
         for obj in queryset:
@@ -929,8 +1044,19 @@ class WebhookAdmin(admin.ModelAdmin):
 
     purge_messages.short_description = "Purge queued messages from selected webhooks"
 
-    filter_horizontal = ("ping_groups",)
+    def send_messages(self, request, queryset):
+        items_count = 0
+        for webhook in queryset:
+            tasks.send_messages_for_webhook.delay(webhook.pk)
+            items_count += 1
 
+        self.message_user(
+            request, f"Started sending queued messages for {items_count} webhooks."
+        )
+
+    send_messages.short_description = "Send queued messages from selected webhooks"
+
+    filter_horizontal = ("ping_groups",)
     fieldsets = (
         (
             None,

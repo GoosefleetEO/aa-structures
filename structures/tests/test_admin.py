@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
+from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
@@ -17,7 +19,15 @@ from ..admin import (
     StructureAdmin,
     WebhookAdmin,
 )
-from ..models import EveEntity, Notification, Owner, Structure, StructureTag, Webhook
+from ..models import (
+    EveEntity,
+    FuelAlertConfig,
+    Notification,
+    Owner,
+    Structure,
+    StructureTag,
+    Webhook,
+)
 from .testdata import (
     create_structures,
     create_user,
@@ -32,6 +42,125 @@ MODULE_PATH = "structures.admin"
 class MockRequest(object):
     def __init__(self, user=None):
         self.user = user
+
+
+class TestFuelNotificationConfigAdmin(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.defaults = {
+            "is_enabled": True,
+            "channel_ping_type": Webhook.PingType.HERE,
+            "color": Webhook.Color.WARNING,
+        }
+        cls.user = User.objects.create_superuser("Clark Kent")
+        create_structures()
+
+    def test_should_create_new_config(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 12, "end": 5, "repeat": 2}},
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelalertconfig_changelist")
+        )
+        self.assertEqual(FuelAlertConfig.objects.count(), 1)
+
+    def test_should_update_existing_config(self):
+        # given
+        self.client.force_login(self.user)
+        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
+            data={**self.defaults, **{"start": 48, "end": 0, "repeat": 2}},
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelalertconfig_changelist")
+        )
+        self.assertEqual(FuelAlertConfig.objects.count(), 1)
+
+    def test_should_remove_existing_fuel_notifications_when_timing_changed(self):
+        # given
+        self.client.force_login(self.user)
+        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_alerts.create(config=config, structure=structure, hours=5)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
+            data={**self.defaults, **{"start": 48, "end": 0, "repeat": 2}},
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelalertconfig_changelist")
+        )
+        self.assertEqual(structure.fuel_alerts.count(), 0)
+
+    def test_should_not_remove_existing_fuel_notifications_on_other_changes(self):
+        # given
+        self.client.force_login(self.user)
+        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_alerts.create(config=config, structure=structure, hours=5)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
+            data={
+                **self.defaults,
+                **{"start": 48, "end": 24, "repeat": 12, "is_enabled": False},
+            },
+        )
+        # then
+        self.assertRedirects(
+            response, reverse("admin:structures_fuelalertconfig_changelist")
+        )
+        self.assertEqual(structure.fuel_alerts.count(), 1)
+
+    def test_should_not_allow_end_before_start(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 1, "end": 2, "repeat": 1}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
+    def test_should_not_allow_invalid_frequency(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 48, "end": 24, "repeat": 36}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
+    def test_should_not_allow_creating_overlapping(self):
+        # given
+        self.client.force_login(self.user)
+        FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 36, "end": 0, "repeat": 8}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelAlertConfig.objects.count(), 1)
 
 
 class TestNotificationAdmin(TestCase):
@@ -76,7 +205,7 @@ class TestNotificationAdmin(TestCase):
     @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
     @patch(MODULE_PATH + ".tasks.send_notifications")
     def test_action_send_to_webhook(self, mock_task, mock_message_user):
-        self.modeladmin.send_to_webhooks(MockRequest(self.user), self.obj_qs)
+        self.modeladmin.send_to_configured_webhooks(MockRequest(self.user), self.obj_qs)
         self.assertEqual(mock_task.delay.call_count, 1)
         self.assertTrue(mock_message_user.called)
 

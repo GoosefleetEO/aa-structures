@@ -1,17 +1,21 @@
+import itertools
 from pydoc import locate
 
 from bravado.exception import HTTPError
 
+from django.contrib.auth.models import User
 from django.db import models, transaction
-from django.db.models import Case, Count, Q, Value, When
+from django.db.models import Case, Count, Exists, OuterRef, Q, Value, When
 from django.utils.timezone import now
 from esi.models import Token
 
+from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from . import __title__, constants
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -49,31 +53,24 @@ class EveUniverseManager(models.Manager):
         from .models import EsiNameLocalization
 
         eve_id = int(eve_id)
-        log_prefix = make_log_prefix(self, eve_id)
-        try:
-            esi_path = "Universe." + self.model.esi_method()
-            args = {self.model.esi_pk(): eve_id}
-            if self.model.has_esi_localization():
-                eve_data_objects = esi_fetch_with_localization(
-                    esi_path=esi_path,
-                    languages=EsiNameLocalization.ESI_LANGUAGES,
-                    args=args,
-                )
-            else:
-                eve_data_objects = dict()
-                eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = esi_fetch(
-                    esi_path=esi_path, args=args
-                )  # noqa E123
-            defaults = self.model.map_esi_fields_to_model(eve_data_objects)
-            obj, created = self.update_or_create(id=eve_id, defaults=defaults)
-            obj.set_generated_translations()
-            obj.save()
-            self._update_or_create_children(eve_data_objects)
-
-        except Exception as ex:
-            logger.warn("%s: Failed to update or create", log_prefix)
-            raise ex
-
+        esi_path = "Universe." + self.model.esi_method()
+        args = {self.model.esi_pk(): eve_id}
+        if self.model.has_esi_localization():
+            eve_data_objects = esi_fetch_with_localization(
+                esi_path=esi_path,
+                languages=EsiNameLocalization.ESI_LANGUAGES,
+                args=args,
+            )
+        else:
+            eve_data_objects = dict()
+            eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = esi_fetch(
+                esi_path=esi_path, args=args
+            )  # noqa E123
+        defaults = self.model.map_esi_fields_to_model(eve_data_objects)
+        obj, created = self.update_or_create(id=eve_id, defaults=defaults)
+        obj.set_generated_translations()
+        obj.save()
+        self._update_or_create_children(eve_data_objects)
         return obj, created
 
     def _update_or_create_children(self, eve_data_objects: dict) -> None:
@@ -160,24 +157,19 @@ class EveEntityManager(models.Manager):
         """
         eve_entity_id = int(eve_entity_id)
         log_prefix = make_log_prefix(self, eve_entity_id)
-        try:
-            response = esi_fetch(
-                esi_path="Universe.post_universe_names",
-                args={"ids": [eve_entity_id]},
+        response = esi_fetch(
+            esi_path="Universe.post_universe_names",
+            args={"ids": [eve_entity_id]},
+        )
+        if len(response) > 0:
+            first = response[0]
+            category = self.model.Category.from_esi_name(first["category"])
+            obj, created = self.update_or_create(
+                id=eve_entity_id,
+                defaults={"category": category, "name": first["name"]},
             )
-            if len(response) > 0:
-                first = response[0]
-                category = self.model.Category.from_esi_name(first["category"])
-                obj, created = self.update_or_create(
-                    id=eve_entity_id,
-                    defaults={"category": category, "name": first["name"]},
-                )
-            else:
-                raise ValueError(f"{log_prefix}: Did not find a match")
-
-        except Exception as ex:
-            logger.warn("%s: Failed to load eve entity", log_prefix)
-            raise ex
+        else:
+            raise ValueError(f"{log_prefix}: Did not find a match")
 
         return obj, created
 
@@ -215,6 +207,57 @@ class StructureQuerySet(models.QuerySet):
             "eve_type__eve_group__eve_category",
         )
 
+    # TODO: Add specific tests
+    def visible_for_user(self, user: User, tags: list = None) -> models.QuerySet:
+        from .models import PocoDetails
+
+        if user.has_perm("structures.view_all_structures"):
+            structures_query = self.select_related_defaults()
+            if tags:
+                structures_query = structures_query.filter(
+                    tags__name__in=tags
+                ).distinct()
+
+        else:
+            if user.has_perm("structures.view_corporation_structures") or user.has_perm(
+                "structures.view_alliance_structures"
+            ):
+                corporation_ids = {
+                    character_ownership.character.corporation_id
+                    for character_ownership in user.character_ownerships.all()
+                }
+                corporations = list(
+                    EveCorporationInfo.objects.select_related("alliance").filter(
+                        corporation_id__in=corporation_ids
+                    )
+                )
+            else:
+                corporations = []
+
+            if user.has_perm("structures.view_alliance_structures"):
+                alliances = {
+                    corporation.alliance
+                    for corporation in corporations
+                    if corporation.alliance
+                }
+                for alliance in alliances:
+                    corporations += alliance.evecorporationinfo_set.all()
+
+                corporations = list(set(corporations))
+
+            structures_query = self.select_related_defaults().filter(
+                owner__corporation__in=corporations
+            )
+
+        structures_query = structures_query.prefetch_related(
+            "tags", "services"
+        ).annotate(
+            has_poco_details=Exists(
+                PocoDetails.objects.filter(structure_id=OuterRef("id"))
+            )
+        )
+        return structures_query
+
 
 class StructureManagerBase(models.Manager):
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:
@@ -249,35 +292,25 @@ class StructureManagerBase(models.Manager):
 
         log_prefix = make_log_prefix(self, structure_id)
         logger.info("%s: Trying to fetch structure from ESI", log_prefix)
-        try:
-            if token is None:
-                raise ValueError("Can not fetch structure without token")
+        if token is None:
+            raise ValueError("Can not fetch structure without token")
 
-            structure_info = esi_fetch(
-                esi_path="Universe.get_universe_structures_structure_id",
-                args={"structure_id": structure_id},
-                token=token,
-            )
-            structure = {
-                "structure_id": structure_id,
-                "name": self.model.extract_name_from_esi_respose(
-                    structure_info["name"]
-                ),
-                "position": structure_info["position"],
-                "type_id": structure_info["type_id"],
-                "system_id": structure_info["solar_system_id"],
-            }
-            owner = Owner.objects.get(
-                corporation__corporation_id=structure_info["corporation_id"]
-            )
-            obj, created = self.update_or_create_from_dict(
-                structure=structure, owner=owner
-            )
-
-        except Exception as ex:
-            logger.warn("%s: Failed to load structure", log_prefix)
-            raise ex
-
+        structure_info = esi_fetch(
+            esi_path="Universe.get_universe_structures_structure_id",
+            args={"structure_id": structure_id},
+            token=token,
+        )
+        structure = {
+            "structure_id": structure_id,
+            "name": self.model.extract_name_from_esi_respose(structure_info["name"]),
+            "position": structure_info["position"],
+            "type_id": structure_info["type_id"],
+            "system_id": structure_info["solar_system_id"],
+        }
+        owner = Owner.objects.get(
+            corporation__corporation_id=structure_info["corporation_id"]
+        )
+        obj, created = self.update_or_create_from_dict(structure=structure, owner=owner)
         return obj, created
 
     def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:
@@ -338,6 +371,10 @@ class StructureManagerBase(models.Manager):
             eve_moon, _ = EveMoon.objects.get_or_create_esi(structure["moon_id"])
         else:
             eve_moon = None
+        try:
+            old_obj = self.get(id=structure["structure_id"])
+        except self.model.DoesNotExist:
+            old_obj = None
         obj, created = self.update_or_create(
             id=structure["structure_id"],
             defaults={
@@ -361,6 +398,8 @@ class StructureManagerBase(models.Manager):
                 "last_updated_at": now(),
             },
         )
+        if old_obj:
+            obj.handle_fuel_notifications(old_obj)
         # Make sure we have dogmas loaded for this type for fittings
         EveUniverseType.objects.get_or_create_esi(
             id=structure["type_id"], enabled_sections=[EveUniverseType.Section.DOGMAS]
@@ -487,6 +526,19 @@ class OwnerQuerySet(models.QuerySet):
             )
         )
 
+    def structures_last_updated(self):
+        """Date/time when structures were last updated for any of the active owners."""
+        active_owners = self.filter(is_active=True)
+        return (
+            (
+                active_owners.order_by("-structures_last_update_at")
+                .first()
+                .structures_last_update_at
+            )
+            if active_owners
+            else None
+        )
+
 
 class OwnerManagerBase(models.Manager):
     pass
@@ -512,7 +564,7 @@ class OwnerAssetManager(models.Manager):
         assets_in_structures = [
             asset
             for asset in assets
-            if asset["location_id"] in structure_ids
+            if asset["location_id"] in set(structure_ids)
             and asset["location_flag"]
             not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
         ]
@@ -535,7 +587,7 @@ class OwnerAssetManager(models.Manager):
             objs_ids.append(obj.id)
 
         # Clean up assets not in structures anymore
-        objs_to_delete = self.filter(location_id__in=structure_ids).exclude(
+        objs_to_delete = self.filter(location_id__in=list(structure_ids)).exclude(
             id__in=objs_ids
         )
         objs_to_delete.delete()
@@ -556,3 +608,12 @@ class OwnerAssetManager(models.Manager):
             structure.has_fitting = bool(has_fitting)
             structure.has_core = bool(has_core)
             structure.save()
+
+
+class WebhookManager(WebhookBaseManager):
+    def enabled_notification_types(self) -> set:
+        """Set of all currently enabled notification types."""
+        notif_types_list = list(
+            self.filter(is_active=True).values_list("notification_types", flat=True)
+        )
+        return set(itertools.chain(*notif_types_list))
