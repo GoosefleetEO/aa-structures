@@ -965,6 +965,22 @@ if "structuretimers" in app_labels():
 
 
 class TestNotificationType(NoSocketsTestCase):
+    def test_should_return_enabled_values_only(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+            values = NotificationType.values_enabled
+        # then
+        self.assertNotIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
+        self.assertNotIn(NotificationType.TOWER_REFUELED_EXTRA, values)
+
+    def test_should_return_all_values(self):
+        # when
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+            values = NotificationType.values_enabled
+        # then
+        self.assertIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
+        self.assertIn(NotificationType.TOWER_REFUELED_EXTRA, values)
+
     def test_should_return_enabled_choices_only(self):
         # when
         with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):

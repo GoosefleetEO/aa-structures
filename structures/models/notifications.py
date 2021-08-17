@@ -264,13 +264,18 @@ class NotificationType(models.TextChoices):
         return my_set
 
     @classproperty
-    def choices_enabled(cls) -> list:
-        """Choices list containing enabled features only."""
-        disabled_types = set()
+    def values_enabled(cls) -> set:
+        """Values of enabled notif types only."""
+        my_set = set(cls.values)
         if not STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS:
-            disabled_types.add(cls.STRUCTURE_REFUELED_EXTRA)
-            disabled_types.add(cls.TOWER_REFUELED_EXTRA)
-        return [choice for choice in cls.choices if choice[0] not in disabled_types]
+            my_set.discard(cls.STRUCTURE_REFUELED_EXTRA)
+            my_set.discard(cls.TOWER_REFUELED_EXTRA)
+        return my_set
+
+    @classproperty
+    def choices_enabled(cls) -> list:
+        """Choices list containing enabled notif types only."""
+        return [choice for choice in cls.choices if choice[0] in cls.values_enabled]
 
 
 def get_default_notification_types():
