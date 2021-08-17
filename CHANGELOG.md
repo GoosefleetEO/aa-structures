@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
+## [1.15.0] - 2021-08-17
+
 ## Added
 
-- New notifications are generated to warn about fuel running out in structures and POSes at configurable times and frequencies, e.g. 3 days before fuel runs out and repeated every 12 hours (BETA)
-- New notifications are generated to inform when a structure or POS has been refueled
+- Fuel alert notifications for structures and POSes can now be configured freely, e.g. to appear 3 days before fuel runs out and repeated every 12 hours
+- Default fuel alert notifications from ESI can be turned off with the setting: `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS` (so they don't interfere with the custom fuel alerts)
+- EXPERIMENTAL: A new notification can be generated to inform when a structure or POS has been refueled. This is an experimental feature that can be enabled with this feature flag in your local settings: `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = True`. Note that this feature currently does not work properly for POSes.
 - Tokens will now also be rotated when fetching structures from ESI to reduce latency
 
 ## Changed

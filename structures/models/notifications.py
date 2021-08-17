@@ -92,9 +92,7 @@ class NotificationType(models.TextChoices):
     )
     STRUCTURE_UNANCHORING = "StructureUnanchoring", _("Upwell structure unanchoring")
     STRUCTURE_FUEL_ALERT = "StructureFuelAlert", _("Upwell structure fuel alert")
-    STRUCTURE_REFUELED_EXTRA = "StructureRefueledExtra", _(
-        "Upwell structure refueled (extra)"
-    )
+    STRUCTURE_REFUELED_EXTRA = "StructureRefueledExtra", _("Upwell structure refueled")
     STRUCTURE_UNDER_ATTACK = "StructureUnderAttack", _(
         "Upwell structure is under attack"
     )
@@ -116,7 +114,7 @@ class NotificationType(models.TextChoices):
     # starbases
     TOWER_ALERT_MSG = "TowerAlertMsg", _("Starbase attacked")
     TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg", _("Starbase fuel alert")
-    TOWER_REFUELED_EXTRA = "TowerRefueledExtra", _("Starbase refueled (extra)")
+    TOWER_REFUELED_EXTRA = "TowerRefueledExtra", _("Starbase refueled")
 
     # moon mining
     MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted", _(
@@ -199,7 +197,6 @@ class NotificationType(models.TextChoices):
             cls.STRUCTURE_ANCHORING,
             cls.STRUCTURE_DESTROYED,
             cls.STRUCTURE_FUEL_ALERT,
-            cls.STRUCTURE_REFUELED_EXTRA,
             cls.STRUCTURE_LOST_ARMOR,
             cls.STRUCTURE_LOST_SHIELD,
             cls.STRUCTURE_ONLINE,
@@ -211,7 +208,6 @@ class NotificationType(models.TextChoices):
             cls.ORBITAL_REINFORCED,
             cls.TOWER_ALERT_MSG,
             cls.TOWER_RESOURCE_ALERT_MSG,
-            cls.TOWER_REFUELED_EXTRA,
             cls.SOV_STRUCTURE_REINFORCED,
             cls.SOV_STRUCTURE_DESTROYED,
         ]
@@ -257,7 +253,7 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def relevant_for_forwarding(cls) -> set:
-        my_set = set(cls.values)
+        my_set = set(cls.values_enabled)
         if STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS:
             my_set.discard(cls.STRUCTURE_FUEL_ALERT)
             my_set.discard(cls.TOWER_RESOURCE_ALERT_MSG)
