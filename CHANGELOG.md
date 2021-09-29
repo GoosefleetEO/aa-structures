@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
+## [1.16.0] - 2021-09-29
+
+## Changed
+
+- Removed feature to send ESI errors as auth notifications. Turns out that many ESI errors are just temporary and do not result in a permanent degradion of ESI functionality. Reporting those errors as auth notifications has therefore little real value. Note that all occuring ESI errors will continue to be reported in the usual errors logs (e.g. extensions.log)
+
+- Removed feature to send Discord webhook errors as aut notifications. Note that those errors will continue continue to be reported in the usual errors logs (e.g. extensions.log)
+
+- Removed setting: STRUCTURES_NOTIFY_THROTTLED_TIMEOUT
+
+- Structure refuled notifications for Upwell structures (but not POSes) have shown to work perfectly and are no longer considered experimental.
+
 ## [1.15.0] - 2021-08-17
 
 ## Added
