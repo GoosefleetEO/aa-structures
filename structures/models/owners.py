@@ -19,7 +19,7 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
-from app_utils.allianceauth import notify_admins_throttled, notify_throttled
+from app_utils.allianceauth import notify_admins
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag
@@ -34,7 +34,6 @@ from ..app_settings import (
     STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
     STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
-    STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
@@ -294,29 +293,23 @@ class Owner(models.Model):
         Raises TokenError when no valid token can be provided.
         """
 
-        def notify_error(
+        def notify_token_removal(
             error: str, character: CharacterOwnership = None, level="warning"
         ) -> None:
-            """Notify admin and users about an error with the owner characters."""
-            message_id = f"{__title__}-Owner-fetch_token-{self.pk}"
-            title = f"{__title__}: Failed to fetch token for {self}"
-            error = f"{error} Please add a new character to restore service level."
+            """Notify admin and users about the removal of an owner token."""
+            title = f"{__title__}: Invalid character has been removed {self}"
+            error = (
+                f"{character.character_ownership}: {error}\n"
+                "Please add a new character to restore the previous service level."
+            )
             if character and character.character_ownership:
-                notify_throttled(
-                    message_id=message_id,
+                notify(
                     user=character.character_ownership.user,
                     title=title,
                     message=error,
                     level=level,
                 )
-                title = f"FYI: {title}"
-            notify_admins_throttled(
-                message_id=message_id,
-                title=title,
-                message=error,
-                level=level,
-                timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-            )
+            notify_admins(title=f"FYI: {title}", message=error, level=level)
 
         token = None
         order_by_last_used = (
@@ -329,8 +322,11 @@ class Owner(models.Model):
                 character.character_ownership.character.corporation_id
                 != self.corporation.corporation_id
             ):
-                notify_error(
-                    f"{character.character_ownership}: Character does no longer belong to the owner's corporation and has been removed. ",
+                notify_token_removal(
+                    (
+                        "Character does no longer belong to the owner's "
+                        "corporation and has been removed. "
+                    ),
                     character,
                 )
                 character.delete()
@@ -338,18 +334,17 @@ class Owner(models.Model):
             elif not character.character_ownership.user.has_perm(
                 "structures.add_structure_owner"
             ):
-                notify_error(
-                    f"{character.character_ownership}: "
+                notify_token_removal(
                     "Character does not have sufficient permission to sync "
-                    "and has been removed."
+                    "and has been removed.",
+                    character,
                 )
                 character.delete()
                 continue
             token = character.valid_token()
             if not token:
-                notify_error(
-                    f"{character.character_ownership}: Character has no valid token "
-                    "for sync and has been removed. ",
+                notify_token_removal(
+                    "Character has no valid token for sync and has been removed. ",
                     character,
                 )
                 character.delete()
@@ -361,7 +356,6 @@ class Owner(models.Model):
                 f"{self}: No valid character found for sync. "
                 "Service down for this owner."
             )
-            notify_error(error, level="danger")
             raise TokenError(error)
         if rotate_characters:
             self._rotate_character(
@@ -404,17 +398,8 @@ class Owner(models.Model):
 
     def _report_esi_issue(self, action: str, ex: Exception, token: Token):
         """Report an ESI issue to admins."""
-        message_id = f"{__title__}-{action}-{self.pk}-{type(ex).__name__}"
-        title = f"{__title__}: Failed to {action} for {self}"
         message = f"{self}: Failed to {action} from ESI with token {token} due to {ex}"
         logger.warning(message, exc_info=True)
-        notify_admins_throttled(
-            message_id=message_id,
-            title=title,
-            message=message,
-            level="warning",
-            timeout=STRUCTURES_NOTIFY_THROTTLED_TIMEOUT,
-        )
 
     def update_structures_esi(self, user: User = None):
         """Updates all structures from ESI."""
