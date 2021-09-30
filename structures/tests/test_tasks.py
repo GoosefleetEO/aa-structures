@@ -72,10 +72,9 @@ class TestUpdateStructures(NoSocketsTestCase):
             """TODO: Investigate how to call the top level method that contains the chains()"""
             tasks.update_structures_esi_for_owner(owner_pk=generate_invalid_pk(Owner))
 
-    @patch(MODULE_PATH + ".update_is_up_for_owner")
     @patch(MODULE_PATH + ".update_structures_for_owner")
     def test_can_update_structures_for_all_owners(
-        self, mock_update_structures_for_owner, mock_update_is_up_for_owner
+        self, mock_update_structures_for_owner
     ):
         Owner.objects.all().delete()
         owner_2001 = Owner.objects.create(
@@ -92,10 +91,9 @@ class TestUpdateStructures(NoSocketsTestCase):
         args, kwargs = call_args_list[1]
         self.assertEqual(args[0], owner_2002.pk)
 
-    @patch(MODULE_PATH + ".update_is_up_for_owner")
     @patch(MODULE_PATH + ".update_structures_for_owner")
     def test_does_not_update_structures_for_non_active_owners(
-        self, mock_update_structures_for_owner, mock_update_is_up_for_owner
+        self, mock_update_structures_for_owner
     ):
         Owner.objects.filter().delete()
         owner_2001 = Owner.objects.create(
@@ -167,7 +165,7 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
 
 
 @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
-@patch(MODULE_PATH + ".update_is_up_for_owner")
+@patch(MODULE_PATH_MODELS_OWNERS + ".Owner.update_is_up", lambda *args, **kwargs: None)
 @patch(MODULE_PATH + ".send_fuel_notifications_for_config")
 @patch(MODULE_PATH + ".process_notifications_for_owner")
 class TestFetchAllNotifications(NoSocketsTestCase):
@@ -178,10 +176,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
     def test_fetch_all_notifications(
-        self,
-        mock_fetch_notifications_owner,
-        mock_send_fuel_notifications_for_config,
-        mock_update_is_up_for_owner,
+        self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
     ):
         # given
         owner_2001 = Owner.objects.get(
@@ -204,10 +199,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2002.pk)
 
     def test_send_new_fuel_notifications(
-        self,
-        mock_fetch_notifications_owner,
-        mock_send_fuel_notifications_for_config,
-        mock_update_is_up_for_owner,
+        self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
     ):
         # given
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
@@ -231,14 +223,10 @@ class TestProcessNotificationsForOwner(TestCase):
         with self.assertRaises(Owner.DoesNotExist):
             tasks.process_notifications_for_owner(owner_pk=generate_invalid_pk(Owner))
 
-    @patch(MODULE_PATH + ".update_is_up_for_owner")
     @patch(MODULE_PATH + ".send_messages_for_webhook")
     @patch(MODULE_PATH + ".Owner.fetch_notifications_esi")
     def test_should_send_notifications_for_owner(
-        self,
-        mock_fetch_notifications_esi,
-        mock_send_messages_for_webhook,
-        mock_update_is_up_for_owner,
+        self, mock_fetch_notifications_esi, mock_send_messages_for_webhook
     ):
         # given
         load_notification_entities(self.owner)
@@ -250,14 +238,10 @@ class TestProcessNotificationsForOwner(TestCase):
         self.assertTrue(mock_fetch_notifications_esi.called)
         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
 
-    @patch(MODULE_PATH + ".update_is_up_for_owner")
     @patch(MODULE_PATH + ".send_messages_for_webhook")
     @patch(MODULE_PATH + ".Owner.fetch_notifications_esi")
     def test_dont_sent_if_queue_is_empty(
-        self,
-        mock_fetch_notifications_esi,
-        mock_send_messages_for_webhook,
-        mock_update_is_up_for_owner,
+        self, mock_fetch_notifications_esi, mock_send_messages_for_webhook
     ):
         self.owner.webhooks.first().clear_queue()
 

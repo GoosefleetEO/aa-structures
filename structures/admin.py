@@ -393,8 +393,7 @@ class OwnerAdmin(admin.ModelAdmin):
     def _alliance(self, obj):
         if obj.corporation.alliance:
             return obj.corporation.alliance.alliance_name
-        else:
-            return None
+        return None
 
     _alliance.admin_order_field = "corporation__alliance__alliance_name"
 
@@ -402,11 +401,10 @@ class OwnerAdmin(admin.ModelAdmin):
         names = sorted([webhook.name for webhook in obj.webhooks.all()])
         if names:
             return names
-        else:
-            return format_html(
-                '<span style="color: red"></i>Error: Notifications can not be sent, '
-                "because there is no webhook configured for this owner."
-            )
+        return format_html(
+            '<span style="color: red"></i>Error: Notifications can not be sent, '
+            "because there is no webhook configured for this owner."
+        )
 
     def _is_active(self, obj):
         return obj.is_active
@@ -423,8 +421,7 @@ class OwnerAdmin(admin.ModelAdmin):
     def _is_sync_ok(self, obj):
         if not obj.is_active:
             return None
-        else:
-            return obj.are_all_syncs_ok
+        return obj.is_up
 
     _is_sync_ok.boolean = True
     _is_sync_ok.short_description = "services up"
