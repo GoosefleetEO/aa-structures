@@ -427,7 +427,7 @@ class OwnerAdmin(admin.ModelAdmin):
             return obj.are_all_syncs_ok
 
     _is_sync_ok.boolean = True
-    _is_sync_ok.short_description = "sync ok"
+    _is_sync_ok.short_description = "services up"
 
     def _notifications_count(self, obj: Owner) -> int:
         return obj.notifications_count

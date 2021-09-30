@@ -44,6 +44,7 @@ def update_structures():
     """Update all structures for all active owners from ESI."""
     for owner in Owner.objects.all():
         if owner.is_active:
+            update_is_up_for_owner.delay(owner.pk)
             update_structures_for_owner.delay(owner.pk)
 
     if (
@@ -75,6 +76,7 @@ def update_structures_for_owner(owner_pk, user_pk=None):
         chain(
             update_structures_esi_for_owner.si(owner_pk, user_pk),
             update_structures_assets_for_owner.si(owner_pk, user_pk),
+            update_is_up_for_owner.si(owner_pk),
         ).delay()
 
 
@@ -117,6 +119,7 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
         owner.fetch_notifications_esi(_get_user(user_pk))
         owner.send_new_notifications()
         send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))
+        update_is_up_for_owner.delay(owner_pk),
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
