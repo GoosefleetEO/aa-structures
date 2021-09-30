@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
+## [1.17.0] - tbd.
+
+## Added
+
+- Informs admins via auth notification when a structure service for an owner went down and when it is up again. In combination with Discord Notify this allows admins to be informed quickly about a service outage. This new feature can be disabled via setting STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
+
 ## [1.16.0] - 2021-09-29
 
 ## Changed

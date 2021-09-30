@@ -3,6 +3,7 @@ from typing import Iterable, Optional
 from celery import chain, shared_task
 
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
@@ -58,6 +59,7 @@ def update_structures():
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_all_for_owner(owner_pk, user_pk=None):
     """Update structures and notifications for owner from ESI."""
+    update_is_up_for_owner.delay(owner_pk)
     chain(
         update_structures_for_owner.si(owner_pk, user_pk),
         process_notifications_for_owner.si(owner_pk, user_pk),
@@ -98,6 +100,7 @@ def fetch_all_notifications():
             process_notifications_for_owner.apply_async(
                 kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
             )
+            update_is_up_for_owner.delay(owner.pk)
     for config_pk in FuelAlertConfig.objects.filter(is_enabled=True).values_list(
         "pk", flat=True
     ):
@@ -189,3 +192,12 @@ def _get_user(user_pk: int) -> Optional[User]:
         except User.DoesNotExist:
             logger.warning("Ignoring non-existing user with pk %s", user_pk)
     return user
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_is_up_for_owner(owner_pk):
+    """Update is up status for this owner."""
+    with transaction.atomic():
+        owner = Owner.objects.get(pk=owner_pk)
+        if owner.is_active:
+            owner.update_is_up()

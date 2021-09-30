@@ -27,6 +27,7 @@ from app_utils.logging import LoggerAddTag
 from .. import __title__, constants
 from ..app_settings import (
     STRUCTURES_ADD_TIMERS,
+    STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
@@ -151,6 +152,12 @@ class Owner(models.Model):
             "the overall status of this services"
         ),
     )
+    is_up = models.BooleanField(
+        null=True,
+        default=None,
+        editable=False,
+        help_text="whether all services for this owner are currently up",
+    )
     notifications_last_update_at = models.DateTimeField(
         null=True, default=None, blank=True, help_text="when the last sync happened"
     )
@@ -255,6 +262,30 @@ class Owner(models.Model):
             and self.is_forwarding_sync_ok
             and self.is_assets_sync_ok
         )
+
+    def update_is_up(self) -> bool:
+        """Check if all services for this owner are up, notify admins if necessary
+        and store result.
+        """
+        is_up = self.are_all_syncs_ok
+        if (
+            STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
+            and self.is_included_in_service_status
+        ):
+            if self.is_up and is_up is False:
+                title = f"{__title__}: Service is down for {self}"
+                msg = (
+                    f"Structure services for {self} are down. "
+                    "Admin action is required to analyse how the service can be restored."
+                )
+                notify_admins(message=msg, title=title, level="danger")
+            elif self.is_up is False and is_up:
+                title = f"{__title__}: Service restored for {self}"
+                msg = f"Structure services for {self} have been restored. "
+                notify_admins(message=msg, title=title, level="success")
+        self.is_up = is_up
+        self.save(update_fields=["is_up"])
+        return is_up
 
     def add_character(
         self, character_ownership: CharacterOwnership

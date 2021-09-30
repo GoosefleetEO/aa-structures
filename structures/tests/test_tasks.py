@@ -165,6 +165,7 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
 
 
 @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
+@patch(MODULE_PATH + ".update_is_up_for_owner")
 @patch(MODULE_PATH + ".send_fuel_notifications_for_config")
 @patch(MODULE_PATH + ".process_notifications_for_owner")
 class TestFetchAllNotifications(NoSocketsTestCase):
@@ -175,7 +176,10 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
     def test_fetch_all_notifications(
-        self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
+        self,
+        mock_fetch_notifications_owner,
+        mock_send_fuel_notifications_for_config,
+        mock_update_is_up_for_owner,
     ):
         # given
         owner_2001 = Owner.objects.get(
@@ -198,7 +202,10 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         self.assertEqual(kwargs["kwargs"]["owner_pk"], owner_2002.pk)
 
     def test_send_new_fuel_notifications(
-        self, mock_fetch_notifications_owner, mock_send_fuel_notifications_for_config
+        self,
+        mock_fetch_notifications_owner,
+        mock_send_fuel_notifications_for_config,
+        mock_update_is_up_for_owner,
     ):
         # given
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)

@@ -736,3 +736,89 @@ class TestOwnerToken(NoSocketsTestCase):
         token = owner.characters.first().valid_token()
         # then
         self.assertIsNone(token)
+
+
+class TestOwnerUpdateIsUp(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.owner.is_alliance_main = True
+        cls.owner.is_included_in_service_status = True
+        cls.owner.save()
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
+    @patch(MODULE_PATH + ".notify_admins")
+    def test_should_do_nothing_when_still_up(self, mock_notify_admins):
+        # given
+        self.owner.is_up = True
+        self.owner.save()
+        # when
+        result = self.owner.update_is_up()
+        # then
+        self.assertTrue(result)
+        self.assertFalse(mock_notify_admins.called)
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_up)
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
+    @patch(MODULE_PATH + ".notify_admins")
+    def test_should_report_when_down(self, mock_notify_admins):
+        # given
+        self.owner.is_up = True
+        self.owner.save()
+        # when
+        result = self.owner.update_is_up()
+        # then
+        self.assertFalse(result)
+        self.assertTrue(mock_notify_admins.called)
+        self.owner.refresh_from_db()
+        self.assertFalse(self.owner.is_up)
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
+    @patch(MODULE_PATH + ".notify_admins")
+    def test_should_not_report_again_when_still_down(self, mock_notify_admins):
+        # given
+        self.owner.is_up = False
+        self.owner.save()
+        # when
+        result = self.owner.update_is_up()
+        # then
+        self.assertFalse(result)
+        self.assertFalse(mock_notify_admins.called)
+        self.owner.refresh_from_db()
+        self.assertFalse(self.owner.is_up)
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
+    @patch(MODULE_PATH + ".notify_admins")
+    def test_should_report_when_up_again(self, mock_notify_admins):
+        # given
+        self.owner.is_up = False
+        self.owner.save()
+        # when
+        result = self.owner.update_is_up()
+        # then
+        self.assertTrue(result)
+        self.assertTrue(mock_notify_admins.called)
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_up)
+
+    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
+    @patch(MODULE_PATH + ".notify_admins")
+    def test_should_not_report_when_up_again_after_none(self, mock_notify_admins):
+        # given
+        self.owner.is_up = None
+        self.owner.save()
+        # when
+        result = self.owner.update_is_up()
+        # then
+        self.assertTrue(result)
+        self.assertFalse(mock_notify_admins.called)
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_up)
