@@ -91,124 +91,68 @@ class TestOwner(NoSocketsTestCase):
         )
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
-    def test_is_structure_sync_ok(self):
+    def test_is_structure_sync_fresh(self):
         # no errors and recent sync
-        self.owner.structures_last_update_ok = True
         self.owner.structures_last_update_at = now()
-        self.assertTrue(self.owner.is_structure_sync_ok)
+        self.assertTrue(self.owner.is_structure_sync_fresh)
 
         # no errors and sync within grace period
-        self.owner.structures_last_update_ok = True
         self.owner.structures_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(self.owner.is_structure_sync_ok)
-
-        # recent sync error
-        self.owner.structures_last_update_ok = None
-        self.owner.structures_last_update_at = now()
-        self.assertFalse(self.owner.is_structure_sync_ok)
-
-        # recent sync error
-        self.owner.structures_last_update_ok = False
-        self.owner.structures_last_update_at = now()
-        self.assertFalse(self.owner.is_structure_sync_ok)
+        self.assertTrue(self.owner.is_structure_sync_fresh)
 
         # no error, but no sync within grace period
-        self.owner.structures_last_update_ok = True
         self.owner.structures_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(self.owner.is_structure_sync_ok)
+        self.assertFalse(self.owner.is_structure_sync_fresh)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
-    def test_is_notification_sync_ok(self):
+    def test_is_notification_sync_fresh(self):
         # no errors and recent sync
-        self.owner.notifications_last_update_ok = True
         self.owner.notifications_last_update_at = now()
-        self.assertTrue(self.owner.is_notification_sync_ok)
+        self.assertTrue(self.owner.is_notification_sync_fresh)
 
         # no errors and sync within grace period
-        self.owner.notifications_last_update_ok = True
         self.owner.notifications_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(self.owner.is_notification_sync_ok)
-
-        # recent sync error
-        self.owner.notifications_last_update_ok = None
-        self.owner.notifications_last_update_at = now()
-        self.assertFalse(self.owner.is_notification_sync_ok)
-
-        # recent sync error
-        self.owner.notifications_last_update_ok = False
-        self.owner.notifications_last_update_at = now()
-        self.assertFalse(self.owner.is_notification_sync_ok)
+        self.assertTrue(self.owner.is_notification_sync_fresh)
 
         # no error, but no sync within grace period
-        self.owner.notifications_last_update_ok = True
         self.owner.notifications_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(self.owner.is_notification_sync_ok)
+        self.assertFalse(self.owner.is_notification_sync_fresh)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
-    def test_is_forwarding_sync_ok(self):
+    def test_is_forwarding_sync_fresh(self):
         # no errors and recent sync
-        self.owner.forwarding_last_update_ok = True
         self.owner.forwarding_last_update_at = now()
-        self.assertTrue(self.owner.is_forwarding_sync_ok)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
 
         # no errors and sync within grace period
-        self.owner.forwarding_last_update_ok = True
         self.owner.forwarding_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(self.owner.is_forwarding_sync_ok)
-
-        # recent sync error
-        self.owner.forwarding_last_update_ok = None
-        self.owner.forwarding_last_update_at = now()
-        self.assertFalse(self.owner.is_forwarding_sync_ok)
-
-        # recent sync error
-        self.owner.forwarding_last_update_ok = False
-        self.owner.forwarding_last_update_at = now()
-        self.assertFalse(self.owner.is_forwarding_sync_ok)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
 
         # no error, but no sync within grace period
-        self.owner.forwarding_last_update_ok = True
         self.owner.forwarding_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(self.owner.is_forwarding_sync_ok)
+        self.assertFalse(self.owner.is_forwarding_sync_fresh)
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
-    def test_is_assets_sync_ok(self):
+    def test_is_assets_sync_fresh(self):
         # no errors and recent sync
-        self.owner.assets_last_update_ok = True
         self.owner.assets_last_update_at = now()
-        self.assertTrue(self.owner.is_assets_sync_ok)
+        self.assertTrue(self.owner.is_assets_sync_fresh)
 
         # no errors and sync within grace period
-        self.owner.assets_last_update_ok = True
         self.owner.assets_last_update_at = now() - timedelta(minutes=29)
-        self.assertTrue(self.owner.is_assets_sync_ok)
-
-        # recent sync error
-        self.owner.assets_last_update_ok = None
-        self.owner.assets_last_update_at = now()
-        self.assertFalse(self.owner.is_assets_sync_ok)
-
-        # recent sync error
-        self.owner.assets_last_update_ok = False
-        self.owner.assets_last_update_at = now()
-        self.assertFalse(self.owner.is_assets_sync_ok)
+        self.assertTrue(self.owner.is_assets_sync_fresh)
 
         # no error, but no sync within grace period
-        self.owner.assets_last_update_ok = True
         self.owner.assets_last_update_at = now() - timedelta(minutes=31)
-        self.assertFalse(self.owner.is_assets_sync_ok)
+        self.assertFalse(self.owner.is_assets_sync_fresh)
 
     @patch(MODULE_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_is_all_syncs_ok(self):
-        self.owner.structures_last_update_ok = True
         self.owner.structures_last_update_at = now()
-        self.owner.notifications_last_update_ok = True
         self.owner.notifications_last_update_at = now()
-        self.owner.forwarding_last_update_ok = True
         self.owner.forwarding_last_update_at = now()
-        self.owner.assets_last_update_ok = True
         self.owner.assets_last_update_at = now()
         self.assertTrue(self.owner.are_all_syncs_ok)
 
@@ -717,7 +661,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
         self.assertAlmostEqual(
             owner.structures_last_update_at, now(), delta=timedelta(seconds=30)
         )
@@ -841,7 +785,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
 
         # must contain all expected structures
         expected = {
@@ -902,7 +846,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
 
         # must contain all expected structures
         expected = {
@@ -982,7 +926,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
 
         # must contain all expected structures
         expected = {
@@ -1018,7 +962,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
         self.assertSetEqual(owner.structures.ids(), set())
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
@@ -1053,7 +997,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertFalse(owner.structures_last_update_ok)
+        self.assertFalse(owner.is_structure_sync_fresh)
         expected = {1200000000003, 1200000000004, 1200000000005, 1200000000006}
         self.assertSetEqual(owner.structures.ids(), expected)
 
@@ -1089,7 +1033,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertFalse(owner.structures_last_update_ok)
+        self.assertFalse(owner.is_structure_sync_fresh)
         structure_ids = {x["id"] for x in owner.structures.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(structure_ids, expected)
@@ -1127,7 +1071,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertFalse(owner.structures_last_update_ok)
+        self.assertFalse(owner.is_structure_sync_fresh)
         expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(owner.structures.ids(), expected)
 
@@ -1146,7 +1090,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # when
         owner.update_structures_esi()
         # then
-        self.assertFalse(owner.structures_last_update_ok)
+        self.assertFalse(owner.is_structure_sync_fresh)
         esi_get_universe_structures_structure_id.override_data = None
         structure = Structure.objects.get(id=1000000000002)
         self.assertEqual(structure.name, "(no data)")
@@ -1226,7 +1170,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
         self.assertEqual(owner.structures.count(), 0)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
@@ -1250,7 +1194,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # when
         owner.update_structures_esi()
         # then
-        self.assertFalse(owner.structures_last_update_ok)
+        self.assertFalse(owner.is_structure_sync_fresh)
         expected = expected = {
             1000000000001,
             1000000000002,
@@ -1303,7 +1247,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # when
         owner.update_structures_esi()
         # then
-        self.assertTrue(owner.structures_last_update_ok)
+        self.assertTrue(owner.is_structure_sync_fresh)
         structure = Structure.objects.get(id=1200000000003)
         self.assertEqual(structure.name, "")
 
@@ -1443,10 +1387,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     #     # given
     #     mock_esi_client.side_effect = esi_mock_client
     #     owner = create_owner(self.corporation, self.main_ownership)
-    #     owner.structures_last_update_ok = False
+    #     owner.is_structure_sync_fresh = False
     #     owner.save()
     #     # when
     #     owner.update_structures_esi()
     #     # then
     #     owner.refresh_from_db()
-    #     self.assertTrue(owner.structures_last_update_ok)
+    #     self.assertTrue(owner.is_structure_sync_fresh)

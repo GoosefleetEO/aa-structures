@@ -15,7 +15,6 @@ from ..admin import (
     OwnerAdmin,
     OwnerAllianceFilter,
     OwnerCorporationsFilter,
-    OwnerSyncStatusFilter,
     StructureAdmin,
     WebhookAdmin,
 )
@@ -301,65 +300,6 @@ class TestOwnerAdmin(TestCase):
         result = self.modeladmin._avg_turnaround_time(my_owner)
         # then
         self.assertEqual(result, "2 | 2 | 2")
-
-
-class TestOwnerAdminFilter(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.factory = RequestFactory()
-        cls.modeladmin = OwnerAdmin(model=Owner, admin_site=AdminSite())
-        create_structures()
-        cls.user, cls.obj = set_owner_character(character_id=1001)
-
-    def test_owner_sync_status_filter(self):
-        class OwnerAdminTest(admin.ModelAdmin):
-            list_filter = (OwnerSyncStatusFilter,)
-
-        owner_2001 = Owner.objects.get(corporation__corporation_id=2001)
-        owner_2001.structures_last_update_ok = False
-        owner_2001.save()
-
-        owner_2002 = Owner.objects.get(corporation__corporation_id=2002)
-        owner_2002.notifications_last_update_ok = False
-        owner_2002.save()
-
-        owner_2005 = Owner.objects.get(corporation__corporation_id=2002)
-        owner_2005.forwarding_last_update_ok = False
-        owner_2005.save()
-
-        owner_2102 = Owner.objects.get(corporation__corporation_id=2102)
-        owner_2102.assets_last_update_ok = False
-        owner_2102.save()
-
-        modeladmin = OwnerAdminTest(Owner, AdminSite())
-        # Make sure the lookups are correct
-        request = self.factory.get("/")
-        request.user = self.user
-        changelist = modeladmin.get_changelist_instance(request)
-        filterspec = changelist.get_filters(request)[0][0]
-        expected = [("yes", "Yes"), ("no", "No")]
-        self.assertEqual(filterspec.lookup_choices, expected)
-
-        # Make sure the correct queryset is returned - 1
-        request = self.factory.get("/", {"sync_status__exact": "yes"})
-        request.user = self.user
-        changelist = modeladmin.get_changelist_instance(request)
-        queryset = changelist.get_queryset(request)
-        expected = Owner.objects.exclude(
-            corporation__corporation_id__in=[2001, 2002, 2005, 2102]
-        )
-        self.assertSetEqual(set(queryset), set(expected))
-
-        # Make sure the correct queryset is returned - 2
-        request = self.factory.get("/", {"sync_status__exact": "no"})
-        request.user = self.user
-        changelist = modeladmin.get_changelist_instance(request)
-        queryset = changelist.get_queryset(request)
-        expected = Owner.objects.filter(
-            corporation__corporation_id__in=[2001, 2002, 2005, 2102]
-        )
-        self.assertSetEqual(set(queryset), set(expected))
 
 
 class TestStructureAdmin(TestCase):

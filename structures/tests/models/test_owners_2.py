@@ -195,7 +195,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.notifications_last_update_ok)
+        self.assertTrue(self.owner.is_notification_sync_fresh)
         # should only contain the right notifications
         notif_ids_current = set(
             Notification.objects.values_list("notification_id", flat=True)
@@ -211,7 +211,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
             # run sync again
             self.owner.fetch_notifications_esi()
-            self.assertTrue(self.owner.notifications_last_update_ok)
+            self.assertTrue(self.owner.is_notification_sync_fresh)
 
             # should not have more timers
             self.assertEqual(AuthTimer.objects.count(), 4)
@@ -244,7 +244,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.notifications_last_update_ok)
+        self.assertTrue(self.owner.is_notification_sync_fresh)
         self.assertTrue(mock_notify.called)
 
     @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
@@ -274,7 +274,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             self.owner.fetch_notifications_esi()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.notifications_last_update_ok)
+        self.assertTrue(self.owner.is_notification_sync_fresh)
         # should only contain the right notifications
         notif_ids_current = set(
             Notification.objects.values_list("notification_id", flat=True)
@@ -318,7 +318,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             self.owner.fetch_notifications_esi()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.notifications_last_update_ok)
+        self.assertTrue(self.owner.is_notification_sync_fresh)
         structure = Structure.objects.get(id=1000000000002)
         self.assertEqual(structure.eve_moon, EveMoon.objects.get(id=40161465))
 
@@ -342,7 +342,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             self.owner.fetch_notifications_esi()
         # then
         self.owner.refresh_from_db()
-        self.assertFalse(self.owner.notifications_last_update_ok)
+        self.assertFalse(self.owner.is_notification_sync_fresh)
 
 
 @override_settings(DEBUG=True)
@@ -377,7 +377,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         self.owner.send_new_notifications()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.forwarding_last_update_ok)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
         notifications_processed = {
             int(args[1]["embeds"][0].footer.text[-10:])
             for args in mock_send_message.call_args_list
@@ -402,7 +402,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         self.owner.send_new_notifications()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.forwarding_last_update_ok)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
         notifications_processed = {
             int(args[1]["embeds"][0].footer.text[-10:])
             for args in mock_send_message.call_args_list
@@ -431,7 +431,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         owner.send_new_notifications()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.forwarding_last_update_ok)
+        self.assertTrue(owner.is_forwarding_sync_fresh)
         notifications_processed = {
             int(args[1]["embeds"][0].footer.text[-10:])
             for args in mock_send_message.call_args_list
@@ -464,7 +464,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         self.owner.send_new_notifications()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.forwarding_last_update_ok)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
         notifications_processed = {
             int(args[1]["embeds"][0].footer.text[-10:])
             for args in mock_send_message.call_args_list
@@ -540,7 +540,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
         self.owner.send_new_notifications()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.forwarding_last_update_ok)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
         notifications_per_webhook = {webhook_1.pk: set(), webhook_2.pk: set()}
         for x in mock_send_to_webhook.call_args_list:
             first = x[0]
@@ -653,8 +653,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         owner.update_asset_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.assets_last_update_ok)
-        self.assertTrue(owner.assets_last_update_at)
+        self.assertTrue(owner.is_assets_sync_fresh)
         self.assertSetEqual(
             queryset_pks(OwnerAsset.objects.all()),
             {1300000001001, 1300000001002, 1300000002001},
@@ -671,7 +670,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         owner.update_asset_esi(user=self.user)
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.assets_last_update_ok)
+        self.assertTrue(owner.is_assets_sync_fresh)
         self.assertTrue(mock_notify.called)
 
     def test_should_raise_exception_if_esi_has_error(self, mock_esi_client):
@@ -685,7 +684,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
             owner.update_asset_esi()
         # then
         owner.refresh_from_db()
-        self.assertIsNone(owner.assets_last_update_ok)
+        self.assertIsNone(owner.is_assets_sync_fresh)
 
     # TODO: Add tests for error cases
 

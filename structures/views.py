@@ -164,10 +164,10 @@ class StructuresRowBuilder:
             corporation.corporation_name,
             alliance_name,
         )
-        if not self._structure.owner.is_structure_sync_ok:
+        if not self._structure.owner.is_structure_sync_fresh:
             update_warning_html = format_html(
                 '<i class="fas fa-exclamation-circle text-warning" '
-                'title="Sync has issues. Data may be outdated."></i>'
+                'title="Data has not been updated for a while and may be outdated."></i>'
             )
         else:
             update_warning_html = ""

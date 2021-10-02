@@ -294,38 +294,6 @@ class NotificationAdmin(admin.ModelAdmin):
         return False
 
 
-class OwnerSyncStatusFilter(admin.SimpleListFilter):
-    title = "is sync ok"
-
-    parameter_name = "sync_status__exact"
-
-    def lookups(self, request, model_admin):
-        """List of values to allow admin to select"""
-        return (
-            ("yes", "Yes"),
-            ("no", "No"),
-        )
-
-    def queryset(self, request, queryset):
-        """Return the filtered queryset"""
-        if self.value() == "yes":
-            return queryset.filter(
-                structures_last_update_ok=True,
-                notifications_last_update_ok=True,
-                forwarding_last_update_ok=True,
-                assets_last_update_ok=True,
-            )
-        elif self.value() == "no":
-            return queryset.exclude(
-                structures_last_update_ok=True,
-                notifications_last_update_ok=True,
-                forwarding_last_update_ok=True,
-                assets_last_update_ok=True,
-            )
-        else:
-            return queryset
-
-
 class OwnerCharacterAdminInline(admin.TabularInline):
     model = OwnerCharacter
 
@@ -353,7 +321,7 @@ class OwnerAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "is_active",
-        OwnerSyncStatusFilter,
+        "is_up",
         ("corporation__alliance", admin.RelatedOnlyFieldListFilter),
         "has_default_pings_enabled",
         "is_alliance_main",
@@ -496,14 +464,10 @@ class OwnerAdmin(admin.ModelAdmin):
         if obj:  # editing an existing object
             return self.readonly_fields + (
                 "assets_last_update_at",
-                "assets_last_update_ok",
                 "corporation",
                 "forwarding_last_update_at",
-                "forwarding_last_update_ok",
                 "notifications_last_update_at",
-                "notifications_last_update_ok",
                 "structures_last_update_at",
-                "structures_last_update_ok",
                 "_avg_turnaround_time",
                 "_are_all_syncs_ok",
                 "_structures_last_update_fresh",
@@ -537,27 +501,14 @@ class OwnerAdmin(admin.ModelAdmin):
                 "classes": ("collapse",),
                 "fields": (
                     "_are_all_syncs_ok",
+                    ("_structures_last_update_fresh", "structures_last_update_at"),
                     (
-                        "structures_last_update_ok",
-                        "_structures_last_update_fresh",
-                        "structures_last_update_at",
-                    ),
-                    (
-                        "notifications_last_update_ok",
                         "_notifications_last_update_fresh",
                         "notifications_last_update_at",
                         "_avg_turnaround_time",
                     ),
-                    (
-                        "forwarding_last_update_ok",
-                        "_forwarding_last_update_fresh",
-                        "forwarding_last_update_at",
-                    ),
-                    (
-                        "assets_last_update_ok",
-                        "_assets_last_update_fresh",
-                        "assets_last_update_at",
-                    ),
+                    ("_forwarding_last_update_fresh", "forwarding_last_update_at"),
+                    ("_assets_last_update_fresh", "assets_last_update_at"),
                 ),
             },
         ),
@@ -637,8 +588,7 @@ class OwnerAdmin(admin.ModelAdmin):
                 )
             ),
             "_are_all_syncs_ok": (
-                "True when all syncs were successful and not older then "
-                "the respective grace period."
+                "True when all of the last successful syncs were within grace periods."
             ),
             "_structures_last_update_fresh": (
                 "True when last sync within %s minutes."

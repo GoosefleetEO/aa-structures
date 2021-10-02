@@ -107,10 +107,10 @@ class Owner(models.Model):
         help_text=("whether pocos of this owner are shown on public POCO page"),
     )
     assets_last_update_at = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last update happened"
-    )
-    assets_last_update_ok = models.BooleanField(
-        null=True, default=None, help_text="True if the last update was successful"
+        null=True,
+        default=None,
+        blank=True,
+        help_text="when the last successful update happened",
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,
@@ -122,10 +122,10 @@ class Owner(models.Model):
         help_text="OUTDATED. Has been replaced by OwnerCharacter",
     )
     forwarding_last_update_at = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
-    )
-    forwarding_last_update_ok = models.BooleanField(
-        null=True, default=None, help_text="True if the last update was successful"
+        null=True,
+        default=None,
+        blank=True,
+        help_text="when the last successful update happened",
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
@@ -159,10 +159,10 @@ class Owner(models.Model):
         help_text="whether all services for this owner are currently up",
     )
     notifications_last_update_at = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
-    )
-    notifications_last_update_ok = models.BooleanField(
-        null=True, default=None, help_text="True if the last update was successful"
+        null=True,
+        default=None,
+        blank=True,
+        help_text="when the last successful update happened",
     )
     ping_groups = models.ManyToManyField(
         Group,
@@ -171,10 +171,10 @@ class Owner(models.Model):
         help_text="Groups to be pinged for each notification - ",
     )
     structures_last_update_at = models.DateTimeField(
-        null=True, default=None, blank=True, help_text="when the last sync happened"
-    )
-    structures_last_update_ok = models.BooleanField(
-        null=True, default=None, help_text="True if the last update was successful"
+        null=True,
+        default=None,
+        blank=True,
+        help_text="when the last successful update happened",
     )
     webhooks = models.ManyToManyField(
         "Webhook",
@@ -199,23 +199,10 @@ class Owner(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def is_structure_sync_ok(self) -> bool:
-        """True if last sync was ok and happend recently, else False."""
-        return self.structures_last_update_ok is True and self.is_structure_sync_fresh
-
-    @property
     def is_structure_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
         return self.structures_last_update_at and self.structures_last_update_at > (
             now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
-        )
-
-    @property
-    def is_notification_sync_ok(self) -> bool:
-        """True if last sync was ok and happend recently, else False."""
-        return (
-            self.notifications_last_update_ok is True
-            and self.is_notification_sync_fresh
         )
 
     @property
@@ -228,21 +215,11 @@ class Owner(models.Model):
         )
 
     @property
-    def is_forwarding_sync_ok(self) -> bool:
-        """True if last sync was ok and happend recently, else False."""
-        return self.forwarding_last_update_ok is True and self.is_forwarding_sync_fresh
-
-    @property
     def is_forwarding_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
         return self.forwarding_last_update_at and self.forwarding_last_update_at > (
             now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
-
-    @property
-    def is_assets_sync_ok(self) -> bool:
-        """True if last sync was ok and happend recently, else False."""
-        return self.assets_last_update_ok is True and self.is_assets_sync_fresh
 
     @property
     def is_assets_sync_fresh(self) -> bool:
@@ -257,10 +234,10 @@ class Owner(models.Model):
         and last syncing occurred within alloted time for all sync categories
         """
         return (
-            self.is_structure_sync_ok
-            and self.is_notification_sync_ok
-            and self.is_forwarding_sync_ok
-            and self.is_assets_sync_ok
+            self.is_structure_sync_fresh
+            and self.is_notification_sync_fresh
+            and self.is_forwarding_sync_fresh
+            and self.is_assets_sync_fresh
         )
 
     def update_is_up(self) -> bool:
@@ -434,11 +411,7 @@ class Owner(models.Model):
 
     def update_structures_esi(self, user: User = None):
         """Updates all structures from ESI."""
-        self.structures_last_update_ok = None
-        self.structures_last_update_at = now()
-        self.save()
         token = self.fetch_token(rotate_characters=self.RotateCharactersType.STRUCTURES)
-
         is_ok = self._fetch_upwell_structures(token)
         if STRUCTURES_FEATURE_CUSTOMS_OFFICES:
             is_ok &= self._fetch_custom_offices(token)
@@ -446,8 +419,8 @@ class Owner(models.Model):
             is_ok &= self._fetch_starbases(token)
 
         if is_ok:
-            self.structures_last_update_ok = True
-            self.save()
+            self.structures_last_update_at = now()
+            self.save(update_fields=["structures_last_update_at"])
             if user:
                 self._send_report_to_user(
                     topic="structures", topic_count=self.structures.count(), user=user
@@ -921,44 +894,32 @@ class Owner(models.Model):
     def fetch_notifications_esi(self, user: User = None) -> None:
         """Fetch notifications for this owner from ESI and proceses them."""
         notifications_count_all = 0
-        self.notifications_last_update_ok = None
-        self.notifications_last_update_at = now()
-        self.save()
         token = self.fetch_token(
             rotate_characters=self.RotateCharactersType.NOTIFICATIONS
         )
-
-        try:
-            notifications = self._fetch_notifications_from_esi(token)
-        except OSError as ex:
-            self._report_esi_issue("fetch notifications", ex, token)
-            self.notifications_last_update_ok = False
-            self.save()
-            raise ex
+        notifications = self._fetch_notifications_from_esi(token)
+        notifications_count_new = self._store_notifications(notifications)
+        self._process_moon_notifications()
+        if notifications_count_new > 0:
+            logger.info(
+                "%s: Received %d new notifications from ESI",
+                self,
+                notifications_count_new,
+            )
+            self._process_timers_for_notifications(token)
+            notifications_count_all += notifications_count_new
         else:
-            notifications_count_new = self._store_notifications(notifications)
-            self._process_moon_notifications()
-            if notifications_count_new > 0:
-                logger.info(
-                    "%s: Received %d new notifications from ESI",
-                    self,
-                    notifications_count_new,
-                )
-                self._process_timers_for_notifications(token)
-                notifications_count_all += notifications_count_new
+            logger.info("%s: No new notifications received from ESI", self)
 
-            else:
-                logger.info("%s: No new notifications received from ESI", self)
+        self.notifications_last_update_at = now()
+        self.save(update_fields=["notifications_last_update_at"])
 
-            self.notifications_last_update_ok = True
-            self.save()
-
-            if user:
-                self._send_report_to_user(
-                    topic="notifications",
-                    topic_count=notifications_count_all,
-                    user=user,
-                )
+        if user:
+            self._send_report_to_user(
+                topic="notifications",
+                topic_count=notifications_count_all,
+                user=user,
+            )
 
     def _fetch_notifications_from_esi(self, token: Token) -> dict:
         """fetching all notifications from ESI for current owner"""
@@ -1108,9 +1069,6 @@ class Owner(models.Model):
     def send_new_notifications(self, user: User = None):
         """Forward all new notification of this owner to configured webhooks."""
         notifications_count = 0
-        self.forwarding_last_update_ok = None
-        self.forwarding_last_update_at = now()
-        self.save()
         cutoff_dt_for_stale = now() - timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
@@ -1130,8 +1088,8 @@ class Owner(models.Model):
             notif.send_to_configured_webhooks()
         if not all_new_notifications:
             logger.info("%s: No new notifications found for forwarding", self)
-        self.forwarding_last_update_ok = True
-        self.save()
+        self.forwarding_last_update_at = now()
+        self.save(update_fields=["forwarding_last_update_at"])
         if user:
             self._send_report_to_user(
                 topic="notifications", topic_count=notifications_count, user=user
@@ -1172,27 +1130,17 @@ class Owner(models.Model):
 
     def update_asset_esi(self, user: User = None):
         """Update all assets from ESI related to active structure for this owner."""
-        self.assets_last_update_ok = None
-        self.assets_last_update_at = now()
-        self.save()
-
         token = self.fetch_token()
         structure_ids = list(self.structures.values_list("id", flat=True))
-        try:
-            OwnerAsset.objects.update_or_create_for_structures_esi(
-                structure_ids, self.corporation.corporation_id, token
+        OwnerAsset.objects.update_or_create_for_structures_esi(
+            structure_ids, self.corporation.corporation_id, token
+        )
+        self.assets_last_update_at = now()
+        self.save(update_fields=["assets_last_update_at"])
+        if user:
+            self._send_report_to_user(
+                topic="assets", topic_count=self.structures.count(), user=user
             )
-        except OSError as ex:
-            self._report_esi_issue("fetch assets", ex, token)
-            raise ex
-        else:
-            self.assets_last_update_ok = True
-            self.save()
-
-            if user:
-                self._send_report_to_user(
-                    topic="assets", topic_count=self.structures.count(), user=user
-                )
 
     @classmethod
     def get_esi_scopes(cls) -> list:

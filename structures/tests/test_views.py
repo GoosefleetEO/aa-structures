@@ -21,14 +21,11 @@ from app_utils.testing import (
 )
 
 from .. import views
-from ..app_settings import (
-    STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES,
-    STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
-)
 from ..models import Owner, PocoDetails, Structure, Webhook
 from .testdata import create_structures, load_entities, load_entity, set_owner_character
 
-MODULE_PATH = "structures.views"
+VIEWS_PATH = "structures.views"
+OWNERS_PATH = "structures.models.owners"
 
 
 class TestStructureList(TestCase):
@@ -257,7 +254,7 @@ class TestStructureListFilters(TestCase):
         )
         cls.factory = RequestFactory()
 
-    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED", True)
+    @patch(VIEWS_PATH + ".STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED", True)
     def test_default_filter_enabled(self):
         request = self.factory.get(reverse("structures:index"))
         request.user = self.user
@@ -265,7 +262,7 @@ class TestStructureListFilters(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, "/structures/list?tags=tag_a")
 
-    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED", False)
+    @patch(VIEWS_PATH + ".STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED", False)
     def test_default_filter_disabled(self):
         request = self.factory.get(reverse("structures:index"))
         request.user = self.user
@@ -496,10 +493,10 @@ class TestAddStructureOwner(TestCase):
         # when
         return orig_view(request, token)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
-    @patch(MODULE_PATH + ".notify_admins")
-    @patch(MODULE_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
+    @patch(VIEWS_PATH + ".notify_admins")
+    @patch(VIEWS_PATH + ".messages_plus")
     def test_should_add_new_structure_owner_and_notify_admins(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -518,10 +515,10 @@ class TestAddStructureOwner(TestCase):
         self.assertEqual(owner.webhooks.first().name, "Test Webhook 1")
         self.assertTrue(mock_update_all_for_owner.delay.called)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
-    @patch(MODULE_PATH + ".notify_admins")
-    @patch(MODULE_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
+    @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
+    @patch(VIEWS_PATH + ".notify_admins")
+    @patch(VIEWS_PATH + ".messages_plus")
     def test_should_add_character_to_existing_structure_owner_and_reactive(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -555,10 +552,10 @@ class TestAddStructureOwner(TestCase):
         )
         self.assertTrue(owner.is_active)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
-    @patch(MODULE_PATH + ".notify_admins")
-    @patch(MODULE_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
+    @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
+    @patch(VIEWS_PATH + ".notify_admins")
+    @patch(VIEWS_PATH + ".messages_plus")
     def test_should_add_new_structure_owner_and_not_notify_admins(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -576,10 +573,10 @@ class TestAddStructureOwner(TestCase):
         self.assertFalse(mock_notify_admins.called)
         self.assertTrue(mock_update_all_for_owner.delay.called)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".tasks.update_all_for_owner")
-    @patch(MODULE_PATH + ".notify_admins")
-    @patch(MODULE_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
+    @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
+    @patch(VIEWS_PATH + ".notify_admins")
+    @patch(VIEWS_PATH + ".messages_plus")
     def test_should_add_structure_owner_with_no_default_webhook(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -601,7 +598,7 @@ class TestAddStructureOwner(TestCase):
         # webhook.is_default = True
         # webhook.save()
 
-    @patch(MODULE_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".messages_plus")
     def test_should_report_error_when_token_does_not_belong_to_user(
         self, mock_messages
     ):
@@ -632,111 +629,61 @@ class TestStatus(TestCase):
     def test_view_service_status_ok(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
             owner.structures_last_update_at = now()
-            owner.structures_last_update_ok = True
             owner.notifications_last_update_at = now()
-            owner.notifications_last_update_ok = True
             owner.forwarding_last_update_at = now()
-            owner.forwarding_last_update_ok = True
             owner.assets_last_update_at = now()
-            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 200)
 
+    @patch(OWNERS_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     def test_view_service_status_fail_structures(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_update_at = now()
-            owner.structures_last_update_ok = None
+            owner.structures_last_update_at = now() - timedelta(minutes=31)
             owner.notifications_last_update_at = now()
-            owner.notifications_last_update_ok = True
             owner.forwarding_last_update_at = now()
-            owner.forwarding_last_update_ok = True
             owner.assets_last_update_at = now()
-            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    @patch(OWNERS_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_view_service_status_fail_notifications(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
             owner.structures_last_update_at = now()
-            owner.structures_last_update_ok = True
-            owner.notifications_last_update_at = now()
-            owner.notifications_last_update_ok = None
+            owner.notifications_last_update_at = now() - timedelta(minutes=31)
             owner.forwarding_last_update_at = now()
-            owner.forwarding_last_update_ok = True
             owner.assets_last_update_at = now()
-            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    @patch(OWNERS_PATH + ".STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 30)
     def test_view_service_status_fail_forwarding(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
             owner.structures_last_update_at = now()
-            owner.structures_last_update_ok = True
             owner.notifications_last_update_at = now()
-            owner.notifications_last_update_ok = True
-            owner.forwarding_last_update_at = now()
-            owner.forwarding_last_update_ok = None
+            owner.forwarding_last_update_at = now() - timedelta(minutes=31)
             owner.assets_last_update_at = now()
-            owner.assets_last_update_ok = True
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
         response = views.service_status(request)
         self.assertEqual(response.status_code, 500)
 
+    @patch(OWNERS_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     def test_view_service_status_fail_assets(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_update_at = now() - timedelta(
-                minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES + 1
-            )
-            owner.structures_last_update_ok = True
-            owner.notifications_last_update_at = now()
-            owner.notifications_last_update_ok = True
-            owner.forwarding_last_update_at = now()
-            owner.forwarding_last_update_ok = True
-            owner.assets_last_update_at = now()
-            owner.assets_last_update_ok = None
-            owner.save()
-
-        request = self.factory.get(reverse("structures:service_status"))
-        response = views.service_status(request)
-        self.assertEqual(response.status_code, 500)
-
-    def test_view_service_status_fail_notifications_2(self):
-        for owner in Owner.objects.filter(is_included_in_service_status=True):
             owner.structures_last_update_at = now()
-            owner.structures_last_update_ok = True
-            owner.notifications_last_update_at = now() - timedelta(
-                minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES + 1
-            )
-            owner.notifications_last_update_ok = True
-            owner.forwarding_last_update_at = now()
-            owner.forwarding_last_update_ok = True
-            owner.save()
-
-        request = self.factory.get(reverse("structures:service_status"))
-        response = views.service_status(request)
-        self.assertEqual(response.status_code, 500)
-
-    def test_view_service_status_fail_forwarding_2(self):
-        for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_update_at = now()
-            owner.structures_last_update_ok = True
             owner.notifications_last_update_at = now()
-            owner.notifications_last_update_ok = True
-            owner.forwarding_last_update_at = now() - timedelta(
-                minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES + 1
-            )
-            owner.forwarding_last_update_ok = True
+            owner.forwarding_last_update_at = now()
+            owner.assets_last_update_at = now() - timedelta(minutes=31)
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
