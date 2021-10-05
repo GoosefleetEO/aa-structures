@@ -810,7 +810,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
     @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
     @patch(MODULE_PATH + ".notify_admins")
-    def test_should_not_report_when_up_again_after_none(self, mock_notify_admins):
+    def test_should_report_when_up_for_the_first_time(self, mock_notify_admins):
         # given
         self.owner.is_up = None
         self.owner.save()
@@ -818,6 +818,6 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         result = self.owner.update_is_up()
         # then
         self.assertTrue(result)
-        self.assertFalse(mock_notify_admins.called)
+        self.assertTrue(mock_notify_admins.called)
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.is_up)

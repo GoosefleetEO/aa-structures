@@ -253,15 +253,19 @@ class Owner(models.Model):
             and self.is_included_in_service_status
         ):
             if self.is_up and is_up is False:
-                title = f"{__title__}: Service is down for {self}"
+                title = f"{__title__}: Services are down for {self}"
                 msg = (
                     f"Structure services for {self} are down. "
                     "Admin action is required to analyse how the service can be restored."
                 )
                 notify_admins(message=msg, title=title, level="danger")
             elif self.is_up is False and is_up:
-                title = f"{__title__}: Service restored for {self}"
+                title = f"{__title__}: Services restored for {self}"
                 msg = f"Structure services for {self} have been restored. "
+                notify_admins(message=msg, title=title, level="success")
+            elif self.is_up is None and is_up:
+                title = f"{__title__}: Services enabled {self}"
+                msg = f"Structure services for {self} have been enabled. "
                 notify_admins(message=msg, title=title, level="success")
         self.is_up = is_up
         self.save(update_fields=["is_up"])
