@@ -556,25 +556,25 @@ class OwnerAdmin(admin.ModelAdmin):
         return obj.is_structure_sync_fresh
 
     _structures_last_update_fresh.boolean = True
-    _structures_last_update_fresh.short_description = "Last update fresh"
+    _structures_last_update_fresh.short_description = "Structures update fresh"
 
     def _notifications_last_update_fresh(self, obj) -> int:
         return obj.is_notification_sync_fresh
 
     _notifications_last_update_fresh.boolean = True
-    _notifications_last_update_fresh.short_description = "Last update fresh"
+    _notifications_last_update_fresh.short_description = "Notifications update fresh"
 
     def _forwarding_last_update_fresh(self, obj) -> int:
         return obj.is_forwarding_sync_fresh
 
     _forwarding_last_update_fresh.boolean = True
-    _forwarding_last_update_fresh.short_description = "Last update fresh"
+    _forwarding_last_update_fresh.short_description = "Forwarding update fresh"
 
     def _assets_last_update_fresh(self, obj) -> int:
         return obj.is_assets_sync_fresh
 
     _assets_last_update_fresh.boolean = True
-    _assets_last_update_fresh.short_description = "Last update fresh"
+    _assets_last_update_fresh.short_description = "Assets update fresh"
 
     def get_form(self, *args, **kwargs):
         """Add help text to custom field."""

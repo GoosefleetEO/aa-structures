@@ -3,7 +3,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from bravado.exception import HTTPInternalServerError
+from bravado.exception import HTTPForbidden, HTTPInternalServerError
 
 from django.utils.timezone import now, utc
 from esi.errors import TokenError
@@ -1074,6 +1074,44 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertFalse(owner.is_structure_sync_fresh)
         expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(MODULE_PATH + ".notify", spec=True)
+    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
+    def test_should_remove_character_if_not_director_when_updating_starbases(
+        self, mock_esi_client_2, mock_notify, mock_esi_client
+    ):
+        # given
+        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
+            esi_post_corporations_corporation_id_assets_locations
+        )
+        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_names = (
+            esi_post_corporations_corporation_id_assets_names
+        )
+        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices = (
+            esi_get_corporations_corporation_id_customs_offices
+        )
+        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = (
+            esi_get_corporations_corporation_id_structures
+        )
+        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = HTTPForbidden(
+            BravadoResponseStub(status_code=403, reason="Test")
+        )
+        mock_esi_client_2.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
+            esi_get_corporations_corporation_id_starbases_starbase_id
+        )
+        mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
+            esi_get_universe_structures_structure_id
+        )
+        owner = create_owner(self.corporation, self.main_ownership)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_structure_sync_fresh)
+        self.assertTrue(mock_notify)
+        self.assertEqual(owner.characters.count(), 0)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)

@@ -7,7 +7,10 @@ from datetime import datetime, timedelta
 from email.utils import format_datetime, parsedate_to_datetime
 from typing import Optional
 
+from bravado.exception import HTTPForbidden
+
 from django.contrib.auth.models import Group, User
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now
@@ -300,25 +303,6 @@ class Owner(models.Model):
 
         Raises TokenError when no valid token can be provided.
         """
-
-        def notify_token_removal(
-            error: str, character: CharacterOwnership = None, level="warning"
-        ) -> None:
-            """Notify admin and users about the removal of an owner token."""
-            title = f"{__title__}: Invalid character has been removed {self}"
-            error = (
-                f"{character.character_ownership}: {error}\n"
-                "Please add a new character to restore the previous service level."
-            )
-            if character and character.character_ownership:
-                notify(
-                    user=character.character_ownership.user,
-                    title=title,
-                    message=error,
-                    level=level,
-                )
-            notify_admins(title=f"FYI: {title}", message=error, level=level)
-
         token = None
         order_by_last_used = (
             rotate_characters.last_used_at_name
@@ -330,32 +314,25 @@ class Owner(models.Model):
                 character.character_ownership.character.corporation_id
                 != self.corporation.corporation_id
             ):
-                notify_token_removal(
-                    (
-                        "Character does no longer belong to the owner's "
-                        "corporation and has been removed. "
-                    ),
+                self._delete_character(
+                    ("Character does no longer belong to the owner's corporation."),
                     character,
                 )
-                character.delete()
                 continue
             elif not character.character_ownership.user.has_perm(
                 "structures.add_structure_owner"
             ):
-                notify_token_removal(
-                    "Character does not have sufficient permission to sync "
-                    "and has been removed.",
+                self._delete_character(
+                    "Character does not have sufficient permission to sync.",
                     character,
                 )
-                character.delete()
                 continue
             token = character.valid_token()
             if not token:
-                notify_token_removal(
-                    "Character has no valid token for sync and has been removed. ",
+                self._delete_character(
+                    "Character has no valid token for sync.",
                     character,
                 )
-                character.delete()
                 continue
             break  # leave the for loop if we have found a valid token
 
@@ -372,6 +349,40 @@ class Owner(models.Model):
                 rotate_characters=rotate_characters,
             )
         return token
+
+    def _delete_character(
+        self,
+        error: str,
+        character: CharacterOwnership,
+        level="warning",
+    ) -> None:
+        """Delete character and notify it's owner and admin about the reason
+
+        Args:
+        - error: Error text
+        - character: Character this error refers to
+        - level: context level for the notification
+        - delete_character: will delete the character object if set true
+        """
+        title = f"{__title__}: {self}: Invalid character has been removed"
+        error = (
+            f"{character.character_ownership}: {error}\n"
+            "The character has been removed. "
+            "Please add a new character to restore the previous service level."
+        )
+        if self.characters.count() == 1:
+            error += (
+                " This owner has not more characters and it's services are now down."
+            )
+            level = "danger"
+        notify(
+            user=character.character_ownership.user,
+            title=title,
+            message=error,
+            level=level,
+        )
+        notify_admins(title=f"FYI: {title}", message=error, level=level)
+        character.delete()
 
     def _rotate_character(
         self,
@@ -754,7 +765,6 @@ class Owner(models.Model):
 
         Return True when successful, else False.
         """
-
         structures = list()
         corporation_id = self.corporation.corporation_id
         try:
@@ -810,6 +820,20 @@ class Owner(models.Model):
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures, corporation_id)
+
+        except HTTPForbidden:
+            try:
+                character = self.characters.get(
+                    character_ownership__character__character_id=token.character_id
+                )
+            except ObjectDoesNotExist:
+                pass
+            else:
+                self._delete_character(
+                    "Character is not a director and therefore can not fetch starbases.",
+                    character,
+                )
+            return False
 
         except OSError as ex:
             self._report_esi_issue("fetch starbases", ex, token)
