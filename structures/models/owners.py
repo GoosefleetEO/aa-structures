@@ -256,7 +256,7 @@ class Owner(models.Model):
                 title = f"{__title__}: Services are down for {self}"
                 msg = (
                     f"Structure services for {self} are down. "
-                    "Admin action is required to analyse how the service can be restored."
+                    "Admin action is likely required to restore services."
                 )
                 notify_admins(message=msg, title=title, level="danger")
             elif self.is_up is False and is_up:
@@ -374,17 +374,18 @@ class Owner(models.Model):
             "The character has been removed. "
             "Please add a new character to restore the previous service level."
         )
-        if self.characters.count() == 1:
-            error += (
-                " This owner has not more characters and it's services are now down."
-            )
-            level = "danger"
         notify(
             user=character.character_ownership.user,
             title=title,
             message=error,
             level=level,
         )
+        if self.characters.count() == 1:
+            error += (
+                " This owner has no configured characters anymore "
+                "and it's services are now down."
+            )
+            level = "danger"
         notify_admins(title=f"FYI: {title}", message=error, level=level)
         character.delete()
 
