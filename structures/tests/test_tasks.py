@@ -2,8 +2,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.test import TestCase
-from django.test.utils import override_settings
+from django.test import TestCase, override_settings
 
 from allianceauth.eveonline.models import EveCorporationInfo
 from app_utils.esi import EsiStatus
