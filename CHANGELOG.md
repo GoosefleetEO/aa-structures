@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Added
 
-- Informs admins via auth notification when a structure service for an owner went down and when it is up again. In combination with Discord Notify this allows admins to be informed quickly about a service outage. This new feature can be disabled via setting STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
+- Informs admins via auth notification when a structure service for an owner went down and when it is up again. In combination with Discord Notify this allows admins to be informed quickly about a service outage. This new feature can be disabled via setting `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`
+
+## Changed
+
+- `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS` is now always `False` as temporary workaround for issue #59
 
 ## [1.16.0] - 2021-09-29
 

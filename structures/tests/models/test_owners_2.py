@@ -364,9 +364,10 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         )
         cls.owner.webhooks.add(my_webhook)
 
-    @patch(
-        MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", False
-    )
+    # TODO: Temporarily disabled
+    # @patch(
+    #     MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", False
+    # )
     def test_should_send_all_notifications(self, mock_send_message):
         # given
         mock_send_message.return_value = True
@@ -389,33 +390,34 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         )
         self.assertSetEqual(notifications_processed, notifications_expected)
 
-    @patch(
-        MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", True
-    )
-    def test_should_send_all_notifications_except_fuel_alerts(self, mock_send_message):
-        # given
-        mock_send_message.return_value = True
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        # when
-        self.owner.send_new_notifications()
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_forwarding_sync_fresh)
-        notifications_processed = {
-            int(args[1]["embeds"][0].footer.text[-10:])
-            for args in mock_send_message.call_args_list
-        }
-        notif_types = set(NotificationType.values)
-        notif_types.discard(NotificationType.STRUCTURE_FUEL_ALERT)
-        notif_types.discard(NotificationType.TOWER_RESOURCE_ALERT_MSG)
-        notifications_expected = set(
-            self.owner.notifications.filter(notif_type__in=notif_types).values_list(
-                "notification_id", flat=True
-            )
-        )
-        self.assertSetEqual(notifications_processed, notifications_expected)
+    # TODO: temporary disabled
+    # @patch(
+    #     MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", True
+    # )
+    # def test_should_send_all_notifications_except_fuel_alerts(self, mock_send_message):
+    #     # given
+    #     mock_send_message.return_value = True
+    #     self.user = AuthUtils.add_permission_to_user_by_name(
+    #         "structures.add_structure_owner", self.user
+    #     )
+    #     # when
+    #     self.owner.send_new_notifications()
+    #     # then
+    #     self.owner.refresh_from_db()
+    #     self.assertTrue(self.owner.is_forwarding_sync_fresh)
+    #     notifications_processed = {
+    #         int(args[1]["embeds"][0].footer.text[-10:])
+    #         for args in mock_send_message.call_args_list
+    #     }
+    #     notif_types = set(NotificationType.values)
+    #     notif_types.discard(NotificationType.STRUCTURE_FUEL_ALERT)
+    #     notif_types.discard(NotificationType.TOWER_RESOURCE_ALERT_MSG)
+    #     notifications_expected = set(
+    #         self.owner.notifications.filter(notif_type__in=notif_types).values_list(
+    #             "notification_id", flat=True
+    #         )
+    #     )
+    #     self.assertSetEqual(notifications_processed, notifications_expected)
 
     def test_should_send_all_notifications_corp(self, mock_send_message):
         # given
