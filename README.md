@@ -319,14 +319,14 @@ Timers can be created from the following notification types:
 - StructureLostArmor
 - StructureLostShields
 
-## Multiple sync characters
+### Multiple sync characters
 
 It is possible to add multiple sync characters for a structure owner / corporation. This serves two purposes:
 
 - Improved reaction time for notifications
 - Improved resilence against character becoming invalid
 
-### Improved reaction time for notifications
+#### Improved reaction time for notifications
 
 One of the most popular features of Structures is it's ability to automatically forward notications from the Eve server to Discord. However, there is a significant delay between the time a notification is create in game and it apearing on Discord, which on average is about 10 minutes.
 
@@ -336,13 +336,32 @@ You can reduce the reaction time by adding multiple sync characters for every ow
 
 Every added sync character will reduce the delay up to a maximum of 10, which brings the average reaction time down to about 1 minute.
 
-### Improved resilence against character becoming invalid
+#### Improved resilence against character becoming invalid
 
 Another benefit of having multple sync characters is that it increases the resilence of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for tha towner until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but notify admins about it) and use any of the remaining valid characters to complete the update.
 
-### Measuring notification delay
+#### Measuring notification delay
 
 Structures has the ability to measure the average notification delay of your system. You can find that information on the admin site / owners / [Your owner] / Sync status / Avg. turnaround time. This will show the current average delay in seconds between a notification being created in game and it being received by Structures for the last 5, 15 and 50 notifications.
+
+### Services Monitoring
+
+Many alliances are relying that the structure services - i.e. getting attack and fuel notifications on Discord. However, outages can occur, e.g. when tokens become invalid or the Eve Online API server (ESI) has issues. To give alliances the ability to fix outages quickly, Structures has a build in service monitoring capability. Should an issue occur it will automatically send an Auth notification to admins. When combined with the app [Discord Notify](https://gitlab.com/ErikKalkoken/aa-discordnotify), those notifications will be forwarded immediately to Discord, allowing admins to take quick action to resolve any issues.
+
+There are currently two types of issue related admin notifications:
+
+- Sync character no longer valid
+- Services are down
+
+#### Sync character no longer valid
+
+When a character that us used to sync an owner from ESI becomes invalid, it is automatically removed and both the related user and the admins are informed. Characters can become invalid e.g. when the token is no longer valid or the character lost permissions to use Structures.
+
+#### Services are down
+
+In addition Structures is constantly monitoring that all updates from ESI are running. Should a service fail to update within the alloted time the services for that owner will be reported as down and the admins will be notified. Once that service has resumed updating another notification is issued informating the admins that the services for that owner are back up.
+
+> **Hint**<br>You can adjust maximum time since it's last successful sync before a service is reported as down with the [settings](#settings) `STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES` and `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`.
 
 ## Settings
 

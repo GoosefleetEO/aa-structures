@@ -247,6 +247,10 @@ class Owner(models.Model):
         """Check if all services for this owner are up, notify admins if necessary
         and store result.
         """
+
+        def fresh_str(value: bool) -> str:
+            return "up" if value else "down"
+
         is_up = self.are_all_syncs_ok
         if (
             STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED
@@ -256,7 +260,11 @@ class Owner(models.Model):
                 title = f"{__title__}: Services are down for {self}"
                 msg = (
                     f"Structure services for {self} are down. "
-                    "Admin action is likely required to restore services."
+                    "Admin action is likely required to restore services.\n"
+                    f"- Structures: {fresh_str(self.is_structure_sync_fresh)}\n"
+                    f"- Notifications: {fresh_str(self.is_notification_sync_fresh)}\n"
+                    f"- Forwarding: {fresh_str(self.is_forwarding_sync_fresh)}\n"
+                    f"- Assets: {fresh_str(self.is_assets_sync_fresh)}\n"
                 )
                 notify_admins(message=msg, title=title, level="danger")
             elif self.is_up is False and is_up:
