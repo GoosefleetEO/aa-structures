@@ -7,15 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
-## [1.17.0] - tbd.
+## [1.17.0] - 2021-10-18
 
 ## Added
 
-- Informs admins via auth notification when a structure service for an owner went down and when it is up again. In combination with Discord Notify this allows admins to be informed quickly about a service outage. This new feature can be disabled via setting `STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED`
+- Improved service monitoring: This app will inform admins via AA notification when a structure service went down and when it is up again. When used in combination with the app [Discord Notify](https://gitlab.com/ErikKalkoken/aa-discordnotify) this allows admins to be informed quickly about any service outage. Please also see the section "Features/Services Monitoring" in the README.
 
 ## Changed
 
-- `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS` is now always `False` as temporary workaround for issue #59
+- Fuel alert notifications from ESI will now always be forwarded as temporary workaround for issue #59
+
+- A service is now only regarded as down when the last succesful update from ESI is older than the allowed grace period, e.g. temporary ESI issues will be ignored
 
 ## [1.16.0] - 2021-09-29
 
