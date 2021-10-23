@@ -464,6 +464,15 @@
             "corporation_ticker": "DB"
         },
         {
+            "character_id": 1007,
+            "character_name": "Kara Danvers",
+            "corporation_id": 2007,
+            "corporation_name": "CatCo Daily",
+            "corporation_ticker": "CD",
+            "alliance_id": 3007,
+            "alliance_name": "CatCo Worldwide Media"
+        },
+        {
             "character_id": 1011,
             "character_name": "Lex Luther",
             "corporation_id": 2102,
@@ -476,6 +485,13 @@
             "corporation_id": 2102,
             "corporation_name": "Harley Quinn inc.",
             "corporation_ticker": "HQ"
+        },
+        {
+            "character_id": 1103,
+            "character_name": "Eddie Brock",
+            "corporation_id": 2103,
+            "corporation_name": "Metropolis News",
+            "corporation_ticker": "MN"
         }
     ],
     "EveEntity": [

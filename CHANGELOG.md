@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Fixed
 
 - Alliance spanning notifications like sov notifications are no longer forwarded.
+- Can not set alliance_main for other alliances and solo corporations
 
 ## [1.17.0] - 2021-10-18
 

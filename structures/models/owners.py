@@ -198,7 +198,9 @@ class Owner(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         if self.is_alliance_main:
-            Owner.objects.update(is_alliance_main=False)
+            Owner.objects.filter(
+                corporation__alliance_id=self.corporation.alliance_id
+            ).update(is_alliance_main=False)
             if "update_fields" in kwargs:
                 kwargs["update_fields"].append("is_alliance_main")
         super().save(*args, **kwargs)

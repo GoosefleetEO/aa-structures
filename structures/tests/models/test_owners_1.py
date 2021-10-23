@@ -73,8 +73,10 @@ class TestOwner(NoSocketsTestCase):
         super().setUpClass()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.owner.is_alliance_main = True
-        cls.owner.save()
+
+    def setUp(self) -> None:
+        self.owner.is_alliance_main = True
+        self.owner.save()
 
     def test_str(self):
         # when
@@ -304,10 +306,10 @@ class TestOwner(NoSocketsTestCase):
         # then
         self.assertEqual(result, 0)
 
-    def test_should_ensur_only_one_owner_is_alliance_main(self):
+    def test_should_ensure_only_one_owner_is_alliance_main_1(self):
         # given
         self.assertTrue(self.owner.is_alliance_main)
-        owner = Owner.objects.get(corporation__corporation_id=2102)
+        owner = Owner.objects.get(corporation__corporation_id=2002)
         # when
         owner.is_alliance_main = True
         owner.save()
@@ -316,6 +318,37 @@ class TestOwner(NoSocketsTestCase):
         self.assertTrue(owner.is_alliance_main)
         self.owner.refresh_from_db()
         self.assertFalse(self.owner.is_alliance_main)
+
+    def test_should_ensure_only_one_owner_is_alliance_main_2(self):
+        # given
+        self.assertTrue(self.owner.is_alliance_main)
+        owner = Owner.objects.get(corporation__corporation_id=2007)
+        # when
+        owner.is_alliance_main = True
+        owner.save()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_alliance_main)
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_alliance_main)
+
+    def test_should_ensure_only_one_owner_is_alliance_main_3(self):
+        # given
+        self.assertTrue(self.owner.is_alliance_main)
+        owner_2103 = Owner.objects.get(corporation__corporation_id=2102)
+        owner_2103.is_alliance_main = True
+        owner_2103.save()
+        owner_2102 = Owner.objects.get(corporation__corporation_id=2102)
+        # when
+        owner_2102.is_alliance_main = True
+        owner_2102.save()
+        # then
+        owner_2102.refresh_from_db()
+        self.assertTrue(owner_2102.is_alliance_main)
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_alliance_main)
+        owner_2103.refresh_from_db()
+        self.assertTrue(owner_2103.is_alliance_main)
 
 
 @patch(MODULE_PATH + ".notify")
