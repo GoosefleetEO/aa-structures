@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [UNRELEASED] - tbd
 
+## [1.17.1] - 2021-10-23
+
+## Fixed
+
+- Alliance spanning notifications like sov notifications are no longer forwarded.
+
 ## [1.17.0] - 2021-10-18
 
 ## Added

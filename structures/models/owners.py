@@ -199,6 +199,8 @@ class Owner(models.Model):
     def save(self, *args, **kwargs) -> None:
         if self.is_alliance_main:
             Owner.objects.update(is_alliance_main=False)
+            if "update_fields" in kwargs:
+                kwargs["update_fields"].append("is_alliance_main")
         super().save(*args, **kwargs)
 
     @property
@@ -275,8 +277,9 @@ class Owner(models.Model):
                 title = f"{__title__}: Services enabled {self}"
                 msg = f"Structure services for {self} have been enabled. "
                 notify_admins(message=msg, title=title, level="success")
-        self.is_up = is_up
-        self.save(update_fields=["is_up"])
+        if self.is_up != is_up:
+            self.is_up = is_up
+            self.save(update_fields=["is_up"])
         return is_up
 
     def add_character(

@@ -763,6 +763,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertFalse(mock_notify_admins.called)
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.is_up)
+        self.assertTrue(self.owner.is_alliance_main)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
     @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
@@ -778,6 +779,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertTrue(mock_notify_admins.called)
         self.owner.refresh_from_db()
         self.assertFalse(self.owner.is_up)
+        self.assertTrue(self.owner.is_alliance_main)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
     @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
@@ -793,6 +795,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertFalse(mock_notify_admins.called)
         self.owner.refresh_from_db()
         self.assertFalse(self.owner.is_up)
+        self.assertTrue(self.owner.is_alliance_main)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
     @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
@@ -808,6 +811,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertTrue(mock_notify_admins.called)
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.is_up)
+        self.assertTrue(self.owner.is_alliance_main)
 
     @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
     @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
@@ -823,3 +827,4 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertTrue(mock_notify_admins.called)
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.is_up)
+        self.assertTrue(self.owner.is_alliance_main)
