@@ -7,6 +7,7 @@ from celery.schedules import crontab
 from django.contrib import messages
 
 INSTALLED_APPS = [
+    "allianceauth",  # needs to be on top of this list to support favicons in Django admin (see https://gitlab.com/allianceauth/allianceauth/-/issues/1301)
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -18,13 +19,13 @@ INSTALLED_APPS = [
     "bootstrapform",
     "sortedm2m",
     "esi",
-    "allianceauth",
     "allianceauth.authentication",
     "allianceauth.services",
     "allianceauth.eveonline",
     "allianceauth.groupmanagement",
     "allianceauth.notifications",
     "allianceauth.thirdparty.navhelper",
+    "allianceauth.analytics",
 ]
 
 SECRET_KEY = "wow I'm a really bad default secret key"
@@ -49,6 +50,10 @@ CELERYBEAT_SCHEDULE = {
         "task": "allianceauth.authentication.tasks.check_all_character_ownership",
         "schedule": crontab(minute=0, hour="*/4"),
     },
+    "analytics_daily_stats": {
+        "task": "allianceauth.analytics.tasks.analytics_daily_stats",
+        "schedule": crontab(minute=0, hour=2),
+    },
 }
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -58,12 +63,13 @@ BASE_DIR = os.path.dirname(PROJECT_DIR)
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
+    "allianceauth.analytics.middleware.AnalyticsMiddleware",
 ]
 
 ROOT_URLCONF = "allianceauth.urls"
@@ -75,6 +81,12 @@ LANGUAGES = (
     ("en", ugettext("English")),
     ("de", ugettext("German")),
     ("es", ugettext("Spanish")),
+    ("zh-hans", ugettext("Chinese Simplified")),
+    ("ru", ugettext("Russian")),
+    ("ko", ugettext("Korean")),
+    ("fr", ugettext("French")),
+    ("ja", ugettext("Japanese")),
+    ("it", ugettext("Italian")),
 )
 
 TEMPLATES = [
@@ -128,6 +140,8 @@ AUTHENTICATION_BACKENDS = [
 
 LANGUAGE_CODE = "en-us"
 
+LANGUAGE_COOKIE_AGE = 1209600
+
 TIME_ZONE = "UTC"
 
 USE_I18N = True
@@ -156,6 +170,8 @@ CACHES = {
         },
     }
 }
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
@@ -205,8 +221,16 @@ LOGGING = {
             "maxBytes": 1024 * 1024 * 5,  # edit this line to change max log file size
             "backupCount": 5,  # edit this line to change number of log backups
         },
+        "extension_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "extensions.log"),
+            "formatter": "verbose",
+            "maxBytes": 1024 * 1024 * 5,  # edit this line to change max log file size
+            "backupCount": 5,  # edit this line to change number of log backups
+        },
         "console": {
-            "level": "CRITICAL",  # edit this line to change logging level to console
+            "level": "DEBUG",  # edit this line to change logging level to console
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
@@ -221,6 +245,10 @@ LOGGING = {
             "handlers": ["log_file", "console", "notifications"],
             "level": "DEBUG",
         },
+        "extensions": {
+            "handlers": ["extension_file", "console"],
+            "level": "DEBUG",
+        },
         "django": {
             "handlers": ["log_file", "console"],
             "level": "ERROR",
@@ -231,6 +259,8 @@ LOGGING = {
         },
     },
 }
+
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 ########################################################
 # local.py settings
