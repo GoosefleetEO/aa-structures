@@ -848,7 +848,8 @@ class Owner(models.Model):
                 pass
             else:
                 self._delete_character(
-                    "Character is not a director and therefore can not fetch starbases.",
+                    "Character is not a director or CEO and therefore "
+                    "can not fetch starbases.",
                     character,
                 )
             return False

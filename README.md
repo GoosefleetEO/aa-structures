@@ -222,6 +222,7 @@ In this section you find a detailed description of the following key features:
 - [Structure tags](#structure-tags)
 - [Timers](#timers)
 - [Multiple sync characters](#multiple-sync-characters)
+- [Public customs offices](#public-customs-offices)
 
 ### Localization
 
@@ -363,6 +364,20 @@ In addition Structures is constantly monitoring that all updates from ESI are ru
 
 > **Hint**<br>You can adjust maximum time since it's last successful sync before a service is reported as down with the [settings](#settings) `STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES` and `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`.
 
+### Public Customs Offices
+
+PI can be a lucrative income source, both for alliances and characters. But your alliance mates need to know where your alliances' customs offices are in order to use them. To help you with that you can choose to show the customs offices of any owner on a special page. In addition to the exact location that page will also show the current tax rates and the planet type.
+
+Here is an example:
+
+![example](https://i.imgur.com/5kd20QZ.png)
+
+To enable this feature you need to do 2 things: First, you need to enable the "public" showing of customs offices for an owner. You will find that option on the admin site for Owners:
+
+![Poco options](https://i.imgur.com/BK3MadZ.png)
+
+Second, you need to give your users access to the Structures app with the basic access permission. e.g. by adding that permssion to the Member state. The pages with the full structures list are hidden behind additional permissions. For details please see [permissions](#permissions).
+
 ## Settings
 
 Here is a list of available settings for this app. They can be configured by adding them to your AA settings file (`local.py`).
@@ -399,7 +414,7 @@ This is an overview of all permissions used by this app. Note that all permissio
 
 Name | Purpose | Code
 -- | -- | --
-Can access public views | User can access this app and view public pages, e.g. public POCO view |  `general.basic_access`
+Can access public views | User can access this app and view public pages, e.g. public POCO view |  https://i.imgur.com/BK3MadZ.png
 Can view corporation structures | User can see structures belonging to corporations of his characters only. |  `general.view_corporation_structures`
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`

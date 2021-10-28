@@ -5,11 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [UNRELEASED] - tbd
+## [1.17.2] - 2021-10-28
+
+## Added
+
+- Documentation for Public Customs Offices feature to README.
 
 ## Changed
 
 - Added CI tests for AA 2.9+ (Python 3.7+, Django 3.2), removed CI tests for AA < 2.9 (Python 3.6, Django 3.1)
+
+## Fixed
+
+- Improved user message when having to remove token that is not a director.
 
 ## [1.17.1] - 2021-10-23
 
