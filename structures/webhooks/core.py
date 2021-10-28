@@ -1,6 +1,7 @@
 import json
 from time import sleep
 from typing import List, Tuple
+from urllib.parse import urlparse
 
 import dhooks_lite
 from simple_mq import SimpleMQ
@@ -92,10 +93,20 @@ class DiscordWebhookMixin:
             message["tts"] = tts
         if username:
             message["username"] = username
-        if avatar_url:
+        if avatar_url and self._url_has_scheme(avatar_url):
             message["avatar_url"] = avatar_url
 
         return self._main_queue.enqueue(json.dumps(message, cls=JSONDateTimeEncoder))
+
+    @staticmethod
+    def _url_has_scheme(avatar_url) -> bool:
+        """Return True if URL is valid and has a scheme else return False."""
+        try:
+            parts = urlparse(avatar_url)
+        except ValueError:
+            return False
+        else:
+            return bool(parts.scheme)
 
     def send_queued_messages(self) -> int:
         """sends all messages in the queue to this webhook

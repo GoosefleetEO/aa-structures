@@ -66,7 +66,7 @@ class TestDiscordWebhookMixin(TestCase):
         self.webhook.send_message(
             content="test-content",
             username="test-username",
-            avatar_url="test-avatar-url",
+            avatar_url="http://www.example.com/test",
             embeds=[dhooks_lite.Embed(description="test-description")],
         )
         self.assertEqual(self.webhook.queue_size(), 1)
@@ -78,7 +78,7 @@ class TestDiscordWebhookMixin(TestCase):
             {
                 "content": "test-content",
                 "username": "test-username",
-                "avatar_url": "test-avatar-url",
+                "avatar_url": "http://www.example.com/test",
                 "embeds": [dhooks_lite.Embed(description="test-description").asdict()],
             },
         )
