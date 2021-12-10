@@ -14,8 +14,8 @@ from .eveuniverse import (
 )
 from .notifications import (
     EveEntity,
-    FuelAlert,
-    FuelAlertConfig,
+    StructureFuelAlert,
+    StructureFuelAlertConfig,
     Notification,
     NotificationType,
     Webhook,

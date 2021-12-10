@@ -1042,50 +1042,8 @@ class Notification(models.Model):
         return cls(**kwargs)
 
 
-class FuelAlert(models.Model):
-    """A generated notification alerting about fuel getting low in structures."""
-
-    structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts"
-    )
-    config = models.ForeignKey(
-        "FuelAlertConfig", on_delete=models.CASCADE, related_name="fuel_alerts"
-    )
-    hours = models.PositiveIntegerField(
-        db_index=True,
-        help_text="number of hours before fuel expiration this alert was sent",
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["structure", "config", "hours"],
-                name="functional_pk_fuelalert",
-            )
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.structure}-{self.config}-{self.hours}"
-
-    def send_generated_notification(self):
-        notif_type = (
-            NotificationType.TOWER_RESOURCE_ALERT_MSG
-            if self.structure.is_starbase
-            else NotificationType.STRUCTURE_FUEL_ALERT
-        )
-        notif = Notification.create_from_structure(
-            structure=self.structure, notif_type=notif_type
-        )
-        notif.send_to_configured_webhooks(
-            ping_type_override=self.config.channel_ping_type,
-            use_color_override=True,
-            color_override=self.config.color,
-        )
-
-
-class FuelAlertConfig(models.Model):
-    """Configuration of fuel notifications."""
+class StructureFuelAlertConfig(models.Model):
+    """Configuration of structure fuel notifications."""
 
     channel_ping_type = models.CharField(
         max_length=2,
@@ -1130,7 +1088,7 @@ class FuelAlertConfig(models.Model):
                 {"repeat": _("Repeat can not be larger that the interval size.")}
             )
         new = range(self.end, self.start)
-        for config in FuelAlertConfig.objects.exclude(pk=self.pk):
+        for config in StructureFuelAlertConfig.objects.exclude(pk=self.pk):
             current = range(config.end, config.start)
             overlap = range(max(new[0], current[0]), min(new[-1], current[-1]) + 1)
             if len(overlap) > 0:
@@ -1143,8 +1101,8 @@ class FuelAlertConfig(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         try:
-            old_instance = FuelAlertConfig.objects.get(pk=self.pk)
-        except FuelAlertConfig.DoesNotExist:
+            old_instance = StructureFuelAlertConfig.objects.get(pk=self.pk)
+        except StructureFuelAlertConfig.DoesNotExist:
             old_instance = None
         super().save(*args, **kwargs)
         if old_instance and (
@@ -1168,7 +1126,7 @@ class FuelAlertConfig(models.Model):
                     if self.repeat
                     else self.start
                 )
-                notif, created = FuelAlert.objects.get_or_create(
+                notif, created = StructureFuelAlert.objects.get_or_create(
                     structure=structure, config=self, hours=hours_last_alert
                 )
                 if created or force:
@@ -1198,4 +1156,46 @@ class FuelAlertConfig(models.Model):
                 )
             )
             .distinct()
+        )
+
+
+class StructureFuelAlert(models.Model):
+    """A generated notification alerting about fuel getting low in structures."""
+
+    structure = models.ForeignKey(
+        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts"
+    )
+    config = models.ForeignKey(
+        "StructureFuelAlertConfig", on_delete=models.CASCADE, related_name="fuel_alerts"
+    )
+    hours = models.PositiveIntegerField(
+        db_index=True,
+        help_text="number of hours before fuel expiration this alert was sent",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["structure", "config", "hours"],
+                name="functional_pk_fuelalert",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.structure}-{self.config}-{self.hours}"
+
+    def send_generated_notification(self):
+        notif_type = (
+            NotificationType.TOWER_RESOURCE_ALERT_MSG
+            if self.structure.is_starbase
+            else NotificationType.STRUCTURE_FUEL_ALERT
+        )
+        notif = Notification.create_from_structure(
+            structure=self.structure, notif_type=notif_type
+        )
+        notif.send_to_configured_webhooks(
+            ping_type_override=self.config.channel_ping_type,
+            use_color_override=True,
+            color_override=self.config.color,
         )

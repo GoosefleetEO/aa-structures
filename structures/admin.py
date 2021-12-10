@@ -13,8 +13,8 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (
-    FuelAlert,
-    FuelAlertConfig,
+    StructureFuelAlert,
+    StructureFuelAlertConfig,
     Notification,
     NotificationType,
     Owner,
@@ -28,7 +28,7 @@ from .models import (
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
-@admin.register(FuelAlert)
+@admin.register(StructureFuelAlert)
 class FuelAlertAdmin(admin.ModelAdmin):
     list_display = ("config", "_owner", "structure", "hours", "created_at")
     list_select_related = (
@@ -55,7 +55,7 @@ class FuelAlertAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(FuelAlertConfig)
+@admin.register(StructureFuelAlertConfig)
 class FuelNotificationConfigAdmin(admin.ModelAdmin):
     list_display = (
         "__str__",
