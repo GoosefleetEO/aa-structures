@@ -1042,7 +1042,7 @@ class Notification(models.Model):
         return cls(**kwargs)
 
 
-class StructureFuelAlertConfig(models.Model):
+class BaseFuelAlertConfig(models.Model):
     """Configuration of structure fuel notifications."""
 
     channel_ping_type = models.CharField(
@@ -1056,6 +1056,43 @@ class StructureFuelAlertConfig(models.Model):
             "or webhook configuration"
         ),
     )
+    color = models.IntegerField(
+        choices=Webhook.Color.choices,
+        default=Webhook.Color.WARNING,
+        blank=True,
+        null=True,
+    )
+    is_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self) -> str:
+        return f"#{self.pk}"
+
+    def send_new_notifications(self, force: bool = False) -> None:
+        """Send new fuel notifications based on this config."""
+        raise NotImplementedError()
+
+    @staticmethod
+    def relevant_webhooks() -> models.QuerySet:
+        """Webhooks relevant for processing fuel notifications based on this config."""
+        return (
+            Webhook.objects.filter(owner__isnull=False)
+            .filter(is_active=True)
+            .filter(
+                Q(notification_types__contains=NotificationType.STRUCTURE_FUEL_ALERT)
+                | Q(
+                    notification_types__contains=NotificationType.TOWER_RESOURCE_ALERT_MSG
+                )
+            )
+            .distinct()
+        )
+
+
+class StructureFuelAlertConfig(BaseFuelAlertConfig):
+    """Configuration of structure fuel notifications."""
+
     end = models.PositiveIntegerField(
         help_text="End of alerts in hours before fuel expires"
     )
@@ -1064,19 +1101,9 @@ class StructureFuelAlertConfig(models.Model):
             "Notifications will be repeated every x hours. Set to 0 for no repeats"
         )
     )
-    color = models.IntegerField(
-        choices=Webhook.Color.choices,
-        default=Webhook.Color.WARNING,
-        blank=True,
-        null=True,
-    )
-    is_enabled = models.BooleanField(default=True)
     start = models.PositiveIntegerField(
         help_text="Start of alerts in hours before fuel expires"
     )
-
-    def __str__(self) -> str:
-        return f"#{self.pk}"
 
     def clean(self) -> None:
         if self.start <= self.end:
@@ -1110,7 +1137,7 @@ class StructureFuelAlertConfig(models.Model):
             or old_instance.end != self.end
             or old_instance.repeat != self.repeat
         ):
-            self.fuel_alerts.all().delete()
+            self.structure_fuel_alerts.all().delete()
 
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
@@ -1143,36 +1170,39 @@ class StructureFuelAlertConfig(models.Model):
             fuel_expires_at__isnull=False,
         )
 
-    @staticmethod
-    def relevant_webhooks() -> models.QuerySet:
-        """Webhooks relevant for processing fuel notifications based on this config."""
-        return (
-            Webhook.objects.filter(owner__isnull=False)
-            .filter(is_active=True)
-            .filter(
-                Q(notification_types__contains=NotificationType.STRUCTURE_FUEL_ALERT)
-                | Q(
-                    notification_types__contains=NotificationType.TOWER_RESOURCE_ALERT_MSG
-                )
-            )
-            .distinct()
+
+class JumpFuelAlertConfig(BaseFuelAlertConfig):
+    """Configuration of jump fuel notifications."""
+
+    threshold = models.PositiveIntegerField(
+        help_text=(
+            "Notifications will be sent once fuel level in units reaches this threshold"
         )
+    )
 
 
-class StructureFuelAlert(models.Model):
+class BaseFuelAlert(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
+
+
+class StructureFuelAlert(BaseFuelAlert):
     """A generated notification alerting about fuel getting low in structures."""
 
     structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="fuel_alerts"
+        "Structure", on_delete=models.CASCADE, related_name="structure_fuel_alerts"
     )
     config = models.ForeignKey(
-        "StructureFuelAlertConfig", on_delete=models.CASCADE, related_name="fuel_alerts"
+        "StructureFuelAlertConfig",
+        on_delete=models.CASCADE,
+        related_name="structure_fuel_alerts",
     )
     hours = models.PositiveIntegerField(
         db_index=True,
         help_text="number of hours before fuel expiration this alert was sent",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
@@ -1199,3 +1229,17 @@ class StructureFuelAlert(models.Model):
             use_color_override=True,
             color_override=self.config.color,
         )
+
+
+class JumpFuelAlert(BaseFuelAlert):
+    """A generated notification alerting about jump fuel getting low."""
+
+    structure = models.ForeignKey(
+        "Structure", on_delete=models.CASCADE, related_name="jump_fuel_alerts"
+    )
+    config = models.ForeignKey(
+        "JumpFuelAlertConfig", on_delete=models.CASCADE, related_name="jump_fuel_alerts"
+    )
+
+    def __str__(self) -> str:
+        return f"{self.structure}-{self.config}"

@@ -91,7 +91,9 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.client.force_login(self.user)
         config = StructureFuelAlertConfig.objects.create(start=48, end=24, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_alerts.create(config=config, structure=structure, hours=5)
+        structure.structure_fuel_alerts.create(
+            config=config, structure=structure, hours=5
+        )
         # when
         response = self.client.post(
             reverse(
@@ -103,14 +105,16 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.assertRedirects(
             response, reverse("admin:structures_structurefuelalertconfig_changelist")
         )
-        self.assertEqual(structure.fuel_alerts.count(), 0)
+        self.assertEqual(structure.structure_fuel_alerts.count(), 0)
 
     def test_should_not_remove_existing_fuel_notifications_on_other_changes(self):
         # given
         self.client.force_login(self.user)
         config = StructureFuelAlertConfig.objects.create(start=48, end=24, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_alerts.create(config=config, structure=structure, hours=5)
+        structure.structure_fuel_alerts.create(
+            config=config, structure=structure, hours=5
+        )
         # when
         response = self.client.post(
             reverse(
@@ -125,7 +129,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.assertRedirects(
             response, reverse("admin:structures_structurefuelalertconfig_changelist")
         )
-        self.assertEqual(structure.fuel_alerts.count(), 1)
+        self.assertEqual(structure.structure_fuel_alerts.count(), 1)
 
     def test_should_not_allow_end_before_start(self):
         # given

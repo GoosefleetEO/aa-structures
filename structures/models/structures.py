@@ -500,7 +500,7 @@ class Structure(models.Model):
                     "Therefore removing current fuel notifications.",
                     logger_tag,
                 )
-                self.fuel_alerts.all().delete()
+                self.structure_fuel_alerts.all().delete()
                 if STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS and (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at

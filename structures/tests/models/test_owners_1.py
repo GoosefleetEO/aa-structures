@@ -1442,13 +1442,13 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
         structure.save()
         config = StructureFuelAlertConfig.objects.create(start=48, end=0, repeat=12)
-        structure.fuel_alerts.create(config=config, hours=12)
+        structure.structure_fuel_alerts.create(config=config, hours=12)
         # when
         with patch("structures.models.structures.now") as now:
             now.return_value = datetime(2020, 3, 2, 0, 0, tzinfo=utc)
             owner.update_structures_esi()
         # then
-        self.assertEqual(structure.fuel_alerts.count(), 0)
+        self.assertEqual(structure.structure_fuel_alerts.count(), 0)
 
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)

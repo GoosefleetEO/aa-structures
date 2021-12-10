@@ -13,13 +13,15 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (
-    StructureFuelAlert,
-    StructureFuelAlertConfig,
+    JumpFuelAlert,
+    JumpFuelAlertConfig,
     Notification,
     NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
+    StructureFuelAlert,
+    StructureFuelAlertConfig,
     StructureService,
     StructureTag,
     Webhook,
@@ -29,7 +31,7 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 @admin.register(StructureFuelAlert)
-class FuelAlertAdmin(admin.ModelAdmin):
+class StructureFuelAlertAdmin(admin.ModelAdmin):
     list_display = ("config", "_owner", "structure", "hours", "created_at")
     list_select_related = (
         "config",
@@ -55,13 +57,8 @@ class FuelAlertAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(StructureFuelAlertConfig)
-class FuelNotificationConfigAdmin(admin.ModelAdmin):
+class BaseFuelNotificationConfigAdmin(admin.ModelAdmin):
     list_display = (
-        "__str__",
-        "start",
-        "end",
-        "repeat",
         "channel_ping_type",
         "_color",
         "is_enabled",
@@ -71,6 +68,8 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
 
     def _id(self, obj):
         return f"#{obj.pk}"
+
+    _id.admin_order_field = "pk"
 
     def _color(self, obj):
         color = Webhook.Color(obj.color)
@@ -101,6 +100,24 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (
+            "Discord",
+            {"fields": ("channel_ping_type", "color")},
+        ),
+        ("General", {"fields": ("is_enabled",)}),
+    )
+
+
+@admin.register(StructureFuelAlertConfig)
+class StructureFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
+    list_display = (
+        "_id",
+        "start",
+        "end",
+        "repeat",
+    ) + BaseFuelNotificationConfigAdmin.list_display
+
+    fieldsets = (
+        (
             "Timeing",
             {
                 "description": (
@@ -112,12 +129,30 @@ class FuelNotificationConfigAdmin(admin.ModelAdmin):
                 "fields": ("start", "end", "repeat"),
             },
         ),
+    ) + BaseFuelNotificationConfigAdmin.fieldsets
+
+
+@admin.register(JumpFuelAlertConfig)
+class JumpFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
+    list_display = (
+        "_id",
+        "threshold",
+    ) + BaseFuelNotificationConfigAdmin.list_display
+
+    fieldsets = (
         (
-            "Discord",
-            {"fields": ("channel_ping_type", "color")},
+            "Fuel levels",
+            {
+                "description": ("tbd."),
+                "fields": ("threshold",),
+            },
         ),
-        ("General", {"fields": ("is_enabled",)}),
-    )
+    ) + BaseFuelNotificationConfigAdmin.fieldsets
+
+
+@admin.register(JumpFuelAlert)
+class JumpFuelNotificationAdmin(admin.ModelAdmin):
+    ...
 
 
 class RenderableNotificationFilter(admin.SimpleListFilter):

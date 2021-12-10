@@ -1174,7 +1174,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         # when
         config.send_new_notifications()
         # then
-        self.assertEqual(config.fuel_alerts.count(), 1)
+        self.assertEqual(config.structure_fuel_alerts.count(), 1)
         self.assertEqual(mock_send_to_webhook.call_count, 1)
         args, _ = mock_send_to_webhook.call_args
         self.assertEqual(args[0], self.webhook)
@@ -1201,7 +1201,7 @@ class TestFuelNotifications(NoSocketsTestCase):
         # when
         config.send_new_notifications()
         # then
-        self.assertEqual(config.fuel_alerts.count(), 1)
+        self.assertEqual(config.structure_fuel_alerts.count(), 1)
         self.assertEqual(mock_send_to_webhook.call_count, 1)
         args, _ = mock_send_to_webhook.call_args
         self.assertEqual(args[0], self.webhook)
