@@ -30,9 +30,8 @@ from .models import (
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
-@admin.register(FuelAlert)
-class StructureFuelAlertAdmin(admin.ModelAdmin):
-    list_display = ("config", "_owner", "structure", "hours", "created_at")
+class BaseFuelAlertAdmin(admin.ModelAdmin):
+    list_display = ("config", "_owner", "structure", "created_at")
     list_select_related = (
         "config",
         "structure",
@@ -45,7 +44,7 @@ class StructureFuelAlertAdmin(admin.ModelAdmin):
         ("structure", admin.RelatedOnlyFieldListFilter),
         ("structure__owner", admin.RelatedOnlyFieldListFilter),
     )
-    ordering = ("config", "structure", "-hours")
+    ordering = ("config", "structure")
 
     def _owner(self, obj):
         return obj.structure.owner
@@ -55,6 +54,17 @@ class StructureFuelAlertAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, *args, **kwargs) -> bool:
         return False
+
+
+@admin.register(FuelAlert)
+class StructureFuelAlertAdmin(BaseFuelAlertAdmin):
+    list_display = BaseFuelAlertAdmin.list_display + ("hours",)
+    ordering = BaseFuelAlertAdmin.ordering + ("-hours",)
+
+
+@admin.register(JumpFuelAlert)
+class JumpFuelNotificationAdmin(BaseFuelAlertAdmin):
+    ...
 
 
 class BaseFuelNotificationConfigAdmin(admin.ModelAdmin):
@@ -148,11 +158,6 @@ class JumpFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
             },
         ),
     ) + BaseFuelNotificationConfigAdmin.fieldsets
-
-
-@admin.register(JumpFuelAlert)
-class JumpFuelNotificationAdmin(admin.ModelAdmin):
-    ...
 
 
 class RenderableNotificationFilter(admin.SimpleListFilter):

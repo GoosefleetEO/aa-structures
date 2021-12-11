@@ -145,7 +145,7 @@ class TestStructureListDataPermissions(TestCase):
         # when
         structure_ids = self._structure_list_data_view(user).keys()
         # then
-        self.assertSetEqual(set(structure_ids), {1000000000003})
+        self.assertSetEqual(set(structure_ids), {1000000000003, 1000000000004})
 
     def test_should_show_own_alliance_only_1(self):
         # given
@@ -182,7 +182,7 @@ class TestStructureListDataPermissions(TestCase):
         # when
         structure_ids = self._structure_list_data_view(user).keys()
         # then
-        self.assertSetEqual(set(structure_ids), {1000000000003})
+        self.assertSetEqual(set(structure_ids), {1000000000003, 1000000000004})
 
     def test_should_show_all_structures(self):
         # given
@@ -200,6 +200,7 @@ class TestStructureListDataPermissions(TestCase):
                 1000000000001,
                 1000000000002,
                 1000000000003,  # only for all
+                1000000000004,
                 1200000000003,
                 1200000000004,
                 1200000000005,
@@ -286,6 +287,7 @@ class TestStructureListFilters(TestCase):
                 1000000000001,
                 1000000000002,
                 1000000000003,
+                1000000000004,
                 1200000000003,
                 1200000000004,
                 1200000000005,

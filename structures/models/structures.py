@@ -5,6 +5,7 @@ from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Sum
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.timezone import now
@@ -16,7 +17,7 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
-from .. import __title__
+from .. import __title__, constants
 from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
@@ -444,6 +445,14 @@ class Structure(models.Model):
         if self.eve_planet:
             return self.eve_planet.name
         return self.eve_solar_system.name
+
+    @cached_property
+    def jump_fuel_quantity(self) -> Optional[int]:
+        return self.owner.assets.filter(
+            location_flag="StructureFuel",
+            eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_id=self.id,
+        ).aggregate(Sum("quantity"))["quantity__sum"]
 
     @property
     def hours_fuel_expires(self) -> Optional[float]:

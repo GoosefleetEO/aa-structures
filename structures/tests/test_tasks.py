@@ -165,7 +165,7 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
 
 @patch(MODULE_PATH_MODELS_OWNERS + ".STRUCTURES_ADD_TIMERS", False)
 @patch(MODULE_PATH_MODELS_OWNERS + ".Owner.update_is_up", lambda *args, **kwargs: None)
-@patch(MODULE_PATH + ".send_fuel_notifications_for_config")
+@patch(MODULE_PATH + ".send_structure_fuel_notifications_for_config")
 @patch(MODULE_PATH + ".process_notifications_for_owner")
 class TestFetchAllNotifications(NoSocketsTestCase):
     @classmethod

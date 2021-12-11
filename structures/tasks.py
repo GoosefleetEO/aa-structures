@@ -12,7 +12,14 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
-from .models import EveSovereigntyMap, FuelAlertConfig, Notification, Owner, Webhook
+from .models import (
+    EveSovereigntyMap,
+    FuelAlertConfig,
+    JumpFuelAlertConfig,
+    Notification,
+    Owner,
+    Webhook,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -102,7 +109,11 @@ def fetch_all_notifications():
     for config_pk in FuelAlertConfig.objects.filter(is_enabled=True).values_list(
         "pk", flat=True
     ):
-        send_fuel_notifications_for_config.delay(config_pk)
+        send_structure_fuel_notifications_for_config.delay(config_pk)
+    for config_pk in JumpFuelAlertConfig.objects.filter(is_enabled=True).values_list(
+        "pk", flat=True
+    ):
+        send_jump_fuel_notifications_for_config.delay(config_pk)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -118,9 +129,15 @@ def process_notifications_for_owner(owner_pk, user_pk=None):
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_fuel_notifications_for_config(config_pk: int):
+def send_structure_fuel_notifications_for_config(config_pk: int):
     FuelAlertConfig.objects.get(pk=config_pk).send_new_notifications()
     send_queued_messages_for_webhooks(FuelAlertConfig.relevant_webhooks())
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def send_jump_fuel_notifications_for_config(config_pk: int):
+    JumpFuelAlertConfig.objects.get(pk=config_pk).send_new_notifications()
+    send_queued_messages_for_webhooks(JumpFuelAlertConfig.relevant_webhooks())
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

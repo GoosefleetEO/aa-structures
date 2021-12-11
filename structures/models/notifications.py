@@ -92,6 +92,9 @@ class NotificationType(models.TextChoices):
     STRUCTURE_UNANCHORING = "StructureUnanchoring", _("Upwell structure unanchoring")
     STRUCTURE_FUEL_ALERT = "FuelAlert", _("Upwell structure fuel alert")
     STRUCTURE_REFUELED_EXTRA = "StructureRefueledExtra", _("Upwell structure refueled")
+    STRUCTURE_JUMP_FUEL_ALERT = "StructureJumpFuelAlert", _(
+        "Upwell structure jump fuel alert"
+    )
     STRUCTURE_UNDER_ATTACK = "StructureUnderAttack", _(
         "Upwell structure is under attack"
     )
@@ -185,6 +188,7 @@ class NotificationType(models.TextChoices):
     @classproperty
     def esi_notifications(cls) -> set:
         my_set = set(cls.values)
+        my_set.discard(cls.STRUCTURE_JUMP_FUEL_ALERT)
         my_set.discard(cls.STRUCTURE_REFUELED_EXTRA)
         my_set.discard(cls.TOWER_REFUELED_EXTRA)
         return my_set
@@ -1144,7 +1148,14 @@ class FuelAlertConfig(BaseFuelAlertConfig):
 
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
-        for structure in self._structures_queryset():
+        structures = Structure.objects.filter(
+            eve_type__eve_group__eve_category_id__in=[
+                constants.EVE_CATEGORY_ID_STARBASE,
+                constants.EVE_CATEGORY_ID_STRUCTURE,
+            ],
+            fuel_expires_at__isnull=False,
+        )
+        for structure in structures:
             hours_left = structure.hours_fuel_expires
             if self.start >= hours_left >= self.end:
                 hours_last_alert = (
@@ -1162,17 +1173,6 @@ class FuelAlertConfig(BaseFuelAlertConfig):
                 if created or force:
                     notif.send_generated_notification()
 
-    @staticmethod
-    def _structures_queryset():
-        """Queryset of all relevant structures."""
-        return Structure.objects.filter(
-            eve_type__eve_group__eve_category_id__in=[
-                constants.EVE_CATEGORY_ID_STARBASE,
-                constants.EVE_CATEGORY_ID_STRUCTURE,
-            ],
-            fuel_expires_at__isnull=False,
-        )
-
 
 class JumpFuelAlertConfig(BaseFuelAlertConfig):
     """Configuration of jump fuel notifications."""
@@ -1182,6 +1182,36 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
             "Notifications will be sent once fuel level in units reaches this threshold"
         )
     )
+
+    # def save(self, *args, **kwargs) -> None:
+    #     try:
+    #         old_instance = JumpFuelAlertConfig.objects.get(pk=self.pk)
+    #     except JumpFuelAlertConfig.DoesNotExist:
+    #         old_instance = None
+    #     super().save(*args, **kwargs)
+    #     if old_instance and (old_instance.threshold != self.threshold):
+    #         self.jump_fuel_alerts.all().delete()
+
+    def send_new_notifications(self, force: bool = False) -> None:
+        """Send new fuel notifications based on this config."""
+        jump_gate_ids = Structure.objects.filter(
+            eve_type__eve_group__eve_type_id=constants.EVE_GROUP_ID_JUMP_GATE
+        ).values_list("id", flat=True)
+        if jump_gate_ids:
+            from .owners import OwnerAsset
+
+            fuel_assets = OwnerAsset.objects.filter(
+                location_flag="StructureFuel",
+                eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
+                location_id__in=jump_gate_ids,
+            )
+            for fuel_asset in fuel_assets:
+                if fuel_asset.quantity < self.threshold:
+                    notif, created = JumpFuelAlert.objects.get_or_create(
+                        structure_id=fuel_asset.location_id, config=self
+                    )
+                    if created or force:
+                        notif.send_generated_notification()
 
 
 class BaseFuelAlert(models.Model):
@@ -1250,3 +1280,14 @@ class JumpFuelAlert(BaseFuelAlert):
 
     def __str__(self) -> str:
         return f"{self.structure}-{self.config}"
+
+    def send_generated_notification(self):
+        notif = Notification.create_from_structure(
+            structure=self.structure,
+            notif_type=NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
+        )
+        notif.send_to_configured_webhooks(
+            ping_type_override=self.config.channel_ping_type,
+            use_color_override=True,
+            color_override=self.config.color,
+        )

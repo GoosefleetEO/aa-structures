@@ -672,6 +672,7 @@ class TestStructureManager(NoSocketsTestCase):
                 1000000000001,
                 1000000000002,
                 1000000000003,
+                1000000000004,
                 1200000000003,
                 1200000000004,
                 1200000000005,
@@ -689,7 +690,8 @@ class TestStructureManager(NoSocketsTestCase):
         result_qs = Structure.objects.filter_upwell_structures()
         # then
         self.assertSetEqual(
-            result_qs.ids(), {1000000000001, 1000000000002, 1000000000003}
+            result_qs.ids(),
+            {1000000000001, 1000000000002, 1000000000003, 1000000000004},
         )
 
     def test_should_filter_customs_offices(self):

@@ -7,9 +7,11 @@ from django.utils.timezone import now
 from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
+from ... import constants
 from ...models import (
     FuelAlertConfig,
     NotificationType,
+    OwnerAsset,
     PocoDetails,
     Structure,
     StructureService,
@@ -253,6 +255,50 @@ class TestStructure(NoSocketsTestCase):
         self.assertTrue(structure.is_upwell_structure)
         self.assertFalse(poco.is_upwell_structure)
         self.assertFalse(starbase.is_upwell_structure)
+
+    def test_should_return_jump_fuel_quantity(self):
+        # given
+        structure = Structure.objects.get(id=1000000000004)
+        OwnerAsset.objects.create(
+            id=1,
+            owner=structure.owner,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag="StructureFuel",
+            location_id=structure.id,
+            location_type="item",
+            is_singleton=False,
+            quantity=32,
+        )
+        OwnerAsset.objects.create(
+            id=2,
+            owner=structure.owner,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag="StructureFuel",
+            location_id=structure.id,
+            location_type="item",
+            is_singleton=False,
+            quantity=10,
+        )
+        # when
+        result = structure.jump_fuel_quantity
+        # then
+        self.assertEqual(result, 42)
+
+    def test_should_return_none_for_jump_fuel_1(self):
+        # given
+        structure = Structure.objects.get(id=1000000000003)
+        # when
+        result = structure.jump_fuel_quantity
+        # then
+        self.assertIsNone(result)
+
+    def test_should_return_none_for_jump_fuel_2(self):
+        # given
+        structure = Structure.objects.get(id=1200000000005)
+        # when
+        result = structure.jump_fuel_quantity
+        # then
+        self.assertIsNone(result)
 
 
 class TestStructureIsBurningFuel(NoSocketsTestCase):

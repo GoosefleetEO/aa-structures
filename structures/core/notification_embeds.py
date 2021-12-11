@@ -170,6 +170,8 @@ class NotificationBaseEmbed:
             return NotificationStructureOnline(notification)
         elif notif_type == NotificationType.STRUCTURE_FUEL_ALERT:
             return NotificationStructureFuelAlert(notification)
+        elif notif_type == NotificationType.STRUCTURE_JUMP_FUEL_ALERT:
+            return NotificationStructureJumpFuelAlert(notification)
         elif notif_type == NotificationType.STRUCTURE_REFUELED_EXTRA:
             return NotificationStructureRefuledExtra(notification)
         elif notif_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
@@ -360,6 +362,17 @@ class NotificationStructureFuelAlert(NotificationStructureEmbed):
         self._title = gettext("Structure fuel alert")
         self._description += gettext(
             "is running out of fuel in %s." % Webhook.text_bold(hours_left)
+        )
+        self._color = Webhook.Color.WARNING
+
+
+class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = gettext("Structure jump fuel alert")
+        self._description += gettext(
+            "is low on liquid ozone.\nRemaining units: %s."
+            % Webhook.text_bold(self._structure.jump_fuel_quantity)
         )
         self._color = Webhook.Color.WARNING
 

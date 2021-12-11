@@ -167,6 +167,11 @@
             "eve_group_id": 365
         },
         {
+            "id": 16273,
+            "name": "Liquid Ozone",
+            "eve_group_id": 423
+        },
+        {
             "id": 16275,
             "name": "Strontium Clathrates",
             "eve_group_id": 423
@@ -618,6 +623,16 @@
         {
             "id": 1000000000003,
             "name": "Test Structure Charlie",
+            "eve_type_id": 35832,
+            "eve_solar_system_id": 30000476,
+            "reinforce_hour": 11,
+            "state": 11,
+            "owner_corporation_id": 2102,
+            "unanchors_at": "dummy"
+        },
+        {
+            "id": 1000000000004,
+            "name": "Test Jump Gate",
             "eve_type_id": 35832,
             "eve_solar_system_id": 30000476,
             "reinforce_hour": 11,
