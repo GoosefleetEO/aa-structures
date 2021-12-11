@@ -8,7 +8,7 @@ from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
 from ...models import (
-    StructureFuelAlertConfig,
+    FuelAlertConfig,
     NotificationType,
     PocoDetails,
     Structure,
@@ -318,7 +318,7 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     )
     def test_should_reset_fuel_notifications_when_refueled_1(self):
         # given
-        config = StructureFuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
@@ -336,7 +336,7 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     )
     def test_should_reset_fuel_notifications_when_fuel_expires_date_has_changed(self):
         # given
-        config = StructureFuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()
@@ -354,7 +354,7 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     )
     def test_should_not_reset_fuel_notifications_when_fuel_expiry_dates_unchanged(self):
         # given
-        config = StructureFuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + timedelta(hours=12)
         structure.save()

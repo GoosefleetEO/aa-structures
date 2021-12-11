@@ -27,7 +27,7 @@ from ...models import (
     EveSolarSystem,
     EveSovereigntyMap,
     EveType,
-    StructureFuelAlertConfig,
+    FuelAlertConfig,
     NotificationType,
     Owner,
     OwnerCharacter,
@@ -1441,7 +1441,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = datetime(2020, 3, 3, 0, 0, tzinfo=utc)
         structure.save()
-        config = StructureFuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure.structure_fuel_alerts.create(config=config, hours=12)
         # when
         with patch("structures.models.structures.now") as now:

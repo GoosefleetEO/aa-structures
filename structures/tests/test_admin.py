@@ -20,10 +20,10 @@ from ..admin import (
 )
 from ..models import (
     EveEntity,
+    FuelAlertConfig,
     Notification,
     Owner,
     Structure,
-    StructureFuelAlertConfig,
     StructureTag,
     Webhook,
 )
@@ -60,66 +60,60 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.client.force_login(self.user)
         # when
         response = self.client.post(
-            reverse("admin:structures_structurefuelalertconfig_add"),
+            reverse("admin:structures_fuelalertconfig_add"),
             data={**self.defaults, **{"start": 12, "end": 5, "repeat": 2}},
         )
         # then
         self.assertRedirects(
-            response, reverse("admin:structures_structurefuelalertconfig_changelist")
+            response, reverse("admin:structures_fuelalertconfig_changelist")
         )
-        self.assertEqual(StructureFuelAlertConfig.objects.count(), 1)
+        self.assertEqual(FuelAlertConfig.objects.count(), 1)
 
     def test_should_update_existing_config(self):
         # given
         self.client.force_login(self.user)
-        config = StructureFuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
         # when
         response = self.client.post(
-            reverse(
-                "admin:structures_structurefuelalertconfig_change", args=[config.pk]
-            ),
+            reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
             data={**self.defaults, **{"start": 48, "end": 0, "repeat": 2}},
         )
         # then
         self.assertRedirects(
-            response, reverse("admin:structures_structurefuelalertconfig_changelist")
+            response, reverse("admin:structures_fuelalertconfig_changelist")
         )
-        self.assertEqual(StructureFuelAlertConfig.objects.count(), 1)
+        self.assertEqual(FuelAlertConfig.objects.count(), 1)
 
     def test_should_remove_existing_fuel_notifications_when_timing_changed(self):
         # given
         self.client.force_login(self.user)
-        config = StructureFuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.structure_fuel_alerts.create(
             config=config, structure=structure, hours=5
         )
         # when
         response = self.client.post(
-            reverse(
-                "admin:structures_structurefuelalertconfig_change", args=[config.pk]
-            ),
+            reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
             data={**self.defaults, **{"start": 48, "end": 0, "repeat": 2}},
         )
         # then
         self.assertRedirects(
-            response, reverse("admin:structures_structurefuelalertconfig_changelist")
+            response, reverse("admin:structures_fuelalertconfig_changelist")
         )
         self.assertEqual(structure.structure_fuel_alerts.count(), 0)
 
     def test_should_not_remove_existing_fuel_notifications_on_other_changes(self):
         # given
         self.client.force_login(self.user)
-        config = StructureFuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.structure_fuel_alerts.create(
             config=config, structure=structure, hours=5
         )
         # when
         response = self.client.post(
-            reverse(
-                "admin:structures_structurefuelalertconfig_change", args=[config.pk]
-            ),
+            reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
             data={
                 **self.defaults,
                 **{"start": 48, "end": 24, "repeat": 12, "is_enabled": False},
@@ -127,7 +121,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
         )
         # then
         self.assertRedirects(
-            response, reverse("admin:structures_structurefuelalertconfig_changelist")
+            response, reverse("admin:structures_fuelalertconfig_changelist")
         )
         self.assertEqual(structure.structure_fuel_alerts.count(), 1)
 
@@ -136,40 +130,40 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.client.force_login(self.user)
         # when
         response = self.client.post(
-            reverse("admin:structures_structurefuelalertconfig_add"),
+            reverse("admin:structures_fuelalertconfig_add"),
             data={**self.defaults, **{"start": 1, "end": 2, "repeat": 1}},
         )
         # then
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "errornote")
-        self.assertEqual(StructureFuelAlertConfig.objects.count(), 0)
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
 
     def test_should_not_allow_invalid_frequency(self):
         # given
         self.client.force_login(self.user)
         # when
         response = self.client.post(
-            reverse("admin:structures_structurefuelalertconfig_add"),
+            reverse("admin:structures_fuelalertconfig_add"),
             data={**self.defaults, **{"start": 48, "end": 24, "repeat": 36}},
         )
         # then
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "errornote")
-        self.assertEqual(StructureFuelAlertConfig.objects.count(), 0)
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
 
     def test_should_not_allow_creating_overlapping(self):
         # given
         self.client.force_login(self.user)
-        StructureFuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
         # when
         response = self.client.post(
-            reverse("admin:structures_structurefuelalertconfig_add"),
+            reverse("admin:structures_fuelalertconfig_add"),
             data={**self.defaults, **{"start": 36, "end": 0, "repeat": 8}},
         )
         # then
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "errornote")
-        self.assertEqual(StructureFuelAlertConfig.objects.count(), 1)
+        self.assertEqual(FuelAlertConfig.objects.count(), 1)
 
 
 class TestNotificationAdmin(TestCase):

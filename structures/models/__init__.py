@@ -14,12 +14,12 @@ from .eveuniverse import (
 )
 from .notifications import (
     EveEntity,
+    FuelAlert,
+    FuelAlertConfig,
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
     NotificationType,
-    StructureFuelAlert,
-    StructureFuelAlertConfig,
     Webhook,
     get_default_notification_types,
 )

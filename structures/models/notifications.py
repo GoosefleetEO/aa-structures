@@ -90,7 +90,7 @@ class NotificationType(models.TextChoices):
         "Upwell structure went low power"
     )
     STRUCTURE_UNANCHORING = "StructureUnanchoring", _("Upwell structure unanchoring")
-    STRUCTURE_FUEL_ALERT = "StructureFuelAlert", _("Upwell structure fuel alert")
+    STRUCTURE_FUEL_ALERT = "FuelAlert", _("Upwell structure fuel alert")
     STRUCTURE_REFUELED_EXTRA = "StructureRefueledExtra", _("Upwell structure refueled")
     STRUCTURE_UNDER_ATTACK = "StructureUnderAttack", _(
         "Upwell structure is under attack"
@@ -1090,7 +1090,7 @@ class BaseFuelAlertConfig(models.Model):
         )
 
 
-class StructureFuelAlertConfig(BaseFuelAlertConfig):
+class FuelAlertConfig(BaseFuelAlertConfig):
     """Configuration of structure fuel notifications."""
 
     end = models.PositiveIntegerField(
@@ -1105,6 +1105,9 @@ class StructureFuelAlertConfig(BaseFuelAlertConfig):
         help_text="Start of alerts in hours before fuel expires"
     )
 
+    class Meta:
+        verbose_name = "StructureFuelAlertConfig"
+
     def clean(self) -> None:
         if self.start <= self.end:
             raise ValidationError(
@@ -1115,7 +1118,7 @@ class StructureFuelAlertConfig(BaseFuelAlertConfig):
                 {"repeat": _("Repeat can not be larger that the interval size.")}
             )
         new = range(self.end, self.start)
-        for config in StructureFuelAlertConfig.objects.exclude(pk=self.pk):
+        for config in FuelAlertConfig.objects.exclude(pk=self.pk):
             current = range(config.end, config.start)
             overlap = range(max(new[0], current[0]), min(new[-1], current[-1]) + 1)
             if len(overlap) > 0:
@@ -1128,8 +1131,8 @@ class StructureFuelAlertConfig(BaseFuelAlertConfig):
 
     def save(self, *args, **kwargs) -> None:
         try:
-            old_instance = StructureFuelAlertConfig.objects.get(pk=self.pk)
-        except StructureFuelAlertConfig.DoesNotExist:
+            old_instance = FuelAlertConfig.objects.get(pk=self.pk)
+        except FuelAlertConfig.DoesNotExist:
             old_instance = None
         super().save(*args, **kwargs)
         if old_instance and (
@@ -1153,7 +1156,7 @@ class StructureFuelAlertConfig(BaseFuelAlertConfig):
                     if self.repeat
                     else self.start
                 )
-                notif, created = StructureFuelAlert.objects.get_or_create(
+                notif, created = FuelAlert.objects.get_or_create(
                     structure=structure, config=self, hours=hours_last_alert
                 )
                 if created or force:
@@ -1187,15 +1190,18 @@ class BaseFuelAlert(models.Model):
     class Meta:
         abstract = True
 
+    def send_generated_notification(self):
+        raise NotImplementedError()
 
-class StructureFuelAlert(BaseFuelAlert):
+
+class FuelAlert(BaseFuelAlert):
     """A generated notification alerting about fuel getting low in structures."""
 
     structure = models.ForeignKey(
         "Structure", on_delete=models.CASCADE, related_name="structure_fuel_alerts"
     )
     config = models.ForeignKey(
-        "StructureFuelAlertConfig",
+        "FuelAlertConfig",
         on_delete=models.CASCADE,
         related_name="structure_fuel_alerts",
     )
@@ -1205,6 +1211,7 @@ class StructureFuelAlert(BaseFuelAlert):
     )
 
     class Meta:
+        verbose_name = "StructureFuelAlert"
         constraints = [
             models.UniqueConstraint(
                 fields=["structure", "config", "hours"],
