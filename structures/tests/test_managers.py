@@ -6,12 +6,7 @@ from bravado.exception import HTTPError
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from app_utils.testing import (
-    NoSocketsTestCase,
-    add_new_token,
-    create_fake_user,
-    queryset_pks,
-)
+from app_utils.testing import NoSocketsTestCase, add_new_token, create_fake_user
 
 from ..models import (
     EveCategory,
@@ -26,7 +21,6 @@ from ..models import (
     EveType,
     NotificationType,
     Owner,
-    OwnerAsset,
     Structure,
     StructureService,
     StructureTag,
@@ -1080,70 +1074,6 @@ class TestStructureTagManager(NoSocketsTestCase):
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
     """
-
-
-class TestOwnerAssetManager(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-                EveRegion,
-                EveConstellation,
-                EveSolarSystem,
-            ]
-        )
-        user = create_fake_user(1001, "Bruce Wayne")
-        cls.token = add_new_token(user, user.profile.main_character, ["dummy"])
-
-    @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
-    def test_can_create_or_update_asset_from_esi_1(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        create_structures()
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure_ids = set(owner.structures.values_list("id", flat=True))
-        # when
-        try:
-            OwnerAsset.objects.update_or_create_for_structures_esi(
-                structure_ids, owner.corporation.corporation_id, self.token
-            )
-        # then
-        except Exception as ex:
-            self.fail(f"Test failed due to exception: {ex}")
-
-        assets = OwnerAsset.objects.filter(location_id__in=structure_ids)
-        self.assertSetEqual(
-            queryset_pks(assets), {1300000001001, 1300000001002, 1300000002001}
-        )
-        obj = assets.get(pk=1300000001001)
-        self.assertEqual(obj.owner, owner)
-        self.assertEqual(obj.eve_type_id, 56201)
-        self.assertEqual(obj.location_id, 1000000000001)
-        self.assertEqual(obj.location_flag, "QuantumCoreRoom")
-        self.assertEqual(obj.location_type, "item")
-        self.assertEqual(obj.quantity, 1)
-        self.assertFalse(obj.is_singleton)
-
-        obj = assets.get(pk=1300000001002)
-        self.assertEqual(obj.owner, owner)
-        self.assertEqual(obj.eve_type_id, 35894)
-        self.assertEqual(obj.location_id, 1000000000001)
-        self.assertEqual(obj.location_flag, "ServiceSlot0")
-        self.assertEqual(obj.location_type, "item")
-        self.assertEqual(obj.quantity, 1)
-        self.assertTrue(obj.is_singleton)
-
-        structure = owner.structures.get(id=1000000000001)
-        self.assertTrue(structure.has_fitting)
-        self.assertTrue(structure.has_core)
-
-        structure = owner.structures.get(id=1000000000002)
-        self.assertTrue(structure.has_fitting)
-        self.assertFalse(structure.has_core)
 
 
 class TestWebhookManager(NoSocketsTestCase):

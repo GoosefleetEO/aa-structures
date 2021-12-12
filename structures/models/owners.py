@@ -41,7 +41,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
-from ..managers import OwnerAssetManager, OwnerManager
+from ..managers import OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
 from .notifications import EveEntity, Notification, NotificationType, Webhook
 from .structures import PocoDetails, Structure
@@ -1175,15 +1175,69 @@ class Owner(models.Model):
         """Update all assets from ESI related to active structure for this owner."""
         token = self.fetch_token()
         structure_ids = list(self.structures.values_list("id", flat=True))
-        OwnerAsset.objects.update_or_create_for_structures_esi(
-            structure_ids, self.corporation.corporation_id, token
-        )
+        self._update_assets_from_esi(structure_ids, token)
         self.assets_last_update_at = now()
         self.save(update_fields=["assets_last_update_at"])
         if user:
             self._send_report_to_user(
                 topic="assets", topic_count=self.structures.count(), user=user
             )
+
+    def _update_assets_from_esi(self, structure_ids: list, token: Token) -> tuple:
+        """Fetch assets from esi for list of structures."""
+        assets = esi_fetch(
+            esi_path="Assets.get_corporations_corporation_id_assets",
+            args={"corporation_id": self.corporation.corporation_id},
+            token=token,
+            has_pages=True,
+        )
+        assets_in_structures = [
+            asset
+            for asset in assets
+            if asset["location_id"] in set(structure_ids)
+            and asset["location_flag"]
+            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
+        ]
+        objs_ids = []
+        for asset in assets_in_structures:
+            eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
+            obj, _ = OwnerAsset.objects.update_or_create(
+                id=asset["item_id"],
+                defaults={
+                    "owner": self,
+                    "eve_type": eve_type,
+                    "is_singleton": asset["is_singleton"],
+                    "location_flag": asset["location_flag"],
+                    "location_id": asset["location_id"],
+                    "location_type": asset["location_type"],
+                    "quantity": asset["quantity"],
+                    "last_updated_at": now(),
+                },
+            )
+            objs_ids.append(obj.id)
+
+        # Clean up assets not in structures anymore
+        objs_to_delete = OwnerAsset.objects.filter(
+            location_id__in=list(structure_ids)
+        ).exclude(id__in=objs_ids)
+        objs_to_delete.delete()
+        for structure_id in structure_ids:
+            has_fitting = [
+                asset
+                for asset in assets_in_structures
+                if asset["location_id"] == structure_id
+                and asset["location_flag"] != "QuantumCoreRoom"
+            ]
+            has_core = [
+                asset
+                for asset in assets_in_structures
+                if asset["location_id"] == structure_id
+                and asset["location_flag"] == "QuantumCoreRoom"
+            ]
+            structure = Structure.objects.get(id=structure_id)
+            structure.has_fitting = bool(has_fitting)
+            structure.has_core = bool(has_core)
+            structure.save()
 
     @classmethod
     def get_esi_scopes(cls) -> list:
@@ -1276,8 +1330,6 @@ class OwnerAsset(models.Model):
     location_type = models.CharField(max_length=255)
     quantity = models.IntegerField(null=False)
     last_updated_at = models.DateTimeField(auto_now=True)
-
-    objects = OwnerAssetManager()
 
     def __str__(self) -> str:
         return str(self.eve_type.name)

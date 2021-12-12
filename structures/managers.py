@@ -547,69 +547,6 @@ class OwnerManagerBase(models.Manager):
 OwnerManager = OwnerManagerBase.from_queryset(OwnerQuerySet)
 
 
-class OwnerAssetManager(models.Manager):
-    def update_or_create_for_structures_esi(
-        self, structure_ids: list, corporation_id: int, token: Token
-    ) -> tuple:
-        """Fetch assets from esi for list of structures."""
-        from .models import EveType, Owner, Structure
-
-        assets = esi_fetch(
-            esi_path="Assets.get_corporations_corporation_id_assets",
-            args={"corporation_id": corporation_id},
-            token=token,
-            has_pages=True,
-        )
-        owner = Owner.objects.get(corporation__corporation_id=corporation_id)
-        assets_in_structures = [
-            asset
-            for asset in assets
-            if asset["location_id"] in set(structure_ids)
-            and asset["location_flag"]
-            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
-        ]
-        objs_ids = []
-        for asset in assets_in_structures:
-            eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
-            obj, _ = self.update_or_create(
-                id=asset["item_id"],
-                defaults={
-                    "owner": owner,
-                    "eve_type": eve_type,
-                    "is_singleton": asset["is_singleton"],
-                    "location_flag": asset["location_flag"],
-                    "location_id": asset["location_id"],
-                    "location_type": asset["location_type"],
-                    "quantity": asset["quantity"],
-                    "last_updated_at": now(),
-                },
-            )
-            objs_ids.append(obj.id)
-
-        # Clean up assets not in structures anymore
-        objs_to_delete = self.filter(location_id__in=list(structure_ids)).exclude(
-            id__in=objs_ids
-        )
-        objs_to_delete.delete()
-        for structure_id in structure_ids:
-            has_fitting = [
-                asset
-                for asset in assets_in_structures
-                if asset["location_id"] == structure_id
-                and asset["location_flag"] != "QuantumCoreRoom"
-            ]
-            has_core = [
-                asset
-                for asset in assets_in_structures
-                if asset["location_id"] == structure_id
-                and asset["location_flag"] == "QuantumCoreRoom"
-            ]
-            structure = Structure.objects.get(id=structure_id)
-            structure.has_fitting = bool(has_fitting)
-            structure.has_core = bool(has_core)
-            structure.save()
-
-
 class WebhookManager(WebhookBaseManager):
     def enabled_notification_types(self) -> set:
         """Set of all currently enabled notification types."""
