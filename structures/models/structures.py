@@ -446,12 +446,10 @@ class Structure(models.Model):
             return self.eve_planet.name
         return self.eve_solar_system.name
 
-    @cached_property
     def jump_fuel_quantity(self) -> Optional[int]:
-        return self.owner.assets.filter(
-            location_flag="StructureFuel",
-            eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_id=self.id,
+        """Current quantity of liquid ozone in units."""
+        return self.items.filter(
+            location_flag="StructureFuel", eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE
         ).aggregate(Sum("quantity"))["quantity__sum"]
 
     @property
@@ -573,7 +571,7 @@ class StructureItem(models.Model):
     structure = models.ForeignKey(
         "Structure",
         on_delete=models.CASCADE,
-        related_name="assets",
+        related_name="items",
         help_text="Structure this item is located in",
     )
 
@@ -586,7 +584,6 @@ class StructureItem(models.Model):
     is_singleton = models.BooleanField(null=False)
     last_updated_at = models.DateTimeField(auto_now=True)
     location_flag = models.CharField(max_length=255)
-    location_id = models.BigIntegerField(null=False, db_index=True)
     quantity = models.IntegerField(null=False)
 
     def __str__(self) -> str:

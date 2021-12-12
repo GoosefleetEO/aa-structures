@@ -10,7 +10,7 @@ from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
 from app_utils.testing import BravadoResponseStub, NoSocketsTestCase, queryset_pks
 
-from ...models import EveMoon, Notification, Owner, OwnerAsset, Structure, Webhook
+from ...models import EveMoon, Notification, Owner, Structure, StructureItem, Webhook
 from ...models.notifications import NotificationType
 from .. import to_json
 from ..testdata import (
@@ -658,22 +658,18 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         owner.refresh_from_db()
         self.assertTrue(owner.is_assets_sync_fresh)
         self.assertSetEqual(
-            queryset_pks(OwnerAsset.objects.all()),
+            queryset_pks(StructureItem.objects.all()),
             {1300000001001, 1300000001002, 1300000002001},
         )
-        obj = owner.assets.get(pk=1300000001001)
+        obj = owner.structures.get(pk=1000000000001).items.get(pk=1300000001001)
         self.assertEqual(obj.eve_type_id, 56201)
-        self.assertEqual(obj.location_id, 1000000000001)
         self.assertEqual(obj.location_flag, "QuantumCoreRoom")
-        self.assertEqual(obj.location_type, "item")
         self.assertEqual(obj.quantity, 1)
         self.assertFalse(obj.is_singleton)
 
-        obj = owner.assets.get(pk=1300000001002)
+        obj = owner.structures.get(pk=1000000000001).items.get(pk=1300000001002)
         self.assertEqual(obj.eve_type_id, 35894)
-        self.assertEqual(obj.location_id, 1000000000001)
         self.assertEqual(obj.location_flag, "ServiceSlot0")
-        self.assertEqual(obj.location_type, "item")
         self.assertEqual(obj.quantity, 1)
         self.assertTrue(obj.is_singleton)
 

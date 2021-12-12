@@ -1194,24 +1194,16 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
 
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
-        jump_gate_ids = Structure.objects.filter(
-            eve_type__eve_group__eve_type_id=constants.EVE_GROUP_ID_JUMP_GATE
-        ).values_list("id", flat=True)
-        if jump_gate_ids:
-            from .owners import OwnerAsset
-
-            fuel_assets = OwnerAsset.objects.filter(
-                location_flag="StructureFuel",
-                eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
-                location_id__in=jump_gate_ids,
-            )
-            for fuel_asset in fuel_assets:
-                if fuel_asset.quantity < self.threshold:
-                    notif, created = JumpFuelAlert.objects.get_or_create(
-                        structure_id=fuel_asset.location_id, config=self
-                    )
-                    if created or force:
-                        notif.send_generated_notification()
+        jump_gates = Structure.objects.filter(
+            eve_type_id=constants.EVE_GROUP_ID_JUMP_GATE
+        )
+        for jump_gate in jump_gates:
+            if jump_gate.jump_fuel_quantity() < self.threshold:
+                notif, created = JumpFuelAlert.objects.get_or_create(
+                    structure=jump_gate, config=self
+                )
+                if created or force:
+                    notif.send_generated_notification()
 
 
 class BaseFuelAlert(models.Model):

@@ -52,14 +52,7 @@ from .app_settings import (
     STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
 )
 from .forms import TagsFilterForm
-from .models import (
-    Owner,
-    OwnerAsset,
-    Structure,
-    StructureService,
-    StructureTag,
-    Webhook,
-)
+from .models import Owner, Structure, StructureService, StructureTag, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
@@ -530,9 +523,7 @@ def structure_details(request, structure_id):
         "rig": Slot.RIG.image_url(),
         "service": Slot.SERVICE.image_url(),
     }
-    assets = OwnerAsset.objects.select_related("eve_type").filter(
-        location_id=structure_id
-    )
+    assets = structure.items.select_related("eve_type")
     high_slots = extract_slot_assets(assets, "HiSlot")
     med_slots = extract_slot_assets(assets, "MedSlot")
     low_slots = extract_slot_assets(assets, "LoSlot")

@@ -12,7 +12,7 @@ from bravado.exception import HTTPForbidden
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db import models, transaction
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from esi.errors import TokenError
@@ -44,7 +44,7 @@ from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localizat
 from ..managers import OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
 from .notifications import EveEntity, Notification, NotificationType, Webhook
-from .structures import PocoDetails, Structure
+from .structures import PocoDetails, Structure, StructureItem
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -1173,45 +1173,44 @@ class Owner(models.Model):
 
     def update_asset_esi(self, user: User = None):
         assets_in_structures = self._fetch_structure_assets_from_esi()
-        objs_ids = []
-        for structure_id in assets_in_structures.keys():
-            for asset in assets_in_structures[structure_id]:
-                eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
-                obj, _ = OwnerAsset.objects.update_or_create(
-                    id=asset["item_id"],
-                    defaults={
-                        "owner": self,
-                        "eve_type": eve_type,
-                        "is_singleton": asset["is_singleton"],
-                        "location_flag": asset["location_flag"],
-                        "location_id": asset["location_id"],
-                        "location_type": asset["location_type"],
-                        "quantity": asset["quantity"],
-                        "last_updated_at": now(),
-                    },
-                )
-                objs_ids.append(obj.id)
+        for structure in self.structures.all():
+            if structure.id in assets_in_structures.keys():
+                structure_assets = assets_in_structures[structure.id]
+                has_fitting = [
+                    asset
+                    for asset in structure_assets.values()
+                    if asset["location_flag"] != "QuantumCoreRoom"
+                ]
+                has_core = [
+                    asset
+                    for asset in structure_assets.values()
+                    if asset["location_flag"] == "QuantumCoreRoom"
+                ]
+                structure.has_fitting = bool(has_fitting)
+                structure.has_core = bool(has_core)
+                structure.save()
 
-        # Clean up assets not in structures anymore
-        objs_to_delete = OwnerAsset.objects.filter(
-            location_id__in=assets_in_structures.keys()
-        ).exclude(id__in=objs_ids)
-        objs_to_delete.delete()
-        for structure_id in assets_in_structures.keys():
-            has_fitting = [
-                asset
-                for asset in assets_in_structures[structure_id]
-                if asset["location_flag"] != "QuantumCoreRoom"
-            ]
-            has_core = [
-                asset
-                for asset in assets_in_structures[structure_id]
-                if asset["location_flag"] == "QuantumCoreRoom"
-            ]
-            structure = Structure.objects.get(id=structure_id)
-            structure.has_fitting = bool(has_fitting)
-            structure.has_core = bool(has_core)
-            structure.save()
+                structure_items = list()
+                for item_id, asset in structure_assets.items():
+                    eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
+                    structure_items.append(
+                        StructureItem(
+                            id=item_id,
+                            structure=structure,
+                            eve_type=eve_type,
+                            is_singleton=asset["is_singleton"],
+                            location_flag=asset["location_flag"],
+                            quantity=asset["quantity"],
+                        )
+                    )
+                with transaction.atomic():
+                    structure.items.all().delete()
+                    structure.items.bulk_create(structure_items)
+
+        # remove items from structures that no longer have items
+        StructureItem.objects.filter(structure__owner=self).exclude(
+            structure_id__in=assets_in_structures.keys()
+        ).delete()
 
         self.assets_last_update_at = now()
         self.save(update_fields=["assets_last_update_at"])
@@ -1228,7 +1227,7 @@ class Owner(models.Model):
             has_pages=True,
         )
         structure_ids = set(self.structures.values_list("id", flat=True))
-        assets_in_structures = {id: list() for id in structure_ids}
+        assets_in_structures = {id: dict() for id in structure_ids}
         for asset in assets:
             location_id = asset["location_id"]
             if location_id in structure_ids and asset["location_flag"] not in [
@@ -1237,7 +1236,7 @@ class Owner(models.Model):
                 "SecondaryStorage",
                 "AutoFit",
             ]:
-                assets_in_structures[location_id].append(asset)
+                assets_in_structures[location_id][asset["item_id"]] = asset
         return assets_in_structures
 
     @classmethod
@@ -1306,36 +1305,4 @@ class OwnerCharacter(models.Model):
             .require_scopes(Owner.get_esi_scopes())
             .require_valid()
             .first()
-        )
-
-
-class OwnerAsset(models.Model):
-    """An asset for a corporation"""
-
-    id = models.BigIntegerField(primary_key=True, help_text="The Item ID of the assets")
-    eve_type = models.ForeignKey(
-        "EveType",
-        on_delete=models.CASCADE,
-        help_text="type of the assets",
-        related_name="+",
-    )
-    owner = models.ForeignKey(
-        "Owner",
-        on_delete=models.CASCADE,
-        related_name="assets",
-        help_text="Corporation that owns the assets",
-    )
-    is_singleton = models.BooleanField(null=False)
-    location_flag = models.CharField(max_length=255)
-    location_id = models.BigIntegerField(null=False, db_index=True)
-    location_type = models.CharField(max_length=255)
-    quantity = models.IntegerField(null=False)
-    last_updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return str(self.eve_type.name)
-
-    def __repr__(self):
-        return "{}(pk={}, owner=<{}>, eve_type=<{}>)".format(
-            self.__class__.__name__, self.pk, self.owner, self.eve_type
         )

@@ -23,5 +23,11 @@ from .notifications import (
     Webhook,
     get_default_notification_types,
 )
-from .owners import Owner, OwnerAsset, OwnerCharacter
-from .structures import PocoDetails, Structure, StructureService, StructureTag
+from .owners import Owner, OwnerCharacter
+from .structures import (
+    PocoDetails,
+    Structure,
+    StructureItem,
+    StructureService,
+    StructureTag,
+)

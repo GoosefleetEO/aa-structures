@@ -11,7 +11,6 @@ from ... import constants
 from ...models import (
     FuelAlertConfig,
     NotificationType,
-    OwnerAsset,
     PocoDetails,
     Structure,
     StructureService,
@@ -259,28 +258,22 @@ class TestStructure(NoSocketsTestCase):
     def test_should_return_jump_fuel_quantity(self):
         # given
         structure = Structure.objects.get(id=1000000000004)
-        OwnerAsset.objects.create(
+        structure.items.create(
             id=1,
-            owner=structure.owner,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
             location_flag="StructureFuel",
-            location_id=structure.id,
-            location_type="item",
             is_singleton=False,
             quantity=32,
         )
-        OwnerAsset.objects.create(
+        structure.items.create(
             id=2,
-            owner=structure.owner,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
             location_flag="StructureFuel",
-            location_id=structure.id,
-            location_type="item",
             is_singleton=False,
             quantity=10,
         )
         # when
-        result = structure.jump_fuel_quantity
+        result = structure.jump_fuel_quantity()
         # then
         self.assertEqual(result, 42)
 
@@ -288,7 +281,7 @@ class TestStructure(NoSocketsTestCase):
         # given
         structure = Structure.objects.get(id=1000000000003)
         # when
-        result = structure.jump_fuel_quantity
+        result = structure.jump_fuel_quantity()
         # then
         self.assertIsNone(result)
 
@@ -296,7 +289,7 @@ class TestStructure(NoSocketsTestCase):
         # given
         structure = Structure.objects.get(id=1200000000005)
         # when
-        result = structure.jump_fuel_quantity
+        result = structure.jump_fuel_quantity()
         # then
         self.assertIsNone(result)
 

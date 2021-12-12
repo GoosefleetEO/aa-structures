@@ -372,7 +372,7 @@ class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
         self._title = gettext("Structure jump fuel alert")
         self._description += gettext(
             "is low on liquid ozone.\nRemaining units: %s."
-            % Webhook.text_bold(self._structure.jump_fuel_quantity)
+            % Webhook.text_bold(self._structure.jump_fuel_quantity())
         )
         self._color = Webhook.Color.WARNING
 
