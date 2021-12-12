@@ -1172,29 +1172,17 @@ class Owner(models.Model):
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
     def update_asset_esi(self, user: User = None):
-        """Update all assets from ESI related to active structure for this owner."""
-        token = self.fetch_token()
-        structure_ids = list(self.structures.values_list("id", flat=True))
-        self._update_assets_from_esi(structure_ids, token)
-        self.assets_last_update_at = now()
-        self.save(update_fields=["assets_last_update_at"])
-        if user:
-            self._send_report_to_user(
-                topic="assets", topic_count=self.structures.count(), user=user
-            )
-
-    def _update_assets_from_esi(self, structure_ids: list, token: Token) -> tuple:
-        """Fetch assets from esi for list of structures."""
         assets = esi_fetch(
             esi_path="Assets.get_corporations_corporation_id_assets",
             args={"corporation_id": self.corporation.corporation_id},
-            token=token,
+            token=self.fetch_token(),
             has_pages=True,
         )
+        structure_ids = set(self.structures.values_list("id", flat=True))
         assets_in_structures = [
             asset
             for asset in assets
-            if asset["location_id"] in set(structure_ids)
+            if asset["location_id"] in structure_ids
             and asset["location_flag"]
             not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
         ]
@@ -1218,7 +1206,7 @@ class Owner(models.Model):
 
         # Clean up assets not in structures anymore
         objs_to_delete = OwnerAsset.objects.filter(
-            location_id__in=list(structure_ids)
+            location_id__in=structure_ids
         ).exclude(id__in=objs_ids)
         objs_to_delete.delete()
         for structure_id in structure_ids:
@@ -1238,6 +1226,13 @@ class Owner(models.Model):
             structure.has_fitting = bool(has_fitting)
             structure.has_core = bool(has_core)
             structure.save()
+
+        self.assets_last_update_at = now()
+        self.save(update_fields=["assets_last_update_at"])
+        if user:
+            self._send_report_to_user(
+                topic="assets", topic_count=self.structures.count(), user=user
+            )
 
     @classmethod
     def get_esi_scopes(cls) -> list:
