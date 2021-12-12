@@ -566,6 +566,38 @@ class Structure(models.Model):
         return matches.group(1) if matches else esi_name
 
 
+class StructureItem(models.Model):
+    """An item in a structure"""
+
+    id = models.BigIntegerField(primary_key=True, help_text="The Eve item ID")
+    structure = models.ForeignKey(
+        "Structure",
+        on_delete=models.CASCADE,
+        related_name="assets",
+        help_text="Structure this item is located in",
+    )
+
+    eve_type = models.ForeignKey(
+        "EveType",
+        on_delete=models.CASCADE,
+        help_text="eve type of the item",
+        related_name="+",
+    )
+    is_singleton = models.BooleanField(null=False)
+    last_updated_at = models.DateTimeField(auto_now=True)
+    location_flag = models.CharField(max_length=255)
+    location_id = models.BigIntegerField(null=False, db_index=True)
+    quantity = models.IntegerField(null=False)
+
+    def __str__(self) -> str:
+        return str(self.eve_type.name)
+
+    def __repr__(self):
+        return "{}(pk={}, structure=<{}>, eve_type=<{}>)".format(
+            self.__class__.__name__, self.pk, self.structure, self.eve_type
+        )
+
+
 class StructureService(EsiNameLocalization, models.Model):
     """service of a structure"""
 

@@ -1172,55 +1172,41 @@ class Owner(models.Model):
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
     def update_asset_esi(self, user: User = None):
-        assets = esi_fetch(
-            esi_path="Assets.get_corporations_corporation_id_assets",
-            args={"corporation_id": self.corporation.corporation_id},
-            token=self.fetch_token(),
-            has_pages=True,
-        )
-        structure_ids = set(self.structures.values_list("id", flat=True))
-        assets_in_structures = [
-            asset
-            for asset in assets
-            if asset["location_id"] in structure_ids
-            and asset["location_flag"]
-            not in ["CorpDeliveries", "OfficeFolder", "SecondaryStorage", "AutoFit"]
-        ]
+        assets_in_structures = self._fetch_structure_assets_from_esi()
         objs_ids = []
-        for asset in assets_in_structures:
-            eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
-            obj, _ = OwnerAsset.objects.update_or_create(
-                id=asset["item_id"],
-                defaults={
-                    "owner": self,
-                    "eve_type": eve_type,
-                    "is_singleton": asset["is_singleton"],
-                    "location_flag": asset["location_flag"],
-                    "location_id": asset["location_id"],
-                    "location_type": asset["location_type"],
-                    "quantity": asset["quantity"],
-                    "last_updated_at": now(),
-                },
-            )
-            objs_ids.append(obj.id)
+        for structure_id in assets_in_structures.keys():
+            for asset in assets_in_structures[structure_id]:
+                eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
+                obj, _ = OwnerAsset.objects.update_or_create(
+                    id=asset["item_id"],
+                    defaults={
+                        "owner": self,
+                        "eve_type": eve_type,
+                        "is_singleton": asset["is_singleton"],
+                        "location_flag": asset["location_flag"],
+                        "location_id": asset["location_id"],
+                        "location_type": asset["location_type"],
+                        "quantity": asset["quantity"],
+                        "last_updated_at": now(),
+                    },
+                )
+                objs_ids.append(obj.id)
 
         # Clean up assets not in structures anymore
         objs_to_delete = OwnerAsset.objects.filter(
-            location_id__in=structure_ids
+            location_id__in=assets_in_structures.keys()
         ).exclude(id__in=objs_ids)
         objs_to_delete.delete()
-        for structure_id in structure_ids:
+        for structure_id in assets_in_structures.keys():
             has_fitting = [
                 asset
-                for asset in assets_in_structures
-                if asset["location_id"] == structure_id
-                and asset["location_flag"] != "QuantumCoreRoom"
+                for asset in assets_in_structures[structure_id]
+                if asset["location_flag"] != "QuantumCoreRoom"
             ]
             has_core = [
                 asset
-                for asset in assets_in_structures
-                if asset["location_id"] == structure_id
-                and asset["location_flag"] == "QuantumCoreRoom"
+                for asset in assets_in_structures[structure_id]
+                if asset["location_flag"] == "QuantumCoreRoom"
             ]
             structure = Structure.objects.get(id=structure_id)
             structure.has_fitting = bool(has_fitting)
@@ -1233,6 +1219,26 @@ class Owner(models.Model):
             self._send_report_to_user(
                 topic="assets", topic_count=self.structures.count(), user=user
             )
+
+    def _fetch_structure_assets_from_esi(self) -> dict:
+        assets = esi_fetch(
+            esi_path="Assets.get_corporations_corporation_id_assets",
+            args={"corporation_id": self.corporation.corporation_id},
+            token=self.fetch_token(),
+            has_pages=True,
+        )
+        structure_ids = set(self.structures.values_list("id", flat=True))
+        assets_in_structures = {id: list() for id in structure_ids}
+        for asset in assets:
+            location_id = asset["location_id"]
+            if location_id in structure_ids and asset["location_flag"] not in [
+                "CorpDeliveries",
+                "OfficeFolder",
+                "SecondaryStorage",
+                "AutoFit",
+            ]:
+                assets_in_structures[location_id].append(asset)
+        return assets_in_structures
 
     @classmethod
     def get_esi_scopes(cls) -> list:
