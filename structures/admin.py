@@ -63,11 +63,11 @@ class StructureFuelAlertAdmin(BaseFuelAlertAdmin):
 
 
 @admin.register(JumpFuelAlert)
-class JumpFuelNotificationAdmin(BaseFuelAlertAdmin):
+class JumpFuelAlertAdmin(BaseFuelAlertAdmin):
     ...
 
 
-class BaseFuelNotificationConfigAdmin(admin.ModelAdmin):
+class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
     list_display = (
         "channel_ping_type",
         "_color",
@@ -118,13 +118,13 @@ class BaseFuelNotificationConfigAdmin(admin.ModelAdmin):
 
 
 @admin.register(FuelAlertConfig)
-class StructureFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
+class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
     list_display = (
         "_id",
         "start",
         "end",
         "repeat",
-    ) + BaseFuelNotificationConfigAdmin.list_display
+    ) + BaseFuelAlertConfigAdmin.list_display
 
     fieldsets = (
         (
@@ -139,15 +139,20 @@ class StructureFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
                 "fields": ("start", "end", "repeat"),
             },
         ),
-    ) + BaseFuelNotificationConfigAdmin.fieldsets
+    ) + BaseFuelAlertConfigAdmin.fieldsets
 
 
 @admin.register(JumpFuelAlertConfig)
-class JumpFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
+class JumpFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
     list_display = (
         "_id",
-        "threshold",
-    ) + BaseFuelNotificationConfigAdmin.list_display
+        "_threshold",
+    ) + BaseFuelAlertConfigAdmin.list_display
+
+    def _threshold(self, obj) -> str:
+        return f"{obj.threshold:,}"
+
+    _threshold.admin_order_field = "threshold"
 
     fieldsets = (
         (
@@ -157,7 +162,7 @@ class JumpFuelAlertConfigAdmin(BaseFuelNotificationConfigAdmin):
                 "fields": ("threshold",),
             },
         ),
-    ) + BaseFuelNotificationConfigAdmin.fieldsets
+    ) + BaseFuelAlertConfigAdmin.fieldsets
 
 
 class RenderableNotificationFilter(admin.SimpleListFilter):

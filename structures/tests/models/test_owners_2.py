@@ -10,7 +10,16 @@ from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
 from app_utils.testing import BravadoResponseStub, NoSocketsTestCase, queryset_pks
 
-from ...models import EveMoon, Notification, Owner, Structure, StructureItem, Webhook
+from ... import constants
+from ...models import (
+    EveMoon,
+    JumpFuelAlertConfig,
+    Notification,
+    Owner,
+    Structure,
+    StructureItem,
+    Webhook,
+)
 from ...models.notifications import NotificationType
 from .. import to_json
 from ..testdata import (
@@ -707,6 +716,27 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         # then
         owner.refresh_from_db()
         self.assertIsNone(owner.is_assets_sync_fresh)
+
+    def test_should_remove_jump_fuel_notifications_when_fuel_level_changed(
+        self, mock_esi_client
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.items.create(
+            id=1,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag="StructureFuel",
+            is_singleton=False,
+            quantity=5000,
+        )
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure.jump_fuel_alerts.create(structure=structure, config=config)
+        # when
+        owner.update_asset_esi()
+        # then
+        self.assertEqual(structure.jump_fuel_alerts.count(), 0)
 
     # TODO: Add tests for error cases
 

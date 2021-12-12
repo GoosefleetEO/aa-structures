@@ -1174,6 +1174,7 @@ class Owner(models.Model):
     def update_asset_esi(self, user: User = None):
         assets_in_structures = self._fetch_structure_assets_from_esi()
         for structure in self.structures.all():
+            old_jump_fuel_quantity = structure.jump_fuel_quantity()
             if structure.id in assets_in_structures.keys():
                 structure_assets = assets_in_structures[structure.id]
                 has_fitting = [
@@ -1206,6 +1207,14 @@ class Owner(models.Model):
                 with transaction.atomic():
                     structure.items.all().delete()
                     structure.items.bulk_create(structure_items)
+
+            # remove outdated jump fuel alerts
+            new_jump_fuel_quantity = structure.jump_fuel_quantity()
+            if (
+                not new_jump_fuel_quantity
+                or old_jump_fuel_quantity != new_jump_fuel_quantity
+            ):
+                structure.jump_fuel_alerts.all().delete()
 
         # remove items from structures that no longer have items
         StructureItem.objects.filter(structure__owner=self).exclude(
