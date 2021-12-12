@@ -1018,6 +1018,7 @@ class Notification(models.Model):
             if notif_type in {
                 NotificationType.STRUCTURE_FUEL_ALERT,
                 NotificationType.STRUCTURE_REFUELED_EXTRA,
+                NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
             }:
                 data = {
                     "solarsystemID": structure.eve_solar_system_id,
@@ -1195,7 +1196,7 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
         jump_gates = Structure.objects.filter(
-            eve_type_id=constants.EVE_GROUP_ID_JUMP_GATE
+            eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE
         )
         for jump_gate in jump_gates:
             if jump_gate.jump_fuel_quantity() < self.threshold:

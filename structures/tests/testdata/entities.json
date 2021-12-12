@@ -75,6 +75,11 @@
             "eve_category_id": 65
         },
         {
+            "id": 1408,
+            "name": "Upwell Jump Gate",
+            "eve_category_id": 65
+        },
+        {
             "id": 1025,
             "name": "Orbital Infrastructure",
             "eve_category_id": 46
@@ -200,6 +205,11 @@
             "id": 35835,
             "name": "Athanor",
             "eve_group_id": 1406
+        },
+        {
+            "id": 35841,
+            "name": "Ansiblex Jump Gate",
+            "eve_group_id": 1408
         },
         {
             "id": 46300,
@@ -633,7 +643,7 @@
         {
             "id": 1000000000004,
             "name": "Test Jump Gate",
-            "eve_type_id": 35832,
+            "eve_type_id": 35841,
             "eve_solar_system_id": 30000476,
             "reinforce_hour": 11,
             "state": 11,

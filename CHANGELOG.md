@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.18.0] - tbd.
+
+> **Important**:<br>Current owner assets will be cleared temporarily by installing this update and need to be updated again from ESI to re-enable features like fittings and quantum core. Note that you can trigger a manual update for owners from the admin site.
+
+## Added
+
+- Configurable alerts to warn about jump fuel (liquid ozone) running low in jump gates (#39)
+
+## Changed
+
+- Restructured data model: former OwnerAssets are now stored as StructureItems per structure
+
 ## [1.17.3] - 2021-12-10
 
 ## Fixed
