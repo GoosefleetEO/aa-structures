@@ -1014,6 +1014,7 @@ class Notification(models.Model):
             kwargs["timestamp"] = now()
         if "last_updated" not in kwargs:
             kwargs["last_updated"] = now()
+        threshold = kwargs.pop("threshold") if "threshold" in kwargs else None
         if "text" not in kwargs:
             if notif_type in {
                 NotificationType.STRUCTURE_FUEL_ALERT,
@@ -1024,6 +1025,7 @@ class Notification(models.Model):
                     "solarsystemID": structure.eve_solar_system_id,
                     "structureID": structure.id,
                     "structureTypeID": structure.eve_type_id,
+                    "threshold": threshold,
                 }
             elif notif_type in {
                 NotificationType.TOWER_RESOURCE_ALERT_MSG,
@@ -1290,6 +1292,7 @@ class JumpFuelAlert(BaseFuelAlert):
         notif = Notification.create_from_structure(
             structure=self.structure,
             notif_type=NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
+            threshold=self.config.threshold,
         )
         notif.send_to_configured_webhooks(
             ping_type_override=self.config.channel_ping_type,

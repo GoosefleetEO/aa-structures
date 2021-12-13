@@ -369,10 +369,16 @@ class NotificationStructureFuelAlert(NotificationStructureEmbed):
 class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure jump fuel alert")
+        self._title = gettext("Jump gate low on Liquid Ozone")
+        threshold_str = f"{self._parsed_text['threshold']:,}"
+        quantity_str = f"{self._structure.jump_fuel_quantity():,}"
         self._description += gettext(
-            "is low on liquid ozone.\nRemaining units: %s."
-            % Webhook.text_bold(self._structure.jump_fuel_quantity())
+            "is below %(threshold)s units on Liquid Ozone. "
+            "Remaining units: %(remaining)s."
+            % {
+                "threshold": f"{Webhook.text_bold(threshold_str)}",
+                "remaining": f"{Webhook.text_bold(quantity_str)}",
+            }
         )
         self._color = Webhook.Color.WARNING
 
