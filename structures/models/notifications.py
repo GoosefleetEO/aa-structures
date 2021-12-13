@@ -1082,17 +1082,7 @@ class BaseFuelAlertConfig(models.Model):
     @staticmethod
     def relevant_webhooks() -> models.QuerySet:
         """Webhooks relevant for processing fuel notifications based on this config."""
-        return (
-            Webhook.objects.filter(owner__isnull=False)
-            .filter(is_active=True)
-            .filter(
-                Q(notification_types__contains=NotificationType.STRUCTURE_FUEL_ALERT)
-                | Q(
-                    notification_types__contains=NotificationType.TOWER_RESOURCE_ALERT_MSG
-                )
-            )
-            .distinct()
-        )
+        raise NotImplementedError()
 
 
 class FuelAlertConfig(BaseFuelAlertConfig):
@@ -1174,6 +1164,21 @@ class FuelAlertConfig(BaseFuelAlertConfig):
                 if created or force:
                     notif.send_generated_notification()
 
+    @staticmethod
+    def relevant_webhooks() -> models.QuerySet:
+        """Webhooks relevant for processing fuel notifications based on this config."""
+        return (
+            Webhook.objects.filter(owner__isnull=False)
+            .filter(is_active=True)
+            .filter(
+                Q(notification_types__contains=NotificationType.STRUCTURE_FUEL_ALERT)
+                | Q(
+                    notification_types__contains=NotificationType.TOWER_RESOURCE_ALERT_MSG
+                )
+            )
+            .distinct()
+        )
+
 
 class JumpFuelAlertConfig(BaseFuelAlertConfig):
     """Configuration of jump fuel notifications."""
@@ -1184,14 +1189,14 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
         )
     )
 
-    # def save(self, *args, **kwargs) -> None:
-    #     try:
-    #         old_instance = JumpFuelAlertConfig.objects.get(pk=self.pk)
-    #     except JumpFuelAlertConfig.DoesNotExist:
-    #         old_instance = None
-    #     super().save(*args, **kwargs)
-    #     if old_instance and (old_instance.threshold != self.threshold):
-    #         self.jump_fuel_alerts.all().delete()
+    def save(self, *args, **kwargs) -> None:
+        try:
+            old_instance = JumpFuelAlertConfig.objects.get(pk=self.pk)
+        except JumpFuelAlertConfig.DoesNotExist:
+            old_instance = None
+        super().save(*args, **kwargs)
+        if old_instance and (old_instance.threshold != self.threshold):
+            self.jump_fuel_alerts.all().delete()
 
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
@@ -1206,10 +1211,17 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
                 if created or force:
                     notif.send_generated_notification()
 
+    @staticmethod
+    def relevant_webhooks() -> models.QuerySet:
+        """Webhooks relevant for processing jump fuel notifications based on this config."""
+        return Webhook.objects.filter(
+            owner__isnull=False,
+            is_active=True,
+            notification_types__contains=NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
+        )
+
 
 class BaseFuelAlert(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         abstract = True
 

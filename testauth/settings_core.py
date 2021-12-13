@@ -165,9 +165,7 @@ CACHES = {
     "default": {
         "BACKEND": "redis_cache.RedisCache",
         "LOCATION": "localhost:6379",
-        "OPTIONS": {
-            "DB": 1,
-        },
+        "OPTIONS": {"DB": 2},
     }
 }
 
@@ -230,7 +228,7 @@ LOGGING = {
             "backupCount": 5,  # edit this line to change number of log backups
         },
         "console": {
-            "level": "DEBUG",  # edit this line to change logging level to console
+            "level": "CRITICAL",  # edit this line to change logging level to console
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },

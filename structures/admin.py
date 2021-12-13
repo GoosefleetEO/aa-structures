@@ -31,7 +31,7 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 class BaseFuelAlertAdmin(admin.ModelAdmin):
-    list_display = ("config", "_owner", "structure", "created_at")
+    list_display = ("config", "_owner", "structure")
     list_select_related = (
         "config",
         "structure",

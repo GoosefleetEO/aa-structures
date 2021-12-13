@@ -25,7 +25,7 @@ MODULE_PATH = "structures.models.notifications"
 
 
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-class TestStructureFuelNotifications(NoSocketsTestCase):
+class TestStructureFuelAlerts(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -34,6 +34,16 @@ class TestStructureFuelNotifications(NoSocketsTestCase):
         load_notification_entities(cls.owner)
         cls.webhook = Webhook.objects.get(name="Test Webhook 1")
         Structure.objects.update(fuel_expires_at=None)
+
+    def test_should_output_str(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        alert = FuelAlert.objects.create(structure=structure, config=config, hours=36)
+        # when
+        result = str(alert)
+        # then
+        self.assertIsInstance(result, str)
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
@@ -232,9 +242,54 @@ class TestStructureFuelNotifications(NoSocketsTestCase):
         args, _ = mock_send_to_webhook.call_args
         self.assertEqual(args[0], self.webhook)
 
+    def test_should_remove_alerts_when_config_changes_1(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        FuelAlert.objects.create(structure=structure, config=config, hours=36)
+        # when
+        config.start = 36
+        config.save()
+        # then
+        self.assertEqual(structure.structure_fuel_alerts.count(), 0)
+
+    def test_should_remove_alerts_when_config_changes_2(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        FuelAlert.objects.create(structure=structure, config=config, hours=36)
+        # when
+        config.end = 2
+        config.save()
+        # then
+        self.assertEqual(structure.structure_fuel_alerts.count(), 0)
+
+    def test_should_remove_alerts_when_config_changes_3(self, mock_send_message):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        FuelAlert.objects.create(structure=structure, config=config, hours=36)
+        # when
+        config.repeat = 4
+        config.save()
+        # then
+        self.assertEqual(structure.structure_fuel_alerts.count(), 0)
+
+    def test_should_keep_alerts_when_config_updated_without_change(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        FuelAlert.objects.create(structure=structure, config=config, hours=36)
+        # when
+        config.save()
+        # then
+        self.assertEqual(structure.structure_fuel_alerts.count(), 1)
+
 
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-class TestJumpFuelNotifications(NoSocketsTestCase):
+class TestJumpFuelAlerts(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -242,6 +297,16 @@ class TestJumpFuelNotifications(NoSocketsTestCase):
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
         cls.webhook = Webhook.objects.get(name="Test Webhook 1")
+
+    def test_should_output_str(self, mock_send_message):
+        # given
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure = Structure.objects.get(id=1000000000004)
+        alert = structure.jump_fuel_alerts.create(config=config)
+        # when
+        result = str(alert)
+        # then
+        self.assertIsInstance(result, str)
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
@@ -379,3 +444,26 @@ class TestJumpFuelNotifications(NoSocketsTestCase):
         self.assertEqual(mock_send_to_webhook.call_count, 1)
         args, _ = mock_send_to_webhook.call_args
         self.assertEqual(args[0], self.webhook)
+
+    def test_should_remove_alerts_when_config_changes(self, mock_send_message):
+        # given
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure = Structure.objects.get(id=1000000000004)
+        structure.jump_fuel_alerts.create(config=config)
+        # when
+        config.threshold = 50
+        config.save()
+        # then
+        self.assertEqual(structure.jump_fuel_alerts.count(), 0)
+
+    def test_should_keep_alerts_when_config_updated_without_change(
+        self, mock_send_message
+    ):
+        # given
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure = Structure.objects.get(id=1000000000004)
+        structure.jump_fuel_alerts.create(config=config)
+        # when
+        config.save()
+        # then
+        self.assertEqual(structure.jump_fuel_alerts.count(), 1)
