@@ -1,10 +1,8 @@
-import re
 import urllib
 from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Q
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,13 +15,12 @@ from eveuniverse.core import eveimageserver
 from eveuniverse.models import EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.allianceauth import notify_admins
 from app_utils.logging import LoggerAddTag
 from app_utils.messages import messages_plus
-from app_utils.views import bootstrap_label_html, image_html, link_html
+from app_utils.views import image_html
 
 from . import __title__, constants, tasks
 from .app_settings import (
@@ -34,8 +31,11 @@ from .app_settings import (
     STRUCTURES_PAGING_ENABLED,
     STRUCTURES_SHOW_JUMP_GATES,
 )
-from .constants import STRUCTURE_LIST_ICON_OUTPUT_SIZE, STRUCTURE_LIST_ICON_RENDER_SIZE
-from .core.serializers import JumpGatesListSerializer, StructureListSerializer
+from .core.serializers import (
+    JumpGatesListSerializer,
+    PocoListSerializer,
+    StructureListSerializer,
+)
 from .forms import TagsFilterForm
 from .models import Owner, Structure, StructureItem, StructureTag, Webhook
 
@@ -357,111 +357,12 @@ def service_status(request):
 
 def poco_list_data(request) -> JsonResponse:
     """List of public POCOs for DataTables."""
-    pocos = (
-        Structure.objects.select_related(
-            "eve_planet",
-            "eve_planet__eve_type",
-            "eve_type",
-            "eve_type__eve_group",
-            "eve_solar_system",
-            "eve_solar_system__eve_constellation__eve_region",
-            "poco_details",
-            "owner__corporation",
-        )
-        .filter(eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL)
-        .filter(owner__are_pocos_public=True)
+    pocos = Structure.objects.filter(
+        eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL,
+        owner__are_pocos_public=True,
     )
-    data = list()
-    try:
-        main_character = request.user.profile.main_character
-    except (AttributeError, ObjectDoesNotExist):
-        main_character = None
-    for poco in pocos:
-        if poco.eve_solar_system.is_low_sec:
-            space_badge_type = "warning"
-        elif poco.eve_solar_system.is_high_sec:
-            space_badge_type = "success"
-        else:
-            space_badge_type = "danger"
-        solar_system_html = format_html(
-            "{}<br>{}",
-            link_html(
-                dotlan.solar_system_url(poco.eve_solar_system.name),
-                poco.eve_solar_system.name,
-            ),
-            bootstrap_label_html(
-                text=poco.eve_solar_system.space_type, label=space_badge_type
-            ),
-        )
-        type_icon = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            poco.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-        )
-        try:
-            match = re.search(r"Planet \((\S+)\)", poco.eve_planet.eve_type.name)
-        except AttributeError:
-            planet_name = planet_type_name = "?"
-            planet_type_icon = ""
-        else:
-            if match:
-                planet_type_name = match.group(1)
-            else:
-                planet_type_name = ""
-            planet_name = poco.eve_planet.name
-            planet_type_icon = format_html(
-                '<img src="{}" width="{}" height="{}"/>',
-                poco.eve_planet.eve_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-                STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            )
-
-        tax = None
-        has_access = None
-        if main_character:
-            try:
-                details = poco.poco_details
-            except (AttributeError, ObjectDoesNotExist):
-                ...
-            else:
-                tax = details.tax_for_character(main_character)
-                has_access = details.has_character_access(main_character)
-
-        if has_access is True:
-            has_access_html = (
-                '<i class="fas fa-check text-success" title="Has access"></i>'
-            )
-            has_access_str = _("yes")
-        elif has_access is False:
-            has_access_html = (
-                '<i class="fas fa-times text-danger" title="No access"></i>'
-            )
-            has_access_str = _("no")
-        else:
-            has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
-            has_access_str = "?"
-
-        data.append(
-            {
-                "id": poco.id,
-                "type_icon": type_icon,
-                "region": poco.eve_solar_system.eve_constellation.eve_region.name,
-                "solar_system_html": {
-                    "display": solar_system_html,
-                    "sort": poco.eve_solar_system.name,
-                },
-                "solar_system": poco.eve_solar_system.name,
-                "planet": planet_name,
-                "planet_type_icon": planet_type_icon,
-                "planet_type_name": planet_type_name,
-                "space_type": poco.eve_solar_system.space_type,
-                "has_access_html": has_access_html,
-                "has_access_str": has_access_str,
-                "tax": f"{tax * 100:.0f} %" if tax else "?",
-            }
-        )
-    return JsonResponse({"data": data})
+    serializer = PocoListSerializer(queryset=pocos, request=request)
+    return JsonResponse({"data": serializer.to_list()})
 
 
 @login_required

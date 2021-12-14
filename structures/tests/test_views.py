@@ -751,6 +751,35 @@ class TestPocoList(TestCase):
         )
         cls.factory = RequestFactory()
 
+    def test_should_return_correct_data_for_poco(self):
+        # given
+        request = self.factory.get(reverse("structures:poco_list_data"))
+        request.user = self.user
+        self.owner.are_pocos_public = True
+        self.owner.save()
+        PocoDetails.objects.create(
+            structure_id=1200000000003,
+            alliance_tax_rate=0.02,
+            allow_access_with_standings=True,
+            allow_alliance_access=True,
+            corporation_tax_rate=0.01,
+            reinforce_exit_end=21,
+            reinforce_exit_start=18,
+        )
+        # when
+        response = views.poco_list_data(request)
+        # then
+        self.assertEqual(response.status_code, 200)
+        data = json_response_to_dict(response)
+        obj = data[1200000000003]
+        self.assertEqual(obj["region"], "Heimatar")
+        self.assertEqual(obj["solar_system"], "Amamake")
+        self.assertEqual(obj["planet"], "Amamake V")
+        self.assertEqual(obj["planet_type_name"], "Barren")
+        self.assertEqual(obj["space_type"], "lowsec")
+        self.assertEqual(obj["has_access_str"], "yes")
+        self.assertEqual(obj["tax"], "1 %")
+
     def test_should_return_all_pocos(self):
         # given
         request = self.factory.get(reverse("structures:poco_list_data"))
@@ -766,12 +795,6 @@ class TestPocoList(TestCase):
             set(data.keys()),
             {1200000000003, 1200000000004, 1200000000005, 1200000000006},
         )
-        obj = data[1200000000003]
-        self.assertEqual(obj["region"], "Heimatar")
-        self.assertEqual(obj["solar_system"], "Amamake")
-        self.assertEqual(obj["planet"], "Amamake V")
-        self.assertEqual(obj["planet_type_name"], "Barren")
-        self.assertEqual(obj["space_type"], "lowsec")
 
     def test_should_return_no_pocos(self):
         # given

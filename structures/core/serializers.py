@@ -1,5 +1,7 @@
+import re
 from abc import ABC, abstractmethod
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q, Sum
 from django.urls import reverse
@@ -22,12 +24,14 @@ from app_utils.views import (
 
 from .. import constants
 from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
-from ..constants import STRUCTURE_LIST_ICON_OUTPUT_SIZE, STRUCTURE_LIST_ICON_RENDER_SIZE
 from ..models import Structure, StructureItem, StructureService
 
 
 class _AbstractStructureListSerializer(ABC):
     """Converting a list of structure objects into a dict for JSON."""
+
+    ICON_RENDER_SIZE = 64
+    ICON_OUTPUT_SIZE = 32
 
     def __init__(self, queryset: models.QuerySet, request=None):
         self.queryset = queryset
@@ -69,9 +73,9 @@ class _AbstractStructureListSerializer(ABC):
         row["corporation_icon"] = format_html(
             '<span class="nowrap">{} <img src="{}" width="{}" height="{}"/></span>',
             update_warning_html,
-            corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            corporation.logo_url(size=self.ICON_RENDER_SIZE),
+            self.ICON_OUTPUT_SIZE,
+            self.ICON_OUTPUT_SIZE,
         )
         row["alliance_name"] = alliance_name
         row["corporation_name"] = corporation.corporation_name
@@ -111,9 +115,9 @@ class _AbstractStructureListSerializer(ABC):
         # type icon
         row["type_icon"] = format_html(
             '<img src="{}" width="{}" height="{}"/>',
-            structure_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
+            structure_type.icon_url(size=self.ICON_RENDER_SIZE),
+            self.ICON_OUTPUT_SIZE,
+            self.ICON_OUTPUT_SIZE,
         )
         # type name
         row["type_name"] = structure_type.name_localized
@@ -381,3 +385,116 @@ class JumpGatesListSerializer(_AbstractStructureListSerializer):
 
     def _add_jump_fuel_level(self, structure, row):
         row["jump_fuel_quantity"] = structure.jump_fuel_quantity_2
+
+
+class PocoListSerializer(_AbstractStructureListSerializer):
+    def __init__(self, queryset: models.QuerySet, request=None):
+        super().__init__(queryset, request=request)
+        self.queryset = self.queryset.select_related(
+            "eve_planet",
+            "eve_planet__eve_type",
+            "eve_type",
+            "eve_type__eve_group",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation__eve_region",
+            "poco_details",
+            "owner__corporation",
+        )
+        if not request:
+            raise ValueError("request can not be None")
+        try:
+            self.main_character = request.user.profile.main_character
+        except (AttributeError, ObjectDoesNotExist):
+            self.main_character = None
+
+    def serialize_object(self, structure: Structure) -> dict:
+        row = super().serialize_object(structure)
+        self._add_type(structure, row)
+        self._add_solar_system(structure, row)
+        self._add_planet(structure, row)
+        self._add_has_access_and_tax(structure, row, self.main_character)
+        return row
+
+    def _add_type(self, structure, row):
+        row["type_icon"] = format_html(
+            '<img src="{}" width="{}" height="{}"/>',
+            structure.eve_type.icon_url(size=self.ICON_RENDER_SIZE),
+            self.ICON_OUTPUT_SIZE,
+            self.ICON_OUTPUT_SIZE,
+        )
+
+    def _add_solar_system(self, structure, row):
+        if structure.eve_solar_system.is_low_sec:
+            space_badge_type = "warning"
+        elif structure.eve_solar_system.is_high_sec:
+            space_badge_type = "success"
+        else:
+            space_badge_type = "danger"
+        solar_system_html = format_html(
+            "{}<br>{}",
+            link_html(
+                dotlan.solar_system_url(structure.eve_solar_system.name),
+                structure.eve_solar_system.name,
+            ),
+            bootstrap_label_html(
+                text=structure.eve_solar_system.space_type, label=space_badge_type
+            ),
+        )
+        row["solar_system_html"] = {
+            "display": solar_system_html,
+            "sort": structure.eve_solar_system.name,
+        }
+        row["solar_system"] = structure.eve_solar_system.name
+        row["region"] = structure.eve_solar_system.eve_constellation.eve_region.name
+        row["space_type"] = structure.eve_solar_system.space_type
+
+    def _add_planet(self, structure, row):
+        try:
+            match = re.search(r"Planet \((\S+)\)", structure.eve_planet.eve_type.name)
+        except AttributeError:
+            planet_name = planet_type_name = "?"
+            planet_type_icon = ""
+        else:
+            if match:
+                planet_type_name = match.group(1)
+            else:
+                planet_type_name = ""
+            planet_name = structure.eve_planet.name
+            planet_type_icon = format_html(
+                '<img src="{}" width="{}" height="{}"/>',
+                structure.eve_planet.eve_type.icon_url(size=self.ICON_RENDER_SIZE),
+                self.ICON_OUTPUT_SIZE,
+                self.ICON_OUTPUT_SIZE,
+            )
+        row["planet"] = planet_name
+        row["planet_type_icon"] = planet_type_icon
+        row["planet_type_name"] = planet_type_name
+
+    def _add_has_access_and_tax(self, structure, row, main_character):
+        tax = None
+        has_access = None
+        if main_character:
+            try:
+                details = structure.poco_details
+            except (AttributeError, ObjectDoesNotExist):
+                pass
+            else:
+                tax = details.tax_for_character(main_character)
+                has_access = details.has_character_access(main_character)
+
+        if has_access is True:
+            has_access_html = (
+                '<i class="fas fa-check text-success" title="Has access"></i>'
+            )
+            has_access_str = _("yes")
+        elif has_access is False:
+            has_access_html = (
+                '<i class="fas fa-times text-danger" title="No access"></i>'
+            )
+            has_access_str = _("no")
+        else:
+            has_access_html = '<i class="fas fa-question" title="Unknown"></i>'
+            has_access_str = "?"
+        row["has_access_html"] = has_access_html
+        row["has_access_str"] = has_access_str
+        row["tax"] = f"{tax * 100:.0f} %" if tax else "?"
