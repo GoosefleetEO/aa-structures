@@ -1288,7 +1288,7 @@ class JumpFuelAlert(BaseFuelAlert):
     def __str__(self) -> str:
         return f"{self.structure}-{self.config}"
 
-    def send_generated_notification(self):
+    def send_generated_notification(self) -> None:
         notif = Notification.create_from_structure(
             structure=self.structure,
             notif_type=NotificationType.STRUCTURE_JUMP_FUEL_ALERT,

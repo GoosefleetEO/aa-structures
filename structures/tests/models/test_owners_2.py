@@ -717,7 +717,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         owner.refresh_from_db()
         self.assertIsNone(owner.is_assets_sync_fresh)
 
-    def test_should_remove_jump_fuel_notifications_when_fuel_level_changed(
+    def test_should_remove_assets_that_no_longer_exist_for_existing_structure(
         self, mock_esi_client
     ):
         # given
@@ -725,12 +725,47 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         owner = Owner.objects.get(corporation__corporation_id=2001)
         structure = Structure.objects.get(id=1000000000001)
         structure.items.create(
-            id=1,
+            id=42,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag="Cargo",
             is_singleton=False,
             quantity=5000,
         )
+        # when
+        owner.update_asset_esi()
+        # then
+        self.assertFalse(structure.items.filter(id=42).exists())
+
+    def test_should_remove_assets_that_no_longer_exist_for_removed_structure(
+        self, mock_esi_client
+    ):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure = Structure.objects.create(
+            id=1000000000666,
+            owner=owner,
+            eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE,
+            name="Zombie",
+            eve_solar_system_id=30000476,
+        )
+        structure.items.create(
+            id=42,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag="Cargo",
+            is_singleton=False,
+            quantity=5000,
+        )
+        # when
+        owner.update_asset_esi()
+        # then
+        self.assertFalse(structure.items.filter(id=42).exists())
+
+    def test_should_remove_outdated_jump_fuel_alerts(self, mock_esi_client):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        _, owner = set_owner_character(character_id=1011)
+        structure = Structure.objects.get(id=1000000000004)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
         structure.jump_fuel_alerts.create(structure=structure, config=config)
         # when

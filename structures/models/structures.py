@@ -529,6 +529,14 @@ class Structure(models.Model):
         )
         notif.send_to_configured_webhooks()
 
+    def reevaluate_jump_fuel_alerts(self):
+        """Remove outdated fuel alerts based on potentially changed fuel levels."""
+        jump_fuel_quantity = self.jump_fuel_quantity()
+        if jump_fuel_quantity:
+            self.jump_fuel_alerts.filter(
+                config__threshold__lt=jump_fuel_quantity
+            ).delete()
+
     def get_power_mode_display(self) -> str:
         return self.PowerMode(self.power_mode).label if self.power_mode else ""
 

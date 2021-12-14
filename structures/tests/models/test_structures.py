@@ -10,6 +10,7 @@ from app_utils.testing import NoSocketsTestCase
 from ... import constants
 from ...models import (
     FuelAlertConfig,
+    JumpFuelAlertConfig,
     NotificationType,
     PocoDetails,
     Structure,
@@ -292,6 +293,40 @@ class TestStructure(NoSocketsTestCase):
         result = structure.jump_fuel_quantity()
         # then
         self.assertIsNone(result)
+
+    def test_should_remove_fuel_alerts_when_fuel_level_above_threshold(self):
+        # given
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure = Structure.objects.get(id=1000000000004)
+        structure.items.create(
+            id=1,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag="StructureFuel",
+            is_singleton=False,
+            quantity=101,
+        )
+        structure.jump_fuel_alerts.create(config=config)
+        # when
+        structure.reevaluate_jump_fuel_alerts()
+        # then
+        self.assertEqual(structure.jump_fuel_alerts.count(), 0)
+
+    def test_should_keep_fuel_alerts_when_fuel_level_below_threshold(self):
+        # given
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure = Structure.objects.get(id=1000000000004)
+        structure.items.create(
+            id=1,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag="StructureFuel",
+            is_singleton=False,
+            quantity=99,
+        )
+        structure.jump_fuel_alerts.create(config=config)
+        # when
+        structure.reevaluate_jump_fuel_alerts()
+        # then
+        self.assertEqual(structure.jump_fuel_alerts.count(), 1)
 
 
 class TestStructureIsBurningFuel(NoSocketsTestCase):

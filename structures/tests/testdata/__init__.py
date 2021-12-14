@@ -22,7 +22,7 @@ from allianceauth.eveonline.models import (
     EveCharacter,
     EveCorporationInfo,
 )
-from app_utils.esi_testing import BravadoOperationStub
+from app_utils.esi_testing import BravadoOperationStub, BravadoResponseStub
 from app_utils.testing import create_user_from_evecharacter
 
 from ...models import (
@@ -419,6 +419,23 @@ def esi_get_corporations_corporation_id_customs_offices(
 esi_get_corporations_corporation_id_customs_offices.override_data = None
 
 
+def esi_get_corporations_corporation_id_assets(
+    corporation_id: int, token: str, **kwargs
+) -> list:
+    """simulates ESI endpoint of same name for mock test"""
+    try:
+        my_esi_data = esi_data["Assets"]["get_corporations_corporation_id_assets"][
+            str(corporation_id)
+        ]
+    except KeyError:
+        raise HTTPNotFound(
+            response=BravadoResponseStub(
+                404, f"No asset data found for {corporation_id} "
+            )
+        )
+    return BravadoOperationStub(data=my_esi_data)
+
+
 def _esi_post_corporations_corporation_id_assets(
     category: str, corporation_id: int, item_ids: list, my_esi_data: list = None
 ) -> list:
@@ -502,38 +519,8 @@ def esi_mock_client(version=1.6):
     mock_client = Mock()
 
     # Assets
-    mock_client.Assets.get_corporations_corporation_id_assets.side_effect = (
-        esi_return_data(
-            [
-                {
-                    "is_singleton": False,
-                    "item_id": 1300000001001,
-                    "location_flag": "QuantumCoreRoom",
-                    "location_id": 1000000000001,
-                    "location_type": "item",
-                    "quantity": 1,
-                    "type_id": 56201,
-                },
-                {
-                    "is_singleton": True,
-                    "item_id": 1300000001002,
-                    "location_flag": "ServiceSlot0",
-                    "location_id": 1000000000001,
-                    "location_type": "item",
-                    "quantity": 1,
-                    "type_id": 35894,
-                },
-                {
-                    "is_singleton": True,
-                    "item_id": 1300000002001,
-                    "location_flag": "ServiceSlot0",
-                    "location_id": 1000000000002,
-                    "location_type": "item",
-                    "quantity": 1,
-                    "type_id": 35894,
-                },
-            ]
-        )
+    mock_client.Assets.get_corporations_corporation_id_assets = (
+        esi_get_corporations_corporation_id_assets
     )
     mock_client.Assets.post_corporations_corporation_id_assets_locations = (
         esi_post_corporations_corporation_id_assets_locations
