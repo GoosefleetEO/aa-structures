@@ -449,7 +449,8 @@ class Structure(models.Model):
     def jump_fuel_quantity(self) -> Optional[int]:
         """Current quantity of liquid ozone in units."""
         return self.items.filter(
-            location_flag="StructureFuel", eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
         ).aggregate(Sum("quantity"))["quantity__sum"]
 
     @property
@@ -574,6 +575,20 @@ class Structure(models.Model):
 
 class StructureItem(models.Model):
     """An item in a structure"""
+
+    class LocationFlag(models.TextChoices):
+        """Frequently used location flags.
+        This are not all, so can not be used as choices.
+        """
+
+        AUTOFIT = "AutoFit"
+        CARGO = "Cargo"
+        CORP_DELIVERIES = "CorpDeliveries"
+        FIGHTER_BAY = "FighterBay"
+        OFFICE_FOLDER = "OfficeFolder"
+        QUANTUM_CORE_ROOM = "QuantumCoreRoom"
+        SECONDARY_STORAGE = "SecondaryStorage"
+        STRUCTURE_FUEL = "StructureFuel"
 
     id = models.BigIntegerField(primary_key=True, help_text="The Eve item ID")
     structure = models.ForeignKey(

@@ -1179,12 +1179,14 @@ class Owner(models.Model):
                 has_fitting = [
                     asset
                     for asset in structure_assets.values()
-                    if asset["location_flag"] != "QuantumCoreRoom"
+                    if asset["location_flag"]
+                    != StructureItem.LocationFlag.QUANTUM_CORE_ROOM
                 ]
                 has_core = [
                     asset
                     for asset in structure_assets.values()
-                    if asset["location_flag"] == "QuantumCoreRoom"
+                    if asset["location_flag"]
+                    == StructureItem.LocationFlag.QUANTUM_CORE_ROOM
                 ]
                 structure.has_fitting = bool(has_fitting)
                 structure.has_core = bool(has_core)
@@ -1233,10 +1235,10 @@ class Owner(models.Model):
         for asset in assets:
             location_id = asset["location_id"]
             if location_id in structure_ids and asset["location_flag"] not in [
-                "CorpDeliveries",
-                "OfficeFolder",
-                "SecondaryStorage",
-                "AutoFit",
+                StructureItem.LocationFlag.CORP_DELIVERIES,
+                StructureItem.LocationFlag.OFFICE_FOLDER,
+                StructureItem.LocationFlag.SECONDARY_STORAGE,
+                StructureItem.LocationFlag.AUTOFIT,
             ]:
                 assets_in_structures[location_id][asset["item_id"]] = asset
         return assets_in_structures

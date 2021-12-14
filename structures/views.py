@@ -52,7 +52,14 @@ from .app_settings import (
     STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
 )
 from .forms import TagsFilterForm
-from .models import Owner, Structure, StructureService, StructureTag, Webhook
+from .models import (
+    Owner,
+    Structure,
+    StructureItem,
+    StructureService,
+    StructureTag,
+    Webhook,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 STRUCTURE_LIST_ICON_RENDER_SIZE = 64
@@ -532,11 +539,11 @@ def structure_details(request, structure_id):
     fighter_tubes = extract_slot_assets(assets, "FighterTube")
     assets_grouped = {"ammo_hold": [], "fighter_bay": [], "fuel_bay": []}
     for asset in assets:
-        if asset.location_flag == "Cargo":
+        if asset.location_flag == StructureItem.LocationFlag.CARGO:
             assets_grouped["ammo_hold"].append(asset)
-        elif asset.location_flag == "FighterBay":
+        elif asset.location_flag == StructureItem.LocationFlag.FIGHTER_BAY:
             assets_grouped["fighter_bay"].append(asset)
-        elif asset.location_flag == "StructureFuel":
+        elif asset.location_flag == StructureItem.LocationFlag.STRUCTURE_FUEL:
             assets_grouped["fuel_bay"].append(asset)
         else:
             assets_grouped[asset.location_flag] = asset

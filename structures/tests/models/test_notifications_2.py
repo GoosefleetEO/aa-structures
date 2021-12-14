@@ -13,6 +13,7 @@ from ...models import (
     JumpFuelAlertConfig,
     NotificationType,
     Structure,
+    StructureItem,
     Webhook,
 )
 from ..testdata import (
@@ -315,7 +316,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
         )
@@ -337,7 +338,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
         )
@@ -359,7 +360,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=101,
         )
@@ -379,7 +380,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
         )
@@ -400,7 +401,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
         )
@@ -432,7 +433,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
         )

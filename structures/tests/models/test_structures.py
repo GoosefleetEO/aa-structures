@@ -14,6 +14,7 @@ from ...models import (
     NotificationType,
     PocoDetails,
     Structure,
+    StructureItem,
     StructureService,
     StructureTag,
 )
@@ -262,14 +263,14 @@ class TestStructure(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=32,
         )
         structure.items.create(
             id=2,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=10,
         )
@@ -301,7 +302,7 @@ class TestStructure(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=101,
         )
@@ -318,7 +319,7 @@ class TestStructure(NoSocketsTestCase):
         structure.items.create(
             id=1,
             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
-            location_flag="StructureFuel",
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
         )

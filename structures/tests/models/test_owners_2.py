@@ -672,7 +672,9 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         )
         obj = owner.structures.get(pk=1000000000001).items.get(pk=1300000001001)
         self.assertEqual(obj.eve_type_id, 56201)
-        self.assertEqual(obj.location_flag, "QuantumCoreRoom")
+        self.assertEqual(
+            obj.location_flag, StructureItem.LocationFlag.QUANTUM_CORE_ROOM
+        )
         self.assertEqual(obj.quantity, 1)
         self.assertFalse(obj.is_singleton)
 
