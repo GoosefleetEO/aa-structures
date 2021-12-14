@@ -107,14 +107,14 @@
                     { data: 'structure_name' },
                     { data: 'services' },
                     {
-                        data: 'fuel_expires_at',
+                        data: 'last_online_at',
                         render: {
                             _: 'display',
                             sort: 'timestamp'
                         }
                     },
                     {
-                        data: 'last_online_at',
+                        data: 'fuel_expires_at',
                         render: {
                             _: 'display',
                             sort: 'timestamp'
@@ -124,6 +124,7 @@
                     { data: 'state_details' },
                     { data: 'core_status' },
                     { data: 'details' },
+                    /* hidden */
                     { data: 'alliance_name' },
                     { data: 'corporation_name' },
                     { data: 'region_name' },
@@ -397,6 +398,13 @@
                     { data: 'location' },
                     { data: 'structure_name' },
                     {
+                        data: 'last_online_at',
+                        render: {
+                            _: 'display',
+                            sort: 'timestamp'
+                        }
+                    },
+                    {
                         data: 'fuel_expires_at',
                         render: {
                             _: 'display',
@@ -413,6 +421,7 @@
                     { data: 'region_name' },
                     { data: 'solar_system_name' },
                     { data: 'is_reinforced_str' },
+                    { data: 'power_mode_str' },
                 ],
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 paging: dataTablesPaging,
@@ -420,35 +429,40 @@
                 order: [[1, "asc"]],
                 columnDefs: [
                     { "sortable": false, "targets": [ 0, 2 ] },
-                    { "visible": false, "targets": [ 6, 7, 8, 9, 10 ] },
+                    { "visible": false, "targets": [ 7, 8, 9, 10, 11, 12 ] },
                 ],
                 filterDropDown:
                 {
                    columns: [
                         {
-                            idx: 6,
+                            idx: 7,
                             title: "{% translate 'Alliance' %}",
                             maxWidth: "11em"
                         },
                         {
-                            idx: 7,
+                            idx: 8,
                             title: "{% translate 'Corporation' %}",
                             maxWidth: "11em"
                         },
                         {
-                            idx: 8,
+                            idx: 9,
                             title: "{% translate 'Region' %}",
                             maxWidth: "7em"
                         },
                         {
-                            idx: 9,
+                            idx: 10,
                             title: "{% translate 'Solar System' %}",
                             maxWidth: "14em"
                         },
                         {
-                            idx: 10,
+                            idx: 11,
                             title: "{% translate 'Reinforced?' %}",
                             maxWidth: "13em"
+                        },
+                        {
+                            idx: 12,
+                            title: "{% translate 'Power Mode' %}",
+                            maxWidth: "12em"
                         }
                     ],
                     autoSize: false,

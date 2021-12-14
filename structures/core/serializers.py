@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from django.db import models
+from django.db.models import Q, Sum
 from django.urls import reverse
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
@@ -19,12 +20,15 @@ from app_utils.views import (
     yesnonone_str,
 )
 
+from .. import constants
 from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
 from ..constants import STRUCTURE_LIST_ICON_OUTPUT_SIZE, STRUCTURE_LIST_ICON_RENDER_SIZE
-from ..models import Structure, StructureService
+from ..models import Structure, StructureItem, StructureService
 
 
-class BaseStructuresListFormatter(ABC):
+class _AbstractStructureListSerializer(ABC):
+    """Converting a list of structure objects into a dict for JSON."""
+
     def __init__(self, queryset: models.QuerySet, request=None):
         self.queryset = queryset
         self._request = request
@@ -35,19 +39,20 @@ class BaseStructuresListFormatter(ABC):
     def count(self) -> bool:
         return self.queryset.count()
 
-    def render(self) -> list:
-        return [self.convert_row(obj) for obj in self.queryset]
+    def to_list(self) -> list:
+        """Serialize all objects into a list."""
+        return [self.serialize_object(obj) for obj in self.queryset]
 
     @abstractmethod
-    def convert_row(self, structure: Structure) -> dict:
+    def serialize_object(self, structure: Structure) -> dict:
+        """Serialize one objects into a dict."""
         return {"id": structure.id}
 
     def _add_owner(self, structure, row):
         corporation = structure.owner.corporation
-        if corporation.alliance:
-            alliance_name = corporation.alliance.alliance_name
-        else:
-            alliance_name = ""
+        alliance_name = (
+            corporation.alliance.alliance_name if corporation.alliance else ""
+        )
         row["owner"] = format_html(
             '<a href="{}">{}</a><br>{}',
             dotlan.corporation_url(corporation.corporation_name),
@@ -84,7 +89,6 @@ class BaseStructuresListFormatter(ABC):
             location_name = structure.eve_planet.name_localized
         else:
             location_name = row["solar_system_name"]
-
         row["location"] = format_html(
             '<a href="{}">{}</a><br><em>{}</em>',
             solar_system_url,
@@ -131,23 +135,22 @@ class BaseStructuresListFormatter(ABC):
     def _add_services(self, structure, row):
         if row["is_poco"] or row["is_starbase"]:
             row["services"] = "-"
-        else:
-            services = list()
-            for service in structure.services.all():
-                service_name_html = no_wrap_html(
-                    format_html("<small>{}</small>", service.name_localized)
-                )
-                if service.state == StructureService.State.OFFLINE:
-                    service_name_html = format_html("<del>{}</del>", service_name_html)
-
-                services.append({"name": service.name, "html": service_name_html})
-            row["services"] = (
-                "<br>".join(
-                    map(lambda x: x["html"], sorted(services, key=lambda x: x["name"]))
-                )
-                if services
-                else "-"
+            return
+        services = list()
+        for service in structure.services.all():
+            service_name_html = no_wrap_html(
+                format_html("<small>{}</small>", service.name_localized)
             )
+            if service.state == StructureService.State.OFFLINE:
+                service_name_html = format_html("<del>{}</del>", service_name_html)
+            services.append({"name": service.name, "html": service_name_html})
+        row["services"] = (
+            "<br>".join(
+                map(lambda x: x["html"], sorted(services, key=lambda x: x["name"]))
+            )
+            if services
+            else "-"
+        )
 
     def _add_reinforcement_infos(self, structure, row):
         row["is_reinforced"] = structure.is_reinforced
@@ -205,7 +208,6 @@ class BaseStructuresListFormatter(ABC):
         else:
             fuel_expires_display = "-"
             fuel_expires_timestamp = None
-
         row["fuel_expires_at"] = {
             "display": no_wrap_html(fuel_expires_display),
             "timestamp": fuel_expires_timestamp,
@@ -255,7 +257,6 @@ class BaseStructuresListFormatter(ABC):
         else:
             last_online_at_display = "-"
             last_online_at_timestamp = None
-
         row["last_online_at"] = {
             "display": no_wrap_html(last_online_at_display),
             "timestamp": last_online_at_timestamp,
@@ -331,9 +332,15 @@ class BaseStructuresListFormatter(ABC):
             row["details"] = ""
 
 
-class StructuresListFormatter(BaseStructuresListFormatter):
-    def convert_row(self, structure: Structure) -> dict:
-        row = super().convert_row(structure)
+class StructureListSerializer(_AbstractStructureListSerializer):
+    def __init__(self, queryset: models.QuerySet, request=None):
+        super().__init__(queryset, request=request)
+        self.queryset = self.queryset.prefetch_related(
+            "tags", "services"
+        ).annotate_has_poco_details()
+
+    def serialize_object(self, structure: Structure) -> dict:
+        row = super().serialize_object(structure)
         self._add_owner(structure, row)
         self._add_location(structure, row)
         self._add_type(structure, row)
@@ -348,20 +355,29 @@ class StructuresListFormatter(BaseStructuresListFormatter):
         return row
 
 
-class JumpGatesListFormatter(BaseStructuresListFormatter):
+class JumpGatesListSerializer(_AbstractStructureListSerializer):
     def __init__(self, queryset: models.QuerySet, request=None):
         super().__init__(queryset, request=request)
-        self.queryset = self.queryset  # TODO: add calculated jump fuel quantity
+        self.queryset = self.queryset.annotate(
+            jump_fuel_quantity_2=Sum(
+                "items__quantity",
+                filter=Q(
+                    items__eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
+                    items__location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+                ),
+            )
+        )
 
-    def convert_row(self, structure: Structure) -> dict:
-        row = super().convert_row(structure)
+    def serialize_object(self, structure: Structure) -> dict:
+        row = super().serialize_object(structure)
         self._add_owner(structure, row)
         self._add_location(structure, row)
         self._add_name(structure, row, check_tags=False)
         self._add_jump_fuel_level(structure, row)
         self._add_fuel_infos(structure, row)
         self._add_reinforcement_infos(structure, row)
+        self._add_online_infos(structure, row)
         return row
 
     def _add_jump_fuel_level(self, structure, row):
-        row["jump_fuel_quantity"] = structure.jump_fuel_quantity()
+        row["jump_fuel_quantity"] = structure.jump_fuel_quantity_2

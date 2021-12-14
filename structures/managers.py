@@ -209,8 +209,6 @@ class StructureQuerySet(models.QuerySet):
 
     # TODO: Add specific tests
     def visible_for_user(self, user: User, tags: list = None) -> models.QuerySet:
-        from .models import PocoDetails
-
         if user.has_perm("structures.view_all_structures"):
             structures_query = self.select_related_defaults()
             if tags:
@@ -248,15 +246,16 @@ class StructureQuerySet(models.QuerySet):
             structures_query = self.select_related_defaults().filter(
                 owner__corporation__in=corporations
             )
+        return structures_query
 
-        structures_query = structures_query.prefetch_related(
-            "tags", "services"
-        ).annotate(
+    def annotate_has_poco_details(self) -> models.QuerySet:
+        from .models import PocoDetails
+
+        return self.annotate(
             has_poco_details=Exists(
                 PocoDetails.objects.filter(structure_id=OuterRef("id"))
             )
         )
-        return structures_query
 
 
 class StructureManagerBase(models.Manager):

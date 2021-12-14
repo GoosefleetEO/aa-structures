@@ -40,7 +40,7 @@ from .app_settings import (
     STRUCTURES_SHOW_JUMP_GATES,
 )
 from .constants import STRUCTURE_LIST_ICON_OUTPUT_SIZE, STRUCTURE_LIST_ICON_RENDER_SIZE
-from .core.output_formatter import JumpGatesListFormatter, StructuresListFormatter
+from .core.serializers import JumpGatesListSerializer, StructureListSerializer
 from .forms import TagsFilterForm
 from .models import Owner, Structure, StructureItem, StructureTag, Webhook
 
@@ -116,10 +116,9 @@ def structure_list_data(request) -> JsonResponse:
     """returns structure list in JSON for AJAX call in structure_list view"""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     tags = tags_raw.split(",") if tags_raw else None
-    formatter = StructuresListFormatter(
-        queryset=Structure.objects.visible_for_user(request.user, tags), request=request
-    )
-    return JsonResponse({"data": formatter.render()})
+    structures = Structure.objects.visible_for_user(request.user, tags)
+    serializer = StructureListSerializer(queryset=structures, request=request)
+    return JsonResponse({"data": serializer.to_list()})
 
 
 @login_required
@@ -486,34 +485,34 @@ def structure_summary_data(request) -> JsonResponse:
         )
         .annotate(
             ec_count=Count(
-                id,
+                "id",
                 filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_ENGINERING_COMPLEX),
             )
         )
         .annotate(
             refinery_count=Count(
-                id,
+                "id",
                 filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_REFINERY),
             )
         )
         .annotate(
             citadel_count=Count(
-                id,
+                "id",
                 filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_CITADEL),
             )
         )
         .annotate(
             upwell_count=Count(
-                id,
+                "id",
                 filter=Q(
                     eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STRUCTURE
                 ),
             )
         )
-        .annotate(poco_count=Count(id, filter=Q(eve_type=constants.EVE_TYPE_ID_POCO)))
+        .annotate(poco_count=Count("id", filter=Q(eve_type=constants.EVE_TYPE_ID_POCO)))
         .annotate(
             starbase_count=Count(
-                id,
+                "id",
                 filter=Q(
                     eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STARBASE
                 ),
@@ -560,5 +559,5 @@ def jump_gates_list_data(request) -> JsonResponse:
     jump_gates = Structure.objects.visible_for_user(request.user).filter(
         eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE
     )
-    formatter = JumpGatesListFormatter(queryset=jump_gates)
-    return JsonResponse({"data": formatter.render()})
+    serializer = JumpGatesListSerializer(queryset=jump_gates)
+    return JsonResponse({"data": serializer.to_list()})
