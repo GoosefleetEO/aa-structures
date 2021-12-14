@@ -29,6 +29,28 @@ def json_response_to_dict(response, key="id") -> dict:
     return {x[key]: x for x in json_response_to_python(response)["data"]}
 
 
+class TestStructureListFormat(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.factory = RequestFactory()
+        create_structures()
+
+    def test_should_format_rows_correctly(self):
+        # given
+        user, _ = set_owner_character(character_id=1001)
+        user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        # when
+        request = self.factory.get(reverse("structures:structure_list_data"))
+        request.user = user
+        response = views.structure_list_data(request)
+        # then
+        self.assertEqual(response.status_code, 200)
+        json_response_to_dict(response)
+        # obj = data[1000000000001]
+        # self.assertEqual(obj["corporation_name"], "Wayne Technologies")
+
+
 class TestStructureList(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -100,7 +122,7 @@ class TestStructureListDataPermissions(TestCase):
         request.user = user
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
-        return json_response_to_dict(response, "structure_id")
+        return json_response_to_dict(response)
 
     def test_should_show_no_structures(self):
         # given
@@ -281,7 +303,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json_response_to_dict(response, key="structure_id")
+        data = json_response_to_dict(response)
         self.assertSetEqual(
             set(data.keys()),
             {
@@ -307,7 +329,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json_response_to_dict(response, key="structure_id")
+        data = json_response_to_dict(response)
         self.assertSetEqual(set(data.keys()), {1000000000002, 1000000000003})
 
         # filter for tag_b
@@ -318,7 +340,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json_response_to_dict(response, key="structure_id")
+        data = json_response_to_dict(response)
         self.assertSetEqual(set(data.keys()), {1000000000003})
 
         # filter for tag_c, tag_b
@@ -329,7 +351,7 @@ class TestStructureListFilters(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json_response_to_dict(response, key="structure_id")
+        data = json_response_to_dict(response)
         self.assertSetEqual(set(data.keys()), {1000000000002, 1000000000003})
 
     def test_call_with_raw_tags(self):
@@ -383,7 +405,7 @@ class TestStructurePowerModes(TestCase):
 
         data = json_response_to_python(response)["data"]
         for row in data:
-            if row["structure_id"] == structure_id:
+            if row["id"] == structure_id:
                 return row
 
         return None

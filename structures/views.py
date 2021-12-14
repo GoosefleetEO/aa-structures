@@ -136,7 +136,7 @@ class StructuresRowBuilder:
         self._request = request
 
     def convert(self, structure) -> dict:
-        self._row = {"structure_id": structure.id}
+        self._row = {"id": structure.id}
         self._structure = structure
         self._build_owner()
         self._build_location()
@@ -430,8 +430,7 @@ class StructuresRowBuilder:
             "structures.view_structure_fit"
         ):
             ajax_url = reverse(
-                "structures:structure_details",
-                args=[self._row["structure_id"]],
+                "structures:structure_details", args=[self._structure.id]
             )
             self._row["details"] = format_html(
                 '<button type="button" class="btn btn-default" '
@@ -443,7 +442,7 @@ class StructuresRowBuilder:
         elif self._structure.has_poco_details:
             ajax_url = reverse(
                 "structures:poco_details",
-                args=[self._row["structure_id"]],
+                args=[self._structure.id],
             )
             self._row["details"] = format_html(
                 '<button type="button" class="btn btn-default" '
