@@ -6,12 +6,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Q
-from django.http import (
-    HttpResponse,
-    HttpResponseNotFound,
-    HttpResponseServerError,
-    JsonResponse,
-)
+from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import translation
@@ -80,7 +75,7 @@ def main(request):
         if form.is_valid():
             for name, activated in form.cleaned_data.items():
                 if activated:
-                    active_tags.append(StructureTag.objects.get(name=name))
+                    active_tags.append(get_object_or_404(StructureTag, name=name))
 
             url = reverse("structures:main")
             if active_tags:
@@ -94,7 +89,6 @@ def main(request):
             active_tags = [
                 x for x in StructureTag.objects.all() if x.name in tags_parsed
             ]
-
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
@@ -164,9 +158,10 @@ def structure_details(request, structure_id):
             )
         ]
 
-    structure = Structure.objects.select_related(
-        "owner", "eve_type", "eve_solar_system"
-    ).get(id=structure_id)
+    structure = get_object_or_404(
+        Structure.objects.select_related("owner", "eve_type", "eve_solar_system"),
+        id=structure_id,
+    )
     type_attributes = {
         obj["eve_dogma_attribute_id"]: int(obj["value"])
         for obj in EveTypeDogmaAttribute.objects.filter(
@@ -221,17 +216,12 @@ def structure_details(request, structure_id):
 def poco_details(request, structure_id):
     """Shows details modal for a POCO"""
 
-    try:
-        poco = (
-            Structure.objects.select_related(
-                "owner", "eve_type", "eve_solar_system", "poco_details"
-            )
-            .filter(eve_type=constants.EVE_TYPE_ID_POCO, poco_details__isnull=False)
-            .get(id=structure_id)
-        )
-    except Structure.DoesNotExist:
-        logger.warning("Could not find poco details for structure %s", structure_id)
-        return HttpResponseNotFound()
+    poco = get_object_or_404(
+        Structure.objects.select_related(
+            "owner", "eve_type", "eve_solar_system", "poco_details"
+        ).filter(eve_type=constants.EVE_TYPE_ID_POCO, poco_details__isnull=False),
+        id=structure_id,
+    )
     context = {
         "poco": poco,
         "details": poco.poco_details,
