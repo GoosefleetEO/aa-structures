@@ -458,7 +458,7 @@ class StructuresRowBuilder:
 
 @login_required
 @permission_required("structures.basic_access")
-def structure_list_data(request):
+def structure_list_data(request) -> JsonResponse:
     """returns structure list in JSON for AJAX call in structure_list view"""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     tags = tags_raw.split(",") if tags_raw else None
@@ -467,8 +467,7 @@ def structure_list_data(request):
         row_converter.convert(structure)
         for structure in Structure.objects.visible_for_user(request.user, tags)
     ]
-
-    return JsonResponse(structure_rows, safe=False)
+    return JsonResponse({"data": structure_rows})
 
 
 @login_required
@@ -820,12 +819,12 @@ def poco_list_data(request) -> JsonResponse:
                 "tax": f"{tax * 100:.0f} %" if tax else "?",
             }
         )
-    return JsonResponse(data, safe=False)
+    return JsonResponse({"data": data})
 
 
 @login_required
 @permission_required("structures.basic_access")
-def structure_summary_data(request):
+def structure_summary_data(request) -> JsonResponse:
     summary_qs = (
         Structure.objects.values(
             "owner__corporation__corporation_id",
@@ -870,30 +869,34 @@ def structure_summary_data(request):
     )
     data = list()
     for row in summary_qs:
+        other_count = (
+            row["upwell_count"]
+            - row["ec_count"]
+            - row["refinery_count"]
+            - row["citadel_count"]
+        )
+        total = row["upwell_count"] + row["poco_count"] + row["starbase_count"]
+        corporation_icon = image_html(
+            eveimageserver.corporation_logo_url(
+                row["owner__corporation__corporation_id"], size=32
+            )
+        )
+        alliance_name = default_if_none(
+            row["owner__corporation__alliance__alliance_name"], ""
+        )
         data.append(
             {
                 "id": int(row["owner__corporation__corporation_id"]),
-                "corporation_icon": image_html(
-                    eveimageserver.corporation_logo_url(
-                        row["owner__corporation__corporation_id"], size=32
-                    )
-                ),
+                "corporation_icon": corporation_icon,
                 "corporation_name": row["owner__corporation__corporation_name"],
-                "alliance_name": default_if_none(
-                    row["owner__corporation__alliance__alliance_name"], ""
-                ),
+                "alliance_name": alliance_name,
                 "citadel_count": row["citadel_count"],
                 "ec_count": row["ec_count"],
                 "refinery_count": row["refinery_count"],
-                "other_count": row["upwell_count"]
-                - row["ec_count"]
-                - row["refinery_count"]
-                - row["citadel_count"],
+                "other_count": other_count,
                 "poco_count": row["poco_count"],
                 "starbase_count": row["starbase_count"],
-                "total": row["upwell_count"]
-                + row["poco_count"]
-                + row["starbase_count"],
+                "total": total,
             }
         )
-    return JsonResponse(data, safe=False)
+    return JsonResponse({"data": data})

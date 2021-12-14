@@ -89,7 +89,7 @@
             $('#tab_structures').DataTable({
                 ajax: {
                     url: "{% url 'structures:structure_list_data' %}?tags={{ active_tags|join:',' }}",
-                    dataSrc: '',
+                    dataSrc: 'data',
                     cache: false
                 },
                 columns: [
@@ -249,7 +249,7 @@
             $('#tab_pocos').DataTable({
                 ajax: {
                     url: "{% url 'structures:poco_list_data' %}",
-                    dataSrc: '',
+                    dataSrc: 'data',
                     cache: false
                 },
                 columns: [
@@ -311,7 +311,7 @@
             $('#tab_summary').DataTable({
                 ajax: {
                     url: "{% url 'structures:structure_summary_data' %}",
-                    dataSrc: '',
+                    dataSrc: 'data',
                     cache: false
                 },
                 columns: [

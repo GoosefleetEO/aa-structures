@@ -14,11 +14,7 @@ from allianceauth.eveonline.models import (
     EveCorporationInfo,
 )
 from allianceauth.tests.auth_utils import AuthUtils
-from app_utils.testing import (
-    create_user_from_evecharacter,
-    json_response_to_dict,
-    json_response_to_python,
-)
+from app_utils.testing import create_user_from_evecharacter, json_response_to_python
 
 from .. import views
 from ..models import Owner, PocoDetails, Structure, Webhook
@@ -26,6 +22,11 @@ from .testdata import create_structures, load_entities, load_entity, set_owner_c
 
 VIEWS_PATH = "structures.views"
 OWNERS_PATH = "structures.models.owners"
+
+
+def json_response_to_dict(response, key="id") -> dict:
+    """Convert JSON response into dict by given key."""
+    return {x[key]: x for x in json_response_to_python(response)["data"]}
 
 
 class TestStructureList(TestCase):
@@ -380,7 +381,7 @@ class TestStructurePowerModes(TestCase):
         response = views.structure_list_data(request)
         self.assertEqual(response.status_code, 200)
 
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
         for row in data:
             if row["structure_id"] == structure_id:
                 return row
