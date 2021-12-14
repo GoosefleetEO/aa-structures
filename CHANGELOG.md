@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Added
 
 - Configurable alerts to warn about jump fuel (liquid ozone) running low in jump gates (#39)
+- New tab showing jump gates only incl. liquid ozone level. Can be disabled via setting. (#39)
 
 ## Changed
 

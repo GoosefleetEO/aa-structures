@@ -1,4 +1,4 @@
-from datetime import timedelta
+import datetime as dt
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
@@ -16,8 +16,8 @@ from allianceauth.eveonline.models import (
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.testing import create_user_from_evecharacter, json_response_to_python
 
-from .. import views
-from ..models import Owner, PocoDetails, Structure, Webhook
+from .. import constants, views
+from ..models import Owner, PocoDetails, Structure, StructureItem, Webhook
 from .testdata import create_structures, load_entities, load_entity, set_owner_character
 
 VIEWS_PATH = "structures.views"
@@ -40,15 +40,36 @@ class TestStructureListFormat(TestCase):
         # given
         user, _ = set_owner_character(character_id=1001)
         user = AuthUtils.add_permission_to_user_by_name("structures.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_all_structures", user
+        )
+        structure = Structure.objects.get(id=1000000000001)
         # when
         request = self.factory.get(reverse("structures:structure_list_data"))
         request.user = user
         response = views.structure_list_data(request)
         # then
         self.assertEqual(response.status_code, 200)
-        json_response_to_dict(response)
-        # obj = data[1000000000001]
-        # self.assertEqual(obj["corporation_name"], "Wayne Technologies")
+        data = json_response_to_dict(response)
+        obj = data[1000000000001]
+        self.assertEqual(obj["alliance_name"], "Wayne Enterprises")
+        self.assertEqual(obj["corporation_name"], "Wayne Technologies")
+        self.assertEqual(obj["region_name"], "Heimatar")
+        self.assertEqual(obj["solar_system_name"], "Amamake")
+        self.assertEqual(obj["group_name"], "Citadel")
+        self.assertEqual(obj["category_name"], "Structure")
+        self.assertFalse(obj["is_starbase"])
+        self.assertFalse(obj["is_poco"])
+        self.assertEqual(obj["type_name"], "Astrahus")
+        self.assertEqual(obj["is_reinforced_str"], "no")
+        self.assertEqual(obj["reinforcement"], "05:00")
+        self.assertEqual(
+            obj["fuel_expires_at"]["timestamp"], structure.fuel_expires_at.isoformat()
+        )
+        self.assertEqual(obj["power_mode_str"], "Full Power")
+        self.assertEqual(obj["state_str"], "Shield vulnerable")
+        self.assertEqual(obj["core_status_str"], "")
+        self.assertEqual(obj["details"], "")
 
 
 class TestStructureList(TestCase):
@@ -413,7 +434,7 @@ class TestStructurePowerModes(TestCase):
     def test_full_power(self):
         structure_id = 1000000000001
         structure = Structure.objects.get(id=structure_id)
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         structure.save()
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure["power_mode_str"], "Full Power")
@@ -427,7 +448,7 @@ class TestStructurePowerModes(TestCase):
         structure_id = 1000000000001
         structure = Structure.objects.get(id=structure_id)
         structure.fuel_expires_at = None
-        structure.last_online_at = now() - timedelta(days=3)
+        structure.last_online_at = now() - dt.timedelta(days=3)
         structure.save()
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure["power_mode_str"], "Low Power")
@@ -441,7 +462,7 @@ class TestStructurePowerModes(TestCase):
         structure_id = 1000000000001
         structure = Structure.objects.get(id=structure_id)
         structure.fuel_expires_at = None
-        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        structure.last_online_at = now() - dt.timedelta(days=7, seconds=1)
         structure.save()
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure["power_mode_str"], "Abandoned")
@@ -469,7 +490,7 @@ class TestStructurePowerModes(TestCase):
     def test_starbase_online(self):
         structure_id = 1300000000001
         structure = Structure.objects.get(id=structure_id)
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         structure.save()
         my_structure = self.display_data_for_structure(structure_id)
         self.assertEqual(my_structure["power_mode_str"], "")
@@ -666,7 +687,7 @@ class TestStatus(TestCase):
     @patch(OWNERS_PATH + ".STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES", 30)
     def test_view_service_status_fail_structures(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
-            owner.structures_last_update_at = now() - timedelta(minutes=31)
+            owner.structures_last_update_at = now() - dt.timedelta(minutes=31)
             owner.notifications_last_update_at = now()
             owner.forwarding_last_update_at = now()
             owner.assets_last_update_at = now()
@@ -680,7 +701,7 @@ class TestStatus(TestCase):
     def test_view_service_status_fail_notifications(self):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
             owner.structures_last_update_at = now()
-            owner.notifications_last_update_at = now() - timedelta(minutes=31)
+            owner.notifications_last_update_at = now() - dt.timedelta(minutes=31)
             owner.forwarding_last_update_at = now()
             owner.assets_last_update_at = now()
             owner.save()
@@ -694,7 +715,7 @@ class TestStatus(TestCase):
         for owner in Owner.objects.filter(is_included_in_service_status=True):
             owner.structures_last_update_at = now()
             owner.notifications_last_update_at = now()
-            owner.forwarding_last_update_at = now() - timedelta(minutes=31)
+            owner.forwarding_last_update_at = now() - dt.timedelta(minutes=31)
             owner.assets_last_update_at = now()
             owner.save()
 
@@ -708,7 +729,7 @@ class TestStatus(TestCase):
             owner.structures_last_update_at = now()
             owner.notifications_last_update_at = now()
             owner.forwarding_last_update_at = now()
-            owner.assets_last_update_at = now() - timedelta(minutes=31)
+            owner.assets_last_update_at = now() - dt.timedelta(minutes=31)
             owner.save()
 
         request = self.factory.get(reverse("structures:service_status"))
@@ -833,3 +854,44 @@ class TestPocoDetailsModal(TestCase):
         response = views.poco_details(request, 1200000000003)
         # then
         self.assertEqual(response.status_code, 200)
+
+
+class TestJumpGateList(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.basic_access", cls.user
+        )
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "structures.view_all_structures", cls.user
+        )
+        cls.factory = RequestFactory()
+
+    def test_should_return_jump_gates(self):
+        # given
+        request = self.factory.get(reverse("structures:jump_gates_list_data"))
+        request.user = self.user
+        structure = Structure.objects.get(id=1000000000004)
+        structure.items.create(
+            id=1,
+            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            is_singleton=False,
+            quantity=5000,
+        )
+        # when
+        response = views.jump_gates_list_data(request)
+        # then
+        self.assertEqual(response.status_code, 200)
+        data = json_response_to_dict(response)
+        self.assertSetEqual(set(data.keys()), {1000000000004})
+        obj = data[1000000000004]
+        self.assertEqual(obj["region_name"], "Detorid")
+        self.assertEqual(obj["solar_system_name"], "1-PGSG")
+        self.assertEqual(
+            obj["structure_name"], "1-PGSG &gt;&gt; A-C5TC - Test Jump Gate"
+        )
+        self.assertEqual(obj["jump_fuel_quantity"], 5000)

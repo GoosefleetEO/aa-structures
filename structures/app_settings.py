@@ -84,7 +84,6 @@ STRUCTURES_NOTIFICATION_SHOW_MOON_ORE = clean_setting(
     "STRUCTURES_NOTIFICATION_SHOW_MOON_ORE", True
 )
 
-
 # how to handle notification about NPC attacks
 STRUCTURES_REPORT_NPC_ATTACKS = clean_setting("STRUCTURES_REPORT_NPC_ATTACKS", True)
 
@@ -92,6 +91,9 @@ STRUCTURES_REPORT_NPC_ATTACKS = clean_setting("STRUCTURES_REPORT_NPC_ATTACKS", T
 STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE = clean_setting(
     "STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE", True
 )
+
+# Whether to show the jump gates tab
+STRUCTURES_SHOW_JUMP_GATES = clean_setting("STRUCTURES_SHOW_JUMP_GATES", True)
 
 # Max time in minutes since last successful structures sync
 # before service is reported as down

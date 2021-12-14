@@ -405,6 +405,7 @@ Name | Description | Default
 `STRUCTURES_PAGING_ENABLED`| Wether paging is enabled for the structure list. | `True`
 `STRUCTURES_REPORT_NPC_ATTACKS`| Enable / disable sending notifications for attacks by NPCs (structure reinforcements are still reported) | `True`
 `STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE`| Enable / disable whether fuel expire is shown as relative figure | `True`
+`STRUCTURES_SHOW_JUMP_GATES`| Whether to show the jump gates tab | `True`
 `STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES`| Max time in minutes since last successful structures sync before service is reported as down  | `120`
 `STRUCTURES_TASKS_TIME_LIMIT`| Hard timeout for tasks in seconds to reduce task accumulation during outages | `7200`
 `STRUCTURES_TIMERS_ARE_CORP_RESTRICTED`| whether created timers are corp restricted on the timerboard  | `False`

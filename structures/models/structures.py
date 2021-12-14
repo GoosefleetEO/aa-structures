@@ -337,15 +337,15 @@ class Structure(models.Model):
         # make sure related objects are saved whenever structure is saved
         self.update_generated_tags()
 
-    @property
+    @cached_property
     def is_upwell_structure(self) -> bool:
         return self.eve_type.is_upwell_structure
 
-    @property
+    @cached_property
     def is_poco(self) -> bool:
         return self.eve_type.is_poco
 
-    @property
+    @cached_property
     def is_starbase(self) -> bool:
         return self.eve_type.is_starbase
 

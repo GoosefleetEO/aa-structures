@@ -18,6 +18,9 @@
     <ul id="structure-tabs" class="nav nav-tabs" role="tablist">
         {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
             <li role="presentation"><a href="#structures" aria-controls="structures" role="tab" data-toggle="tab">{% trans "All Structures" %}</a></li>
+            {% if show_jump_gates_tab %}
+                <li role="presentation"><a href="#jump-gates" aria-controls="jump-gates" role="tab" data-toggle="tab">{% trans "Jump Gates" %}</a></li>
+            {% endif %}
             <li role="presentation"><a href="#summary" aria-controls="summary" role="tab" data-toggle="tab">{% trans "Summary" %}</a></li>
             <script id="active-tab" type="application/javascript">
                 let activeTab = 'structures';
@@ -35,6 +38,9 @@
             <div class="tab-content">
                 {% if perms.structures.view_corporation_structures or perms.structures.view_alliance_structures or perms.structures.view_all_structures %}
                     {% include "structures/partials/structure_list.html" %}
+                    {% if show_jump_gates_tab %}
+                        {% include "structures/partials/jump_gates_list.html" %}
+                    {% endif %}
                     {% include "structures/partials/structure_summary.html" %}
                 {% endif %}
                 {% include "structures/partials/poco_list.html" %}
@@ -377,6 +383,84 @@
                     dataTableFooterSumColumn(api, 9);
                 }
             });
+
+            /* jump gates */
+            $('#tab_jump_gates').DataTable({
+                ajax: {
+                    url: "{% url 'structures:jump_gates_list_data' %}",
+                    dataSrc: 'data',
+                    cache: false
+                },
+                columns: [
+                    { data: 'corporation_icon' },
+                    { data: 'owner' },
+                    { data: 'location' },
+                    { data: 'structure_name' },
+                    {
+                        data: 'fuel_expires_at',
+                        render: {
+                            _: 'display',
+                            sort: 'timestamp'
+                        }
+                    },
+                    {
+                        data: 'jump_fuel_quantity',
+                        render: $.fn.dataTable.render.number(',', '.', 0)
+                    },
+                    /* hidden */
+                    { data: 'alliance_name' },
+                    { data: 'corporation_name' },
+                    { data: 'region_name' },
+                    { data: 'solar_system_name' },
+                    { data: 'is_reinforced_str' },
+                ],
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                paging: dataTablesPaging,
+                pageLength: dataTablesPageLength,
+                order: [[1, "asc"]],
+                columnDefs: [
+                    { "sortable": false, "targets": [ 0, 2 ] },
+                    { "visible": false, "targets": [ 6, 7, 8, 9, 10 ] },
+                ],
+                filterDropDown:
+                {
+                   columns: [
+                        {
+                            idx: 6,
+                            title: "{% translate 'Alliance' %}",
+                            maxWidth: "11em"
+                        },
+                        {
+                            idx: 7,
+                            title: "{% translate 'Corporation' %}",
+                            maxWidth: "11em"
+                        },
+                        {
+                            idx: 8,
+                            title: "{% translate 'Region' %}",
+                            maxWidth: "7em"
+                        },
+                        {
+                            idx: 9,
+                            title: "{% translate 'Solar System' %}",
+                            maxWidth: "14em"
+                        },
+                        {
+                            idx: 10,
+                            title: "{% translate 'Reinforced?' %}",
+                            maxWidth: "13em"
+                        }
+                    ],
+                    autoSize: false,
+                    bootstrap: true
+                },
+                createdRow: function (row, data, dataIndex) {
+                    if (data['is_reinforced']) {
+                        $(row).addClass('danger');
+                    }
+                },
+            });
+
 
             $('#structure-tabs a[href="#' + activeTab + '"]').tab('show')
 

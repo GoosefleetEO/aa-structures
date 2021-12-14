@@ -15,9 +15,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import translation
-from django.utils.html import escape, format_html
-from django.utils.safestring import mark_safe
-from django.utils.timezone import now
+from django.utils.html import format_html
 from django.utils.translation import gettext as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
@@ -28,19 +26,9 @@ from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.allianceauth import notify_admins
-from app_utils.datetime import DATETIME_FORMAT, timeuntil_str
 from app_utils.logging import LoggerAddTag
 from app_utils.messages import messages_plus
-from app_utils.views import (
-    BootstrapStyle,
-    bootstrap_label_html,
-    format_html_lazy,
-    image_html,
-    link_html,
-    no_wrap_html,
-    yesno_str,
-    yesnonone_str,
-)
+from app_utils.views import bootstrap_label_html, image_html, link_html
 
 from . import __title__, constants, tasks
 from .app_settings import (
@@ -49,21 +37,15 @@ from .app_settings import (
     STRUCTURES_DEFAULT_PAGE_LENGTH,
     STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED,
     STRUCTURES_PAGING_ENABLED,
-    STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE,
+    STRUCTURES_SHOW_JUMP_GATES,
 )
+from .constants import STRUCTURE_LIST_ICON_OUTPUT_SIZE, STRUCTURE_LIST_ICON_RENDER_SIZE
+from .core.output_formatter import JumpGatesListFormatter, StructuresListFormatter
 from .forms import TagsFilterForm
-from .models import (
-    Owner,
-    Structure,
-    StructureItem,
-    StructureService,
-    StructureTag,
-    Webhook,
-)
+from .models import Owner, Structure, StructureItem, StructureTag, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
-STRUCTURE_LIST_ICON_RENDER_SIZE = 64
-STRUCTURE_LIST_ICON_OUTPUT_SIZE = 32
+
 QUERY_PARAM_TAGS = "tags"
 
 
@@ -122,337 +104,10 @@ def main(request):
         "tags_exist": StructureTag.objects.exists(),
         "data_tables_page_length": STRUCTURES_DEFAULT_PAGE_LENGTH,
         "data_tables_paging": STRUCTURES_PAGING_ENABLED,
+        "show_jump_gates_tab": STRUCTURES_SHOW_JUMP_GATES,
         "last_updated": Owner.objects.structures_last_updated(),
     }
     return render(request, "structures/main.html", context)
-
-
-class StructuresRowBuilder:
-    """This class build the HTML table rows from structure objects."""
-
-    def __init__(self, request):
-        self._row = None
-        self._structure = None
-        self._request = request
-
-    def convert(self, structure) -> dict:
-        self._row = {"id": structure.id}
-        self._structure = structure
-        self._build_owner()
-        self._build_location()
-        self._build_type()
-        self._build_name()
-        self._build_services()
-        self._build_reinforcement_infos()
-        self._build_fuel_infos()
-        self._build_online_infos()
-        self._build_state()
-        self._build_core_status()
-        self._build_details_widget()
-        return self._row
-
-    def _build_owner(self):
-        corporation = self._structure.owner.corporation
-        if corporation.alliance:
-            alliance_name = corporation.alliance.alliance_name
-        else:
-            alliance_name = ""
-
-        self._row["owner"] = format_html(
-            '<a href="{}">{}</a><br>{}',
-            dotlan.corporation_url(corporation.corporation_name),
-            corporation.corporation_name,
-            alliance_name,
-        )
-        if not self._structure.owner.is_structure_sync_fresh:
-            update_warning_html = format_html(
-                '<i class="fas fa-exclamation-circle text-warning" '
-                'title="Data has not been updated for a while and may be outdated."></i>'
-            )
-        else:
-            update_warning_html = ""
-        self._row["corporation_icon"] = format_html(
-            '<span class="nowrap">{} <img src="{}" width="{}" height="{}"/></span>',
-            update_warning_html,
-            corporation.logo_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-        )
-        self._row["alliance_name"] = alliance_name
-        self._row["corporation_name"] = corporation.corporation_name
-
-    def _build_location(self):
-        solar_system = self._structure.eve_solar_system
-
-        # location
-        self._row[
-            "region_name"
-        ] = solar_system.eve_constellation.eve_region.name_localized
-        self._row["solar_system_name"] = solar_system.name_localized
-        solar_system_url = dotlan.solar_system_url(solar_system.name)
-        if self._structure.eve_moon:
-            location_name = self._structure.eve_moon.name_localized
-        elif self._structure.eve_planet:
-            location_name = self._structure.eve_planet.name_localized
-        else:
-            location_name = self._row["solar_system_name"]
-
-        self._row["location"] = format_html(
-            '<a href="{}">{}</a><br><em>{}</em>',
-            solar_system_url,
-            no_wrap_html(location_name),
-            no_wrap_html(self._row["region_name"]),
-        )
-
-    def _build_type(self):
-        structure_type = self._structure.eve_type
-        # category
-        my_group = structure_type.eve_group
-        self._row["group_name"] = my_group.name_localized
-        try:
-            my_category = my_group.eve_category
-            self._row["category_name"] = my_category.name_localized
-            self._row["is_starbase"] = self._structure.is_starbase
-        except AttributeError:
-            self._row["category_name"] = ""
-            self._row["is_starbase"] = None
-
-        # type icon
-        self._row["type_icon"] = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            structure_type.icon_url(size=STRUCTURE_LIST_ICON_RENDER_SIZE),
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-            STRUCTURE_LIST_ICON_OUTPUT_SIZE,
-        )
-
-        # type name
-        self._row["type_name"] = structure_type.name_localized
-        self._row["type"] = format_html(
-            "{}<br><em>{}</em>",
-            no_wrap_html(link_html(structure_type.profile_url, self._row["type_name"])),
-            no_wrap_html(self._row["group_name"]),
-        )
-
-        # poco
-        self._row["is_poco"] = self._structure.is_poco
-
-    def _build_name(self):
-        self._row["structure_name"] = escape(self._structure.name)
-        tags = []
-        if self._structure.tags.exists():
-            tags += [x.html for x in self._structure.tags.all()]
-            self._row["structure_name"] += format_html(
-                "<br>{}", mark_safe(" ".join(tags))
-            )
-
-    def _build_services(self):
-        if self._row["is_poco"] or self._row["is_starbase"]:
-            self._row["services"] = "-"
-        else:
-            services = list()
-            for service in self._structure.services.all():
-                service_name_html = no_wrap_html(
-                    format_html("<small>{}</small>", service.name_localized)
-                )
-                if service.state == StructureService.State.OFFLINE:
-                    service_name_html = format_html("<del>{}</del>", service_name_html)
-
-                services.append({"name": service.name, "html": service_name_html})
-            self._row["services"] = (
-                "<br>".join(
-                    map(lambda x: x["html"], sorted(services, key=lambda x: x["name"]))
-                )
-                if services
-                else "-"
-            )
-
-    def _build_reinforcement_infos(self):
-        self._row["is_reinforced"] = self._structure.is_reinforced
-        self._row["is_reinforced_str"] = yesno_str(self._structure.is_reinforced)
-
-        if self._row["is_starbase"]:
-            self._row["reinforcement"] = "-"
-        else:
-            if self._structure.reinforce_hour is not None:
-                self._row["reinforcement"] = "{:02d}:00".format(
-                    self._structure.reinforce_hour
-                )
-            else:
-                self._row["reinforcement"] = ""
-
-    def _build_fuel_infos(self):
-        if self._structure.is_poco:
-            fuel_expires_display = "-"
-            fuel_expires_timestamp = None
-        elif self._structure.is_low_power:
-            fuel_expires_display = format_html_lazy(
-                bootstrap_label_html(
-                    self._structure.get_power_mode_display(), BootstrapStyle.WARNING
-                )
-            )
-            fuel_expires_timestamp = None
-        elif self._structure.is_abandoned:
-            fuel_expires_display = format_html_lazy(
-                bootstrap_label_html(
-                    self._structure.get_power_mode_display(), BootstrapStyle.DANGER
-                )
-            )
-            fuel_expires_timestamp = None
-        elif self._structure.is_maybe_abandoned:
-            fuel_expires_display = format_html_lazy(
-                bootstrap_label_html(
-                    self._structure.get_power_mode_display(), BootstrapStyle.WARNING
-                )
-            )
-            fuel_expires_timestamp = None
-        elif self._structure.fuel_expires_at:
-            fuel_expires_timestamp = self._structure.fuel_expires_at.isoformat()
-            if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
-                fuel_expires_display = timeuntil_str(
-                    self._structure.fuel_expires_at - now(), show_seconds=False
-                )
-                if not fuel_expires_display:
-                    fuel_expires_display = "?"
-                    fuel_expires_timestamp = None
-            else:
-                if self._structure.fuel_expires_at >= now():
-                    fuel_expires_display = self._structure.fuel_expires_at.strftime(
-                        DATETIME_FORMAT
-                    )
-                else:
-                    fuel_expires_display = "?"
-                    fuel_expires_timestamp = None
-        else:
-            fuel_expires_display = "-"
-            fuel_expires_timestamp = None
-
-        self._row["fuel_expires_at"] = {
-            "display": no_wrap_html(fuel_expires_display),
-            "timestamp": fuel_expires_timestamp,
-        }
-
-    def _build_online_infos(self):
-        self._row["power_mode_str"] = self._structure.get_power_mode_display()
-        if self._structure.is_poco:
-            last_online_at_display = "-"
-            last_online_at_timestamp = None
-        elif self._structure.is_full_power:
-            last_online_at_display = format_html_lazy(
-                bootstrap_label_html(
-                    self._structure.get_power_mode_display(), BootstrapStyle.SUCCESS
-                )
-            )
-            last_online_at_timestamp = None
-        elif self._structure.is_maybe_abandoned:
-            last_online_at_display = format_html_lazy(
-                bootstrap_label_html(
-                    self._structure.get_power_mode_display(), BootstrapStyle.WARNING
-                )
-            )
-            last_online_at_timestamp = None
-        elif self._structure.is_abandoned:
-            last_online_at_display = format_html_lazy(
-                bootstrap_label_html(
-                    self._structure.get_power_mode_display(), BootstrapStyle.DANGER
-                )
-            )
-            last_online_at_timestamp = None
-        elif self._structure.last_online_at:
-            last_online_at_timestamp = self._structure.last_online_at.isoformat()
-            if STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE:
-                last_online_at_display = timeuntil_str(
-                    now() - self._structure.last_online_at, show_seconds=False
-                )
-                if not last_online_at_display:
-                    last_online_at_display = "?"
-                    last_online_at_timestamp = None
-                else:
-                    last_online_at_display = "- " + last_online_at_display
-            else:
-                last_online_at_display = self._structure.last_online_at.strftime(
-                    DATETIME_FORMAT
-                )
-        else:
-            last_online_at_display = "-"
-            last_online_at_timestamp = None
-
-        self._row["last_online_at"] = {
-            "display": no_wrap_html(last_online_at_display),
-            "timestamp": last_online_at_timestamp,
-        }
-
-    def _build_state(self):
-        def cap_first(s: str) -> str:
-            return s[0].upper() + s[1::]
-
-        self._row["state_str"] = (
-            cap_first(self._structure.get_state_display())
-            if not self._structure.is_poco
-            else "-"
-        )
-        self._row["state_details"] = self._row["state_str"]
-        if self._structure.state_timer_end:
-            self._row["state_details"] += format_html(
-                "<br>{}",
-                no_wrap_html(self._structure.state_timer_end.strftime(DATETIME_FORMAT)),
-            )
-        if (
-            self._request.user.has_perm("structures.view_all_unanchoring_status")
-            and self._structure.unanchors_at
-        ):
-            self._row["state_details"] += format_html(
-                "<br>Unanchoring until {}",
-                no_wrap_html(self._structure.unanchors_at.strftime(DATETIME_FORMAT)),
-            )
-
-    def _build_core_status(self):
-        if self._structure.is_upwell_structure:
-            if self._structure.has_core is True:
-                has_core = True
-                core_status = '<i class="fas fa-check" title="Core present"></i>'
-            elif self._structure.has_core is False:
-                has_core = False
-                core_status = (
-                    '<i class="fas fa-times text-danger title="Core absent"></i>'
-                )
-            else:
-                has_core = None
-                core_status = '<i class="fas fa-question" title="Status unknown"></i>'
-        else:
-            has_core = None
-            core_status = "-"
-        self._row["core_status"] = core_status
-        self._row["core_status_str"] = yesnonone_str(has_core)
-
-    def _build_details_widget(self):
-        """Add details widget when applicable"""
-        if self._structure.has_fitting and self._request.user.has_perm(
-            "structures.view_structure_fit"
-        ):
-            ajax_url = reverse(
-                "structures:structure_details", args=[self._structure.id]
-            )
-            self._row["details"] = format_html(
-                '<button type="button" class="btn btn-default" '
-                'data-toggle="modal" data-target="#modalUpwellDetails" '
-                f"data-ajax_url={ajax_url} "
-                f'title="{_("Show fitting")}">'
-                '<i class="fas fa-search"></i></button>'
-            )
-        elif self._structure.has_poco_details:
-            ajax_url = reverse(
-                "structures:poco_details",
-                args=[self._structure.id],
-            )
-            self._row["details"] = format_html(
-                '<button type="button" class="btn btn-default" '
-                'data-toggle="modal" data-target="#modalPocoDetails" '
-                f"data-ajax_url={ajax_url} "
-                f'title="{_("Show details")}">'
-                '<i class="fas fa-search"></i></button>'
-            )
-        else:
-            self._row["details"] = ""
 
 
 @login_required
@@ -461,12 +116,10 @@ def structure_list_data(request) -> JsonResponse:
     """returns structure list in JSON for AJAX call in structure_list view"""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     tags = tags_raw.split(",") if tags_raw else None
-    row_converter = StructuresRowBuilder(request)
-    structure_rows = [
-        row_converter.convert(structure)
-        for structure in Structure.objects.visible_for_user(request.user, tags)
-    ]
-    return JsonResponse({"data": structure_rows})
+    formatter = StructuresListFormatter(
+        queryset=Structure.objects.visible_for_user(request.user, tags), request=request
+    )
+    return JsonResponse({"data": formatter.render()})
 
 
 @login_required
@@ -714,6 +367,7 @@ def service_status(request):
 
 
 def poco_list_data(request) -> JsonResponse:
+    """List of public POCOs for DataTables."""
     pocos = (
         Structure.objects.select_related(
             "eve_planet",
@@ -899,3 +553,12 @@ def structure_summary_data(request) -> JsonResponse:
             }
         )
     return JsonResponse({"data": data})
+
+
+def jump_gates_list_data(request) -> JsonResponse:
+    """List of jump gates for DataTables."""
+    jump_gates = Structure.objects.visible_for_user(request.user).filter(
+        eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE
+    )
+    formatter = JumpGatesListFormatter(queryset=jump_gates)
+    return JsonResponse({"data": formatter.render()})

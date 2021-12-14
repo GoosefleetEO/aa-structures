@@ -642,9 +642,9 @@
         },
         {
             "id": 1000000000004,
-            "name": "Test Jump Gate",
+            "name": "1-PGSG >> A-C5TC - Test Jump Gate",
             "eve_type_id": 35841,
-            "eve_solar_system_id": 30000476,
+            "eve_solar_system_id": 30000474,
             "reinforce_hour": 11,
             "state": 11,
             "owner_corporation_id": 2102,
