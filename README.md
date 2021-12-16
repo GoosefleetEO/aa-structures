@@ -224,6 +224,7 @@ In this section you find a detailed description of the following key features:
 - [Timers](#timers)
 - [Multiple sync characters](#multiple-sync-characters)
 - [Public customs offices](#public-customs-offices)
+- [Fuel alerts](#fuel-alerts)
 
 ### Localization
 
@@ -378,6 +379,37 @@ To enable this feature you need to do 2 things: First, you need to enable the "p
 ![Poco options](https://i.imgur.com/BK3MadZ.png)
 
 Second, you need to give your users access to the Structures app with the basic access permission. e.g. by adding that permssion to the Member state. The pages with the full structures list are hidden behind additional permissions. For details please see [permissions](#permissions).
+
+### Fuel Alerts
+
+Structures can generate additional notifications that help keep track of fueling levels for your structures:
+
+- Refueled notification
+- Structure fuel alerts
+- Jump fuel alerts
+
+All of these notifications can be enabled for webhooks, just like any of the standard notifications from the Eve Server.
+
+>**Note**<br>All notifications are generated based on the structure and asset information that is usually updated hourly from the Eve server due to caching. However, you can get more timely updates by adding multiple characters to your owners. e.g. with 2 characters you get fresh data every 30 minutes.
+
+#### Refueled notification
+
+Refueled notification are generated once a structure has been refueled and will help you coordinate refueling efforts. i.e. when the refuled notification appers in your Discord channel, you know that someone else has taken care of refuelung that particular structures.
+
+Refueled notifications are available for Upwell structures and POSes, however the POS version is currently experimental.
+
+#### Structure fuel alerts
+
+Structure fuel alerts can be configured to provide additional alert notification about low fuel levels of your structures. They are highly customizable to accomodate all kinds of use cases. You can configure one ore multiple structure fuel alerts. All configuration is done through the admin site.
+
+Here are some examples:
+
+- When fuel is down to 3 days, send a warning notification every 12 hours.
+- When fuel is down to 24 hours, send a danger notification every 6 hours and ping everybody.
+
+#### Jump fuel alerts
+
+Jump fuel alerts are simular to structure fuel alerts, but made specifically to deal with Liquid Ozone levels of jump gates. They have many of the same customization options and you also configure them on the admin site. They are triggered by the current fuel level measured in units of Liquid Ozone in a jump gate.
 
 ## Settings
 
