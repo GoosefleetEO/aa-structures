@@ -373,7 +373,7 @@ class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
         threshold_str = f"{self._parsed_text['threshold']:,}"
         quantity_str = f"{self._structure.jump_fuel_quantity():,}"
         self._description += gettext(
-            "is below %(threshold)s units on Liquid Ozone. "
+            "is below %(threshold)s units on Liquid Ozone.\n"
             "Remaining units: %(remaining)s."
             % {
                 "threshold": f"{Webhook.text_bold(threshold_str)}",

@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.18.0] - tbd.
+## [1.18.0] - 021-12-16
 
-> **Important**:<br>Current owner assets will be cleared temporarily by installing this update and need to be updated again from ESI to re-enable features like fittings and quantum core. Note that you can trigger a manual update for owners from the admin site.
+> **Important**:<br>By installing this update the owner assets will be temporarily removed and need to be fetched again from ESI to re-enable features like fittings and quantum core. This will happen automatically with the next periodic update or you can trigger it manually on the admin site.
 
 ## Added
 
