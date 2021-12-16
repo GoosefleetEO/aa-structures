@@ -1068,8 +1068,12 @@ class BaseFuelAlertConfig(models.Model):
         default=Webhook.Color.WARNING,
         blank=True,
         null=True,
+        help_text="Context color of these notification on Discord",
     )
-    is_enabled = models.BooleanField(default=True)
+    is_enabled = models.BooleanField(
+        default=True,
+        help_text="Disabled configurations will not create any new alerts.",
+    )
 
     class Meta:
         abstract = True
@@ -1103,7 +1107,7 @@ class FuelAlertConfig(BaseFuelAlertConfig):
     )
 
     class Meta:
-        verbose_name = "StructureFuelAlertConfig"
+        verbose_name = "structure fuel alert config"
 
     def clean(self) -> None:
         if self.start <= self.end:
@@ -1248,7 +1252,7 @@ class FuelAlert(BaseFuelAlert):
     )
 
     class Meta:
-        verbose_name = "StructureFuelAlert"
+        verbose_name = "structure fuel alert"
         constraints = [
             models.UniqueConstraint(
                 fields=["structure", "config", "hours"],

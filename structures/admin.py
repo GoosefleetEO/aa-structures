@@ -1,5 +1,6 @@
 import statistics
 
+from django.conf import settings
 from django.contrib import admin
 from django.db import models
 from django.db.models import Count
@@ -56,15 +57,16 @@ class BaseFuelAlertAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(FuelAlert)
-class StructureFuelAlertAdmin(BaseFuelAlertAdmin):
-    list_display = BaseFuelAlertAdmin.list_display + ("hours",)
-    ordering = BaseFuelAlertAdmin.ordering + ("-hours",)
+if settings.DEBUG:
 
+    @admin.register(FuelAlert)
+    class StructureFuelAlertAdmin(BaseFuelAlertAdmin):
+        list_display = BaseFuelAlertAdmin.list_display + ("hours",)
+        ordering = BaseFuelAlertAdmin.ordering + ("-hours",)
 
-@admin.register(JumpFuelAlert)
-class JumpFuelAlertAdmin(BaseFuelAlertAdmin):
-    ...
+    @admin.register(JumpFuelAlert)
+    class JumpFuelAlertAdmin(BaseFuelAlertAdmin):
+        pass
 
 
 class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
