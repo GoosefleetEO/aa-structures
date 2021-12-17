@@ -23,6 +23,9 @@ from ..testdata import create_structures, set_owner_character
 STRUCTURES_PATH = "structures.models.structures"
 NOTIFICATIONS_PATH = "structures.models.notifications"
 
+EVE_ID_HELIUM_FUEL_BLOCK = 4247
+EVE_ID_NITROGEN_FUEL_BLOCK = 4051
+
 
 class TestStructureTag(NoSocketsTestCase):
     def test_str(self):
@@ -328,6 +331,35 @@ class TestStructure(NoSocketsTestCase):
         structure.reevaluate_jump_fuel_alerts()
         # then
         self.assertEqual(structure.jump_fuel_alerts.count(), 1)
+
+    def test_should_return_fuel_blocks(self):
+        # given
+        structure = Structure.objects.get(id=1000000000004)
+        structure.items.create(
+            id=1,
+            eve_type_id=EVE_ID_NITROGEN_FUEL_BLOCK,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            is_singleton=False,
+            quantity=250,
+        )
+        structure.items.create(
+            id=2,
+            eve_type_id=EVE_ID_HELIUM_FUEL_BLOCK,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            is_singleton=False,
+            quantity=1000,
+        )
+        structure.items.create(
+            id=3,
+            eve_type_id=EVE_ID_HELIUM_FUEL_BLOCK,
+            location_flag=StructureItem.LocationFlag.CARGO,
+            is_singleton=False,
+            quantity=500,
+        )
+        # when
+        result = structure.structure_fuel_quantity()
+        # then
+        self.assertEqual(result, 1250)
 
 
 class TestStructureIsBurningFuel(NoSocketsTestCase):
