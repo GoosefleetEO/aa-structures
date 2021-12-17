@@ -30,7 +30,7 @@ from app_utils.django import app_labels
 from app_utils.logging import LoggerAddTag
 from app_utils.urls import static_file_absolute_url
 
-from .. import __title__, constants
+from .. import __title__
 from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS,
@@ -39,6 +39,7 @@ from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
+from ..constants import EveCategoryId, EveCorporationId, EveTypeId
 from ..managers import EveEntityManager, NotificationManager, WebhookManager
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
@@ -398,13 +399,13 @@ class Notification(models.Model):
 
     # event type structure map
     MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
-        1: constants.EVE_TYPE_ID_TCU,
-        2: constants.EVE_TYPE_ID_IHUB,
+        1: EveTypeId.TCU,
+        2: EveTypeId.IHUB,
     }
     MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
-        constants.EVE_TYPE_ID_POCO: "POCO",
-        constants.EVE_TYPE_ID_TCU: "TCU",
-        constants.EVE_TYPE_ID_IHUB: "I-HUB",
+        EveTypeId.CUSTOMS_OFFICE: "POCO",
+        EveTypeId.TCU: "TCU",
+        EveTypeId.IHUB: "I-HUB",
     }
 
     notification_id = models.PositiveBigIntegerField(verbose_name="id")
@@ -744,7 +745,7 @@ class Notification(models.Model):
                 id=parsed_text["solarSystemID"]
             )
             structure_type, _ = EveType2.objects.get_or_create_esi(
-                id=constants.EVE_TYPE_ID_POCO
+                id=EveTypeId.CUSTOMS_OFFICE
             )
             visibility = (
                 Timer.VISIBILITY_CORPORATION
@@ -1040,7 +1041,7 @@ class Notification(models.Model):
             kwargs["text"] = yaml.dump(data)
         if "sender" not in kwargs:
             sender, _ = EveEntity.objects.get_or_create_esi(
-                eve_entity_id=constants.EVE_CORPORATION_ID_DED
+                eve_entity_id=EveCorporationId.DED
             )
             kwargs["sender"] = sender
         kwargs["notification_id"] = cls.GENERATED_NOTIFICATION_ID
@@ -1147,8 +1148,8 @@ class FuelAlertConfig(BaseFuelAlertConfig):
         """Send new fuel notifications based on this config."""
         structures = Structure.objects.filter(
             eve_type__eve_group__eve_category_id__in=[
-                constants.EVE_CATEGORY_ID_STARBASE,
-                constants.EVE_CATEGORY_ID_STRUCTURE,
+                EveCategoryId.STARBASE,
+                EveCategoryId.STRUCTURE,
             ],
             fuel_expires_at__isnull=False,
         )
@@ -1206,9 +1207,7 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
 
     def send_new_notifications(self, force: bool = False) -> None:
         """Send new fuel notifications based on this config."""
-        jump_gates = Structure.objects.filter(
-            eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE
-        )
+        jump_gates = Structure.objects.filter(eve_type_id=EveTypeId.JUMP_GATE)
         for jump_gate in jump_gates:
             if jump_gate.jump_fuel_quantity() < self.threshold:
                 notif, created = JumpFuelAlert.objects.get_or_create(

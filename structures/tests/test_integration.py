@@ -37,7 +37,7 @@
 #         structure = Structure.objects.get(id=1000000000004)
 #         structure.items.create(
 #             id=1,
-#             eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+#             eve_type_id=constants.EveTypeId.LIQUID_OZONE,
 #             location_flag="StructureFuel",
 #             is_singleton=False,
 #             quantity=99,

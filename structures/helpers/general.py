@@ -3,9 +3,11 @@ import datetime as dt
 from django.utils.timezone import now
 
 
-def hours_until_deadline(deadline: dt) -> float:
+def hours_until_deadline(deadline: dt, start: dt = None) -> float:
     """Currently remaining hours until a given deadline."""
-    return (deadline - now()).total_seconds() / 3600
+    if not start:
+        start = now()
+    return (deadline - start).total_seconds() / 3600
 
 
 def datetime_almost_equal(

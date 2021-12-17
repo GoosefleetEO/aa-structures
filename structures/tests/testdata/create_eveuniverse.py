@@ -2,7 +2,7 @@ from django.test import TestCase
 from eveuniverse.models import EveType as EveUniverseType
 from eveuniverse.tools.testdata import ModelSpec, create_testdata
 
-from ... import constants
+from ...constants import EveCategoryId, EveGroupId, EveTypeId
 from . import test_data_filename
 
 
@@ -11,23 +11,19 @@ class CreateEveUniverseTestData(TestCase):
         testdata_spec = [
             ModelSpec(
                 "EveCategory",
-                ids=[constants.EVE_CATEGORY_ID_STRUCTURE],
+                ids=[EveCategoryId.STRUCTURE],
                 include_children=True,
                 enabled_sections=[EveUniverseType.Section.DOGMAS],
             ),
             ModelSpec(
                 "EveGroup",
-                ids=[constants.EVE_GROUP_ID_CONTROL_TOWER],
+                ids=[EveGroupId.CONTROL_TOWER],
                 include_children=True,
                 enabled_sections=[EveUniverseType.Section.DOGMAS],
             ),
             ModelSpec(
                 "EveType",
-                ids=[
-                    constants.EVE_TYPE_ID_TCU,
-                    constants.EVE_TYPE_ID_IHUB,
-                    constants.EVE_TYPE_ID_POCO,
-                ],
+                ids=[EveTypeId.TCU, EveTypeId.IHUB, EveTypeId.CUSTOMS_OFFICE],
                 include_children=True,
                 enabled_sections=[EveUniverseType.Section.DOGMAS],
             ),

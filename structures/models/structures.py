@@ -1,11 +1,12 @@
 """Structure related models"""
+import math
 import re
 from datetime import timedelta
 from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Min, Sum
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.timezone import now
@@ -17,8 +18,9 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
-from .. import __title__, constants
+from .. import __title__
 from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
+from ..constants import EveGroupId, EveTypeId
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
@@ -446,12 +448,40 @@ class Structure(models.Model):
             return self.eve_planet.name
         return self.eve_solar_system.name
 
-    def jump_fuel_quantity(self) -> Optional[int]:
-        """Current quantity of liquid ozone in units."""
+    @cached_property
+    def structure_fuel_quantity(self) -> Optional[int]:
+        """Current quantity of fuel blocks in units used as fuel."""
         return self.items.filter(
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type__eve_group_id=EveGroupId.FUEL_BLOCK,
         ).aggregate(Sum("quantity"))["quantity__sum"]
+
+    def jump_fuel_quantity(self) -> Optional[int]:
+        """Current quantity of liquid ozone in units used as fuel."""
+        return self.items.filter(
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
+        ).aggregate(Sum("quantity"))["quantity__sum"]
+
+    def structure_fuel_usage(self) -> Optional[int]:
+        """Needed fuel blocks per day."""
+        fuel_quantity = self.structure_fuel_quantity
+        if not fuel_quantity:
+            return None
+        assets_last_updated_at = self.items.filter(
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            eve_type__eve_group_id=EveGroupId.FUEL_BLOCK,
+        ).aggregate(Min("last_updated_at"))["last_updated_at__min"]
+        if not assets_last_updated_at:
+            return None
+        try:
+            return math.ceil(
+                fuel_quantity
+                / hours_until_deadline(self.fuel_expires_at, assets_last_updated_at)
+                * 24
+            )
+        except ZeroDivisionError:
+            return None
 
     @property
     def hours_fuel_expires(self) -> Optional[float]:

@@ -5,7 +5,7 @@ from django.utils.timezone import now
 
 from app_utils.testing import NoSocketsTestCase
 
-from ... import constants
+from ...constants import EveTypeId
 from ...models import (
     FuelAlert,
     FuelAlertConfig,
@@ -315,7 +315,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
@@ -337,7 +337,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
@@ -359,7 +359,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=101,
@@ -379,7 +379,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
@@ -400,7 +400,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
@@ -432,7 +432,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,

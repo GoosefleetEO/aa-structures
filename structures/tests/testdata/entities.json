@@ -162,6 +162,11 @@
             "eve_group_id": 1136
         },
         {
+            "id": 4247,
+            "name": "Helium Fuel Block",
+            "eve_group_id": 1136
+        },
+        {
             "id": 16213,
             "name": "Caldari Control Tower",
             "eve_group_id": 365

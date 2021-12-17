@@ -1,13 +1,15 @@
+import datetime as dt
 from copy import deepcopy
-from datetime import timedelta
 from unittest.mock import patch
+
+from pytz import UTC
 
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter
 from app_utils.testing import NoSocketsTestCase
 
-from ... import constants
+from ...constants import EveTypeId
 from ...models import (
     FuelAlertConfig,
     JumpFuelAlertConfig,
@@ -22,6 +24,9 @@ from ..testdata import create_structures, set_owner_character
 
 STRUCTURES_PATH = "structures.models.structures"
 NOTIFICATIONS_PATH = "structures.models.notifications"
+
+EVE_ID_HELIUM_FUEL_BLOCK = 4247
+EVE_ID_NITROGEN_FUEL_BLOCK = 4051
 
 
 class TestStructureTag(NoSocketsTestCase):
@@ -61,7 +66,7 @@ class TestStructure(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         create_structures()
-        set_owner_character(character_id=1001)
+        _, cls.owner = set_owner_character(character_id=1001)
 
     def test_str(self):
         x = Structure.objects.get(id=1000000000001)
@@ -78,11 +83,11 @@ class TestStructure(NoSocketsTestCase):
         poco = Structure.objects.get(id=1200000000003)
 
         # true when upwell structure and has fuel that is not expired
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         self.assertTrue(structure.is_full_power)
 
         # false when upwell structure and has fuel, but is expired
-        structure.fuel_expires_at = now() - timedelta(hours=1)
+        structure.fuel_expires_at = now() - dt.timedelta(hours=1)
         self.assertFalse(structure.is_full_power)
 
         # False when no fuel info
@@ -90,28 +95,28 @@ class TestStructure(NoSocketsTestCase):
         self.assertFalse(structure.is_full_power)
 
         # none when no upwell structure
-        poco.fuel_expires_at = now() + timedelta(hours=1)
+        poco.fuel_expires_at = now() + dt.timedelta(hours=1)
         self.assertIsNone(poco.is_full_power)
 
     def test_is_low_power(self):
         structure = Structure.objects.get(id=1000000000001)
 
         # true if Upwell structure and fuel expired and last online < 7d
-        structure.fuel_expires_at = now() - timedelta(seconds=3)
-        structure.last_online_at = now() - timedelta(days=3)
+        structure.fuel_expires_at = now() - dt.timedelta(seconds=3)
+        structure.last_online_at = now() - dt.timedelta(days=3)
         self.assertTrue(structure.is_low_power)
 
         # True if Upwell structure and no fuel info and last online < 7d
         structure.fuel_expires_at = None
-        structure.last_online_at = now() - timedelta(days=3)
+        structure.last_online_at = now() - dt.timedelta(days=3)
         self.assertTrue(structure.is_low_power)
 
         # false if Upwell structure and it has fuel
-        structure.fuel_expires_at = now() + timedelta(days=3)
+        structure.fuel_expires_at = now() + dt.timedelta(days=3)
         self.assertFalse(structure.is_low_power)
 
         # none if upwell structure, but not online info
-        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.fuel_expires_at = now() - dt.timedelta(seconds=3)
         structure.last_online_at = None
         self.assertFalse(structure.is_low_power)
 
@@ -134,13 +139,13 @@ class TestStructure(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
 
         # true when upwell structure, online > 7 days
-        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        structure.last_online_at = now() - dt.timedelta(days=7, seconds=1)
 
         # false when upwell structure, online <= 7 days or none
-        structure.last_online_at = now() - timedelta(days=7, seconds=0)
+        structure.last_online_at = now() - dt.timedelta(days=7, seconds=0)
         self.assertFalse(structure.is_abandoned)
 
-        structure.last_online_at = now() - timedelta(days=3)
+        structure.last_online_at = now() - dt.timedelta(days=3)
         self.assertFalse(structure.is_abandoned)
 
         # none if missing information
@@ -194,7 +199,7 @@ class TestStructure(NoSocketsTestCase):
     def test_should_return_hours_when_fuel_expires(self):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=2)
         # when
         result = structure.hours_fuel_expires
         # then
@@ -262,14 +267,14 @@ class TestStructure(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=32,
         )
         structure.items.create(
             id=2,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=10,
@@ -301,7 +306,7 @@ class TestStructure(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=101,
@@ -318,7 +323,7 @@ class TestStructure(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=99,
@@ -328,6 +333,60 @@ class TestStructure(NoSocketsTestCase):
         structure.reevaluate_jump_fuel_alerts()
         # then
         self.assertEqual(structure.jump_fuel_alerts.count(), 1)
+
+    def test_should_return_fuel_blocks(self):
+        # given
+        structure = Structure.objects.get(id=1000000000004)
+        structure.items.create(
+            id=1,
+            eve_type_id=EVE_ID_NITROGEN_FUEL_BLOCK,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            is_singleton=False,
+            quantity=250,
+        )
+        structure.items.create(
+            id=2,
+            eve_type_id=EVE_ID_HELIUM_FUEL_BLOCK,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            is_singleton=False,
+            quantity=1000,
+        )
+        structure.items.create(
+            id=3,
+            eve_type_id=EVE_ID_HELIUM_FUEL_BLOCK,
+            location_flag=StructureItem.LocationFlag.CARGO,
+            is_singleton=False,
+            quantity=500,
+        )
+        # when
+        result = structure.structure_fuel_quantity
+        # then
+        self.assertEqual(result, 1250)
+
+    def test_should_return_fuel_need(self):
+        # given
+        structure = Structure.objects.create(
+            id=1900000000001,
+            owner=self.owner,
+            eve_solar_system_id=30002537,
+            name="Dummy",
+            state=Structure.State.SHIELD_VULNERABLE,
+            eve_type_id=35832,
+            fuel_expires_at=dt.datetime(2022, 1, 24, 5, 0, tzinfo=UTC),
+        )
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = dt.datetime(2021, 12, 17, 15, 13, tzinfo=UTC)
+            structure.items.create(
+                id=1,
+                eve_type_id=EVE_ID_NITROGEN_FUEL_BLOCK,
+                location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+                is_singleton=False,
+                quantity=6309,
+            )
+        # when
+        result = structure.structure_fuel_usage()
+        # then
+        self.assertEqual(result, 168)
 
 
 class TestStructureIsBurningFuel(NoSocketsTestCase):
@@ -395,12 +454,12 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         # given
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=12)
         structure.save()
         structure.structure_fuel_alerts.create(config=config, hours=12)
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=13)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=13)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.structure_fuel_alerts.count(), 0)
@@ -413,12 +472,12 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         # given
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=12)
         structure.save()
         old_instance = deepcopy(structure)
         structure.structure_fuel_alerts.create(config=config, hours=12)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=11)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=11)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.structure_fuel_alerts.count(), 0)
@@ -431,12 +490,12 @@ class TestStructureFuelLevels(NoSocketsTestCase):
         # given
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=12)
         structure.save()
         structure.structure_fuel_alerts.create(config=config, hours=12)
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=12, minutes=5)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=12, minutes=5)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertEqual(structure.structure_fuel_alerts.count(), 1)
@@ -447,11 +506,11 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         structure.save()
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=6)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=6)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_create_from_structure.called)
@@ -466,11 +525,11 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     ):
         # given
         structure = Structure.objects.get(id=1300000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         structure.save()
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=4)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=4)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_create_from_structure.called)
@@ -483,11 +542,11 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         structure.save()
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=12)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertTrue(mock_send_to_webhook.called)
@@ -498,8 +557,8 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        target_date_1 = now() + timedelta(hours=2)
-        target_date_1 = now() + timedelta(hours=2, minutes=15)
+        target_date_1 = now() + dt.timedelta(hours=2)
+        target_date_1 = now() + dt.timedelta(hours=2, minutes=15)
         structure.fuel_expires_at = target_date_1
         structure.save()
         old_instance = deepcopy(structure)
@@ -515,11 +574,11 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=12)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=12)
         structure.save()
         old_instance = deepcopy(structure)
         # when
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         structure.handle_fuel_notifications(old_instance)
         # then
         self.assertFalse(mock_send_to_webhook.called)
@@ -530,7 +589,7 @@ class TestStructureFuelLevels(NoSocketsTestCase):
     ):
         # given
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=2)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=2)
         structure.save()
         old_instance = deepcopy(structure)
         # when
@@ -558,14 +617,14 @@ class TestStructurePowerMode(NoSocketsTestCase):
 
     def test_full_power_mode(self):
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() + timedelta(hours=1)
+        structure.fuel_expires_at = now() + dt.timedelta(hours=1)
         self.assertEqual(structure.power_mode, Structure.PowerMode.FULL_POWER)
         self.assertEqual(structure.get_power_mode_display(), "Full Power")
 
     def test_low_power_mode(self):
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() - timedelta(seconds=3)
-        structure.last_online_at = now() - timedelta(days=3)
+        structure.fuel_expires_at = now() - dt.timedelta(seconds=3)
+        structure.last_online_at = now() - dt.timedelta(days=3)
         self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_POWER)
 
         structure = Structure.objects.get(id=1000000000001)
@@ -575,24 +634,24 @@ class TestStructurePowerMode(NoSocketsTestCase):
         self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_POWER)
 
         structure.fuel_expires_at = None
-        structure.last_online_at = now() - timedelta(days=3)
+        structure.last_online_at = now() - dt.timedelta(days=3)
         self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_POWER)
         self.assertEqual(structure.get_power_mode_display(), "Low Power")
 
     def test_abandoned_mode(self):
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() - timedelta(seconds=3)
-        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        structure.fuel_expires_at = now() - dt.timedelta(seconds=3)
+        structure.last_online_at = now() - dt.timedelta(days=7, seconds=1)
         self.assertEqual(structure.power_mode, Structure.PowerMode.ABANDONED)
 
         structure.fuel_expires_at = None
-        structure.last_online_at = now() - timedelta(days=7, seconds=1)
+        structure.last_online_at = now() - dt.timedelta(days=7, seconds=1)
         self.assertEqual(structure.power_mode, Structure.PowerMode.ABANDONED)
         self.assertEqual(structure.get_power_mode_display(), "Abandoned")
 
     def test_low_abandoned_mode(self):
         structure = Structure.objects.get(id=1000000000001)
-        structure.fuel_expires_at = now() - timedelta(seconds=3)
+        structure.fuel_expires_at = now() - dt.timedelta(seconds=3)
         structure.last_online_at = None
         self.assertEqual(structure.power_mode, Structure.PowerMode.LOW_ABANDONED)
 

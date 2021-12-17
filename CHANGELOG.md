@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.19.0] - 021-12-17
+
+## Added
+
+- Show current fuel usage for Upwell structures on structures details window (#56)
+
 ## [1.18.0] - 021-12-16
 
 > **Important**:<br>By installing this update the owner assets will be temporarily removed and need to be fetched again from ESI to re-enable features like fittings and quantum core. This will happen automatically with the next periodic update or you can trigger it manually on the admin site.

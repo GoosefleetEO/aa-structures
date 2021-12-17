@@ -27,7 +27,7 @@ from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__, constants
+from .. import __title__
 from ..app_settings import (
     STRUCTURES_ADD_TIMERS,
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
@@ -40,6 +40,7 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
+from ..constants import EveGroupId, EveTypeId
 from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
@@ -650,7 +651,7 @@ class Owner(models.Model):
                     reinforce_hour = reinforce_exit_start + timedelta(hours=1)
                     structure = {
                         "structure_id": office_id,
-                        "type_id": constants.EVE_TYPE_ID_POCO,
+                        "type_id": EveTypeId.CUSTOMS_OFFICE,
                         "corporation_id": corporation_id,
                         "name": name if name else "",
                         "system_id": poco["system_id"],
@@ -1077,7 +1078,7 @@ class Owner(models.Model):
         """processes notifications for timers if any"""
         empty_refineries = Structure.objects.filter(
             owner=self,
-            eve_type__eve_group_id=constants.EVE_GROUP_ID_REFINERY,
+            eve_type__eve_group_id=EveGroupId.REFINERY,
             eve_moon__isnull=True,
         )
         if empty_refineries:

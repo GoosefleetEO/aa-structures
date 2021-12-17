@@ -23,6 +23,7 @@
         {% include "structures/modals/fitting_assets.html" with slot_name="Fuel Bay" asset_list=assets_grouped.fuel_bay %}
         {% include "structures/modals/fitting_assets.html" with slot_name="Fighter Bay" asset_list=assets_grouped.fighter_bay %}
         {% include "structures/modals/fitting_assets.html" with slot_name="Fighter Tubes" asset_list=slot_assets.fighter_tubes %}
+        {% include "structures/modals/fitting_assets.html" with slot_name="Fuel Usage" asset_list=assets_grouped.fuel_usage %}
     </ul>
     <p class="text-muted">Last updated {{ last_updated|naturaltime|default:"?" }}</p>
 </div>

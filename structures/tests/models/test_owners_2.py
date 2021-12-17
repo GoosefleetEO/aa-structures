@@ -10,7 +10,7 @@ from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
 from app_utils.testing import BravadoResponseStub, NoSocketsTestCase, queryset_pks
 
-from ... import constants
+from ...constants import EveTypeId
 from ...models import (
     EveMoon,
     JumpFuelAlertConfig,
@@ -728,7 +728,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         structure = Structure.objects.get(id=1000000000001)
         structure.items.create(
             id=42,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag="Cargo",
             is_singleton=False,
             quantity=5000,
@@ -747,13 +747,13 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         structure = Structure.objects.create(
             id=1000000000666,
             owner=owner,
-            eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE,
+            eve_type_id=EveTypeId.JUMP_GATE,
             name="Zombie",
             eve_solar_system_id=30000476,
         )
         structure.items.create(
             id=42,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag="Cargo",
             is_singleton=False,
             quantity=5000,

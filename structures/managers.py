@@ -13,7 +13,8 @@ from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from . import __title__, constants
+from . import __title__
+from .constants import EveCategoryId, EveTypeId
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from .webhooks.managers import WebhookBaseManager
 
@@ -176,17 +177,13 @@ class EveEntityManager(models.Manager):
 
 class StructureQuerySet(models.QuerySet):
     def filter_upwell_structures(self) -> models.QuerySet:
-        return self.filter(
-            eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STRUCTURE
-        )
+        return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STRUCTURE)
 
     def filter_customs_offices(self) -> models.QuerySet:
-        return self.filter(eve_type=constants.EVE_TYPE_ID_POCO)
+        return self.filter(eve_type=EveTypeId.CUSTOMS_OFFICE)
 
     def filter_starbases(self) -> models.QuerySet:
-        return self.filter(
-            eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STARBASE
-        )
+        return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STARBASE)
 
     def ids(self) -> set():
         """Return ids as set."""
