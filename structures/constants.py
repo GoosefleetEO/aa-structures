@@ -19,8 +19,9 @@ class EveGroupId(IntEnum):
 class EveTypeId(IntEnum):
     CUSTOMS_OFFICE = 2233
     IHUB = 32458
-    LIQUID_OZONE = 16273
     JUMP_GATE = 35841
+    LIQUID_OZONE = 16273
+    NITROGEN_FUEL_BLOCK = 4051
     STRONTIUM = 16275
     TCU = 32226
 

@@ -474,12 +474,14 @@ class Structure(models.Model):
         ).aggregate(Min("last_updated_at"))["last_updated_at__min"]
         if not assets_last_updated_at:
             return None
-        result = math.ceil(
-            fuel_quantity
-            / ((self.fuel_expires_at - assets_last_updated_at).total_seconds() / 3600)
-            * 24
-        )
-        return result
+        try:
+            return math.ceil(
+                fuel_quantity
+                / hours_until_deadline(self.fuel_expires_at, assets_last_updated_at)
+                * 24
+            )
+        except ZeroDivisionError:
+            return None
 
     @property
     def hours_fuel_expires(self) -> Optional[float]:

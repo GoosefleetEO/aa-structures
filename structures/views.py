@@ -145,6 +145,22 @@ def structure_details(request, structure_id):
             except KeyError:
                 return ""
 
+    class FakeEveType:
+        def __init__(self, id, name):
+            self.id = id
+            self.name = name
+            self.profile_url = ""
+
+    class FakeAsset:
+        """Fake asset object for showing additional information in the asset list."""
+
+        def __init__(self, name, quantity, eve_type_id):
+            self.name = name
+            self.quantity = quantity
+            self.eve_type_id = eve_type_id
+            self.eve_type = FakeEveType(eve_type_id, name)
+            self.is_singleton = False
+
     def extract_slot_assets(fittings: list, slot_name: str) -> list:
         """Return assets for slot sorted by slot number"""
         return [
@@ -193,7 +209,14 @@ def structure_details(request, structure_id):
             assets_grouped["fuel_bay"].append(asset)
         else:
             assets_grouped[asset.location_flag] = asset
-
+    if structure.is_upwell_structure:
+        assets_grouped["fuel_usage"] = [
+            FakeAsset(
+                name="Fuel blocks per day",
+                quantity=structure.structure_fuel_usage(),
+                eve_type_id=EveTypeId.NITROGEN_FUEL_BLOCK,
+            )
+        ]
     context = {
         "fitting": assets,
         "slots": slot_image_urls,
