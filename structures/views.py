@@ -212,7 +212,7 @@ def structure_details(request, structure_id):
     if structure.is_upwell_structure:
         assets_grouped["fuel_usage"] = [
             FakeAsset(
-                name="Fuel blocks per day",
+                name="Fuel blocks per day (est.)",
                 quantity=structure.structure_fuel_usage(),
                 eve_type_id=EveTypeId.NITROGEN_FUEL_BLOCK,
             )
