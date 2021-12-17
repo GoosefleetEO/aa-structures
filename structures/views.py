@@ -22,7 +22,7 @@ from app_utils.logging import LoggerAddTag
 from app_utils.messages import messages_plus
 from app_utils.views import image_html
 
-from . import __title__, constants, tasks
+from . import __title__, tasks
 from .app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEFAULT_LANGUAGE,
@@ -31,6 +31,7 @@ from .app_settings import (
     STRUCTURES_PAGING_ENABLED,
     STRUCTURES_SHOW_JUMP_GATES,
 )
+from .constants import EveCategoryId, EveGroupId, EveTypeId
 from .core.serializers import (
     JumpGatesListSerializer,
     PocoListSerializer,
@@ -219,14 +220,14 @@ def poco_details(request, structure_id):
     poco = get_object_or_404(
         Structure.objects.select_related(
             "owner", "eve_type", "eve_solar_system", "poco_details"
-        ).filter(eve_type=constants.EVE_TYPE_ID_POCO, poco_details__isnull=False),
+        ).filter(eve_type=EveTypeId.CUSTOMS_OFFICE, poco_details__isnull=False),
         id=structure_id,
     )
     context = {
         "poco": poco,
         "details": poco.poco_details,
         "poco_image_url": eveimageserver.type_render_url(
-            type_id=constants.EVE_TYPE_ID_POCO, size=256
+            type_id=EveTypeId.CUSTOMS_OFFICE, size=256
         ),
         "last_updated": poco.last_updated_at,
     }
@@ -358,7 +359,7 @@ def service_status(request):
 def poco_list_data(request) -> JsonResponse:
     """List of public POCOs for DataTables."""
     pocos = Structure.objects.filter(
-        eve_type__eve_group__eve_category_id=constants.EVE_CATEGORY_ID_ORBITAL,
+        eve_type__eve_group__eve_category_id=EveCategoryId.ORBITAL,
         owner__are_pocos_public=True,
     )
     serializer = PocoListSerializer(queryset=pocos, request=request)
@@ -376,37 +377,27 @@ def structure_summary_data(request) -> JsonResponse:
         )
         .annotate(
             ec_count=Count(
-                "id",
-                filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_ENGINERING_COMPLEX),
+                "id", filter=Q(eve_type__eve_group=EveGroupId.ENGINERING_COMPLEX)
             )
         )
         .annotate(
             refinery_count=Count(
-                "id",
-                filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_REFINERY),
+                "id", filter=Q(eve_type__eve_group=EveGroupId.REFINERY)
             )
         )
         .annotate(
-            citadel_count=Count(
-                "id",
-                filter=Q(eve_type__eve_group=constants.EVE_GROUP_ID_CITADEL),
-            )
+            citadel_count=Count("id", filter=Q(eve_type__eve_group=EveGroupId.CITADEL))
         )
         .annotate(
             upwell_count=Count(
                 "id",
-                filter=Q(
-                    eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STRUCTURE
-                ),
+                filter=Q(eve_type__eve_group__eve_category=EveCategoryId.STRUCTURE),
             )
         )
-        .annotate(poco_count=Count("id", filter=Q(eve_type=constants.EVE_TYPE_ID_POCO)))
+        .annotate(poco_count=Count("id", filter=Q(eve_type=EveTypeId.CUSTOMS_OFFICE)))
         .annotate(
             starbase_count=Count(
-                "id",
-                filter=Q(
-                    eve_type__eve_group__eve_category=constants.EVE_CATEGORY_ID_STARBASE
-                ),
+                "id", filter=Q(eve_type__eve_group__eve_category=EveCategoryId.STARBASE)
             )
         )
     )
@@ -448,7 +439,7 @@ def structure_summary_data(request) -> JsonResponse:
 def jump_gates_list_data(request) -> JsonResponse:
     """List of jump gates for DataTables."""
     jump_gates = Structure.objects.visible_for_user(request.user).filter(
-        eve_type_id=constants.EVE_TYPE_ID_JUMP_GATE
+        eve_type_id=EveTypeId.JUMP_GATE
     )
     serializer = JumpGatesListSerializer(queryset=jump_gates)
     return JsonResponse({"data": serializer.to_list()})

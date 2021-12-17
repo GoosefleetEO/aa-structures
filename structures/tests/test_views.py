@@ -16,7 +16,8 @@ from allianceauth.eveonline.models import (
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.testing import create_user_from_evecharacter, json_response_to_python
 
-from .. import constants, views
+from .. import views
+from ..constants import EveTypeId
 from ..models import Owner, PocoDetails, Structure, StructureItem, Webhook
 from .testdata import create_structures, load_entities, load_entity, set_owner_character
 
@@ -900,7 +901,7 @@ class TestJumpGateList(TestCase):
         structure = Structure.objects.get(id=1000000000004)
         structure.items.create(
             id=1,
-            eve_type_id=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             is_singleton=False,
             quantity=5000,

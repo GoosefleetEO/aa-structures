@@ -16,8 +16,9 @@ from app_utils.datetime import (
 )
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
-from .. import __title__, constants
+from .. import __title__
 from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+from ..constants import EveTypeId
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
@@ -787,7 +788,7 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
             self._parsed_text["planetID"]
         )
         self._structure_type, _ = EveType.objects.get_or_create_esi(
-            constants.EVE_TYPE_ID_POCO
+            EveTypeId.CUSTOMS_OFFICE
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             self._parsed_text["solarSystemID"]
@@ -940,7 +941,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
                 self._parsed_text["campaignEventType"]
             )
         else:
-            structure_type_id = constants.EVE_TYPE_ID_TCU
+            structure_type_id = EveTypeId.TCU
         structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
         self._structure_type_name = structure_type.name_localized
         self._sov_owner_link = self._gen_alliance_link(notification.sender.name)

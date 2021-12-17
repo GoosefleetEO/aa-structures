@@ -22,8 +22,8 @@ from app_utils.views import (
     yesnonone_str,
 )
 
-from .. import constants
 from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
+from ..constants import EveTypeId
 from ..models import Structure, StructureItem, StructureService
 
 
@@ -366,7 +366,7 @@ class JumpGatesListSerializer(_AbstractStructureListSerializer):
             jump_fuel_quantity_2=Sum(
                 "items__quantity",
                 filter=Q(
-                    items__eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
+                    items__eve_type=EveTypeId.LIQUID_OZONE,
                     items__location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
                 ),
             )

@@ -17,8 +17,9 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
-from .. import __title__, constants
+from .. import __title__
 from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
+from ..constants import EveTypeId
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import EsiNameLocalization, EveSolarSystem
@@ -450,7 +451,7 @@ class Structure(models.Model):
         """Current quantity of liquid ozone in units."""
         return self.items.filter(
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            eve_type=constants.EVE_TYPE_ID_LIQUID_OZONE,
+            eve_type=EveTypeId.LIQUID_OZONE,
         ).aggregate(Sum("quantity"))["quantity__sum"]
 
     @property

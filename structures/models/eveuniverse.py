@@ -11,7 +11,8 @@ from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__, constants
+from .. import __title__
+from ..constants import EveCategoryId, EveGroupId, EveTypeId
 from ..managers import EveSovereigntyMapManager, EveUniverseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -292,11 +293,11 @@ class EveCategory(EveUniverse):
 
     @property
     def is_starbase(self):
-        return self.id == constants.EVE_CATEGORY_ID_STARBASE
+        return self.id == EveCategoryId.STARBASE
 
     @property
     def is_upwell_structure(self):
-        return self.id == constants.EVE_CATEGORY_ID_STRUCTURE
+        return self.id == EveCategoryId.STRUCTURE
 
     class EveUniverseMeta:
         esi_pk = "category_id"
@@ -341,16 +342,16 @@ class EveType(EveUniverse):
 
     @property
     def is_poco(self):
-        return self.id == constants.EVE_TYPE_ID_POCO
+        return self.id == EveTypeId.CUSTOMS_OFFICE
 
     @property
     def is_starbase(self):
-        return self.eve_group_id == constants.EVE_GROUP_ID_CONTROL_TOWER
+        return self.eve_group_id == EveGroupId.CONTROL_TOWER
 
     @property
     def is_upwell_structure(self):
         try:
-            return self.eve_group.eve_category_id == constants.EVE_CATEGORY_ID_STRUCTURE
+            return self.eve_group.eve_category_id == EveCategoryId.STRUCTURE
         except AttributeError:
             logger.warning(
                 'Group "%s" does not have a category. This is a data error. '
@@ -361,7 +362,7 @@ class EveType(EveUniverse):
 
     @property
     def is_fuel_block(self):
-        return self.eve_group_id == constants.EVE_GROUP_ID_FUEL_BLOCK
+        return self.eve_group_id == EveGroupId.FUEL_BLOCK
 
     @property
     def starbase_size(self):
