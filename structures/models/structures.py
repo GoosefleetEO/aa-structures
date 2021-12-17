@@ -1,11 +1,12 @@
 """Structure related models"""
+import math
 import re
 from datetime import timedelta
 from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Min, Sum
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.timezone import now
@@ -447,6 +448,14 @@ class Structure(models.Model):
             return self.eve_planet.name
         return self.eve_solar_system.name
 
+    @cached_property
+    def structure_fuel_quantity(self) -> Optional[int]:
+        """Current quantity of fuel blocks in units used as fuel."""
+        return self.items.filter(
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            eve_type__eve_group_id=EveGroupId.FUEL_BLOCK,
+        ).aggregate(Sum("quantity"))["quantity__sum"]
+
     def jump_fuel_quantity(self) -> Optional[int]:
         """Current quantity of liquid ozone in units used as fuel."""
         return self.items.filter(
@@ -454,12 +463,23 @@ class Structure(models.Model):
             eve_type_id=EveTypeId.LIQUID_OZONE,
         ).aggregate(Sum("quantity"))["quantity__sum"]
 
-    def structure_fuel_quantity(self) -> Optional[int]:
-        """Current quantity of fuel blocks in units used as fuel."""
-        return self.items.filter(
+    def structure_fuel_usage(self) -> Optional[int]:
+        """Needed fuel blocks per day."""
+        fuel_quantity = self.structure_fuel_quantity
+        if not fuel_quantity:
+            return None
+        assets_last_updated_at = self.items.filter(
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
             eve_type__eve_group_id=EveGroupId.FUEL_BLOCK,
-        ).aggregate(Sum("quantity"))["quantity__sum"]
+        ).aggregate(Min("last_updated_at"))["last_updated_at__min"]
+        if not assets_last_updated_at:
+            return None
+        result = math.ceil(
+            fuel_quantity
+            / ((self.fuel_expires_at - assets_last_updated_at).total_seconds() / 3600)
+            * 24
+        )
+        return result
 
     @property
     def hours_fuel_expires(self) -> Optional[float]:
