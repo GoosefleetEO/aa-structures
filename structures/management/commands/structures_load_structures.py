@@ -18,5 +18,5 @@ class Command(BaseCommand):
             "eveuniverse_load_types",
             __title__,
             "--category_id_with_dogma",
-            str(EveCategoryId.STRUCTURE),
+            EveCategoryId.STRUCTURE.value,
         )
