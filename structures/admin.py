@@ -252,7 +252,7 @@ class NotificationAdmin(admin.ModelAdmin):
             return ", ".join(names)
         else:
             return format_html(
-                '<b><span style="color: orange">Not configured</span></b>'
+                '<b><span style="color: orange">⚠ Not configured</span></b>'
             )
 
     def _is_sent(self, obj):
@@ -417,8 +417,8 @@ class OwnerAdmin(admin.ModelAdmin):
         if names:
             return names
         return format_html(
-            '<span style="color: red"></i>Error: Notifications can not be sent, '
-            "because there is no webhook configured for this owner."
+            '<span style="color: red">⚠ Notifications can not be sent, '
+            "because there is no webhook configured for this owner.</span>"
         )
 
     def _is_active(self, obj):
@@ -971,10 +971,19 @@ class WebhookAdmin(admin.ModelAdmin):
     _default_pings.boolean = True
 
     def _ping_groups(self, obj):
-        return sorted([ping_group.name for ping_group in obj.ping_groups.all()])
+        ping_groups = [ping_group.name for ping_group in obj.ping_groups.all()]
+        if not ping_groups:
+            return None
+        return sorted(ping_groups)
 
     def _owners(self, obj):
-        return sorted([str(owner) for owner in obj.owner_set.all()])
+        owners = [str(owner) for owner in obj.owner_set.all()]
+        if not owners:
+            return format_html(
+                '<b><span style="color: orange;">'
+                "⚠ Please add this webhook to an owner to enable it.</span></b>"
+            )
+        return sorted(owners)
 
     _owners.short_description = "Enabled for Owners"
 
