@@ -5,27 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.19.3] - 2021-12-22
+## [1.20.0] - 2022-01-03
 
-# Changed
+### Changed
 
 - Show warning on admin site if webhook is not used by owner
+- Dropped support for Python 3.6 / Django 3.1
 
 ## [1.19.2] - 2021-12-22
 
-## Changed
+### Changed
 
 - Default for `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES` is now 40, since 20 minutes was too low to deal with longer downtimes.
 
 ## [1.19.1] - 2021-12-22
 
-## Fixed
+### Fixed
 
 - command `structures_load_structures` aborts with `invalid int value: 'EveCategoryId.STRUCTURE'`
 
 ## [1.19.0] - 2021-12-17
 
-## Added
+### Added
 
 - Show current fuel usage for Upwell structures on structures details window (#56)
 
@@ -33,49 +34,49 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 > **Important**:<br>By installing this update the owner assets will be temporarily removed and need to be fetched again from ESI to re-enable features like fittings and quantum core. This will happen automatically with the next periodic update or you can trigger it manually on the admin site.
 
-## Added
+### Added
 
 - Configurable alerts to warn about jump fuel (liquid ozone) running low in jump gates (#39)
 - New tab showing jump gates only incl. liquid ozone level. Can be disabled via setting. (#39)
 
-## Changed
+### Changed
 
 - Restructured data model: former OwnerAssets are now stored as StructureItems per structure
 
 ## [1.17.3] - 2021-12-10
 
-## Fixed
+### Fixed
 
 - Discord notifications may break when the avatar URL is not valid
 
 ## [1.17.2] - 2021-10-28
 
-## Added
+### Added
 
 - Documentation for Public Customs Offices feature to README.
 
-## Changed
+### Changed
 
 - Added CI tests for AA 2.9+ (Python 3.7+, Django 3.2), removed CI tests for AA < 2.9 (Python 3.6, Django 3.1)
 
-## Fixed
+### Fixed
 
 - Improved user message when having to remove token that is not a director.
 
 ## [1.17.1] - 2021-10-23
 
-## Fixed
+### Fixed
 
 - Alliance spanning notifications like sov notifications are no longer forwarded.
 - Can not set alliance_main for other alliances and solo corporations
 
 ## [1.17.0] - 2021-10-18
 
-## Added
+### Added
 
 - Improved service monitoring: This app will inform admins via AA notification when a structure service went down and when it is up again. When used in combination with the app [Discord Notify](https://gitlab.com/ErikKalkoken/aa-discordnotify) this allows admins to be informed quickly about any service outage. Please also see the section "Features/Services Monitoring" in the README.
 
-## Changed
+### Changed
 
 - Fuel alert notifications from ESI will now always be forwarded as temporary workaround for issue #59
 
@@ -83,7 +84,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.16.0] - 2021-09-29
 
-## Changed
+### Changed
 
 - Removed feature to send ESI errors as auth notifications. Turns out that many ESI errors are just temporary and do not result in a permanent degradion of ESI functionality. Reporting those errors as auth notifications has therefore little real value. Note that all occuring ESI errors will continue to be reported in the usual errors logs (e.g. extensions.log)
 
@@ -95,14 +96,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.15.0] - 2021-08-17
 
-## Added
+### Added
 
 - Fuel alert notifications for structures and POSes can now be configured freely, e.g. to appear 3 days before fuel runs out and repeated every 12 hours
 - Default fuel alert notifications from ESI can be turned off with the setting: `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS` (so they don't interfere with the custom fuel alerts)
 - EXPERIMENTAL: A new notification can be generated to inform when a structure or POS has been refueled. This is an experimental feature that can be enabled with this feature flag in your local settings: `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = True`. Note that this feature currently does not work properly for POSes.
 - Tokens will now also be rotated when fetching structures from ESI to reduce latency
 
-## Changed
+### Changed
 
 - Will now show name of token's character for ESI issues to make it easier to identify the culprit (#55)
 
@@ -113,14 +114,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.14.2] - 2021-07-12
 
-## Changed
+### Changed
 
 - Default for repeating issue notifications changed to 1 day
 - Inactive owners will be re-activated once a new sync character is added
 
 ## [1.14.1] - 2021-07-10
 
-## Fixed
+### Fixed
 
 - Pinned dependency to app-utils incorrect
 
@@ -140,7 +141,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - New setting STRUCTURES_NOTIFY_THROTTLED_TIMEOUT to configure how often issue related auth notifications are sent
 - Default for repearting issue related auth notifications to users and admins reduced to 1 hour
 
-## Fixed
+### Fixed
 
 - Only one owner can be alliance_main
 
@@ -296,19 +297,19 @@ Big thanks to @huideaki for contributing the fitting feature and to @ppfeufer fo
 
 ## [1.9.3] - 2021-04-01
 
-## Fixed
+### Fixed
 
 - Poco List breaks when poco has no planet. ([#48](https://gitlab.com/ErikKalkoken/aa-structures/issues/48))
 
 ## [1.9.2] - 2021-03-31
 
-## Fixed
+### Fixed
 
 - Will now set names of customs offices to blank if planet matching fails. ([#48](https://gitlab.com/ErikKalkoken/aa-structures/issues/48))
 
 ## [1.9.1] - 2021-03-24
 
-## Changed
+### Changed
 
 - Will now automatically update the moon for refineries based on respective moon notifications
 
@@ -316,13 +317,13 @@ Big thanks to @huideaki for contributing the fitting feature and to @ppfeufer fo
 
 > **Important update notes**:<br>There has been an important change in the permission system. The `basic_access` permission no longer gives access to viewing structures from one's own corporation. Users now need the new permission `view_corporation_structures` for that. Please make sure to add that new permissions after installing this update where applicable (e.g. to Member state).
 
-## Added
+### Added
 
 - New dedicated tab showing all customs offices, meant for public consumption
 - New permission for viewing corporation structures
 - Notification types for characters applying to join a corp: `CorpAppNewMsg`, `CorpAppInvitedMsg`, `CorpAppRejectCustomMsg`, `CharAppWithdrawMsg`
 
-## Changed
+### Changed
 
 - `basic_access` no longer gives access to viewing structures from one's own corporation. Users now need the new permission `view_corporation_structures` for that.
 - Removed anchoring time for structure anchoring notifications
@@ -330,7 +331,7 @@ Big thanks to @huideaki for contributing the fitting feature and to @ppfeufer fo
 
 ## [1.8.1] - 2021-03-01
 
-## Changed
+### Changed
 
 - Reduce vulnerability for transaction timeouts
 - Improve performance of notification updates
