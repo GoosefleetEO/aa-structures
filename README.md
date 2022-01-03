@@ -432,7 +432,7 @@ Name | Description | Default
 `STRUCTURES_NOTIFICATION_MAX_RETRIES`| Max number of retries after a HTTP error occurred incl. rate limiting  | `3`
 `STRUCTURES_NOTIFICATION_SET_AVATAR`| Wether structures sets the name and avatar icon of a webhook. When `False` the webhook will use it's own values as set on the platform | `True`
 `STRUCTURES_NOTIFICATION_SHOW_MOON_ORE`| Wether ore details are shown on moon notifications | `True`
-`STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | `15`
+`STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`| Max time in minutes since last successful notifications sync before service is reported as down  | `40`
 `STRUCTURES_NOTIFICATION_WAIT_SEC`| Default wait time in seconds before retrying after HTTP error (not used for rate limits)  | `5`
 `STRUCTURES_PAGING_ENABLED`| Wether paging is enabled for the structure list. | `True`
 `STRUCTURES_REPORT_NPC_ATTACKS`| Enable / disable sending notifications for attacks by NPCs (structure reinforcements are still reported) | `True`

@@ -41,7 +41,7 @@ class TestSendMessagesForWebhook(TestCase):
         self.assertEqual(mock_send_queued_messages.call_count, 0)
 
 
-@override_settings(CELERY_ALWAYS_EAGER=True)
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestUpdateStructures(NoSocketsTestCase):
     def setUp(self):
         create_structures()
@@ -65,7 +65,9 @@ class TestUpdateStructures(NoSocketsTestCase):
         first, second = mock_update_structures_esi.call_args
         self.assertIsNone(first[0])
 
-    @override_settings(CELERY_ALWAYS_EAGER=True)
+    @override_settings(
+        CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True
+    )
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
             """TODO: Investigate how to call the top level method that contains the chains()"""
@@ -128,7 +130,7 @@ class TestUpdateStructures(NoSocketsTestCase):
     """
 
 
-@override_settings(CELERY_ALWAYS_EAGER=True)
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestUpdateOwnerAsset(NoSocketsTestCase):
     def setUp(self):
         create_structures()
@@ -154,7 +156,9 @@ class TestUpdateOwnerAsset(NoSocketsTestCase):
         first, second = mock_update_asset_esi.call_args
         self.assertIsNone(first[0])
 
-    @override_settings(CELERY_ALWAYS_EAGER=True)
+    @override_settings(
+        CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True
+    )
     def test_raises_exception_if_owner_is_unknown(self):
         with self.assertRaises(Owner.DoesNotExist):
             """TODO: Investigate how to call the top level method that contains the chains()"""

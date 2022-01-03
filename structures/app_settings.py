@@ -54,12 +54,7 @@ STRUCTURES_NOTIFICATION_MAX_RETRIES = clean_setting(
 # Max time in minutes since last successful notification sync
 # before service is reported as down
 STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES = clean_setting(
-    "STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 20
-)
-
-# Duration of period in minutes when notifications are synced
-STRUCTURES_NOTIFICATION_SYNC_PERIOD_MINUTES = clean_setting(
-    "STRUCTURES_NOTIFICATION_SYNC_PERIOD_MINUTES", 2
+    "STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES", 40
 )
 
 # Default wait time in seconds before retrying to send a notification
