@@ -329,6 +329,16 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self.assertEqual(alert.structure, structure)
         self.assertEqual(alert.config, config)
 
+    def test_should_handle_no_fuel_situation(self, mock_send_message):
+        # given
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        Structure.objects.get(id=1000000000004)
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+
     def test_should_not_send_fuel_notification_that_already_exists(
         self, mock_send_message
     ):

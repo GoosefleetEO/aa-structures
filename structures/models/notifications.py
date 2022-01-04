@@ -1209,7 +1209,8 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
         """Send new fuel notifications based on this config."""
         jump_gates = Structure.objects.filter(eve_type_id=EveTypeId.JUMP_GATE)
         for jump_gate in jump_gates:
-            if jump_gate.jump_fuel_quantity() < self.threshold:
+            fuel_quantity = jump_gate.jump_fuel_quantity()
+            if fuel_quantity and fuel_quantity < self.threshold:
                 notif, created = JumpFuelAlert.objects.get_or_create(
                     structure=jump_gate, config=self
                 )
