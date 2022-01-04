@@ -7,7 +7,6 @@ from django.utils import translation
 from django.utils.timezone import now
 from django.utils.translation import gettext
 
-from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
@@ -418,32 +417,6 @@ class EveSolarSystem(EveUniverse):
             return self.TYPE_W_SPACE
         else:
             return self.TYPE_UNKNOWN
-
-    @property
-    def sov_alliance_id(self) -> int:
-        """returns ID of sov owning alliance for this system or None"""
-        if self.is_null_sec:
-            try:
-                sov_map = EveSovereigntyMap.objects.get(solar_system_id=self.id)
-                alliance_id = sov_map.alliance_id if sov_map.alliance_id else None
-            except EveSovereigntyMap.DoesNotExist:
-                alliance_id = None
-        else:
-            alliance_id = None
-
-        return alliance_id
-
-    def corporation_has_sov(self, corporation: EveCorporationInfo) -> bool:
-        """returns true if given corporation has sov in this solar system
-        else False
-        """
-        if not self.is_null_sec:
-            return None
-        else:
-            alliance_id = (
-                int(corporation.alliance.alliance_id) if corporation.alliance else None
-            )
-            return alliance_id and (self.sov_alliance_id == alliance_id)
 
 
 class EvePlanet(EveUniverse):

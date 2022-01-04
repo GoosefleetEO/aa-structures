@@ -1,6 +1,5 @@
 from django.utils import translation
 
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase
 
 from ...models import (
@@ -195,8 +194,6 @@ class TestEveSolarSystem(NoSocketsTestCase):
                 EveRegion,
                 EveConstellation,
                 EveSolarSystem,
-                EveSovereigntyMap,
-                EveCharacter,
             ]
         )
 
@@ -251,34 +248,6 @@ class TestEveSolarSystem(NoSocketsTestCase):
         obj = EveSolarSystem.objects.get(id=31000005)
         expected = EveSolarSystem.TYPE_W_SPACE
         self.assertEqual(obj.space_type, expected)
-
-    def test_sov_alliance_id(self):
-        # returns alliance ID for sov system in null
-        obj = EveSolarSystem.objects.get(id=30000474)
-        expected = 3001
-        self.assertEqual(obj.sov_alliance_id, expected)
-
-        # returns None if there is not sov info
-        obj = EveSolarSystem.objects.get(id=30000476)
-        self.assertIsNone(obj.sov_alliance_id)
-
-        # returns None if system is not in Null sec
-        obj = EveSolarSystem.objects.get(id=30002537)
-        self.assertIsNone(obj.sov_alliance_id)
-
-    def test_corporation_has_sov(self):
-        corp = EveCorporationInfo.objects.get(corporation_id=2001)
-        # Wayne Tech has sov in 1-PG
-        obj = EveSolarSystem.objects.get(id=30000474)
-        self.assertTrue(obj.corporation_has_sov(corp))
-
-        # Wayne Tech has no sov in A-C5
-        obj = EveSolarSystem.objects.get(id=30000476)
-        self.assertFalse(obj.corporation_has_sov(corp))
-
-        # There can't be any sov outside nullsec
-        obj = EveSolarSystem.objects.get(id=30002537)
-        self.assertIsNone(obj.corporation_has_sov(corp))
 
 
 class TestEvePlanet(NoSocketsTestCase):

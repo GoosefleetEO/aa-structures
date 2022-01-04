@@ -131,6 +131,32 @@ class EveSovereigntyMapManager(models.Manager):
                 self.all().delete()
                 self.bulk_create(obj_list, batch_size=1000)
 
+    def corporation_has_sov(
+        self, eve_solar_system: models.Model, corporation: EveCorporationInfo
+    ) -> bool:
+        """returns true if given corporation has sov in this solar system
+        else False
+        """
+        if not eve_solar_system.is_null_sec:
+            return None
+        else:
+            alliance_id = (
+                int(corporation.alliance.alliance_id) if corporation.alliance else None
+            )
+            return alliance_id and (
+                self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
+            )
+
+    def solar_system_sov_alliance_id(self, eve_solar_system: models.Model) -> int:
+        """returns ID of sov owning alliance for this system or None"""
+        if not eve_solar_system.is_null_sec:
+            return None
+        try:
+            sov_map = self.get(solar_system_id=eve_solar_system.id)
+            return sov_map.alliance_id if sov_map.alliance_id else None
+        except self.model.DoesNotExist:
+            return None
+
 
 class EveEntityManager(models.Manager):
     def get_or_create_esi(self, eve_entity_id: int) -> tuple:
@@ -173,6 +199,58 @@ class EveEntityManager(models.Manager):
             raise ValueError(f"{log_prefix}: Did not find a match")
 
         return obj, created
+
+
+class NotificationQuerySet(models.QuerySet):
+    def annotate_can_be_rendered(self) -> models.QuerySet:
+        """annotates field indicating if a notification can be rendered"""
+        from .models import NotificationType
+
+        return self.annotate(
+            can_be_rendered_2=Case(
+                When(notif_type__in=NotificationType.values, then=True),
+                default=Value(False),
+                output_field=models.BooleanField(),
+            )
+        )
+
+
+class NotificationManagerBase(models.Manager):
+    pass
+
+
+NotificationManager = NotificationManagerBase.from_queryset(NotificationQuerySet)
+
+
+class OwnerQuerySet(models.QuerySet):
+    def annotate_characters_count(self) -> models.QuerySet:
+        return self.annotate(
+            x_characters_count=Count(
+                "characters",
+                filter=Q(characters__character_ownership__isnull=False),
+                distinct=True,
+            )
+        )
+
+    def structures_last_updated(self):
+        """Date/time when structures were last updated for any of the active owners."""
+        active_owners = self.filter(is_active=True)
+        return (
+            (
+                active_owners.order_by("-structures_last_update_at")
+                .first()
+                .structures_last_update_at
+            )
+            if active_owners
+            else None
+        )
+
+
+class OwnerManagerBase(models.Manager):
+    pass
+
+
+OwnerManager = OwnerManagerBase.from_queryset(OwnerQuerySet)
 
 
 class StructureQuerySet(models.QuerySet):
@@ -489,58 +567,6 @@ class StructureTagManager(models.Manager):
             },
         )
         return obj, created
-
-
-class NotificationQuerySet(models.QuerySet):
-    def annotate_can_be_rendered(self) -> models.QuerySet:
-        """annotates field indicating if a notification can be rendered"""
-        from .models import NotificationType
-
-        return self.annotate(
-            can_be_rendered_2=Case(
-                When(notif_type__in=NotificationType.values, then=True),
-                default=Value(False),
-                output_field=models.BooleanField(),
-            )
-        )
-
-
-class NotificationManagerBase(models.Manager):
-    pass
-
-
-NotificationManager = NotificationManagerBase.from_queryset(NotificationQuerySet)
-
-
-class OwnerQuerySet(models.QuerySet):
-    def annotate_characters_count(self) -> models.QuerySet:
-        return self.annotate(
-            x_characters_count=Count(
-                "characters",
-                filter=Q(characters__character_ownership__isnull=False),
-                distinct=True,
-            )
-        )
-
-    def structures_last_updated(self):
-        """Date/time when structures were last updated for any of the active owners."""
-        active_owners = self.filter(is_active=True)
-        return (
-            (
-                active_owners.order_by("-structures_last_update_at")
-                .first()
-                .structures_last_update_at
-            )
-            if active_owners
-            else None
-        )
-
-
-class OwnerManagerBase(models.Manager):
-    pass
-
-
-OwnerManager = OwnerManagerBase.from_queryset(OwnerQuerySet)
 
 
 class WebhookManager(WebhookBaseManager):

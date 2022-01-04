@@ -44,7 +44,14 @@ from ..constants import EveGroupId, EveTypeId
 from ..core import starbases
 from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerManager
-from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
+from .eveuniverse import (
+    EveMoon,
+    EvePlanet,
+    EveSolarSystem,
+    EveSovereigntyMap,
+    EveType,
+    EveUniverse,
+)
 from .notifications import EveEntity, Notification, NotificationType, Webhook
 from .structures import PocoDetails, Structure, StructureItem
 
@@ -923,9 +930,10 @@ class Owner(models.Model):
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 starbase["system_id"]
             )
-            sov_discount = (
-                0.25 if solar_system.corporation_has_sov(self.corporation) else 0
+            has_sov = EveSovereigntyMap.objects.corporation_has_sov(
+                eve_solar_system=solar_system, corporation=self.corporation
             )
+            sov_discount = 0.25 if has_sov else 0
             seconds = math.floor(
                 3600
                 * fuel_quantity

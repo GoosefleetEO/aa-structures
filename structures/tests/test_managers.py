@@ -516,6 +516,59 @@ class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
         self.assertEqual(structure.alliance_id, 3001)
 
 
+class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities(
+            [
+                EveCategory,
+                EveGroup,
+                EveType,
+                EveRegion,
+                EveConstellation,
+                EveSolarSystem,
+                EveSovereigntyMap,
+                EveCharacter,
+            ]
+        )
+
+    def test_sov_alliance_id(self):
+        # returns alliance ID for sov system in null
+        obj = EveSolarSystem.objects.get(id=30000474)
+        self.assertEqual(
+            EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj), 3001
+        )
+
+        # returns None if there is not sov info
+        obj = EveSolarSystem.objects.get(id=30000476)
+        self.assertIsNone(EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj))
+
+        # returns None if system is not in Null sec
+        obj = EveSolarSystem.objects.get(id=30002537)
+        self.assertIsNone(EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj))
+
+    def test_corporation_has_sov(self):
+        corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        # Wayne Tech has sov in 1-PG
+        eve_solar_system = EveSolarSystem.objects.get(id=30000474)
+        self.assertTrue(
+            EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
+        )
+
+        # Wayne Tech has no sov in A-C5
+        eve_solar_system = EveSolarSystem.objects.get(id=30000476)
+        self.assertFalse(
+            EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
+        )
+
+        # There can't be any sov outside nullsec
+        eve_solar_system = EveSolarSystem.objects.get(id=30002537)
+        self.assertIsNone(
+            EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
+        )
+
+
 class TestEveEntityManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveEntity)
