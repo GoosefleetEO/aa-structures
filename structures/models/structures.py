@@ -20,7 +20,7 @@ from app_utils.views import bootstrap_label_html
 
 from .. import __title__
 from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
-from ..constants import EveGroupId, EveTypeId
+from ..constants import EveCategoryId, EveGroupId, EveTypeId
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import (
@@ -351,7 +351,15 @@ class Structure(models.Model):
 
     @cached_property
     def is_upwell_structure(self) -> bool:
-        return self.eve_type.is_upwell_structure
+        try:
+            return self.eve_type.eve_group.eve_category_id == EveCategoryId.STRUCTURE
+        except AttributeError:
+            logger.warning(
+                "Group %s does not have a category. This is a data error. "
+                "Please update your local SDE data",
+                self.eve_group,
+            )
+            return False
 
     @cached_property
     def is_poco(self) -> bool:

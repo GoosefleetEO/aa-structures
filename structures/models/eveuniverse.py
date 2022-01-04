@@ -295,10 +295,6 @@ class EveCategory(EveUniverse):
     def is_starbase(self):
         return self.id == EveCategoryId.STARBASE
 
-    @property
-    def is_upwell_structure(self):
-        return self.id == EveCategoryId.STRUCTURE
-
     class EveUniverseMeta:
         esi_pk = "category_id"
         esi_method = "get_universe_categories_category_id"
@@ -343,18 +339,6 @@ class EveType(EveUniverse):
     @property
     def is_starbase(self):
         return self.eve_group_id == EveGroupId.CONTROL_TOWER
-
-    @property
-    def is_upwell_structure(self):
-        try:
-            return self.eve_group.eve_category_id == EveCategoryId.STRUCTURE
-        except AttributeError:
-            logger.warning(
-                'Group "%s" does not have a category. This is a data error. '
-                "Please update your local SDE data",
-                self.eve_group,
-            )
-            return False
 
     @property
     def is_fuel_block(self):

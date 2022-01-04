@@ -267,6 +267,15 @@ class TestStructure(NoSocketsTestCase):
         self.assertFalse(poco.is_upwell_structure)
         self.assertFalse(starbase.is_upwell_structure)
 
+    # TODO: activate
+    # def test_is_upwell_structure_data_error(self):
+    #     # group without a category
+    #     my_group = EveGroup.objects.create(id=299999, name="invalid group")
+    #     my_type = EveType.objects.create(
+    #         id=199999, name="invalid type", eve_group=my_group
+    #     )
+    #     self.assertFalse(my_type.is_upwell_structure)
+
     def test_should_return_jump_fuel_quantity(self):
         # given
         structure = Structure.objects.get(id=1000000000004)
