@@ -12,7 +12,6 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from .. import __title__
-from ..constants import EveCategoryId, EveGroupId
 from ..managers import EveSovereigntyMapManager, EveUniverseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -291,10 +290,6 @@ class EveUniverse(EsiNameLocalization, models.Model):
 class EveCategory(EveUniverse):
     """category in Eve Online"""
 
-    @property
-    def is_starbase(self):
-        return self.id == EveCategoryId.STARBASE
-
     class EveUniverseMeta:
         esi_pk = "category_id"
         esi_method = "get_universe_categories_category_id"
@@ -320,11 +315,6 @@ class EveGroup(EveUniverse):
 class EveType(EveUniverse):
     """type in Eve Online"""
 
-    # starbase sizes
-    STARBASE_SMALL = 1
-    STARBASE_MEDIUM = 2
-    STARBASE_LARGE = 3
-
     EVE_IMAGESERVER_BASE_URL = "https://images.evetech.net"
     URL_PROFILE_TYPE = "https://www.kalkoken.org/apps/eveitems/"
 
@@ -335,41 +325,6 @@ class EveType(EveUniverse):
     class EveUniverseMeta:
         esi_pk = "type_id"
         esi_method = "get_universe_types_type_id"
-
-    @property
-    def is_starbase(self):
-        return self.eve_group_id == EveGroupId.CONTROL_TOWER
-
-    @property
-    def is_fuel_block(self):
-        return self.eve_group_id == EveGroupId.FUEL_BLOCK
-
-    @property
-    def starbase_size(self):
-        """return the size of a starbase or None if this type is not a starbase"""
-        if not self.is_starbase:
-            return None
-        elif "medium" in self.name.lower():
-            return self.STARBASE_MEDIUM
-        elif "small" in self.name.lower():
-            return self.STARBASE_SMALL
-        else:
-            return self.STARBASE_LARGE
-
-    @property
-    def starbase_fuel_per_hour(self):
-        """returns the number of fuel blocks consumed per hour
-        or None if not a starbase
-        """
-        size = self.starbase_size
-        if size == self.STARBASE_LARGE:
-            return 40
-        elif size == self.STARBASE_MEDIUM:
-            return 20
-        elif size == self.STARBASE_SMALL:
-            return 10
-        else:
-            return None
 
     @property
     def profile_url(self) -> str:

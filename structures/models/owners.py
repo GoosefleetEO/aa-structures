@@ -41,6 +41,7 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..constants import EveGroupId, EveTypeId
+from ..core import starbases
 from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerManager
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType, EveUniverse
@@ -915,7 +916,7 @@ class Owner(models.Model):
         if "fuels" in starbase_details:
             for fuel in starbase_details["fuels"]:
                 fuel_type, _ = EveType.objects.get_or_create_esi(fuel["type_id"])
-                if fuel_type.is_fuel_block:
+                if starbases.is_fuel_block(fuel_type):
                     fuel_quantity = fuel["quantity"]
         if fuel_quantity:
             starbase_type, _ = EveType.objects.get_or_create_esi(starbase["type_id"])
@@ -928,7 +929,7 @@ class Owner(models.Model):
             seconds = math.floor(
                 3600
                 * fuel_quantity
-                / (starbase_type.starbase_fuel_per_hour * (1 - sov_discount))
+                / (starbases.starbase_fuel_per_hour(starbase_type) * (1 - sov_discount))
             )
             last_modified = parsedate_to_datetime(
                 response.headers.get("Last-Modified", format_datetime(now()))

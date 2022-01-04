@@ -154,11 +154,6 @@ class TestEveType(NoSocketsTestCase):
         expected = "EveType(id=35832, name='Astrahus')"
         self.assertEqual(repr(self.type_astrahus), expected)
 
-    def test_is_starbase(self):
-        self.assertFalse(self.type_astrahus.is_starbase)
-        self.assertFalse(self.type_poco.is_starbase)
-        self.assertTrue(self.type_starbase.is_starbase)
-
     def test_generic_icon_url_normal(self):
         self.assertEqual(
             EveType.generic_icon_url(self.type_astrahus.id),
@@ -186,62 +181,6 @@ class TestEveType(NoSocketsTestCase):
             self.type_astrahus.profile_url,
             "https://www.kalkoken.org/apps/eveitems/?typeId=35832",
         )
-
-    def test_is_fuel_block(self):
-        obj = EveType.objects.get(id=16213)
-        self.assertFalse(obj.is_fuel_block)
-
-        obj = EveType.objects.get(id=4051)
-        self.assertTrue(obj.is_fuel_block)
-
-    def test_starbase_fuel_consumption_per_hour(self):
-        # large
-        obj = EveType.objects.get(id=16213)
-        self.assertEqual(obj.starbase_fuel_per_hour, 40)
-
-        # medium
-        obj = EveType.objects.get(id=20061)
-        self.assertEqual(obj.starbase_fuel_per_hour, 20)
-
-        # small
-        obj = EveType.objects.get(id=20062)
-        self.assertEqual(obj.starbase_fuel_per_hour, 10)
-
-        # none
-        obj = EveType.objects.get(id=35832)
-        self.assertIsNone(obj.starbase_fuel_per_hour)
-
-
-class TestEveTypeStarBaseSize(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-            ]
-        )
-
-    def test_returns_large_for_large_control_tower(self):
-        obj = EveType.objects.get(id=16213)
-        expected = EveType.STARBASE_LARGE
-        self.assertEqual(obj.starbase_size, expected)
-
-    def test_returns_medium_for_medium_control_tower(self):
-        obj = EveType.objects.get(id=20061)
-        expected = EveType.STARBASE_MEDIUM
-        self.assertEqual(obj.starbase_size, expected)
-
-    def test_returns_small_for_small_control_tower(self):
-        obj = EveType.objects.get(id=20062)
-        expected = EveType.STARBASE_SMALL
-        self.assertEqual(obj.starbase_size, expected)
-
-    def test_returns_none_for_non_control_towers(self):
-        obj = EveType.objects.get(id=35832)
-        self.assertIsNone(obj.starbase_size)
 
 
 class TestEveSolarSystem(NoSocketsTestCase):

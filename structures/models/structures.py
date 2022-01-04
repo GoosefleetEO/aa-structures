@@ -21,6 +21,7 @@ from app_utils.views import bootstrap_label_html
 from .. import __title__
 from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
 from ..constants import EveCategoryId, EveGroupId, EveTypeId
+from ..core import starbases
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
 from .eveuniverse import (
@@ -367,7 +368,7 @@ class Structure(models.Model):
 
     @cached_property
     def is_starbase(self) -> bool:
-        return self.eve_type.is_starbase
+        return starbases.is_starbase(self.eve_type)
 
     @property
     def is_full_power(self) -> bool:
