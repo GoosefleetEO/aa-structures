@@ -1,6 +1,7 @@
 """Eve Universe models"""
 
 import urllib
+from enum import Enum
 
 from django.db import models
 from django.utils import translation
@@ -16,6 +17,27 @@ from ..managers import EveSovereigntyMapManager, EveUniverseManager
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 NAMES_MAX_LENGTH = 255
+
+
+class EveSpaceType(str, Enum):
+    UNKNOWN = "unknown"
+    HIGHSEC = "highsec"
+    LOWSEC = "lowsec"
+    NULLSEC = "nullsec"
+    W_SPACE = "w-space"
+
+    @classmethod
+    def from_solar_system(cls, eve_solar_system: "EveSolarSystem") -> "EveSpaceType":
+        """returns the space type"""
+        if eve_solar_system.is_null_sec:
+            return cls.NULLSEC
+        elif eve_solar_system.is_low_sec:
+            return cls.LOWSEC
+        elif eve_solar_system.is_high_sec:
+            return cls.HIGHSEC
+        elif eve_solar_system.is_w_space:
+            return cls.W_SPACE
+        return cls.UNKNOWN
 
 
 class EsiNameLocalization(models.Model):
@@ -403,20 +425,6 @@ class EveSolarSystem(EveUniverse):
     def is_w_space(self) -> bool:
         """returns True if this solar system is in wormhole space, else False"""
         return 31000000 <= self.id < 32000000
-
-    @property
-    def space_type(self):
-        """returns the space type"""
-        if self.is_null_sec:
-            return self.TYPE_NULLSEC
-        elif self.is_low_sec:
-            return self.TYPE_LOWSEC
-        elif self.is_high_sec:
-            return self.TYPE_HIGHSEC
-        elif self.is_w_space:
-            return self.TYPE_W_SPACE
-        else:
-            return self.TYPE_UNKNOWN
 
 
 class EvePlanet(EveUniverse):

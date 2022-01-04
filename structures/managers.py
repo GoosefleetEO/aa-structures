@@ -503,31 +503,24 @@ StructureManager = StructureManagerBase.from_queryset(StructureQuerySet)
 
 
 class StructureTagManager(models.Manager):
-    def get_or_create_for_space_type(self, solar_system: object) -> tuple:
-        if solar_system.space_type in self.model.SPACE_TYPE_MAP:
-            name = self.model.SPACE_TYPE_MAP[solar_system.space_type]["name"]
-        else:
-            name = None
+    def get_or_create_for_space_type(self, solar_system: models.Model) -> tuple:
+        from .models import EveSpaceType
 
-        if name:
+        space_type = EveSpaceType.from_solar_system(solar_system)
+        params = self.model.SPACE_TYPE_MAP.get(space_type)
+        if params:
             try:
-                obj = self.get(name=name)
-                created = False
+                obj = self.get(name=params["name"])
+                return obj, False
             except self.model.DoesNotExist:
-                obj, created = self.update_or_create_for_space_type(solar_system)
-
-        else:
-            obj = None
-            created = None
-
-        return obj, created
+                return self.update_or_create_for_space_type(solar_system)
+        return None, None
 
     def update_or_create_for_space_type(self, solar_system: object) -> tuple:
-        if solar_system.space_type in self.model.SPACE_TYPE_MAP:
-            params = self.model.SPACE_TYPE_MAP[solar_system.space_type]
-        else:
-            params = None
+        from .models import EveSpaceType
 
+        space_type = EveSpaceType.from_solar_system(solar_system)
+        params = self.model.SPACE_TYPE_MAP.get(space_type)
         if params:
             return self.update_or_create(
                 name=params["name"],
@@ -541,20 +534,17 @@ class StructureTagManager(models.Manager):
                     "is_default": False,
                 },
             )
-        else:
-            return None, None
+        return None, None
 
     def get_or_create_for_sov(self) -> tuple:
         try:
             obj = self.get(name=self.model.NAME_SOV_TAG)
-            created = False
+            return obj, False
         except self.model.DoesNotExist:
-            obj, created = self.update_or_create_for_sov()
-
-        return obj, created
+            return self.update_or_create_for_sov()
 
     def update_or_create_for_sov(self) -> tuple:
-        obj, created = self.update_or_create(
+        return self.update_or_create(
             name=self.model.NAME_SOV_TAG,
             defaults={
                 "style": self.model.Style.DARK_BLUE,
@@ -566,7 +556,6 @@ class StructureTagManager(models.Manager):
                 "is_default": False,
             },
         )
-        return obj, created
 
 
 class WebhookManager(WebhookBaseManager):

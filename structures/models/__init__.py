@@ -10,6 +10,7 @@ from .eveuniverse import (
     EveRegion,
     EveSolarSystem,
     EveSovereigntyMap,
+    EveSpaceType,
     EveType,
 )
 from .notifications import (

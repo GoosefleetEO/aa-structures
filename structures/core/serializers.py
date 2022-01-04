@@ -24,7 +24,7 @@ from app_utils.views import (
 
 from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
 from ..constants import EveTypeId
-from ..models import Structure, StructureItem, StructureService
+from ..models import EveSpaceType, Structure, StructureItem, StructureService
 
 
 class _AbstractStructureListSerializer(ABC):
@@ -430,15 +430,14 @@ class PocoListSerializer(_AbstractStructureListSerializer):
             space_badge_type = "success"
         else:
             space_badge_type = "danger"
+        space_type = EveSpaceType.from_solar_system(structure.eve_solar_system)
         solar_system_html = format_html(
             "{}<br>{}",
             link_html(
                 dotlan.solar_system_url(structure.eve_solar_system.name),
                 structure.eve_solar_system.name,
             ),
-            bootstrap_label_html(
-                text=structure.eve_solar_system.space_type, label=space_badge_type
-            ),
+            bootstrap_label_html(text=space_type.value, label=space_badge_type),
         )
         row["solar_system_html"] = {
             "display": solar_system_html,
@@ -446,7 +445,7 @@ class PocoListSerializer(_AbstractStructureListSerializer):
         }
         row["solar_system"] = structure.eve_solar_system.name
         row["region"] = structure.eve_solar_system.eve_constellation.eve_region.name
-        row["space_type"] = structure.eve_solar_system.space_type
+        row["space_type"] = space_type.value
 
     def _add_planet(self, structure, row):
         try:

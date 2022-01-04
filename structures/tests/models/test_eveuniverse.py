@@ -11,6 +11,7 @@ from ...models import (
     EveRegion,
     EveSolarSystem,
     EveSovereigntyMap,
+    EveSpaceType,
     EveType,
 )
 from ...models.eveuniverse import EveUniverse
@@ -231,23 +232,23 @@ class TestEveSolarSystem(NoSocketsTestCase):
 
     def test_space_type_highsec(self):
         obj = EveSolarSystem.objects.get(id=30002506)
-        expected = EveSolarSystem.TYPE_HIGHSEC
-        self.assertEqual(obj.space_type, expected)
+        expected = EveSpaceType.HIGHSEC
+        self.assertEqual(EveSpaceType.from_solar_system(obj), expected)
 
     def test_space_type_lowsec(self):
         obj = EveSolarSystem.objects.get(id=30002537)
-        expected = EveSolarSystem.TYPE_LOWSEC
-        self.assertEqual(obj.space_type, expected)
+        expected = EveSpaceType.LOWSEC
+        self.assertEqual(EveSpaceType.from_solar_system(obj), expected)
 
     def test_space_type_nullsec(self):
         obj = EveSolarSystem.objects.get(id=30000474)
-        expected = EveSolarSystem.TYPE_NULLSEC
-        self.assertEqual(obj.space_type, expected)
+        expected = EveSpaceType.NULLSEC
+        self.assertEqual(EveSpaceType.from_solar_system(obj), expected)
 
     def test_space_type_wh_space(self):
         obj = EveSolarSystem.objects.get(id=31000005)
-        expected = EveSolarSystem.TYPE_W_SPACE
-        self.assertEqual(obj.space_type, expected)
+        expected = EveSpaceType.W_SPACE
+        self.assertEqual(EveSpaceType.from_solar_system(obj), expected)
 
 
 class TestEvePlanet(NoSocketsTestCase):

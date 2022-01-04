@@ -30,6 +30,7 @@ from .eveuniverse import (
     EvePlanet,
     EveSolarSystem,
     EveSovereigntyMap,
+    EveSpaceType,
     EveType,
 )
 
@@ -56,13 +57,10 @@ class StructureTag(models.Model):
         # TODO: add localization
 
     SPACE_TYPE_MAP = {
-        EveSolarSystem.TYPE_HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": Style.GREEN},
-        EveSolarSystem.TYPE_LOWSEC: {"name": NAME_LOWSEC_TAG, "style": Style.ORANGE},
-        EveSolarSystem.TYPE_NULLSEC: {"name": NAME_NULLSEC_TAG, "style": Style.RED},
-        EveSolarSystem.TYPE_W_SPACE: {
-            "name": NAME_W_SPACE_TAG,
-            "style": Style.LIGHT_BLUE,
-        },
+        EveSpaceType.HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": Style.GREEN},
+        EveSpaceType.LOWSEC: {"name": NAME_LOWSEC_TAG, "style": Style.ORANGE},
+        EveSpaceType.NULLSEC: {"name": NAME_NULLSEC_TAG, "style": Style.RED},
+        EveSpaceType.W_SPACE: {"name": NAME_W_SPACE_TAG, "style": Style.LIGHT_BLUE},
     }
 
     name = models.CharField(
