@@ -1261,7 +1261,7 @@ class OwnerCharacter(models.Model):
     """Character for syncing owner data with ESI."""
 
     owner = models.ForeignKey(
-        "Owner", on_delete=models.CASCADE, related_name="characters"
+        Owner, on_delete=models.CASCADE, related_name="characters"
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,

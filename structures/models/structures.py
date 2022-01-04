@@ -23,7 +23,13 @@ from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
 from ..constants import EveGroupId, EveTypeId
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
-from .eveuniverse import EsiNameLocalization, EveSolarSystem
+from .eveuniverse import (
+    EsiNameLocalization,
+    EveMoon,
+    EvePlanet,
+    EveSolarSystem,
+    EveType,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -196,12 +202,12 @@ class Structure(models.Model):
         help_text="Corporation that owns the structure",
     )
     eve_type = models.ForeignKey(
-        "EveType", on_delete=models.CASCADE, help_text="type of the structure"
+        EveType, on_delete=models.CASCADE, help_text="type of the structure"
     )
     name = models.CharField(max_length=255, help_text="The full name of the structure")
-    eve_solar_system = models.ForeignKey("EveSolarSystem", on_delete=models.CASCADE)
+    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
     eve_planet = models.ForeignKey(
-        "EvePlanet",
+        EvePlanet,
         on_delete=models.SET_DEFAULT,
         null=True,
         default=None,
@@ -209,7 +215,7 @@ class Structure(models.Model):
         help_text="Planet next to this structure - if any",
     )
     eve_moon = models.ForeignKey(
-        "EveMoon",
+        EveMoon,
         on_delete=models.SET_DEFAULT,
         null=True,
         default=None,
@@ -626,14 +632,14 @@ class StructureItem(models.Model):
 
     id = models.BigIntegerField(primary_key=True, help_text="The Eve item ID")
     structure = models.ForeignKey(
-        "Structure",
+        Structure,
         on_delete=models.CASCADE,
         related_name="items",
         help_text="Structure this item is located in",
     )
 
     eve_type = models.ForeignKey(
-        "EveType",
+        EveType,
         on_delete=models.CASCADE,
         help_text="eve type of the item",
         related_name="+",

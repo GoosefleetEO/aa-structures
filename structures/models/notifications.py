@@ -1251,10 +1251,10 @@ class FuelAlert(BaseFuelAlert):
     """A generated notification alerting about fuel getting low in structures."""
 
     structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="structure_fuel_alerts"
+        Structure, on_delete=models.CASCADE, related_name="structure_fuel_alerts"
     )
     config = models.ForeignKey(
-        "FuelAlertConfig",
+        FuelAlertConfig,
         on_delete=models.CASCADE,
         related_name="structure_fuel_alerts",
     )
@@ -1295,10 +1295,10 @@ class JumpFuelAlert(BaseFuelAlert):
     """A generated notification alerting about jump fuel getting low."""
 
     structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="jump_fuel_alerts"
+        Structure, on_delete=models.CASCADE, related_name="jump_fuel_alerts"
     )
     config = models.ForeignKey(
-        "JumpFuelAlertConfig", on_delete=models.CASCADE, related_name="jump_fuel_alerts"
+        JumpFuelAlertConfig, on_delete=models.CASCADE, related_name="jump_fuel_alerts"
     )
 
     def __str__(self) -> str:
