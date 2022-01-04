@@ -371,6 +371,7 @@ class EveEntity(models.Model):
             self.__class__.__name__, self.id, self.get_category_display(), self.name
         )
 
+    @property
     def profile_url(self) -> str:
         """Returns link to website with profile info about this entity."""
         if self.category == self.Category.CORPORATION:

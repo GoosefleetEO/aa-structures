@@ -299,7 +299,7 @@ class NotificationBaseEmbed:
             return "(Unknown aggressor)"
 
         entity, _ = EveEntity.objects.get_or_create_esi(self._parsed_text[key])
-        return Webhook.create_link(entity.name, entity.profile_url())
+        return Webhook.create_link(entity.name, entity.profile_url)
 
 
 class NotificationStructureEmbed(NotificationBaseEmbed):

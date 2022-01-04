@@ -390,12 +390,6 @@ class EveConstellation(EveUniverse):
 class EveSolarSystem(EveUniverse):
     """solar system in Eve Online"""
 
-    TYPE_HIGHSEC = "highsec"
-    TYPE_LOWSEC = "lowsec"
-    TYPE_NULLSEC = "nullsec"
-    TYPE_W_SPACE = "w-space"
-    TYPE_UNKNOWN = "unknown"
-
     eve_constellation = models.ForeignKey(
         EveConstellation, on_delete=models.CASCADE, related_name="eve_solar_systems"
     )

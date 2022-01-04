@@ -71,15 +71,15 @@ class TestEveEntities(NoSocketsTestCase):
     def test_profile_url(self):
         x = EveEntity.objects.get(id=3001)
         self.assertEqual(
-            x.profile_url(), "http://evemaps.dotlan.net/alliance/Wayne_Enterprises"
+            x.profile_url, "http://evemaps.dotlan.net/alliance/Wayne_Enterprises"
         )
 
         x = EveEntity.objects.get(id=2001)
         self.assertEqual(
-            x.profile_url(), "http://evemaps.dotlan.net/corp/Wayne_Technologies"
+            x.profile_url, "http://evemaps.dotlan.net/corp/Wayne_Technologies"
         )
         x = EveEntity.objects.get(id=1011)
-        self.assertEqual(x.profile_url(), "")
+        self.assertEqual(x.profile_url, "")
 
 
 class TestNotification(NoSocketsTestCase):
