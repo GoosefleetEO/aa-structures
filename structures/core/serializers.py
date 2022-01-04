@@ -84,13 +84,13 @@ class _AbstractStructureListSerializer(ABC):
         solar_system = structure.eve_solar_system
 
         # location
-        row["region_name"] = solar_system.eve_constellation.eve_region.name_localized
-        row["solar_system_name"] = solar_system.name_localized
+        row["region_name"] = solar_system.eve_constellation.eve_region.name
+        row["solar_system_name"] = solar_system.name
         solar_system_url = dotlan.solar_system_url(solar_system.name)
         if structure.eve_moon:
-            location_name = structure.eve_moon.name_localized
+            location_name = structure.eve_moon.name
         elif structure.eve_planet:
-            location_name = structure.eve_planet.name_localized
+            location_name = structure.eve_planet.name
         else:
             location_name = row["solar_system_name"]
         row["location"] = format_html(
@@ -104,10 +104,10 @@ class _AbstractStructureListSerializer(ABC):
         structure_type = structure.eve_type
         # category
         my_group = structure_type.eve_group
-        row["group_name"] = my_group.name_localized
+        row["group_name"] = my_group.name
         try:
             my_category = my_group.eve_category
-            row["category_name"] = my_category.name_localized
+            row["category_name"] = my_category.name
             row["is_starbase"] = structure.is_starbase
         except AttributeError:
             row["category_name"] = ""
@@ -120,7 +120,7 @@ class _AbstractStructureListSerializer(ABC):
             self.ICON_OUTPUT_SIZE,
         )
         # type name
-        row["type_name"] = structure_type.name_localized
+        row["type_name"] = structure_type.name
         row["type"] = format_html(
             "{}<br><em>{}</em>",
             no_wrap_html(link_html(structure_type.profile_url, row["type_name"])),
@@ -143,7 +143,7 @@ class _AbstractStructureListSerializer(ABC):
         services = list()
         for service in structure.services.all():
             service_name_html = no_wrap_html(
-                format_html("<small>{}</small>", service.name_localized)
+                format_html("<small>{}</small>", service.name)
             )
             if service.state == StructureService.State.OFFLINE:
                 service_name_html = format_html("<del>{}</del>", service_name_html)

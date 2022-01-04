@@ -256,9 +256,9 @@ class NotificationBaseEmbed:
     def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
         text = "{} ({})".format(
             Webhook.create_link(
-                solar_system.name_localized, dotlan.solar_system_url(solar_system.name)
+                solar_system.name, dotlan.solar_system_url(solar_system.name)
             ),
-            solar_system.eve_constellation.eve_region.name_localized,
+            solar_system.eve_constellation.eve_region.name,
         )
         return text
 
@@ -334,7 +334,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             "The %(structure_type)s %(structure_name)s%(location)s in %(solar_system)s "
             "belonging to %(owner_link)s "
         ) % {
-            "structure_type": structure_type.name_localized,
+            "structure_type": structure_type.name,
             "structure_name": Webhook.text_bold(structure_name),
             "location": location,
             "solar_system": self._gen_solar_system_text(structure_solar_system),
@@ -545,7 +545,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
             "A %(structure_type)s belonging to %(owner_link)s "
             "has started anchoring in %(solar_system)s. "
         ) % {
-            "structure_type": structure_type.name_localized,
+            "structure_type": structure_type.name,
             "owner_link": owner_link,
             "solar_system": self._gen_solar_system_text(solar_system),
         }
@@ -599,7 +599,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
                 "- %(structure_type)s %(structure_name)s in %(solar_system)s "
                 "belonging to %(owner_link)s"
             ) % {
-                "structure_type": structure_info.eve_type.name_localized,
+                "structure_type": structure_info.eve_type.name,
                 "structure_name": Webhook.text_bold(structure_info.name),
                 "solar_system": self._gen_solar_system_text(
                     structure_info.eve_solar_system
@@ -669,7 +669,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self._moon.name_localized,
+            "moon": self._moon.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": started_by,
@@ -698,7 +698,7 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
             "%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self._moon.name_localized,
+            "moon": self._moon.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "auto_time": target_datetime_formatted(auto_time),
@@ -721,7 +721,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
             "%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self._moon.name_localized,
+            "moon": self._moon.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "ore_text": gettext("\nOre composition: %s" % self._ore_composition_text())
@@ -747,7 +747,7 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
             "has been cancelled by %(character)s."
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self._moon.name_localized,
+            "moon": self._moon.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": cancelled_by,
@@ -768,7 +768,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
             "%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
-            "moon": self._moon.name_localized,
+            "moon": self._moon.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": fired_by,
@@ -810,8 +810,8 @@ class NotificationOrbitalAttacked(NotificationOrbitalEmbed):
             "belonging to %(owner_link)s "
             "is under attack by %(aggressor)s."
         ) % {
-            "structure_type": self._structure_type.name_localized,
-            "planet": self._planet.name_localized,
+            "structure_type": self._structure_type.name,
+            "planet": self._planet.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "aggressor": self._aggressor_link,
@@ -832,8 +832,8 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
             "has been reinforced by %(aggressor)s "
             "and will come out at: %(date)s."
         ) % {
-            "structure_type": self._structure_type.name_localized,
-            "planet": self._planet.name_localized,
+            "structure_type": self._structure_type.name,
+            "planet": self._planet.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "aggressor": self._aggressor_link,
@@ -857,7 +857,7 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         if self._structure:
             structure_name = self._structure.name
         else:
-            structure_name = structure_type.name_localized
+            structure_name = structure_type.name
 
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -867,7 +867,7 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
             "in %(solar_system)s belonging to %(owner_link)s "
         ) % {
             "structure_name": Webhook.text_bold(structure_name),
-            "moon": self.eve_moon.name_localized,
+            "moon": self.eve_moon.name,
             "solar_system": self._gen_solar_system_text(self.eve_moon.eve_solar_system),
             "owner_link": self._gen_corporation_link(str(notification.owner)),
         }
@@ -943,7 +943,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         else:
             structure_type_id = EveTypeId.TCU
         structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
-        self._structure_type_name = structure_type.name_localized
+        self._structure_type_name = structure_type.name
         self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -957,7 +957,7 @@ class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
             "%(structure_type)s in %(solar_system)s is being captured"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
-            "solar_system": self._solar_system.name_localized,
+            "solar_system": self._solar_system.name,
         }
         self._description = gettext(
             "A capsuleer has started to influence the %(type)s "
@@ -979,7 +979,7 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
             "have begun to decloak"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
-            "solar_system": self._solar_system.name_localized,
+            "solar_system": self._solar_system.name,
         }
         self._description = gettext(
             "Command nodes for %(structure_type)s in %(solar_system)s "
@@ -989,7 +989,7 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system_link,
             "owner": self._sov_owner_link,
-            "constellation": self._solar_system.eve_constellation.name_localized,
+            "constellation": self._solar_system.eve_constellation.name,
         }
         self._color = Webhook.Color.WARNING
 
@@ -1005,7 +1005,7 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
         )
         self._title = (
             gettext("DED Sovereignty claim acknowledgment: %s")
-            % self._solar_system.name_localized
+            % self._solar_system.name
         )
         self._description = gettext(
             "DED now officially acknowledges that your "
@@ -1028,9 +1028,7 @@ class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
         corporation, _ = EveEntity.objects.get_or_create_esi(
             self._parsed_text["corpID"]
         )
-        self._title = (
-            gettext("Lost sovereignty in: %s") % self._solar_system.name_localized
-        )
+        self._title = gettext("Lost sovereignty in: %s") % self._solar_system.name
         self._description = gettext(
             "DED acknowledges that member corporation %(corporation)s has lost its "
             "claim to sovereignty on behalf of %(alliance)s in %(solar_system)s."
@@ -1050,7 +1048,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
             "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
-            "solar_system": self._solar_system.name_localized,
+            "solar_system": self._solar_system.name,
         }
         self._description = gettext(
             "The %(structure_type)s in %(solar_system)s belonging "
@@ -1073,7 +1071,7 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
             "%(structure_type)s in %(solar_system)s has been destroyed"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
-            "solar_system": self._solar_system.name_localized,
+            "solar_system": self._solar_system.name,
         }
         self._description = gettext(
             "The command nodes for %(structure_type)s "
