@@ -154,11 +154,6 @@ class TestEveType(NoSocketsTestCase):
         expected = "EveType(id=35832, name='Astrahus')"
         self.assertEqual(repr(self.type_astrahus), expected)
 
-    def test_is_poco(self):
-        self.assertFalse(self.type_astrahus.is_poco)
-        self.assertTrue(self.type_poco.is_poco)
-        self.assertFalse(self.type_starbase.is_poco)
-
     def test_is_starbase(self):
         self.assertFalse(self.type_astrahus.is_starbase)
         self.assertFalse(self.type_poco.is_starbase)

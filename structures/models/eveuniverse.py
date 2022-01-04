@@ -12,7 +12,7 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from .. import __title__
-from ..constants import EveCategoryId, EveGroupId, EveTypeId
+from ..constants import EveCategoryId, EveGroupId
 from ..managers import EveSovereigntyMapManager, EveUniverseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -339,10 +339,6 @@ class EveType(EveUniverse):
     class EveUniverseMeta:
         esi_pk = "type_id"
         esi_method = "get_universe_types_type_id"
-
-    @property
-    def is_poco(self):
-        return self.id == EveTypeId.CUSTOMS_OFFICE
 
     @property
     def is_starbase(self):

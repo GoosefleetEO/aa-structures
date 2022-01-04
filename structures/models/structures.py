@@ -355,7 +355,7 @@ class Structure(models.Model):
 
     @cached_property
     def is_poco(self) -> bool:
-        return self.eve_type.is_poco
+        return self.eve_type_id == EveTypeId.CUSTOMS_OFFICE
 
     @cached_property
     def is_starbase(self) -> bool:
