@@ -1174,6 +1174,7 @@ class Owner(models.Model):
 
     def update_asset_esi(self, user: User = None):
         assets_in_structures = self._fetch_structure_assets_from_esi()
+        StructureItem.objects.filter(structure__owner=self).delete()  # clear all items
         for structure in self.structures.all():
             if structure.id in assets_in_structures.keys():
                 structure_assets = assets_in_structures[structure.id]
@@ -1211,11 +1212,6 @@ class Owner(models.Model):
                     structure.items.bulk_create(structure_items)
 
             structure.reevaluate_jump_fuel_alerts()
-
-        # remove items from structures that no longer have items
-        StructureItem.objects.filter(structure__owner=self).exclude(
-            structure_id__in=assets_in_structures.keys()
-        ).delete()
 
         self.assets_last_update_at = now()
         self.save(update_fields=["assets_last_update_at"])

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.20.2] - 2022-01-08
+
+### Fixed
+
+- Update assets breaks with IntegrityError for assets moved between structures of the same owner
+
 ## [1.20.1] - 2022-01-04
 
 ### Fixed

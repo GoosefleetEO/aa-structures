@@ -775,6 +775,47 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         # then
         self.assertEqual(structure.jump_fuel_alerts.count(), 0)
 
+    def test_should_handle_asset_moved_to_another_structure(self, mock_esi_client):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        owner = Owner.objects.get(corporation__corporation_id=2001)
+        structure_1 = Structure.objects.get(id=1000000000001)
+        structure_2 = Structure.objects.get(id=1000000000002)
+        structure_2.items.create(
+            id=1300000001002,
+            eve_type_id=35894,
+            location_flag="ServiceSlot0",
+            is_singleton=True,
+            quantity=1,
+        )
+        # when
+        owner.update_asset_esi()
+        # then
+        self.assertSetEqual(queryset_pks(structure_2.items.all()), {1300000002001})
+        self.assertSetEqual(
+            queryset_pks(structure_1.items.all()), {1300000001001, 1300000001002}
+        )
+
+    def test_should_not_delete_assets_from_other_owners(self, mock_esi_client):
+        # given
+        mock_esi_client.side_effect = esi_mock_client
+        structure = Structure.objects.get(id=1000000000004)
+        structure.items.create(
+            id=1300000003001,
+            eve_type_id=16273,
+            location_flag="StructureFuel",
+            is_singleton=False,
+            quantity=5000,
+        )
+        owner_2001 = Owner.objects.get(corporation__corporation_id=2001)
+        # when
+        owner_2001.update_asset_esi()
+        # then
+        self.assertSetEqual(
+            queryset_pks(StructureItem.objects.all()),
+            {1300000001001, 1300000001002, 1300000002001, 1300000003001},
+        )
+
     # TODO: Add tests for error cases
 
 
