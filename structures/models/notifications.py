@@ -642,8 +642,8 @@ class Notification(models.Model):
 
         if has_structure_timers:
             timer_map = {
-                NotificationType.STRUCTURE_LOST_SHIELD: Timer.TYPE_ARMOR,
-                NotificationType.STRUCTURE_LOST_ARMOR: Timer.TYPE_HULL,
+                NotificationType.STRUCTURE_LOST_SHIELD: Timer.Type.ARMOR,
+                NotificationType.STRUCTURE_LOST_ARMOR: Timer.Type.HULL,
             }
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
                 id=structure_obj.eve_solar_system_id
@@ -652,15 +652,15 @@ class Notification(models.Model):
                 id=structure_obj.eve_type_id
             )
             visibility = (
-                Timer.VISIBILITY_CORPORATION
+                Timer.Visibility.CORPORATION
                 if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.VISIBILITY_UNRESTRICTED
+                else Timer.Visibility.UNRESTRICTED
             )
             Timer.objects.create(
                 eve_solar_system=eve_solar_system,
                 structure_type=structure_type,
                 timer_type=timer_map.get(self.notif_type),
-                objective=Timer.OBJECTIVE_FRIENDLY,
+                objective=Timer.Objective.FRIENDLY,
                 date=eve_time,
                 eve_corporation=self.owner.corporation,
                 eve_alliance=self.owner.corporation.alliance,
@@ -712,15 +712,15 @@ class Notification(models.Model):
                 id=self.type_id_from_event_type(parsed_text["campaignEventType"])
             )
             visibility = (
-                Timer.VISIBILITY_CORPORATION
+                Timer.Visibility.CORPORATION
                 if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.VISIBILITY_UNRESTRICTED
+                else Timer.Visibility.UNRESTRICTED
             )
             Timer.objects.create(
                 eve_solar_system=eve_solar_system,
                 structure_type=structure_type,
-                timer_type=Timer.TYPE_FINAL,
-                objective=Timer.OBJECTIVE_FRIENDLY,
+                timer_type=Timer.Type.FINAL,
+                objective=Timer.Objective.FRIENDLY,
                 date=eve_time,
                 eve_corporation=self.owner.corporation,
                 eve_alliance=self.owner.corporation.alliance,
@@ -761,15 +761,15 @@ class Notification(models.Model):
                 id=EveTypeId.CUSTOMS_OFFICE
             )
             visibility = (
-                Timer.VISIBILITY_CORPORATION
+                Timer.Visibility.CORPORATION
                 if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.VISIBILITY_UNRESTRICTED
+                else Timer.Visibility.UNRESTRICTED
             )
             Timer.objects.create(
                 eve_solar_system=eve_solar_system,
                 structure_type=structure_type,
-                timer_type=Timer.TYPE_FINAL,
-                objective=Timer.OBJECTIVE_FRIENDLY,
+                timer_type=Timer.Type.FINAL,
+                objective=Timer.Objective.FRIENDLY,
                 date=eve_time,
                 location_details=planet.name,
                 eve_corporation=self.owner.corporation,
@@ -808,9 +808,9 @@ class Notification(models.Model):
                 id=parsed_text["structureTypeID"]
             )
             visibility = (
-                Timer.VISIBILITY_CORPORATION
+                Timer.Visibility.CORPORATION
                 if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.VISIBILITY_UNRESTRICTED
+                else Timer.Visibility.UNRESTRICTED
             )
         else:
             eve_solar_system = None
@@ -839,15 +839,15 @@ class Notification(models.Model):
                     id=parsed_text["structureTypeID"]
                 )
                 visibility = (
-                    Timer.VISIBILITY_CORPORATION
+                    Timer.Visibility.CORPORATION
                     if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                    else Timer.VISIBILITY_UNRESTRICTED
+                    else Timer.Visibility.UNRESTRICTED
                 )
                 Timer.objects.create(
                     eve_solar_system=eve_solar_system,
                     structure_type=structure_type,
-                    timer_type=Timer.TYPE_MOONMINING,
-                    objective=Timer.OBJECTIVE_FRIENDLY,
+                    timer_type=Timer.Type.MOONMINING,
+                    objective=Timer.Objective.FRIENDLY,
                     date=eve_time,
                     location_details=moon.name,
                     eve_corporation=self.owner.corporation,
@@ -890,10 +890,10 @@ class Notification(models.Model):
                         timer_query = Timer.objects.filter(
                             eve_solar_system=eve_solar_system,
                             structure_type=structure_type,
-                            timer_type=Timer.TYPE_MOONMINING,
+                            timer_type=Timer.Type.MOONMINING,
                             location_details=moon.name,
                             date=eve_time,
-                            objective=Timer.OBJECTIVE_FRIENDLY,
+                            objective=Timer.Objective.FRIENDLY,
                             eve_corporation=self.owner.corporation,
                             eve_alliance=self.owner.corporation.alliance,
                             visibility=visibility,

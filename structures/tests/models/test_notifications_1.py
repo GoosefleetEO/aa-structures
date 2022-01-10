@@ -895,8 +895,8 @@ if "structuretimers" in app_labels():
                 timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
             )
             self.assertEqual(timer.structure_type, EveType2.objects.get(id=35832))
-            self.assertEqual(timer.timer_type, Timer.TYPE_ARMOR)
-            self.assertEqual(timer.objective, Timer.OBJECTIVE_FRIENDLY)
+            self.assertEqual(timer.timer_type, Timer.Type.ARMOR)
+            self.assertEqual(timer.objective, Timer.Objective.FRIENDLY)
             self.assertAlmostEqual(
                 timer.date, now() + dt.timedelta(hours=47), delta=dt.timedelta(hours=1)
             )
@@ -907,7 +907,7 @@ if "structuretimers" in app_labels():
             self.assertEqual(
                 timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
             )
-            self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
+            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
             self.assertEqual(timer.structure_name, "Test Structure Alpha")
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertTrue(timer.details_notes)
@@ -926,7 +926,7 @@ if "structuretimers" in app_labels():
 
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.TYPE_FINAL)
+            self.assertEqual(timer.timer_type, Timer.Type.FINAL)
             self.assertEqual(
                 timer.eve_solar_system, EveSolarSystem2.objects.get(id=30000474)
             )
@@ -943,7 +943,7 @@ if "structuretimers" in app_labels():
             self.assertEqual(
                 timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
             )
-            self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
+            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
             self.assertEqual(timer.owner_name, "Wayne Enterprises")
             self.assertTrue(timer.details_notes)
 
@@ -952,7 +952,7 @@ if "structuretimers" in app_labels():
             self.assertTrue(notification.process_for_timerboard())
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.TYPE_FINAL)
+            self.assertEqual(timer.timer_type, Timer.Type.FINAL)
             self.assertEqual(
                 timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
             )
@@ -970,7 +970,7 @@ if "structuretimers" in app_labels():
             self.assertEqual(
                 timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
             )
-            self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
+            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertTrue(timer.details_notes)
 
@@ -979,7 +979,7 @@ if "structuretimers" in app_labels():
             self.assertTrue(notification.process_for_timerboard())
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.TYPE_MOONMINING)
+            self.assertEqual(timer.timer_type, Timer.Type.MOONMINING)
             self.assertEqual(
                 timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
             )
@@ -991,7 +991,7 @@ if "structuretimers" in app_labels():
             self.assertEqual(
                 timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
             )
-            self.assertEqual(timer.visibility, Timer.VISIBILITY_UNRESTRICTED)
+            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
             self.assertEqual(timer.location_details, "Amamake II - Moon 1")
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertEqual(timer.structure_name, "Dummy")
