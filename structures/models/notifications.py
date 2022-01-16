@@ -153,7 +153,6 @@ class NotificationType(models.TextChoices):
     SOV_ALL_CLAIM_LOST_MSG = "SovAllClaimLostMsg", _("Sovereignty lost")
 
     # wars
-    WAR_WAR_DECLARED = "WarDeclared", _("War declared")
     WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = "AllyJoinedWarAggressorMsg", _(
         "War ally joined aggressor"
     )
@@ -161,17 +160,18 @@ class NotificationType(models.TextChoices):
     WAR_ALLY_JOINED_WAR_DEFENDER_MSG = "AllyJoinedWarDefenderMsg", _(
         "War ally joined defender"
     )
-    WAR_WAR_ADOPTED = "WarAdopted", _("War adopted")
-    WAR_WAR_INHERITED = "WarInherited", _("War inherited")
     WAR_CORP_WAR_SURRENDER_MSG = "CorpWarSurrenderMsg", _("War party surrendered")
-    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", _(
-        "War retracted by Concord"
-    )
     WAR_CORPORATION_BECAME_ELIGIBLE = "CorpBecameWarEligible", _(
         "War corporation became eligable"
     )
     WAR_CORPORATION_NO_LONGER_ELIGIBLE = "CorpNoLongerWarEligible", _(
         "War corporation no longer eligable"
+    )
+    WAR_WAR_ADOPTED = "WarAdopted", _("War adopted")
+    WAR_WAR_DECLARED = "WarDeclared", _("War declared")
+    WAR_WAR_INHERITED = "WarInherited", _("War inherited")
+    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", _(
+        "War retracted by Concord"
     )
 
     # corporation membership
@@ -230,19 +230,23 @@ class NotificationType(models.TextChoices):
     @classproperty
     def relevant_for_alliance_level(cls) -> set:
         return {
+            # sov
             cls.SOV_ENTOSIS_CAPTURE_STARTED,
             cls.SOV_COMMAND_NODE_EVENT_STARTED,
             cls.SOV_ALL_CLAIM_ACQUIRED_MSG,
             cls.SOV_STRUCTURE_REINFORCED,
             cls.SOV_STRUCTURE_DESTROYED,
+            # wars
             cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
+            cls.WAR_ALLY_JOINED_WAR_AllY_MSG,
+            cls.WAR_ALLY_JOINED_WAR_DEFENDER_MSG,
             cls.WAR_CORP_WAR_SURRENDER_MSG,
-            cls.WAR_WAR_DECLARED,
-            cls.WAR_WAR_RETRACTED_BY_CONCORD,
-            cls.WAR_WAR_ADOPTED,
-            cls.WAR_WAR_INHERITED,
             cls.WAR_CORPORATION_BECAME_ELIGIBLE,
             cls.WAR_CORPORATION_NO_LONGER_ELIGIBLE,
+            cls.WAR_WAR_ADOPTED,
+            cls.WAR_WAR_DECLARED,
+            cls.WAR_WAR_INHERITED,
+            cls.WAR_WAR_RETRACTED_BY_CONCORD,
         }
 
     @classproperty
