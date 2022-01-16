@@ -201,7 +201,9 @@ class Owner(models.Model):
         if self.is_alliance_main:
             Owner.objects.filter(
                 corporation__alliance_id=self.corporation.alliance_id
-            ).update(is_alliance_main=False)
+            ).exclude(corporation__alliance_id__isnull=True).update(
+                is_alliance_main=False
+            )
             if "update_fields" in kwargs:
                 kwargs["update_fields"].append("is_alliance_main")
         super().save(*args, **kwargs)

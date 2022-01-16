@@ -44,7 +44,7 @@ check_complexity:
 nuke_testdb:
 	# This will delete the current test database
 	# very userful after large changes to the models
-	mysql -u root -p -e "drop database test_aa_dev_2;"
+	sudo mysql -u root -e "drop database test_aa_dev_4;"
 
 flake8:
 	flake8 $(package) --count

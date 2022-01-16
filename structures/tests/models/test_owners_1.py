@@ -335,7 +335,7 @@ class TestOwner(NoSocketsTestCase):
     def test_should_ensure_only_one_owner_is_alliance_main_3(self):
         # given
         self.assertTrue(self.owner.is_alliance_main)
-        owner_2103 = Owner.objects.get(corporation__corporation_id=2102)
+        owner_2103 = Owner.objects.get(corporation__corporation_id=2103)
         owner_2103.is_alliance_main = True
         owner_2103.save()
         owner_2102 = Owner.objects.get(corporation__corporation_id=2102)
