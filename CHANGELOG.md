@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.20.3] - 2022-01-16
+
+### Changed
+
+- Will now always forward "alliance level" notifications (e.g. war notifications) to unaffiliated corporations => it is no longer required to set unaffiliated corporations as "alliance main"  (#63)
+
 ### Fixed
 
 - Can not define more then one unaffiliated corporation as "main" (#63)

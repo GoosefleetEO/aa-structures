@@ -142,30 +142,60 @@ class TestNotification(NoSocketsTestCase):
         x1 = Notification.objects.get(notification_id=1000010509)
         self.assertTrue(x1.filter_for_npc_attacks())
 
-    def test_filter_alliance_level(self):
-        # notification is not and owner is not alliance level
+
+class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        load_notification_entities(cls.owner)
+
+    def test_should_not_filter_non_alliance_notifications_1(self):
+        # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        x1 = Notification.objects.get(notification_id=1000000509)
-        self.assertFalse(x1.filter_for_alliance_level())
+        notif = self.owner.notifications.get(notification_id=1000000509)
+        # when/then
+        self.assertFalse(notif.filter_for_alliance_level())
 
-        # notification is, but owner is not
+    def test_should_not_filter_non_alliance_notifications_2(self):
+        # given
+        self.owner.is_alliance_main = True
+        self.owner.save()
+        notif = self.owner.notifications.get(notification_id=1000000509)
+        # when/then
+        self.assertFalse(notif.filter_for_alliance_level())
+
+    def test_should_filter_alliance_notifications(self):
+        # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        x1 = Notification.objects.get(notification_id=1000000803)
-        self.assertTrue(x1.filter_for_alliance_level())
+        notif = self.owner.notifications.get(notification_id=1000000803)
+        # when/then
+        self.assertTrue(notif.filter_for_alliance_level())
 
-        # notification is and owner is
+    def test_should_not_filter_alliance_notifications_1(self):
+        # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        x1 = Notification.objects.get(notification_id=1000000803)
-        self.assertFalse(x1.filter_for_alliance_level())
+        # when/then
+        notif = self.owner.notifications.get(notification_id=1000000803)
+        self.assertFalse(notif.filter_for_alliance_level())
 
-        # notification is not, but owner is
+    def test_should_not_filter_alliance_notifications_2(self):
+        # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        x1 = Notification.objects.get(notification_id=1000000509)
-        self.assertFalse(x1.filter_for_alliance_level())
+        notif = self.owner.notifications.get(notification_id=1000000803)
+        self.assertFalse(notif.filter_for_alliance_level())
+
+    def test_should_not_filter_alliance_notifications_3(self):
+        # given
+        _, owner = set_owner_character(character_id=1102)  # corp with no alliance
+        load_notification_entities(owner)
+        notif = owner.notifications.get(notification_id=1000000803)
+        self.assertFalse(notif.filter_for_alliance_level())
 
 
 class TestNotificationCreateFromStructure(NoSocketsTestCase):

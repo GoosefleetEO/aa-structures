@@ -153,6 +153,7 @@ class NotificationType(models.TextChoices):
     SOV_ALL_CLAIM_LOST_MSG = "SovAllClaimLostMsg", _("Sovereignty lost")
 
     # wars
+    WAR_WAR_DECLARED = "WarDeclared", _("War declared")
     WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = "AllyJoinedWarAggressorMsg", _(
         "War ally joined aggressor"
     )
@@ -160,18 +161,17 @@ class NotificationType(models.TextChoices):
     WAR_ALLY_JOINED_WAR_DEFENDER_MSG = "AllyJoinedWarDefenderMsg", _(
         "War ally joined defender"
     )
+    WAR_WAR_ADOPTED = "WarAdopted", _("War adopted")
+    WAR_WAR_INHERITED = "WarInherited", _("War inherited")
     WAR_CORP_WAR_SURRENDER_MSG = "CorpWarSurrenderMsg", _("War party surrendered")
+    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", _(
+        "War retracted by Concord"
+    )
     WAR_CORPORATION_BECAME_ELIGIBLE = "CorpBecameWarEligible", _(
         "War corporation became eligable"
     )
     WAR_CORPORATION_NO_LONGER_ELIGIBLE = "CorpNoLongerWarEligible", _(
         "War corporation no longer eligable"
-    )
-    WAR_WAR_ADOPTED = "WarAdopted", _("War adopted")
-    WAR_WAR_DECLARED = "WarDeclared", _("War declared")
-    WAR_WAR_INHERITED = "WarInherited", _("War inherited")
-    WAR_WAR_RETRACTED_BY_CONCORD = "WarRetractedByConcord", _(
-        "War retracted by Concord"
     )
 
     # corporation membership
@@ -535,7 +535,11 @@ class Notification(models.Model):
 
     def filter_for_alliance_level(self) -> bool:
         """True when notification to be filtered out due to alliance level."""
-        return self.is_alliance_level and not self.owner.is_alliance_main
+        return (
+            self.is_alliance_level
+            and self.owner.corporation.alliance is not None
+            and not self.owner.is_alliance_main
+        )
 
     def _generate_embed(
         self, language_code: str
