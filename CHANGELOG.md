@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.20.4] - 2022-01-19
+
+### Changed
+
+- Move logic from signal into save() method and remove signal
+
 ## [1.20.3] - 2022-01-16
 
 ### Changed

@@ -20,7 +20,12 @@ from ...models import (
     StructureService,
     StructureTag,
 )
-from ..testdata import create_structures, set_owner_character
+from ..testdata import (
+    create_owners,
+    create_structures,
+    load_entities,
+    set_owner_character,
+)
 
 STRUCTURES_PATH = "structures.models.structures"
 NOTIFICATIONS_PATH = "structures.models.notifications"
@@ -703,10 +708,9 @@ class TestStructureSave(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        create_structures()
+        load_entities()
+        create_owners()
         _, cls.owner = set_owner_character(character_id=1001)
-        Structure.objects.all().delete()
-        StructureTag.objects.all().delete()
 
     def test_can_save_tags_low_sec(self):
         obj = Structure.objects.create(
@@ -736,6 +740,34 @@ class TestStructureSave(NoSocketsTestCase):
         self.assertIn(nullsec_tag, obj.tags.all())
         sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
         self.assertIn(sov_tag, obj.tags.all())
+
+    def test_should_create_default_tags(self):
+        # when
+        obj = Structure.objects.create(
+            id=1300000000003,
+            owner=self.owner,
+            eve_solar_system_id=30000474,
+            name="Dummy",
+            state=Structure.State.SHIELD_VULNERABLE,
+            eve_type_id=35832,
+        )
+        # then
+        self.assertTrue(obj.tags.filter(name="tag_a").exists())
+
+    def test_should_not_create_default_tags(self):
+        # when
+        obj = Structure.objects.create(
+            id=1300000000003,
+            owner=self.owner,
+            eve_solar_system_id=30000474,
+            name="Dummy",
+            state=Structure.State.SHIELD_VULNERABLE,
+            eve_type_id=35832,
+        )
+        obj.tags.all().delete()
+        obj.save()
+        # then
+        self.assertFalse(obj.tags.filter(name="tag_a").exists())
 
 
 class TestStructureNoSetup(NoSocketsTestCase):

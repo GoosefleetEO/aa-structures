@@ -335,7 +335,11 @@ class Structure(models.Model):
         )
 
     def save(self, *args, **kwargs):
+        is_new = self._state.adding is True
         super().save(*args, **kwargs)
+        if is_new:
+            for tag in StructureTag.objects.filter(is_default=True):
+                self.tags.add(tag)
         # make sure related objects are saved whenever structure is saved
         self.update_generated_tags()
 

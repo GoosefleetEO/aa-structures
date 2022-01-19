@@ -684,27 +684,10 @@ def load_entities(entities_def: list = None):
 
 def create_structures(dont_load_entities: bool = False) -> object:
     """create structure entities from test data"""
-
     if not dont_load_entities:
         load_entities()
 
-    default_webhooks = Webhook.objects.filter(is_default=True)
-    for corporation in EveCorporationInfo.objects.all():
-        EveEntity.objects.get_or_create(
-            id=corporation.corporation_id,
-            defaults={
-                "category": EveEntity.Category.CORPORATION,
-                "name": corporation.corporation_name,
-            },
-        )
-        my_owner = Owner.objects.create(corporation=corporation)
-        for x in default_webhooks:
-            my_owner.webhooks.add(x)
-
-        if int(corporation.corporation_id) in [2001, 2002]:
-            alliance = EveAllianceInfo.objects.get(alliance_id=3001)
-            corporation.alliance = alliance
-            corporation.save()
+    create_owners()
 
     for character in EveCharacter.objects.all():
         EveEntity.objects.get_or_create(
@@ -758,6 +741,26 @@ def create_structures(dont_load_entities: bool = False) -> object:
                     state=StructureService.State.from_esi_name(service["state"]),
                 )
         obj.save()
+
+
+def create_owners():
+    default_webhooks = Webhook.objects.filter(is_default=True)
+    for corporation in EveCorporationInfo.objects.all():
+        EveEntity.objects.get_or_create(
+            id=corporation.corporation_id,
+            defaults={
+                "category": EveEntity.Category.CORPORATION,
+                "name": corporation.corporation_name,
+            },
+        )
+        my_owner = Owner.objects.create(corporation=corporation)
+        for x in default_webhooks:
+            my_owner.webhooks.add(x)
+
+        if int(corporation.corporation_id) in [2001, 2002]:
+            alliance = EveAllianceInfo.objects.get(alliance_id=3001)
+            corporation.alliance = alliance
+            corporation.save()
 
 
 def create_user(character_id, load_data=False) -> User:
