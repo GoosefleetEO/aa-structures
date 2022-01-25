@@ -8,7 +8,12 @@ from esi.models import Token
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
-from app_utils.testing import BravadoResponseStub, NoSocketsTestCase, queryset_pks
+from app_utils.testing import (
+    BravadoResponseStub,
+    NoSocketsTestCase,
+    create_user_from_evecharacter,
+    queryset_pks,
+)
 
 from ...constants import EveTypeId
 from ...models import (
@@ -24,13 +29,13 @@ from ...models.notifications import NotificationType
 from .. import to_json
 from ..testdata import (
     create_structures,
-    create_user_from_evecharacter,
     entities_testdata,
     esi_mock_client,
     load_entities,
     load_notification_entities,
     set_owner_character,
 )
+from ..testdata.factories import create_owner_from_user, create_webhook
 
 if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer
@@ -366,12 +371,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         cls.owner.is_alliance_main = True
         cls.owner.save()
         load_notification_entities(cls.owner)
-        my_webhook = Webhook.objects.create(
-            name="Dummy",
-            url="dummy-url",
-            is_active=True,
-            notification_types=NotificationType.values,
-        )
+        my_webhook = create_webhook(notification_types=NotificationType.values)
         cls.owner.webhooks.add(my_webhook)
 
     # TODO: Temporarily disabled
@@ -461,14 +461,11 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         self.user = AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-        webhook = Webhook.objects.create(
-            name="Webhook 1",
-            url="dummy-url-1",
+        webhook = create_webhook(
             notification_types=[
                 NotificationType.ORBITAL_ATTACKED,
                 NotificationType.STRUCTURE_DESTROYED,
-            ],
-            is_active=True,
+            ]
         )
         self.owner.webhooks.clear()
         self.owner.webhooks.add(webhook)
@@ -496,88 +493,51 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.owner.is_alliance_main = True
-        cls.owner.save()
-        load_notification_entities(cls.owner)
-        my_webhook = Webhook.objects.create(
-            name="Dummy",
-            url="dummy-url",
-            is_active=True,
-            notification_types=NotificationType.values,
+        load_entities()
+        user, _ = create_user_from_evecharacter(
+            1001, permissions=["structures.add_structure_owner"]
         )
-        cls.owner.webhooks.add(my_webhook)
+        cls.owner = create_owner_from_user(user=user, is_alliance_main=True)
+        Webhook.objects.all().delete()
+        load_notification_entities(cls.owner)
 
-    @staticmethod
-    def my_send_to_webhook_success(self, webhook):
-        """simulates successful sending of a notification"""
-        self.is_sent = True
-        self.save()
-        return True
-
-    @patch(MODULE_PATH + ".Token", spec=True)
-    @patch("structures.helpers.esi_fetch._esi_client")
-    @patch(MODELS_NOTIFICATIONS + ".Notification.send_to_webhook", autospec=True)
+    @patch(MODULE_PATH + ".Notification.send_to_configured_webhooks", autospec=True)
     def test_should_send_notifications_to_multiple_webhooks_but_same_owner(
-        self, mock_send_to_webhook, mock_esi_client_factory, mock_token
+        self, mock_send_to_configured_webhooks
     ):
         # given
-        mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        webhook_1 = Webhook.objects.create(
-            name="Webhook 1",
-            url="dummy-url-1",
+        webhook_1 = create_webhook(
             notification_types=[
                 NotificationType.ORBITAL_ATTACKED,
                 NotificationType.ORBITAL_REINFORCED,
             ],
-            is_active=True,
         )
-        webhook_2 = Webhook.objects.create(
-            name="Webhook 2",
-            url="dummy-url-2",
+        webhook_2 = create_webhook(
             notification_types=[
                 NotificationType.STRUCTURE_DESTROYED,
                 NotificationType.STRUCTURE_FUEL_ALERT,
             ],
-            is_active=True,
         )
-        self.owner.webhooks.clear()
         self.owner.webhooks.add(webhook_1)
         self.owner.webhooks.add(webhook_2)
         # when
         self.owner.send_new_notifications()
         # then
         self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_forwarding_sync_fresh)
-        notifications_per_webhook = {webhook_1.pk: set(), webhook_2.pk: set()}
-        for x in mock_send_to_webhook.call_args_list:
-            first = x[0]
-            notification = first[0]
-            hook = first[1]
-            notifications_per_webhook[hook.pk].add(notification.notification_id)
-        expected = {
-            webhook_1.pk: set(
-                Notification.objects.filter(
-                    notif_type__in=[
-                        NotificationType.ORBITAL_ATTACKED,
-                        NotificationType.ORBITAL_REINFORCED,
-                    ]
-                ).values_list("notification_id", flat=True)
-            ),
-            webhook_2.pk: set(
-                Notification.objects.filter(
-                    notif_type__in=[
-                        NotificationType.STRUCTURE_DESTROYED,
-                        NotificationType.STRUCTURE_FUEL_ALERT,
-                    ]
-                ).values_list("notification_id", flat=True)
-            ),
+        notif_types_called = {
+            obj.args[0].notif_type
+            for obj in mock_send_to_configured_webhooks.call_args_list
         }
-        self.assertDictEqual(notifications_per_webhook, expected)
+        self.assertTrue(self.owner.is_forwarding_sync_fresh)
+        self.assertSetEqual(
+            notif_types_called,
+            {
+                NotificationType.STRUCTURE_DESTROYED,
+                NotificationType.STRUCTURE_FUEL_ALERT,
+                NotificationType.ORBITAL_ATTACKED,
+                NotificationType.ORBITAL_REINFORCED,
+            },
+        )
 
     # @patch(MODULE_PATH + ".Token", spec=True)
     # @patch("structures.helpers.esi_fetch._esi_client")
@@ -594,7 +554,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     #     notification_groups_1 = ",".join(
     #         [str(x) for x in sorted([NotificationGroup.CUSTOMS_OFFICE])]
     #     )
-    #     wh_structures = Webhook.objects.create(
+    #     wh_structures = create_webhook(
     #         name="Structures",
     #         url="dummy-url-1",
     #         notification_types=notification_groups_1,
@@ -603,7 +563,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     #     notification_groups_2 = ",".join(
     #         [str(x) for x in sorted([NotificationGroup.STARBASE])]
     #     )
-    #     wh_mining = Webhook.objects.create(
+    #     wh_mining = create_webhook(
     #         name="Mining",
     #         url="dummy-url-2",
     #         notification_types=notification_groups_2,

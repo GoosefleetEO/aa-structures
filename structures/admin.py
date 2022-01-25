@@ -494,7 +494,7 @@ class OwnerAdmin(admin.ModelAdmin):
         return self.readonly_fields
 
     inlines = (OwnerCharacterAdminInline,)
-    filter_horizontal = ("ping_groups",)
+    filter_horizontal = ("ping_groups", "webhooks")
     fieldsets = (
         (
             None,
@@ -820,11 +820,23 @@ class StructureAdmin(admin.ModelAdmin):
         [
             x.name
             for x in Structure._meta.get_fields()
-            if isinstance(x, models.fields.Field) and x.name not in ["tags"]
+            if isinstance(x, models.fields.Field) and x.name not in ["tags", "webhooks"]
         ]
     )
     fieldsets = (
-        (None, {"fields": ("name", "owner", "eve_solar_system", "eve_type", "tags")}),
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "owner",
+                    "eve_solar_system",
+                    "eve_type",
+                    "tags",
+                    "webhooks",
+                )
+            },
+        ),
         (
             "Status",
             {
@@ -875,6 +887,7 @@ class StructureAdmin(admin.ModelAdmin):
             },
         ),
     )
+    filter_horizontal = ("tags", "webhooks")
     inlines = (StructureAdminInline,)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):

@@ -322,13 +322,24 @@ class Structure(models.Model):
         StructureTag,
         default=None,
         blank=True,
-        help_text="list of tags for this structure",
+        help_text="List of tags for this structure. ",
     )
     unanchors_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
         help_text="Date at which the structure will unanchor",
+    )
+    webhooks = models.ManyToManyField(
+        "Webhook",
+        default=None,
+        blank=True,
+        help_text=(
+            "Webhooks for sending notifications to. "
+            "If any webhook is enabled, these will be used instead of the webhooks "
+            "defined for the respective owner. "
+            "If no webhook is enabled the owner's setting will be used. "
+        ),
     )
 
     objects = StructureManager()

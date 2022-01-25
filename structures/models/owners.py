@@ -180,7 +180,7 @@ class Owner(models.Model):
         Group,
         default=None,
         blank=True,
-        help_text="Groups to be pinged for each notification - ",
+        help_text="Groups to be pinged for each notification. ",
     )
     structures_last_update_at = models.DateTimeField(
         null=True,
@@ -192,7 +192,7 @@ class Owner(models.Model):
         "Webhook",
         default=None,
         blank=True,
-        help_text="notifications are sent to these webhooks. ",
+        help_text="Notifications are sent to these webhooks. ",
     )
 
     objects = OwnerManager()
@@ -1163,7 +1163,6 @@ class Owner(models.Model):
             "result": _("completed successfully"),
             "message_details": message_details,
         }
-
         notify(
             user,
             title=_("%(title)s: %(topic)s updated for " "%(owner)s: %(result)s")
