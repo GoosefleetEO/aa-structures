@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Changed
+
+- Internal rework of models API to prepare for later full migration to eveuniverse models
+
 ## [1.20.5] - 2022-01-27
 
 >**Upgrade note**<br>Please double check that your webhooks have the structure fuel alert enabled if applicable.

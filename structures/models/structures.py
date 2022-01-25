@@ -195,24 +195,10 @@ class Structure(models.Model):
     id = models.BigIntegerField(
         primary_key=True, help_text="The Item ID of the structure"
     )
-    owner = models.ForeignKey(
-        "Owner",
-        on_delete=models.CASCADE,
-        related_name="structures",
-        help_text="Corporation that owns the structure",
-    )
-    eve_type = models.ForeignKey(
-        EveType, on_delete=models.CASCADE, help_text="type of the structure"
-    )
-    name = models.CharField(max_length=255, help_text="The full name of the structure")
-    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
-    eve_planet = models.ForeignKey(
-        EvePlanet,
-        on_delete=models.SET_DEFAULT,
-        null=True,
-        default=None,
-        blank=True,
-        help_text="Planet next to this structure - if any",
+
+    created_at = models.DateTimeField(
+        default=now,
+        help_text="date this structure was received from ESI for the first time",
     )
     eve_moon = models.ForeignKey(
         EveMoon,
@@ -222,14 +208,17 @@ class Structure(models.Model):
         blank=True,
         help_text="Moon next to this structure - if any",
     )
-    position_x = models.FloatField(
-        null=True, default=None, blank=True, help_text="x position in the solar system"
+    eve_planet = models.ForeignKey(
+        EvePlanet,
+        on_delete=models.SET_DEFAULT,
+        null=True,
+        default=None,
+        blank=True,
+        help_text="Planet next to this structure - if any",
     )
-    position_y = models.FloatField(
-        null=True, default=None, blank=True, help_text="y position in the solar system"
-    )
-    position_z = models.FloatField(
-        null=True, default=None, blank=True, help_text="z position in the solar system"
+    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
+    eve_type = models.ForeignKey(
+        EveType, on_delete=models.CASCADE, help_text="type of the structure"
     )
     fuel_expires_at = models.DateTimeField(
         null=True,
@@ -237,6 +226,33 @@ class Structure(models.Model):
         blank=True,
         help_text="Date on which the structure will run out of fuel",
     )
+    has_fitting = models.BooleanField(
+        null=True,
+        default=None,
+        blank=True,
+        db_index=True,
+        help_text="bool indicating if the structure has a fitting",
+    )
+    has_core = models.BooleanField(
+        null=True,
+        default=None,
+        blank=True,
+        db_index=True,
+        help_text="bool indicating if the structure has a quantum core",
+    )
+    last_online_at = models.DateTimeField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text="date this structure had any of it's services online",
+    )
+    last_updated_at = models.DateTimeField(
+        null=True,
+        default=None,
+        blank=True,
+        help_text="date this structure was last updated from the EVE server",
+    )
+    name = models.CharField(max_length=255, help_text="The full name of the structure")
     next_reinforce_hour = models.PositiveIntegerField(
         null=True,
         default=None,
@@ -256,6 +272,12 @@ class Structure(models.Model):
             "effect at the time shown by next_reinforce_apply"
         ),
     )
+    owner = models.ForeignKey(
+        "Owner",
+        on_delete=models.CASCADE,
+        related_name="structures",
+        help_text="Corporation that owns the structure",
+    )
     reinforce_hour = models.PositiveIntegerField(
         validators=[MaxValueValidator(23)],
         null=True,
@@ -269,17 +291,20 @@ class Structure(models.Model):
             "is +/- 2 hours centered on the value of this property"
         ),
     )
+    position_x = models.FloatField(
+        null=True, default=None, blank=True, help_text="x position in the solar system"
+    )
+    position_y = models.FloatField(
+        null=True, default=None, blank=True, help_text="y position in the solar system"
+    )
+    position_z = models.FloatField(
+        null=True, default=None, blank=True, help_text="z position in the solar system"
+    )
     state = models.IntegerField(
         choices=State.choices,
         default=State.UNKNOWN,
         blank=True,
         help_text="Current state of the structure",
-    )
-    state_timer_start = models.DateTimeField(
-        null=True,
-        default=None,
-        blank=True,
-        help_text="Date at which the structure will move to it’s next state",
     )
     state_timer_end = models.DateTimeField(
         null=True,
@@ -287,17 +312,11 @@ class Structure(models.Model):
         blank=True,
         help_text="Date at which the structure entered it’s current state",
     )
-    unanchors_at = models.DateTimeField(
+    state_timer_start = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="Date at which the structure will unanchor",
-    )
-    last_online_at = models.DateTimeField(
-        null=True,
-        default=None,
-        blank=True,
-        help_text="date this structure had any of it's services online",
+        help_text="Date at which the structure will move to it’s next state",
     )
     tags = models.ManyToManyField(
         StructureTag,
@@ -305,29 +324,11 @@ class Structure(models.Model):
         blank=True,
         help_text="list of tags for this structure",
     )
-    last_updated_at = models.DateTimeField(
+    unanchors_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="date this structure was last updated from the EVE server",
-    )
-    created_at = models.DateTimeField(
-        default=now,
-        help_text="date this structure was received from ESI for the first time",
-    )
-    has_fitting = models.BooleanField(
-        null=True,
-        default=None,
-        blank=True,
-        db_index=True,
-        help_text="bool indicating if the structure has a fitting",
-    )
-    has_core = models.BooleanField(
-        null=True,
-        default=None,
-        blank=True,
-        db_index=True,
-        help_text="bool indicating if the structure has a quantum core",
+        help_text="Date at which the structure will unanchor",
     )
 
     objects = StructureManager()
@@ -692,6 +693,7 @@ class StructureService(EsiNameLocalization, models.Model):
         help_text="Structure this service is installed to",
     )
     name = models.CharField(max_length=100, help_text="Name of the service")
+
     state = models.IntegerField(
         choices=State.choices, help_text="Current state of this service"
     )
@@ -732,9 +734,6 @@ class PocoDetails(models.Model):
             except KeyError:
                 return cls.NONE
 
-    structure = models.OneToOneField(
-        Structure, on_delete=models.CASCADE, related_name="poco_details"
-    )
     alliance_tax_rate = models.FloatField(null=True, default=None)
     allow_access_with_standings = models.BooleanField()
     allow_alliance_access = models.BooleanField()
@@ -747,6 +746,9 @@ class PocoDetails(models.Model):
     reinforce_exit_start = models.PositiveIntegerField()
     standing_level = models.IntegerField(
         choices=StandingLevel.choices, default=StandingLevel.NONE
+    )
+    structure = models.OneToOneField(
+        Structure, on_delete=models.CASCADE, related_name="poco_details"
     )
     terrible_standing_tax_rate = models.FloatField(null=True, default=None)
 
