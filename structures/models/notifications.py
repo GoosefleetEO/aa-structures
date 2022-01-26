@@ -546,6 +546,23 @@ class Notification(models.Model):
             and not self.owner.is_alliance_main
         )
 
+    def related_structure(self) -> int:
+        """Identify structure this notification is related to.
+
+        Raises:
+        - Structure.DoesNotExist: If structure object not found
+
+        Returns:
+        - structure object if found or None if there is no related structure
+        """
+        parsed_text = self.get_parsed_text()
+        structure_id = None
+        if "structureID" in parsed_text:
+            structure_id = int(parsed_text["structureID"])
+        if structure_id:
+            return Structure.objects.get(id=structure_id)
+        return None
+
     def _generate_embed(
         self, language_code: str
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
@@ -931,9 +948,18 @@ class Notification(models.Model):
         """
         if self.filter_for_npc_attacks() or self.filter_for_alliance_level():
             return None
-        webhooks = self.owner.webhooks.filter(
-            notification_types__contains=self.notif_type, is_active=True
-        )
+        try:
+            structure = self.related_structure()
+        except Structure.DoesNotExist:
+            structure = None
+        if structure and structure.webhooks.exists():
+            webhooks = structure.webhooks.filter(
+                notification_types__contains=self.notif_type, is_active=True
+            )
+        else:
+            webhooks = self.owner.webhooks.filter(
+                notification_types__contains=self.notif_type, is_active=True
+            )
         if not webhooks.exists():
             return None
         if ping_type_override:

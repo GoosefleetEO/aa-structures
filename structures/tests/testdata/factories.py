@@ -28,6 +28,8 @@ def create_owner_from_user(user, **kwargs) -> Owner:
     kwargs["corporation"] = EveCorporationInfo.objects.get(
         corporation_id=main_character.corporation_id
     )
+    if "is_alliance_main" not in kwargs:
+        kwargs["is_alliance_main"] = True
     owner = Owner.objects.create(**kwargs)
     webhook = create_webhook()
     owner.webhooks.add(webhook)

@@ -45,6 +45,7 @@ from ...models import (
     Webhook,
 )
 from ...models.eveuniverse import EveUniverse
+from .factories import create_notification
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
 
@@ -801,26 +802,42 @@ def set_owner_character(character_id: int) -> Tuple[User, Owner]:
     return my_user, my_owner
 
 
+def load_notification_by_type(
+    owner: Owner, notif_type: NotificationType
+) -> Notification:
+    for notification in entities_testdata["Notification"]:
+        if notification["type"] == notif_type.value:
+            return create_notification(
+                owner=owner,
+                notif_type=notif_type.value,
+                text=notification.get("text", ""),
+            )
+
+
 def load_notification_entities(owner: Owner):
     timestamp_start = now() - dt.timedelta(hours=2)
     for notification in entities_testdata["Notification"]:
-        notification_id = notification["notification_id"]
-        notif_type = notification["type"]
-        # print(f"Reading notification: {notification_id}-{notif_type}")
-        sender = EveEntity.objects.get(id=notification["sender_id"])
-        text = notification["text"] if "text" in notification else None
-        is_read = notification["is_read"] if "is_read" in notification else None
-        timestamp_start = timestamp_start + dt.timedelta(minutes=5)
-        Notification.objects.update_or_create(
-            notification_id=notification_id,
-            owner=owner,
-            defaults={
-                "sender": sender,
-                "timestamp": timestamp_start,
-                "notif_type": notif_type,
-                "text": text,
-                "is_read": is_read,
-                "last_updated": now(),
-                "is_sent": False,
-            },
-        )
+        _load_notification_for_owner(owner, timestamp_start, notification)
+
+
+def _load_notification_for_owner(owner, timestamp_start, notification, new_ids=False):
+    notification_id = notification["notification_id"]
+    notif_type = notification["type"]
+    # print(f"Reading notification: {notification_id}-{notif_type}")
+    sender = EveEntity.objects.get(id=notification["sender_id"])
+    text = notification["text"] if "text" in notification else None
+    is_read = notification["is_read"] if "is_read" in notification else None
+    timestamp_start = timestamp_start + dt.timedelta(minutes=5)
+    Notification.objects.update_or_create(
+        notification_id=notification_id,
+        owner=owner,
+        defaults={
+            "sender": sender,
+            "timestamp": timestamp_start,
+            "notif_type": notif_type,
+            "text": text,
+            "is_read": is_read,
+            "last_updated": now(),
+            "is_sent": False,
+        },
+    )

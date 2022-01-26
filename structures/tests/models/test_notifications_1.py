@@ -22,6 +22,7 @@ from ..testdata import (
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
+    create_structure,
     create_webhook,
 )
 
@@ -301,7 +302,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
         )
-        cls.owner = create_owner_from_user(user=user, is_alliance_main=True)
+        cls.owner = create_owner_from_user(user=user)
         Webhook.objects.all().delete()
 
     @patch(MODULE_PATH + ".Notification.send_to_webhook")
@@ -395,6 +396,27 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
         result = notif.send_to_configured_webhooks()
         # then
         self.assertFalse(result)
+        self.assertTrue(mock_send_to_webhook.called)
+
+    @patch(MODULE_PATH + ".Notification.send_to_webhook")
+    def test_should_send_to_structure_webhook(self, mock_send_to_webhook):
+        # given
+        webhook_owner = create_webhook(notification_types=[])
+        self.owner.webhooks.add(webhook_owner)
+        structure = create_structure(owner=self.owner)
+        webhook_structure = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        structure.webhooks.add(webhook_structure)
+        notif = create_notification(
+            owner=self.owner,
+            notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
+            text=f"allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: {structure.eve_solar_system_id}\nstructureID: &id001 {structure.id}\nstructureShowInfoData:\n- showinfo\n- {structure.eve_type_id}\n- *id001\nstructureTypeID: {structure.eve_type_id}\n",
+        )
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertTrue(result)
         self.assertTrue(mock_send_to_webhook.called)
 
 
