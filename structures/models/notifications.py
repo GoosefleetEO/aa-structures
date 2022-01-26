@@ -425,18 +425,12 @@ class Notification(models.Model):
         help_text="Corporation that received this notification",
     )
 
-    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(db_index=True)
-    notif_type = models.CharField(
-        max_length=100,
-        default="",
-        db_index=True,
-        verbose_name="type",
-        help_text="type of this notification as reported by ESI",
+    created = models.DateTimeField(
+        null=True,
+        default=None,
+        help_text="Date when this notification was first received from ESI",
     )
-    text = models.TextField(
-        null=True, default=None, blank=True, help_text="Notification details in YAML"
-    )
+
     is_read = models.BooleanField(
         null=True,
         default=None,
@@ -454,11 +448,23 @@ class Notification(models.Model):
     last_updated = models.DateTimeField(
         help_text="Date when this notification has last been updated from ESI"
     )
-    created = models.DateTimeField(
-        null=True,
-        default=None,
-        help_text="Date when this notification was first received from ESI",
+    notif_type = models.CharField(
+        max_length=100,
+        default="",
+        db_index=True,
+        verbose_name="type",
+        help_text="type of this notification as reported by ESI",
     )
+    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
+    structures = models.ManyToManyField(
+        Structure,
+        related_name="notifications",
+        help_text="Structures this notification is about (if any)",
+    )
+    text = models.TextField(
+        null=True, default=None, blank=True, help_text="Notification details in YAML"
+    )
+    timestamp = models.DateTimeField(db_index=True)
 
     objects = NotificationManager()
 
@@ -506,7 +512,7 @@ class Notification(models.Model):
     #     """returns a set with all supported notification types"""
     #     return {x[0] for x in NotificationType.choices}
 
-    def get_parsed_text(self) -> dict:
+    def parsed_text(self) -> dict:
         """Returns the notifications's text as dict."""
         return yaml.safe_load(self.text)
 
@@ -517,7 +523,7 @@ class Notification(models.Model):
             NotificationType.ORBITAL_ATTACKED,
             NotificationType.STRUCTURE_UNDER_ATTACK,
         ]:
-            parsed_text = self.get_parsed_text()
+            parsed_text = self.parsed_text()
             corporation_id = None
             if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
                 if (
@@ -547,22 +553,69 @@ class Notification(models.Model):
             and not self.owner.is_alliance_main
         )
 
-    def related_structure(self) -> int:
-        """Identify structure this notification is related to.
+    def update_related_structures(self):
+        """Update related structure for this notification."""
+        structures_qs = self.calc_related_structures()
+        self.structures.clear()
+        if structures_qs.exists():
+            objs = [obj for obj in structures_qs.all()]
+            self.structures.add(*objs)
 
-        Raises:
-        - Structure.DoesNotExist: If structure object not found
+    def calc_related_structures(self) -> models.QuerySet[Structure]:
+        """Identify structures this notification is related to.
 
         Returns:
-        - structure object if found or None if there is no related structure
+        - structures if any found or empty list if there are no related structures
         """
-        structure_id = None
-        parsed_text = self.get_parsed_text()
-        if parsed_text and "structureID" in parsed_text:
-            structure_id = int(parsed_text["structureID"])
-        if structure_id:
-            return Structure.objects.get(id=structure_id)
-        return None
+        parsed_text = self.parsed_text()
+        if not parsed_text:
+            return Structure.objects.none()
+        if self.notif_type in {
+            NotificationType.STRUCTURE_ONLINE,
+            NotificationType.STRUCTURE_FUEL_ALERT,
+            NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
+            NotificationType.STRUCTURE_REFUELED_EXTRA,
+            NotificationType.STRUCTURE_SERVICES_OFFLINE,
+            NotificationType.STRUCTURE_WENT_LOW_POWER,
+            NotificationType.STRUCTURE_WENT_HIGH_POWER,
+            NotificationType.STRUCTURE_UNANCHORING,
+            NotificationType.STRUCTURE_UNDER_ATTACK,
+            NotificationType.STRUCTURE_LOST_SHIELD,
+            NotificationType.STRUCTURE_LOST_ARMOR,
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.OWNERSHIP_TRANSFERRED,
+            NotificationType.STRUCTURE_ANCHORING,
+            NotificationType.MOONMINING_EXTRACTION_STARTED,
+            NotificationType.MOONMINING_EXTRACTION_FINISHED,
+            NotificationType.MOONMINING_AUTOMATIC_FRACTURE,
+            NotificationType.MOONMINING_EXTRACTION_CANCELLED,
+            NotificationType.MOONMINING_LASER_FIRED,
+        }:
+            structure_id = parsed_text.get("structureID")
+            return Structure.objects.filter(id=structure_id)
+        elif self.notif_type == NotificationType.STRUCTURE_REINFORCE_CHANGED:
+            structure_ids = [
+                structure_info[0] for structure_info in parsed_text["allStructureInfo"]
+            ]
+            return Structure.objects.filter(id__in=structure_ids)
+
+        elif self.notif_type in {
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.ORBITAL_REINFORCED,
+        }:
+            return Structure.objects.filter(
+                eve_planet_id=parsed_text["planetID"], eve_type_id=parsed_text["typeID"]
+            )
+
+        elif self.notif_type in {
+            NotificationType.TOWER_ALERT_MSG,
+            NotificationType.TOWER_RESOURCE_ALERT_MSG,
+            NotificationType.TOWER_REFUELED_EXTRA,
+        }:
+            return Structure.objects.filter(
+                eve_moon_id=parsed_text["moonID"], eve_type_id=parsed_text["typeID"]
+            )
+        return Structure.objects.none()
 
     def _generate_embed(
         self, language_code: str
@@ -585,7 +638,7 @@ class Notification(models.Model):
         if (
             has_auth_timers or has_structure_timers
         ) and self.notif_type in NotificationType.relevant_for_timerboard:
-            parsed_text = self.get_parsed_text()
+            parsed_text = self.parsed_text()
             try:
                 with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
                     if self.notif_type in [
@@ -886,7 +939,7 @@ class Notification(models.Model):
             ).order_by("-timestamp")
 
             for notification in notifications_qs:
-                parsed_text_2 = notification.get_parsed_text()
+                parsed_text_2 = notification.parsed_text()
                 my_structure_type_id = parsed_text_2["structureTypeID"]
                 if my_structure_type_id == parsed_text["structureTypeID"]:
                     eve_time = ldap_time_2_datetime(parsed_text_2["readyTime"])
@@ -949,26 +1002,28 @@ class Notification(models.Model):
         """
         if self.filter_for_npc_attacks() or self.filter_for_alliance_level():
             return None
-        try:
-            structure = self.related_structure()
-        except Structure.DoesNotExist:
-            structure = None
-        if structure and structure.webhooks.exists():
-            webhooks = structure.webhooks.filter(
+        if self.is_temporary:
+            structures_qs = self.calc_related_structures()
+        else:
+            if not self.structures.exists():
+                self.update_related_structures()
+            structures_qs = self.structures
+        if structures_qs.filter(webhooks__isnull=False).count() == 1:
+            webhooks_qs = structures_qs.first().webhooks.filter(
                 notification_types__contains=self.notif_type, is_active=True
             )
         else:
-            webhooks = self.owner.webhooks.filter(
+            webhooks_qs = self.owner.webhooks.filter(
                 notification_types__contains=self.notif_type, is_active=True
             )
-        if not webhooks.exists():
+        if not webhooks_qs.exists():
             return None
         if ping_type_override:
             self.ping_type_override = ping_type_override
         if use_color_override:
             self.color_override = color_override
         success = True
-        for webhook in webhooks:
+        for webhook in webhooks_qs:
             success &= self.send_to_webhook(webhook)
         return success
 
@@ -1072,6 +1127,7 @@ class Notification(models.Model):
                 data = {
                     "moonID": structure.eve_moon_id,
                     "typeID": structure.eve_type_id,
+                    "structureID": structure.id,
                 }
             else:
                 raise ValueError("text property not provided and can not be generated.")

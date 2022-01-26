@@ -11,6 +11,7 @@ from ...models import (
     FuelAlertConfig,
     JumpFuelAlert,
     JumpFuelAlertConfig,
+    Notification,
     NotificationType,
     Structure,
     StructureItem,
@@ -19,6 +20,7 @@ from ...models import (
 from ..testdata import (
     create_structures,
     load_entities,
+    load_notification_by_type,
     load_notification_entities,
     set_owner_character,
 )
@@ -486,7 +488,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self.assertEqual(structure.jump_fuel_alerts.count(), 1)
 
 
-class TestNotificationRelatedStructure(NoSocketsTestCase):
+class TestNotificationRelatedStructures(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -496,15 +498,124 @@ class TestNotificationRelatedStructure(NoSocketsTestCase):
         )
         cls.owner = create_owner_from_user(user=user)
 
-    def test_return_related_structure(self):
+    def test_related_structures_for_structure_notifications(self):
+        # given
+        structure = create_structure(owner=self.owner, id=1000000000001)
+        for notif_type in [
+            NotificationType.STRUCTURE_ONLINE,
+            NotificationType.STRUCTURE_FUEL_ALERT,
+            NotificationType.STRUCTURE_SERVICES_OFFLINE,
+            NotificationType.STRUCTURE_WENT_LOW_POWER,
+            NotificationType.STRUCTURE_WENT_HIGH_POWER,
+            NotificationType.STRUCTURE_UNANCHORING,
+            NotificationType.STRUCTURE_UNDER_ATTACK,
+            NotificationType.STRUCTURE_LOST_SHIELD,
+            NotificationType.STRUCTURE_LOST_ARMOR,
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.OWNERSHIP_TRANSFERRED,
+            NotificationType.STRUCTURE_ANCHORING,
+        ]:
+            with self.subTest(notif_type=notif_type):
+                notif = load_notification_by_type(
+                    owner=self.owner, notif_type=notif_type
+                )
+                # when
+                result_qs = notif.calc_related_structures()
+                # then
+                self.assertQuerysetEqual(
+                    result_qs, Structure.objects.filter(id=structure.id)
+                )
+
+    def test_related_structures_for_moon_notifications(self):
+        # given
+        structure = create_structure(owner=self.owner, id=1000000000002)
+        for notif_type in [
+            NotificationType.MOONMINING_EXTRACTION_STARTED,
+            NotificationType.MOONMINING_EXTRACTION_FINISHED,
+            NotificationType.MOONMINING_AUTOMATIC_FRACTURE,
+            NotificationType.MOONMINING_EXTRACTION_CANCELLED,
+            NotificationType.MOONMINING_LASER_FIRED,
+        ]:
+            with self.subTest(notif_type=notif_type):
+                notif = load_notification_by_type(
+                    owner=self.owner, notif_type=notif_type
+                )
+                # when
+                result_qs = notif.calc_related_structures()
+                # then
+                self.assertQuerysetEqual(
+                    result_qs, Structure.objects.filter(id=structure.id)
+                )
+
+    def test_related_structures_for_orbital_notifications(self):
+        # given
+        structure = create_structure(
+            owner=self.owner, eve_planet_id=40161469, eve_type_id=2233
+        )
+        for notif_type in [
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.ORBITAL_REINFORCED,
+        ]:
+            with self.subTest(notif_type=notif_type):
+                notif = load_notification_by_type(
+                    owner=self.owner, notif_type=notif_type
+                )
+                # when
+                result_qs = notif.calc_related_structures()
+                # then
+                self.assertQuerysetEqual(
+                    result_qs, Structure.objects.filter(id=structure.id)
+                )
+
+    def test_related_structures_for_tower_notifications(self):
+        # given
+        structure = create_structure(
+            owner=self.owner, eve_moon_id=40161465, eve_type_id=16213
+        )
+        for notif_type in [
+            NotificationType.TOWER_ALERT_MSG,
+            NotificationType.TOWER_RESOURCE_ALERT_MSG,
+        ]:
+            with self.subTest(notif_type=notif_type):
+                notif = load_notification_by_type(
+                    owner=self.owner, notif_type=notif_type
+                )
+                # when
+                result_qs = notif.calc_related_structures()
+                # then
+                self.assertQuerysetEqual(
+                    result_qs, Structure.objects.filter(id=structure.id)
+                )
+
+    def test_related_structures_for_generated_notifications(self):
+        # given
+        structure = create_structure(
+            owner=self.owner, eve_moon_id=40161465, eve_type_id=16213
+        )
+        for notif_type in [
+            NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
+            NotificationType.STRUCTURE_REFUELED_EXTRA,
+            NotificationType.TOWER_REFUELED_EXTRA,
+        ]:
+            with self.subTest(notif_type=notif_type):
+                notif = Notification.create_from_structure(
+                    structure, notif_type=notif_type
+                )
+                # when
+                result_qs = notif.calc_related_structures()
+                # then
+                self.assertQuerysetEqual(
+                    result_qs, Structure.objects.filter(id=structure.id)
+                )
+
+    def test_should_update_related_structure_when_it_exists(self):
         # given
         structure = create_structure(owner=self.owner)
-        notif = create_notification(
-            owner=self.owner,
-            notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
-            text=f"allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: {structure.eve_solar_system_id}\nstructureID: &id001 {structure.id}\nstructureShowInfoData:\n- showinfo\n- {structure.eve_type_id}\n- *id001\nstructureTypeID: {structure.eve_type_id}\n",
-        )
+        notif = create_notification(owner=self.owner)
         # when
-        obj = notif.related_structure()
+        with patch(MODULE_PATH + ".Notification.calc_related_structures") as m:
+            m.return_value = Structure.objects.filter(id=structure.id)
+            notif.update_related_structures()
         # then
-        self.assertEqual(obj, structure)
+        structure_ids = notif.structures.values_list("id", flat=True)
+        self.assertSetEqual(set(structure_ids), {structure.id})

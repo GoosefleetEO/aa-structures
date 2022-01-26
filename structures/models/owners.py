@@ -1018,7 +1018,7 @@ class Owner(models.Model):
             f.write("\n")
 
     def _store_notifications(self, notifications: list) -> int:
-        """stores new notifications in database.
+        """Store new notifications in database.
         Returns number of newly created objects.
         """
         # identify new notifications
@@ -1030,8 +1030,7 @@ class Owner(models.Model):
             for obj in notifications
             if obj["notification_id"] not in existing_notification_ids
         ]
-        # create new notif objects
-        new_notification_objects = list()
+        # create new notification objects
         for notification in new_notifications:
             sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
             if sender_type != EveEntity.Category.OTHER:
@@ -1045,24 +1044,22 @@ class Owner(models.Model):
                 )
             text = notification["text"] if "text" in notification else None
             is_read = notification["is_read"] if "is_read" in notification else None
-            new_notification_objects.append(
-                Notification(
-                    notification_id=notification["notification_id"],
-                    owner=self,
-                    sender=sender,
-                    timestamp=notification["timestamp"],
-                    # at least one type has a trailing white space
-                    # which we need to remove
-                    notif_type=notification["type"].strip(),
-                    text=text,
-                    is_read=is_read,
-                    last_updated=now(),
-                    created=now(),
-                )
+            # at least one type has a trailing white space
+            # which we need to remove
+            notif_type = notification["type"].strip()
+            obj = Notification.objects.create(
+                notification_id=notification["notification_id"],
+                owner=self,
+                sender=sender,
+                timestamp=notification["timestamp"],
+                notif_type=notif_type,
+                text=text,
+                is_read=is_read,
+                last_updated=now(),
+                created=now(),
             )
-
-        Notification.objects.bulk_create(new_notification_objects)
-        return len(new_notification_objects)
+            obj.update_related_structures()
+        return len(new_notifications)
 
     def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
@@ -1107,7 +1104,7 @@ class Owner(models.Model):
             )
             structure_id_2_moon_id = dict()
             for notification in notifications:
-                parsed_text = notification.get_parsed_text()
+                parsed_text = notification.parsed_text()
                 moon_id = parsed_text["moonID"]
                 structure_id = parsed_text["structureID"]
                 structure_id_2_moon_id[structure_id] = moon_id

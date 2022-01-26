@@ -52,7 +52,7 @@ class NotificationBaseEmbed:
         if not isinstance(notification, Notification):
             raise TypeError("notification must be of type Notification")
         self._notification = notification
-        self._parsed_text = notification.get_parsed_text()
+        self._parsed_text = notification.parsed_text()
         self._title = None
         self._description = ""
         self._color = None

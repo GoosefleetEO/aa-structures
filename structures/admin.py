@@ -3,7 +3,7 @@ import statistics
 from django.conf import settings
 from django.contrib import admin
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from django.db.models.functions import Lower
 from django.utils.html import format_html
 
@@ -228,19 +228,29 @@ class NotificationAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("owner__webhooks").select_related(
-            "owner", "owner__corporation", "sender"
-        )
+        return qs.prefetch_related(
+            "owner__webhooks",
+            Prefetch(
+                "structures",
+                queryset=Structure.objects.filter(webhooks__isnull=False),
+                to_attr="structures_with_webhooks",
+            ),
+        ).select_related("owner", "owner__corporation", "sender")
 
     def _webhooks(self, obj):
         if not obj.can_be_rendered:
             return format_html("<i>N/A</i>")
+        webhooks_qs = obj.owner.webhooks.all()
+        for structure in obj.structures_with_webhooks:
+            webhooks_qs |= structure.webhooks.all()
         names = sorted(
-            [
-                webhook.name
-                for webhook in obj.owner.webhooks.all()
-                if obj.notif_type in webhook.notification_types
-            ]
+            list(
+                {
+                    webhook.name
+                    for webhook in webhooks_qs
+                    if obj.notif_type in webhook.notification_types
+                }
+            )
         )
         if names:
             return ", ".join(names)
@@ -699,6 +709,23 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
             return qs.filter(owner__corporation__alliance__alliance_id=self.value())
 
 
+class HasWebhooksListFilter(admin.SimpleListFilter):
+    title = "has webhooks"
+    parameter_name = "has_webhooks"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("y", "yes"),
+            ("n", "no"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "y":
+            return queryset.filter(webhooks__isnull=False)
+        if self.value() == "n":
+            return queryset.filter(webhooks__isnull=True)
+
+
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
     show_full_result_count = True
@@ -720,7 +747,15 @@ class StructureAdmin(admin.ModelAdmin):
         "eve_solar_system__name",
     ]
     ordering = ["name"]
-    list_display = ("_name", "_owner", "_location", "_type", "_power_mode", "_tags")
+    list_display = (
+        "_name",
+        "_owner",
+        "_location",
+        "_type",
+        "_power_mode",
+        "_tags",
+        "_webhooks",
+    )
     list_filter = (
         OwnerCorporationsFilter,
         OwnerAllianceFilter,
@@ -733,13 +768,17 @@ class StructureAdmin(admin.ModelAdmin):
         ("eve_type__eve_group", admin.RelatedOnlyFieldListFilter),
         ("eve_type__eve_group__eve_category", admin.RelatedOnlyFieldListFilter),
         ("tags", admin.RelatedOnlyFieldListFilter),
+        HasWebhooksListFilter,
     )
 
     actions = ("add_default_tags", "remove_user_tags", "update_generated_tags")
 
+    def has_add_permission(self, request):
+        return False
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("tags")
+        return qs.prefetch_related("tags", "webhooks")
 
     @admin.display(ordering="name")
     def _name(self, structure) -> str:
@@ -775,8 +814,9 @@ class StructureAdmin(admin.ModelAdmin):
     def _tags(self, structure) -> str:
         return sorted([tag.name for tag in structure.tags.all()])
 
-    def has_add_permission(self, request):
-        return False
+    def _webhooks(self, obj):
+        names = sorted([webhook.name for webhook in obj.webhooks.all()])
+        return names if names else None
 
     @admin.display(description="Add default tags to selected structures")
     def add_default_tags(self, request, queryset):

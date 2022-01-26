@@ -112,7 +112,7 @@ class TestNotification(NoSocketsTestCase):
 
     def test_get_parsed_text(self):
         obj = Notification.objects.get(notification_id=1000000404)
-        parsed_text = obj.get_parsed_text()
+        parsed_text = obj.parsed_text()
         self.assertEqual(parsed_text["autoTime"], 132186924601059151)
         self.assertEqual(parsed_text["structureName"], "Dummy")
         self.assertEqual(parsed_text["solarSystemID"], 30002537)
