@@ -106,7 +106,7 @@ class NotificationBaseEmbed:
             self._ping_type = Webhook.PingType.HERE
         else:
             self._ping_type = Webhook.PingType.NONE
-        if self.notification.is_generated:
+        if self.notification.is_temporary:
             footer_text = __title__
             footer_icon_url = static_file_absolute_url(
                 "structures/img/structures_logo.png"
@@ -119,7 +119,7 @@ class NotificationBaseEmbed:
         if settings.DEBUG:
             footer_text += " #{}".format(
                 self.notification.notification_id
-                if not self.notification.is_generated
+                if not self.notification.is_temporary
                 else "GENERATED"
             )
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
