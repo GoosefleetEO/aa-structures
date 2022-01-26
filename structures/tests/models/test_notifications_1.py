@@ -95,10 +95,7 @@ class TestNotification(NoSocketsTestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
-        cls.owner.webhooks.add(cls.webhook)
+        cls.owner.webhooks.add(create_webhook())
 
     def test_str(self):
         obj = Notification.objects.get(notification_id=1000000403)
@@ -474,9 +471,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
+        cls.webhook = create_webhook()
         cls.owner.webhooks.add(cls.webhook)
 
     def test_can_send_message_normal(self, mock_send_message):
@@ -614,48 +609,48 @@ class TestNotificationPings(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_ping(self, mock_send_message):
+        # given
         args = {"status_code": 200, "status_ok": True, "content": None}
         mock_response = Mock(**args)
         mock_send_message.return_value = mock_response
-
-        webhook_normal = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
+        webhook_normal = create_webhook()
         obj = Notification.objects.get(notification_id=1000000509)
-        self.assertTrue(obj.send_to_webhook(webhook_normal))
+        # when
+        result = obj.send_to_webhook(webhook_normal)
+        # then
+        self.assertTrue(result)
         args, kwargs = mock_send_message.call_args
         self.assertTrue(kwargs["content"] and "@everyone" in kwargs["content"])
 
     @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_disable_pinging_webhook(self, mock_send_message):
+        # given
         args = {"status_code": 200, "status_ok": True, "content": None}
         mock_response = Mock(**args)
         mock_send_message.return_value = mock_response
-
-        webhook_no_pings = Webhook.objects.create(
-            name="Test2",
-            url="http://www.example.com/x-2/",
-            has_default_pings_enabled=False,
-        )
+        webhook_no_pings = create_webhook(has_default_pings_enabled=False)
         obj = Notification.objects.get(notification_id=1000000509)
-        self.assertTrue(obj.send_to_webhook(webhook_no_pings))
+        # when
+        result = obj.send_to_webhook(webhook_no_pings)
+        self.assertTrue(result)
         args, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
     @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_disable_pinging_owner(self, mock_send_message):
+        # given
         args = {"status_code": 200, "status_ok": True, "content": None}
         mock_response = Mock(**args)
         mock_send_message.return_value = mock_response
-
-        webhook_normal = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
+        webhook_normal = create_webhook()
         self.owner.webhooks.add(webhook_normal)
         self.owner.has_default_pings_enabled = False
         self.owner.save()
         obj = Notification.objects.get(notification_id=1000000509)
-        self.assertTrue(obj.send_to_webhook(webhook_normal))
+        # when
+        result = obj.send_to_webhook(webhook_normal)
+        # then
+        self.assertTrue(result)
         args, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
@@ -690,9 +685,7 @@ if "discord" in app_labels():
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
-            webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
+            webhook = create_webhook()
             webhook.ping_groups.add(self.group_1)
 
             obj = Notification.objects.get(notification_id=1000000509)
@@ -709,9 +702,7 @@ if "discord" in app_labels():
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
-            webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
+            webhook = create_webhook()
             self.owner.ping_groups.add(self.group_2)
 
             obj = Notification.objects.get(notification_id=1000000509)
@@ -728,9 +719,7 @@ if "discord" in app_labels():
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
-            webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
+            webhook = create_webhook()
             webhook.ping_groups.add(self.group_1)
             self.owner.ping_groups.add(self.group_2)
 
@@ -744,37 +733,37 @@ if "discord" in app_labels():
 
         @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
         def test_no_ping_if_not_set(self, mock_send_message, mock_import_discord):
+            # given
             args = {"status_code": 200, "status_ok": True, "content": None}
             mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
             )
-            webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
-
+            webhook = create_webhook()
             obj = Notification.objects.get(notification_id=1000000509)
-            self.assertTrue(obj.send_to_webhook(webhook))
-
+            # when
+            result = obj.send_to_webhook(webhook)
+            # then
+            self.assertTrue(result)
             self.assertFalse(mock_import_discord.called)
             args, kwargs = mock_send_message.call_args
             self.assertFalse(re.search(r"(<@&\d+>)", kwargs["content"]))
 
         @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
         def test_can_handle_http_error(self, mock_send_message, mock_import_discord):
+            # given
             args = {"status_code": 200, "status_ok": True, "content": None}
             mock_send_message.return_value = Mock(**args)
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 HTTPError
             )
-            webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
+            webhook = create_webhook()
             webhook.ping_groups.add(self.group_1)
-
             obj = Notification.objects.get(notification_id=1000000509)
-            self.assertTrue(obj.send_to_webhook(webhook))
-
+            # when
+            result = obj.send_to_webhook(webhook)
+            # then
+            self.assertTrue(result)
             self.assertTrue(mock_import_discord.called)
             args, kwargs = mock_send_message.call_args
             self.assertFalse(re.search(r"(<@&\d+>)", kwargs["content"]))
@@ -797,10 +786,7 @@ if "timerboard" in app_labels():
             load_eveuniverse()
             _, cls.owner = set_owner_character(character_id=1001)
             load_notification_entities(cls.owner)
-            cls.webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
-            cls.owner.webhooks.add(cls.webhook)
+            cls.owner.webhooks.add(create_webhook())
 
         def setUp(self) -> None:
             AuthTimer.objects.all().delete()
@@ -915,10 +901,7 @@ if "structuretimers" in app_labels():
         def setUp(self) -> None:
             _, self.owner = set_owner_character(character_id=1001)
             load_notification_entities(self.owner)
-            self.webhook = Webhook.objects.create(
-                name="Test", url="http://www.example.com/dummy/"
-            )
-            self.owner.webhooks.add(self.webhook)
+            self.owner.webhooks.add(create_webhook())
             Timer.objects.all().delete()
 
         def test_timer_structure_reinforcement(self):

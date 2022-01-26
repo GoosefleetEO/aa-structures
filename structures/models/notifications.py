@@ -477,8 +477,9 @@ class Notification(models.Model):
         )
 
     def save(self, *args, **kwargs) -> None:
-        if not self.is_generated:
-            super().save(*args, **kwargs)  # generated notifications can not be saved
+        if self.is_generated:
+            raise ValueError("Generated notifications can not be saved")
+        super().save(*args, **kwargs)
 
     @property
     def is_generated(self) -> bool:
@@ -555,9 +556,9 @@ class Notification(models.Model):
         Returns:
         - structure object if found or None if there is no related structure
         """
-        parsed_text = self.get_parsed_text()
         structure_id = None
-        if "structureID" in parsed_text:
+        parsed_text = self.get_parsed_text()
+        if parsed_text and "structureID" in parsed_text:
             structure_id = int(parsed_text["structureID"])
         if structure_id:
             return Structure.objects.get(id=structure_id)
@@ -1012,12 +1013,9 @@ class Notification(models.Model):
 
         username, avatar_url = self._gen_avatar()
         success = webhook.send_message(
-            content=content,
-            embeds=[embed],
-            username=username,
-            avatar_url=avatar_url,
+            content=content, embeds=[embed], username=username, avatar_url=avatar_url
         )
-        if success:
+        if success and not self.is_generated:
             self.is_sent = True
             self.save()
 
