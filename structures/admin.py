@@ -1,4 +1,5 @@
 import statistics
+from typing import Optional
 
 from django.conf import settings
 from django.contrib import admin
@@ -214,6 +215,7 @@ class NotificationAdmin(admin.ModelAdmin):
         "created",
         "last_updated",
         "_webhooks",
+        "_structures",
         "_is_sent",
         "_is_timer_added",
     )
@@ -230,6 +232,8 @@ class NotificationAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.prefetch_related(
             "owner__webhooks",
+            "structures",
+            "structures__eve_solar_system",
             Prefetch(
                 "structures",
                 queryset=Structure.objects.filter(webhooks__isnull=False),
@@ -258,6 +262,12 @@ class NotificationAdmin(admin.ModelAdmin):
             return format_html(
                 '<b><span style="color: orange">⚠ Not configured</span></b>'
             )
+
+    def _structures(self, obj) -> Optional[list]:
+        if obj.is_structure_related:
+            structures = [str(structure) for structure in obj.structures.all()]
+            return sorted(structures) if structures else "?"
+        return None
 
     def _is_sent(self, obj):
         value = obj.is_sent if obj.can_be_rendered else None
@@ -650,8 +660,21 @@ class StructureTagAdmin(admin.ModelAdmin):
         return False if obj and not obj.is_user_managed else True
 
 
-class StructureAdminInline(admin.TabularInline):
+class StructureServicesAdminInline(admin.TabularInline):
     model = StructureService
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class StructureNotificationsAdminInline(admin.TabularInline):
+    model = Structure.notifications.through
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -928,7 +951,7 @@ class StructureAdmin(admin.ModelAdmin):
         ),
     )
     filter_horizontal = ("tags", "webhooks")
-    inlines = (StructureAdminInline,)
+    inlines = (StructureServicesAdminInline, StructureNotificationsAdminInline)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """only show custom tags in dropdown"""

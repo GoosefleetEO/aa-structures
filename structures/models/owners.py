@@ -1047,7 +1047,7 @@ class Owner(models.Model):
             # at least one type has a trailing white space
             # which we need to remove
             notif_type = notification["type"].strip()
-            obj = Notification.objects.create(
+            notif = Notification.objects.create(
                 notification_id=notification["notification_id"],
                 owner=self,
                 sender=sender,
@@ -1058,7 +1058,8 @@ class Owner(models.Model):
                 last_updated=now(),
                 created=now(),
             )
-            obj.update_related_structures()
+            if notif.is_structure_related:
+                notif.update_related_structures()
         return len(new_notifications)
 
     def _process_timers_for_notifications(self, token: Token):

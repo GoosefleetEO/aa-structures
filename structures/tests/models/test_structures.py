@@ -74,14 +74,18 @@ class TestStructure(NoSocketsTestCase):
         _, cls.owner = set_owner_character(character_id=1001)
 
     def test_str(self):
-        x = Structure.objects.get(id=1000000000001)
-        expected = "1000000000001 - Amamake - Test Structure Alpha"
-        self.assertEqual(str(x), expected)
+        obj = Structure.objects.get(id=1000000000001)
+        expected = "Amamake - Test Structure Alpha"
+        self.assertEqual(str(obj), expected)
 
     def test_repr(self):
-        x = Structure.objects.get(id=1000000000001)
-        expected = "Structure(id=1000000000001, " "name='Test Structure Alpha')"
-        self.assertEqual(repr(x), expected)
+        obj = Structure.objects.get(id=1000000000001)
+        expected = (
+            "Structure(id=1000000000001, "
+            "eve_solar_system='Amamake', "
+            "name='Test Structure Alpha')"
+        )
+        self.assertEqual(repr(obj), expected)
 
     def test_is_full_power(self):
         structure = Structure.objects.get(id=1000000000001)
@@ -174,12 +178,10 @@ class TestStructure(NoSocketsTestCase):
 
     def test_structure_service_str(self):
         structure = Structure.objects.get(id=1000000000001)
-        x = StructureService(
+        obj = StructureService(
             structure=structure, name="Dummy", state=StructureService.State.ONLINE
         )
-        self.assertEqual(
-            str(x), "1000000000001 - Amamake - Test Structure Alpha - Dummy"
-        )
+        self.assertEqual(str(obj), "Amamake - Test Structure Alpha - Dummy")
 
     def test_extract_name_from_esi_respose(self):
         expected = "Alpha"
@@ -815,7 +817,7 @@ class TestStructureService(NoSocketsTestCase):
     def test_str(self):
         structure = Structure.objects.get(id=1000000000001)
         obj = StructureService.objects.get(structure=structure, name="Clone Bay")
-        expected = "1000000000001 - Amamake - Test Structure Alpha - Clone Bay"
+        expected = "Amamake - Test Structure Alpha - Clone Bay"
         self.assertEqual(str(obj), expected)
 
     def test_repr(self):

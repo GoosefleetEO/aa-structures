@@ -345,11 +345,13 @@ class Structure(models.Model):
     objects = StructureManager()
 
     def __str__(self) -> str:
-        return f"{self.id} - {self.eve_solar_system} - {self.name}"
+        return f"{self.eve_solar_system} - {self.name}"
 
     def __repr__(self) -> str:
-        return "{}(id={}, name='{}')".format(
-            self.__class__.__name__, self.id, self.name
+        return (
+            f"{self.__class__.__name__}(id={self.id}, "
+            f"eve_solar_system='{self.eve_solar_system}', "
+            f"name='{self.name}')"
         )
 
     def save(self, *args, **kwargs):

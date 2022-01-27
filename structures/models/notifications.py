@@ -222,6 +222,7 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def relevant_for_timerboard(cls) -> set:
+        """Notification types that can create timers."""
         return {
             cls.STRUCTURE_LOST_SHIELD,
             cls.STRUCTURE_LOST_ARMOR,
@@ -233,6 +234,7 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def relevant_for_alliance_level(cls) -> set:
+        """Notification types that requre the alliance level flag."""
         return {
             # sov
             cls.SOV_ENTOSIS_CAPTURE_STARTED,
@@ -255,6 +257,7 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def relevant_for_moonmining(cls) -> set:
+        """Notification types about moon mining."""
         return {
             cls.MOONMINING_EXTRACTION_STARTED,
             cls.MOONMINING_EXTRACTION_CANCELLED,
@@ -264,7 +267,39 @@ class NotificationType(models.TextChoices):
         }
 
     @classproperty
+    def structure_related(cls) -> set:
+        """Notification types that are related to a structure."""
+        return {
+            cls.STRUCTURE_ONLINE,
+            cls.STRUCTURE_FUEL_ALERT,
+            cls.STRUCTURE_JUMP_FUEL_ALERT,
+            cls.STRUCTURE_REFUELED_EXTRA,
+            cls.STRUCTURE_SERVICES_OFFLINE,
+            cls.STRUCTURE_WENT_LOW_POWER,
+            cls.STRUCTURE_WENT_HIGH_POWER,
+            cls.STRUCTURE_UNANCHORING,
+            cls.STRUCTURE_UNDER_ATTACK,
+            cls.STRUCTURE_LOST_SHIELD,
+            cls.STRUCTURE_LOST_ARMOR,
+            cls.STRUCTURE_DESTROYED,
+            cls.OWNERSHIP_TRANSFERRED,
+            cls.STRUCTURE_ANCHORING,
+            cls.MOONMINING_EXTRACTION_STARTED,
+            cls.MOONMINING_EXTRACTION_FINISHED,
+            cls.MOONMINING_AUTOMATIC_FRACTURE,
+            cls.MOONMINING_EXTRACTION_CANCELLED,
+            cls.MOONMINING_LASER_FIRED,
+            cls.STRUCTURE_REINFORCE_CHANGED,
+            cls.ORBITAL_ATTACKED,
+            cls.ORBITAL_REINFORCED,
+            cls.TOWER_ALERT_MSG,
+            cls.TOWER_RESOURCE_ALERT_MSG,
+            cls.TOWER_REFUELED_EXTRA,
+        }
+
+    @classproperty
     def relevant_for_forwarding(cls) -> set:
+        """Notification types that are forwarded to Discord."""
         my_set = set(cls.values_enabled)
         # if STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS:
         #     my_set.discard(cls.STRUCTURE_FUEL_ALERT)
@@ -506,6 +541,11 @@ class Notification(models.Model):
     def can_have_timer(self) -> bool:
         """Whether this notification can have a timer."""
         return self.notif_type in NotificationType.relevant_for_timerboard
+
+    @property
+    def is_structure_related(self) -> bool:
+        """Wheater this notification related to a structure."""
+        return self.notif_type in NotificationType.structure_related
 
     # @classmethod
     # def get_all_types(cls) -> Set[int]:
@@ -1002,20 +1042,9 @@ class Notification(models.Model):
         """
         if self.filter_for_npc_attacks() or self.filter_for_alliance_level():
             return None
-        if self.is_temporary:
-            structures_qs = self.calc_related_structures()
-        else:
-            if not self.structures.exists():
-                self.update_related_structures()
-            structures_qs = self.structures
-        if structures_qs.filter(webhooks__isnull=False).count() == 1:
-            webhooks_qs = structures_qs.first().webhooks.filter(
-                notification_types__contains=self.notif_type, is_active=True
-            )
-        else:
-            webhooks_qs = self.owner.webhooks.filter(
-                notification_types__contains=self.notif_type, is_active=True
-            )
+        if self.is_structure_related and not self.is_temporary:
+            self.update_related_structures()
+        webhooks_qs = self.relevant_webhooks()
         if not webhooks_qs.exists():
             return None
         if ping_type_override:
@@ -1026,6 +1055,22 @@ class Notification(models.Model):
         for webhook in webhooks_qs:
             success &= self.send_to_webhook(webhook)
         return success
+
+    def relevant_webhooks(self) -> models.QuerySet:
+        """Determine relevant webhooks matching this notification type."""
+        if not self.is_structure_related:
+            structures_qs = None
+        else:
+            structures_qs = self.calc_related_structures()
+        if structures_qs and structures_qs.filter(webhooks__isnull=False).count() == 1:
+            webhooks_qs = structures_qs.first().webhooks.filter(
+                notification_types__contains=self.notif_type, is_active=True
+            )
+        else:
+            webhooks_qs = self.owner.webhooks.filter(
+                notification_types__contains=self.notif_type, is_active=True
+            )
+        return webhooks_qs
 
     def send_to_webhook(self, webhook: Webhook) -> bool:
         """Sends this notification to the configured webhook.

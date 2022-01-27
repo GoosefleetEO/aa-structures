@@ -291,6 +291,108 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
             )
 
 
+class TestNotificationRelevantWebhooks(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities()
+        user, _ = create_user_from_evecharacter(
+            1001, permissions=["structures.add_structure_owner"]
+        )
+        cls.owner = create_owner_from_user(user=user)
+        Webhook.objects.all().delete()
+
+    def test_should_return_owner_webhooks_for_non_structure_notif(self):
+        # given
+        webhook = create_webhook(
+            notification_types=[NotificationType.CHAR_APP_ACCEPT_MSG]
+        )
+        self.owner.webhooks.add(webhook)
+        notif = create_notification(
+            owner=self.owner, notif_type=NotificationType.CHAR_APP_ACCEPT_MSG
+        )
+        # when
+        result_qs = notif.relevant_webhooks()
+        # then
+        self.assertQuerysetEqual(result_qs, Webhook.objects.filter(pk=webhook.pk))
+
+    def test_should_return_no_webhooks(self):
+        # given
+        notif = create_notification(
+            owner=self.owner, notif_type=NotificationType.CHAR_APP_ACCEPT_MSG
+        )
+        # when
+        result_qs = notif.relevant_webhooks()
+        # then
+        self.assertQuerysetEqual(result_qs, Webhook.objects.none())
+
+    def test_should_return_owner_webhooks_for_structure_notif(self):
+        # given
+        webhook_owner = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        self.owner.webhooks.add(webhook_owner)
+        structure = create_structure(owner=self.owner)
+        notif = create_notification(
+            owner=self.owner,
+            notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
+            text=f"allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: {structure.eve_solar_system_id}\nstructureID: &id001 {structure.id}\nstructureShowInfoData:\n- showinfo\n- {structure.eve_type_id}\n- *id001\nstructureTypeID: {structure.eve_type_id}\n",
+        )
+        # when
+        result_qs = notif.relevant_webhooks()
+        # then
+        self.assertQuerysetEqual(result_qs, Webhook.objects.filter(pk=webhook_owner.pk))
+
+    def test_should_return_structure_webhooks_for_structure_notif(self):
+        # given
+        webhook_owner = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        self.owner.webhooks.add(webhook_owner)
+        structure = create_structure(owner=self.owner)
+        webhook_structure = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        structure.webhooks.add(webhook_structure)
+        notif = create_notification(
+            owner=self.owner,
+            notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
+            text=f"allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: {structure.eve_solar_system_id}\nstructureID: &id001 {structure.id}\nstructureShowInfoData:\n- showinfo\n- {structure.eve_type_id}\n- *id001\nstructureTypeID: {structure.eve_type_id}\n",
+        )
+        # when
+        result_qs = notif.relevant_webhooks()
+        # then
+        self.assertQuerysetEqual(
+            result_qs, Webhook.objects.filter(pk=webhook_structure.pk)
+        )
+
+    def test_should_return_owner_webhooks_when_notif_has_multiple_structures(self):
+        # given
+        webhook_owner = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        self.owner.webhooks.add(webhook_owner)
+        structure_1 = create_structure(owner=self.owner)
+        webhook_structure = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        structure_1.webhooks.add(webhook_structure)
+        structure_2 = create_structure(owner=self.owner)
+        webhook_structure = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        structure_2.webhooks.add(webhook_structure)
+        notif = create_notification(
+            owner=self.owner,
+            notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
+            text=f"allStructureInfo:\n- - {structure_1.id}\n  - {structure_1}\n  - 35825\n- - {structure_2.id}\n  - {structure_2}\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 255\n",
+        )
+        # when
+        result_qs = notif.relevant_webhooks()
+        # then
+        self.assertQuerysetEqual(result_qs, Webhook.objects.filter(pk=webhook_owner.pk))
+
+
 class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
