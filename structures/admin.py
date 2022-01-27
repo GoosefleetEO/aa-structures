@@ -673,19 +673,6 @@ class StructureServicesAdminInline(admin.TabularInline):
         return False
 
 
-class StructureNotificationsAdminInline(admin.TabularInline):
-    model = Structure.notifications.through
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 class OwnerCorporationsFilter(admin.SimpleListFilter):
     """Custom filter to filter on corporations from owners only"""
 
@@ -951,7 +938,7 @@ class StructureAdmin(admin.ModelAdmin):
         ),
     )
     filter_horizontal = ("tags", "webhooks")
-    inlines = (StructureServicesAdminInline, StructureNotificationsAdminInline)
+    inlines = (StructureServicesAdminInline,)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """only show custom tags in dropdown"""

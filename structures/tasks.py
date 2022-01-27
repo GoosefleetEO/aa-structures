@@ -17,6 +17,7 @@ from .models import (
     FuelAlertConfig,
     JumpFuelAlertConfig,
     Notification,
+    NotificationType,
     Owner,
     Webhook,
 )
@@ -124,19 +125,32 @@ def process_notifications_for_owner(owner_pk: int, user_pk: int = None):
         return
     chain(
         fetch_notification_for_owner.si(owner_pk=owner_pk, user_pk=user_pk),
+        update_existing_notifications.si(owner_pk=owner_pk),
         send_new_notifications_for_owner.si(owner_pk=owner_pk),
     ).apply_async(priority=TASK_PRIO_HIGH)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def fetch_notification_for_owner(owner_pk: int, user_pk: int = None):
+    """Fetch notifications from ESI."""
     owner = Owner.objects.get(pk=owner_pk)
     owner.fetch_notifications_esi(_get_user(user_pk))
-    owner.send_new_notifications()
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def update_existing_notifications(owner_pk: int):
+    """Update structure relation for existing notifications if needed."""
+    owner = Owner.objects.get(pk=owner_pk)
+    for notif in owner.notifications.filter(
+        notif_type__in=NotificationType.structure_related,
+        structures__isnull=True,
+    ):
+        notif.update_related_structures()
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_new_notifications_for_owner(owner_pk: int):
+    """Send new notifications to Discord."""
     owner = Owner.objects.get(pk=owner_pk)
     owner.send_new_notifications()
     send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))

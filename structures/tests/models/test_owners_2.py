@@ -219,14 +219,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             x["notification_id"] for x in entities_testdata["Notification"]
         }
         self.assertSetEqual(notif_ids_current, notif_ids_testdata)
-        for notif in self.owner.notifications.filter(
-            notif_type__in=[NotificationType.structure_related]
-        ):
-            structure_ids = notif.structures.values_list("id", flat=True)
-            self.assertTrue(
-                1000000000001 in set(structure_ids)
-                or 1000000000002 in set(structure_ids)
-            )
 
         if has_auth_timers:
             # should have added timers

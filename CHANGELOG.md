@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Added
+
+- Option to define webhooks for a structure, which will then be used instead of the owner's webhooks for that structure
+- Shows related structure (if any) for each notification on admin page
+
 ### Changed
 
 - Internal rework of models API to prepare for later full migration to eveuniverse models

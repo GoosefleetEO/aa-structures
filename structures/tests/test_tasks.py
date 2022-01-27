@@ -11,7 +11,7 @@ from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 from structures.models.notifications import Notification
 
 from .. import tasks
-from ..models import FuelAlertConfig, Owner, Webhook
+from ..models import FuelAlertConfig, NotificationType, Owner, Webhook
 from .testdata import create_structures, load_notification_entities, set_owner_character
 
 MODULE_PATH = "structures.tasks"
@@ -241,15 +241,25 @@ class TestProcessNotificationsForOwner(TestCase):
         # then
         self.assertTrue(mock_fetch_notifications_esi.called)
         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
+        for notif in self.owner.notifications.filter(
+            notif_type__in=[NotificationType.structure_related]
+        ):
+            structure_ids = notif.structures.values_list("id", flat=True)
+            self.assertTrue(
+                1000000000001 in set(structure_ids)
+                or 1000000000002 in set(structure_ids)
+            )
 
     @patch(MODULE_PATH + ".send_messages_for_webhook")
     @patch(MODULE_PATH + ".Owner.fetch_notifications_esi")
     def test_dont_sent_if_queue_is_empty(
         self, mock_fetch_notifications_esi, mock_send_messages_for_webhook
     ):
+        # given
         self.owner.webhooks.first().clear_queue()
-
+        # when
         tasks.process_notifications_for_owner(owner_pk=self.owner.pk)
+        # then
         self.assertTrue(mock_fetch_notifications_esi.called)
         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 0)
 

@@ -1042,8 +1042,6 @@ class Notification(models.Model):
         """
         if self.filter_for_npc_attacks() or self.filter_for_alliance_level():
             return None
-        if self.is_structure_related and not self.is_temporary:
-            self.update_related_structures()
         webhooks_qs = self.relevant_webhooks()
         if not webhooks_qs.exists():
             return None
