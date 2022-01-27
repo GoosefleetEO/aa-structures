@@ -444,7 +444,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         self.assertEqual(mock_send_to_webhook.call_count, 2)
-        webhook_pks = {call.args[0].pk for call in mock_send_to_webhook.call_args_list}
+        webhook_pks = {call[0][0].pk for call in mock_send_to_webhook.call_args_list}
         self.assertSetEqual(webhook_pks, {webhook_1.pk, webhook_2.pk})
 
     @patch(MODULE_PATH + ".Notification.send_to_webhook")

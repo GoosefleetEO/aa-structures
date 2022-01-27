@@ -533,7 +533,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
         # then
         self.owner.refresh_from_db()
         notif_types_called = {
-            obj.args[0].notif_type
+            obj[0][0].notif_type
             for obj in mock_send_to_configured_webhooks.call_args_list
         }
         self.assertTrue(self.owner.is_forwarding_sync_fresh)
