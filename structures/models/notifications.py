@@ -91,7 +91,7 @@ class NotificationType(models.TextChoices):
         "Upwell structure went low power"
     )
     STRUCTURE_UNANCHORING = "StructureUnanchoring", _("Upwell structure unanchoring")
-    STRUCTURE_FUEL_ALERT = "FuelAlert", _("Upwell structure fuel alert")
+    STRUCTURE_FUEL_ALERT = "StructureFuelAlert", _("Upwell structure fuel alert")
     STRUCTURE_REFUELED_EXTRA = "StructureRefueledExtra", _("Upwell structure refueled")
     STRUCTURE_JUMP_FUEL_ALERT = "StructureJumpFuelAlert", _(
         "Upwell structure jump fuel alert"
@@ -188,11 +188,15 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def esi_notifications(cls) -> set:
-        my_set = set(cls.values)
-        my_set.discard(cls.STRUCTURE_JUMP_FUEL_ALERT)
-        my_set.discard(cls.STRUCTURE_REFUELED_EXTRA)
-        my_set.discard(cls.TOWER_REFUELED_EXTRA)
-        return my_set
+        return set(cls.values) - cls.generated_notifications
+
+    @classproperty
+    def generated_notifications(cls) -> set:
+        return {
+            cls.STRUCTURE_JUMP_FUEL_ALERT,
+            cls.STRUCTURE_REFUELED_EXTRA,
+            cls.TOWER_REFUELED_EXTRA,
+        }
 
     @classproperty
     def webhook_defaults(cls) -> list:

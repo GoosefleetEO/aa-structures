@@ -867,7 +867,7 @@
         },
         {
             "notification_id": 1000000503,
-            "type": "FuelAlert",
+            "type": "StructureFuelAlert",
             "sender_id": 2901,
             "sender_type": "corporation",
             "timestamp": "2019-08-16T16:08:00Z",
