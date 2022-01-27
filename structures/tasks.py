@@ -117,15 +117,29 @@ def fetch_all_notifications():
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def process_notifications_for_owner(owner_pk, user_pk=None):
+def process_notifications_for_owner(owner_pk: int, user_pk: int = None):
     """Fetch all notification for owner from ESI and processes them."""
     if not fetch_esi_status().is_ok:
         logger.warning("ESI currently not available. Aborting.")
-    else:
-        owner = Owner.objects.get(pk=owner_pk)
-        owner.fetch_notifications_esi(_get_user(user_pk))
-        owner.send_new_notifications()
-        send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))
+        return
+    chain(
+        fetch_notification_for_owner.si(owner_pk=owner_pk, user_pk=user_pk),
+        send_new_notifications_for_owner.si(owner_pk=owner_pk),
+    ).apply_async(priority=TASK_PRIO_HIGH)
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def fetch_notification_for_owner(owner_pk: int, user_pk: int = None):
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.fetch_notifications_esi(_get_user(user_pk))
+    owner.send_new_notifications()
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def send_new_notifications_for_owner(owner_pk: int):
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.send_new_notifications()
+    send_queued_messages_for_webhooks(owner.webhooks.filter(is_active=True))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

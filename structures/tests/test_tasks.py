@@ -214,6 +214,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
         self.assertEqual(args[0], config.pk)
 
 
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 @patch(MODULE_PATH + ".fetch_esi_status", lambda: EsiStatus(True, 100, 60))
 class TestProcessNotificationsForOwner(TestCase):
     @classmethod
