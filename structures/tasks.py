@@ -141,11 +141,16 @@ def fetch_notification_for_owner(owner_pk: int, user_pk: int = None):
 def update_existing_notifications(owner_pk: int):
     """Update structure relation for existing notifications if needed."""
     owner = Owner.objects.get(pk=owner_pk)
-    for notif in owner.notifications.filter(
-        notif_type__in=NotificationType.structure_related,
-        structures__isnull=True,
-    ):
-        notif.update_related_structures()
+    notif_need_update_qs = owner.notifications.filter(
+        notif_type__in=NotificationType.structure_related, structures__isnull=True
+    )
+    notif_need_update_count = notif_need_update_qs.count()
+    if notif_need_update_count > 0:
+        for notif in notif_need_update_qs:
+            notif.update_related_structures()
+        logger.info(
+            "Updated structure relation for %d notifications", notif_need_update_count
+        )
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -171,12 +176,16 @@ def send_jump_fuel_notifications_for_config(config_pk: int):
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_notifications(notification_pks: list) -> None:
     """Send notifications defined by list of pks (used for admin action)."""
-    notifications = Notification.objects.filter(pk__in=notification_pks)
-    if notifications:
-        logger.info("Trying to send %s notifications to webhooks...", notification_pks)
-        for notif in notifications:
-            notif.send_to_configured_webhooks()
+    notifications_qs = Notification.objects.filter(pk__in=notification_pks)
+    notifs_sent = 0
+    if notifications_qs.exists():
+        for notif in notifications_qs:
+            if notif.send_to_configured_webhooks():
+                notifs_sent += 1
         send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
+    logger.info(
+        "Sent %d of %d notifications to webhooks", notifs_sent, len(notification_pks)
+    )
 
 
 def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):

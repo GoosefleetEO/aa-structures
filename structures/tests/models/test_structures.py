@@ -73,17 +73,51 @@ class TestStructure(NoSocketsTestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
 
-    def test_str(self):
+    def test_str_upwell(self):
         obj = Structure.objects.get(id=1000000000001)
         expected = "Amamake - Test Structure Alpha"
         self.assertEqual(str(obj), expected)
 
-    def test_repr(self):
+    def test_str_poco(self):
+        obj = Structure.objects.get(id=1200000000003)
+        expected = "Amamake V - Customs Office (Amamake V)"
+        self.assertEqual(str(obj), expected)
+
+    def test_str_starbase(self):
+        obj = Structure.objects.get(id=1300000000001)
+        expected = "Amamake II - Moon 1 - Home Sweat Home"
+        self.assertEqual(str(obj), expected)
+
+    def test_repr_upwell(self):
         obj = Structure.objects.get(id=1000000000001)
         expected = (
             "Structure(id=1000000000001, "
             "eve_solar_system='Amamake', "
+            "eve_planet='', "
+            "eve_moon='', "
             "name='Test Structure Alpha')"
+        )
+        self.assertEqual(repr(obj), expected)
+
+    def test_repr_poco(self):
+        obj = Structure.objects.get(id=1200000000003)
+        expected = (
+            "Structure(id=1200000000003, "
+            "eve_solar_system='Amamake', "
+            "eve_planet='Amamake V', "
+            "eve_moon='', "
+            "name='Customs Office (Amamake V)')"
+        )
+        self.assertEqual(repr(obj), expected)
+
+    def test_repr_starbase(self):
+        obj = Structure.objects.get(id=1300000000001)
+        expected = (
+            "Structure(id=1300000000001, "
+            "eve_solar_system='Amamake', "
+            "eve_planet='', "
+            "eve_moon='Amamake II - Moon 1', "
+            "name='Home Sweat Home')"
         )
         self.assertEqual(repr(obj), expected)
 

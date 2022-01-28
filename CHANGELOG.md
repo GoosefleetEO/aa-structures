@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Internal rework of models API to prepare for later full migration to eveuniverse models
+- Removed localization for names of ESI objects, e.g. solar systems
 
 ## [1.20.5] - 2022-01-27
 

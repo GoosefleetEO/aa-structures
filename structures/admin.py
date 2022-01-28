@@ -234,6 +234,8 @@ class NotificationAdmin(admin.ModelAdmin):
             "owner__webhooks",
             "structures",
             "structures__eve_solar_system",
+            "structures__eve_type",
+            "structures__eve_type__eve_group",
             Prefetch(
                 "structures",
                 queryset=Structure.objects.filter(webhooks__isnull=False),
@@ -245,8 +247,10 @@ class NotificationAdmin(admin.ModelAdmin):
         if not obj.can_be_rendered:
             return format_html("<i>N/A</i>")
         webhooks_qs = obj.owner.webhooks.all()
-        for structure in obj.structures_with_webhooks:
-            webhooks_qs |= structure.webhooks.all()
+        if obj.structures_with_webhooks:
+            webhooks_qs = Webhook.objects.none()
+            for structure in obj.structures_with_webhooks:
+                webhooks_qs |= structure.webhooks.all()
         names = sorted(
             list(
                 {
@@ -309,18 +313,28 @@ class NotificationAdmin(admin.ModelAdmin):
 
     @admin.display(description="Send selected notifications to configured webhooks")
     def send_to_configured_webhooks(self, request, queryset):
-        obj_pks = [obj.pk for obj in queryset if obj.can_be_rendered]
-        ignored_count = len([obj for obj in queryset if not obj.can_be_rendered])
-        tasks.send_notifications.delay(obj_pks)
-        message = (
-            f"Initiated sending of {len(obj_pks)} notification(s) to "
-            f"configured webhooks."
-        )
+        obj_pks = [
+            obj.pk
+            for obj in queryset
+            if obj.can_be_rendered and obj.relevant_webhooks().exists()
+        ]
+        total_count = queryset.count()
+        ignored_count = total_count - len(obj_pks)
+        if obj_pks:
+            tasks.send_notifications.delay(obj_pks)
+            message = (
+                f"Initiated sending of {len(obj_pks)} notification(s) to "
+                f"configured webhooks."
+            )
+            level = "SUCCESS"
+        else:
+            message = ""
+            level = "WARNING"
         if ignored_count:
             message += (
                 f" Ignored {ignored_count} notification(s), which can not be rendered."
             )
-        self.message_user(request, message)
+        self.message_user(request, message, level=level)
 
     @admin.display(description="Process selected notifications for timerboard")
     def process_for_timerboard(self, request, queryset):
@@ -971,12 +985,25 @@ class WebhookAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.prefetch_related("ping_groups", "owner_set", "owner_set__corporation")
+        return qs.prefetch_related(
+            "ping_groups",
+            "owner_set",
+            "owner_set__corporation",
+            Prefetch(
+                "structures",
+                queryset=Structure.objects.select_related(
+                    "eve_solar_system",
+                    "eve_type",
+                    "eve_type__eve_group",
+                    "owner",
+                    "owner__corporation",
+                ),
+            ),
+        )
 
+    @admin.display(boolean=True)
     def _default_pings(self, obj):
         return obj.has_default_pings_enabled
-
-    _default_pings.boolean = True
 
     def _ping_groups(self, obj):
         ping_groups = [ping_group.name for ping_group in obj.ping_groups.all()]
@@ -984,15 +1011,19 @@ class WebhookAdmin(admin.ModelAdmin):
             return None
         return sorted(ping_groups)
 
-    @admin.display(description="Enabled for Owners")
+    @admin.display(description="Enabled for Owners/Structures")
     def _owners(self, obj):
-        owners = [str(owner) for owner in obj.owner_set.all()]
-        if not owners:
+        configurations = [str(owner) for owner in obj.owner_set.all()]
+        configurations += [
+            f"{structure.owner}: {structure}" for structure in obj.structures.all()
+        ]
+        if not configurations:
             return format_html(
                 '<b><span style="color: orange;">'
-                "⚠ Please add this webhook to an owner to enable it.</span></b>"
+                "⚠ Please add this webhook to an owner or structure to enable it."
+                "</span></b>"
             )
-        return sorted(owners)
+        return sorted(configurations)
 
     def _is_default(self, obj):
         value = True if obj.is_default else None

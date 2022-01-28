@@ -593,7 +593,7 @@ class Notification(models.Model):
             and not self.owner.is_alliance_main
         )
 
-    def update_related_structures(self):
+    def update_related_structures(self) -> None:
         """Update related structure for this notification."""
         structures_qs = self.calc_related_structures()
         self.structures.clear()

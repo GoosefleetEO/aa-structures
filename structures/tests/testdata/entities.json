@@ -697,7 +697,7 @@
         },
         {
             "id": 1300000000001,
-            "name": "Amamake II - Moon 1",
+            "name": "Home Sweat Home",
             "state": 22,
             "eve_solar_system_id": 30002537,
             "eve_type_id": 16213,
@@ -706,7 +706,7 @@
         },
         {
             "id": 1300000000002,
-            "name": "Amamake II - Moon 2",
+            "name": "Bat cave",
             "state": 21,
             "eve_solar_system_id": 30002537,
             "eve_type_id": 16214,
@@ -715,7 +715,7 @@
         },
         {
             "id": 1300000000003,
-            "name": "Amamake II - Moon 2",
+            "name": "Panic Room",
             "state": 22,
             "eve_solar_system_id": 30000474,
             "eve_type_id": 20062,

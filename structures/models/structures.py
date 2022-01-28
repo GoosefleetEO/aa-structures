@@ -334,6 +334,7 @@ class Structure(models.Model):
         "Webhook",
         default=None,
         blank=True,
+        related_name="structures",
         help_text=(
             "Webhooks for sending notifications to. "
             "If any webhook is enabled, these will be used instead of the webhooks "
@@ -345,12 +346,33 @@ class Structure(models.Model):
     objects = StructureManager()
 
     def __str__(self) -> str:
-        return f"{self.eve_solar_system} - {self.name}"
+        if self.is_upwell_structure:
+            try:
+                location_name = self.eve_solar_system.name
+            except AttributeError:
+                location_name = "?"
+        else:
+            location_name = self.location_name
+        return f"{location_name} - {self.name}"
 
     def __repr__(self) -> str:
+        try:
+            eve_solar_system_name = self.eve_solar_system.name
+        except AttributeError:
+            eve_solar_system_name = ""
+        try:
+            eve_planet_name = self.eve_planet.name
+        except AttributeError:
+            eve_planet_name = ""
+        try:
+            eve_moon_name = self.eve_moon.name
+        except AttributeError:
+            eve_moon_name = ""
         return (
             f"{self.__class__.__name__}(id={self.id}, "
-            f"eve_solar_system='{self.eve_solar_system}', "
+            f"eve_solar_system='{eve_solar_system_name}', "
+            f"eve_planet='{eve_planet_name}', "
+            f"eve_moon='{eve_moon_name}', "
             f"name='{self.name}')"
         )
 
@@ -476,11 +498,18 @@ class Structure(models.Model):
     @cached_property
     def location_name(self) -> str:
         """Name of this structures's location."""
-        if self.eve_moon:
+        try:
             return self.eve_moon.name
-        if self.eve_planet:
+        except AttributeError:
+            pass
+        try:
             return self.eve_planet.name
-        return self.eve_solar_system.name
+        except AttributeError:
+            pass
+        try:
+            return self.eve_solar_system.name
+        except AttributeError:
+            return "?"
 
     @cached_property
     def structure_fuel_quantity(self) -> Optional[int]:
