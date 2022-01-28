@@ -987,8 +987,8 @@ class WebhookAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.prefetch_related(
             "ping_groups",
-            "owner_set",
-            "owner_set__corporation",
+            "owners",
+            "owners__corporation",
             Prefetch(
                 "structures",
                 queryset=Structure.objects.select_related(
@@ -1013,7 +1013,7 @@ class WebhookAdmin(admin.ModelAdmin):
 
     @admin.display(description="Enabled for Owners/Structures")
     def _owners(self, obj):
-        configurations = [str(owner) for owner in obj.owner_set.all()]
+        configurations = [str(owner) for owner in obj.owners.all()]
         configurations += [
             f"{structure.owner}: {structure}" for structure in obj.structures.all()
         ]

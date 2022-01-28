@@ -180,6 +180,7 @@ class Owner(models.Model):
         Group,
         default=None,
         blank=True,
+        related_name="+",
         help_text="Groups to be pinged for each notification. ",
     )
     structures_last_update_at = models.DateTimeField(
@@ -192,6 +193,7 @@ class Owner(models.Model):
         "Webhook",
         default=None,
         blank=True,
+        related_name="owners",
         help_text="Notifications are sent to these webhooks. ",
     )
 

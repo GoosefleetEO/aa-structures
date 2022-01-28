@@ -322,6 +322,7 @@ class Structure(models.Model):
         StructureTag,
         default=None,
         blank=True,
+        related_name="structures",
         help_text="List of tags for this structure. ",
     )
     unanchors_at = models.DateTimeField(
