@@ -615,7 +615,18 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
         # when
         with patch(MODULE_PATH + ".Notification.calc_related_structures") as m:
             m.return_value = Structure.objects.filter(id=structure.id)
-            notif.update_related_structures()
+            result = notif.update_related_structures()
         # then
         structure_ids = notif.structures.values_list("id", flat=True)
         self.assertSetEqual(set(structure_ids), {structure.id})
+        self.assertTrue(result)
+
+    def test_should_not_update_related_structure_when_not_found(self):
+        # given
+        notif = create_notification(owner=self.owner)
+        # when
+        with patch(MODULE_PATH + ".Notification.calc_related_structures") as m:
+            m.return_value = Structure.objects.none()
+            result = notif.update_related_structures()
+        # then
+        self.assertFalse(result)

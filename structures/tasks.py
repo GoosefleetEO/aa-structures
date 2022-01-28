@@ -146,11 +146,14 @@ def update_existing_notifications(owner_pk: int):
     )
     notif_need_update_count = notif_need_update_qs.count()
     if notif_need_update_count > 0:
+        updated_count = 0
         for notif in notif_need_update_qs:
-            notif.update_related_structures()
+            if notif.update_related_structures():
+                updated_count += 1
         logger.info(
-            "%s: Updated structure relation for %d notifications",
+            "%s: Updated structure relation for %d of %d relevant notifications",
             owner,
+            updated_count,
             notif_need_update_count,
         )
 

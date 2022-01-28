@@ -272,7 +272,6 @@ class NotificationAdmin(admin.ModelAdmin):
         if obj.is_structure_related:
             structures = [str(structure) for structure in obj.structures.all()]
             return lines_sorted_html(structures) if structures else "?"
-
         return None
 
     def _is_sent(self, obj):
@@ -415,7 +414,8 @@ class OwnerAdmin(admin.ModelAdmin):
         return obj.has_default_pings_enabled
 
     def _ping_groups(self, obj):
-        return sorted([ping_group.name for ping_group in obj.ping_groups.all()])
+        ping_groups = [ping_group.name for ping_group in obj.ping_groups.all()]
+        return lines_sorted_html(ping_groups) if ping_groups else None
 
     @admin.display(ordering="corporation__corporation_name")
     def _corporation(self, obj):
@@ -768,6 +768,7 @@ class StructureAdmin(admin.ModelAdmin):
         "eve_moon",
     )
     search_fields = [
+        "id",
         "name",
         "owner__corporation__corporation_name",
         "eve_solar_system__name",
@@ -1009,9 +1010,7 @@ class WebhookAdmin(admin.ModelAdmin):
 
     def _ping_groups(self, obj):
         ping_groups = [ping_group.name for ping_group in obj.ping_groups.all()]
-        if not ping_groups:
-            return None
-        return sorted(ping_groups)
+        return lines_sorted_html(ping_groups) if ping_groups else None
 
     @admin.display(description="Enabled for Owners/Structures")
     def _owners(self, obj):

@@ -593,13 +593,18 @@ class Notification(models.Model):
             and not self.owner.is_alliance_main
         )
 
-    def update_related_structures(self) -> None:
-        """Update related structure for this notification."""
+    def update_related_structures(self) -> bool:
+        """Update related structure for this notification.
+
+        Returns True if structures where updated, else False.
+        """
         structures_qs = self.calc_related_structures()
         self.structures.clear()
         if structures_qs.exists():
             objs = [obj for obj in structures_qs.all()]
             self.structures.add(*objs)
+            return True
+        return False
 
     def calc_related_structures(self) -> models.QuerySet[Structure]:
         """Identify structures this notification is related to.
