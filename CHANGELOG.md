@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.21.0] - 2022-01-28
+
 ### Added
 
 - Ability to also define webhooks for a structure, which will then be used **instead** of the owner's webhooks for notifications related to that structure
