@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Option to define webhooks for a structure, which will then be used instead of the owner's webhooks for that structure
-- Shows related structure (if any) for each notification on admin page
+- Ability to also define webhooks for a structure, which will then be used **instead** of the owner's webhooks for notifications related to that structure
+- Show structures a notificaiton is related to (if any) on admin page
 
 ### Changed
 
