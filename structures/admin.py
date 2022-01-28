@@ -32,9 +32,9 @@ from .models import (
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
-def list_sorted_html(items: list) -> str:
+def lines_sorted_html(items: list) -> str:
     """Format list into HTML with one item per line."""
-    return format_html("<br>".join(sorted(items)))
+    return format_html("<br>".join(sorted(items, key=str.casefold)))
 
 
 class BaseFuelAlertAdmin(admin.ModelAdmin):
@@ -255,25 +255,23 @@ class NotificationAdmin(admin.ModelAdmin):
             webhooks_qs = Webhook.objects.none()
             for structure in obj.structures_with_webhooks:
                 webhooks_qs |= structure.webhooks.all()
-        names = sorted(
-            list(
-                {
-                    webhook.name
-                    for webhook in webhooks_qs
-                    if obj.notif_type in webhook.notification_types
-                }
-            )
+        names = list(
+            {
+                webhook.name
+                for webhook in webhooks_qs
+                if obj.notif_type in webhook.notification_types
+            }
         )
         if not names:
             return format_html(
                 '<b><span style="color: orange">⚠ Not configured</span></b>'
             )
-        return list_sorted_html(names)
+        return lines_sorted_html(names)
 
     def _structures(self, obj) -> Optional[list]:
         if obj.is_structure_related:
             structures = [str(structure) for structure in obj.structures.all()]
-            return list_sorted_html(structures) if structures else "?"
+            return lines_sorted_html(structures) if structures else "?"
 
         return None
 
@@ -430,9 +428,9 @@ class OwnerAdmin(admin.ModelAdmin):
         return None
 
     def _webhooks(self, obj):
-        names = sorted([webhook.name for webhook in obj.webhooks.all()])
+        names = [webhook.name for webhook in obj.webhooks.all()]
         if names:
-            return list_sorted_html(names)
+            return lines_sorted_html(names)
         return format_html(
             '<span style="color: red">⚠ Notifications can not be sent, '
             "because there is no webhook configured for this owner.</span>"
@@ -843,8 +841,8 @@ class StructureAdmin(admin.ModelAdmin):
         return sorted([tag.name for tag in structure.tags.all()])
 
     def _webhooks(self, obj):
-        names = sorted([webhook.name for webhook in obj.webhooks.all()])
-        return names if names else None
+        names = [webhook.name for webhook in obj.webhooks.all()]
+        return lines_sorted_html(names) if names else None
 
     @admin.display(description="Add default tags to selected structures")
     def add_default_tags(self, request, queryset):
@@ -1027,7 +1025,7 @@ class WebhookAdmin(admin.ModelAdmin):
                 "⚠ Please add this webhook to an owner or structure to enable it."
                 "</span></b>"
             )
-        return list_sorted_html(configurations)
+        return lines_sorted_html(configurations)
 
     def _is_default(self, obj):
         value = True if obj.is_default else None
