@@ -36,8 +36,8 @@ def update_all_structures():
     """
     if not fetch_esi_status().is_ok:
         logger.warning("ESI currently not available. Aborting.")
-    else:
-        chain(update_sov_map.si(), update_structures.si()).delay()
+        return
+    chain(update_sov_map.si(), update_structures.si()).delay()
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -149,7 +149,9 @@ def update_existing_notifications(owner_pk: int):
         for notif in notif_need_update_qs:
             notif.update_related_structures()
         logger.info(
-            "Updated structure relation for %d notifications", notif_need_update_count
+            "%s: Updated structure relation for %d notifications",
+            owner,
+            notif_need_update_count,
         )
 
 

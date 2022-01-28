@@ -32,6 +32,11 @@ from .models import (
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
+def list_sorted_html(items: list) -> str:
+    """Format list into HTML with one item per line."""
+    return format_html("<br>".join(sorted(items)))
+
+
 class BaseFuelAlertAdmin(admin.ModelAdmin):
     list_display = ("config", "_owner", "structure")
     list_select_related = (
@@ -213,7 +218,6 @@ class NotificationAdmin(admin.ModelAdmin):
         "notif_type",
         "timestamp",
         "created",
-        "last_updated",
         "_webhooks",
         "_structures",
         "_is_sent",
@@ -260,17 +264,17 @@ class NotificationAdmin(admin.ModelAdmin):
                 }
             )
         )
-        if names:
-            return ", ".join(names)
-        else:
+        if not names:
             return format_html(
                 '<b><span style="color: orange">⚠ Not configured</span></b>'
             )
+        return list_sorted_html(names)
 
     def _structures(self, obj) -> Optional[list]:
         if obj.is_structure_related:
             structures = [str(structure) for structure in obj.structures.all()]
-            return sorted(structures) if structures else "?"
+            return list_sorted_html(structures) if structures else "?"
+
         return None
 
     def _is_sent(self, obj):
@@ -428,7 +432,7 @@ class OwnerAdmin(admin.ModelAdmin):
     def _webhooks(self, obj):
         names = sorted([webhook.name for webhook in obj.webhooks.all()])
         if names:
-            return names
+            return list_sorted_html(names)
         return format_html(
             '<span style="color: red">⚠ Notifications can not be sent, '
             "because there is no webhook configured for this owner.</span>"
@@ -1023,7 +1027,7 @@ class WebhookAdmin(admin.ModelAdmin):
                 "⚠ Please add this webhook to an owner or structure to enable it."
                 "</span></b>"
             )
-        return sorted(configurations)
+        return list_sorted_html(configurations)
 
     def _is_default(self, obj):
         value = True if obj.is_default else None

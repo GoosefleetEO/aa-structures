@@ -258,8 +258,8 @@ class TestOwnerAdmin(TestCase):
 
     def test_webhooks(self):
         self.obj.webhooks.add(Webhook.objects.get(name="Test Webhook 2"))
-        self.assertListEqual(
-            self.modeladmin._webhooks(self.obj), ["Test Webhook 1", "Test Webhook 2"]
+        self.assertEqual(
+            self.modeladmin._webhooks(self.obj), "Test Webhook 1<br>Test Webhook 2"
         )
 
     @patch(MODULE_PATH + ".OwnerAdmin.message_user", auto_spec=True)
