@@ -1,6 +1,8 @@
+import datetime as dt
 from unittest.mock import Mock, patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
+from pytz import utc
 
 from django.test import override_settings
 from esi.models import Token
@@ -8,6 +10,7 @@ from esi.models import Token
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
+from app_utils.esi_testing import EsiEndpoint
 from app_utils.testing import (
     BravadoResponseStub,
     NoSocketsTestCase,
@@ -17,7 +20,6 @@ from app_utils.testing import (
 
 from ...constants import EveTypeId
 from ...models import (
-    EveMoon,
     JumpFuelAlertConfig,
     Notification,
     Owner,
@@ -26,342 +28,222 @@ from ...models import (
     Webhook,
 )
 from ...models.notifications import NotificationType
-from .. import to_json
 from ..testdata import (
     create_structures,
-    entities_testdata,
     esi_mock_client,
     load_entities,
     load_notification_entities,
     set_owner_character,
 )
-from ..testdata.factories import create_owner_from_user, create_webhook
+from ..testdata.esi_client_stub import create_esi_client_stub
+from ..testdata.factories import (
+    create_owner_from_user,
+    create_structure,
+    create_webhook,
+)
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer
 
-    has_auth_timers = True
+    has_auth_timers_app = True
 
 else:
-    has_auth_timers = False
+    has_auth_timers_app = False
+
+if "structuretimers" in app_labels():
+    has_structure_timers_app = True
+else:
+    has_structure_timers_app = False
+
+OWNERS_PATH = "structures.models.owners"
+NOTIFICATIONS_PATH = "structures.models.notifications"
 
 
-MODULE_PATH = "structures.models.owners"
-MODELS_NOTIFICATIONS = "structures.models.notifications"
-MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"
-
-
-class TestUpdateStructuresEsiWithLocalization(NoSocketsTestCase):
-    def setUp(self):
-        self.default_lang = "en-us"
-        self.structures_w_lang = {
-            "en-us": [
-                {
-                    "structure_id": 1001,
-                    "services": [
-                        {"name": "alpha", "state": "online"},
-                        {"name": "bravo", "state": "online"},
-                    ],
-                },
-                {
-                    "structure_id": 1002,
-                    "services": [{"name": "bravo", "state": "offline"}],
-                },
-            ],
-            "ko": [
-                {
-                    "structure_id": 1001,
-                    "services": [
-                        {"name": "alpha_ko", "state": "online"},
-                        {"name": "bravo_ko", "state": "online"},
-                    ],
-                },
-                {
-                    "structure_id": 1002,
-                    "services": [{"name": "bravo_ko", "state": "offline"}],
-                },
-            ],
-            "de": [
-                {
-                    "structure_id": 1001,
-                    "services": [
-                        {"name": "alpha_de", "state": "online"},
-                        {"name": "bravo_de", "state": "online"},
-                    ],
-                },
-                {
-                    "structure_id": 1002,
-                    "services": [{"name": "bravo_de", "state": "offline"}],
-                },
-            ],
-        }
-
-    def test_collect_services_with_localizations(self):
-        structures_services = Owner._collect_services_with_localizations(
-            self.structures_w_lang, self.default_lang
-        )
-        expected = {
-            1001: {"de": ["alpha_de", "bravo_de"], "ko": ["alpha_ko", "bravo_ko"]},
-            1002: {"de": ["bravo_de"], "ko": ["bravo_ko"]},
-        }
-        self.maxDiff = None
-        self.assertEqual(to_json(structures_services), to_json(expected))
-
-    def test_condense_services_localizations_into_structures(self):
-        structures_services = {
-            1001: {"de": ["alpha_de", "bravo_de"], "ko": ["alpha_ko", "bravo_ko"]},
-            1002: {"de": ["bravo_de"], "ko": ["bravo_ko"]},
-        }
-        structures = Owner._condense_services_localizations_into_structures(
-            self.structures_w_lang, self.default_lang, structures_services
-        )
-        excepted = [
-            {
-                "structure_id": 1001,
-                "services": [
-                    {
-                        "name": "alpha",
-                        "name_de": "alpha_de",
-                        "name_ko": "alpha_ko",
-                        "state": "online",
-                    },
-                    {
-                        "name": "bravo",
-                        "name_de": "bravo_de",
-                        "name_ko": "bravo_ko",
-                        "state": "online",
-                    },
-                ],
-            },
-            {
-                "structure_id": 1002,
-                "services": [
-                    {
-                        "name": "bravo",
-                        "name_de": "bravo_de",
-                        "name_ko": "bravo_ko",
-                        "state": "offline",
-                    }
-                ],
-            },
-        ]
-        self.maxDiff = None
-        self.assertEqual(to_json(structures), to_json(excepted))
-
-    def test_condense_services_localizations_into_structures_2(self):
-        structures_services = {
-            1001: {"de": ["alpha_de", "bravo_de"]},
-            1002: {"de": ["bravo_de"]},
-        }
-        structures = Owner._condense_services_localizations_into_structures(
-            self.structures_w_lang, self.default_lang, structures_services
-        )
-        excepted = [
-            {
-                "structure_id": 1001,
-                "services": [
-                    {"name": "alpha", "name_de": "alpha_de", "state": "online"},
-                    {"name": "bravo", "name_de": "bravo_de", "state": "online"},
-                ],
-            },
-            {
-                "structure_id": 1002,
-                "services": [
-                    {"name": "bravo", "name_de": "bravo_de", "state": "offline"}
-                ],
-            },
-        ]
-        self.maxDiff = None
-        self.assertEqual(to_json(structures), to_json(excepted))
-
-
-@patch("structures.helpers.esi_fetch._esi_client")
+@patch(OWNERS_PATH + ".esi")
 class TestFetchNotificationsEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.owner.is_alliance_main = True
-        cls.owner.save()
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    def test_should_create_notifications_and_timers_from_scratch(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
+        load_entities()
+        load_eveuniverse()
+        cls.user, _ = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
         )
+        Webhook.objects.all().delete()
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data={
+                    "1001": [
+                        {
+                            "notification_id": 1000000505,
+                            "type": "StructureLostShields",
+                            "sender_id": 2901,
+                            "sender_type": "corporation",
+                            "timestamp": "2019-10-04 14:52:00",
+                            "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n",
+                        },
+                    ]
+                },
+            )
+        ]
+        cls.esi_client_stub = create_esi_client_stub(endpoints)
+
+    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
+    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    @patch(OWNERS_PATH + ".now")
+    def test_should_create_notifications_from_scratch(self, mock_now, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
         # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi()
-        else:
-            self.owner.fetch_notifications_esi()
-
+        owner.fetch_notifications_esi()
         # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_notification_sync_fresh)
         # should only contain the right notifications
         notif_ids_current = set(
             Notification.objects.values_list("notification_id", flat=True)
         )
-        notif_ids_testdata = {
-            x["notification_id"] for x in entities_testdata["Notification"]
-        }
-        self.assertSetEqual(notif_ids_current, notif_ids_testdata)
+        self.assertSetEqual(notif_ids_current, {1000000505})
 
-        if has_auth_timers:
-            # should have added timers
-            self.assertEqual(AuthTimer.objects.count(), 4)
-
-            # run sync again
-            self.owner.fetch_notifications_esi()
-            self.assertTrue(self.owner.is_notification_sync_fresh)
-
-            # should not have more timers
-            self.assertEqual(AuthTimer.objects.count(), 4)
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
+    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    @patch(OWNERS_PATH + ".notify", spec=True)
+    @patch(OWNERS_PATH + ".now", spec=True)
     def test_should_inform_user_about_successful_update(
-        self, mock_notify, mock_esi_client
+        self, mock_now, mock_notify, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
+        mock_esi.client = self.esi_client_stub
+        mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
         # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi(user=self.user)
-        else:
-            self.owner.fetch_notifications_esi(user=self.user)
-
+        owner.fetch_notifications_esi(self.user)
         # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_notification_sync_fresh)
         self.assertTrue(mock_notify.called)
 
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    def test_should_create_new_notifications_only(self, mock_esi_client):
+    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
+    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", True)
+    def test_should_create_notifications_and_timers_from_scratch(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        load_notification_entities(self.owner)
-        Notification.objects.get(notification_id=1000000803).delete()
-        Notification.objects.all().update(created=None)
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
         # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi()
-        else:
-            self.owner.fetch_notifications_esi()
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
-        # should only contain the right notifications
-        notif_ids_current = set(
-            Notification.objects.values_list("notification_id", flat=True)
-        )
-        notif_ids_testdata = {
-            x["notification_id"] for x in entities_testdata["Notification"]
-        }
-        self.assertSetEqual(notif_ids_current, notif_ids_testdata)
-        # should only have created one notification
-        created_ids = set(
-            Notification.objects.filter(created__isnull=False).values_list(
-                "notification_id", flat=True
+        with patch(OWNERS_PATH + ".now") as mock_now:
+            mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
+            if has_structure_timers_app:
+                with patch(
+                    "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED",
+                    False,
+                ), patch(
+                    "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
+                    lambda: Mock(),
+                ):
+                    owner.fetch_notifications_esi()
+            else:
+                owner.fetch_notifications_esi()
+            # then
+            owner.refresh_from_db()
+            self.assertTrue(owner.is_notification_sync_fresh)
+            # should only contain the right notifications
+            notif_ids_current = set(
+                Notification.objects.values_list("notification_id", flat=True)
             )
-        )
-        self.assertSetEqual(created_ids, {1000000803})
+            self.assertSetEqual(notif_ids_current, {1000000505})
 
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    def test_should_set_moon_for_structure_if_missing(self, mock_esi_client):
+            if has_auth_timers_app:
+                # should have added timers
+                self.assertEqual(AuthTimer.objects.count(), 1)
+
+                # run sync again
+                owner.fetch_notifications_esi()
+                self.assertTrue(owner.is_notification_sync_fresh)
+
+                # should not have more timers
+                self.assertEqual(AuthTimer.objects.count(), 1)
+
+    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
+    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    @patch(OWNERS_PATH + ".now")
+    def test_should_set_moon_for_structure_if_missing(self, mock_now, mock_esi_client):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        load_notification_entities(self.owner)
-        Notification.objects.get(notification_id=1000000803).delete()
-        Notification.objects.all().update(created=None)
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data={
+                    "1001": [
+                        {
+                            "notification_id": 1000000404,
+                            "type": "MoonminingExtractionStarted",
+                            "sender_id": 2901,
+                            "sender_type": "corporation",
+                            "timestamp": "2019-11-13 23:33:00",
+                            "text": 'autoTime: 132186924601059151\nmoonID: 40161465\noreVolumeByType:\n  46300: 1288475.124715103\n  46301: 544691.7637724016\n  46302: 526825.4047522942\n  46303: 528996.6386983792\nreadyTime: 132186816601059151\nsolarSystemID: 30002537\nstartedBy: 1001\nstartedByLink: <a href="showinfo:1383//1001">Bruce Wayne</a>\nstructureID: 1000000000002\nstructureLink: <a href="showinfo:35835//1000000000002">Dummy</a>\nstructureName: Dummy\nstructureTypeID: 35835\n',
+                            "is_read": False,
+                        },
+                    ]
+                },
+            )
+        ]
+        mock_esi_client.client = create_esi_client_stub(endpoints)
+        mock_now.return_value = dt.datetime(2019, 11, 13, 23, 50, 0, tzinfo=utc)
+        owner = create_owner_from_user(self.user)
+        structure = create_structure(owner=owner, id=1000000000002, eve_type_id=35835)
         # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi()
-        else:
-            self.owner.fetch_notifications_esi()
+        owner.fetch_notifications_esi()
         # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
-        structure = Structure.objects.get(id=1000000000002)
-        self.assertEqual(structure.eve_moon, EveMoon.objects.get(id=40161465))
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_notification_sync_fresh)
+        structure.refresh_from_db()
+        self.assertEqual(structure.eve_moon_id, 40161465)
 
-    @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    def test_report_error_when_esi_returns_error_during_sync(self, mock_esi_client):
-        # given
-        def get_characters_character_id_notifications_error(*args, **kwargs):
+    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    def test_report_error_when_esi_returns_error_during_sync(self, mock_esi):
+        def my_callback(*args, **kwargs):
             raise HTTPBadGateway(
                 BravadoResponseStub(status_code=502, reason="Test Exception")
             )
 
-        mock_esi_client.return_value.Character.get_characters_character_id_notifications.side_effect = (
-            get_characters_character_id_notifications_error
-        )
-        AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
+        # given
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data=[],
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = create_esi_client_stub(endpoints)
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
         # when
         with self.assertRaises(HTTPBadGateway):
-            self.owner.fetch_notifications_esi()
+            owner.fetch_notifications_esi()
         # then
-        self.owner.refresh_from_db()
-        self.assertFalse(self.owner.is_notification_sync_fresh)
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_notification_sync_fresh)
 
 
 @override_settings(DEBUG=True)
-@patch(MODELS_NOTIFICATIONS + ".Webhook.send_message", spec=True)
+@patch(NOTIFICATIONS_PATH + ".Webhook.send_message", spec=True)
 class TestSendNewNotifications1(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -376,7 +258,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
 
     # TODO: Temporarily disabled
     # @patch(
-    #     MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", False
+    #     NOTIFICATIONS_PATH + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", False
     # )
     def test_should_send_all_notifications(self, mock_send_message):
         # given
@@ -402,7 +284,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
 
     # TODO: temporary disabled
     # @patch(
-    #     MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", True
+    #     NOTIFICATIONS_PATH + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", True
     # )
     # def test_should_send_all_notifications_except_fuel_alerts(self, mock_send_message):
     #     # given
@@ -501,7 +383,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
         Webhook.objects.all().delete()
         load_notification_entities(cls.owner)
 
-    @patch(MODULE_PATH + ".Notification.send_to_configured_webhooks", autospec=True)
+    @patch(OWNERS_PATH + ".Notification.send_to_configured_webhooks", autospec=True)
     def test_should_send_notifications_to_multiple_webhooks_but_same_owner(
         self, mock_send_to_configured_webhooks
     ):
@@ -539,10 +421,10 @@ class TestSendNewNotifications2(NoSocketsTestCase):
             },
         )
 
-    # @patch(MODULE_PATH + ".Token", spec=True)
+    # @patch(OWNERS_PATH + ".Token", spec=True)
     # @patch("structures.helpers.esi_fetch._esi_client")
     # @patch(
-    #     MODELS_NOTIFICATIONS + ".Notification.send_to_webhook", autospec=True
+    #     NOTIFICATIONS_PATH + ".Notification.send_to_webhook", autospec=True
     # )
     # def test_can_send_notifications_to_multiple_owners(
     #     self, mock_send_to_webhook, mock_esi_client_factory, mock_token
@@ -652,7 +534,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertTrue(structure.has_fitting)
         self.assertFalse(structure.has_core)
 
-    @patch(MODULE_PATH + ".notify", spec=True)
+    @patch(OWNERS_PATH + ".notify", spec=True)
     def test_should_inform_user_about_successful_update(
         self, mock_notify, mock_esi_client
     ):
@@ -837,9 +719,9 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         cls.owner.is_included_in_service_status = True
         cls.owner.save()
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
-    @patch(MODULE_PATH + ".notify_admins")
+    @patch(OWNERS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(OWNERS_PATH + ".Owner.are_all_syncs_ok", True)
+    @patch(OWNERS_PATH + ".notify_admins")
     def test_should_do_nothing_when_still_up(self, mock_notify_admins):
         # given
         self.owner.is_up = True
@@ -853,9 +735,9 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertTrue(self.owner.is_up)
         self.assertTrue(self.owner.is_alliance_main)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
-    @patch(MODULE_PATH + ".notify_admins")
+    @patch(OWNERS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(OWNERS_PATH + ".Owner.are_all_syncs_ok", False)
+    @patch(OWNERS_PATH + ".notify_admins")
     def test_should_report_when_down(self, mock_notify_admins):
         # given
         self.owner.is_up = True
@@ -869,9 +751,9 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertFalse(self.owner.is_up)
         self.assertTrue(self.owner.is_alliance_main)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
-    @patch(MODULE_PATH + ".notify_admins")
+    @patch(OWNERS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(OWNERS_PATH + ".Owner.are_all_syncs_ok", False)
+    @patch(OWNERS_PATH + ".notify_admins")
     def test_should_not_report_again_when_still_down(self, mock_notify_admins):
         # given
         self.owner.is_up = False
@@ -885,9 +767,9 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertFalse(self.owner.is_up)
         self.assertTrue(self.owner.is_alliance_main)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
-    @patch(MODULE_PATH + ".notify_admins")
+    @patch(OWNERS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(OWNERS_PATH + ".Owner.are_all_syncs_ok", True)
+    @patch(OWNERS_PATH + ".notify_admins")
     def test_should_report_when_up_again(self, mock_notify_admins):
         # given
         self.owner.is_up = False
@@ -901,9 +783,9 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.assertTrue(self.owner.is_up)
         self.assertTrue(self.owner.is_alliance_main)
 
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
-    @patch(MODULE_PATH + ".notify_admins")
+    @patch(OWNERS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
+    @patch(OWNERS_PATH + ".Owner.are_all_syncs_ok", True)
+    @patch(OWNERS_PATH + ".notify_admins")
     def test_should_report_when_up_for_the_first_time(self, mock_notify_admins):
         # given
         self.owner.is_up = None

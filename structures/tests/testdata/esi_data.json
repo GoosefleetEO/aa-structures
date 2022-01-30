@@ -124,6 +124,14 @@
                     "sender_type": "character",
                     "timestamp": "2019-08-16T15:08:00Z",
                     "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
+                },
+                {
+                    "notification_id": 1000000505,
+                    "type": "StructureLostShields",
+                    "sender_id": 2901,
+                    "sender_type": "corporation",
+                    "timestamp": "2019-10-04 14:52:00",
+                    "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35832\n- *id001\nstructureTypeID: 35832\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n"
                 }
             ]
         }

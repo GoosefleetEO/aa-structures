@@ -2,6 +2,7 @@ import json
 from collections import namedtuple
 from copy import deepcopy
 from pathlib import Path
+from typing import List
 
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 
@@ -91,6 +92,12 @@ def generate_esi_client_stub(callbacks: list = None, **kwargs) -> EsiClientStub:
                     )
                     endpoints.remove(endpoint)
                     endpoints.append(new_endpoint)
+    params = {"testdata": _esi_data, "endpoints": endpoints}
+    params.update(kwargs)
+    return EsiClientStub(**params)
+
+
+def create_esi_client_stub(endpoints: List[EsiEndpoint], **kwargs) -> EsiClientStub:
     params = {"testdata": _esi_data, "endpoints": endpoints}
     params.update(kwargs)
     return EsiClientStub(**params)

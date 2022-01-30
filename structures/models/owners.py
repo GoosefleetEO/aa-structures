@@ -949,7 +949,6 @@ class Owner(models.Model):
 
         self.notifications_last_update_at = now()
         self.save(update_fields=["notifications_last_update_at"])
-
         if user:
             self._send_report_to_user(
                 topic="notifications",
@@ -1038,6 +1037,7 @@ class Owner(models.Model):
             )
         return len(new_notifications)
 
+    # TODO: run this as seperate task
     def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
         if STRUCTURES_ADD_TIMERS:
@@ -1066,7 +1066,7 @@ class Owner(models.Model):
             eve_type__eve_group_id=EveGroupId.REFINERY,
             eve_moon__isnull=True,
         )
-        if empty_refineries:
+        if empty_refineries.exists():
             logger.info(
                 "%s: Trying to find moons for up to %d refineries which have no moon.",
                 self,
@@ -1085,7 +1085,6 @@ class Owner(models.Model):
                 moon_id = parsed_text["moonID"]
                 structure_id = parsed_text["structureID"]
                 structure_id_2_moon_id[structure_id] = moon_id
-
             for refinery in empty_refineries:
                 if refinery.id in structure_id_2_moon_id:
                     logger.info("%s: Updating moon for structure %s", self, refinery)

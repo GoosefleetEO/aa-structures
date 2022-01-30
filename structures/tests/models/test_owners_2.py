@@ -5,7 +5,6 @@ from bravado.exception import HTTPForbidden, HTTPInternalServerError
 
 from django.utils.timezone import now, utc
 
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import (
     BravadoResponseStub,
     NoSocketsTestCase,
@@ -13,16 +12,7 @@ from app_utils.testing import (
 )
 
 from ...models import (
-    EveCategory,
-    EveConstellation,
-    EveEntity,
-    EveGroup,
-    EveMoon,
     EvePlanet,
-    EveRegion,
-    EveSolarSystem,
-    EveSovereigntyMap,
-    EveType,
     FuelAlertConfig,
     NotificationType,
     Owner,
@@ -33,7 +23,7 @@ from ...models import (
     Webhook,
 )
 from .. import to_json
-from ..testdata import entities_testdata, load_entities
+from ..testdata import load_entities
 from ..testdata.esi_client_stub import (
     EsiEndpointCallback,
     esi_client_stub,
@@ -57,37 +47,14 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         # given (global)
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-                EveRegion,
-                EveConstellation,
-                EveSolarSystem,
-                EveSovereigntyMap,
-                EvePlanet,
-                EveMoon,
-                EveCorporationInfo,
-                EveCharacter,
-                EveEntity,
-            ]
-        )
         load_eveuniverse()
-        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        cls.user, cls.main_ownership = create_user_from_evecharacter(
+        load_entities()
+        cls.user, _ = create_user_from_evecharacter(
             1001,
             permissions=["structures.add_structure_owner"],
             scopes=Owner.get_esi_scopes(),
         )
-        for x in entities_testdata["StructureTag"]:
-            StructureTag.objects.create(**x)
-
-    # def setUp(self):
-    #     # reset data that might be overridden
-    #     esi_get_corporations_corporation_id_structures.override_data = None
-    #     esi_get_corporations_corporation_id_starbases.override_data = None
-    #     esi_get_corporations_corporation_id_customs_offices.override_data = None
+        Webhook.objects.all().delete()
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
