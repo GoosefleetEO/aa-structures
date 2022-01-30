@@ -18,19 +18,10 @@ from app_utils.testing import (
     queryset_pks,
 )
 
-from ...constants import EveTypeId
-from ...models import (
-    JumpFuelAlertConfig,
-    Notification,
-    Owner,
-    Structure,
-    StructureItem,
-    Webhook,
-)
+from ...models import JumpFuelAlertConfig, Notification, Owner, StructureItem, Webhook
 from ...models.notifications import NotificationType
 from ..testdata import (
     create_structures,
-    esi_mock_client,
     load_entities,
     load_notification_entities,
     set_owner_character,
@@ -39,6 +30,7 @@ from ..testdata.esi_client_stub import create_esi_client_stub
 from ..testdata.factories import (
     create_owner_from_user,
     create_structure,
+    create_structure_item,
     create_webhook,
 )
 from ..testdata.load_eveuniverse import load_eveuniverse
@@ -487,22 +479,66 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     #     self.assertSetEqual(results[wh_mining.pk], {1000000402})
 
 
-@patch("structures.helpers.esi_fetch._esi_client")
-@patch("structures.helpers.esi_fetch.sleep", lambda x: None)
+@patch(OWNERS_PATH + ".esi")
 class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", cls.user
+        load_entities()
+        load_eveuniverse()
+        cls.user, _ = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.basic_access", "structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
         )
+        Webhook.objects.all().delete()
+        endpoints = [
+            EsiEndpoint(
+                "Assets",
+                "get_corporations_corporation_id_assets",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "is_singleton": False,
+                            "item_id": 1300000001001,
+                            "location_flag": "QuantumCoreRoom",
+                            "location_id": 1000000000001,
+                            "location_type": "item",
+                            "quantity": 1,
+                            "type_id": 56201,
+                        },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1300000001002,
+                            "location_flag": "ServiceSlot0",
+                            "location_id": 1000000000001,
+                            "location_type": "item",
+                            "quantity": 1,
+                            "type_id": 35894,
+                        },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1300000002001,
+                            "location_flag": "ServiceSlot0",
+                            "location_id": 1000000000002,
+                            "location_type": "item",
+                            "quantity": 1,
+                            "type_id": 35894,
+                        },
+                    ]
+                },
+            )
+        ]
+        cls.esi_client_stub = create_esi_client_stub(endpoints)
 
-    def test_should_update_assets_for_owner(self, mock_esi_client):
+    def test_should_update_assets_for_owner(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
+        create_structure(owner=owner, id=1000000000002)
         # when
         owner.update_asset_esi()
         # then
@@ -535,12 +571,11 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertFalse(structure.has_core)
 
     @patch(OWNERS_PATH + ".notify", spec=True)
-    def test_should_inform_user_about_successful_update(
-        self, mock_notify, mock_esi_client
-    ):
+    def test_should_inform_user_about_successful_update(self, mock_notify, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
         # when
         owner.update_asset_esi(user=self.user)
         # then
@@ -548,12 +583,25 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertTrue(owner.is_assets_sync_fresh)
         self.assertTrue(mock_notify.called)
 
-    def test_should_raise_exception_if_esi_has_error(self, mock_esi_client):
+    def test_should_raise_exception_if_esi_has_error(self, mock_esi):
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                BravadoResponseStub(status_code=500, reason="Test")
+            )
+
         # given
-        mock_esi_client.return_value.Assets.get_corporations_corporation_id_assets.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        owner = Owner.objects.get(corporation__corporation_id=2001)
+        endpoints = [
+            EsiEndpoint(
+                "Assets",
+                "get_corporations_corporation_id_assets",
+                "corporation_id",
+                needs_token=True,
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = create_esi_client_stub(endpoints)
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
         # when
         with self.assertRaises(HTTPInternalServerError):
             owner.update_asset_esi()
@@ -562,68 +610,40 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertIsNone(owner.is_assets_sync_fresh)
 
     def test_should_remove_assets_that_no_longer_exist_for_existing_structure(
-        self, mock_esi_client
+        self, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure = Structure.objects.get(id=1000000000001)
-        structure.items.create(
-            id=42,
-            eve_type_id=EveTypeId.LIQUID_OZONE,
-            location_flag="Cargo",
-            is_singleton=False,
-            quantity=5000,
-        )
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        structure = create_structure(owner=owner, id=1000000000001)
+        item = create_structure_item(structure=structure)
         # when
         owner.update_asset_esi()
         # then
-        self.assertFalse(structure.items.filter(id=42).exists())
+        self.assertFalse(structure.items.filter(pk=item.pk).exists())
 
     def test_should_remove_assets_that_no_longer_exist_for_removed_structure(
-        self, mock_esi_client
+        self, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure = Structure.objects.create(
-            id=1000000000666,
-            owner=owner,
-            eve_type_id=EveTypeId.JUMP_GATE,
-            name="Zombie",
-            eve_solar_system_id=30000476,
-        )
-        structure.items.create(
-            id=42,
-            eve_type_id=EveTypeId.LIQUID_OZONE,
-            location_flag="Cargo",
-            is_singleton=False,
-            quantity=5000,
-        )
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
+        structure = create_structure(owner=owner, id=1000000000666)
+        item = create_structure_item(structure=structure)
         # when
         owner.update_asset_esi()
         # then
-        self.assertFalse(structure.items.filter(id=42).exists())
+        self.assertFalse(structure.items.filter(pk=item.pk).exists())
 
-    def test_should_remove_outdated_jump_fuel_alerts(self, mock_esi_client):
+    def test_should_handle_asset_moved_to_another_structure(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        _, owner = set_owner_character(character_id=1011)
-        structure = Structure.objects.get(id=1000000000004)
-        config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure.jump_fuel_alerts.create(structure=structure, config=config)
-        # when
-        owner.update_asset_esi()
-        # then
-        self.assertEqual(structure.jump_fuel_alerts.count(), 0)
-
-    def test_should_handle_asset_moved_to_another_structure(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure_1 = Structure.objects.get(id=1000000000001)
-        structure_2 = Structure.objects.get(id=1000000000002)
-        structure_2.items.create(
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        structure_1 = create_structure(owner=owner, id=1000000000001)
+        structure_2 = create_structure(owner=owner, id=1000000000002)
+        create_structure_item(
+            structure=structure_2,
             id=1300000001002,
             eve_type_id=35894,
             location_flag="ServiceSlot0",
@@ -638,25 +658,61 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
             queryset_pks(structure_1.items.all()), {1300000001001, 1300000001002}
         )
 
-    def test_should_not_delete_assets_from_other_owners(self, mock_esi_client):
+    def test_should_not_delete_assets_from_other_owners(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1300000003001,
-            eve_type_id=16273,
-            location_flag="StructureFuel",
-            is_singleton=False,
-            quantity=5000,
-        )
-        owner_2001 = Owner.objects.get(corporation__corporation_id=2001)
+        mock_esi.client = self.esi_client_stub
+        user_2, _ = create_user_from_evecharacter(1102)
+        owner_2 = create_owner_from_user(user_2)
+        structure_2 = create_structure(owner=owner_2, id=1000000000004)
+        create_structure_item(structure=structure_2, id=1300000003001)
+        owner = create_owner_from_user(self.user)
+        create_structure(owner=owner, id=1000000000001)
+        create_structure(owner=owner, id=1000000000002)
         # when
-        owner_2001.update_asset_esi()
+        owner.update_asset_esi()
         # then
         self.assertSetEqual(
             queryset_pks(StructureItem.objects.all()),
             {1300000001001, 1300000001002, 1300000002001, 1300000003001},
         )
+
+    def test_should_remove_outdated_jump_fuel_alerts(self, mock_esi):
+        # given
+        endpoints = [
+            EsiEndpoint(
+                "Assets",
+                "get_corporations_corporation_id_assets",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2102": [
+                        {
+                            "is_singleton": False,
+                            "item_id": 1300000003001,
+                            "location_flag": "StructureFuel",
+                            "location_id": 1000000000004,
+                            "location_type": "item",
+                            "quantity": 5000,
+                            "type_id": 16273,
+                        }
+                    ]
+                },
+            )
+        ]
+        mock_esi.client = create_esi_client_stub(endpoints)
+        user, _ = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.basic_access", "structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner = create_owner_from_user(user)
+        structure = create_structure(owner=owner, id=1000000000004)
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        structure.jump_fuel_alerts.create(structure=structure, config=config)
+        # when
+        owner.update_asset_esi()
+        # then
+        self.assertEqual(structure.jump_fuel_alerts.count(), 0)
 
     # TODO: Add tests for error cases
 

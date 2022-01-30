@@ -85,6 +85,8 @@ def create_structure_item(**kwargs):
         "is_singleton": False,
         "quantity": 1,
     }
+    if "eve_type_id" not in kwargs and "eve_type" not in kwargs:
+        params["eve_type_id"] = EveTypeId.LIQUID_OZONE
     params.update(kwargs)
     return StructureItem.objects.create(**params)
 
