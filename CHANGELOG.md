@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Ability to also define webhooks for a structure, which will then be used **instead** of the owner's webhooks for notifications related to that structure
+- Ability to also define webhooks for a structure, which will then be used **instead** of the owner's webhooks for notifications related to that structure (#64)
 - Show structures a notificaiton is related to (if any) on admin page
 
 ### Changed

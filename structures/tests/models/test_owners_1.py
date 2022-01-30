@@ -1,5 +1,4 @@
 import datetime as dt
-from copy import deepcopy
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -20,6 +19,7 @@ from app_utils.testing import (
 from ...models import (
     EveCategory,
     EveConstellation,
+    EveEntity,
     EveGroup,
     EveMoon,
     EvePlanet,
@@ -41,18 +41,19 @@ from .. import to_json
 from ..testdata import (
     create_structures,
     entities_testdata,
-    esi_corp_structures_data,
-    esi_data,
-    esi_get_corporations_corporation_id_customs_offices,
-    esi_get_corporations_corporation_id_starbases,
-    esi_get_corporations_corporation_id_starbases_starbase_id,
-    esi_get_corporations_corporation_id_structures,
-    esi_get_universe_structures_structure_id,
-    esi_mock_client,
-    esi_post_corporations_corporation_id_assets_locations,
-    esi_post_corporations_corporation_id_assets_names,
     load_entities,
     set_owner_character,
+)
+from ..testdata.esi_client_stub import (
+    EsiEndpointCallback,
+    esi_client_stub,
+    generate_esi_client_stub,
+)
+from ..testdata.factories import (
+    create_poco,
+    create_starbase,
+    create_structure_service,
+    create_upwell_structure,
 )
 from ..testdata.load_eveuniverse import load_eveuniverse
 
@@ -646,8 +647,7 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         self.assertListEqual(tokens_received, [1102, 1011, 1102, 1102])
 
 
-@patch("structures.helpers.esi_fetch._esi_client")
-@patch("structures.helpers.esi_fetch.sleep", lambda x: None)
+@patch(MODULE_PATH + ".esi")
 class TestUpdateStructuresEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -666,6 +666,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                 EveMoon,
                 EveCorporationInfo,
                 EveCharacter,
+                EveEntity,
             ]
         )
         load_eveuniverse()
@@ -678,17 +679,17 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         for x in entities_testdata["StructureTag"]:
             StructureTag.objects.create(**x)
 
-    def setUp(self):
-        # reset data that might be overridden
-        esi_get_corporations_corporation_id_structures.override_data = None
-        esi_get_corporations_corporation_id_starbases.override_data = None
-        esi_get_corporations_corporation_id_customs_offices.override_data = None
+    # def setUp(self):
+    #     # reset data that might be overridden
+    #     esi_get_corporations_corporation_id_structures.override_data = None
+    #     esi_get_corporations_corporation_id_starbases.override_data = None
+    #     esi_get_corporations_corporation_id_customs_offices.override_data = None
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_can_sync_upwell_structures(self, mock_esi_client):
+    def test_can_sync_upwell_structures(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -733,9 +734,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             to_json(
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
-                    "name_ru": "Clone Bay_ru",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
                     # "name_zh": "Clone Bay_zh",
                     "state": StructureService.State.ONLINE,
                 }
@@ -743,9 +744,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             to_json(
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
-                    "name_ru": "Market Hub_ru",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
                     # "name_zh": "Market Hub_zh",
                     "state": StructureService.State.OFFLINE,
                 }
@@ -756,9 +757,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             to_json(
                 {
                     "name": x.name,
-                    "name_de": x.name_de,
-                    "name_ko": x.name_ko,
-                    "name_ru": x.name_ru,
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
                     # "name_zh": x.name_zh,
                     "state": x.state,
                 }
@@ -773,9 +774,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             to_json(
                 {
                     "name": "Reprocessing",
-                    "name_de": "Reprocessing_de",
-                    "name_ko": "Reprocessing_ko",
-                    "name_ru": "Reprocessing_ru",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
                     # "name_zh": "Reprocessing_zh",
                     "state": StructureService.State.ONLINE,
                 }
@@ -783,9 +784,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             to_json(
                 {
                     "name": "Moon Drilling",
-                    "name_de": "Moon Drilling_de",
-                    "name_ko": "Moon Drilling_ko",
-                    "name_ru": "Moon Drilling_ru",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
                     # "name_zh": "Moon Drilling_zh",
                     "state": StructureService.State.ONLINE,
                 }
@@ -796,9 +797,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             to_json(
                 {
                     "name": x.name,
-                    "name_de": x.name_de,
-                    "name_ko": x.name_ko,
-                    "name_ru": x.name_ru,
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
                     # "name_zh": x.name_zh,
                     "state": x.state,
                 }
@@ -809,9 +810,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_can_sync_pocos(self, mock_esi_client):
+    def test_can_sync_pocos(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -829,16 +830,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000004,
             1200000000005,
             1200000000006,
+            1200000000099,
         }
         self.assertSetEqual(owner.structures.ids(), expected)
         self.assertSetEqual(
             set(PocoDetails.objects.values_list("structure_id", flat=True)),
-            {
-                1200000000003,
-                1200000000004,
-                1200000000005,
-                1200000000006,
-            },
+            {1200000000003, 1200000000004, 1200000000005, 1200000000006, 1200000000099},
         )
 
         # verify attributes for POCO
@@ -866,13 +863,15 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(details.standing_level, PocoDetails.StandingLevel.TERRIBLE)
         self.assertEqual(details.terrible_standing_tax_rate, 0.5)
 
+        # empty name for POCO with no asset data
+        structure = Structure.objects.get(id=1200000000099)
+        self.assertEqual(structure.name, "")
+
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
-    def test_can_sync_starbases(self, mock_esi_client_2, mock_esi_client):
+    def test_can_sync_starbases(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        mock_esi_client_2.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -944,14 +943,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
     @patch(MODULE_PATH + ".notify", spec=True)
-    def test_can_sync_all_structures_and_notify_user(
-        self, mock_notify, mock_esi_client_2, mock_esi_client
-    ):
+    def test_can_sync_all_structures_and_notify_user(self, mock_notify, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        mock_esi_client_2.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
 
         # when
@@ -970,6 +965,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             1200000000004,
             1200000000005,
             1200000000006,
+            1200000000099,
             1300000000001,
             1300000000002,
             1300000000003,
@@ -981,9 +977,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_can_handle_owner_without_structures(self, mock_esi_client):
+    def test_can_handle_owner_without_structures(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         _, my_main_ownership = create_user_from_evecharacter(
             1005,
             permissions=["structures.add_structure_owner"],
@@ -1000,67 +996,57 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_should_not_break_on_http_error_when_fetching_upwell_structures(
-        self, mock_esi_client
+    def test_should_not_break_when_endpoint_for_fetching_upwell_structures_is_down(
+        self, mock_esi
     ):
         # given
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
-            esi_post_corporations_corporation_id_assets_locations
-        )
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_names = (
-            esi_post_corporations_corporation_id_assets_names
-        )
-        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices = (
-            esi_get_corporations_corporation_id_customs_offices
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = (
-            esi_get_corporations_corporation_id_starbases
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
-            esi_get_corporations_corporation_id_starbases_starbase_id
-        )
-        mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
-            esi_get_universe_structures_structure_id
-        )
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                response=BravadoResponseStub(500, "Test exception")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Corporation",
+                "get_corporations_corporation_id_structures",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
         owner.refresh_from_db()
         self.assertFalse(owner.is_structure_sync_fresh)
-        expected = {1200000000003, 1200000000004, 1200000000005, 1200000000006}
+        expected = {
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
         self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_break_on_http_error_when_fetching_custom_offices(
-        self, mock_esi_client
+        self, mock_esi
     ):
         # given
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
-            esi_post_corporations_corporation_id_assets_locations
-        )
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_names = (
-            esi_post_corporations_corporation_id_assets_names
-        )
-        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = (
-            esi_get_corporations_corporation_id_starbases
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
-            esi_get_corporations_corporation_id_starbases_starbase_id
-        )
-        mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
-            esi_get_universe_structures_structure_id
-        )
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                response=BravadoResponseStub(500, "Test exception")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Planetary_Interaction",
+                "get_corporations_corporation_id_customs_offices",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -1073,32 +1059,21 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
-    def test_should_not_break_on_http_error_when_fetching_star_bases(
-        self, mock_esi_client_2, mock_esi_client
-    ):
+    def test_should_not_break_on_http_error_when_fetching_star_bases(self, mock_esi):
         # given
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
-            esi_post_corporations_corporation_id_assets_locations
-        )
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_names = (
-            esi_post_corporations_corporation_id_assets_names
-        )
-        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices = (
-            esi_get_corporations_corporation_id_customs_offices
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        mock_esi_client_2.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
-            esi_get_corporations_corporation_id_starbases_starbase_id
-        )
-        mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
-            esi_get_universe_structures_structure_id
-        )
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                response=BravadoResponseStub(500, "Test exception")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Corporation",
+                "get_corporations_corporation_id_starbases",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -1111,32 +1086,21 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
     def test_should_remove_character_if_not_director_when_updating_starbases(
-        self, mock_esi_client_2, mock_notify, mock_esi_client
+        self, mock_notify, mock_esi
     ):
         # given
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_locations = (
-            esi_post_corporations_corporation_id_assets_locations
-        )
-        mock_esi_client.return_value.Assets.post_corporations_corporation_id_assets_names = (
-            esi_post_corporations_corporation_id_assets_names
-        )
-        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices = (
-            esi_get_corporations_corporation_id_customs_offices
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = HTTPForbidden(
-            BravadoResponseStub(status_code=403, reason="Test")
-        )
-        mock_esi_client_2.return_value.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
-            esi_get_corporations_corporation_id_starbases_starbase_id
-        )
-        mock_esi_client.return_value.Universe.get_universe_structures_structure_id.side_effect = (
-            esi_get_universe_structures_structure_id
-        )
+        def my_callback(**kwargs):
+            raise HTTPForbidden(BravadoResponseStub(status_code=403, reason="Test"))
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Corporation",
+                "get_corporations_corporation_id_starbases",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -1148,54 +1112,88 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_update_will_not_break_on_http_error_from_structure_info(
-        self, mock_esi_client
-    ):
+    def test_update_will_not_break_on_http_error_from_structure_info(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        # remove info data for structure with ID 1000000000002
-        data = deepcopy(esi_data["Universe"]["get_universe_structures_structure_id"])
-        del data["1000000000002"]
-        esi_get_universe_structures_structure_id.override_data = data
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                BravadoResponseStub(status_code=500, reason="Test")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Universe",
+                "get_universe_structures_structure_id",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
         # then
         self.assertFalse(owner.is_structure_sync_fresh)
-        esi_get_universe_structures_structure_id.override_data = None
         structure = Structure.objects.get(id=1000000000002)
         self.assertEqual(structure.name, "(no data)")
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_removes_old_structures(self, mock_esi_client):
+    def test_should_remove_old_upwell_structures(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
-
-        # run update task with all structures
+        create_upwell_structure(owner=owner, id=1000000000004, name="delete-me")
+        # when
         owner.update_structures_esi()
-
-        # should contain the right structures
+        # then
         expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(owner.structures.ids(), expected)
 
-        # run update task 2nd time with one less structure
-        my_corp_structures_data = deepcopy(esi_corp_structures_data)
-        del my_corp_structures_data["2001"][1]
-        esi_get_corporations_corporation_id_structures.override_data = (
-            my_corp_structures_data
-        )
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_remove_old_pocos(self, mock_esi):
+        # given
+        mock_esi.client = esi_client_stub
+        owner = create_owner(self.corporation, self.main_ownership)
+        create_poco(owner=owner, id=1000000000004, name="delete-me")
+        # when
         owner.update_structures_esi()
+        # then
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
 
-        # should contain only the remaining structures
-        expected = {1000000000002, 1000000000003}
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_remove_old_starbases(self, mock_esi):
+        # given
+        mock_esi.client = esi_client_stub
+        owner = create_owner(self.corporation, self.main_ownership)
+        create_starbase(owner=owner, id=1300000000099, name="delete-me")
+        # when
+        owner.update_structures_esi()
+        # then
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
         self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_tags_are_not_modified_by_update(self, mock_esi_client):
-        mock_esi_client.side_effect = esi_mock_client
+    def test_tags_are_not_modified_by_update(self, mock_esi):
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
 
         # run update task with all structures
@@ -1221,98 +1219,123 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         s_new = Structure.objects.get(id=1000000000001)
         self.assertEqual(s_new.tags.get(name="tag_a"), tag_a)
 
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    @patch(MODULE_PATH + "._esi_client", name="esi_client_2")
-    def test_should_remove_structures_not_returned_from_esi(
-        self, mock_esi_client_2, mock_esi_client
-    ):
-        # given
-        esi_get_corporations_corporation_id_structures.override_data = {"2001": []}
-        esi_get_corporations_corporation_id_starbases.override_data = {"2001": []}
-        esi_get_corporations_corporation_id_customs_offices.override_data = {"2001": []}
-        mock_esi_client.side_effect = esi_mock_client
-        mock_esi_client_2.side_effect = esi_mock_client
-        create_structures(dont_load_entities=True)
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        owner.add_character(self.main_ownership)
-        self.assertGreater(owner.structures.count(), 0)
-        # when
-        owner.update_structures_esi()
-        # then
-        owner.refresh_from_db()
-        self.assertTrue(owner.is_structure_sync_fresh)
-        self.assertEqual(owner.structures.count(), 0)
-
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_should_not_delete_existing_structures_when_update_failed_with_http_error(
-        self, mock_esi_client
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_delete_existing_upwell_structures_when_update_failed(
+        self, mock_esi
     ):
         # given
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_structures.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        mock_esi_client.return_value.Corporation.get_corporations_corporation_id_starbases.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        mock_esi_client.return_value.Planetary_Interaction.get_corporations_corporation_id_customs_offices.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
-        )
-        create_structures(dont_load_entities=True)
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        owner.add_character(self.main_ownership)
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                BravadoResponseStub(status_code=500, reason="Test")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Corporation",
+                "get_corporations_corporation_id_structures",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
+        owner = create_owner(self.corporation, self.main_ownership)
+        create_upwell_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000002)
         # when
         owner.update_structures_esi()
         # then
         self.assertFalse(owner.is_structure_sync_fresh)
-        expected = expected = {
+        expected = {1000000000001, 1000000000002}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_delete_existing_pocos_when_update_failed(self, mock_esi):
+        # given
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                BravadoResponseStub(status_code=500, reason="Test")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Planetary_Interaction",
+                "get_corporations_corporation_id_customs_offices",
+                callback=my_callback,
+            ),
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
+        owner = create_owner(self.corporation, self.main_ownership)
+        create_poco(owner=owner, id=1200000000003)
+        create_poco(owner=owner, id=1200000000004)
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {
             1000000000001,
             1000000000002,
+            1000000000003,
             1200000000003,
             1200000000004,
-            1200000000005,
-            1200000000006,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_delete_existing_starbases_when_update_failed(self, mock_esi):
+        # given
+        def my_callback(**kwargs):
+            raise HTTPInternalServerError(
+                BravadoResponseStub(status_code=500, reason="Test")
+            )
+
+        callbacks = [
+            EsiEndpointCallback(
+                "Corporation",
+                "get_corporations_corporation_id_starbases",
+                callback=my_callback,
+            )
+        ]
+        mock_esi.client = generate_esi_client_stub(callbacks=callbacks)
+        owner = create_owner(self.corporation, self.main_ownership)
+        create_starbase(owner=owner, id=1300000000001)
+        create_starbase(owner=owner, id=1300000000002)
+        # when
+        owner.update_structures_esi()
+        # then
+        # self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
             1300000000001,
             1300000000002,
-            1300000000003,
         }
         self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
-    def test_removes_outdated_services(self, mock_esi_client):
+    def test_should_remove_outdated_services(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
-
-        # run update task with all structures
+        structure = create_upwell_structure(owner=owner, id=1000000000002)
+        create_structure_service(structure=structure, name="Clone Bay")
+        # when
         owner.update_structures_esi()
-        structure = Structure.objects.get(id=1000000000002)
-        self.assertEqual(
-            {x.name for x in StructureService.objects.filter(structure=structure)},
-            {"Reprocessing", "Moon Drilling"},
-        )
-
-        # run update task 2nd time after removing a service
-        my_corp_structures_data = deepcopy(esi_corp_structures_data)
-        del my_corp_structures_data["2001"][0]["services"][0]
-        esi_get_corporations_corporation_id_structures.override_data = (
-            my_corp_structures_data
-        )
-        owner.update_structures_esi()
-        # should contain only the remaining service
+        # then
         structure.refresh_from_db()
-        self.assertEqual(
-            {x.name for x in StructureService.objects.filter(structure=structure)},
-            {"Moon Drilling"},
-        )
+        services = {
+            obj.name for obj in StructureService.objects.filter(structure=structure)
+        }
+        self.assertEqual(services, {"Moon Drilling", "Reprocessing"})
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_should_have_empty_name_if_not_match_with_planets(self, mock_esi_client):
+    def test_should_have_empty_name_if_not_match_with_planets(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
         EvePlanet.objects.all().delete()
         # when
@@ -1324,9 +1347,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_define_poco_name_from_planet_type_if_found(self, mock_esi_client):
+    def test_define_poco_name_from_planet_type_if_found(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -1338,9 +1361,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "de")
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_define_poco_name_from_planet_type_localized(self, mock_esi_client):
+    def test_define_poco_name_from_planet_type_localized(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         owner = create_owner(self.corporation, self.main_ownership)
         # when
         owner.update_structures_esi()
@@ -1350,31 +1373,16 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.name, "Planet (Barren)_de")
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_update_pocos_no_asset_name_match(self, mock_esi_client):
-        # given
-        esi_post_corporations_corporation_id_assets_names.override_data = {"2001": []}
-        mock_esi_client.side_effect = esi_mock_client
-        owner = create_owner(self.corporation, self.main_ownership)
-        EvePlanet.objects.all().delete()
-        # when
-        owner.update_structures_esi()
-        # then
-        structure = Structure.objects.get(id=1200000000003)
-        self.assertEqual(structure.name, "")
-        esi_post_corporations_corporation_id_assets_names.override_data = None
-
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(
         "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
     )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_send_refueled_notification_when_fuel_level_increased(
-        self, mock_send_message, mock_esi_client
+        self, mock_send_message, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",
@@ -1401,10 +1409,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
-        self, mock_send_message, mock_esi_client
+        self, mock_send_message, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",
@@ -1425,10 +1433,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_remove_outdated_fuel_alerts_when_fuel_level_changed(
-        self, mock_send_message, mock_esi_client
+        self, mock_send_message, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
+        mock_esi.client = esi_client_stub
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",

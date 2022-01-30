@@ -42,16 +42,9 @@ from ..app_settings import (
 )
 from ..constants import EveGroupId, EveTypeId
 from ..core import starbases
-from ..helpers.esi_fetch import _esi_client, esi_fetch, esi_fetch_with_localization
 from ..managers import OwnerManager
-from .eveuniverse import (
-    EveMoon,
-    EvePlanet,
-    EveSolarSystem,
-    EveSovereigntyMap,
-    EveType,
-    EveUniverse,
-)
+from ..providers import esi
+from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSovereigntyMap, EveType
 from .notifications import EveEntity, Notification, NotificationType, Webhook
 from .structures import PocoDetails, Structure, StructureItem
 
@@ -487,28 +480,18 @@ class Owner(models.Model):
 
         Return True if successful, else False.
         """
-        from .eveuniverse import EsiNameLocalization
-
+        is_ok = True
         corporation_id = self.corporation.corporation_id
-        structures = list()
+        # fetch main list of structure for this corporation
         try:
-            # fetch all structures incl. localizations for services
-            structures_w_lang = esi_fetch_with_localization(
-                esi_path="Corporation.get_corporations_corporation_id_structures",
-                args={"corporation_id": corporation_id},
-                token=token,
-                languages=EsiNameLocalization.ESI_LANGUAGES,
-                has_pages=True,
+            structures = (
+                esi.client.Corporation.get_corporations_corporation_id_structures(
+                    corporation_id=corporation_id, token=token.valid_access_token()
+                ).results()
             )
         except OSError as ex:
             self._report_esi_issue("fetch corporation structures", ex, token)
             return False
-
-        is_ok = True
-        # reduce data
-        structures = self._compress_services_localization(
-            structures_w_lang, EveUniverse.ESI_DEFAULT_LANGUAGE
-        )
 
         # fetch additional information for structures
         if not structures:
@@ -521,21 +504,23 @@ class Owner(models.Model):
             )
             for structure in structures:
                 try:
-                    structure_info = esi_fetch(
-                        "Universe.get_universe_structures_structure_id",
-                        args={"structure_id": structure["structure_id"]},
-                        token=token,
-                    )
-                    structure["name"] = Structure.extract_name_from_esi_respose(
-                        structure_info["name"]
-                    )
-                    structure["position"] = structure_info["position"]
+                    structure_info = (
+                        esi.client.Universe.get_universe_structures_structure_id(
+                            structure_id=structure["structure_id"],
+                            token=token.valid_access_token(),
+                        )
+                    ).results()
                 except OSError as ex:
                     self._report_esi_issue(
                         f"fetch structure #{structure['structure_id']}", ex, token
                     )
                     structure["name"] = "(no data)"
                     is_ok = False
+                else:
+                    structure["name"] = Structure.extract_name_from_esi_respose(
+                        structure_info["name"]
+                    )
+                    structure["position"] = structure_info["position"]
 
             logger.info(
                 "%s: Storing updates for %d upwell structures",
@@ -614,16 +599,12 @@ class Owner(models.Model):
 
         Return True when successful, else False.
         """
-
         corporation_id = self.corporation.corporation_id
         structures = dict()
         try:
-            pocos = esi_fetch(
-                "Planetary_Interaction.get_corporations_corporation_id_customs_offices",
-                args={"corporation_id": corporation_id},
-                token=token,
-                has_pages=True,
-            )
+            pocos = esi.client.Planetary_Interaction.get_corporations_corporation_id_customs_offices(
+                corporation_id=corporation_id, token=token.valid_access_token()
+            ).results()
             if not pocos:
                 logger.info("%s: No custom offices retrieved from ESI", self)
             else:
@@ -679,7 +660,7 @@ class Owner(models.Model):
                     structures[office_id] = structure
 
                 logger.info(
-                    "%s: Storing updates for %d customs offices", self, len(structure)
+                    "%s: Storing updates for %d customs offices", self, len(structures)
                 )
                 for office_id, structure in structures.items():
                     structure_obj, _ = Structure.objects.update_or_create_from_dict(
@@ -744,26 +725,28 @@ class Owner(models.Model):
         )
         return True
 
-    def _fetch_locations_for_pocos(self, corporation_id, item_ids, token):
+    def _fetch_locations_for_pocos(
+        self, corporation_id: int, item_ids: list, token: Token
+    ) -> dict:
         logger.info(
             "%s: Fetching locations for %d custom offices from ESI", self, len(item_ids)
         )
         locations_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
-            locations_data_chunk = esi_fetch(
-                "Assets.post_corporations_corporation_id_assets_locations",
-                args={
-                    "corporation_id": corporation_id,
-                    "item_ids": item_ids_chunk,
-                },
-                token=token,
-            )
+            locations_data_chunk = (
+                esi.client.Assets.post_corporations_corporation_id_assets_locations(
+                    corporation_id=corporation_id,
+                    item_ids=item_ids_chunk,
+                    token=token.valid_access_token(),
+                )
+            ).results()
             locations_data += locations_data_chunk
         positions = {x["item_id"]: x["position"] for x in locations_data}
         return positions
 
-    def _fetch_names_for_pocos(self, corporation_id, item_ids, token):
-
+    def _fetch_names_for_pocos(
+        self, corporation_id: int, item_ids: list, token: Token
+    ) -> dict:
         logger.info(
             "%s: Fetching names for %d custom office names from ESI",
             self,
@@ -771,16 +754,14 @@ class Owner(models.Model):
         )
         names_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
-            names_data_chunk = esi_fetch(
-                "Assets.post_corporations_corporation_id_assets_names",
-                args={
-                    "corporation_id": corporation_id,
-                    "item_ids": item_ids_chunk,
-                },
-                token=token,
-            )
+            names_data_chunk = (
+                esi.client.Assets.post_corporations_corporation_id_assets_names(
+                    corporation_id=corporation_id,
+                    item_ids=item_ids_chunk,
+                    token=token.valid_access_token(),
+                )
+            ).results()
             names_data += names_data_chunk
-
         names = {x["item_id"]: self._extract_planet_name(x["name"]) for x in names_data}
         return names
 
@@ -799,12 +780,11 @@ class Owner(models.Model):
         structures = list()
         corporation_id = self.corporation.corporation_id
         try:
-            starbases = esi_fetch(
-                "Corporation.get_corporations_corporation_id_starbases",
-                args={"corporation_id": corporation_id},
-                token=token,
-                has_pages=True,
-            )
+            starbases = (
+                esi.client.Corporation.get_corporations_corporation_id_starbases(
+                    corporation_id=corporation_id, token=token.valid_access_token()
+                )
+            ).results()
             if not starbases:
                 logger.info("%s: No starbases retrieved from ESI", self)
             else:
@@ -877,22 +857,22 @@ class Owner(models.Model):
         )
         return True
 
-    def _fetch_starbases_names(self, corporation_id, starbases, token):
-
+    def _fetch_starbases_names(
+        self, corporation_id: int, starbases: list, token: Token
+    ) -> dict:
         logger.info(
             "%s: Fetching names for %d starbases from ESI", self, len(starbases)
         )
         item_ids = [x["starbase_id"] for x in starbases]
         names_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
-            names_data_chunk = esi_fetch(
-                "Assets.post_corporations_corporation_id_assets_names",
-                args={
-                    "corporation_id": corporation_id,
-                    "item_ids": item_ids_chunk,
-                },
-                token=token,
-            )
+            names_data_chunk = (
+                esi.client.Assets.post_corporations_corporation_id_assets_names(
+                    corporation_id=corporation_id,
+                    item_ids=item_ids_chunk,
+                    token=token.valid_access_token(),
+                )
+            ).results()
             names_data += names_data_chunk
         names = {x["item_id"]: x["name"] for x in names_data}
 
@@ -901,7 +881,6 @@ class Owner(models.Model):
             starbase["name"] = (
                 names[starbase_id] if starbase_id in names else "Starbase"
             )
-
         return names
 
     def _calc_starbase_fuel_expires(
@@ -913,14 +892,14 @@ class Owner(models.Model):
         """
         if starbase["state"] == "offline":
             return None
-        operation = _esi_client().Corporation.get_corporations_corporation_id_starbases_starbase_id(
+        operation = esi.client.Corporation.get_corporations_corporation_id_starbases_starbase_id(
             corporation_id=corporation_id,
             starbase_id=starbase["starbase_id"],
             system_id=starbase["system_id"],
             token=token.valid_access_token(),
         )
         operation.request_config.also_return_response = True
-        starbase_details, response = operation.result()
+        starbase_details, response = operation.results()
         fuel_quantity = None
         if "fuels" in starbase_details:
             for fuel in starbase_details["fuels"]:
@@ -980,12 +959,9 @@ class Owner(models.Model):
 
     def _fetch_notifications_from_esi(self, token: Token) -> dict:
         """fetching all notifications from ESI for current owner"""
-
-        notifications = esi_fetch(
-            "Character.get_characters_character_id_notifications",
-            args={"character_id": token.character_id},
-            token=token,
-        )
+        notifications = esi.client.Character.get_characters_character_id_notifications(
+            character_id=token.character_id, token=token.valid_access_token()
+        ).results()
         if STRUCTURES_DEVELOPER_MODE:
             self._store_raw_data(
                 "notifications", notifications, self.corporation.corporation_id
@@ -1229,12 +1205,11 @@ class Owner(models.Model):
             )
 
     def _fetch_structure_assets_from_esi(self) -> dict:
-        assets = esi_fetch(
-            esi_path="Assets.get_corporations_corporation_id_assets",
-            args={"corporation_id": self.corporation.corporation_id},
-            token=self.fetch_token(),
-            has_pages=True,
-        )
+        token = self.fetch_token()
+        assets = esi.client.Assets.get_corporations_corporation_id_assets(
+            corporation_id=self.corporation.corporation_id,
+            token=token.valid_access_token(),
+        ).results()
         structure_ids = set(self.structures.values_list("id", flat=True))
         assets_in_structures = {id: dict() for id in structure_ids}
         for asset in assets:

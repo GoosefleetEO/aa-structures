@@ -5,12 +5,15 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
+from ...constants import EveTypeId
 from ...models import (
     Notification,
     Owner,
     OwnerCharacter,
+    PocoDetails,
     Structure,
     StructureItem,
+    StructureService,
     Webhook,
 )
 
@@ -62,11 +65,11 @@ def create_structure(**kwargs) -> Structure:
         "state": Structure.State.SHIELD_VULNERABLE,
     }
     if "owner" not in kwargs and "owner_id" not in kwargs:
-        params["owner_id"] = 2001
+        params["owner_id"] = 2001  # Wayne Technologies
     if "eve_solar_system_id" not in kwargs and "eve_solar_system" not in kwargs:
-        params["eve_solar_system_id"] = 30002537
+        params["eve_solar_system_id"] = 30002537  # Amamake
     if "eve_type_id" not in kwargs and "eve_type" not in kwargs:
-        params["eve_type_id"] = 35832
+        params["eve_type_id"] = 35832  # Astrahus
     params.update(kwargs)
     return Structure.objects.create(**params)
 
@@ -80,6 +83,59 @@ def create_structure_item(**kwargs):
     }
     params.update(kwargs)
     return StructureItem.objects.create(**params)
+
+
+def create_poco(poco_details=None, **kwargs) -> Structure:
+    kwargs["eve_type_id"] = EveTypeId.CUSTOMS_OFFICE
+    if "eve_type" in kwargs:
+        del kwargs["eve_type"]
+    if "eve_planet_id" not in kwargs and "eve_planet" not in kwargs:
+        kwargs["eve_planet_id"] = 40161472  # Amamake V
+    structure = create_structure(**kwargs)
+    assert structure.is_poco
+    poco_params = {
+        "alliance_tax_rate": 0.05,
+        "allow_access_with_standings": True,
+        "allow_alliance_access": True,
+        "bad_standing_tax_rate": 0.1,
+        "corporation_tax_rate": 0.1,
+        "excellent_standing_tax_rate": 0.05,
+        "good_standing_tax_rate": 0.05,
+        "neutral_standing_tax_rate": 0.1,
+        "reinforce_exit_end": 20,
+        "reinforce_exit_start": 18,
+        "standing_level": PocoDetails.StandingLevel.TERRIBLE,
+        "structure": structure,
+        "terrible_standing_tax_rate": 0.1,
+    }
+    if poco_details:
+        poco_params.update(poco_details)
+    PocoDetails.objects.create(**poco_params)
+    return structure
+
+
+def create_starbase(**kwargs):
+    if "eve_moon_id" not in kwargs and "eve_moon" not in kwargs:
+        kwargs["eve_moon_id"] = 40161465  # Amamake II - Moon 1
+    if "eve_type_id" not in kwargs and "eve_type" not in kwargs:
+        kwargs["eve_type_id"] = 16213  # Caldari Control Tower
+    structure = create_structure(**kwargs)
+    assert structure.is_starbase
+    return structure
+
+
+def create_upwell_structure(**kwargs) -> Structure:
+    structure = create_structure(**kwargs)
+    assert structure.is_upwell_structure
+    return structure
+
+
+def create_structure_service(**kwargs) -> StructureService:
+    if "name" not in kwargs:
+        kwargs["name"] = "Clone Bay"
+    if "state" not in kwargs:
+        kwargs["state"] = StructureService.State.ONLINE
+    return StructureService.objects.create(**kwargs)
 
 
 def create_webhook(**kwargs) -> Webhook:
