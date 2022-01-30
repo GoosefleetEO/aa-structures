@@ -296,6 +296,24 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         # then
         self.assertEqual(structure.structure_fuel_alerts.count(), 1)
 
+    def test_should_return_correct_webhooks(self, mock_send_message):
+        # given
+        webhook_2 = Webhook.objects.create(
+            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        )
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.TOWER_RESOURCE_ALERT_MSG,
+        ]
+        webhook_2.save()
+        self.owner.webhooks.add(webhook_2)
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        # when
+        qs = config.relevant_webhooks()
+        # then
+        webhook_pks = qs.values_list("pk", flat=True)
+        self.assertSetEqual(set(webhook_pks), {self.webhook.pk, webhook_2.pk})
+
 
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestJumpFuelAlerts(NoSocketsTestCase):
@@ -486,6 +504,24 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         config.save()
         # then
         self.assertEqual(structure.jump_fuel_alerts.count(), 1)
+
+    def test_should_return_correct_webhooks(self, mock_send_message):
+        # given
+        webhook_2 = Webhook.objects.create(
+            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        )
+        webhook_2.notification_types = [
+            NotificationType.STRUCTURE_DESTROYED,
+            NotificationType.TOWER_RESOURCE_ALERT_MSG,
+        ]
+        webhook_2.save()
+        self.owner.webhooks.add(webhook_2)
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        # when
+        qs = config.relevant_webhooks()
+        # then
+        webhook_pks = qs.values_list("pk", flat=True)
+        self.assertSetEqual(set(webhook_pks), {self.webhook.pk})
 
 
 class TestNotificationRelatedStructures(NoSocketsTestCase):

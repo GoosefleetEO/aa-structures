@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.21.1] - 2022-01-30
+
+### Fixed
+
+- Failed to send notifications (#65, #66)
+
 ## [1.21.0] - 2022-01-28
 
 ### Added
