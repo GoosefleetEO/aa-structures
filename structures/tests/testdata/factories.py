@@ -1,5 +1,7 @@
 from random import randint
+from typing import List
 
+from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.timezone import now
 
@@ -33,7 +35,9 @@ def create_notification(**kwargs):
     return Notification.objects.create(**params)
 
 
-def create_owner_from_user(user, webhooks=None, **kwargs) -> Owner:
+def create_owner_from_user(
+    user: User, webhooks: List[Webhook] = None, **kwargs
+) -> Owner:
     main_character = user.profile.main_character
     kwargs["corporation"] = EveCorporationInfo.objects.get(
         corporation_id=main_character.corporation_id
