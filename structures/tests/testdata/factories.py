@@ -5,7 +5,14 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from ...models import Notification, Owner, OwnerCharacter, Structure, Webhook
+from ...models import (
+    Notification,
+    Owner,
+    OwnerCharacter,
+    Structure,
+    StructureItem,
+    Webhook,
+)
 
 
 def create_notification(**kwargs):
@@ -23,7 +30,7 @@ def create_notification(**kwargs):
     return Notification.objects.create(**params)
 
 
-def create_owner_from_user(user, **kwargs) -> Owner:
+def create_owner_from_user(user, webhooks=None, **kwargs) -> Owner:
     main_character = user.profile.main_character
     kwargs["corporation"] = EveCorporationInfo.objects.get(
         corporation_id=main_character.corporation_id
@@ -31,8 +38,10 @@ def create_owner_from_user(user, **kwargs) -> Owner:
     if "is_alliance_main" not in kwargs:
         kwargs["is_alliance_main"] = True
     owner = Owner.objects.create(**kwargs)
-    webhook = create_webhook()
-    owner.webhooks.add(webhook)
+    if not webhooks:
+        owner.webhooks.add(create_webhook())
+    else:
+        owner.webhooks.add(*webhooks)
     owner.characters.add(
         create_owner_character(
             owner=owner, character_ownership=main_character.character_ownership
@@ -60,6 +69,17 @@ def create_structure(**kwargs) -> Structure:
         params["eve_type_id"] = 35832
     params.update(kwargs)
     return Structure.objects.create(**params)
+
+
+def create_structure_item(**kwargs):
+    params = {
+        "id": _generate_unique_id(StructureItem, "id"),
+        "location_flag": StructureItem.LocationFlag.CARGO,
+        "is_singleton": False,
+        "quantity": 1,
+    }
+    params.update(kwargs)
+    return StructureItem.objects.create(**params)
 
 
 def create_webhook(**kwargs) -> Webhook:

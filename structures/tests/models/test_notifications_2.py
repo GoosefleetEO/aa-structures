@@ -28,6 +28,8 @@ from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
     create_structure,
+    create_structure_item,
+    create_webhook,
 )
 
 MODULE_PATH = "structures.models.notifications"
@@ -202,14 +204,12 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_send_message
     ):
         # given
-        webhook_2 = Webhook.objects.create(
-            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        webhook_2 = create_webhook(
+            notification_types=[
+                NotificationType.STRUCTURE_DESTROYED,
+                NotificationType.TOWER_RESOURCE_ALERT_MSG,
+            ]
         )
-        webhook_2.notification_types = [
-            NotificationType.STRUCTURE_DESTROYED,
-            NotificationType.TOWER_RESOURCE_ALERT_MSG,
-        ]
-        webhook_2.save()
         self.owner.webhooks.add(webhook_2)
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
@@ -229,14 +229,12 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_send_message
     ):
         # given
-        webhook_2 = Webhook.objects.create(
-            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        webhook_2 = create_webhook(
+            notification_types=[
+                NotificationType.STRUCTURE_DESTROYED,
+                NotificationType.STRUCTURE_FUEL_ALERT,
+            ]
         )
-        webhook_2.notification_types = [
-            NotificationType.STRUCTURE_DESTROYED,
-            NotificationType.STRUCTURE_FUEL_ALERT,
-        ]
-        webhook_2.save()
         self.owner.webhooks.add(webhook_2)
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1300000000001)
@@ -298,21 +296,28 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_return_correct_webhooks(self, mock_send_message):
         # given
-        webhook_2 = Webhook.objects.create(
-            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        webhook_wrong_type = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_DESTROYED]
         )
-        webhook_2.notification_types = [
-            NotificationType.STRUCTURE_DESTROYED,
-            NotificationType.TOWER_RESOURCE_ALERT_MSG,
-        ]
-        webhook_2.save()
-        self.owner.webhooks.add(webhook_2)
+        self.owner.webhooks.add(webhook_wrong_type)
+        structure = create_structure(owner=self.owner)
+        webhook_structure = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_FUEL_ALERT]
+        )
+        structure.webhooks.add(webhook_structure)
+        webhook_inactive = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_FUEL_ALERT], is_active=False
+        )
+        self.owner.webhooks.add(webhook_inactive)
+        create_webhook(notification_types=[NotificationType.STRUCTURE_FUEL_ALERT])
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         # when
         qs = config.relevant_webhooks()
         # then
-        webhook_pks = qs.values_list("pk", flat=True)
-        self.assertSetEqual(set(webhook_pks), {self.webhook.pk, webhook_2.pk})
+        relevant_webhook_pks = qs.values_list("pk", flat=True)
+        self.assertSetEqual(
+            set(relevant_webhook_pks), {self.webhook.pk, webhook_structure.pk}
+        )
 
 
 @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
@@ -320,15 +325,17 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        create_structures()
-        _, cls.owner = set_owner_character(character_id=1001)
-        load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.get(name="Test Webhook 1")
+        load_entities()
+        cls.user, _ = create_user_from_evecharacter(
+            1001, permissions=["structures.add_structure_owner"]
+        )
+        Webhook.objects.all().delete()
 
     def test_should_output_str(self, mock_send_message):
         # given
+        owner = create_owner_from_user(user=self.user)
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
         alert = structure.jump_fuel_alerts.create(config=config)
         # when
         result = str(alert)
@@ -337,15 +344,18 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
-        config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1,
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            is_singleton=False,
             quantity=99,
         )
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
         mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
@@ -357,8 +367,12 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_handle_no_fuel_situation(self, mock_send_message):
         # given
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
-        Structure.objects.get(id=1000000000004)
         mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
@@ -369,15 +383,18 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
-        config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1,
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            is_singleton=False,
             quantity=99,
         )
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
         alert = structure.jump_fuel_alerts.create(config=config)
         mock_send_message.reset_mock()
         # when
@@ -391,15 +408,18 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
-        config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1,
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            is_singleton=False,
             quantity=101,
         )
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
         mock_send_message.reset_mock()
         # when
         config.send_new_notifications()
@@ -409,16 +429,19 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
         # given
-        config = JumpFuelAlertConfig.objects.create(
-            threshold=100, channel_ping_type=Webhook.PingType.EVERYONE
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1,
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            is_singleton=False,
             quantity=99,
+        )
+        config = JumpFuelAlertConfig.objects.create(
+            threshold=100, channel_ping_type=Webhook.PingType.EVERYONE
         )
         mock_send_message.reset_mock()
         # when
@@ -430,16 +453,19 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_use_configured_level_for_notifications(self, mock_send_message):
         # given
-        config = JumpFuelAlertConfig.objects.create(
-            threshold=100, color=Webhook.Color.SUCCESS
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1,
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            is_singleton=False,
             quantity=99,
+        )
+        config = JumpFuelAlertConfig.objects.create(
+            threshold=100, color=Webhook.Color.SUCCESS
         )
         mock_send_message.reset_mock()
         # when
@@ -455,24 +481,23 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_send_message
     ):
         # given
-        webhook_2 = Webhook.objects.create(
-            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
-        webhook_2.notification_types = [
-            NotificationType.STRUCTURE_DESTROYED,
-            NotificationType.TOWER_RESOURCE_ALERT_MSG,
-        ]
-        webhook_2.save()
-        self.owner.webhooks.add(webhook_2)
-        config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1,
+        webhook_other = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+        )
+        owner = create_owner_from_user(
+            user=self.user, webhooks=[webhook, webhook_other]
+        )
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
             location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
-            is_singleton=False,
             quantity=99,
         )
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
         mock_send_to_webhook.reset_mock()
         # when
         config.send_new_notifications()
@@ -480,12 +505,22 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self.assertEqual(config.jump_fuel_alerts.count(), 1)
         self.assertEqual(mock_send_to_webhook.call_count, 1)
         args, _ = mock_send_to_webhook.call_args
-        self.assertEqual(args[0], self.webhook)
+        self.assertEqual(args[0], webhook)
 
     def test_should_remove_alerts_when_config_changes(self, mock_send_message):
         # given
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            quantity=99,
+        )
         config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
         structure.jump_fuel_alerts.create(config=config)
         # when
         config.threshold = 50
@@ -497,8 +532,18 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_structure_item(
+            structure=structure,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            quantity=99,
+        )
         config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure = Structure.objects.get(id=1000000000004)
         structure.jump_fuel_alerts.create(config=config)
         # when
         config.save()
@@ -507,21 +552,33 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_return_correct_webhooks(self, mock_send_message):
         # given
-        webhook_2 = Webhook.objects.create(
-            name="Test 2", url="http://www.example.com/dummy-2/", is_active=True
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
-        webhook_2.notification_types = [
-            NotificationType.STRUCTURE_DESTROYED,
-            NotificationType.TOWER_RESOURCE_ALERT_MSG,
-        ]
-        webhook_2.save()
-        self.owner.webhooks.add(webhook_2)
+        webhook_wrong_type = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_DESTROYED]
+        )
+        webhook_inactive = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT],
+            is_active=False,
+        )
+        owner = create_owner_from_user(
+            user=self.user, webhooks=[webhook, webhook_wrong_type, webhook_inactive]
+        )
+        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        webhook_structure = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        structure.webhooks.add(webhook_structure)
+        create_webhook(notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT])
         config = JumpFuelAlertConfig.objects.create(threshold=100)
         # when
         qs = config.relevant_webhooks()
         # then
-        webhook_pks = qs.values_list("pk", flat=True)
-        self.assertSetEqual(set(webhook_pks), {self.webhook.pk})
+        relevant_webhook_pks = qs.values_list("pk", flat=True)
+        self.assertSetEqual(
+            set(relevant_webhook_pks), {webhook.pk, webhook_structure.pk}
+        )
 
 
 class TestNotificationRelatedStructures(NoSocketsTestCase):

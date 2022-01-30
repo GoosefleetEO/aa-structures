@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.21.2] - 2022-01-30
+
+### Fixed
+
+- Structure and jump fuel alerts not recognized by structure webhooks
+
 ## [1.21.1] - 2022-01-30
 
 ### Fixed
