@@ -1,918 +1,1194 @@
-from unittest.mock import Mock, patch
+import datetime as dt
+from unittest.mock import patch
 
-from bravado.exception import HTTPBadGateway, HTTPInternalServerError
+from django.utils.timezone import now, utc
 
-from django.test import override_settings
-from esi.models import Token
+from app_utils.esi_testing import EsiClientStub, EsiEndpoint
+from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from allianceauth.tests.auth_utils import AuthUtils
-from app_utils.django import app_labels
-from app_utils.testing import (
-    BravadoResponseStub,
-    NoSocketsTestCase,
-    create_user_from_evecharacter,
-    queryset_pks,
-)
-
-from ...constants import EveTypeId
 from ...models import (
-    EveMoon,
-    JumpFuelAlertConfig,
-    Notification,
+    EvePlanet,
+    FuelAlertConfig,
+    NotificationType,
     Owner,
+    PocoDetails,
     Structure,
-    StructureItem,
+    StructureService,
+    StructureTag,
     Webhook,
 )
-from ...models.notifications import NotificationType
 from .. import to_json
-from ..testdata import (
-    create_structures,
-    entities_testdata,
-    esi_mock_client,
-    load_entities,
-    load_notification_entities,
-    set_owner_character,
+from ..testdata import load_entities
+from ..testdata.factories import (
+    create_owner_from_user,
+    create_poco,
+    create_starbase,
+    create_structure_service,
+    create_upwell_structure,
 )
-from ..testdata.factories import create_owner_from_user, create_webhook
-
-if "timerboard" in app_labels():
-    from allianceauth.timerboard.models import Timer as AuthTimer
-
-    has_auth_timers = True
-
-else:
-    has_auth_timers = False
-
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.owners"
-MODELS_NOTIFICATIONS = "structures.models.notifications"
-MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"
 
 
-class TestUpdateStructuresEsiWithLocalization(NoSocketsTestCase):
-    def setUp(self):
-        self.default_lang = "en-us"
-        self.structures_w_lang = {
-            "en-us": [
-                {
-                    "structure_id": 1001,
-                    "services": [
-                        {"name": "alpha", "state": "online"},
-                        {"name": "bravo", "state": "online"},
-                    ],
-                },
-                {
-                    "structure_id": 1002,
-                    "services": [{"name": "bravo", "state": "offline"}],
-                },
-            ],
-            "ko": [
-                {
-                    "structure_id": 1001,
-                    "services": [
-                        {"name": "alpha_ko", "state": "online"},
-                        {"name": "bravo_ko", "state": "online"},
-                    ],
-                },
-                {
-                    "structure_id": 1002,
-                    "services": [{"name": "bravo_ko", "state": "offline"}],
-                },
-            ],
-            "de": [
-                {
-                    "structure_id": 1001,
-                    "services": [
-                        {"name": "alpha_de", "state": "online"},
-                        {"name": "bravo_de", "state": "online"},
-                    ],
-                },
-                {
-                    "structure_id": 1002,
-                    "services": [{"name": "bravo_de", "state": "offline"}],
-                },
-            ],
-        }
-
-    def test_collect_services_with_localizations(self):
-        structures_services = Owner._collect_services_with_localizations(
-            self.structures_w_lang, self.default_lang
-        )
-        expected = {
-            1001: {"de": ["alpha_de", "bravo_de"], "ko": ["alpha_ko", "bravo_ko"]},
-            1002: {"de": ["bravo_de"], "ko": ["bravo_ko"]},
-        }
-        self.maxDiff = None
-        self.assertEqual(to_json(structures_services), to_json(expected))
-
-    def test_condense_services_localizations_into_structures(self):
-        structures_services = {
-            1001: {"de": ["alpha_de", "bravo_de"], "ko": ["alpha_ko", "bravo_ko"]},
-            1002: {"de": ["bravo_de"], "ko": ["bravo_ko"]},
-        }
-        structures = Owner._condense_services_localizations_into_structures(
-            self.structures_w_lang, self.default_lang, structures_services
-        )
-        excepted = [
-            {
-                "structure_id": 1001,
-                "services": [
-                    {
-                        "name": "alpha",
-                        "name_de": "alpha_de",
-                        "name_ko": "alpha_ko",
-                        "state": "online",
-                    },
-                    {
-                        "name": "bravo",
-                        "name_de": "bravo_de",
-                        "name_ko": "bravo_ko",
-                        "state": "online",
-                    },
-                ],
-            },
-            {
-                "structure_id": 1002,
-                "services": [
-                    {
-                        "name": "bravo",
-                        "name_de": "bravo_de",
-                        "name_ko": "bravo_ko",
-                        "state": "offline",
-                    }
-                ],
-            },
-        ]
-        self.maxDiff = None
-        self.assertEqual(to_json(structures), to_json(excepted))
-
-    def test_condense_services_localizations_into_structures_2(self):
-        structures_services = {
-            1001: {"de": ["alpha_de", "bravo_de"]},
-            1002: {"de": ["bravo_de"]},
-        }
-        structures = Owner._condense_services_localizations_into_structures(
-            self.structures_w_lang, self.default_lang, structures_services
-        )
-        excepted = [
-            {
-                "structure_id": 1001,
-                "services": [
-                    {"name": "alpha", "name_de": "alpha_de", "state": "online"},
-                    {"name": "bravo", "name_de": "bravo_de", "state": "online"},
-                ],
-            },
-            {
-                "structure_id": 1002,
-                "services": [
-                    {"name": "bravo", "name_de": "bravo_de", "state": "offline"}
-                ],
-            },
-        ]
-        self.maxDiff = None
-        self.assertEqual(to_json(structures), to_json(excepted))
-
-
-@patch("structures.helpers.esi_fetch._esi_client")
-class TestFetchNotificationsEsi(NoSocketsTestCase):
+@patch(MODULE_PATH + ".esi")
+class TestUpdateStructuresEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.owner.is_alliance_main = True
-        cls.owner.save()
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    def test_should_create_notifications_and_timers_from_scratch(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi()
-        else:
-            self.owner.fetch_notifications_esi()
-
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
-        # should only contain the right notifications
-        notif_ids_current = set(
-            Notification.objects.values_list("notification_id", flat=True)
-        )
-        notif_ids_testdata = {
-            x["notification_id"] for x in entities_testdata["Notification"]
-        }
-        self.assertSetEqual(notif_ids_current, notif_ids_testdata)
-
-        if has_auth_timers:
-            # should have added timers
-            self.assertEqual(AuthTimer.objects.count(), 4)
-
-            # run sync again
-            self.owner.fetch_notifications_esi()
-            self.assertTrue(self.owner.is_notification_sync_fresh)
-
-            # should not have more timers
-            self.assertEqual(AuthTimer.objects.count(), 4)
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".notify", spec=True)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    def test_should_inform_user_about_successful_update(
-        self, mock_notify, mock_esi_client
-    ):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi(user=self.user)
-        else:
-            self.owner.fetch_notifications_esi(user=self.user)
-
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
-        self.assertTrue(mock_notify.called)
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    def test_should_create_new_notifications_only(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        load_notification_entities(self.owner)
-        Notification.objects.get(notification_id=1000000803).delete()
-        Notification.objects.all().update(created=None)
-        # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi()
-        else:
-            self.owner.fetch_notifications_esi()
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
-        # should only contain the right notifications
-        notif_ids_current = set(
-            Notification.objects.values_list("notification_id", flat=True)
-        )
-        notif_ids_testdata = {
-            x["notification_id"] for x in entities_testdata["Notification"]
-        }
-        self.assertSetEqual(notif_ids_current, notif_ids_testdata)
-        # should only have created one notification
-        created_ids = set(
-            Notification.objects.filter(created__isnull=False).values_list(
-                "notification_id", flat=True
-            )
-        )
-        self.assertSetEqual(created_ids, {1000000803})
-
-    @patch(MODELS_NOTIFICATIONS + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    def test_should_set_moon_for_structure_if_missing(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        load_notification_entities(self.owner)
-        Notification.objects.get(notification_id=1000000803).delete()
-        Notification.objects.all().update(created=None)
-        # when
-        if "structuretimers" in app_labels():
-            from ..testdata.load_eveuniverse import load_eveuniverse
-
-            load_eveuniverse()
-            with patch(
-                "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False
-            ), patch(
-                "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                lambda: Mock(),
-            ):
-                self.owner.fetch_notifications_esi()
-        else:
-            self.owner.fetch_notifications_esi()
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_notification_sync_fresh)
-        structure = Structure.objects.get(id=1000000000002)
-        self.assertEqual(structure.eve_moon, EveMoon.objects.get(id=40161465))
-
-    @patch("structures.helpers.esi_fetch.ESI_RETRY_SLEEP_SECS", 0)
-    @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
-    def test_report_error_when_esi_returns_error_during_sync(self, mock_esi_client):
-        # given
-        def get_characters_character_id_notifications_error(*args, **kwargs):
-            raise HTTPBadGateway(
-                BravadoResponseStub(status_code=502, reason="Test Exception")
-            )
-
-        mock_esi_client.return_value.Character.get_characters_character_id_notifications.side_effect = (
-            get_characters_character_id_notifications_error
-        )
-        AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        # when
-        with self.assertRaises(HTTPBadGateway):
-            self.owner.fetch_notifications_esi()
-        # then
-        self.owner.refresh_from_db()
-        self.assertFalse(self.owner.is_notification_sync_fresh)
-
-
-@override_settings(DEBUG=True)
-@patch(MODELS_NOTIFICATIONS + ".Webhook.send_message", spec=True)
-class TestSendNewNotifications1(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.owner.is_alliance_main = True
-        cls.owner.save()
-        load_notification_entities(cls.owner)
-        my_webhook = create_webhook(notification_types=NotificationType.values)
-        cls.owner.webhooks.add(my_webhook)
-
-    # TODO: Temporarily disabled
-    # @patch(
-    #     MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", False
-    # )
-    def test_should_send_all_notifications(self, mock_send_message):
-        # given
-        mock_send_message.return_value = True
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        # when
-        self.owner.send_new_notifications()
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_forwarding_sync_fresh)
-        notifications_processed = {
-            int(args[1]["embeds"][0].footer.text[-10:])
-            for args in mock_send_message.call_args_list
-        }
-        notifications_expected = set(
-            self.owner.notifications.filter(
-                notif_type__in=NotificationType.values
-            ).values_list("notification_id", flat=True)
-        )
-        self.assertSetEqual(notifications_processed, notifications_expected)
-
-    # TODO: temporary disabled
-    # @patch(
-    #     MODELS_NOTIFICATIONS + ".STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS", True
-    # )
-    # def test_should_send_all_notifications_except_fuel_alerts(self, mock_send_message):
-    #     # given
-    #     mock_send_message.return_value = True
-    #     self.user = AuthUtils.add_permission_to_user_by_name(
-    #         "structures.add_structure_owner", self.user
-    #     )
-    #     # when
-    #     self.owner.send_new_notifications()
-    #     # then
-    #     self.owner.refresh_from_db()
-    #     self.assertTrue(self.owner.is_forwarding_sync_fresh)
-    #     notifications_processed = {
-    #         int(args[1]["embeds"][0].footer.text[-10:])
-    #         for args in mock_send_message.call_args_list
-    #     }
-    #     notif_types = set(NotificationType.values)
-    #     notif_types.discard(NotificationType.STRUCTURE_FUEL_ALERT)
-    #     notif_types.discard(NotificationType.TOWER_RESOURCE_ALERT_MSG)
-    #     notifications_expected = set(
-    #         self.owner.notifications.filter(notif_type__in=notif_types).values_list(
-    #             "notification_id", flat=True
-    #         )
-    #     )
-    #     self.assertSetEqual(notifications_processed, notifications_expected)
-
-    def test_should_send_all_notifications_corp(self, mock_send_message):
-        # given
-        mock_send_message.return_value = True
-        user, owner = set_owner_character(character_id=1011)
-        load_notification_entities(owner)
-        owner.is_alliance_main = True
-        owner.save()
-        user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", user
-        )
-        # when
-        owner.send_new_notifications()
-        # then
-        owner.refresh_from_db()
-        self.assertTrue(owner.is_forwarding_sync_fresh)
-        notifications_processed = {
-            int(args[1]["embeds"][0].footer.text[-10:])
-            for args in mock_send_message.call_args_list
-        }
-        notifications_expected = set(
-            owner.notifications.filter(
-                notif_type__in=NotificationType.values
-            ).values_list("notification_id", flat=True)
-        )
-        self.assertSetEqual(notifications_processed, notifications_expected)
-
-    def test_should_only_send_selected_notification_types(self, mock_send_message):
-        # given
-        mock_send_message.return_value = True
-        self.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", self.user
-        )
-        webhook = create_webhook(
-            notification_types=[
-                NotificationType.ORBITAL_ATTACKED,
-                NotificationType.STRUCTURE_DESTROYED,
-            ]
-        )
-        self.owner.webhooks.clear()
-        self.owner.webhooks.add(webhook)
-        # when
-        self.owner.send_new_notifications()
-        # then
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_forwarding_sync_fresh)
-        notifications_processed = {
-            int(args[1]["embeds"][0].footer.text[-10:])
-            for args in mock_send_message.call_args_list
-        }
-        notifications_expected = set(
-            Notification.objects.filter(
-                notif_type__in=[
-                    NotificationType.ORBITAL_ATTACKED,
-                    NotificationType.STRUCTURE_DESTROYED,
-                ]
-            ).values_list("notification_id", flat=True)
-        )
-        self.assertSetEqual(notifications_processed, notifications_expected)
-
-
-class TestSendNewNotifications2(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+        # given (global)
+        load_eveuniverse()
         load_entities()
-        user, _ = create_user_from_evecharacter(
-            1001, permissions=["structures.add_structure_owner"]
+        cls.user, _ = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
         )
-        cls.owner = create_owner_from_user(user=user, is_alliance_main=True)
         Webhook.objects.all().delete()
-        load_notification_entities(cls.owner)
+        cls.endpoints = [
+            EsiEndpoint(
+                "Assets",
+                "get_corporations_corporation_id_assets",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "is_singleton": False,
+                            "item_id": 1300000001001,
+                            "location_flag": "QuantumCoreRoom",
+                            "location_id": 1000000000001,
+                            "location_type": "item",
+                            "quantity": 1,
+                            "type_id": 56201,
+                        },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1300000001002,
+                            "location_flag": "ServiceSlot0",
+                            "location_id": 1000000000001,
+                            "location_type": "item",
+                            "quantity": 1,
+                            "type_id": 35894,
+                        },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1300000002001,
+                            "location_flag": "ServiceSlot0",
+                            "location_id": 1000000000002,
+                            "location_type": "item",
+                            "quantity": 1,
+                            "type_id": 35894,
+                        },
+                    ],
+                    "2102": [
+                        {
+                            "is_singleton": False,
+                            "item_id": 1300000003001,
+                            "location_flag": "StructureFuel",
+                            "location_id": 1000000000004,
+                            "location_type": "item",
+                            "quantity": 5000,
+                            "type_id": 16273,
+                        }
+                    ],
+                },
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_locations",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "item_id": 1200000000003,
+                            "position": {"x": 1.2, "y": 2.3, "z": -3.4},
+                        },
+                        {
+                            "item_id": 1200000000004,
+                            "position": {"x": 5.2, "y": 6.3, "z": -7.4},
+                        },
+                        {
+                            "item_id": 1200000000005,
+                            "position": {"x": 1.2, "y": 6.3, "z": -7.4},
+                        },
+                        {
+                            "item_id": 1200000000006,
+                            "position": {"x": 41.2, "y": 26.3, "z": -47.4},
+                        },
+                    ]
+                },
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_names",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "item_id": 1200000000003,
+                            "name": "Customs Office (Amamake V)",
+                        },
+                        {
+                            "item_id": 1200000000004,
+                            "name": "Customs Office (1-PGSG VI)",
+                        },
+                        {
+                            "item_id": 1200000000005,
+                            "name": "Customs Office (1-PGSG VII)",
+                        },
+                        {
+                            "item_id": 1200000000006,
+                            "name": '<localized hint="Customs Office">Customs Office*</localized> (1-PGSG VIII)',
+                        },
+                        {"item_id": 1300000000001, "name": "Home Sweat Home"},
+                        {"item_id": 1300000000002, "name": "Bat cave"},
+                        {"item_id": 1300000000003, "name": "Panic Room"},
+                    ]
+                },
+            ),
+            EsiEndpoint(
+                "Corporation",
+                "get_corporations_corporation_id_structures",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "corporation_id": 2001,
+                            "fuel_expires": dt.datetime(2020, 3, 5, 5, tzinfo=utc),
+                            "next_reinforce_apply": None,
+                            "next_reinforce_hour": None,
+                            "profile_id": 52436,
+                            "reinforce_hour": 19,
+                            "services": [
+                                {"name": "Reprocessing", "state": "online"},
+                                {"name": "Moon Drilling", "state": "online"},
+                            ],
+                            "state": "shield_vulnerable",
+                            "state_timer_end": None,
+                            "state_timer_start": None,
+                            "structure_id": 1000000000002,
+                            "system_id": 30002537,
+                            "type_id": 35835,
+                            "unanchors_at": None,
+                        },
+                        {
+                            "corporation_id": 2001,
+                            "fuel_expires": dt.datetime(2020, 3, 5, 5, tzinfo=utc),
+                            "next_reinforce_apply": None,
+                            "next_reinforce_hour": None,
+                            "profile_id": 101853,
+                            "reinforce_hour": 18,
+                            "services": [
+                                {"name": "Clone Bay", "state": "online"},
+                                {"name": "Market Hub", "state": "offline"},
+                            ],
+                            "state": "shield_vulnerable",
+                            "state_timer_end": dt.datetime(2020, 4, 5, 7, tzinfo=utc),
+                            "state_timer_start": dt.datetime(
+                                2020, 4, 5, 6, 30, tzinfo=utc
+                            ),
+                            "structure_id": 1000000000001,
+                            "system_id": 30002537,
+                            "type_id": 35832,
+                            "unanchors_at": dt.datetime(2020, 5, 5, 6, 30, tzinfo=utc),
+                        },
+                        {
+                            "corporation_id": 2001,
+                            "fuel_expires": None,
+                            "next_reinforce_apply": None,
+                            "next_reinforce_hour": None,
+                            "profile_id": 101853,
+                            "reinforce_hour": 18,
+                            "services": None,
+                            "state": "shield_vulnerable",
+                            "state_timer_end": None,
+                            "state_timer_start": None,
+                            "structure_id": 1000000000003,
+                            "system_id": 30000476,
+                            "type_id": 35832,
+                            "unanchors_at": None,
+                        },
+                    ],
+                    "2005": [],
+                },
+            ),
+            EsiEndpoint(
+                "Corporation",
+                "get_corporations_corporation_id_starbases",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "moon_id": 40161465,
+                            "starbase_id": 1300000000001,
+                            "state": "online",
+                            "system_id": 30002537,
+                            "type_id": 16213,
+                            "reinforced_until": dt.datetime(2020, 4, 5, 7, tzinfo=utc),
+                        },
+                        {
+                            "moon_id": 40161466,
+                            "starbase_id": 1300000000002,
+                            "state": "offline",
+                            "system_id": 30002537,
+                            "type_id": 20061,
+                            "unanchors_at": dt.datetime(2020, 5, 5, 7, tzinfo=utc),
+                        },
+                        {
+                            "moon_id": 40029527,
+                            "starbase_id": 1300000000003,
+                            "state": "online",
+                            "system_id": 30000474,
+                            "type_id": 20062,
+                        },
+                    ]
+                },
+            ),
+            EsiEndpoint(
+                "Corporation",
+                "get_corporations_corporation_id_starbases_starbase_id",
+                ("corporation_id", "starbase_id"),
+                needs_token=True,
+                data={
+                    "2001": {
+                        "1300000000001": {
+                            "allow_alliance_members": True,
+                            "allow_corporation_members": True,
+                            "anchor": "config_starbase_equipment_role",
+                            "attack_if_at_war": False,
+                            "attack_if_other_security_status_dropping": False,
+                            "fuel_bay_take": "config_starbase_equipment_role",
+                            "fuel_bay_view": "starbase_fuel_technician_role",
+                            "fuels": [
+                                {"quantity": 960, "type_id": 4051},
+                                {"quantity": 11678, "type_id": 16275},
+                            ],
+                            "offline": "config_starbase_equipment_role",
+                            "online": "config_starbase_equipment_role",
+                            "unanchor": "config_starbase_equipment_role",
+                            "use_alliance_standings": True,
+                        },
+                        "1300000000002": {
+                            "allow_alliance_members": True,
+                            "allow_corporation_members": True,
+                            "anchor": "config_starbase_equipment_role",
+                            "attack_if_at_war": False,
+                            "attack_if_other_security_status_dropping": False,
+                            "fuel_bay_take": "config_starbase_equipment_role",
+                            "fuels": [
+                                {"quantity": 5, "type_id": 4051},
+                                {"quantity": 11678, "type_id": 16275},
+                            ],
+                            "fuel_bay_view": "starbase_fuel_technician_role",
+                            "offline": "config_starbase_equipment_role",
+                            "online": "config_starbase_equipment_role",
+                            "unanchor": "config_starbase_equipment_role",
+                            "use_alliance_standings": True,
+                        },
+                        "1300000000003": {
+                            "allow_alliance_members": True,
+                            "allow_corporation_members": True,
+                            "anchor": "config_starbase_equipment_role",
+                            "attack_if_at_war": False,
+                            "attack_if_other_security_status_dropping": False,
+                            "fuel_bay_take": "config_starbase_equipment_role",
+                            "fuel_bay_view": "starbase_fuel_technician_role",
+                            "fuels": [
+                                {"quantity": 1000, "type_id": 4051},
+                                {"quantity": 11678, "type_id": 16275},
+                            ],
+                            "offline": "config_starbase_equipment_role",
+                            "online": "config_starbase_equipment_role",
+                            "unanchor": "config_starbase_equipment_role",
+                            "use_alliance_standings": True,
+                        },
+                    }
+                },
+            ),
+            EsiEndpoint(
+                "Planetary_Interaction",
+                "get_corporations_corporation_id_customs_offices",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "alliance_tax_rate": 0.02,
+                            "allow_access_with_standings": True,
+                            "allow_alliance_access": True,
+                            "bad_standing_tax_rate": 0.3,
+                            "corporation_tax_rate": 0.02,
+                            "excellent_standing_tax_rate": 0.02,
+                            "good_standing_tax_rate": 0.02,
+                            "neutral_standing_tax_rate": 0.02,
+                            "office_id": 1200000000003,
+                            "reinforce_exit_end": 21,
+                            "reinforce_exit_start": 19,
+                            "standing_level": "terrible",
+                            "system_id": 30002537,
+                            "terrible_standing_tax_rate": 0.5,
+                        },
+                        {
+                            "alliance_tax_rate": 0.02,
+                            "allow_access_with_standings": True,
+                            "allow_alliance_access": True,
+                            "bad_standing_tax_rate": 0.02,
+                            "corporation_tax_rate": 0.02,
+                            "excellent_standing_tax_rate": 0.02,
+                            "good_standing_tax_rate": 0.02,
+                            "neutral_standing_tax_rate": 0.02,
+                            "office_id": 1200000000004,
+                            "reinforce_exit_end": 21,
+                            "reinforce_exit_start": 19,
+                            "standing_level": "terrible",
+                            "system_id": 30000474,
+                            "terrible_standing_tax_rate": 0.02,
+                        },
+                        {
+                            "alliance_tax_rate": 0.02,
+                            "allow_access_with_standings": True,
+                            "allow_alliance_access": True,
+                            "bad_standing_tax_rate": 0.02,
+                            "corporation_tax_rate": 0.02,
+                            "excellent_standing_tax_rate": 0.02,
+                            "good_standing_tax_rate": 0.02,
+                            "neutral_standing_tax_rate": 0.02,
+                            "office_id": 1200000000005,
+                            "reinforce_exit_end": 21,
+                            "reinforce_exit_start": 19,
+                            "standing_level": "terrible",
+                            "system_id": 30000474,
+                            "terrible_standing_tax_rate": 0.02,
+                        },
+                        {
+                            "alliance_tax_rate": 0.02,
+                            "allow_access_with_standings": True,
+                            "allow_alliance_access": True,
+                            "bad_standing_tax_rate": 0.02,
+                            "corporation_tax_rate": 0.02,
+                            "excellent_standing_tax_rate": 0.02,
+                            "good_standing_tax_rate": 0.02,
+                            "neutral_standing_tax_rate": 0.02,
+                            "office_id": 1200000000006,
+                            "reinforce_exit_end": 21,
+                            "reinforce_exit_start": 19,
+                            "standing_level": "terrible",
+                            "system_id": 30000474,
+                            "terrible_standing_tax_rate": 0.02,
+                        },
+                        {
+                            "alliance_tax_rate": 0.02,
+                            "allow_access_with_standings": True,
+                            "allow_alliance_access": True,
+                            "bad_standing_tax_rate": 0.02,
+                            "corporation_tax_rate": 0.02,
+                            "excellent_standing_tax_rate": 0.02,
+                            "good_standing_tax_rate": 0.02,
+                            "neutral_standing_tax_rate": 0.02,
+                            "office_id": 1200000000099,
+                            "reinforce_exit_end": 21,
+                            "reinforce_exit_start": 19,
+                            "standing_level": "terrible",
+                            "system_id": 30000474,
+                            "terrible_standing_tax_rate": 0.02,
+                        },
+                    ]
+                },
+            ),
+            EsiEndpoint(
+                "Universe",
+                "get_universe_structures_structure_id",
+                "structure_id",
+                needs_token=True,
+                data={
+                    "1000000000001": {
+                        "corporation_id": 2001,
+                        "name": "Amamake - Test Structure Alpha",
+                        "position": {
+                            "x": 55028384780.0,
+                            "y": 7310316270.0,
+                            "z": -163686684205.0,
+                        },
+                        "solar_system_id": 30002537,
+                        "type_id": 35832,
+                    },
+                    "1000000000002": {
+                        "corporation_id": 2001,
+                        "name": "Amamake - Test Structure Bravo",
+                        "position": {
+                            "x": -2518743930339.066,
+                            "y": -130157937025.56424,
+                            "z": -442026427345.6355,
+                        },
+                        "solar_system_id": 30002537,
+                        "type_id": 35835,
+                    },
+                    "1000000000003": {
+                        "corporation_id": 2001,
+                        "name": "Amamake - Test Structure Charlie",
+                        "position": {
+                            "x": -2518743930339.066,
+                            "y": -130157937025.56424,
+                            "z": -442026427345.6355,
+                        },
+                        "solar_system_id": 30000476,
+                        "type_id": 35832,
+                    },
+                },
+            ),
+        ]
+        cls.esi_client_stub = EsiClientStub.create_from_endpoints(cls.endpoints)
 
-    @patch(MODULE_PATH + ".Notification.send_to_configured_webhooks", autospec=True)
-    def test_should_send_notifications_to_multiple_webhooks_but_same_owner(
-        self, mock_send_to_configured_webhooks
-    ):
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_can_sync_upwell_structures(self, mock_esi):
         # given
-        webhook_1 = create_webhook(
-            notification_types=[
-                NotificationType.ORBITAL_ATTACKED,
-                NotificationType.ORBITAL_REINFORCED,
-            ],
-        )
-        webhook_2 = create_webhook(
-            notification_types=[
-                NotificationType.STRUCTURE_DESTROYED,
-                NotificationType.STRUCTURE_FUEL_ALERT,
-            ],
-        )
-        self.owner.webhooks.add(webhook_1)
-        self.owner.webhooks.add(webhook_2)
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
         # when
-        self.owner.send_new_notifications()
-        # then
-        self.owner.refresh_from_db()
-        notif_types_called = {
-            obj[0][0].notif_type
-            for obj in mock_send_to_configured_webhooks.call_args_list
-        }
-        self.assertTrue(self.owner.is_forwarding_sync_fresh)
-        self.assertSetEqual(
-            notif_types_called,
-            {
-                NotificationType.STRUCTURE_DESTROYED,
-                NotificationType.STRUCTURE_FUEL_ALERT,
-                NotificationType.ORBITAL_ATTACKED,
-                NotificationType.ORBITAL_REINFORCED,
-            },
-        )
-
-    # @patch(MODULE_PATH + ".Token", spec=True)
-    # @patch("structures.helpers.esi_fetch._esi_client")
-    # @patch(
-    #     MODELS_NOTIFICATIONS + ".Notification.send_to_webhook", autospec=True
-    # )
-    # def test_can_send_notifications_to_multiple_owners(
-    #     self, mock_send_to_webhook, mock_esi_client_factory, mock_token
-    # ):
-    #     mock_send_to_webhook.side_effect = self.my_send_to_webhook_success
-    #     AuthUtils.add_permission_to_user_by_name(
-    #         "structures.add_structure_owner", self.user
-    #     )
-    #     notification_groups_1 = ",".join(
-    #         [str(x) for x in sorted([NotificationGroup.CUSTOMS_OFFICE])]
-    #     )
-    #     wh_structures = create_webhook(
-    #         name="Structures",
-    #         url="dummy-url-1",
-    #         notification_types=notification_groups_1,
-    #         is_active=True,
-    #     )
-    #     notification_groups_2 = ",".join(
-    #         [str(x) for x in sorted([NotificationGroup.STARBASE])]
-    #     )
-    #     wh_mining = create_webhook(
-    #         name="Mining",
-    #         url="dummy-url-2",
-    #         notification_types=notification_groups_2,
-    #         is_default=True,
-    #         is_active=True,
-    #     )
-
-    #     self.owner.webhooks.clear()
-    #     self.owner.webhooks.add(wh_structures)
-    #     self.owner.webhooks.add(wh_mining)
-
-    #     owner2 = Owner.objects.get(corporation__corporation_id=2002)
-    #     owner2.webhooks.add(wh_structures)
-    #     owner2.webhooks.add(wh_mining)
-
-    #     # move most mining notification to 2nd owner
-    #     notifications = Notification.objects.filter(
-    #         notification_id__in=[1000000401, 1000000403, 1000000404, 1000000405]
-    #     )
-    #     for x in notifications:
-    #         x.owner = owner2
-    #         x.save()
-
-    #     # send notifications for 1st owner only
-    #     self.assertTrue(self.owner.send_new_notifications())
-    #     results = {wh_mining.pk: set(), wh_structures.pk: set()}
-    #     for x in mock_send_to_webhook.call_args_list:
-    #         first = x[0]
-    #         notification = first[0]
-    #         hook = first[1]
-    #         results[hook.pk].add(notification.notification_id)
-
-    #     # structure notifications should have been sent
-    #     self.assertSetEqual(
-    #         results[wh_structures.pk],
-    #         {1000000402, 1000000502, 1000000504, 1000000505, 1000000509, 1000010509},
-    #     )
-    #     # but mining notifications should NOT have been sent
-    #     self.assertSetEqual(results[wh_mining.pk], {1000000402})
-
-
-@patch("structures.helpers.esi_fetch._esi_client")
-@patch("structures.helpers.esi_fetch.sleep", lambda x: None)
-class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.add_structure_owner", cls.user
-        )
-
-    def test_should_update_assets_for_owner(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        # when
-        owner.update_asset_esi()
+        owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.is_assets_sync_fresh)
-        self.assertSetEqual(
-            queryset_pks(StructureItem.objects.all()),
-            {1300000001001, 1300000001002, 1300000002001},
+        self.assertTrue(owner.is_structure_sync_fresh)
+        self.assertAlmostEqual(
+            owner.structures_last_update_at, now(), delta=dt.timedelta(seconds=30)
         )
-        obj = owner.structures.get(pk=1000000000001).items.get(pk=1300000001001)
-        self.assertEqual(obj.eve_type_id, 56201)
+
+        # must contain all expected structures
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+        # verify attributes for structure
+        structure = Structure.objects.get(id=1000000000001)
+        self.assertEqual(structure.name, "Test Structure Alpha")
+        self.assertEqual(structure.position_x, 55028384780.0)
+        self.assertEqual(structure.position_y, 7310316270.0)
+        self.assertEqual(structure.position_z, -163686684205.0)
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.eve_type_id, 35832)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.state, Structure.State.SHIELD_VULNERABLE)
+        self.assertEqual(structure.reinforce_hour, 18)
         self.assertEqual(
-            obj.location_flag, StructureItem.LocationFlag.QUANTUM_CORE_ROOM
+            structure.fuel_expires_at, dt.datetime(2020, 3, 5, 5, 0, 0, tzinfo=utc)
         )
-        self.assertEqual(obj.quantity, 1)
-        self.assertFalse(obj.is_singleton)
+        self.assertEqual(
+            structure.state_timer_start, dt.datetime(2020, 4, 5, 6, 30, 0, tzinfo=utc)
+        )
+        self.assertEqual(
+            structure.state_timer_end, dt.datetime(2020, 4, 5, 7, 0, 0, tzinfo=utc)
+        )
+        self.assertEqual(
+            structure.unanchors_at, dt.datetime(2020, 5, 5, 6, 30, 0, tzinfo=utc)
+        )
 
-        obj = owner.structures.get(pk=1000000000001).items.get(pk=1300000001002)
-        self.assertEqual(obj.eve_type_id, 35894)
-        self.assertEqual(obj.location_flag, "ServiceSlot0")
-        self.assertEqual(obj.quantity, 1)
-        self.assertTrue(obj.is_singleton)
+        # must have created services with localizations
+        # structure 1000000000001
+        expected = {
+            to_json(
+                {
+                    "name": "Clone Bay",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
+                    # "name_zh": "Clone Bay_zh",
+                    "state": StructureService.State.ONLINE,
+                }
+            ),
+            to_json(
+                {
+                    "name": "Market Hub",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
+                    # "name_zh": "Market Hub_zh",
+                    "state": StructureService.State.OFFLINE,
+                }
+            ),
+        }
+        structure = Structure.objects.get(id=1000000000001)
+        services = {
+            to_json(
+                {
+                    "name": x.name,
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
+                    # "name_zh": x.name_zh,
+                    "state": x.state,
+                }
+            )
+            for x in structure.services.all()
+        }
+        self.assertEqual(services, expected)
 
-        structure = owner.structures.get(id=1000000000001)
-        self.assertTrue(structure.has_fitting)
-        self.assertTrue(structure.has_core)
+        # must have created services with localizations
+        # structure 1000000000002
+        expected = {
+            to_json(
+                {
+                    "name": "Reprocessing",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
+                    # "name_zh": "Reprocessing_zh",
+                    "state": StructureService.State.ONLINE,
+                }
+            ),
+            to_json(
+                {
+                    "name": "Moon Drilling",
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
+                    # "name_zh": "Moon Drilling_zh",
+                    "state": StructureService.State.ONLINE,
+                }
+            ),
+        }
+        structure = Structure.objects.get(id=1000000000002)
+        services = {
+            to_json(
+                {
+                    "name": x.name,
+                    "name_de": "",
+                    "name_ko": "",
+                    "name_ru": "",
+                    # "name_zh": x.name_zh,
+                    "state": x.state,
+                }
+            )
+            for x in structure.services.all()
+        }
+        self.assertEqual(services, expected)
 
-        structure = owner.structures.get(id=1000000000002)
-        self.assertTrue(structure.has_fitting)
-        self.assertFalse(structure.has_core)
-
-    @patch(MODULE_PATH + ".notify", spec=True)
-    def test_should_inform_user_about_successful_update(
-        self, mock_notify, mock_esi_client
-    ):
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_can_sync_pocos(self, mock_esi):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
         # when
-        owner.update_asset_esi(user=self.user)
+        owner.update_structures_esi()
+
         # then
         owner.refresh_from_db()
-        self.assertTrue(owner.is_assets_sync_fresh)
+        self.assertTrue(owner.is_structure_sync_fresh)
+
+        # must contain all expected structures
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+        self.assertSetEqual(
+            set(PocoDetails.objects.values_list("structure_id", flat=True)),
+            {1200000000003, 1200000000004, 1200000000005, 1200000000006, 1200000000099},
+        )
+
+        # verify attributes for POCO
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(structure.name, "Planet (Barren)")
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 2233)
+        self.assertEqual(structure.reinforce_hour, 20)
+        self.assertEqual(structure.state, Structure.State.UNKNOWN)
+        self.assertEqual(structure.eve_planet_id, 40161472)
+
+        # verify attributes for POCO details
+        details = structure.poco_details
+        self.assertEqual(details.alliance_tax_rate, 0.02)
+        self.assertTrue(details.allow_access_with_standings)
+        self.assertTrue(details.allow_alliance_access)
+        self.assertEqual(details.bad_standing_tax_rate, 0.3)
+        self.assertEqual(details.corporation_tax_rate, 0.02)
+        self.assertEqual(details.excellent_standing_tax_rate, 0.02)
+        self.assertEqual(details.good_standing_tax_rate, 0.02)
+        self.assertEqual(details.neutral_standing_tax_rate, 0.02)
+        self.assertEqual(details.reinforce_exit_end, 21)
+        self.assertEqual(details.reinforce_exit_start, 19)
+        self.assertEqual(details.standing_level, PocoDetails.StandingLevel.TERRIBLE)
+        self.assertEqual(details.terrible_standing_tax_rate, 0.5)
+
+        # empty name for POCO with no asset data
+        structure = Structure.objects.get(id=1200000000099)
+        self.assertEqual(structure.name, "")
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_can_sync_starbases(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_structure_sync_fresh)
+
+        # must contain all expected structures
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+        # verify attributes for POS
+        structure = Structure.objects.get(id=1300000000001)
+        self.assertEqual(structure.name, "Home Sweat Home")
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 16213)
+        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
+        self.assertEqual(structure.eve_moon_id, 40161465)
+        self.assertEqual(
+            structure.state_timer_end, dt.datetime(2020, 4, 5, 7, 0, 0, tzinfo=utc)
+        )
+        self.assertAlmostEqual(
+            structure.fuel_expires_at,
+            now() + dt.timedelta(hours=24),
+            delta=dt.timedelta(seconds=30),
+        )
+
+        structure = Structure.objects.get(id=1300000000002)
+        self.assertEqual(structure.name, "Bat cave")
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 20061)
+        self.assertEqual(structure.state, Structure.State.POS_OFFLINE)
+        self.assertEqual(structure.eve_moon_id, 40161466)
+        self.assertEqual(
+            structure.unanchors_at, dt.datetime(2020, 5, 5, 7, 0, 0, tzinfo=utc)
+        )
+        self.assertIsNone(structure.fuel_expires_at)
+
+        structure = Structure.objects.get(id=1300000000003)
+        self.assertEqual(structure.name, "Panic Room")
+        self.assertEqual(structure.eve_solar_system_id, 30000474)
+        self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
+        self.assertEqual(structure.eve_type_id, 20062)
+        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
+        self.assertEqual(structure.eve_moon_id, 40029527)
+        # self.assertGreaterEqual(
+        #     structure.fuel_expires_at,
+        #     now() + dt.timedelta(hours=133) - dt.timedelta(seconds=10),
+        # )
+        # self.assertLessEqual(
+        #     structure.fuel_expires_at,
+        #     now() + dt.timedelta(hours=133) + dt.timedelta(seconds=10),
+        # )
+        self.assertAlmostEqual(
+            structure.fuel_expires_at,
+            now() + dt.timedelta(hours=133, minutes=20),
+            delta=dt.timedelta(seconds=30),
+        )
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    @patch(MODULE_PATH + ".notify", spec=True)
+    def test_can_sync_all_structures_and_notify_user(self, mock_notify, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+
+        # when
+        owner.update_structures_esi(user=self.user)
+
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_structure_sync_fresh)
+
+        # must contain all expected structures
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+        # user report has been sent
         self.assertTrue(mock_notify.called)
 
-    def test_should_raise_exception_if_esi_has_error(self, mock_esi_client):
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_can_handle_owner_without_structures(self, mock_esi):
         # given
-        mock_esi_client.return_value.Assets.get_corporations_corporation_id_assets.side_effect = HTTPInternalServerError(
-            BravadoResponseStub(status_code=500, reason="Test")
+        mock_esi.client = self.esi_client_stub
+        user, _ = create_user_from_evecharacter(
+            1005,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
         )
-        owner = Owner.objects.get(corporation__corporation_id=2001)
+        owner = create_owner_from_user(user)  # corp_ID = 2005
         # when
-        with self.assertRaises(HTTPInternalServerError):
-            owner.update_asset_esi()
+        owner.update_structures_esi()
         # then
         owner.refresh_from_db()
-        self.assertIsNone(owner.is_assets_sync_fresh)
+        self.assertTrue(owner.is_structure_sync_fresh)
+        self.assertSetEqual(owner.structures.ids(), set())
 
-    def test_should_remove_assets_that_no_longer_exist_for_existing_structure(
-        self, mock_esi_client
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_break_when_endpoint_for_fetching_upwell_structures_is_down(
+        self, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
+        new_endpoint = EsiEndpoint(
+            "Corporation",
+            "get_corporations_corporation_id_structures",
+            http_error_code=500,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_break_on_http_error_when_fetching_custom_offices(
+        self, mock_esi
+    ):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Planetary_Interaction",
+            "get_corporations_corporation_id_customs_offices",
+            http_error_code=500,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_structure_sync_fresh)
+        structure_ids = {x["id"] for x in owner.structures.values("id")}
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(structure_ids, expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_break_on_http_error_when_fetching_star_bases(self, mock_esi):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Corporation",
+            "get_corporations_corporation_id_starbases",
+            http_error_code=500,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(MODULE_PATH + ".notify", spec=True)
+    def test_should_remove_character_if_not_director_when_updating_starbases(
+        self, mock_notify, mock_esi
+    ):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Corporation",
+            "get_corporations_corporation_id_starbases",
+            http_error_code=403,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_structure_sync_fresh)
+        self.assertTrue(mock_notify)
+        self.assertEqual(owner.characters.count(), 0)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_update_will_not_break_on_http_error_from_structure_info(self, mock_esi):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Universe", "get_universe_structures_structure_id", http_error_code=500
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertFalse(owner.is_structure_sync_fresh)
+        structure = Structure.objects.get(id=1000000000002)
+        self.assertEqual(structure.name, "(no data)")
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(MODULE_PATH + ".Structure.objects.update_or_create_from_dict")
+    def test_update_will_not_break_on_http_error_when_creating_structures(
+        self, mock_create_structure, mock_esi
+    ):
+        mock_create_structure.side_effect = OSError
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertFalse(owner.is_structure_sync_fresh)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_remove_old_upwell_structures(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_upwell_structure(owner=owner, id=1000000000004, name="delete-me")
+        # when
+        owner.update_structures_esi()
+        # then
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_remove_old_pocos(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_poco(owner=owner, id=1000000000004, name="delete-me")
+        # when
+        owner.update_structures_esi()
+        # then
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_remove_old_starbases(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_starbase(owner=owner, id=1300000000099, name="delete-me")
+        # when
+        owner.update_structures_esi()
+        # then
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_tags_are_not_modified_by_update(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+
+        # should contain the right structures
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+        # adding tags
+        tag_a = StructureTag.objects.get(name="tag_a")
+        s = Structure.objects.get(id=1000000000001)
+        s.tags.add(tag_a)
+        s.save()
+
+        # run update task 2nd time
+        owner.update_structures_esi()
+
+        # should still contain alls structures
+        expected = {1000000000001, 1000000000002, 1000000000003}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+        # should still contain the tag
+        s_new = Structure.objects.get(id=1000000000001)
+        self.assertEqual(s_new.tags.get(name="tag_a"), tag_a)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_delete_existing_upwell_structures_when_update_failed(
+        self, mock_esi
+    ):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Corporation",
+            "get_corporations_corporation_id_structures",
+            http_error_code=500,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        create_upwell_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000002)
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {1000000000001, 1000000000002}
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_delete_existing_pocos_when_update_failed(self, mock_esi):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Planetary_Interaction",
+            "get_corporations_corporation_id_customs_offices",
+            http_error_code=500,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        create_poco(owner=owner, id=1200000000003)
+        create_poco(owner=owner, id=1200000000004)
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_delete_existing_starbases_when_update_failed(self, mock_esi):
+        # given
+
+        new_endpoint = EsiEndpoint(
+            "Corporation",
+            "get_corporations_corporation_id_starbases",
+            http_error_code=500,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        create_starbase(owner=owner, id=1300000000001)
+        create_starbase(owner=owner, id=1300000000002)
+        # when
+        owner.update_structures_esi()
+        # then
+        # self.assertFalse(owner.is_structure_sync_fresh)
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1300000000001,
+            1300000000002,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_remove_outdated_services(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        structure = create_upwell_structure(owner=owner, id=1000000000002)
+        create_structure_service(structure=structure, name="Clone Bay")
+        # when
+        owner.update_structures_esi()
+        # then
+        structure.refresh_from_db()
+        services = {
+            obj.name for obj in StructureService.objects.filter(structure=structure)
+        }
+        self.assertEqual(services, {"Moon Drilling", "Reprocessing"})
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_have_empty_name_if_not_match_with_planets(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        EvePlanet.objects.all().delete()
+        # when
+        owner.update_structures_esi()
+        # then
+        self.assertTrue(owner.is_structure_sync_fresh)
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(structure.name, "")
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_define_poco_name_from_planet_type_if_found(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(structure.eve_planet_id, 40161472)
+        self.assertEqual(structure.name, "Planet (Barren)")
+
+    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "de")
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_define_poco_name_from_planet_type_localized(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        structure = Structure.objects.get(id=1200000000003)
+        self.assertEqual(structure.eve_planet_id, 40161472)
+        self.assertEqual(structure.name, "Planet (Barren)_de")
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+    )
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_send_refueled_notification_when_fuel_level_increased(
+        self, mock_send_message, mock_esi
+    ):
+        # given
+        mock_esi.client = self.esi_client_stub
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
+        )
+        owner = create_owner_from_user(self.user)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
         structure = Structure.objects.get(id=1000000000001)
-        structure.items.create(
-            id=42,
-            eve_type_id=EveTypeId.LIQUID_OZONE,
-            location_flag="Cargo",
-            is_singleton=False,
-            quantity=5000,
-        )
+        structure.fuel_expires_at = dt.datetime(2020, 3, 3, 0, 0, tzinfo=utc)
+        structure.save()
         # when
-        owner.update_asset_esi()
+        with patch("structures.models.structures.now") as now:
+            now.return_value = dt.datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
         # then
-        self.assertFalse(structure.items.filter(id=42).exists())
+        self.assertTrue(mock_send_message.called)
 
-    def test_should_remove_assets_that_no_longer_exist_for_removed_structure(
-        self, mock_esi_client
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+    )
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
+        self, mock_send_message, mock_esi
     ):
         # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure = Structure.objects.create(
-            id=1000000000666,
-            owner=owner,
-            eve_type_id=EveTypeId.JUMP_GATE,
-            name="Zombie",
-            eve_solar_system_id=30000476,
+        mock_esi.client = self.esi_client_stub
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
         )
-        structure.items.create(
-            id=42,
-            eve_type_id=EveTypeId.LIQUID_OZONE,
-            location_flag="Cargo",
-            is_singleton=False,
-            quantity=5000,
+        owner = create_owner_from_user(self.user)
+        owner.webhooks.add(webhook)
+        with patch("structures.models.structures.now") as now:
+            now.return_value = dt.datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
+            # when
+            owner.update_structures_esi()
+        # then
+        self.assertFalse(mock_send_message.called)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch("structures.models.notifications.Webhook.send_message")
+    def test_should_remove_outdated_fuel_alerts_when_fuel_level_changed(
+        self, mock_send_message, mock_esi
+    ):
+        # given
+        mock_esi.client = self.esi_client_stub
+        webhook = Webhook.objects.create(
+            name="Webhook 1",
+            url="webhook-1",
+            notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA],
+            is_active=True,
         )
+        owner = create_owner_from_user(self.user)
+        owner.webhooks.add(webhook)
+        owner.update_structures_esi()
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = dt.datetime(2020, 3, 3, 0, 0, tzinfo=utc)
+        structure.save()
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure.structure_fuel_alerts.create(config=config, hours=12)
         # when
-        owner.update_asset_esi()
+        with patch("structures.models.structures.now") as now:
+            now.return_value = dt.datetime(2020, 3, 2, 0, 0, tzinfo=utc)
+            owner.update_structures_esi()
         # then
-        self.assertFalse(structure.items.filter(id=42).exists())
+        self.assertEqual(structure.structure_fuel_alerts.count(), 0)
 
-    def test_should_remove_outdated_jump_fuel_alerts(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        _, owner = set_owner_character(character_id=1011)
-        structure = Structure.objects.get(id=1000000000004)
-        config = JumpFuelAlertConfig.objects.create(threshold=100)
-        structure.jump_fuel_alerts.create(structure=structure, config=config)
-        # when
-        owner.update_asset_esi()
-        # then
-        self.assertEqual(structure.jump_fuel_alerts.count(), 0)
-
-    def test_should_handle_asset_moved_to_another_structure(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        owner = Owner.objects.get(corporation__corporation_id=2001)
-        structure_1 = Structure.objects.get(id=1000000000001)
-        structure_2 = Structure.objects.get(id=1000000000002)
-        structure_2.items.create(
-            id=1300000001002,
-            eve_type_id=35894,
-            location_flag="ServiceSlot0",
-            is_singleton=True,
-            quantity=1,
-        )
-        # when
-        owner.update_asset_esi()
-        # then
-        self.assertSetEqual(queryset_pks(structure_2.items.all()), {1300000002001})
-        self.assertSetEqual(
-            queryset_pks(structure_1.items.all()), {1300000001001, 1300000001002}
-        )
-
-    def test_should_not_delete_assets_from_other_owners(self, mock_esi_client):
-        # given
-        mock_esi_client.side_effect = esi_mock_client
-        structure = Structure.objects.get(id=1000000000004)
-        structure.items.create(
-            id=1300000003001,
-            eve_type_id=16273,
-            location_flag="StructureFuel",
-            is_singleton=False,
-            quantity=5000,
-        )
-        owner_2001 = Owner.objects.get(corporation__corporation_id=2001)
-        # when
-        owner_2001.update_asset_esi()
-        # then
-        self.assertSetEqual(
-            queryset_pks(StructureItem.objects.all()),
-            {1300000001001, 1300000001002, 1300000002001, 1300000003001},
-        )
-
-    # TODO: Add tests for error cases
-
-
-class TestOwnerToken(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        load_entities([EveCorporationInfo, EveCharacter])
-        cls.character = EveCharacter.objects.get(character_id=1001)
-        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-
-    def test_should_return_str(self):
-        # given
-        _, character_ownership = create_user_from_evecharacter(
-            1001, scopes=Owner.get_esi_scopes()
-        )
-        owner = Owner.objects.create(corporation=self.corporation)
-        owner.add_character(character_ownership)
-        # when
-        result = str(owner.characters.first())
-        # then
-        self.assertEqual(result, "Wayne Technologies-Bruce Wayne")
-
-    def test_should_return_valid_token(self):
-        # given
-        user, character_ownership = create_user_from_evecharacter(
-            1001, scopes=Owner.get_esi_scopes()
-        )
-        owner = Owner.objects.create(corporation=self.corporation)
-        owner.add_character(character_ownership)
-        # when
-        token = owner.characters.first().valid_token()
-        # then
-        self.assertIsInstance(token, Token)
-        self.assertEqual(token.user, user)
-        self.assertEqual(token.character_id, 1001)
-
-    def test_should_return_none_if_no_valid_token_found(self):
-        # given
-        user, character_ownership = create_user_from_evecharacter(
-            1001, scopes=Owner.get_esi_scopes()
-        )
-        owner = Owner.objects.create(corporation=self.corporation)
-        owner.add_character(character_ownership)
-        user.token_set.first().scopes.clear()
-        # when
-        token = owner.characters.first().valid_token()
-        # then
-        self.assertIsNone(token)
-
-
-class TestOwnerUpdateIsUp(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cls.owner.is_alliance_main = True
-        cls.owner.is_included_in_service_status = True
-        cls.owner.save()
-
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
-    @patch(MODULE_PATH + ".notify_admins")
-    def test_should_do_nothing_when_still_up(self, mock_notify_admins):
-        # given
-        self.owner.is_up = True
-        self.owner.save()
-        # when
-        result = self.owner.update_is_up()
-        # then
-        self.assertTrue(result)
-        self.assertFalse(mock_notify_admins.called)
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_up)
-        self.assertTrue(self.owner.is_alliance_main)
-
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
-    @patch(MODULE_PATH + ".notify_admins")
-    def test_should_report_when_down(self, mock_notify_admins):
-        # given
-        self.owner.is_up = True
-        self.owner.save()
-        # when
-        result = self.owner.update_is_up()
-        # then
-        self.assertFalse(result)
-        self.assertTrue(mock_notify_admins.called)
-        self.owner.refresh_from_db()
-        self.assertFalse(self.owner.is_up)
-        self.assertTrue(self.owner.is_alliance_main)
-
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", False)
-    @patch(MODULE_PATH + ".notify_admins")
-    def test_should_not_report_again_when_still_down(self, mock_notify_admins):
-        # given
-        self.owner.is_up = False
-        self.owner.save()
-        # when
-        result = self.owner.update_is_up()
-        # then
-        self.assertFalse(result)
-        self.assertFalse(mock_notify_admins.called)
-        self.owner.refresh_from_db()
-        self.assertFalse(self.owner.is_up)
-        self.assertTrue(self.owner.is_alliance_main)
-
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
-    @patch(MODULE_PATH + ".notify_admins")
-    def test_should_report_when_up_again(self, mock_notify_admins):
-        # given
-        self.owner.is_up = False
-        self.owner.save()
-        # when
-        result = self.owner.update_is_up()
-        # then
-        self.assertTrue(result)
-        self.assertTrue(mock_notify_admins.called)
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_up)
-        self.assertTrue(self.owner.is_alliance_main)
-
-    @patch(MODULE_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
-    @patch(MODULE_PATH + ".Owner.are_all_syncs_ok", True)
-    @patch(MODULE_PATH + ".notify_admins")
-    def test_should_report_when_up_for_the_first_time(self, mock_notify_admins):
-        # given
-        self.owner.is_up = None
-        self.owner.save()
-        # when
-        result = self.owner.update_is_up()
-        # then
-        self.assertTrue(result)
-        self.assertTrue(mock_notify_admins.called)
-        self.owner.refresh_from_db()
-        self.assertTrue(self.owner.is_up)
-        self.assertTrue(self.owner.is_alliance_main)
+    # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    # def test_should_notify_admins_when_service_is_restored(
+    #     self, mock_esi_client
+    # ):
+    #     # given
+    #     mock_esi_client.side_effect = esi_mock_client
+    #     owner = create_owner_from_user(self.user)
+    #     owner.is_structure_sync_fresh = False
+    #     owner.save()
+    #     # when
+    #     owner.update_structures_esi()
+    #     # then
+    #     owner.refresh_from_db()
+    #     self.assertTrue(owner.is_structure_sync_fresh)

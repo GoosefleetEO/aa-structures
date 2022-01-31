@@ -16,6 +16,7 @@ from app_utils.logging import LoggerAddTag
 from . import __title__
 from .constants import EveCategoryId, EveTypeId
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from .providers import esi
 from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -103,8 +104,8 @@ class EveUniverseManager(models.Manager):
 
 class EveSovereigntyMapManager(models.Manager):
     def update_from_esi(self):
-        logger.info("Fetching sovereignty map from ESI...")
-        sov_map = esi_fetch("Sovereignty.get_sovereignty_map", args={})
+        sov_map = esi.client.Sovereignty.get_sovereignty_map().results()
+        logger.info("Retrieved sovereignty map from ESI")
         last_updated = now()
         obj_list = list()
         for solar_system in sov_map:
@@ -346,10 +347,9 @@ class StructureManagerBase(models.Manager):
         """
         try:
             obj = self.get(id=structure_id)
-            created = False
+            return obj, False
         except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(structure_id, token)
-        return obj, created
+            return self.update_or_create_esi(structure_id, token)
 
     def update_or_create_esi(self, structure_id: int, token: Token) -> tuple:
         """update or create a structure from ESI for given structure ID
@@ -364,16 +364,13 @@ class StructureManagerBase(models.Manager):
         """
         from .models import Owner
 
-        log_prefix = make_log_prefix(self, structure_id)
-        logger.info("%s: Trying to fetch structure from ESI", log_prefix)
+        logger.info("%s: Trying to fetch structure from ESI with ID %s", structure_id)
         if token is None:
             raise ValueError("Can not fetch structure without token")
 
-        structure_info = esi_fetch(
-            esi_path="Universe.get_universe_structures_structure_id",
-            args={"structure_id": structure_id},
-            token=token,
-        )
+        structure_info = esi.client.Universe.get_universe_structures_structure_id(
+            structure_id=structure_id, token=token.valid_access_token()
+        ).results()
         structure = {
             "structure_id": structure_id,
             "name": self.model.extract_name_from_esi_respose(structure_info["name"]),
