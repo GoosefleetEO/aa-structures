@@ -773,7 +773,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_structures",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -807,7 +807,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Planetary_Interaction",
             "get_corporations_corporation_id_customs_offices",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -834,7 +834,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_starbases",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -861,7 +861,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_starbases",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -887,7 +887,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Universe",
             "get_universe_structures_structure_id",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -1014,7 +1014,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_structures",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -1041,7 +1041,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Planetary_Interaction",
             "get_corporations_corporation_id_customs_offices",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]
@@ -1074,7 +1074,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_starbases",
-            callback=my_callback,
+            side_effect=my_callback,
         )
         mock_esi.client = create_esi_client_stub(
             self.endpoints, new_endpoints=[new_endpoint]

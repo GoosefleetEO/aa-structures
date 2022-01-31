@@ -220,7 +220,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
                 "character_id",
                 needs_token=True,
                 data=[],
-                callback=my_callback,
+                side_effect=my_callback,
             )
         ]
         mock_esi.client = create_esi_client_stub(endpoints)
@@ -596,7 +596,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                 "get_corporations_corporation_id_assets",
                 "corporation_id",
                 needs_token=True,
-                callback=my_callback,
+                side_effect=my_callback,
             )
         ]
         mock_esi.client = create_esi_client_stub(endpoints)
