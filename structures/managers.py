@@ -16,6 +16,7 @@ from app_utils.logging import LoggerAddTag
 from . import __title__
 from .constants import EveCategoryId, EveTypeId
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
+from .providers import esi
 from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -369,11 +370,9 @@ class StructureManagerBase(models.Manager):
         if token is None:
             raise ValueError("Can not fetch structure without token")
 
-        structure_info = esi_fetch(
-            esi_path="Universe.get_universe_structures_structure_id",
-            args={"structure_id": structure_id},
-            token=token,
-        )
+        structure_info = esi.client.Universe.get_universe_structures_structure_id(
+            structure_id=structure_id, token=token.valid_access_token()
+        ).results()
         structure = {
             "structure_id": structure_id,
             "name": self.model.extract_name_from_esi_respose(structure_info["name"]),
