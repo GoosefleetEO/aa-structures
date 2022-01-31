@@ -104,8 +104,8 @@ class EveUniverseManager(models.Manager):
 
 class EveSovereigntyMapManager(models.Manager):
     def update_from_esi(self):
-        logger.info("Fetching sovereignty map from ESI...")
-        sov_map = esi_fetch("Sovereignty.get_sovereignty_map", args={})
+        sov_map = esi.client.Sovereignty.get_sovereignty_map().results()
+        logger.info("Retrieved sovereignty map from ESI")
         last_updated = now()
         obj_list = list()
         for solar_system in sov_map:
@@ -347,10 +347,9 @@ class StructureManagerBase(models.Manager):
         """
         try:
             obj = self.get(id=structure_id)
-            created = False
+            return obj, False
         except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(structure_id, token)
-        return obj, created
+            return self.update_or_create_esi(structure_id, token)
 
     def update_or_create_esi(self, structure_id: int, token: Token) -> tuple:
         """update or create a structure from ESI for given structure ID
@@ -365,8 +364,7 @@ class StructureManagerBase(models.Manager):
         """
         from .models import Owner
 
-        log_prefix = make_log_prefix(self, structure_id)
-        logger.info("%s: Trying to fetch structure from ESI", log_prefix)
+        logger.info("%s: Trying to fetch structure from ESI with ID %s", structure_id)
         if token is None:
             raise ValueError("Can not fetch structure without token")
 

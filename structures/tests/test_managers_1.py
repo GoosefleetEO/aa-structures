@@ -23,8 +23,12 @@ from ..models import (
     Webhook,
 )
 from . import to_json
-from .testdata import create_structures, esi_mock_client, load_entities
-from .testdata.factories import create_owner_from_user, create_structure
+from .testdata import create_structures, load_entities
+from .testdata.factories import (
+    create_eve_sovereignty_map,
+    create_owner_from_user,
+    create_structure,
+)
 from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.managers"
@@ -32,23 +36,72 @@ MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"
 
 
 class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
-    @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
-    def test_can_fetch_from_esi_and_overwrites_existing_map(self, mock_esi_client):
-        mock_esi_client.side_effect = esi_mock_client
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        endpoints = [
+            EsiEndpoint(
+                "Sovereignty",
+                "get_sovereignty_map",
+                data=[
+                    {
+                        "alliance_id": 3011,
+                        "corporation_id": 2011,
+                        "system_id": 30000726,
+                    },
+                    {
+                        "alliance_id": 3001,
+                        "corporation_id": 2001,
+                        "system_id": 30000474,
+                        "faction_id": None,
+                    },
+                    {
+                        "alliance_id": 3001,
+                        "corporation_id": 2001,
+                        "system_id": 30000728,
+                        "faction_id": None,
+                    },
+                    {
+                        "alliance_id": None,
+                        "corporation_id": None,
+                        "system_id": 30000142,
+                        "faction_id": None,
+                    },
+                ],
+            )
+        ]
+        cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
 
-        EveSovereigntyMap.objects.create(solar_system_id=30000726, alliance_id=3001)
-
+    @patch(MODULE_PATH + ".esi")
+    def test_should_create_sov_map_from_scratch(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        # when
         EveSovereigntyMap.objects.update_from_esi()
-        self.assertEqual(EveSovereigntyMap.objects.count(), 3)
+        # then
+        solar_system_ids = EveSovereigntyMap.objects.values_list(
+            "solar_system_id", flat=True
+        )
+        self.assertSetEqual(set(solar_system_ids), {30000726, 30000474, 30000728})
 
+    @patch(MODULE_PATH + ".esi")
+    def test_should_update_existing_map(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        create_eve_sovereignty_map(solar_system_id=30000726, alliance_id=3001)
+        # when
+        EveSovereigntyMap.objects.update_from_esi()
+        # then
+        solar_system_ids = EveSovereigntyMap.objects.values_list(
+            "solar_system_id", flat=True
+        )
+        self.assertSetEqual(set(solar_system_ids), {30000726, 30000474, 30000728})
         structure = EveSovereigntyMap.objects.get(solar_system_id=30000726)
         self.assertEqual(structure.corporation_id, 2011)
         self.assertEqual(structure.alliance_id, 3011)
-
         structure = EveSovereigntyMap.objects.get(solar_system_id=30000474)
         self.assertEqual(structure.corporation_id, 2001)
         self.assertEqual(structure.alliance_id, 3001)
-
         structure = EveSovereigntyMap.objects.get(solar_system_id=30000728)
         self.assertEqual(structure.corporation_id, 2001)
         self.assertEqual(structure.alliance_id, 3001)
@@ -108,7 +161,7 @@ class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
 
 
 @patch(MODULE_PATH + ".esi")
-class TestStructureManager(NoSocketsTestCase):
+class TestStructureManagerEsi(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

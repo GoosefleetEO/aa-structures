@@ -9,6 +9,7 @@ from allianceauth.eveonline.models import EveCorporationInfo
 
 from ...constants import EveTypeId
 from ...models import (
+    EveSovereigntyMap,
     Notification,
     Owner,
     OwnerCharacter,
@@ -18,6 +19,12 @@ from ...models import (
     StructureService,
     Webhook,
 )
+
+
+def create_eve_sovereignty_map(**kwargs):
+    if "alliance_id" not in kwargs:
+        kwargs["alliance_id"] = 3001
+    return EveSovereigntyMap.objects.create(**kwargs)
 
 
 def create_notification(**kwargs):
