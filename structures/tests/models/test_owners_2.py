@@ -1,16 +1,10 @@
 import datetime as dt
 from unittest.mock import patch
 
-from bravado.exception import HTTPForbidden, HTTPInternalServerError
-
 from django.utils.timezone import now, utc
 
-from app_utils.esi_testing import EsiEndpoint
-from app_utils.testing import (
-    BravadoResponseStub,
-    NoSocketsTestCase,
-    create_user_from_evecharacter,
-)
+from app_utils.esi_testing import EsiClientStub, EsiEndpoint
+from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...models import (
     EvePlanet,
@@ -25,7 +19,6 @@ from ...models import (
 )
 from .. import to_json
 from ..testdata import load_entities
-from ..testdata.esi_client_stub import create_esi_client_stub
 from ..testdata.factories import (
     create_owner_from_user,
     create_poco,
@@ -449,7 +442,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                 },
             ),
         ]
-        cls.esi_client_stub = create_esi_client_stub(cls.endpoints)
+        cls.esi_client_stub = EsiClientStub.create_from_endpoints(cls.endpoints)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
@@ -765,19 +758,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self, mock_esi
     ):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                response=BravadoResponseStub(500, "Test exception")
-            )
-
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_structures",
-            side_effect=my_callback,
+            http_error_code=500,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         # when
         owner.update_structures_esi()
@@ -799,19 +785,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self, mock_esi
     ):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                response=BravadoResponseStub(500, "Test exception")
-            )
-
         new_endpoint = EsiEndpoint(
             "Planetary_Interaction",
             "get_corporations_corporation_id_customs_offices",
-            side_effect=my_callback,
+            http_error_code=500,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         # when
         owner.update_structures_esi()
@@ -826,19 +805,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     def test_should_not_break_on_http_error_when_fetching_star_bases(self, mock_esi):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                response=BravadoResponseStub(500, "Test exception")
-            )
-
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_starbases",
-            side_effect=my_callback,
+            http_error_code=500,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         # when
         owner.update_structures_esi()
@@ -855,17 +827,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self, mock_notify, mock_esi
     ):
         # given
-        def my_callback(**kwargs):
-            raise HTTPForbidden(BravadoResponseStub(status_code=403, reason="Test"))
-
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_starbases",
-            side_effect=my_callback,
+            http_error_code=403,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         # when
         owner.update_structures_esi()
@@ -879,19 +846,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     def test_update_will_not_break_on_http_error_from_structure_info(self, mock_esi):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                BravadoResponseStub(status_code=500, reason="Test")
-            )
-
         new_endpoint = EsiEndpoint(
-            "Universe",
-            "get_universe_structures_structure_id",
-            side_effect=my_callback,
+            "Universe", "get_universe_structures_structure_id", http_error_code=500
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         # when
         owner.update_structures_esi()
@@ -1006,19 +964,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self, mock_esi
     ):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                BravadoResponseStub(status_code=500, reason="Test")
-            )
-
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_structures",
-            side_effect=my_callback,
+            http_error_code=500,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         create_upwell_structure(owner=owner, id=1000000000001)
         create_upwell_structure(owner=owner, id=1000000000002)
@@ -1033,19 +984,12 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
     def test_should_not_delete_existing_pocos_when_update_failed(self, mock_esi):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                BravadoResponseStub(status_code=500, reason="Test")
-            )
-
         new_endpoint = EsiEndpoint(
             "Planetary_Interaction",
             "get_corporations_corporation_id_customs_offices",
-            side_effect=my_callback,
+            http_error_code=500,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         create_poco(owner=owner, id=1200000000003)
         create_poco(owner=owner, id=1200000000004)
@@ -1066,19 +1010,13 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     def test_should_not_delete_existing_starbases_when_update_failed(self, mock_esi):
         # given
-        def my_callback(**kwargs):
-            raise HTTPInternalServerError(
-                BravadoResponseStub(status_code=500, reason="Test")
-            )
 
         new_endpoint = EsiEndpoint(
             "Corporation",
             "get_corporations_corporation_id_starbases",
-            side_effect=my_callback,
+            http_error_code=500,
         )
-        mock_esi.client = create_esi_client_stub(
-            self.endpoints, new_endpoints=[new_endpoint]
-        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
         create_starbase(owner=owner, id=1300000000001)
         create_starbase(owner=owner, id=1300000000002)

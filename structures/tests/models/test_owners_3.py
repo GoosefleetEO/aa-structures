@@ -10,7 +10,7 @@ from esi.models import Token
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
-from app_utils.esi_testing import EsiEndpoint
+from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import (
     BravadoResponseStub,
     NoSocketsTestCase,
@@ -26,7 +26,6 @@ from ..testdata import (
     load_notification_entities,
     set_owner_character,
 )
-from ..testdata.esi_client_stub import create_esi_client_stub
 from ..testdata.factories import (
     create_owner_from_user,
     create_structure,
@@ -85,7 +84,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
                 },
             )
         ]
-        cls.esi_client_stub = create_esi_client_stub(endpoints)
+        cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
 
     @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
     @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
@@ -193,7 +192,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
                 },
             )
         ]
-        mock_esi_client.client = create_esi_client_stub(endpoints)
+        mock_esi_client.client = EsiClientStub.create_from_endpoints(endpoints)
         mock_now.return_value = dt.datetime(2019, 11, 13, 23, 50, 0, tzinfo=utc)
         owner = create_owner_from_user(self.user)
         structure = create_structure(owner=owner, id=1000000000002, eve_type_id=35835)
@@ -223,7 +222,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
                 side_effect=my_callback,
             )
         ]
-        mock_esi.client = create_esi_client_stub(endpoints)
+        mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         owner = create_owner_from_user(self.user)
         create_structure(owner=owner, id=1000000000001)
         # when
@@ -531,7 +530,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                 },
             )
         ]
-        cls.esi_client_stub = create_esi_client_stub(endpoints)
+        cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
 
     def test_should_update_assets_for_owner(self, mock_esi):
         # given
@@ -599,7 +598,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                 side_effect=my_callback,
             )
         ]
-        mock_esi.client = create_esi_client_stub(endpoints)
+        mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         owner = create_owner_from_user(self.user)
         create_structure(owner=owner, id=1000000000001)
         # when
@@ -699,7 +698,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                 },
             )
         ]
-        mock_esi.client = create_esi_client_stub(endpoints)
+        mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         user, _ = create_user_from_evecharacter(
             1102,
             permissions=["structures.basic_access", "structures.add_structure_owner"],
