@@ -138,15 +138,18 @@ def fetch_notification_for_owner(owner_pk: int, user_pk: int = None):
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_existing_notifications(owner_pk: int):
-    """Update structure relation for existing notifications if needed."""
+def update_existing_notifications(owner_pk: int) -> int:
+    """Update structure relation for existing notifications if needed.
+
+    Returns number of updated notifications.
+    """
     owner = Owner.objects.get(pk=owner_pk)
     notif_need_update_qs = owner.notifications.filter(
         notif_type__in=NotificationType.structure_related, structures__isnull=True
     )
     notif_need_update_count = notif_need_update_qs.count()
+    updated_count = 0
     if notif_need_update_count > 0:
-        updated_count = 0
         for notif in notif_need_update_qs:
             if notif.update_related_structures():
                 updated_count += 1
@@ -156,6 +159,7 @@ def update_existing_notifications(owner_pk: int):
             updated_count,
             notif_need_update_count,
         )
+    return updated_count
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
