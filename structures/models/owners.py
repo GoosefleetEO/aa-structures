@@ -528,7 +528,15 @@ class Owner(models.Model):
                 len(structures),
             )
             for structure in structures:
-                Structure.objects.update_or_create_from_dict(structure, self)
+                try:
+                    Structure.objects.update_or_create_from_dict(structure, self)
+                except OSError:
+                    logger.warning(
+                        "%s: Failed to store update for structure with ID %s",
+                        self,
+                        structure["structure_id"],
+                    )
+                    is_ok = False
 
         if STRUCTURES_DEVELOPER_MODE:
             self._store_raw_data("structures", structures, corporation_id)
