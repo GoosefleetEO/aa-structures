@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.21.3] - 2022-01-31
+
+### Changed
+
+- Now includes server contact in most ESI requests (!19)
+
 ## [1.21.2] - 2022-01-30
 
 ### Fixed
