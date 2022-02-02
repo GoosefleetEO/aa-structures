@@ -355,16 +355,17 @@ class StructureManagerBase(models.Manager):
         """update or create a structure from ESI for given structure ID
         This will only fetch basic info about a structure
 
-        structure_id: Structure ID of object in Eve Online
+        Args:
+            structure_id: Structure ID of object in Eve Online
 
-        token: ``esi.models.Token`` object with scope:
-        ``esi-universe.read_structures.v1``
+            token: ``esi.models.Token`` object with scope: ``esi-universe.read_structures.v1``
 
-        Returns: object, created
+        Returns:
+            object, created
         """
         from .models import Owner
 
-        logger.info("%s: Trying to fetch structure from ESI with ID %s", structure_id)
+        logger.info("Trying to fetch structure from ESI with ID %s", structure_id)
         if token is None:
             raise ValueError("Can not fetch structure without token")
 
