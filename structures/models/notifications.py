@@ -18,6 +18,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from esi.models import Token
+from eveuniverse.models import EveEntity as EveEntity2
 
 from allianceauth.eveonline.evelinks import dotlan, eveimageserver
 from allianceauth.services.hooks import get_extension_logger
@@ -507,7 +508,7 @@ class Notification(models.Model):
         unique_together = (("notification_id", "owner"),)
 
     def __str__(self) -> str:
-        return str(self.notification_id)
+        return f"{self.notification_id}:{self.notif_type}"
 
     def __repr__(self) -> str:
         return "%s(notification_id=%d, owner='%s', notif_type='%s')" % (
@@ -558,7 +559,6 @@ class Notification(models.Model):
 
     def is_npc_attacking(self) -> bool:
         """Whether this notification is about a NPC attacking."""
-        result = False
         if self.notif_type in [
             NotificationType.ORBITAL_ATTACKED,
             NotificationType.STRUCTURE_UNDER_ATTACK,
@@ -571,15 +571,15 @@ class Notification(models.Model):
                     and len(parsed_text["corpLinkData"]) >= 3
                 ):
                     corporation_id = int(parsed_text["corpLinkData"][2])
-
             if self.notif_type == NotificationType.ORBITAL_ATTACKED:
                 if "aggressorCorpID" in parsed_text:
                     corporation_id = int(parsed_text["aggressorCorpID"])
-
-            if 1000000 <= corporation_id <= 2000000:
-                result = True
-
-        return result
+            if corporation_id:
+                corporation = EveEntity2(
+                    category=EveEntity2.CATEGORY_CORPORATION, id=corporation_id
+                )
+                return corporation.is_npc and not corporation.is_npc_starter_corporation
+        return False
 
     def filter_for_npc_attacks(self) -> bool:
         """True when notification to be filtered out due to npc attacks."""

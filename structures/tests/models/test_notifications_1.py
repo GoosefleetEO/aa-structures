@@ -99,7 +99,7 @@ class TestNotification(NoSocketsTestCase):
 
     def test_str(self):
         obj = Notification.objects.get(notification_id=1000000403)
-        self.assertEqual(str(obj), "1000000403")
+        self.assertEqual(str(obj), "1000000403:MoonminingExtractionFinished")
 
     def test_repr(self):
         obj = Notification.objects.get(notification_id=1000000403)

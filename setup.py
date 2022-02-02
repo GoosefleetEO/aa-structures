@@ -40,12 +40,12 @@ setup(
     ],
     python_requires="~=3.7",
     install_requires=[
-        "allianceauth>=2.9.0",
+        "allianceauth>=2.9.0,<3",
         "dhooks-lite>=0.6.1",
         "allianceauth-app-utils>=1.10",
         "django-navhelper",
         "django-multiselectfield",
         "redis-simple-mq>=0.4",
-        "django-eveuniverse>=0.10",
+        "django-eveuniverse>=0.11",
     ],
 )

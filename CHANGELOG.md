@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.21.4] - 2022-02-02
+
+### Fixed
+
+- When reporting from NPCs is turned off, also ignores attacks from NPC starter corps
+
 ## [1.21.3] - 2022-01-31
 
 ### Changed
