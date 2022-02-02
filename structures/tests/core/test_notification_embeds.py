@@ -41,7 +41,9 @@ class TestNotificationEmbeds(TestCase):
         self.assertIsInstance(
             notification_embed, ne.NotificationMoonminningExtractionFinished
         )
-        self.assertEqual(str(notification_embed), "1000000403")
+        self.assertEqual(
+            str(notification_embed), "1000000403:MoonminingExtractionFinished"
+        )
         self.assertEqual(
             repr(notification_embed),
             "NotificationMoonminningExtractionFinished(notification=Notification("

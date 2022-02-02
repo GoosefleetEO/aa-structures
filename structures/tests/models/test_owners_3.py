@@ -234,6 +234,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
 
 
 @override_settings(DEBUG=True)
+@patch(NOTIFICATIONS_PATH + ".STRUCTURES_REPORT_NPC_ATTACKS", True)
 @patch(NOTIFICATIONS_PATH + ".Webhook.send_message", spec=True)
 class TestSendNewNotifications1(NoSocketsTestCase):
     @classmethod
@@ -334,12 +335,11 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         self.user = AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
-        webhook = create_webhook(
-            notification_types=[
-                NotificationType.ORBITAL_ATTACKED,
-                NotificationType.STRUCTURE_DESTROYED,
-            ]
-        )
+        selected_notif_types = [
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.STRUCTURE_DESTROYED,
+        ]
+        webhook = create_webhook(notification_types=selected_notif_types)
         self.owner.webhooks.clear()
         self.owner.webhooks.add(webhook)
         # when
@@ -353,10 +353,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
         }
         notifications_expected = set(
             Notification.objects.filter(
-                notif_type__in=[
-                    NotificationType.ORBITAL_ATTACKED,
-                    NotificationType.STRUCTURE_DESTROYED,
-                ]
+                notif_type__in=selected_notif_types
             ).values_list("notification_id", flat=True)
         )
         self.assertSetEqual(notifications_processed, notifications_expected)
