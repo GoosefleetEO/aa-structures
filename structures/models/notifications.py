@@ -1045,10 +1045,17 @@ class Notification(models.Model):
         Returns None, if owner has no fitting webhook
         Returns False, if sending to any webhooks failed
         """
-        if self.filter_for_npc_attacks() or self.filter_for_alliance_level():
+        if self.filter_for_npc_attacks():
+            logger.debug("%s: Will not send NPC attacks", self)
+            return None
+        if self.filter_for_alliance_level():
+            logger.debug(
+                "%s: Alliance level notifications are not enabled for this owner", self
+            )
             return None
         webhooks_qs = self.relevant_webhooks()
         if not webhooks_qs.exists():
+            logger.debug("%s: No relevant webhook found", self)
             return None
         if ping_type_override:
             self.ping_type_override = ping_type_override
@@ -1081,13 +1088,11 @@ class Notification(models.Model):
         returns True if successful, else False
         """
         logger.info("%s: Trying to sent to webhook: %s", self, webhook)
-        success = False
         try:
             embed, ping_type = self._generate_embed(webhook.language_code)
         except (OSError, NotImplementedError) as ex:
             logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
             return False
-
         if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
             if ping_type == Webhook.PingType.EVERYONE:
                 content = "@everyone"
@@ -1097,7 +1102,6 @@ class Notification(models.Model):
                 content = ""
         else:
             content = ""
-
         if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
             if "discord" in app_labels():
                 DiscordUser = self._import_discord()
@@ -1121,7 +1125,6 @@ class Notification(models.Model):
         if success and not self.is_temporary:
             self.is_sent = True
             self.save()
-
         return success
 
     @staticmethod
