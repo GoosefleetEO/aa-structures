@@ -398,14 +398,37 @@ Refueled notification are generated once a structure has been refueled and will 
 
 Refueled notifications are available for Upwell structures and POSes, however the POS version is currently experimental.
 
+To enable getting refuled notifications you need to activate this feature with a setting:
+
+```python
+STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = True
+```
+
 #### Structure fuel alerts
 
 Structure fuel alerts can be configured to provide additional alert notification about low fuel levels of your structures. They are highly customizable to accomodate all kinds of use cases. You can configure one ore multiple structure fuel alerts. All configuration is done through the admin site.
 
-Here are some examples:
+Here is an example:
 
-- When fuel is down to 3 days, send a warning notification every 12 hours.
-- When fuel is down to 24 hours, send a danger notification every 6 hours and ping everybody.
+_First configuration_
+
+When fuel is down to 3 days, send a warning notification every 12 hours. For this the configuration would be:
+
+- start: 72
+- end: 24
+- intervall: 12
+- channel pings: @here
+- color: warning
+
+_Second configuration_
+
+When fuel is down to 24 hours, send a danger notification every 6 hours and ping everybody. For this the configuration would be:
+
+- start: 24
+- end: 0
+- intervall: 6
+- channel pings: @everone
+- color: danger
 
 #### Jump fuel alerts
 
@@ -426,6 +449,7 @@ Name | Description | Default
 `STRUCTURES_DEFAULT_PAGE_LENGTH`| Default page size for structure list. Must be an integer value from the available options in the app. | `10`
 `STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | `True`
 `STRUCTURES_FEATURE_STARBASES`| Enable / disable starbases feature | `True`
+`STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS`| Enable / disable refuled notifications feature | `False`
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | `24`
 `STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | `True`
 `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS`| This allows you to turn off ESI fuel alert notifications to use the Structure's generated fuel notifications exclusively.  | `False`
@@ -448,7 +472,7 @@ This is an overview of all permissions used by this app. Note that all permissio
 
 Name | Purpose | Code
 -- | -- | --
-Can access public views | User can access this app and view public pages, e.g. public POCO view |  https://i.imgur.com/BK3MadZ.png
+Can access public views | User can access this app and view public pages, e.g. public POCO view |  <https://i.imgur.com/BK3MadZ.png>
 Can view corporation structures | User can see structures belonging to corporations of his characters only. |  `general.view_corporation_structures`
 Can view alliance structures | User can view all structures belonging to corporation in the alliance of the user. |  `general.view_alliance_structures`
 Can view all structures | User can see all structures in the system |  `general.view_all_structures`
