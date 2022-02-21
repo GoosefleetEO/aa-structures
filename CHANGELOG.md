@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.22.0] - 2022-02-21
+
+### Added
+
+- Notification for anchoring POS in sov space (#67)
+- Notification for war surrender offer (#63)
+
 ## [1.21.4] - 2022-02-02
 
 ### Fixed
