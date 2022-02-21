@@ -225,6 +225,8 @@ class NotificationBaseEmbed:
             return NotificationSovStructureReinforced(notification)
         elif notif_type == NotificationType.SOV_STRUCTURE_DESTROYED:
             return NotificationSovStructureDestroyed(notification)
+        elif notif_type == NotificationType.SOV_ALL_ANCHORING_MSG:
+            return NotificationSovAllAnchoringMsg(notification)
 
         # War
         elif notif_type in [
@@ -247,10 +249,11 @@ class NotificationBaseEmbed:
             return NotificationWarCorporationBecameEligible(notification)
         elif notif_type == NotificationType.WAR_CORPORATION_NO_LONGER_ELIGIBLE:
             return NotificationWarCorporationNoLongerEligible(notification)
+        elif notif_type == NotificationType.WAR_WAR_SURRENDER_OFFER_MSG:
+            return NotificationWarSurrenderOfferMsg(notification)
 
         # NOT IMPLEMENTED
-        else:
-            raise NotImplementedError(repr(notif_type))
+        raise NotImplementedError(repr(notif_type))
 
     @staticmethod
     def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
@@ -281,6 +284,13 @@ class NotificationBaseEmbed:
             eve_entity.name, cls._gen_eveentity_external_url(eve_entity)
         )
 
+    @classmethod
+    def _gen_eveentity_link_from_id(cls, id: int) -> str:
+        if not id:
+            return ""
+        entity, _ = EveEntity.objects.get_or_create_esi(id)
+        return cls._gen_eveentity_link(entity)
+
     @staticmethod
     def _gen_corporation_link(corporation_name: str) -> str:
         return Webhook.create_link(
@@ -297,7 +307,6 @@ class NotificationBaseEmbed:
             key = "aggressorID"
         else:
             return "(Unknown aggressor)"
-
         entity, _ = EveEntity.objects.get_or_create_esi(self._parsed_text[key])
         return Webhook.create_link(entity.name, entity.profile_url)
 
@@ -1085,6 +1094,44 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
         self._color = Webhook.Color.DANGER
 
 
+class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        corporation, _ = EveEntity.objects.get_or_create_esi(
+            self._parsed_text.get("corpID")
+        )
+        corp_link = self._gen_eveentity_link(corporation)
+        alliance_id = self._parsed_text.get("allianceID")
+        if alliance_id:
+            alliance, _ = EveEntity.objects.get_or_create_esi(alliance_id)
+            structure_owner = f"{corp_link} ({alliance.name})"
+        else:
+            structure_owner = corp_link
+        eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+            self._parsed_text.get("solarSystemID")
+        )
+        structure_type, _ = EveType.objects.get_or_create_esi(
+            self._parsed_text.get("typeID")
+        )
+        self._title = gettext("%(structure_type)s anchored in %(solar_system)s") % {
+            "structure_type": structure_type.eve_group.name,
+            "solar_system": eve_solar_system.name,
+        }
+        self._description = gettext(
+            "A %(structure_type)s from %(structure_owner)s has anchored "
+            "in %(solar_system)s belonging to %(sov_owner)s."
+        ) % {
+            "structure_type": Webhook.text_bold(structure_type.name),
+            "structure_owner": structure_owner,
+            "solar_system": self._gen_solar_system_text(eve_solar_system),
+            "sov_owner": self._gen_alliance_link(notification.sender.name),
+        }
+        self._color = Webhook.Color.WARNING
+        self._thumbnail = dhooks_lite.Thumbnail(
+            structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
+
+
 class NotificationCorpCharEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
@@ -1126,11 +1173,9 @@ class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
         self._title = "%(character_name)s has been invited" % {
             "character_name": self._character.name
         }
-        inviting_character, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["invokingCharID"]
+        inviting_character = self._gen_eveentity_link_from_id(
+            self._parsed_text.get("invokingCharID")
         )
-        inviting_character = self._gen_eveentity_link(inviting_character)
-
         self._description = (
             "%(character_name)s has been invited to join %(corporation_name)s "
             "by %(inviting_character)s.\n"
@@ -1398,4 +1443,24 @@ class NotificationWarCorporationNoLongerEligible(NotificationBaseEmbed):
             "If your corporation or alliance is currently involved in a formal war, "
             "that war will end in 24 hours."
         )
+        self._color = Webhook.Color.INFO
+
+
+class NotificationWarSurrenderOfferMsg(NotificationBaseEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        isk_value = self._parsed_text.get("iskValue", 0)
+        owner_1, _ = EveEntity.objects.get_or_create_esi(
+            self._parsed_text.get("ownerID1")
+        )
+        owner_1_link = self._gen_eveentity_link(owner_1)
+        owner_2_link = self._gen_eveentity_link_from_id(
+            self._parsed_text.get("ownerID2")
+        )
+        self._title = gettext("%s has offered a surrender") % (owner_1,)
+        self._description = gettext(
+            "%s has offered to end the war with %s in the exchange for %s ISK. "
+            "If accepted, the war will end in 24 hours and your organizations will"
+            "be unable to declare new wars against each other for the next 2 weeks."
+        ) % (owner_1_link, owner_2_link, f"{isk_value:,.2f}")
         self._color = Webhook.Color.INFO

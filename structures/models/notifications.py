@@ -152,6 +152,9 @@ class NotificationType(models.TextChoices):
         "Sovereignty claim acknowledgment"
     )
     SOV_ALL_CLAIM_LOST_MSG = "SovAllClaimLostMsg", _("Sovereignty lost")
+    SOV_ALL_ANCHORING_MSG = "AllAnchoringMsg", _(
+        "Structure anchoring in alliance space"
+    )
 
     # wars
     WAR_WAR_DECLARED = "WarDeclared", _("War declared")
@@ -174,6 +177,7 @@ class NotificationType(models.TextChoices):
     WAR_CORPORATION_NO_LONGER_ELIGIBLE = "CorpNoLongerWarEligible", _(
         "War corporation no longer eligable"
     )
+    WAR_WAR_SURRENDER_OFFER_MSG = "WarSurrenderOfferMsg", _("War surrender offered")
 
     # corporation membership
     CORP_APP_NEW_MSG = "CorpAppNewMsg", _("Character submitted application")
@@ -243,6 +247,8 @@ class NotificationType(models.TextChoices):
             cls.SOV_ALL_CLAIM_ACQUIRED_MSG,
             cls.SOV_STRUCTURE_REINFORCED,
             cls.SOV_STRUCTURE_DESTROYED,
+            cls.SOV_ALL_CLAIM_LOST_MSG,
+            cls.SOV_ALL_ANCHORING_MSG,
             # wars
             cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
             cls.WAR_ALLY_JOINED_WAR_AllY_MSG,
@@ -254,6 +260,7 @@ class NotificationType(models.TextChoices):
             cls.WAR_WAR_DECLARED,
             cls.WAR_WAR_INHERITED,
             cls.WAR_WAR_RETRACTED_BY_CONCORD,
+            cls.WAR_WAR_SURRENDER_OFFER_MSG,
         }
 
     @classproperty
