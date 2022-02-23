@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.22.1] - 2022-02-23
+
+### Fixed
+
+- Add moon location to notification text for `AllAnchoringMsg`
+
 ## [1.22.0] - 2022-02-21
 
 ### Added

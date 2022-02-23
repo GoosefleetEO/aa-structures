@@ -1108,23 +1108,29 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         else:
             structure_owner = corp_link
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text.get("solarSystemID")
+            self._parsed_text["solarSystemID"]
         )
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text.get("typeID")
+            self._parsed_text["typeID"]
         )
+        moon_id = self._parsed_text.get("moonID")
+        if moon_id:
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(moon_id)
+            location_text = gettext(" near **%s**") % eve_moon.name
+        else:
+            location_text = ""
         self._title = gettext("%(structure_type)s anchored in %(solar_system)s") % {
             "structure_type": structure_type.eve_group.name,
             "solar_system": eve_solar_system.name,
         }
         self._description = gettext(
             "A %(structure_type)s from %(structure_owner)s has anchored "
-            "in %(solar_system)s belonging to %(sov_owner)s."
+            "in %(solar_system)s%(location_text)s."
         ) % {
             "structure_type": Webhook.text_bold(structure_type.name),
             "structure_owner": structure_owner,
             "solar_system": self._gen_solar_system_text(eve_solar_system),
-            "sov_owner": self._gen_alliance_link(notification.sender.name),
+            "location_text": location_text,
         }
         self._color = Webhook.Color.WARNING
         self._thumbnail = dhooks_lite.Thumbnail(

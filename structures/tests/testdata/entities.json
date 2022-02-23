@@ -1221,7 +1221,7 @@
             "sender_id": 3001,
             "sender_type": "corporation",
             "timestamp": "2019-11-18 20:00:00",
-            "text": "allianceID: 1354830081\ncorpID: 98370861\ncorpsPresent:\n- allianceID: 1354830081\n  corpID: 98370861\nsolarSystemID: 30003176\ntowers:\n- moonID: 40201527\n  typeID: 12235\ntypeID: 27540\n",
+            "text": "allianceID: 1354830081\ncorpID: 98370861\ncorpsPresent:\n- allianceID: 1354830081\n  corpID: 98409330\nmoonID: 40201527\nsolarSystemID: 30003176\ntowers:\n- moonID: 40201547\n  typeID: 12235\ntypeID: 27540\n",
             "is_read": false,
             "is_sent": false
         }
