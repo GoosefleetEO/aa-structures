@@ -40,9 +40,9 @@ setup(
     ],
     python_requires="~=3.7",
     install_requires=[
-        "allianceauth>=2.9.0,<3",
+        "allianceauth>=2.9.0",
         "dhooks-lite>=0.6.1",
-        "allianceauth-app-utils>=1.12",
+        "allianceauth-app-utils>=1.13",
         "django-navhelper",
         "django-multiselectfield",
         "redis-simple-mq>=0.4",

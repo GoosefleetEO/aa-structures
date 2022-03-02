@@ -7,9 +7,9 @@ import dhooks_lite
 from simple_mq import SimpleMQ
 
 from django.contrib.auth.models import User
-from django.core.cache import cache
 
 from allianceauth.services.hooks import get_extension_logger
+from app_utils.allianceauth import get_redis_client
 from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 from app_utils.logging import LoggerAddTag
 
@@ -32,11 +32,10 @@ class DiscordWebhookMixin:
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._main_queue = SimpleMQ(
-            cache.get_master_client(), f"{__title__}_webhook_{self.pk}_main"
-        )
+        redis_client = get_redis_client()
+        self._main_queue = SimpleMQ(redis_client, f"{__title__}_webhook_{self.pk}_main")
         self._error_queue = SimpleMQ(
-            cache.get_master_client(), f"{__title__}_webhook_{self.pk}_errors"
+            redis_client, f"{__title__}_webhook_{self.pk}_errors"
         )
 
     def __str__(self) -> str:

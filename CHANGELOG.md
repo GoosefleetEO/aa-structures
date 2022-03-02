@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.22.3] - 2022-03-02
+
 ### Changed
 
-- More Django 4 compatibility updates
+- AA 3 compatibility update
 
-## [1.22.2] - 2022-01-03
+## [1.22.2] - 2022-03-01
 
 ### Fixed
 

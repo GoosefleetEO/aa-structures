@@ -1,5 +1,5 @@
 import datetime as dt
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -534,7 +534,7 @@ class TestAddStructureOwner(TestCase):
             token = user.token_set.first()
         request.user = user
         request.token = token
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(Mock())
         middleware.process_request(request)
         orig_view = views.add_structure_owner.__wrapped__.__wrapped__.__wrapped__
         # when
