@@ -5,13 +5,24 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from allianceauth.eveonline.models import EveCorporationInfo
-from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
+from app_utils.testing import (
+    NoSocketsTestCase,
+    create_user_from_evecharacter,
+    generate_invalid_pk,
+)
 
 from structures.models.notifications import Notification
 
 from .. import tasks
-from ..models import FuelAlertConfig, Owner, Webhook
-from .testdata import create_structures, load_notification_entities, set_owner_character
+from ..models import FuelAlertConfig, NotificationType, Owner, Webhook
+from .testdata import (
+    create_structures,
+    load_entities,
+    load_notification_entities,
+    set_owner_character,
+)
+from .testdata.factories import create_notification, create_owner_from_user
+from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.tasks"
 MODULE_PATH_MODELS_OWNERS = "structures.models.owners"
@@ -321,3 +332,40 @@ class TestSendNotifications(TestCase):
         tasks.send_notifications([notification_pk])
         # then
         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
+
+
+@patch(MODULE_PATH + ".Notification.update_related_structures")
+class TestUpdateExistingNotifications(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        load_entities()
+        load_eveuniverse()
+        cls.user, _ = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.basic_access", "structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+
+    def test_should_run_updates(self, mock_update_related_structures):
+        # given
+        mock_update_related_structures.return_value = True
+        owner = create_owner_from_user(self.user)
+        create_notification(
+            owner=owner, notif_type=NotificationType.STRUCTURE_UNDER_ATTACK
+        )
+        create_notification(owner=owner, notif_type=NotificationType.CORP_APP_NEW_MSG)
+        # when
+        result = tasks.update_existing_notifications(owner.pk)
+        # then
+        self.assertEqual(result, 1)
+
+    def test_should_run_no_updates(self, mock_update_related_structures):
+        # given
+        mock_update_related_structures.return_value = True
+        owner = create_owner_from_user(self.user)
+        create_notification(owner=owner, notif_type=NotificationType.CORP_APP_NEW_MSG)
+        # when
+        result = tasks.update_existing_notifications(owner.pk)
+        # then
+        self.assertEqual(result, 0)
