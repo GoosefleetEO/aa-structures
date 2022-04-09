@@ -83,6 +83,14 @@ class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
     )
     list_select_related = True
     list_filter = ("is_enabled",)
+    actions = ("send_fuel_notifications",)
+    fieldsets = (
+        (
+            "Discord",
+            {"fields": ("channel_ping_type", "color")},
+        ),
+        ("General", {"fields": ("is_enabled",)}),
+    )
 
     @admin.display(ordering="pk")
     def _id(self, obj):
@@ -97,8 +105,6 @@ class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
             color.label,
         )
 
-    actions = ("send_fuel_notifications",)
-
     @admin.display(description="Sent fuel notifications for selected configuration")
     def send_fuel_notifications(self, request, queryset):
         item_count = 0
@@ -111,14 +117,6 @@ class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
             f"Started sending fuel notifications for {item_count} configurations",
         )
 
-    fieldsets = (
-        (
-            "Discord",
-            {"fields": ("channel_ping_type", "color")},
-        ),
-        ("General", {"fields": ("is_enabled",)}),
-    )
-
 
 @admin.register(FuelAlertConfig)
 class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
@@ -128,7 +126,6 @@ class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
         "end",
         "repeat",
     ) + BaseFuelAlertConfigAdmin.list_display
-
     fieldsets = (
         (
             "Timeing",
@@ -151,11 +148,6 @@ class JumpFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
         "_id",
         "_threshold",
     ) + BaseFuelAlertConfigAdmin.list_display
-
-    @admin.display(ordering="threshold")
-    def _threshold(self, obj) -> str:
-        return f"{obj.threshold:,}"
-
     fieldsets = (
         (
             "Fuel levels",
@@ -166,10 +158,13 @@ class JumpFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
         ),
     ) + BaseFuelAlertConfigAdmin.fieldsets
 
+    @admin.display(ordering="threshold")
+    def _threshold(self, obj) -> str:
+        return f"{obj.threshold:,}"
+
 
 class RenderableNotificationFilter(admin.SimpleListFilter):
     title = "can be send"
-
     parameter_name = "notification_renderable"
 
     def lookups(self, request, model_admin):
@@ -231,6 +226,12 @@ class NotificationAdmin(admin.ModelAdmin):
         "is_sent",
         "notif_type",
     )
+    actions = (
+        "mark_as_sent",
+        "mark_as_unsent",
+        "send_to_configured_webhooks",
+        "process_for_timerboard",
+    )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -281,13 +282,6 @@ class NotificationAdmin(admin.ModelAdmin):
     def _is_timer_added(self, obj):
         value = obj.is_timer_added if obj.can_have_timer else None
         return admin_boolean_icon_html(value)
-
-    actions = (
-        "mark_as_sent",
-        "mark_as_unsent",
-        "send_to_configured_webhooks",
-        "process_for_timerboard",
-    )
 
     @admin.display(description="Mark selected notifications as sent")
     def mark_as_sent(self, request, queryset):
@@ -394,6 +388,49 @@ class OwnerAdmin(admin.ModelAdmin):
     )
     ordering = ["corporation__corporation_name"]
     search_fields = ["corporation__corporation_name"]
+    actions = (
+        "update_all",
+        "update_structures",
+        "fetch_notifications",
+        "deactivate_owners",
+        "activate_owners",
+    )
+    inlines = (OwnerCharacterAdminInline,)
+    filter_horizontal = ("ping_groups", "webhooks")
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "corporation",
+                    "webhooks",
+                    "is_alliance_main",
+                    "are_pocos_public",
+                    "has_default_pings_enabled",
+                    "ping_groups",
+                    "is_included_in_service_status",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Sync Status",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "_are_all_syncs_ok",
+                    ("_structures_last_update_fresh", "structures_last_update_at"),
+                    (
+                        "_notifications_last_update_fresh",
+                        "notifications_last_update_at",
+                        "_avg_turnaround_time",
+                    ),
+                    ("_forwarding_last_update_fresh", "forwarding_last_update_at"),
+                    ("_assets_last_update_fresh", "assets_last_update_at"),
+                ),
+            },
+        ),
+    )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -459,14 +496,6 @@ class OwnerAdmin(admin.ModelAdmin):
     def _structures_count(self, obj: Owner) -> int:
         return obj.structures_count
 
-    actions = (
-        "update_all",
-        "update_structures",
-        "fetch_notifications",
-        "deactivate_owners",
-        "activate_owners",
-    )
-
     @admin.display(description="Activate selected owners")
     def activate_owners(self, request, queryset):
         queryset.update(is_active=True)
@@ -528,43 +557,6 @@ class OwnerAdmin(admin.ModelAdmin):
                 "_assets_last_update_fresh",
             )
         return self.readonly_fields
-
-    inlines = (OwnerCharacterAdminInline,)
-    filter_horizontal = ("ping_groups", "webhooks")
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "corporation",
-                    "webhooks",
-                    "is_alliance_main",
-                    "are_pocos_public",
-                    "has_default_pings_enabled",
-                    "ping_groups",
-                    "is_included_in_service_status",
-                    "is_active",
-                )
-            },
-        ),
-        (
-            "Sync Status",
-            {
-                "classes": ("collapse",),
-                "fields": (
-                    "_are_all_syncs_ok",
-                    ("_structures_last_update_fresh", "structures_last_update_at"),
-                    (
-                        "_notifications_last_update_fresh",
-                        "notifications_last_update_at",
-                        "_avg_turnaround_time",
-                    ),
-                    ("_forwarding_last_update_fresh", "forwarding_last_update_at"),
-                    ("_assets_last_update_fresh", "assets_last_update_at"),
-                ),
-            },
-        ),
-    )
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """only show custom tags in dropdown"""
@@ -797,8 +789,80 @@ class StructureAdmin(admin.ModelAdmin):
         ("tags", admin.RelatedOnlyFieldListFilter),
         HasWebhooksListFilter,
     )
-
     actions = ("add_default_tags", "remove_user_tags", "update_generated_tags")
+    readonly_fields = tuple(
+        [
+            x.name
+            for x in Structure._meta.get_fields()
+            if isinstance(x, models.fields.Field) and x.name not in ["tags", "webhooks"]
+        ]
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "owner",
+                    "eve_solar_system",
+                    "eve_type",
+                    "tags",
+                    "webhooks",
+                )
+            },
+        ),
+        (
+            "Status",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "state",
+                    (
+                        "state_timer_start",
+                        "state_timer_end",
+                    ),
+                    "unanchors_at",
+                    "fuel_expires_at",
+                    "last_online_at",
+                    "has_fitting",
+                    "has_core",
+                ),
+            },
+        ),
+        (
+            "Reinforcement",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    ("reinforce_hour",),
+                    (
+                        "next_reinforce_hour",
+                        "next_reinforce_apply",
+                    ),
+                ),
+            },
+        ),
+        (
+            "Position",
+            {
+                "classes": ("collapse",),
+                "fields": ("position_x", "position_y", "position_z"),
+            },
+        ),
+        (
+            None,
+            {
+                "fields": (
+                    (
+                        "id",
+                        "last_updated_at",
+                    )
+                )
+            },
+        ),
+    )
+    filter_horizontal = ("tags", "webhooks")
+    inlines = (StructureServicesAdminInline,)
 
     def has_add_permission(self, request):
         return False
@@ -883,80 +947,6 @@ class StructureAdmin(admin.ModelAdmin):
             "Updated all generated tags for {:,} structures".format(structure_count),
         )
 
-    readonly_fields = tuple(
-        [
-            x.name
-            for x in Structure._meta.get_fields()
-            if isinstance(x, models.fields.Field) and x.name not in ["tags", "webhooks"]
-        ]
-    )
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "name",
-                    "owner",
-                    "eve_solar_system",
-                    "eve_type",
-                    "tags",
-                    "webhooks",
-                )
-            },
-        ),
-        (
-            "Status",
-            {
-                "classes": ("collapse",),
-                "fields": (
-                    "state",
-                    (
-                        "state_timer_start",
-                        "state_timer_end",
-                    ),
-                    "unanchors_at",
-                    "fuel_expires_at",
-                    "last_online_at",
-                    "has_fitting",
-                    "has_core",
-                ),
-            },
-        ),
-        (
-            "Reinforcement",
-            {
-                "classes": ("collapse",),
-                "fields": (
-                    ("reinforce_hour",),
-                    (
-                        "next_reinforce_hour",
-                        "next_reinforce_apply",
-                    ),
-                ),
-            },
-        ),
-        (
-            "Position",
-            {
-                "classes": ("collapse",),
-                "fields": ("position_x", "position_y", "position_z"),
-            },
-        ),
-        (
-            None,
-            {
-                "fields": (
-                    (
-                        "id",
-                        "last_updated_at",
-                    )
-                )
-            },
-        ),
-    )
-    filter_horizontal = ("tags", "webhooks")
-    inlines = (StructureServicesAdminInline,)
-
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """only show custom tags in dropdown"""
         if db_field.name == "tags":
@@ -978,6 +968,41 @@ class WebhookAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active",)
     save_as = True
+    actions = (
+        "test_notification",
+        "activate",
+        "deactivate",
+        "purge_messages",
+        "send_messages",
+    )
+    filter_horizontal = ("ping_groups",)
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "url",
+                    "notes",
+                    "notification_types",
+                    "ping_groups",
+                    "is_active",
+                    "is_default",
+                ),
+            },
+        ),
+        (
+            "Advanced Options",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "language_code",
+                    "has_default_pings_enabled",
+                    "webhook_type",
+                ),
+            },
+        ),
+    )
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -1033,14 +1058,6 @@ class WebhookAdmin(admin.ModelAdmin):
     def _messages_in_queue(self, obj):
         return obj.queue_size()
 
-    actions = (
-        "test_notification",
-        "activate",
-        "deactivate",
-        "purge_messages",
-        "send_messages",
-    )
-
     @admin.display(description="Send test notification to selected webhook")
     def test_notification(self, request, queryset):
         for obj in queryset:
@@ -1090,32 +1107,3 @@ class WebhookAdmin(admin.ModelAdmin):
         self.message_user(
             request, f"Started sending queued messages for {items_count} webhooks."
         )
-
-    filter_horizontal = ("ping_groups",)
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "name",
-                    "url",
-                    "notes",
-                    "notification_types",
-                    "ping_groups",
-                    "is_active",
-                    "is_default",
-                )
-            },
-        ),
-        (
-            "Advanced Options",
-            {
-                "classes": ("collapse",),
-                "fields": (
-                    "language_code",
-                    "has_default_pings_enabled",
-                    "webhook_type",
-                ),
-            },
-        ),
-    )

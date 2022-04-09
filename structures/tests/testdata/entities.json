@@ -60,6 +60,11 @@
             "eve_category_id": 40
         },
         {
+            "id": 1012,
+            "name": "Infrastructure Hub",
+            "eve_category_id": 40
+        },
+        {
             "id": 1136,
             "name": "Fuel Block",
             "eve_category_id": 40
@@ -200,6 +205,11 @@
             "id": 32226,
             "name": "Territorial Claim Unit",
             "eve_group_id": 1003
+        },
+        {
+            "id": 32458,
+            "name": "Infrastructure Hub",
+            "eve_group_id": 1012
         },
         {
             "id": 35832,
@@ -1191,7 +1201,7 @@
             "sender_id": 2902,
             "sender_type": "corporation",
             "timestamp": "2019-11-18 20:00:00",
-            "text": "iskValue: 10000000.0\nownerID1: 99009354\nownerID2: 3011\nwarNegotiationID: 453736\n",
+            "text": "iskValue: 10000000.0\nownerID1: 3001\nownerID2: 3011\nwarNegotiationID: 453736\n",
             "is_read": false,
             "is_sent": false
         },
@@ -1221,7 +1231,37 @@
             "sender_id": 3001,
             "sender_type": "corporation",
             "timestamp": "2019-11-18 20:00:00",
-            "text": "allianceID: 1354830081\ncorpID: 98370861\ncorpsPresent:\n- allianceID: 1354830081\n  corpID: 98409330\nmoonID: 40201527\nsolarSystemID: 30003176\ntowers:\n- moonID: 40201547\n  typeID: 12235\ntypeID: 27540\n",
+            "text": "allianceID: 3001\ncorpID: 2001\ncorpsPresent:\n- allianceID: 3001\n  corpID: 2002\nmoonID: 40161466\nsolarSystemID: 30002537\ntowers:\n- moonID: 40161465\n  typeID: 16213\ntypeID: 16213\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "notification_id": 1000001001,
+            "type": "BillOutOfMoneyMsg",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-18 20:00:00",
+            "text": "billTypeID: 7\ndueDate: 132936019800000000\n",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "notification_id": 1000001002,
+            "type": "InfrastructureHubBillAboutToExpire",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-18 20:00:00",
+            "text": "billID: 24803231\ncorpID: 2001\ndueDate: 132936111600000000\nsolarSystemID: 30000474",
+            "is_read": false,
+            "is_sent": false
+        },
+        {
+            "notification_id": 1000001003,
+            "type": "IHubDestroyedByBillFailure",
+            "sender_id": 2902,
+            "sender_type": "corporation",
+            "timestamp": "2019-11-18 20:00:00",
+            "text": "solarSystemID: 30000474\nstructureTypeID: 32458\n",
             "is_read": false,
             "is_sent": false
         }

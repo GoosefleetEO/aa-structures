@@ -34,7 +34,7 @@ class CreateEveUniverseTestData(TestCase):
             ),
             ModelSpec(
                 "EveMoon",
-                ids=[40161465],
+                ids=[40161465, 40161466],
                 include_children=False,
             ),
         ]
