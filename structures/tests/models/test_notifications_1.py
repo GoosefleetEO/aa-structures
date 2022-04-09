@@ -619,14 +619,16 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         self.assertFalse(obj.is_sent)
 
     def test_send_to_webhook_all_notification_types(self, mock_send_message):
+        # given
         mock_send_message.return_value = True
-
         types_tested = set()
+        # when /then
         for notif in Notification.objects.all():
-            if notif.notif_type in NotificationType.values:
-                self.assertFalse(notif.is_sent)
-                self.assertTrue(notif.send_to_webhook(self.webhook))
-                types_tested.add(notif.notif_type)
+            with self.subTest(notif_type=notif.notif_type):
+                if notif.notif_type in NotificationType.values:
+                    self.assertFalse(notif.is_sent)
+                    self.assertTrue(notif.send_to_webhook(self.webhook))
+                    types_tested.add(notif.notif_type)
 
         # make sure we have tested all existing esi notification types
         self.assertSetEqual(NotificationType.esi_notifications, types_tested)

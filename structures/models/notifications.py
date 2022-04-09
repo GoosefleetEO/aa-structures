@@ -191,6 +191,17 @@ class NotificationType(models.TextChoices):
     CHAR_APP_ACCEPT_MSG = "CharAppAcceptMsg", _("Character joins corporation")
     CHAR_LEFT_CORP_MSG = "CharLeftCorpMsg", _("Character leaves corporation")
 
+    # billing
+    BILLING_BILL_OUT_OF_MONEY_MSG = "BillOutOfMoneyMsg", _("Bill out of money")
+    BILLING_I_HUB_BILL_ABOUT_TO_EXPIRE = (
+        "InfrastructureHubBillAboutToExpire",
+        _("I-HUB bill about to expire"),
+    )
+    BILLING_I_HUB_DESTROYED_BY_BILL_FAILURE = (
+        "IHubDestroyedByBillFailure",
+        _("I_HUB destroyed by bill failure"),
+    )
+
     @classproperty
     def esi_notifications(cls) -> set:
         return set(cls.values) - cls.generated_notifications
@@ -241,6 +252,10 @@ class NotificationType(models.TextChoices):
     def relevant_for_alliance_level(cls) -> set:
         """Notification types that requre the alliance level flag."""
         return {
+            # billing
+            cls.BILLING_BILL_OUT_OF_MONEY_MSG,
+            cls.BILLING_I_HUB_DESTROYED_BY_BILL_FAILURE,
+            cls.BILLING_I_HUB_BILL_ABOUT_TO_EXPIRE,
             # sov
             cls.SOV_ENTOSIS_CAPTURE_STARTED,
             cls.SOV_COMMAND_NODE_EVENT_STARTED,
