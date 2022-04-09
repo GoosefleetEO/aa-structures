@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.23.0] - 2022-04-09
+
+### Added
+
+- Infrastructure hub bill notifications on about to expire (#69)
+
 ## [1.22.3] - 2022-03-02
 
 ### Changed
