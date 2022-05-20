@@ -1,6 +1,8 @@
 from random import randint
 from typing import List
 
+import yaml
+
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.timezone import now
@@ -28,6 +30,9 @@ def create_eve_sovereignty_map(**kwargs):
 
 
 def create_notification(**kwargs):
+    """Args(optional):
+    - data: details of notification as Python dict
+    """
     params = {
         "notification_id": _generate_unique_id(Notification, "notification_id"),
         "sender_id": 2901,
@@ -38,6 +43,9 @@ def create_notification(**kwargs):
     }
     if "owner" not in kwargs and "owner_id" not in kwargs:
         params["owner_id"] = 2001
+    if "data" in kwargs:
+        data = kwargs.pop("data")
+        params["text"] = yaml.dump(data)
     params.update(kwargs)
     return Notification.objects.create(**params)
 

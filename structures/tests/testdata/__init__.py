@@ -1,16 +1,18 @@
 """functions for loading test data and for building mocks"""
-
 import datetime as dt
 import inspect
 import json
 import math
 import os
+import unicodedata
 from copy import deepcopy
 from random import randrange
 from typing import Tuple
 from unittest.mock import Mock
 
 from bravado.exception import HTTPNotFound
+from bs4 import BeautifulSoup
+from markdown import markdown
 
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
@@ -841,3 +843,10 @@ def _load_notification_for_owner(owner, timestamp_start, notification, new_ids=F
             "is_sent": False,
         },
     )
+
+
+def markdown_to_plain(text: str) -> str:
+    """Convert text in markdown to plain text."""
+    html = markdown(text)
+    text = "".join(BeautifulSoup(html, features="html.parser").findAll(text=True))
+    return unicodedata.normalize("NFKD", text)

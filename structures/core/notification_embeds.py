@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import models
 from django.template import Context, Template
 from django.utils.html import strip_tags
+from django.utils.timezone import now
 from django.utils.translation import gettext, gettext_lazy
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
@@ -23,6 +24,7 @@ from ..constants import EveTypeId
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
 from ..models.structures import Structure
+from . import starbases
 
 
 class BillType(models.IntegerChoices):
@@ -37,10 +39,12 @@ class BillType(models.IntegerChoices):
             return cls.UNKNOWN
 
 
-def timeuntil(target_datetime: dt.datetime) -> str:
+def timeuntil(to_date: dt.datetime, from_date: dt.datetime = None) -> str:
     """Render timeuntil template tag for given datetime to string."""
-    template = Template("{{ my_datetime|timeuntil }}")
-    context = Context({"my_datetime": target_datetime})
+    if not from_date:
+        from_date = now()
+    template = Template("{{ to_date|timeuntil:from_date }}")
+    context = Context({"to_date": to_date, "from_date": from_date})
     return template.render(context)
 
 
@@ -930,7 +934,23 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
 class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        if self._structure and self._structure.fuel_expires_at:
+        if "wants" in self._parsed_text and self._parsed_text["wants"]:
+            fuel_quantity = self._parsed_text["wants"][0]["quantity"]
+            starbase_type, _ = EveType.objects.get_or_create_esi(
+                self._parsed_text["typeID"]
+            )
+            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+                self._parsed_text["solarSystemID"]
+            )
+            seconds = starbases.fuel_duration(
+                starbase_type=starbase_type,
+                fuel_quantity=fuel_quantity,
+                has_sov=notification.owner.has_sov(solar_system),
+            )
+            from_date = self.notification.timestamp
+            to_date = from_date + dt.timedelta(seconds=seconds)
+            hours_left = timeuntil(to_date, from_date)
+        elif self._structure and self._structure.fuel_expires_at:
             hours_left = timeuntil(self._structure.fuel_expires_at)
         else:
             hours_left = "?"

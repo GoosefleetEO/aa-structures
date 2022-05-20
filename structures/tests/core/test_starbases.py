@@ -22,19 +22,19 @@ class TestStarbases(NoSocketsTestCase):
     def test_starbase_fuel_consumption_per_hour(self):
         # large
         obj = EveType.objects.get(id=16213)
-        self.assertEqual(starbases.starbase_fuel_per_hour(obj), 40)
+        self.assertEqual(starbases.fuel_per_hour(obj), 40)
 
         # medium
         obj = EveType.objects.get(id=20061)
-        self.assertEqual(starbases.starbase_fuel_per_hour(obj), 20)
+        self.assertEqual(starbases.fuel_per_hour(obj), 20)
 
         # small
         obj = EveType.objects.get(id=20062)
-        self.assertEqual(starbases.starbase_fuel_per_hour(obj), 10)
+        self.assertEqual(starbases.fuel_per_hour(obj), 10)
 
         # none
         obj = EveType.objects.get(id=35832)
-        self.assertIsNone(starbases.starbase_fuel_per_hour(obj))
+        self.assertIsNone(starbases.fuel_per_hour(obj))
 
     def test_returns_large_for_large_control_tower(self):
         obj = EveType.objects.get(id=16213)
@@ -61,3 +61,37 @@ class TestStarbases(NoSocketsTestCase):
 
         obj = EveType.objects.get(id=4051)
         self.assertTrue(starbases.is_fuel_block(obj))
+
+
+class TestStarbasesFuelDuration(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities([EveCategory, EveGroup, EveType])
+
+    def test_can_calculate_for_large_tower(self):
+        # given
+        large_tower_type = EveType.objects.get(name="Caldari Control Tower")
+        # when
+        result = starbases.fuel_duration(
+            starbase_type=large_tower_type, fuel_quantity=80
+        )
+        # then
+        self.assertEqual(result, 7200)
+
+    def test_can_calculate_for_large_tower_with_sov(self):
+        # given
+        large_tower_type = EveType.objects.get(name="Caldari Control Tower")
+        # when
+        result = starbases.fuel_duration(
+            starbase_type=large_tower_type, fuel_quantity=80, has_sov=True
+        )
+        # then
+        self.assertEqual(result, 9600)
+
+    def test_can_raise_error_when_not_starbase_type(self):
+        # given
+        astrahus_type = EveType.objects.get(name="Astrahus")
+        # when
+        with self.assertRaises(ValueError):
+            starbases.fuel_duration(starbase_type=astrahus_type, fuel_quantity=80)

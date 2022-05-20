@@ -1,7 +1,11 @@
+import datetime as dt
+
 import dhooks_lite
 
 from django.test import TestCase, override_settings
 from django.utils.timezone import now
+
+from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...core import notification_embeds as ne
 from ...models.notifications import (
@@ -13,8 +17,15 @@ from ...models.notifications import (
 )
 from ..testdata import (
     create_structures,
+    load_entities,
     load_notification_entities,
+    markdown_to_plain,
     set_owner_character,
+)
+from ..testdata.factories import (
+    create_notification,
+    create_owner_from_user,
+    create_starbase,
 )
 
 MODULE_PATH = "structures.core.notification_embeds"
@@ -200,3 +211,63 @@ class TestNotificationEmbeds(TestCase):
         # then
         self.assertEqual(discord_embed.footer.text, "Structures")
         self.assertIn("structures_logo.png", discord_embed.footer.icon_url)
+
+
+class TestNotificationEmbedsClasses(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities()
+        user, _ = create_user_from_evecharacter(
+            1001, permissions=["structures.add_structure_owner"]
+        )
+        cls.owner = create_owner_from_user(user=user)
+        cls.moon_id = 40161465
+        cls.solar_system_id = 30002537
+        cls.type_id = 16213
+
+    def test_should_generate_embed_for_normal_tower_resource_alert(self):
+        # given
+        create_starbase(
+            owner=self.owner,
+            eve_moon_id=self.moon_id,
+            eve_solar_system_id=self.solar_system_id,
+            eve_type_id=self.type_id,
+        )
+        data = {
+            "corpID": self.owner.corporation.corporation_id,
+            "moonID": self.moon_id,
+            "solarSystemID": self.solar_system_id,
+            "typeID": self.type_id,
+            "wants": [{"quantity": 120, "typeID": 4051}],
+        }
+        notification = create_notification(
+            owner=self.owner,
+            notif_type=NotificationType.TOWER_RESOURCE_ALERT_MSG,
+            data=data,
+        )
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed()
+        # then
+        description = markdown_to_plain(discord_embed.description)
+        self.assertIn("is running out of fuel in 3 hours", description)
+
+    def test_should_generate_embed_for_generated_tower_resource_alert(self):
+        # given
+        structure = create_starbase(
+            owner=self.owner,
+            eve_moon_id=self.moon_id,
+            eve_solar_system_id=self.solar_system_id,
+            eve_type_id=self.type_id,
+            fuel_expires_at=now() + dt.timedelta(hours=2, seconds=20),
+        )
+        notification = Notification.create_from_structure(
+            structure=structure, notif_type=NotificationType.TOWER_RESOURCE_ALERT_MSG
+        )
+        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        # when
+        discord_embed = notification_embed.generate_embed()
+        # then
+        description = markdown_to_plain(discord_embed.description)
+        self.assertIn("is running out of fuel in 2 hours", description)

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.23.1] - 2022-05-20
+
+### Fixed
+
+- Fuel Alerts for POS is starting several weeks out (#72)
+
 ## [1.23.0] - 2022-04-09
 
 ### Added

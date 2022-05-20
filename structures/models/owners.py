@@ -1,6 +1,5 @@
 """Owner related models"""
 import json
-import math
 import os
 import re
 from datetime import datetime, timedelta
@@ -311,6 +310,12 @@ class Owner(models.Model):
     def characters_count(self) -> int:
         """Count of valid owner characters."""
         return self.characters.count()
+
+    def has_sov(self, eve_solar_system: EveSolarSystem) -> bool:
+        """Determine whether this owner has sov in the given solar system."""
+        return EveSovereigntyMap.objects.corporation_has_sov(
+            eve_solar_system=eve_solar_system, corporation=self.corporation
+        )
 
     def fetch_token(
         self,
@@ -919,14 +924,10 @@ class Owner(models.Model):
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 starbase["system_id"]
             )
-            has_sov = EveSovereigntyMap.objects.corporation_has_sov(
-                eve_solar_system=solar_system, corporation=self.corporation
-            )
-            sov_discount = 0.25 if has_sov else 0
-            seconds = math.floor(
-                3600
-                * fuel_quantity
-                / (starbases.starbase_fuel_per_hour(starbase_type) * (1 - sov_discount))
+            seconds = starbases.fuel_duration(
+                starbase_type=starbase_type,
+                fuel_quantity=fuel_quantity,
+                has_sov=self.has_sov(solar_system),
             )
             last_modified = parsedate_to_datetime(
                 response.headers.get("Last-Modified", format_datetime(now()))

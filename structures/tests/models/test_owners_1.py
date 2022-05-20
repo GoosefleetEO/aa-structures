@@ -9,8 +9,9 @@ from esi.models import Token
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...models import Owner, OwnerCharacter
+from ...models import EveSolarSystem, Owner, OwnerCharacter
 from ..testdata import create_structures, load_entities, set_owner_character
+from ..testdata.factories import create_owner_from_user
 from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.owners"
@@ -298,6 +299,35 @@ class TestOwner(NoSocketsTestCase):
         self.assertTrue(self.owner.is_alliance_main)
         owner_2103.refresh_from_db()
         self.assertTrue(owner_2103.is_alliance_main)
+
+
+class TestOwnerHasSov(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities()
+        user, _ = create_user_from_evecharacter(
+            1001, permissions=["structures.add_structure_owner"]
+        )
+        cls.owner = create_owner_from_user(user=user)
+
+    def test_should_return_true_when_owner_has_sov(self):
+        # given
+        system = EveSolarSystem.objects.get(name="1-PGSG")
+        # when/then
+        self.assertTrue(self.owner.has_sov(system))
+
+    def test_should_return_false_when_owner_has_no_sov(self):
+        # given
+        system = EveSolarSystem.objects.get(name="A-C5TC")
+        # when/then
+        self.assertFalse(self.owner.has_sov(system))
+
+    def test_should_return_false_when_owner_is_outside_nullsec(self):
+        # given
+        system = EveSolarSystem.objects.get(name="Amamake")
+        # when/then
+        self.assertFalse(self.owner.has_sov(system))
 
 
 @patch(MODULE_PATH + ".notify")

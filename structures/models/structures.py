@@ -29,7 +29,6 @@ from .eveuniverse import (
     EveMoon,
     EvePlanet,
     EveSolarSystem,
-    EveSovereigntyMap,
     EveSpaceType,
     EveType,
 )
@@ -354,7 +353,7 @@ class Structure(models.Model):
                 location_name = "?"
         else:
             location_name = self.location_name
-        return f"{location_name} - {self.name}"
+        return f"{location_name} - {self.name}" if self.name else str(location_name)
 
     def __repr__(self) -> str:
         try:
@@ -492,9 +491,7 @@ class Structure(models.Model):
 
     @cached_property
     def owner_has_sov(self) -> bool:
-        return EveSovereigntyMap.objects.corporation_has_sov(
-            eve_solar_system=self.eve_solar_system, corporation=self.owner.corporation
-        )
+        return self.owner.has_sov(self.eve_solar_system)
 
     @cached_property
     def location_name(self) -> str:

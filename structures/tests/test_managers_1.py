@@ -142,19 +142,19 @@ class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
     def test_corporation_has_sov(self):
         corporation = EveCorporationInfo.objects.get(corporation_id=2001)
         # Wayne Tech has sov in 1-PG
-        eve_solar_system = EveSolarSystem.objects.get(id=30000474)
+        eve_solar_system = EveSolarSystem.objects.get(name="1-PGSG")
         self.assertTrue(
             EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
         )
 
-        # Wayne Tech has no sov in A-C5
-        eve_solar_system = EveSolarSystem.objects.get(id=30000476)
+        # Wayne Tech has no sov in A-C5TC
+        eve_solar_system = EveSolarSystem.objects.get(name="A-C5TC")
         self.assertFalse(
             EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
         )
 
         # There can't be any sov outside nullsec
-        eve_solar_system = EveSolarSystem.objects.get(id=30002537)
+        eve_solar_system = EveSolarSystem.objects.get(name="Amamake")
         self.assertIsNone(
             EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
         )
