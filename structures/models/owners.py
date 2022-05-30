@@ -934,6 +934,7 @@ class Owner(models.Model):
             "attack_security_status_threshold": data.get(
                 "attack_security_status_threshold"
             ),
+            "attack_standing_threshold": data.get("attack_standing_threshold"),
             "fuel_bay_take_role": StarbaseDetail.Role.from_esi(data["fuel_bay_take"]),
             "fuel_bay_view_role": StarbaseDetail.Role.from_esi(data["fuel_bay_view"]),
             "last_modified_at": last_modified_at,
