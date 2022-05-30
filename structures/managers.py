@@ -333,6 +333,15 @@ class StructureQuerySet(models.QuerySet):
             )
         )
 
+    def annotate_has_starbase_detail(self) -> models.QuerySet:
+        from .models import StarbaseDetail
+
+        return self.annotate(
+            has_starbase_detail=Exists(
+                StarbaseDetail.objects.filter(structure_id=OuterRef("id"))
+            )
+        )
+
 
 class StructureManagerBase(models.Manager):
     def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:

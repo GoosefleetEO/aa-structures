@@ -238,23 +238,47 @@ def structure_details(request, structure_id):
 @login_required
 @permission_required("structures.basic_access")
 def poco_details(request, structure_id):
-    """Shows details modal for a POCO"""
+    """Shows details modal for a POCO."""
 
-    poco = get_object_or_404(
+    structure = get_object_or_404(
         Structure.objects.select_related(
-            "owner", "eve_type", "eve_solar_system", "poco_details"
+            "owner", "eve_type", "eve_solar_system", "poco_details", "eve_planet"
         ).filter(eve_type=EveTypeId.CUSTOMS_OFFICE, poco_details__isnull=False),
         id=structure_id,
     )
     context = {
-        "poco": poco,
-        "details": poco.poco_details,
+        "poco": structure,
+        "details": structure.poco_details,
         "poco_image_url": eveimageserver.type_render_url(
             type_id=EveTypeId.CUSTOMS_OFFICE, size=256
         ),
-        "last_updated": poco.last_updated_at,
+        "last_updated": structure.last_updated_at,
     }
     return render(request, "structures/modals/poco_details.html", context)
+
+
+@login_required
+@permission_required("structures.basic_access")
+def starbase_detail(request, structure_id):
+    """Shows detail modal for a starbase."""
+
+    structure = get_object_or_404(
+        Structure.objects.select_related(
+            "owner", "eve_type", "eve_solar_system", "starbase_detail", "eve_moon"
+        ).filter(starbase_detail__isnull=False),
+        id=structure_id,
+    )
+    fuels = structure.starbase_detail.fuels.order_by("eve_type__name")
+    context = {
+        "structure": structure,
+        "detail": structure.starbase_detail,
+        "fuels": fuels,
+        "structure_image_url": eveimageserver.type_render_url(
+            type_id=structure.eve_type_id, size=256
+        ),
+        "last_updated_at": structure.last_updated_at,
+    }
+    return render(request, "structures/modals/starbase_detail.html", context)
 
 
 @login_required

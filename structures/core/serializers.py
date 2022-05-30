@@ -320,13 +320,19 @@ class _AbstractStructureListSerializer(ABC):
                 '<i class="fas fa-search"></i></button>'
             )
         elif structure.has_poco_details:
-            ajax_url = reverse(
-                "structures:poco_details",
-                args=[structure.id],
-            )
+            ajax_url = reverse("structures:poco_details", args=[structure.id])
             row["details"] = format_html(
                 '<button type="button" class="btn btn-default" '
                 'data-toggle="modal" data-target="#modalPocoDetails" '
+                f"data-ajax_url={ajax_url} "
+                f'title="{_("Show details")}">'
+                '<i class="fas fa-search"></i></button>'
+            )
+        elif structure.has_starbase_detail:
+            ajax_url = reverse("structures:starbase_detail", args=[structure.id])
+            row["details"] = format_html(
+                '<button type="button" class="btn btn-default" '
+                'data-toggle="modal" data-target="#modalStarbaseDetail" '
                 f"data-ajax_url={ajax_url} "
                 f'title="{_("Show details")}">'
                 '<i class="fas fa-search"></i></button>'
@@ -338,9 +344,11 @@ class _AbstractStructureListSerializer(ABC):
 class StructureListSerializer(_AbstractStructureListSerializer):
     def __init__(self, queryset: models.QuerySet, request=None):
         super().__init__(queryset, request=request)
-        self.queryset = self.queryset.prefetch_related(
-            "tags", "services"
-        ).annotate_has_poco_details()
+        self.queryset = (
+            self.queryset.prefetch_related("tags", "services")
+            .annotate_has_poco_details()
+            .annotate_has_starbase_detail()
+        )
 
     def serialize_object(self, structure: Structure) -> dict:
         row = super().serialize_object(structure)

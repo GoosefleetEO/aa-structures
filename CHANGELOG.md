@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.25.0] - tbd
+
+### Added
+
+- Show current configuration & status for all starbases, e.g. defense settings, fuel
+
 ## [1.24.0] - 2022-05-30
 
 ### Added

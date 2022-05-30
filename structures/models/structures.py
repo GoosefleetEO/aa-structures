@@ -1,4 +1,5 @@
 """Structure related models"""
+
 import datetime as dt
 import math
 import re
