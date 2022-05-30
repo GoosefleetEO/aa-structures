@@ -12,10 +12,6 @@ class StarbaseSize(IntEnum):
     LARGE = auto()
 
 
-def is_fuel_block(eve_type: EveType) -> bool:
-    return eve_type.eve_group_id == EveGroupId.FUEL_BLOCK
-
-
 def is_starbase(eve_type: EveType) -> bool:
     return eve_type.eve_group_id == EveGroupId.CONTROL_TOWER
 

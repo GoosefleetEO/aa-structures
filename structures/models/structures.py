@@ -1,7 +1,7 @@
 """Structure related models"""
+import datetime as dt
 import math
 import re
-from datetime import timedelta
 from typing import Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -37,7 +37,7 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
 class StructureTag(models.Model):
-    """tag for organizing structures"""
+    """Tag for organizing structures."""
 
     # special tags
     NAME_SOV_TAG = gettext_noop("sov")
@@ -124,7 +124,7 @@ class StructureTag(models.Model):
 
 
 class Structure(models.Model):
-    """structure of a corporation"""
+    """A structure in Eve Online."""
 
     # Threshold in seconds when two fuel expiry dates will be judged as different
     FUEL_DATES_EQUAL_THRESHOLD_UPWELL = 1800
@@ -459,7 +459,7 @@ class Structure(models.Model):
         if self.fuel_expires_at and self.fuel_expires_at > now():
             return self.PowerMode.FULL_POWER
         elif self.last_online_at:
-            if self.last_online_at >= now() - timedelta(days=7):
+            if self.last_online_at >= now() - dt.timedelta(days=7):
                 return self.PowerMode.LOW_POWER
             else:
                 return self.PowerMode.ABANDONED
@@ -751,6 +751,8 @@ class StructureService(EsiNameLocalization, models.Model):
 
 
 class PocoDetails(models.Model):
+    """Additional information about a POCO."""
+
     class StandingLevel(models.IntegerChoices):
         NONE = -99, _("none")
         TERRIBLE = -10, _("terrible")
@@ -837,3 +839,78 @@ class PocoDetails(models.Model):
             )
             for level in self.StandingLevel.values
         }
+
+
+class StarbaseDetail(models.Model):
+    """Additional information about a starbase."""
+
+    class Role(models.TextChoices):
+        ALLIANCE_MEMBER = "AL", _("alliance member")
+        CONFIG_STARBASE_EQUIPMENT_ROLE = "CE", _("config starbase equipment role")
+        CORPORATION_MEMBER = "CO", _("corporation member")
+        STARBASE_FUEL_TECHNICIAN_ROLE = "FT", _("starbase fuel technician role")
+
+        @classmethod
+        def from_esi(cls, name) -> "StarbaseDetail.Role":
+            my_map = {
+                "alliance_member": cls.ALLIANCE_MEMBER,
+                "config_starbase_equipment_role": cls.CONFIG_STARBASE_EQUIPMENT_ROLE,
+                "corporation_member": cls.CORPORATION_MEMBER,
+                "starbase_fuel_technician_role": cls.STARBASE_FUEL_TECHNICIAN_ROLE,
+            }
+            return my_map[name]
+
+    allow_alliance_members = models.BooleanField()
+    allow_corporation_members = models.BooleanField()
+    anchor_role = models.CharField(max_length=2, choices=Role.choices)
+    attack_if_at_war = models.BooleanField()
+    attack_if_other_security_status_dropping = models.BooleanField()
+    attack_security_status_threshold = models.FloatField(default=None, null=True)
+    attack_standing_threshold = models.FloatField(default=None, null=True)
+    fuel_bay_take_role = models.CharField(max_length=2, choices=Role.choices)
+    fuel_bay_view_role = models.CharField(max_length=2, choices=Role.choices)
+    last_modified_at = models.DateTimeField(
+        help_text="When data was modified on the server."
+    )
+    offline_role = models.CharField(max_length=2, choices=Role.choices)
+    online_role = models.CharField(max_length=2, choices=Role.choices)
+    structure = models.OneToOneField(
+        Structure, on_delete=models.CASCADE, related_name="starbase_detail"
+    )
+    unanchor_role = models.CharField(max_length=2, choices=Role.choices)
+    use_alliance_standings = models.BooleanField()
+
+    def __str__(self) -> str:
+        return str(self.structure)
+
+    def calc_fuel_expires(self) -> dt.datetime:
+        """Estimate when fuel will expire for this starbase.
+
+        Estimate will vary due to server caching of remaining fuel blocks.
+        """
+        if self.structure.state is Structure.State.POS_OFFLINE:
+            return None
+        fuel = self.fuels.filter(eve_type__eve_group_id=EveGroupId.FUEL_BLOCK).first()
+        if not fuel:
+            return None
+        seconds = starbases.fuel_duration(
+            starbase_type=self.structure.eve_type,
+            fuel_quantity=fuel.quantity,
+            has_sov=self.structure.owner.has_sov(self.structure.eve_solar_system),
+        )
+        return self.last_modified_at + dt.timedelta(seconds=seconds)
+
+
+class StarbaseDetailFuel(models.Model):
+    """Fuel for a starbase detail."""
+
+    eve_type = models.ForeignKey(EveType, on_delete=models.CASCADE, related_name="+")
+    detail = models.ForeignKey(
+        StarbaseDetail, on_delete=models.CASCADE, related_name="fuels"
+    )
+    quantity = models.IntegerField()
+
+    def __str__(self) -> str:
+        return f"{self.detail}-{self.eve_type}"
+
+    # TODO: Add unique constraints for detail, eve_type

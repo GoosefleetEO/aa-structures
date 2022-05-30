@@ -27,6 +27,8 @@ from .notifications import (
 from .owners import Owner, OwnerCharacter
 from .structures import (
     PocoDetails,
+    StarbaseDetail,
+    StarbaseDetailFuel,
     Structure,
     StructureItem,
     StructureService,

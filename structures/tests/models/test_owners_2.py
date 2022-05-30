@@ -12,6 +12,7 @@ from ...models import (
     NotificationType,
     Owner,
     PocoDetails,
+    StarbaseDetail,
     Structure,
     StructureService,
     StructureTag,
@@ -666,6 +667,43 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             now() + dt.timedelta(hours=24),
             delta=dt.timedelta(seconds=30),
         )
+        # verify details
+        detail = structure.starbase_detail
+        self.assertTrue(detail.allow_alliance_members)
+        self.assertTrue(detail.allow_corporation_members)
+        self.assertEqual(
+            detail.anchor_role, StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE
+        )
+        self.assertFalse(detail.attack_if_at_war)
+        self.assertFalse(detail.attack_if_other_security_status_dropping)
+        self.assertEqual(
+            detail.anchor_role, StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE
+        )
+        self.assertEqual(
+            detail.fuel_bay_take_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertEqual(
+            detail.fuel_bay_view_role,
+            StarbaseDetail.Role.STARBASE_FUEL_TECHNICIAN_ROLE,
+        )
+        self.assertEqual(
+            detail.offline_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertEqual(
+            detail.online_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertEqual(
+            detail.unanchor_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertTrue(detail.use_alliance_standings)
+        # fuels
+        self.assertEqual(detail.fuels.count(), 2)
+        self.assertEqual(detail.fuels.get(eve_type_id=4051).quantity, 960)
+        self.assertEqual(detail.fuels.get(eve_type_id=16275).quantity, 11678)
 
         structure = Structure.objects.get(id=1300000000002)
         self.assertEqual(structure.name, "Bat cave")

@@ -1,8 +1,8 @@
 """Owner related models"""
+import datetime as dt
 import json
 import os
 import re
-from datetime import datetime, timedelta
 from email.utils import format_datetime, parsedate_to_datetime
 from typing import Optional
 
@@ -40,12 +40,17 @@ from ..app_settings import (
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
 from ..constants import EveGroupId, EveTypeId
-from ..core import starbases
 from ..managers import OwnerManager
 from ..providers import esi
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSovereigntyMap, EveType
 from .notifications import EveEntity, Notification, NotificationType, Webhook
-from .structures import PocoDetails, Structure, StructureItem
+from .structures import (
+    PocoDetails,
+    StarbaseDetail,
+    StarbaseDetailFuel,
+    Structure,
+    StructureItem,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -214,7 +219,7 @@ class Owner(models.Model):
     def is_structure_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
         return self.structures_last_update_at and self.structures_last_update_at > (
-            now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
+            now() - dt.timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
     @property
@@ -223,21 +228,21 @@ class Owner(models.Model):
         return (
             self.notifications_last_update_at
             and self.notifications_last_update_at
-            > (now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
+            > (now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
         )
 
     @property
     def is_forwarding_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
         return self.forwarding_last_update_at and self.forwarding_last_update_at > (
-            now() - timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
+            now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_assets_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
         return self.assets_last_update_at and self.assets_last_update_at > (
-            now() - timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
+            now() - dt.timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
     @property
@@ -651,10 +656,10 @@ class Owner(models.Model):
                         name = None
                         planet_id = None
 
-                    reinforce_exit_start = datetime(
+                    reinforce_exit_start = dt.datetime(
                         year=2000, month=1, day=1, hour=poco["reinforce_exit_start"]
                     )
-                    reinforce_hour = reinforce_exit_start + timedelta(hours=1)
+                    reinforce_hour = reinforce_exit_start + dt.timedelta(hours=1)
                     structure = {
                         "structure_id": office_id,
                         "type_id": EveTypeId.CUSTOMS_OFFICE,
@@ -793,21 +798,19 @@ class Owner(models.Model):
         structures = list()
         corporation_id = self.corporation.corporation_id
         try:
-            starbases = (
+            starbases_data = (
                 esi.client.Corporation.get_corporations_corporation_id_starbases(
                     corporation_id=corporation_id, token=token.valid_access_token()
                 )
             ).results()
-            if not starbases:
-                logger.info("%s: No starbases retrieved from ESI", self)
+            if not starbases_data:
+                logger.info("%s: This corporation has no starbases.", self)
             else:
-                names = self._fetch_starbases_names(corporation_id, starbases, token)
-                for starbase in starbases:
-                    starbase["fuel_expires"] = self._calc_starbase_fuel_expires(
-                        corporation_id, starbase, token
-                    )
+                names = self._fetch_starbases_names(
+                    corporation_id, starbases_data, token
+                )
                 # convert starbases to structures
-                for starbase in starbases:
+                for starbase in starbases_data:
                     if starbase["starbase_id"] in names:
                         name = names[starbase["starbase_id"]]
                     else:
@@ -840,7 +843,16 @@ class Owner(models.Model):
                     "%s: Storing updates for %d starbases", self, len(structures)
                 )
                 for structure in structures:
-                    Structure.objects.update_or_create_from_dict(structure, self)
+                    structure_obj, _ = Structure.objects.update_or_create_from_dict(
+                        structure, self
+                    )
+                    detail = self._update_starbase_detail(
+                        structure=structure_obj, token=token
+                    )
+                    fuel_expires_at = detail.calc_fuel_expires()
+                    if fuel_expires_at:
+                        structure_obj.fuel_expires_at = fuel_expires_at
+                        structure_obj.save()
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures, corporation_id)
@@ -871,12 +883,12 @@ class Owner(models.Model):
         return True
 
     def _fetch_starbases_names(
-        self, corporation_id: int, starbases: list, token: Token
+        self, corporation_id: int, starbases_data: list, token: Token
     ) -> dict:
         logger.info(
-            "%s: Fetching names for %d starbases from ESI", self, len(starbases)
+            "%s: Fetching names for %d starbases from ESI", self, len(starbases_data)
         )
-        item_ids = [x["starbase_id"] for x in starbases]
+        item_ids = [x["starbase_id"] for x in starbases_data]
         names_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
             names_data_chunk = (
@@ -889,52 +901,58 @@ class Owner(models.Model):
             names_data += names_data_chunk
         names = {x["item_id"]: x["name"] for x in names_data}
 
-        for starbase in starbases:
+        for starbase in starbases_data:
             starbase_id = starbase["starbase_id"]
             starbase["name"] = (
                 names[starbase_id] if starbase_id in names else "Starbase"
             )
         return names
 
-    def _calc_starbase_fuel_expires(
-        self, corporation_id: int, starbase: dict, token: Token
-    ) -> datetime:
-        """Estimate when fuel will expire for this starbase.
-
-        Estimate will vary due to server caching of remaining fuel blocks.
-        """
-        if starbase["state"] == "offline":
-            return None
+    def _update_starbase_detail(
+        self, structure: object, token: Token
+    ) -> StarbaseDetail:
+        """Update detail for the starbase from ESI."""
         operation = esi.client.Corporation.get_corporations_corporation_id_starbases_starbase_id(
-            corporation_id=corporation_id,
-            starbase_id=starbase["starbase_id"],
-            system_id=starbase["system_id"],
+            corporation_id=structure.owner.corporation.corporation_id,
+            starbase_id=structure.id,
+            system_id=structure.eve_solar_system.id,
             token=token.valid_access_token(),
         )
         operation.request_config.also_return_response = True
-        starbase_details, response = operation.results()
-        fuel_quantity = None
-        if "fuels" in starbase_details:
-            for fuel in starbase_details["fuels"]:
-                fuel_type, _ = EveType.objects.get_or_create_esi(fuel["type_id"])
-                if starbases.is_fuel_block(fuel_type):
-                    fuel_quantity = fuel["quantity"]
-        if fuel_quantity:
-            starbase_type, _ = EveType.objects.get_or_create_esi(starbase["type_id"])
-            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                starbase["system_id"]
+        data, response = operation.results()
+        last_modified_at = parsedate_to_datetime(
+            response.headers.get("Last-Modified", format_datetime(now()))
+        )
+        defaults = {
+            "allow_alliance_members": data["allow_alliance_members"],
+            "allow_corporation_members": data["allow_corporation_members"],
+            "anchor_role": StarbaseDetail.Role.from_esi(data["anchor"]),
+            "attack_if_at_war": data["attack_if_at_war"],
+            "attack_if_other_security_status_dropping": data.get(
+                "attack_if_other_security_status_dropping"
+            ),
+            "attack_security_status_threshold": data.get(
+                "attack_security_status_threshold"
+            ),
+            "fuel_bay_take_role": StarbaseDetail.Role.from_esi(data["fuel_bay_take"]),
+            "fuel_bay_view_role": StarbaseDetail.Role.from_esi(data["fuel_bay_view"]),
+            "last_modified_at": last_modified_at,
+            "offline_role": StarbaseDetail.Role.from_esi(data["offline"]),
+            "online_role": StarbaseDetail.Role.from_esi(data["online"]),
+            "unanchor_role": StarbaseDetail.Role.from_esi(data["unanchor"]),
+            "use_alliance_standings": data["use_alliance_standings"],
+        }
+        with transaction.atomic():
+            detail, _ = StarbaseDetail.objects.update_or_create(
+                structure=structure, defaults=defaults
             )
-            seconds = starbases.fuel_duration(
-                starbase_type=starbase_type,
-                fuel_quantity=fuel_quantity,
-                has_sov=self.has_sov(solar_system),
-            )
-            last_modified = parsedate_to_datetime(
-                response.headers.get("Last-Modified", format_datetime(now()))
-            )
-            fuel_expires_at = last_modified + timedelta(seconds=seconds)
-
-        return fuel_expires_at
+            detail.fuels.all().delete()
+            for fuel in data["fuels"]:
+                eve_type, _ = EveType.objects.get_or_create_esi(fuel["type_id"])
+                StarbaseDetailFuel.objects.create(
+                    eve_type=eve_type, detail=detail, quantity=fuel["quantity"]
+                )
+        return detail
 
     def fetch_notifications_esi(self, user: User = None) -> None:
         """Fetch notifications for this owner from ESI and proceses them."""
@@ -1050,7 +1068,7 @@ class Owner(models.Model):
     def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
         if STRUCTURES_ADD_TIMERS:
-            cutoff_dt_for_stale = now() - timedelta(
+            cutoff_dt_for_stale = now() - dt.timedelta(
                 hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
             )
             notifications = (
@@ -1106,7 +1124,7 @@ class Owner(models.Model):
     def send_new_notifications(self, user: User = None):
         """Forward all new notification of this owner to configured webhooks."""
         notifications_count = 0
-        cutoff_dt_for_stale = now() - timedelta(
+        cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
         all_new_notifications = (
