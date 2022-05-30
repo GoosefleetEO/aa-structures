@@ -280,6 +280,23 @@ class NotificationBaseEmbed:
         # NOT IMPLEMENTED
         raise NotImplementedError(repr(notif_type))
 
+    def _compile_damage_text(self, field_postfix: str, factor: int = 1) -> str:
+        """Compile damage text for Structures and POSes"""
+        damage_labels = [
+            ("shield", gettext("shield")),
+            ("armor", gettext("armor")),
+            ("hull", gettext("hull")),
+        ]
+        damage_parts = list()
+        for prop in damage_labels:
+            field_name = f"{prop[0]}{field_postfix}"
+            if field_name in self._parsed_text:
+                label = prop[1]
+                value = self._parsed_text[field_name] * factor
+                damage_parts.append(f"{label}: {value:.1f}%")
+        damage_text = " | ".join(damage_parts)
+        return damage_text
+
     @staticmethod
     def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
         text = "{} ({})".format(
@@ -477,8 +494,9 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._title = gettext("Structure under attack")
-        self._description += (
-            gettext("is under attack by %s") % self._get_attacker_link()
+        self._description += gettext("is under attack by %s.\n%s") % (
+            self._get_attacker_link(),
+            self._compile_damage_text("Percentage"),
         )
         self._color = Webhook.Color.DANGER
 
@@ -911,19 +929,7 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         aggressor_link = self._get_aggressor_link()
-        damage_labels = [
-            ("shield", gettext("shield")),
-            ("armor", gettext("armor")),
-            ("hull", gettext("hull")),
-        ]
-        damage_parts = list()
-        for prop in damage_labels:
-            prop_yaml = prop[0] + "Value"
-            if prop_yaml in self._parsed_text:
-                damage_parts.append(
-                    "{}: {:.0f}%".format(prop[1], self._parsed_text[prop_yaml] * 100)
-                )
-        damage_text = " | ".join(damage_parts)
+        damage_text = self._compile_damage_text("Value", 100)
         self._title = gettext("Starbase under attack")
         self._description += gettext(
             "is under attack by %(aggressor)s.\n%(damage_text)s"
