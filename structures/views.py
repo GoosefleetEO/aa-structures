@@ -433,11 +433,10 @@ def structure_summary_data(request) -> JsonResponse:
             - row["citadel_count"]
         )
         total = row["upwell_count"] + row["poco_count"] + row["starbase_count"]
-        corporation_icon = image_html(
-            eveimageserver.corporation_logo_url(
-                row["owner__corporation__corporation_id"], size=32
-            )
+        corporation_icon_url = eveimageserver.corporation_logo_url(
+            row["owner__corporation__corporation_id"], size=64
         )
+        corporation_icon = image_html(corporation_icon_url, size=32)
         alliance_name = default_if_none(
             row["owner__corporation__alliance__alliance_name"], ""
         )
