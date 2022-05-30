@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.24.0] - 2022-05-30
+
+### Added
+
+- Show if its hull/armour/shield being hit in Structure attack notifications (#75)
+
 ## [1.23.1] - 2022-05-20
 
 ### Fixed
