@@ -9,29 +9,15 @@
 </div>
 
 <div class="modal-body">
-    <p class="text-center">
-        <img class="img-circle" src="{{ structure_image_url }}" style="width: 175px; height: 175px;">
-    </p>
+    {% detail_title structure %}
     <br>
     <ul class="list-group">
-        {% list_title "General" %}
-        {% list_item "Allow alliance member usage" detail.allow_alliance_members %}
-        {% list_item "Allow corporation member usage" detail.allow_corporation_members %}
-        {% list_item "Use alliance standings" detail.use_alliance_standings %}
-
-        {% list_title "Defense" %}
-        {% list_item "Attack if standing lower than" detail.attack_standing_threshold %}
-        {% list_item "Attack if security status lower than" detail.attack_security_status_threshold %}
-        {% list_item "Attack if other security status is dropping" detail.attack_if_other_security_status_dropping %}
-        {% list_item "Attack if at war" detail.attack_if_at_war %}
-
-        {% list_title "Access" %}
-        {% list_item "Anchor role" detail.get_anchor_role_display %}
-        {% list_item "Unanchor role" detail.get_unanchor_role_display %}
-        {% list_item "Online role" detail.get_online_role_display %}
-        {% list_item "Offline role" detail.get_offline_role_display %}
-        {% list_item "Fuel bay view role" detail.get_fuel_bay_view_role_display %}
-        {% list_item "Fuel bay take role" detail.get_fuel_bay_take_role_display %}
+        {% list_title _("General") %}
+        {% list_item _("Owner") structure.owner %}
+        {% list_item _("Status") structure.get_state_display %}
+        {% list_item _("Allow alliance member usage") detail.allow_alliance_members %}
+        {% list_item _("Allow corporation member usage") detail.allow_corporation_members %}
+        {% list_item _("Use alliance standings") detail.use_alliance_standings %}
 
         {% list_title "Fuel" %}
         {% for fuel in fuels %}
@@ -40,6 +26,19 @@
             {% list_item "empty" is_muted=True %}
         {% endfor %}
 
+        {% list_title _("Defense") %}
+        {% list_item _("Attack if standing lower than") detail.attack_standing_threshold %}
+        {% list_item _("Attack if security status lower than") detail.attack_security_status_threshold %}
+        {% list_item _("Attack if other security status is dropping") detail.attack_if_other_security_status_dropping %}
+        {% list_item _("Attack if at war") detail.attack_if_at_war %}
+
+        {% list_title _("Access") %}
+        {% list_item _("Anchor role") detail.get_anchor_role_display %}
+        {% list_item _("Unanchor role") detail.get_unanchor_role_display %}
+        {% list_item _("Online role") detail.get_online_role_display %}
+        {% list_item _("Offline role") detail.get_offline_role_display %}
+        {% list_item _("Fuel bay view role") detail.get_fuel_bay_view_role_display %}
+        {% list_item _("Fuel bay take role") detail.get_fuel_bay_take_role_display %}
     </ul>
     <p class="text-muted">Last updated {{ last_updated_at|naturaltime|default:"?" }}</p>
 </div>

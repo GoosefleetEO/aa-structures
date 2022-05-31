@@ -247,11 +247,8 @@ def poco_details(request, structure_id):
         id=structure_id,
     )
     context = {
-        "poco": structure,
+        "structure": structure,
         "details": structure.poco_details,
-        "poco_image_url": eveimageserver.type_render_url(
-            type_id=EveTypeId.CUSTOMS_OFFICE, size=256
-        ),
         "last_updated": structure.last_updated_at,
     }
     return render(request, "structures/modals/poco_details.html", context)
@@ -273,9 +270,6 @@ def starbase_detail(request, structure_id):
         "structure": structure,
         "detail": structure.starbase_detail,
         "fuels": fuels,
-        "structure_image_url": eveimageserver.type_render_url(
-            type_id=structure.eve_type_id, size=256
-        ),
         "last_updated_at": structure.last_updated_at,
     }
     return render(request, "structures/modals/starbase_detail.html", context)

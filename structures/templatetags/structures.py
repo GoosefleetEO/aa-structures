@@ -1,6 +1,14 @@
 from django import template
+from eveuniverse.core import eveimageserver
 
 register = template.Library()
+
+
+@register.inclusion_tag("structures/templatetags/detail_title.html")
+def detail_title(structure):
+    """Render HTML for detail box title."""
+    image_url = eveimageserver.type_render_url(type_id=structure.eve_type_id, size=256)
+    return {"image_url": image_url}
 
 
 @register.inclusion_tag("structures/templatetags/list_title.html")
