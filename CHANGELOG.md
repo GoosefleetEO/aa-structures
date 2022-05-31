@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Show current configuration & status for all starbases, e.g. defense settings, fuel
+- New modal for starbases showing current configuration & status, e.g. defense settings, fuel
+- More information shown in poco modals
+
+### Fixed
+
+- Sometimes generates a fuel alert despite for offline structures
 
 ## [1.24.0] - 2022-05-30
 

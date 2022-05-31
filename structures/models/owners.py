@@ -1185,8 +1185,8 @@ class Owner(models.Model):
 
     def update_asset_esi(self, user: User = None):
         assets_in_structures = self._fetch_structure_assets_from_esi()
-        StructureItem.objects.filter(structure__owner=self).delete()  # clear all items
         for structure in self.structures.all():
+            structure_items = list()
             if structure.id in assets_in_structures.keys():
                 structure_assets = assets_in_structures[structure.id]
                 has_fitting = [
@@ -1205,7 +1205,6 @@ class Owner(models.Model):
                 structure.has_core = bool(has_core)
                 structure.save()
 
-                structure_items = list()
                 for item_id, asset in structure_assets.items():
                     eve_type, _ = EveType.objects.get_or_create_esi(asset["type_id"])
                     structure_items.append(
@@ -1218,8 +1217,14 @@ class Owner(models.Model):
                             quantity=asset["quantity"],
                         )
                     )
-                with transaction.atomic():
-                    structure.items.all().delete()
+
+            with transaction.atomic():
+                structure.items.all().delete()
+                if structure_items:
+                    # remove items that have been transferred between structures
+                    item_ids = {item.id for item in structure_items}
+                    StructureItem.objects.filter(id__in=item_ids).delete()
+
                     structure.items.bulk_create(structure_items)
 
             structure.reevaluate_jump_fuel_alerts()
