@@ -22,13 +22,6 @@
         {% list_item _("Allow corporation member usage") detail.allow_corporation_members %}
         {% list_item _("Use alliance standings") detail.use_alliance_standings %}
 
-        {% list_title "Fuel" %}
-        {% for fuel in fuels %}
-            {% list_item fuel.eve_type.name fuel.quantity fuel.eve_type %}
-        {% empty %}
-            {% list_item "empty" is_muted=True %}
-        {% endfor %}
-
         {% list_title _("Defense") %}
         {% list_item _("Attack if standing lower than") detail.attack_standing_threshold %}
         {% list_item _("Attack if security status lower than") detail.attack_security_status_threshold %}
@@ -42,6 +35,20 @@
         {% list_item _("Offline role") detail.get_offline_role_display %}
         {% list_item _("Fuel bay view role") detail.get_fuel_bay_view_role_display %}
         {% list_item _("Fuel bay take role") detail.get_fuel_bay_take_role_display %}
+
+        {% list_title "Fuel" %}
+        {% for fuel in fuels %}
+            {% list_item fuel.eve_type.name fuel.quantity fuel.eve_type %}
+        {% empty %}
+            {% list_item "empty" is_muted=True %}
+        {% endfor %}
+
+        {% list_title _("Fitting") %}
+        {% for item in fitting %}
+            {% list_item item.eve_type.name item.quantity item.eve_type %}
+        {% empty %}
+            {% list_item "empty" is_muted=True %}
+        {% endfor %}
     </ul>
     <p class="text-muted">Last updated {{ last_updated_at|naturaltime|default:"?" }}</p>
 </div>

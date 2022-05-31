@@ -1,4 +1,5 @@
 import urllib
+from collections import defaultdict
 from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -38,7 +39,7 @@ from .core.serializers import (
     StructureListSerializer,
 )
 from .forms import TagsFilterForm
-from .models import Owner, Structure, StructureItem, StructureTag, Webhook
+from .models import EveType, Owner, Structure, StructureItem, StructureTag, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -265,11 +266,24 @@ def starbase_detail(request, structure_id):
         ).filter(starbase_detail__isnull=False),
         id=structure_id,
     )
-    fuels = structure.starbase_detail.fuels.order_by("eve_type__name")
+    fuels = structure.starbase_detail.fuels.select_related("eve_type").order_by(
+        "eve_type__name"
+    )
+    assets = defaultdict(int)
+    for item in structure.items.select_related("eve_type"):
+        assets[item.eve_type_id] += item.quantity
+    fitting = sorted(
+        [
+            {"eve_type": EveType.objects.get(id=eve_type_id), "quantity": quantity}
+            for eve_type_id, quantity in assets.items()
+        ],
+        key=lambda obj: obj["eve_type"].name,
+    )
     context = {
         "structure": structure,
         "detail": structure.starbase_detail,
         "fuels": fuels,
+        "fitting": fitting,
         "last_updated_at": structure.last_updated_at,
     }
     return render(request, "structures/modals/starbase_detail.html", context)
