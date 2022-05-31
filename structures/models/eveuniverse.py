@@ -1,5 +1,6 @@
 """Eve Universe models"""
 
+import re
 import urllib
 from enum import Enum
 
@@ -445,6 +446,11 @@ class EvePlanet(EveUniverse):
             self.eve_solar_system.name_localized_for_language(language),
         )
         return name_localized
+
+    def eve_type_name_short(self) -> str:
+        """Short name of planet type."""
+        matches = re.findall(r"Planet \((\S*)\)", self.eve_type.name)
+        return matches[0] if matches else ""
 
     class EveUniverseMeta:
         esi_pk = "planet_id"

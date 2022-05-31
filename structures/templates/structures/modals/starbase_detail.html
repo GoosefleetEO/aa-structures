@@ -12,7 +12,10 @@
     {% detail_title structure %}
     <br>
     <ul class="list-group">
+        {% list_title _("Hull") %}
+        {% list_item structure.eve_type.name eve_type=structure.eve_type %}
         {% list_title _("General") %}
+        {% list_item _("Location") structure.location_name %}
         {% list_item _("Owner") structure.owner %}
         {% list_item _("Status") structure.get_state_display %}
         {% list_item _("Allow alliance member usage") detail.allow_alliance_members %}

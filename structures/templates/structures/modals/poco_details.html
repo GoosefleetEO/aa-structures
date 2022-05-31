@@ -12,6 +12,11 @@
     {% detail_title structure %}
     <br>
     <ul class="list-group">
+        {% list_title _("General") %}
+        {% list_item _("Location") structure.location_name %}
+        {% list_item _("Owner") structure.owner %}
+        {% list_item _("Planet Type") structure.eve_planet.eve_type_name_short %}
+
         {% list_title _("Reinforcement exit time") %}
         {% include "structures/modals/poco_details_item.html" with title="Earliest" value=details.reinforce_exit_start type="hour" %}
         {% include "structures/modals/poco_details_item.html" with title="Latest" value=details.reinforce_exit_end type="hour" %}

@@ -1,4 +1,3 @@
-import re
 from abc import ABC, abstractmethod
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -452,20 +451,15 @@ class PocoListSerializer(_AbstractStructureListSerializer):
         row["space_type"] = space_type.value
 
     def _add_planet(self, structure, row):
-        try:
-            match = re.search(r"Planet \((\S+)\)", structure.eve_planet.eve_type.name)
-        except AttributeError:
-            planet_name = planet_type_name = "?"
-            planet_type_icon = ""
-        else:
-            if match:
-                planet_type_name = match.group(1)
-            else:
-                planet_type_name = ""
+        if structure.eve_planet:
+            planet_type_name = structure.eve_planet.eve_type_name_short()
             planet_name = structure.eve_planet.name
             planet_type_icon = self._icon_html(
                 structure.eve_planet.eve_type.icon_url(size=self.ICON_RENDER_SIZE)
             )
+        else:
+            planet_name = planet_type_name = "?"
+            planet_type_icon = ""
         row["planet"] = planet_name
         row["planet_type_icon"] = planet_type_icon
         row["planet_type_name"] = planet_type_name
