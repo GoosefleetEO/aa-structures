@@ -386,25 +386,21 @@ class Structure(models.Model):
         # make sure related objects are saved whenever structure is saved
         self.update_generated_tags()
 
-    @cached_property
-    def is_upwell_structure(self) -> bool:
-        try:
-            return self.eve_type.eve_group.eve_category_id == EveCategoryId.STRUCTURE
-        except AttributeError:
-            logger.warning(
-                "Group %s does not have a category. This is a data error. "
-                "Please update your local SDE data",
-                self.eve_group,
-            )
-            return False
+    @property
+    def is_jump_gate(self) -> bool:
+        return self.eve_type_id == EveTypeId.JUMP_GATE
 
-    @cached_property
+    @property
     def is_poco(self) -> bool:
         return self.eve_type_id == EveTypeId.CUSTOMS_OFFICE
 
     @cached_property
     def is_starbase(self) -> bool:
         return starbases.is_starbase(self.eve_type)
+
+    @cached_property
+    def is_upwell_structure(self) -> bool:
+        return self.eve_type.eve_group.eve_category_id == EveCategoryId.STRUCTURE
 
     @property
     def is_full_power(self) -> bool:

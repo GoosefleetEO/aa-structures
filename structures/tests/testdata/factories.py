@@ -1,3 +1,4 @@
+import datetime as dt
 from random import randint
 from typing import List
 
@@ -148,6 +149,17 @@ def create_starbase(**kwargs):
 def create_upwell_structure(**kwargs) -> Structure:
     structure = create_structure(**kwargs)
     assert structure.is_upwell_structure
+    return structure
+
+
+def create_jump_gate(**kwargs) -> Structure:
+    kwargs["eve_type_id"] = EveTypeId.JUMP_GATE
+    if "eve_type" in kwargs:
+        del kwargs["eve_type"]
+    if "fuel_expires_at" not in kwargs:
+        kwargs["fuel_expires_at"] = now() + dt.timedelta(days=3)
+    structure = create_upwell_structure(**kwargs)
+    assert structure.is_jump_gate
     return structure
 
 

@@ -25,6 +25,7 @@ from ..testdata import (
     set_owner_character,
 )
 from ..testdata.factories import (
+    create_jump_gate,
     create_notification,
     create_owner_from_user,
     create_structure,
@@ -363,7 +364,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
     def test_should_output_str(self, mock_send_message):
         # given
         owner = create_owner_from_user(user=self.user)
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
         alert = structure.jump_fuel_alerts.create(config=config)
         # when
@@ -377,7 +378,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -394,13 +395,35 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self.assertEqual(alert.structure, structure)
         self.assertEqual(alert.config, config)
 
+    def test_should_not_send_fuel_notification_for_structure_when_not_burning_fuel(
+        self, mock_send_message
+    ):
+        # given
+        webhook = create_webhook(
+            notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
+        )
+        owner = create_owner_from_user(user=self.user, webhooks=[webhook])
+        structure = create_jump_gate(owner=owner, fuel_expires_at=None)
+        create_structure_item(
+            structure=structure,
+            eve_type_id=EveTypeId.LIQUID_OZONE,
+            location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+            quantity=99,
+        )
+        config = JumpFuelAlertConfig.objects.create(threshold=100)
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+
     def test_should_handle_no_fuel_situation(self, mock_send_message):
         # given
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        create_jump_gate(owner=owner)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
         mock_send_message.reset_mock()
         # when
@@ -416,7 +439,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -441,7 +464,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -462,7 +485,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -486,7 +509,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -519,7 +542,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         owner = create_owner_from_user(
             user=self.user, webhooks=[webhook, webhook_other]
         )
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -542,7 +565,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -565,7 +588,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
         owner = create_owner_from_user(user=self.user, webhooks=[webhook])
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         create_structure_item(
             structure=structure,
             eve_type_id=EveTypeId.LIQUID_OZONE,
@@ -594,7 +617,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         owner = create_owner_from_user(
             user=self.user, webhooks=[webhook, webhook_wrong_type, webhook_inactive]
         )
-        structure = create_structure(owner=owner, eve_type_id=EveTypeId.JUMP_GATE)
+        structure = create_jump_gate(owner=owner)
         webhook_structure = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
