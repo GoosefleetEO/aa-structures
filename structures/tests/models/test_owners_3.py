@@ -28,6 +28,7 @@ from ..testdata import (
 )
 from ..testdata.factories import (
     create_owner_from_user,
+    create_starbase,
     create_structure_item,
     create_upwell_structure,
     create_webhook,
@@ -525,13 +526,45 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                             "quantity": 1,
                             "type_id": 35894,
                         },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1500000000001,
+                            "location_flag": "AutoFit",
+                            "location_id": 30002537,  # Amamake,
+                            "location_type": "solar_system",
+                            "quantity": 1,
+                            "type_id": 16213,  # control tower
+                        },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1500000000002,
+                            "location_flag": "AutoFit",
+                            "location_id": 30002537,  # Amamake,
+                            "location_type": "solar_system",
+                            "quantity": 1,
+                            "type_id": 32226,
+                        },
+                    ],
+                },
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_locations",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "item_id": 1500000000002,
+                            "position": {"x": 0.1, "y": 0, "z": 0},
+                        }
                     ]
                 },
-            )
+            ),
         ]
         cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
 
-    def test_should_update_assets_for_owner(self, mock_esi):
+    def test_should_update_upwell_items_for_owner(self, mock_esi):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
@@ -695,7 +728,14 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                         }
                     ]
                 },
-            )
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_locations",
+                "corporation_id",
+                needs_token=True,
+                data={"2102": []},
+            ),
         ]
         mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         user, _ = create_user_from_evecharacter(
@@ -713,6 +753,18 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertEqual(structure.jump_fuel_alerts.count(), 0)
 
     # TODO: Add tests for error cases
+
+    def test_should_update_starbase_items_for_owner(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_starbase(owner=owner, id=1500000000001)
+        # when
+        owner.update_asset_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_assets_sync_fresh)
+        self.assertSetEqual(queryset_pks(StructureItem.objects.all()), {1500000000002})
 
 
 class TestOwnerToken(NoSocketsTestCase):

@@ -118,6 +118,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                             "item_id": 1200000000006,
                             "position": {"x": 41.2, "y": 26.3, "z": -47.4},
                         },
+                        {
+                            "item_id": 1300000000001,
+                            "position": {"x": 40.2, "y": 27.3, "z": -19.4},
+                        },
                     ]
                 },
             ),
@@ -667,6 +671,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             now() + dt.timedelta(hours=24),
             delta=dt.timedelta(seconds=30),
         )
+        self.assertEqual(structure.position_x, 40.2)
+        self.assertEqual(structure.position_y, 27.3)
+        self.assertEqual(structure.position_z, -19.4)
         # verify details
         detail = structure.starbase_detail
         self.assertTrue(detail.allow_alliance_members)

@@ -3,10 +3,10 @@
 import datetime as dt
 import math
 import re
-from typing import Optional
+from typing import List, Optional
 
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Min, Sum
 from django.utils.functional import cached_property
 from django.utils.html import escape
@@ -506,6 +506,14 @@ class Structure(models.Model):
         except AttributeError:
             return "?"
 
+    def distance_to_object(self, x: float, y: float, z: float) -> float:
+        """Distance to object with given coordinates (within same solar system)."""
+        return math.sqrt(
+            pow(x - self.position_x, 2)
+            + pow(y - self.position_y, 2)
+            + pow(z - self.position_z, 2)
+        )
+
     @cached_property
     def structure_fuel_quantity(self) -> Optional[int]:
         """Current quantity of fuel blocks in units used as fuel."""
@@ -654,6 +662,17 @@ class Structure(models.Model):
             sov_tag, _ = getattr(StructureTag.objects, method_name)()
             self.tags.add(sov_tag)
 
+    def update_items(self, structure_items: List["StructureItem"]):
+        """Update items for this structure."""
+        with transaction.atomic():
+            self.items.all().delete()
+            if structure_items:
+                # remove items that have been transferred between structures
+                item_ids = {item.id for item in structure_items}
+                StructureItem.objects.filter(id__in=item_ids).delete()
+                # create new items
+                self.items.bulk_create(structure_items)
+
     @classmethod
     def extract_name_from_esi_respose(cls, esi_name):
         """extracts the structure's name from the name in an ESI response"""
@@ -703,6 +722,19 @@ class StructureItem(models.Model):
     def __repr__(self):
         return "{}(pk={}, structure=<{}>, eve_type=<{}>)".format(
             self.__class__.__name__, self.pk, self.structure, self.eve_type
+        )
+
+    @classmethod
+    def from_esi_asset(cls, item: dict, structure: "Structure") -> "StructureItem":
+        """Create new object from ESI asset item."""
+        eve_type, _ = EveType.objects.get_or_create_esi(item["type_id"])
+        return StructureItem(
+            id=item["item_id"],
+            structure=structure,
+            eve_type=eve_type,
+            is_singleton=item["is_singleton"],
+            location_flag=item["location_flag"],
+            quantity=item["quantity"],
         )
 
 

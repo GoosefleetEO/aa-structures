@@ -17,6 +17,7 @@ class EveGroupId(IntEnum):
 
 
 class EveTypeId(IntEnum):
+    CALDARI_CONTROL_TOWER = 16213
     CUSTOMS_OFFICE = 2233
     IHUB = 32458
     JUMP_GATE = 35841

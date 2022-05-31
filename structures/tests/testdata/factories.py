@@ -139,10 +139,13 @@ def create_starbase(detail=None, fuels=None, **kwargs):
     if "eve_moon_id" not in kwargs and "eve_moon" not in kwargs:
         kwargs["eve_moon_id"] = 40161465  # Amamake II - Moon 1
     if "eve_type_id" not in kwargs and "eve_type" not in kwargs:
-        kwargs["eve_type_id"] = 16213  # Caldari Control Tower
+        kwargs["eve_type_id"] = EveTypeId.CALDARI_CONTROL_TOWER
     params = {
         "state": Structure.State.POS_ONLINE,
         "fuel_expires_at": now() + dt.timedelta(days=3),
+        "position_x": 0,
+        "position_y": 0,
+        "position_z": 0,
     }
     params.update(kwargs)
     structure = _create_structure(**params)
