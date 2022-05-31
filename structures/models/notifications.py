@@ -1320,6 +1320,8 @@ class FuelAlertConfig(BaseFuelAlertConfig):
             fuel_expires_at__isnull=False,
         )
         for structure in structures:
+            if not structure.is_burning_fuel:
+                continue
             hours_left = structure.hours_fuel_expires
             if self.start >= hours_left >= self.end:
                 hours_last_alert = (

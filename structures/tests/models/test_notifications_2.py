@@ -70,6 +70,20 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         obj = FuelAlert.objects.first()
         self.assertEqual(obj.hours, 36)
 
+    def test_should_not_send_fuel_notification_for_structure_not_burning_fuel(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1000000000001)
+        structure.fuel_expires_at = now() - dt.timedelta(hours=2)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
+
     def test_should_not_send_fuel_notification_that_already_exists(
         self, mock_send_message
     ):
@@ -99,6 +113,21 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self.assertTrue(mock_send_message.called)
         obj = FuelAlert.objects.first()
         self.assertEqual(obj.hours, 36)
+
+    def test_should_not_send_fuel_notification_for_starbase_not_burning_fuel(
+        self, mock_send_message
+    ):
+        # given
+        config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
+        structure = Structure.objects.get(id=1300000000001)
+        structure.state = Structure.State.POS_OFFLINE
+        structure.fuel_expires_at = now() - dt.timedelta(hours=2)
+        structure.save()
+        mock_send_message.reset_mock()
+        # when
+        config.send_new_notifications()
+        # then
+        self.assertFalse(mock_send_message.called)
 
     def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
         # given
