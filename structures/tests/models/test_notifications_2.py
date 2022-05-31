@@ -28,8 +28,10 @@ from ..testdata.factories import (
     create_jump_gate,
     create_notification,
     create_owner_from_user,
-    create_structure,
+    create_poco,
+    create_starbase,
     create_structure_item,
+    create_upwell_structure,
     create_webhook,
 )
 
@@ -330,7 +332,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_DESTROYED]
         )
         self.owner.webhooks.add(webhook_wrong_type)
-        structure = create_structure(owner=self.owner)
+        structure = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
             notification_types=[NotificationType.STRUCTURE_FUEL_ALERT]
         )
@@ -645,7 +647,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
 
     def test_related_structures_for_structure_notifications(self):
         # given
-        structure = create_structure(owner=self.owner, id=1000000000001)
+        structure = create_upwell_structure(owner=self.owner, id=1000000000001)
         for notif_type in [
             NotificationType.STRUCTURE_ONLINE,
             NotificationType.STRUCTURE_FUEL_ALERT,
@@ -673,7 +675,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
 
     def test_related_structures_for_moon_notifications(self):
         # given
-        structure = create_structure(owner=self.owner, id=1000000000002)
+        structure = create_upwell_structure(owner=self.owner, id=1000000000002)
         for notif_type in [
             NotificationType.MOONMINING_EXTRACTION_STARTED,
             NotificationType.MOONMINING_EXTRACTION_FINISHED,
@@ -694,9 +696,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
 
     def test_related_structures_for_orbital_notifications(self):
         # given
-        structure = create_structure(
-            owner=self.owner, eve_planet_id=40161469, eve_type_id=2233
-        )
+        structure = create_poco(owner=self.owner, eve_planet_id=40161469)
         for notif_type in [
             NotificationType.ORBITAL_ATTACKED,
             NotificationType.ORBITAL_REINFORCED,
@@ -714,9 +714,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
 
     def test_related_structures_for_tower_notifications(self):
         # given
-        structure = create_structure(
-            owner=self.owner, eve_moon_id=40161465, eve_type_id=16213
-        )
+        structure = create_starbase(owner=self.owner, eve_moon_id=40161465)
         for notif_type in [
             NotificationType.TOWER_ALERT_MSG,
             NotificationType.TOWER_RESOURCE_ALERT_MSG,
@@ -734,9 +732,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
 
     def test_related_structures_for_generated_notifications(self):
         # given
-        structure = create_structure(
-            owner=self.owner, eve_moon_id=40161465, eve_type_id=16213
-        )
+        structure = create_starbase(owner=self.owner, eve_moon_id=40161465)
         for notif_type in [
             NotificationType.STRUCTURE_JUMP_FUEL_ALERT,
             NotificationType.STRUCTURE_REFUELED_EXTRA,
@@ -755,7 +751,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
 
     def test_should_update_related_structure_when_it_exists(self):
         # given
-        structure = create_structure(owner=self.owner)
+        structure = create_upwell_structure(owner=self.owner)
         notif = create_notification(owner=self.owner)
         # when
         with patch(MODULE_PATH + ".Notification.calc_related_structures") as m:

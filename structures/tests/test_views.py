@@ -20,6 +20,7 @@ from .. import views
 from ..constants import EveTypeId
 from ..models import Owner, PocoDetails, Structure, StructureItem, Webhook
 from .testdata import create_structures, load_entities, load_entity, set_owner_character
+from .testdata.factories import create_owner_from_user, create_poco, create_starbase
 
 VIEWS_PATH = "structures.views"
 OWNERS_PATH = "structures.models.owners"
@@ -848,34 +849,38 @@ class TestStructureFittingModal(TestCase):
         self.assertEqual(response.status_code, 302)
 
 
-class TestPocoDetailsModal(TestCase):
+class TestDetailsModal(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        poco = cls.owner.structures.get(id=1200000000003)
-        cls.details = PocoDetails.objects.create(
-            structure=poco,
-            alliance_tax_rate=0.02,
-            allow_access_with_standings=True,
-            allow_alliance_access=True,
-            corporation_tax_rate=0.01,
-            reinforce_exit_end=21,
-            reinforce_exit_start=18,
+        load_entities()
+        cls.user, _ = create_user_from_evecharacter(
+            1001, permissions=["structures.basic_access"]
         )
-        cls.user = AuthUtils.add_permission_to_user_by_name(
-            "structures.basic_access", cls.user
-        )
+        cls.owner = create_owner_from_user(cls.user)
 
-    def test_should_load_correctly(self):
+    def test_should_load_poco_detail(self):
+        # given
+        structure = create_poco(owner=self.owner)
         # when
         request = self.factory.get(
-            reverse("structures:poco_details", args=[1200000000003])
+            reverse("structures:poco_details", args=[structure.id])
         )
         request.user = self.user
-        response = views.poco_details(request, 1200000000003)
+        response = views.poco_details(request, structure.id)
+        # then
+        self.assertEqual(response.status_code, 200)
+
+    def test_should_load_starbase_detail(self):
+        # given
+        structure = create_starbase(owner=self.owner)
+        # when
+        request = self.factory.get(
+            reverse("structures:starbase_detail", args=[structure.id])
+        )
+        request.user = self.user
+        response = views.starbase_detail(request, structure.id)
         # then
         self.assertEqual(response.status_code, 200)
 

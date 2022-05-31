@@ -27,7 +27,7 @@ from .testdata import create_structures, load_entities
 from .testdata.factories import (
     create_eve_sovereignty_map,
     create_owner_from_user,
-    create_structure,
+    create_upwell_structure,
 )
 from .testdata.load_eveuniverse import load_eveuniverse
 
@@ -241,7 +241,9 @@ class TestStructureManagerEsi(NoSocketsTestCase):
             )
         ]
         mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
-        structure = create_structure(owner=self.owner, id=1000000000001, name="Batcave")
+        structure = create_upwell_structure(
+            owner=self.owner, id=1000000000001, name="Batcave"
+        )
         # when
         structure, created = Structure.objects.get_or_create_esi(
             1000000000001, self.token
@@ -271,7 +273,9 @@ class TestStructureManagerEsi(NoSocketsTestCase):
     def test_can_update_object_from_esi(self, mock_esi):
         # given
         mock_esi.client = self.esi_client_stub
-        structure = create_structure(owner=self.owner, id=1000000000001, name="Batcave")
+        structure = create_upwell_structure(
+            owner=self.owner, id=1000000000001, name="Batcave"
+        )
         # when
         structure, created = Structure.objects.update_or_create_esi(
             1000000000001, self.token
