@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.25.0] - 2022-06-01
 
+>**Upgrade note**<br>The new information for starbases will be available once the next structures update from ESI is completed. If you do not want to wait, you can manually start the update for an owner on the admin site. Or you can run this command:<br>`celery -A myauth call structures.tasks.update_all_structures`
+
 ### Added
 
 - New detail window for starbases. It shows the current configuration & status, e.g. fuel, modules and defense settings
