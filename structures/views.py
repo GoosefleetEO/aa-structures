@@ -153,6 +153,9 @@ def structure_details(request, structure_id):
             self.name = name
             self.profile_url = ""
 
+        def icon_url(self, size=64) -> str:
+            return eveimageserver.type_icon_url(self.id, size)
+
     class FakeAsset:
         """Fake asset object for showing additional information in the asset list."""
 

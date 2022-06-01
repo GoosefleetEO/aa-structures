@@ -30,7 +30,7 @@ def list_item(title: str, value="", eve_type=None, is_muted=False, url=None):
 
 
 @register.inclusion_tag("structures/templatetags/list_asset.html")
-def list_asset(eve_type: EveType, quantity=None):
+def list_asset(eve_type: EveType, quantity=None, is_singleton=False):
     """Render HTML for an asset with optional quantity."""
     try:
         name = eve_type.name
@@ -43,6 +43,7 @@ def list_asset(eve_type: EveType, quantity=None):
         "icon_url": icon_url,
         "profile_url": profile_url,
         "quantity": quantity,
+        "is_singleton": is_singleton,
     }
 
 
