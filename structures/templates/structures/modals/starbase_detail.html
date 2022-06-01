@@ -38,14 +38,14 @@
 
         {% list_title "Fuel" %}
         {% for fuel in fuels %}
-            {% list_item fuel.eve_type.name fuel.quantity fuel.eve_type %}
+            {% list_asset fuel.eve_type fuel.quantity %}
         {% empty %}
             {% list_item "empty" is_muted=True %}
         {% endfor %}
 
         {% list_title _("Fitting") %}
         {% for item in fitting %}
-            {% list_item item.eve_type.name item.quantity item.eve_type %}
+            {% list_asset item.eve_type item.quantity %}
         {% empty %}
             {% list_item "empty" is_muted=True %}
         {% endfor %}

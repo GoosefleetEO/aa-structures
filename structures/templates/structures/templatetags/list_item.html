@@ -2,10 +2,7 @@
 
 <li class="list-group-item">
      <p class="list-group-item-text">
-        {% if eve_type %}
-            <img src="{{ eve_type.icon_url }}" style="height: 32px; width: 32px;">&nbsp;
-            <a href="{{ eve_type.profile_url }}" target="_blank">{{ eve_type.name }}</a>
-        {% elif is_muted %}
+        {% if is_muted %}
             <span class="text-muted">{{ title }}</span>
         {% else %}
             {{ title }}
@@ -16,7 +13,7 @@
             {% elif value is True %}
                 <i class="fas fa-check text-success" title="Enabled"></i>
             {% else %}
-                {{ value|intcomma }}
+                {{ value }}
             {% endif %}
         </span>
     </p>

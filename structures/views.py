@@ -272,9 +272,10 @@ def starbase_detail(request, structure_id):
     assets = defaultdict(int)
     for item in structure.items.select_related("eve_type"):
         assets[item.eve_type_id] += item.quantity
+    eve_types = EveType.objects.in_bulk(id_list=assets.keys())
     fitting = sorted(
         [
-            {"eve_type": EveType.objects.get(id=eve_type_id), "quantity": quantity}
+            {"eve_type": eve_types.get(eve_type_id), "quantity": quantity}
             for eve_type_id, quantity in assets.items()
         ],
         key=lambda obj: obj["eve_type"].name,
