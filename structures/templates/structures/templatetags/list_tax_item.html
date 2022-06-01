@@ -1,0 +1,13 @@
+<li class="list-group-item">
+     <p class="list-group-item-text">
+        {{ title }}
+        <span class="pull-right">
+            {% widthratio value 1 100 %} %
+            {% if has_access is False %}
+                <i class="fas fa-ban text-danger" title="No Access"></i>
+            {% elif has_access is True %}
+                <i class="fas fa-check text-success" title="Has Access"></i>
+            {% endif %}
+        </span>
+    </p>
+</li>

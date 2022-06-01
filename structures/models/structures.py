@@ -826,6 +826,14 @@ class PocoDetails(models.Model):
     def __str__(self):
         return f"{self.structure}"
 
+    @property
+    def reinforce_exit_end_str(self) -> str:
+        return f"{self.reinforce_exit_end}:00"
+
+    @property
+    def reinforce_exit_start_str(self) -> str:
+        return f"{self.reinforce_exit_start}:00"
+
     def tax_for_character(self, character: EveCharacter) -> Optional[float]:
         """Return the effective tax for this character or None if unknown."""
         owner_corporation = self.structure.owner.corporation

@@ -15,19 +15,31 @@
 
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#tab-starbase-general" aria-controls="modules" role="tab" data-toggle="tab">General</a></li>
+        <li role="presentation" class="active">
+            <a href="#tab-starbase-general" aria-controls="modules" role="tab" data-toggle="tab">
+                {% translate "General" %}
+            </a>
+        </li>
         <li role="presentation">
             <a href="#tab-starbase-fuels" aria-controls="fuels" role="tab" data-toggle="tab">
-                Fuels ({{ fuels|length|default:"-" }})
+                {% translate "Fuels" %} ({{ fuels|length|default:"-" }})
             </a>
         </li>
         <li role="presentation">
             <a href="#tab-starbase-modules" aria-controls="modules" role="tab" data-toggle="tab">
-                Modules ({{ modules_count }})
+                {% translate "Modules" %} ({{ modules_count }})
             </a>
         </li>
-        <li role="presentation"><a href="#tab-starbase-access" aria-controls="access" role="tab" data-toggle="tab">Access</a></li>
-        <li role="presentation"><a href="#tab-starbase-settings" aria-controls="settings" role="tab" data-toggle="tab">Settings</a></li>
+        <li role="presentation">
+            <a href="#tab-starbase-settings" aria-controls="settings" role="tab" data-toggle="tab">
+                {% translate "Settings" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-starbase-access" aria-controls="access" role="tab" data-toggle="tab">
+                {% translate "Access" %}
+            </a>
+        </li>
     </ul>
 
     <!-- Tab panes -->

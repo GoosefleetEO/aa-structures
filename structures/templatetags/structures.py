@@ -44,3 +44,9 @@ def list_asset(eve_type: EveType, quantity=None):
         "profile_url": profile_url,
         "quantity": quantity,
     }
+
+
+@register.inclusion_tag("structures/templatetags/list_tax_item.html")
+def list_tax_item(title: str, value: float, has_access: bool):
+    """Render HTML for list item."""
+    return {"title": title, "value": value, "has_access": has_access}

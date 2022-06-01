@@ -15,9 +15,21 @@
 
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#tab-poco-general" aria-controls="modules" role="tab" data-toggle="tab">General</a></li>
-        <li role="presentation"><a href="#tab-poco-reinforcement" aria-controls="access" role="tab" data-toggle="tab">Reinforcement exit time</a></li>
-        <li role="presentation"><a href="#tab-poco-settings" aria-controls="settings" role="tab" data-toggle="tab">Tax rates & access</a></li>
+        <li role="presentation" class="active">
+            <a href="#tab-poco-general" aria-controls="modules" role="tab" data-toggle="tab">
+                {% translate "General" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-poco-reinforcement" aria-controls="access" role="tab" data-toggle="tab">
+                {% translate "Reinforcement Time" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-poco-settings" aria-controls="settings" role="tab" data-toggle="tab">
+                {% translate "Tax Rates & Access" %}
+            </a>
+        </li>
     </ul>
 
     <!-- Tab panes -->
@@ -39,20 +51,20 @@
 
         <div role="tabpanel" class="tab-pane" id="tab-poco-reinforcement">
             <ul class="list-group">
-                {% include "structures/modals/poco_details_item.html" with title="Earliest" value=details.reinforce_exit_start type="hour" %}
-                {% include "structures/modals/poco_details_item.html" with title="Latest" value=details.reinforce_exit_end type="hour" %}
+                {% list_item _("Earliest") details.reinforce_exit_start_str %}
+                {% list_item _("Latest") details.reinforce_exit_end_str %}
             </ul>
         </div>
 
         <div role="tabpanel" class="tab-pane" id="tab-poco-settings">
             <ul class="list-group">
-                {% include "structures/modals/poco_details_item.html" with title="Corporation members" value=details.corporation_tax_rate type="tax" has_access=True %}
-                {% include "structures/modals/poco_details_item.html" with title="Alliance members" value=details.alliance_tax_rate type="tax" has_access=details.allow_alliance_access %}
-                {% include "structures/modals/poco_details_item.html" with title="Terrible standing" value=details.terrible_standing_tax_rate type="tax" has_access=details.standing_level_access_map.TERRIBLE %}
-                {% include "structures/modals/poco_details_item.html" with title="Bad standing" value=details.bad_standing_tax_rate type="tax" has_access=details.standing_level_access_map.BAD %}
-                {% include "structures/modals/poco_details_item.html" with title="Neutral standing" value=details.neutral_standing_tax_rate type="tax" has_access=details.standing_level_access_map.NEUTRAL %}
-                {% include "structures/modals/poco_details_item.html" with title="Good standing" value=details.good_standing_tax_rate type="tax" has_access=details.standing_level_access_map.GOOD %}
-                {% include "structures/modals/poco_details_item.html" with title="Excellent standing" value=details.excellent_standing_tax_rate type="tax" has_access=details.standing_level_access_map.EXCELLENT %}
+                {% list_tax_item _("Corporation members") details.corporation_tax_rate True %}
+                {% list_tax_item _("Alliance members") details.alliance_tax_rate details.allow_alliance_access %}
+                {% list_tax_item _("Terrible standing") details.terrible_standing_tax_rate details.standing_level_access_map.TERRIBLE %}
+                {% list_tax_item _("Bad standing") details.bad_standing_tax_rate details.standing_level_access_map.BAD %}
+                {% list_tax_item _("Neutral standing") details.neutral_standing_tax_rate details.standing_level_access_map.NEUTRAL %}
+                {% list_tax_item _("Good standing") details.good_standing_tax_rate details.standing_level_access_map.GOOD %}
+                {% list_tax_item _("Excellent standing") details.excellent_standing_tax_rate details.standing_level_access_map.EXCELLENT %}
             </ul>
         </div>
     </div>
