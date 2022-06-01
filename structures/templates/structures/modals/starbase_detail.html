@@ -13,26 +13,26 @@
     {% detail_title structure %}
     <br>
 
-     <!-- Nav tabs -->
+    <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#tab-general" aria-controls="modules" role="tab" data-toggle="tab">General</a></li>
+        <li role="presentation" class="active"><a href="#tab-starbase-general" aria-controls="modules" role="tab" data-toggle="tab">General</a></li>
         <li role="presentation">
-            <a href="#tab-fuels" aria-controls="fuels" role="tab" data-toggle="tab">
+            <a href="#tab-starbase-fuels" aria-controls="fuels" role="tab" data-toggle="tab">
                 Fuels ({{ fuels|length|default:"-" }})
             </a>
         </li>
         <li role="presentation">
-            <a href="#tab-modules" aria-controls="modules" role="tab" data-toggle="tab">
+            <a href="#tab-starbase-modules" aria-controls="modules" role="tab" data-toggle="tab">
                 Modules ({{ modules_count }})
             </a>
         </li>
-        <li role="presentation"><a href="#tab-access" aria-controls="access" role="tab" data-toggle="tab">Access</a></li>
-        <li role="presentation"><a href="#tab-settings" aria-controls="settings" role="tab" data-toggle="tab">Settings</a></li>
+        <li role="presentation"><a href="#tab-starbase-access" aria-controls="access" role="tab" data-toggle="tab">Access</a></li>
+        <li role="presentation"><a href="#tab-starbase-settings" aria-controls="settings" role="tab" data-toggle="tab">Settings</a></li>
     </ul>
 
     <!-- Tab panes -->
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane active" id="tab-general">
+        <div role="tabpanel" class="tab-pane active" id="tab-starbase-general">
             {% list_item _("Name") structure.name|default:"-" %}
             {% list_item _("Corporation") structure.owner url=structure.owner.corporation|dotlan_corporation_url %}
             {% with alliance=structure.owner.corporation.alliance %}
@@ -46,7 +46,7 @@
             {% list_item _("Status") structure.get_state_display %}
         </div>
 
-        <div role="tabpanel" class="tab-pane" id="tab-fuels">
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-fuels">
             <ul class="list-group">
                 {% for fuel in fuels %}
                     {% list_asset fuel.eve_type fuel.quantity %}
@@ -56,7 +56,7 @@
             </ul>
         </div>
 
-        <div role="tabpanel" class="tab-pane" id="tab-modules">
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-modules">
             <ul class="list-group">
                 {% for item in modules %}
                     {% list_asset item.eve_type item.quantity %}
@@ -66,7 +66,7 @@
             </ul>
         </div>
 
-        <div role="tabpanel" class="tab-pane" id="tab-settings">
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-settings">
             <ul class="list-group">
                 {% list_item _("Allow alliance member usage") detail.allow_alliance_members %}
                 {% list_item _("Allow corporation member usage") detail.allow_corporation_members %}
@@ -78,7 +78,7 @@
             </ul>
         </div>
 
-        <div role="tabpanel" class="tab-pane" id="tab-access">
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-access">
             <ul class="list-group">
                 {% list_item _("Anchor role") detail.get_anchor_role_display %}
                 {% list_item _("Unanchor role") detail.get_unanchor_role_display %}
