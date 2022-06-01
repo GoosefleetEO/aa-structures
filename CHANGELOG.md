@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.25.0] - tbd
+## [1.25.0] - 2022-06-01
 
 ### Added
 
-- New modal for starbases showing it's current configuration & status, e.g. defense settings, fuel, modules
+- New detail window for starbases. It shows the current configuration & status, e.g. fuel, modules and defense settings
 
 ### Changed
 
