@@ -1,7 +1,6 @@
 {% load i18n %}
 {% load static %}
 {% load humanize %}
-{% load evelinks %}
 {% load structures %}
 
 <div class="modal-header">
@@ -22,12 +21,12 @@
         </li>
         <li role="presentation">
             <a href="#tab-starbase-fuels" aria-controls="fuels" role="tab" data-toggle="tab">
-                {% translate "Fuels" %} ({{ fuels|length|default:"-" }})
+                {% translate "Fuels" %} <small>({{ fuels|length|default:"-" }})</small>
             </a>
         </li>
         <li role="presentation">
             <a href="#tab-starbase-modules" aria-controls="modules" role="tab" data-toggle="tab">
-                {% translate "Modules" %} ({{ modules_count }})
+                {% translate "Modules" %} <small>({{ modules_count }})</small>
             </a>
         </li>
         <li role="presentation">
@@ -45,17 +44,7 @@
     <!-- Tab panes -->
     <div class="tab-content">
         <div role="tabpanel" class="tab-pane active" id="tab-starbase-general">
-            {% list_item _("Name") structure.name|default:"-" %}
-            {% list_item _("Corporation") structure.owner url=structure.owner.corporation|dotlan_corporation_url %}
-            {% with alliance=structure.owner.corporation.alliance %}
-                {% list_item _("Alliance") alliance|default:"-" url=alliance|dotlan_alliance_url %}
-            {% endwith %}
-            {% list_item _("Location") structure.location_name url=structure.eve_solar_system.profile_url %}
-            {% list_item _("Constellation") structure.eve_solar_system.eve_constellation %}
-            {% with eve_region=structure.eve_solar_system.eve_constellation.eve_region %}
-                {% list_item _("Region") eve_region.name url=eve_region|dotlan_region_url %}
-            {% endwith %}
-            {% list_item _("Status") structure.get_state_display %}
+            {% include "structures/modals/tab_general_detail.html" %}
         </div>
 
         <div role="tabpanel" class="tab-pane" id="tab-starbase-fuels">

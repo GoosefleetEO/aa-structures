@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - New modal for starbases showing current configuration & status, e.g. defense settings, fuel, assets
 - More information shown in poco modals
+- Improved UI for showing structure, POCO and POS details
 
 ### Fixed
 

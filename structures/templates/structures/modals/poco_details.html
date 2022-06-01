@@ -1,7 +1,6 @@
 {% load i18n %}
 {% load static %}
 {% load humanize %}
-{% load evelinks %}
 {% load structures %}
 
 <div class="modal-header">
@@ -35,18 +34,7 @@
     <!-- Tab panes -->
     <div class="tab-content">
         <div role="tabpanel" class="tab-pane active" id="tab-poco-general">
-            <ul class="list-group">
-                {% list_item _("Corporation") structure.owner url=structure.owner.corporation|dotlan_corporation_url %}
-                    {% with alliance=structure.owner.corporation.alliance %}
-                        {% list_item _("Alliance") alliance|default:"-" url=alliance|dotlan_alliance_url %}
-                    {% endwith %}
-                {% list_item _("Location") structure.location_name url=structure.eve_solar_system.profile_url %}
-                {% list_item _("Constellation") structure.eve_solar_system.eve_constellation %}
-                {% with eve_region=structure.eve_solar_system.eve_constellation.eve_region %}
-                    {% list_item _("Region") eve_region.name url=eve_region|dotlan_region_url %}
-                {% endwith %}
-                {% list_item _("Planet Type") structure.eve_planet.eve_type_name_short %}
-            </ul>
+            {% include "structures/modals/tab_general_detail.html" %}
         </div>
 
         <div role="tabpanel" class="tab-pane" id="tab-poco-reinforcement">

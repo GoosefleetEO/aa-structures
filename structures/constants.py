@@ -2,6 +2,10 @@ from enum import IntEnum
 
 
 # Eve enums
+class EveAttributeId(IntEnum):
+    SQUADRON_SIZE = 2215
+
+
 class EveCategoryId(IntEnum):
     ORBITAL = 46
     STARBASE = 23

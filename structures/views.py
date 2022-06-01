@@ -14,6 +14,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
+from eveuniverse.models import EveType as EveType2
 from eveuniverse.models import EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -33,7 +34,7 @@ from .app_settings import (
     STRUCTURES_PAGING_ENABLED,
     STRUCTURES_SHOW_JUMP_GATES,
 )
-from .constants import EveCategoryId, EveGroupId, EveTypeId
+from .constants import EveAttributeId, EveCategoryId, EveGroupId, EveTypeId
 from .core.serializers import (
     JumpGatesListSerializer,
     PocoListSerializer,
@@ -180,6 +181,28 @@ def structure_details(request, structure_id):
             )
         ]
 
+    def patch_fighter_tube_quantities(fighter_tubes):
+        eve_type_ids = {item.eve_type_id for item in fighter_tubes}
+        eve_types = {
+            eve_type_id: EveType2.objects.get_or_create_esi(
+                id=eve_type_id, enabled_sections=[EveType2.Section.DOGMAS]
+            )[0]
+            for eve_type_id in eve_type_ids
+        }
+        for item in fighter_tubes:
+            try:
+                eve_type = eve_types[item.eve_type_id]
+            except KeyError:
+                pass
+            else:
+                squadron_size = int(
+                    eve_type.dogma_attributes.get(
+                        eve_dogma_attribute=EveAttributeId.SQUADRON_SIZE.value
+                    ).value
+                )
+                item.quantity = squadron_size
+                item.is_singleton = False
+
     structure = get_object_or_404(
         Structure.objects.select_related("owner", "eve_type", "eve_solar_system"),
         id=structure_id,
@@ -204,6 +227,7 @@ def structure_details(request, structure_id):
     rig_slots = extract_slot_assets(assets, "RigSlot")
     service_slots = extract_slot_assets(assets, "ServiceSlot")
     fighter_tubes = extract_slot_assets(assets, "FighterTube")
+    patch_fighter_tube_quantities(fighter_tubes)
     assets_grouped = {"ammo_hold": [], "fighter_bay": [], "fuel_bay": []}
     for asset in assets:
         if asset.location_flag == StructureItem.LocationFlag.CARGO:
@@ -219,9 +243,32 @@ def structure_details(request, structure_id):
             FakeAsset(
                 name="Fuel blocks per day (est.)",
                 quantity=structure.structure_fuel_usage(),
-                eve_type_id=EveTypeId.NITROGEN_FUEL_BLOCK,
+                eve_type_id=24756,
             )
         ]
+    modules_count = len(high_slots + med_slots + low_slots + rig_slots + service_slots)
+    fuel_blocks_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in assets_grouped["fuel_bay"]]
+        )
+        if assets_grouped["fuel_bay"]
+        else 0
+    )
+    ammo_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in assets_grouped["ammo_hold"]]
+        )
+        if assets_grouped["ammo_hold"]
+        else 0
+    )
+    fighters_consolidated = assets_grouped["fighter_bay"] + fighter_tubes
+    fighters_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in fighters_consolidated]
+        )
+        if fighters_consolidated
+        else 0
+    )
     context = {
         "fitting": assets,
         "slots": slot_image_urls,
@@ -235,6 +282,10 @@ def structure_details(request, structure_id):
         },
         "assets_grouped": assets_grouped,
         "structure": structure,
+        "modules_count": modules_count,
+        "fuel_blocks_total": fuel_blocks_total,
+        "fighters_total": fighters_total,
+        "ammo_total": ammo_total,
         "last_updated": structure.owner.assets_last_update_at,
     }
     return render(request, "structures/modals/structure_details.html", context)
@@ -288,7 +339,6 @@ def starbase_detail(request, structure_id):
     assets = defaultdict(int)
     for item in structure.items.select_related("eve_type"):
         assets[item.eve_type_id] += item.quantity
-    assets[structure.eve_type_id] += 1
     eve_types = EveType.objects.in_bulk(id_list=assets.keys())
     modules = sorted(
         [
@@ -297,8 +347,10 @@ def starbase_detail(request, structure_id):
         ],
         key=lambda obj: obj["eve_type"].name,
     )
-    modules_count = functools.reduce(
-        lambda x, y: x + y, [obj["quantity"] for obj in modules]
+    modules_count = (
+        functools.reduce(lambda x, y: x + y, [obj["quantity"] for obj in modules])
+        if modules
+        else 0
     )
     context = {
         "structure": structure,
