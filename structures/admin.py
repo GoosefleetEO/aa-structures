@@ -24,6 +24,7 @@ from .models import (
     Owner,
     OwnerCharacter,
     Structure,
+    StructureItem,
     StructureService,
     StructureTag,
     Webhook,
@@ -668,8 +669,21 @@ class StructureTagAdmin(admin.ModelAdmin):
         return False if obj and not obj.is_user_managed else True
 
 
-class StructureServicesAdminInline(admin.TabularInline):
+class StructureServiceAdminInline(admin.TabularInline):
     model = StructureService
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class StructureItemAdminInline(admin.TabularInline):
+    model = StructureItem
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -862,7 +876,7 @@ class StructureAdmin(admin.ModelAdmin):
         ),
     )
     filter_horizontal = ("tags", "webhooks")
-    inlines = (StructureServicesAdminInline,)
+    inlines = (StructureServiceAdminInline, StructureItemAdminInline)
 
     def has_add_permission(self, request):
         return False

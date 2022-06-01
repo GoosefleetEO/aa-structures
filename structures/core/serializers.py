@@ -1,4 +1,3 @@
-import re
 from abc import ABC, abstractmethod
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -16,6 +15,7 @@ from app_utils.views import (
     BootstrapStyle,
     bootstrap_label_html,
     format_html_lazy,
+    image_html,
     link_html,
     no_wrap_html,
     yesno_str,
@@ -31,7 +31,7 @@ class _AbstractStructureListSerializer(ABC):
     """Converting a list of structure objects into a dict for JSON."""
 
     ICON_RENDER_SIZE = 64
-    ICON_OUTPUT_SIZE = 32
+    ICON_OUTPUT_SIZE = 40
 
     def __init__(self, queryset: models.QuerySet, request=None):
         self.queryset = queryset
@@ -52,6 +52,9 @@ class _AbstractStructureListSerializer(ABC):
         """Serialize one objects into a dict."""
         return {"id": structure.id}
 
+    def _icon_html(self, url) -> str:
+        return image_html(url, size=self.ICON_OUTPUT_SIZE)
+
     def _add_owner(self, structure, row):
         corporation = structure.owner.corporation
         alliance_name = (
@@ -71,11 +74,9 @@ class _AbstractStructureListSerializer(ABC):
         else:
             update_warning_html = ""
         row["corporation_icon"] = format_html(
-            '<span class="nowrap">{} <img src="{}" width="{}" height="{}"/></span>',
+            '<span class="text-nowrap">{}{}</span>',
             update_warning_html,
-            corporation.logo_url(size=self.ICON_RENDER_SIZE),
-            self.ICON_OUTPUT_SIZE,
-            self.ICON_OUTPUT_SIZE,
+            self._icon_html(corporation.logo_url(size=self.ICON_RENDER_SIZE)),
         )
         row["alliance_name"] = alliance_name
         row["corporation_name"] = corporation.corporation_name
@@ -113,11 +114,8 @@ class _AbstractStructureListSerializer(ABC):
             row["category_name"] = ""
             row["is_starbase"] = None
         # type icon
-        row["type_icon"] = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            structure_type.icon_url(size=self.ICON_RENDER_SIZE),
-            self.ICON_OUTPUT_SIZE,
-            self.ICON_OUTPUT_SIZE,
+        row["type_icon"] = self._icon_html(
+            structure_type.icon_url(size=self.ICON_RENDER_SIZE)
         )
         # type name
         row["type_name"] = structure_type.name
@@ -321,13 +319,19 @@ class _AbstractStructureListSerializer(ABC):
                 '<i class="fas fa-search"></i></button>'
             )
         elif structure.has_poco_details:
-            ajax_url = reverse(
-                "structures:poco_details",
-                args=[structure.id],
-            )
+            ajax_url = reverse("structures:poco_details", args=[structure.id])
             row["details"] = format_html(
                 '<button type="button" class="btn btn-default" '
                 'data-toggle="modal" data-target="#modalPocoDetails" '
+                f"data-ajax_url={ajax_url} "
+                f'title="{_("Show details")}">'
+                '<i class="fas fa-search"></i></button>'
+            )
+        elif structure.has_starbase_detail:
+            ajax_url = reverse("structures:starbase_detail", args=[structure.id])
+            row["details"] = format_html(
+                '<button type="button" class="btn btn-default" '
+                'data-toggle="modal" data-target="#modalStarbaseDetail" '
                 f"data-ajax_url={ajax_url} "
                 f'title="{_("Show details")}">'
                 '<i class="fas fa-search"></i></button>'
@@ -339,9 +343,11 @@ class _AbstractStructureListSerializer(ABC):
 class StructureListSerializer(_AbstractStructureListSerializer):
     def __init__(self, queryset: models.QuerySet, request=None):
         super().__init__(queryset, request=request)
-        self.queryset = self.queryset.prefetch_related(
-            "tags", "services"
-        ).annotate_has_poco_details()
+        self.queryset = (
+            self.queryset.prefetch_related("tags", "services")
+            .annotate_has_poco_details()
+            .annotate_has_starbase_detail()
+        )
 
     def serialize_object(self, structure: Structure) -> dict:
         row = super().serialize_object(structure)
@@ -416,11 +422,8 @@ class PocoListSerializer(_AbstractStructureListSerializer):
         return row
 
     def _add_type(self, structure, row):
-        row["type_icon"] = format_html(
-            '<img src="{}" width="{}" height="{}"/>',
-            structure.eve_type.icon_url(size=self.ICON_RENDER_SIZE),
-            self.ICON_OUTPUT_SIZE,
-            self.ICON_OUTPUT_SIZE,
+        row["type_icon"] = self._icon_html(
+            structure.eve_type.icon_url(size=self.ICON_RENDER_SIZE)
         )
 
     def _add_solar_system(self, structure, row):
@@ -448,23 +451,15 @@ class PocoListSerializer(_AbstractStructureListSerializer):
         row["space_type"] = space_type.value
 
     def _add_planet(self, structure, row):
-        try:
-            match = re.search(r"Planet \((\S+)\)", structure.eve_planet.eve_type.name)
-        except AttributeError:
+        if structure.eve_planet:
+            planet_type_name = structure.eve_planet.eve_type_name_short()
+            planet_name = structure.eve_planet.name
+            planet_type_icon = self._icon_html(
+                structure.eve_planet.eve_type.icon_url(size=self.ICON_RENDER_SIZE)
+            )
+        else:
             planet_name = planet_type_name = "?"
             planet_type_icon = ""
-        else:
-            if match:
-                planet_type_name = match.group(1)
-            else:
-                planet_type_name = ""
-            planet_name = structure.eve_planet.name
-            planet_type_icon = format_html(
-                '<img src="{}" width="{}" height="{}"/>',
-                structure.eve_planet.eve_type.icon_url(size=self.ICON_RENDER_SIZE),
-                self.ICON_OUTPUT_SIZE,
-                self.ICON_OUTPUT_SIZE,
-            )
         row["planet"] = planet_name
         row["planet_type_icon"] = planet_type_icon
         row["planet_type_name"] = planet_type_name

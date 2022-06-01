@@ -252,6 +252,28 @@
                 );
             });
 
+            $('#modalStarbaseDetail').on('show.bs.modal', function(event) {
+                $(this).find('.modal-title').html('Loading...');
+                {% if NIGHT_MODE %}
+                    $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-dark.gif" %}">');
+                {% else %}
+                    $(this).find('.modal-body').html('<img src="{% static "structures/img/Spinner-1s-64px-light.gif" %}">');
+                {% endif %}
+
+                const button = $(event.relatedTarget);
+                const ajax_url = button.data('ajax_url');
+                $("#modalStarbaseDetailContent").load(
+                    ajax_url, null, (response, status, xhr) => {
+                        if (status != 'success') {
+                            $(this).find('.modal-title').html('Error');
+                            $(this).find('.modal-body').html(
+                                `<p class="text-danger">${xhr.status} ${xhr.statusText}</p>`
+                            );
+                        }
+                    }
+                );
+            });
+
             /* pocos */
             $('#tab_pocos').DataTable({
                 ajax: {

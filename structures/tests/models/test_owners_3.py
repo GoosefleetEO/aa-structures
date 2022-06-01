@@ -28,8 +28,9 @@ from ..testdata import (
 )
 from ..testdata.factories import (
     create_owner_from_user,
-    create_structure,
+    create_starbase,
     create_structure_item,
+    create_upwell_structure,
     create_webhook,
 )
 from ..testdata.load_eveuniverse import load_eveuniverse
@@ -94,7 +95,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi.client = self.esi_client_stub
         mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000001)
         # when
         owner.fetch_notifications_esi()
         # then
@@ -117,7 +118,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi.client = self.esi_client_stub
         mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000001)
         # when
         owner.fetch_notifications_esi(self.user)
         # then
@@ -131,7 +132,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000001)
         # when
         with patch(OWNERS_PATH + ".now") as mock_now:
             mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
@@ -195,7 +196,9 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         mock_esi_client.client = EsiClientStub.create_from_endpoints(endpoints)
         mock_now.return_value = dt.datetime(2019, 11, 13, 23, 50, 0, tzinfo=utc)
         owner = create_owner_from_user(self.user)
-        structure = create_structure(owner=owner, id=1000000000002, eve_type_id=35835)
+        structure = create_upwell_structure(
+            owner=owner, id=1000000000002, eve_type_id=35835
+        )
         # when
         owner.fetch_notifications_esi()
         # then
@@ -224,7 +227,7 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         ]
         mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000001)
         # when
         with self.assertRaises(HTTPBadGateway):
             owner.fetch_notifications_esi()
@@ -523,18 +526,50 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                             "quantity": 1,
                             "type_id": 35894,
                         },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1500000000001,
+                            "location_flag": "AutoFit",
+                            "location_id": 30002537,  # Amamake,
+                            "location_type": "solar_system",
+                            "quantity": 1,
+                            "type_id": 16213,  # control tower
+                        },
+                        {
+                            "is_singleton": True,
+                            "item_id": 1500000000002,
+                            "location_flag": "AutoFit",
+                            "location_id": 30002537,  # Amamake,
+                            "location_type": "solar_system",
+                            "quantity": 1,
+                            "type_id": 32226,
+                        },
+                    ],
+                },
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_locations",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2001": [
+                        {
+                            "item_id": 1500000000002,
+                            "position": {"x": 0.1, "y": 0, "z": 0},
+                        }
                     ]
                 },
-            )
+            ),
         ]
         cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
 
-    def test_should_update_assets_for_owner(self, mock_esi):
+    def test_should_update_upwell_items_for_owner(self, mock_esi):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
-        create_structure(owner=owner, id=1000000000002)
+        create_upwell_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000002)
         # when
         owner.update_asset_esi()
         # then
@@ -571,7 +606,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000001)
         # when
         owner.update_asset_esi(user=self.user)
         # then
@@ -597,7 +632,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         ]
         mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000001)
         # when
         with self.assertRaises(HTTPInternalServerError):
             owner.update_asset_esi()
@@ -611,7 +646,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
-        structure = create_structure(owner=owner, id=1000000000001)
+        structure = create_upwell_structure(owner=owner, id=1000000000001)
         item = create_structure_item(structure=structure)
         # when
         owner.update_asset_esi()
@@ -624,8 +659,8 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
-        structure = create_structure(owner=owner, id=1000000000666)
+        create_upwell_structure(owner=owner, id=1000000000001)
+        structure = create_upwell_structure(owner=owner, id=1000000000666)
         item = create_structure_item(structure=structure)
         # when
         owner.update_asset_esi()
@@ -636,8 +671,8 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
-        structure_1 = create_structure(owner=owner, id=1000000000001)
-        structure_2 = create_structure(owner=owner, id=1000000000002)
+        structure_1 = create_upwell_structure(owner=owner, id=1000000000001)
+        structure_2 = create_upwell_structure(owner=owner, id=1000000000002)
         create_structure_item(
             structure=structure_2,
             id=1300000001002,
@@ -659,11 +694,11 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         mock_esi.client = self.esi_client_stub
         user_2, _ = create_user_from_evecharacter(1102)
         owner_2 = create_owner_from_user(user_2)
-        structure_2 = create_structure(owner=owner_2, id=1000000000004)
+        structure_2 = create_upwell_structure(owner=owner_2, id=1000000000004)
         create_structure_item(structure=structure_2, id=1300000003001)
         owner = create_owner_from_user(self.user)
-        create_structure(owner=owner, id=1000000000001)
-        create_structure(owner=owner, id=1000000000002)
+        create_upwell_structure(owner=owner, id=1000000000001)
+        create_upwell_structure(owner=owner, id=1000000000002)
         # when
         owner.update_asset_esi()
         # then
@@ -693,7 +728,14 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
                         }
                     ]
                 },
-            )
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_locations",
+                "corporation_id",
+                needs_token=True,
+                data={"2102": []},
+            ),
         ]
         mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         user, _ = create_user_from_evecharacter(
@@ -702,7 +744,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
             scopes=Owner.get_esi_scopes(),
         )
         owner = create_owner_from_user(user)
-        structure = create_structure(owner=owner, id=1000000000004)
+        structure = create_upwell_structure(owner=owner, id=1000000000004)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
         structure.jump_fuel_alerts.create(structure=structure, config=config)
         # when
@@ -711,6 +753,18 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertEqual(structure.jump_fuel_alerts.count(), 0)
 
     # TODO: Add tests for error cases
+
+    def test_should_update_starbase_items_for_owner(self, mock_esi):
+        # given
+        mock_esi.client = self.esi_client_stub
+        owner = create_owner_from_user(self.user)
+        create_starbase(owner=owner, id=1500000000001)
+        # when
+        owner.update_asset_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_assets_sync_fresh)
+        self.assertSetEqual(queryset_pks(StructureItem.objects.all()), {1500000000002})
 
 
 class TestOwnerToken(NoSocketsTestCase):

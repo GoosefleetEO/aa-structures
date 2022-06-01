@@ -1,3 +1,4 @@
+import datetime as dt
 from random import randint
 from typing import List
 
@@ -16,6 +17,8 @@ from ...models import (
     Owner,
     OwnerCharacter,
     PocoDetails,
+    StarbaseDetail,
+    StarbaseDetailFuel,
     Structure,
     StructureItem,
     StructureService,
@@ -76,13 +79,9 @@ def create_owner_character(**kwargs) -> OwnerCharacter:
     return OwnerCharacter.objects.create(**kwargs)
 
 
-def create_structure(**kwargs) -> Structure:
+def _create_structure(**kwargs) -> Structure:
     structure_id = _generate_unique_id(Structure, "id")
-    params = {
-        "id": structure_id,
-        "name": f"Generated Structure #{structure_id}",
-        "state": Structure.State.SHIELD_VULNERABLE,
-    }
+    params = {"id": structure_id, "name": f"Generated Structure #{structure_id}"}
     if "owner" not in kwargs and "owner_id" not in kwargs:
         params["owner_id"] = 2001  # Wayne Technologies
     if "eve_solar_system_id" not in kwargs and "eve_solar_system" not in kwargs:
@@ -107,12 +106,13 @@ def create_structure_item(**kwargs):
 
 
 def create_poco(poco_details=None, **kwargs) -> Structure:
-    kwargs["eve_type_id"] = EveTypeId.CUSTOMS_OFFICE
+    params = {"state": Structure.State.UNKNOWN, "eve_type_id": EveTypeId.CUSTOMS_OFFICE}
     if "eve_type" in kwargs:
         del kwargs["eve_type"]
     if "eve_planet_id" not in kwargs and "eve_planet" not in kwargs:
         kwargs["eve_planet_id"] = 40161472  # Amamake V
-    structure = create_structure(**kwargs)
+    params.update(kwargs)
+    structure = _create_structure(**params)
     assert structure.is_poco
     poco_params = {
         "alliance_tax_rate": 0.05,
@@ -135,19 +135,72 @@ def create_poco(poco_details=None, **kwargs) -> Structure:
     return structure
 
 
-def create_starbase(**kwargs):
+def create_starbase(detail=None, fuels=None, **kwargs):
     if "eve_moon_id" not in kwargs and "eve_moon" not in kwargs:
         kwargs["eve_moon_id"] = 40161465  # Amamake II - Moon 1
     if "eve_type_id" not in kwargs and "eve_type" not in kwargs:
-        kwargs["eve_type_id"] = 16213  # Caldari Control Tower
-    structure = create_structure(**kwargs)
+        kwargs["eve_type_id"] = EveTypeId.CALDARI_CONTROL_TOWER.value
+    params = {
+        "state": Structure.State.POS_ONLINE,
+        "fuel_expires_at": now() + dt.timedelta(days=3),
+        "position_x": 0,
+        "position_y": 0,
+        "position_z": 0,
+    }
+    params.update(kwargs)
+    structure = _create_structure(**params)
     assert structure.is_starbase
+    detail_params = {
+        "allow_alliance_members": True,
+        "allow_corporation_members": True,
+        "anchor_role": StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        "attack_if_at_war": True,
+        "attack_if_other_security_status_dropping": True,
+        "fuel_bay_take_role": StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        "fuel_bay_view_role": StarbaseDetail.Role.STARBASE_FUEL_TECHNICIAN_ROLE,
+        "last_modified_at": now(),
+        "offline_role": StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        "online_role": StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        "structure": structure,
+        "unanchor_role": StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        "use_alliance_standings": True,
+    }
+    if detail:
+        detail_params.update(detail)
+    detail_obj = StarbaseDetail.objects.create(**detail_params)
+    if not fuels:
+        fuels = [
+            {"quantity": 960, "eve_type_id": EveTypeId.NITROGEN_FUEL_BLOCK},
+            {"quantity": 12000, "eve_type_id": EveTypeId.STRONTIUM},
+        ]
+    for fuel in fuels:
+        StarbaseDetailFuel.objects.create(
+            detail=detail_obj,
+            eve_type_id=fuel["eve_type_id"],
+            quantity=fuel["quantity"],
+        )
     return structure
 
 
 def create_upwell_structure(**kwargs) -> Structure:
-    structure = create_structure(**kwargs)
+    params = {
+        "state": Structure.State.SHIELD_VULNERABLE,
+        "fuel_expires_at": now() + dt.timedelta(days=3),
+    }
+    if "eve_type_id" not in kwargs and "eve_type" not in kwargs:
+        params["eve_type_id"] = 35832  # Astrahus
+    params.update(kwargs)
+    structure = _create_structure(**params)
     assert structure.is_upwell_structure
+    return structure
+
+
+def create_jump_gate(**kwargs) -> Structure:
+    kwargs["eve_type_id"] = EveTypeId.JUMP_GATE
+    if "eve_type" in kwargs:
+        del kwargs["eve_type"]
+    structure = create_upwell_structure(**kwargs)
+    assert structure.is_jump_gate
     return structure
 
 

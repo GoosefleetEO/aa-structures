@@ -1320,6 +1320,8 @@ class FuelAlertConfig(BaseFuelAlertConfig):
             fuel_expires_at__isnull=False,
         )
         for structure in structures:
+            if not structure.is_burning_fuel:
+                continue
             hours_left = structure.hours_fuel_expires
             if self.start >= hours_left >= self.end:
                 hours_last_alert = (
@@ -1375,6 +1377,8 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
         """Send new fuel notifications based on this config."""
         jump_gates = Structure.objects.filter(eve_type_id=EveTypeId.JUMP_GATE)
         for jump_gate in jump_gates:
+            if not jump_gate.is_burning_fuel:
+                continue
             fuel_quantity = jump_gate.jump_fuel_quantity()
             if fuel_quantity and fuel_quantity < self.threshold:
                 notif, created = JumpFuelAlert.objects.get_or_create(

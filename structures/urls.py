@@ -25,4 +25,9 @@ urlpatterns = [
         views.poco_details,
         name="poco_details",
     ),
+    path(
+        "<int:structure_id>/starbase_detail",
+        views.starbase_detail,
+        name="starbase_detail",
+    ),
 ]

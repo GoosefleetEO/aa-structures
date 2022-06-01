@@ -22,7 +22,7 @@ from ..testdata import (
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
-    create_structure,
+    create_upwell_structure,
     create_webhook,
 )
 
@@ -332,7 +332,7 @@ class TestNotificationRelevantWebhooks(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )
         self.owner.webhooks.add(webhook_owner)
-        structure = create_structure(owner=self.owner)
+        structure = create_upwell_structure(owner=self.owner)
         notif = create_notification(
             owner=self.owner,
             notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
@@ -349,7 +349,7 @@ class TestNotificationRelevantWebhooks(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )
         self.owner.webhooks.add(webhook_owner)
-        structure = create_structure(owner=self.owner)
+        structure = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )
@@ -372,12 +372,12 @@ class TestNotificationRelevantWebhooks(NoSocketsTestCase):
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )
         self.owner.webhooks.add(webhook_owner)
-        structure_1 = create_structure(owner=self.owner)
+        structure_1 = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )
         structure_1.webhooks.add(webhook_structure)
-        structure_2 = create_structure(owner=self.owner)
+        structure_2 = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )
@@ -502,7 +502,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
         # given
         webhook_owner = create_webhook(notification_types=[])
         self.owner.webhooks.add(webhook_owner)
-        structure = create_structure(owner=self.owner)
+        structure = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
             notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
         )

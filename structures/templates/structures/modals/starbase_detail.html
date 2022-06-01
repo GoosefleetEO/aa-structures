@@ -1,0 +1,96 @@
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+{% load structures %}
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title">{{structure}}</h4>
+</div>
+
+<div class="modal-body">
+    {% detail_title structure %}
+    <br>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active">
+            <a href="#tab-starbase-general" aria-controls="modules" role="tab" data-toggle="tab">
+                {% translate "General" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-starbase-fuel" aria-controls="fuels" role="tab" data-toggle="tab">
+                {% translate "Fuel" %} <small>({{ fuel_blocks_count|default:"-"|intcomma }})</small>
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-starbase-modules" aria-controls="modules" role="tab" data-toggle="tab">
+                {% translate "Modules" %} <small>({{ modules_count }})</small>
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-starbase-settings" aria-controls="settings" role="tab" data-toggle="tab">
+                {% translate "Settings" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-starbase-access" aria-controls="access" role="tab" data-toggle="tab">
+                {% translate "Access" %}
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="tab-starbase-general">
+            {% include "structures/modals/tab_general_detail.html" %}
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-fuel">
+            <ul class="list-group">
+                {% for fuel in fuels %}
+                    {% list_asset fuel.eve_type fuel.quantity %}
+                {% empty %}
+                    {% list_item _("empty") is_muted=True %}
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-modules">
+            <ul class="list-group">
+                {% for item in modules %}
+                    {% list_asset item.eve_type item.quantity %}
+                {% empty %}
+                    {% list_item _("empty") is_muted=True %}
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-settings">
+            <ul class="list-group">
+                {% list_item _("Allow alliance member usage") detail.allow_alliance_members %}
+                {% list_item _("Allow corporation member usage") detail.allow_corporation_members %}
+                {% list_item _("Attack if standing lower than") detail.attack_standing_threshold %}
+                {% list_item _("Attack if security status lower than") detail.attack_security_status_threshold %}
+                {% list_item _("Attack if other security status is dropping") detail.attack_if_other_security_status_dropping %}
+                {% list_item _("Attack if at war") detail.attack_if_at_war %}
+                {% list_item _("Use alliance standings") detail.use_alliance_standings %}
+            </ul>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-access">
+            <ul class="list-group">
+                {% list_item _("Anchor role") detail.get_anchor_role_display %}
+                {% list_item _("Unanchor role") detail.get_unanchor_role_display %}
+                {% list_item _("Online role") detail.get_online_role_display %}
+                {% list_item _("Offline role") detail.get_offline_role_display %}
+                {% list_item _("Fuel bay view role") detail.get_fuel_bay_view_role_display %}
+                {% list_item _("Fuel bay take role") detail.get_fuel_bay_take_role_display %}
+            </ul>
+        </div>
+    </div>
+
+    <br>
+    <p class="text-muted">Last updated {{ last_updated_at|naturaltime|default:"?" }}</p>
+</div>

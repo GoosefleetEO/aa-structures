@@ -1,4 +1,6 @@
+import functools
 import urllib
+from collections import defaultdict
 from enum import IntEnum
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -12,6 +14,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
+from eveuniverse.models import EveType as EveType2
 from eveuniverse.models import EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
@@ -31,14 +34,14 @@ from .app_settings import (
     STRUCTURES_PAGING_ENABLED,
     STRUCTURES_SHOW_JUMP_GATES,
 )
-from .constants import EveCategoryId, EveGroupId, EveTypeId
+from .constants import EveAttributeId, EveCategoryId, EveGroupId, EveTypeId
 from .core.serializers import (
     JumpGatesListSerializer,
     PocoListSerializer,
     StructureListSerializer,
 )
 from .forms import TagsFilterForm
-from .models import Owner, Structure, StructureItem, StructureTag, Webhook
+from .models import EveType, Owner, Structure, StructureItem, StructureTag, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -151,6 +154,9 @@ def structure_details(request, structure_id):
             self.name = name
             self.profile_url = ""
 
+        def icon_url(self, size=64) -> str:
+            return eveimageserver.type_icon_url(self.id, size)
+
     class FakeAsset:
         """Fake asset object for showing additional information in the asset list."""
 
@@ -175,8 +181,42 @@ def structure_details(request, structure_id):
             )
         ]
 
+    def patch_fighter_tube_quantities(fighter_tubes):
+        eve_type_ids = {item.eve_type_id for item in fighter_tubes}
+        eve_types = [
+            EveType2.objects.get_or_create_esi(
+                id=eve_type_id, enabled_sections=[EveType2.Section.DOGMAS]
+            )[0]
+            for eve_type_id in eve_type_ids
+        ]
+        squadron_sizes = {
+            eve_type.id: int(
+                eve_type.dogma_attributes.get(
+                    eve_dogma_attribute=EveAttributeId.SQUADRON_SIZE.value
+                ).value
+            )
+            for eve_type in eve_types
+        }
+        for item in fighter_tubes:
+            try:
+                squadron_size = squadron_sizes[item.eve_type_id]
+            except KeyError:
+                pass
+            else:
+                item.quantity = squadron_size
+                item.is_singleton = False
+
     structure = get_object_or_404(
-        Structure.objects.select_related("owner", "eve_type", "eve_solar_system"),
+        Structure.objects.select_related(
+            "owner",
+            "owner__corporation",
+            "owner__corporation__alliance",
+            "eve_type",
+            "eve_type__eve_group",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation",
+            "eve_solar_system__eve_constellation__eve_region",
+        ),
         id=structure_id,
     )
     type_attributes = {
@@ -199,6 +239,7 @@ def structure_details(request, structure_id):
     rig_slots = extract_slot_assets(assets, "RigSlot")
     service_slots = extract_slot_assets(assets, "ServiceSlot")
     fighter_tubes = extract_slot_assets(assets, "FighterTube")
+    patch_fighter_tube_quantities(fighter_tubes)
     assets_grouped = {"ammo_hold": [], "fighter_bay": [], "fuel_bay": []}
     for asset in assets:
         if asset.location_flag == StructureItem.LocationFlag.CARGO:
@@ -214,9 +255,32 @@ def structure_details(request, structure_id):
             FakeAsset(
                 name="Fuel blocks per day (est.)",
                 quantity=structure.structure_fuel_usage(),
-                eve_type_id=EveTypeId.NITROGEN_FUEL_BLOCK,
+                eve_type_id=24756,
             )
         ]
+    modules_count = len(high_slots + med_slots + low_slots + rig_slots + service_slots)
+    fuel_blocks_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in assets_grouped["fuel_bay"]]
+        )
+        if assets_grouped["fuel_bay"]
+        else 0
+    )
+    ammo_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in assets_grouped["ammo_hold"]]
+        )
+        if assets_grouped["ammo_hold"]
+        else 0
+    )
+    fighters_consolidated = assets_grouped["fighter_bay"] + fighter_tubes
+    fighters_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in fighters_consolidated]
+        )
+        if fighters_consolidated
+        else 0
+    )
     context = {
         "fitting": assets,
         "slots": slot_image_urls,
@@ -230,6 +294,10 @@ def structure_details(request, structure_id):
         },
         "assets_grouped": assets_grouped,
         "structure": structure,
+        "modules_count": modules_count,
+        "fuel_blocks_total": fuel_blocks_total,
+        "fighters_total": fighters_total,
+        "ammo_total": ammo_total,
         "last_updated": structure.owner.assets_last_update_at,
     }
     return render(request, "structures/modals/structure_details.html", context)
@@ -238,23 +306,87 @@ def structure_details(request, structure_id):
 @login_required
 @permission_required("structures.basic_access")
 def poco_details(request, structure_id):
-    """Shows details modal for a POCO"""
+    """Shows details modal for a POCO."""
 
-    poco = get_object_or_404(
+    structure = get_object_or_404(
         Structure.objects.select_related(
-            "owner", "eve_type", "eve_solar_system", "poco_details"
+            "owner",
+            "eve_type",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation",
+            "eve_solar_system__eve_constellation__eve_region",
+            "poco_details",
+            "eve_planet",
         ).filter(eve_type=EveTypeId.CUSTOMS_OFFICE, poco_details__isnull=False),
         id=structure_id,
     )
     context = {
-        "poco": poco,
-        "details": poco.poco_details,
-        "poco_image_url": eveimageserver.type_render_url(
-            type_id=EveTypeId.CUSTOMS_OFFICE, size=256
-        ),
-        "last_updated": poco.last_updated_at,
+        "structure": structure,
+        "details": structure.poco_details,
+        "last_updated": structure.last_updated_at,
     }
     return render(request, "structures/modals/poco_details.html", context)
+
+
+@login_required
+@permission_required("structures.basic_access")
+def starbase_detail(request, structure_id):
+    """Shows detail modal for a starbase."""
+
+    structure = get_object_or_404(
+        Structure.objects.select_related(
+            "owner",
+            "owner__corporation",
+            "owner__corporation__alliance",
+            "eve_type",
+            "eve_type__eve_group",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation",
+            "eve_solar_system__eve_constellation__eve_region",
+            "starbase_detail",
+            "eve_moon",
+        ).filter(starbase_detail__isnull=False),
+        id=structure_id,
+    )
+    fuels = structure.starbase_detail.fuels.select_related("eve_type").order_by(
+        "eve_type__name"
+    )
+    assets = defaultdict(int)
+    for item in structure.items.select_related("eve_type"):
+        assets[item.eve_type_id] += item.quantity
+    eve_types = EveType.objects.in_bulk(id_list=assets.keys())
+    modules = sorted(
+        [
+            {"eve_type": eve_types.get(eve_type_id), "quantity": quantity}
+            for eve_type_id, quantity in assets.items()
+        ],
+        key=lambda obj: obj["eve_type"].name,
+    )
+    modules_count = (
+        functools.reduce(lambda x, y: x + y, [obj["quantity"] for obj in modules])
+        if modules
+        else 0
+    )
+    try:
+        fuel_blocks_count = (
+            structure.starbase_detail.fuels.filter(
+                eve_type__eve_group_id=EveGroupId.FUEL_BLOCK
+            )
+            .first()
+            .quantity
+        )
+    except AttributeError:
+        fuel_blocks_count = None
+    context = {
+        "structure": structure,
+        "detail": structure.starbase_detail,
+        "fuels": fuels,
+        "modules": modules,
+        "modules_count": modules_count,
+        "fuel_blocks_count": fuel_blocks_count,
+        "last_updated_at": structure.last_updated_at,
+    }
+    return render(request, "structures/modals/starbase_detail.html", context)
 
 
 @login_required
@@ -433,11 +565,10 @@ def structure_summary_data(request) -> JsonResponse:
             - row["citadel_count"]
         )
         total = row["upwell_count"] + row["poco_count"] + row["starbase_count"]
-        corporation_icon = image_html(
-            eveimageserver.corporation_logo_url(
-                row["owner__corporation__corporation_id"], size=32
-            )
+        corporation_icon_url = eveimageserver.corporation_logo_url(
+            row["owner__corporation__corporation_id"], size=64
         )
+        corporation_icon = image_html(corporation_icon_url, size=32)
         alliance_name = default_if_none(
             row["owner__corporation__alliance__alliance_name"], ""
         )

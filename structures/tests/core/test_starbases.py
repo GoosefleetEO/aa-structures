@@ -55,13 +55,6 @@ class TestStarbases(NoSocketsTestCase):
         obj = EveType.objects.get(id=35832)
         self.assertIsNone(starbases.starbase_size(obj))
 
-    def test_is_fuel_block(self):
-        obj = EveType.objects.get(id=16213)
-        self.assertFalse(starbases.is_fuel_block(obj))
-
-        obj = EveType.objects.get(id=4051)
-        self.assertTrue(starbases.is_fuel_block(obj))
-
 
 class TestStarbasesFuelDuration(NoSocketsTestCase):
     @classmethod

@@ -12,6 +12,7 @@ from ...models import (
     NotificationType,
     Owner,
     PocoDetails,
+    StarbaseDetail,
     Structure,
     StructureService,
     StructureTag,
@@ -116,6 +117,10 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                         {
                             "item_id": 1200000000006,
                             "position": {"x": 41.2, "y": 26.3, "z": -47.4},
+                        },
+                        {
+                            "item_id": 1300000000001,
+                            "position": {"x": 40.2, "y": 27.3, "z": -19.4},
                         },
                     ]
                 },
@@ -666,6 +671,46 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             now() + dt.timedelta(hours=24),
             delta=dt.timedelta(seconds=30),
         )
+        self.assertEqual(structure.position_x, 40.2)
+        self.assertEqual(structure.position_y, 27.3)
+        self.assertEqual(structure.position_z, -19.4)
+        # verify details
+        detail = structure.starbase_detail
+        self.assertTrue(detail.allow_alliance_members)
+        self.assertTrue(detail.allow_corporation_members)
+        self.assertEqual(
+            detail.anchor_role, StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE
+        )
+        self.assertFalse(detail.attack_if_at_war)
+        self.assertFalse(detail.attack_if_other_security_status_dropping)
+        self.assertEqual(
+            detail.anchor_role, StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE
+        )
+        self.assertEqual(
+            detail.fuel_bay_take_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertEqual(
+            detail.fuel_bay_view_role,
+            StarbaseDetail.Role.STARBASE_FUEL_TECHNICIAN_ROLE,
+        )
+        self.assertEqual(
+            detail.offline_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertEqual(
+            detail.online_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertEqual(
+            detail.unanchor_role,
+            StarbaseDetail.Role.CONFIG_STARBASE_EQUIPMENT_ROLE,
+        )
+        self.assertTrue(detail.use_alliance_standings)
+        # fuels
+        self.assertEqual(detail.fuels.count(), 2)
+        self.assertEqual(detail.fuels.get(eve_type_id=4051).quantity, 960)
+        self.assertEqual(detail.fuels.get(eve_type_id=16275).quantity, 11678)
 
         structure = Structure.objects.get(id=1300000000002)
         self.assertEqual(structure.name, "Bat cave")

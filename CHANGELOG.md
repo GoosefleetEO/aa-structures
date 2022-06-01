@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.25.0] - tbd
+
+### Added
+
+- New modal for starbases showing it's current configuration & status, e.g. defense settings, fuel, modules
+
+### Changed
+
+- UI overhaul of structure & POCO detail modals
+
+### Fixed
+
+- Sometimes generates a fuel alert despite for offline structures
+
 ## [1.24.0] - 2022-05-30
 
 ### Added

@@ -2,6 +2,10 @@ from enum import IntEnum
 
 
 # Eve enums
+class EveAttributeId(IntEnum):
+    SQUADRON_SIZE = 2215
+
+
 class EveCategoryId(IntEnum):
     ORBITAL = 46
     STARBASE = 23
@@ -17,6 +21,7 @@ class EveGroupId(IntEnum):
 
 
 class EveTypeId(IntEnum):
+    CALDARI_CONTROL_TOWER = 16213
     CUSTOMS_OFFICE = 2233
     IHUB = 32458
     JUMP_GATE = 35841

@@ -1,0 +1,20 @@
+{% load i18n %}
+{% load evelinks %}
+{% load structures %}
+
+<ul class="list-group">
+    {% list_item _("Name") structure.name|default:"-" %}
+    {% list_item _("Type") structure.eve_type.name url=structure.eve_type.profile_url %}
+    {% list_item _("Corporation") structure.owner url=structure.owner.corporation|dotlan_corporation_url %}
+    {% with alliance=structure.owner.corporation.alliance %}
+        {% list_item _("Alliance") alliance|default:"-" url=alliance|dotlan_alliance_url %}
+    {% endwith %}
+    {% list_item _("Location") structure.location_name url=structure.eve_solar_system.profile_url %}
+    {% list_item _("Constellation") structure.eve_solar_system.eve_constellation %}
+    {% with eve_region=structure.eve_solar_system.eve_constellation.eve_region %}
+        {% list_item _("Region") eve_region.name url=eve_region|dotlan_region_url %}
+    {% endwith %}
+    {% if not structure.is_poco %}
+        {% list_item _("State") structure.get_state_display %}
+    {% endif %}
+</ul>
