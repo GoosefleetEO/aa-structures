@@ -1,13 +1,13 @@
 """Eve Universe models"""
 
 import re
-import urllib
 from enum import Enum
 
 from django.db import models
 from django.utils import translation
 from django.utils.timezone import now
 from django.utils.translation import gettext
+from eveuniverse.core import dotlan, eveimageserver, eveitems
 
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
@@ -337,9 +337,6 @@ class EveGroup(EveUniverse):
 class EveType(EveUniverse):
     """type in Eve Online"""
 
-    EVE_IMAGESERVER_BASE_URL = "https://images.evetech.net"
-    URL_PROFILE_TYPE = "https://www.kalkoken.org/apps/eveitems/"
-
     eve_group = models.ForeignKey(
         EveGroup, on_delete=models.CASCADE, related_name="eve_types"
     )
@@ -350,22 +347,18 @@ class EveType(EveUniverse):
 
     @property
     def profile_url(self) -> str:
-        return f"{self.URL_PROFILE_TYPE}?typeId={self.id}"
+        return eveitems.type_url(self.id)
 
     @classmethod
     def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
-        if size < 32 or size > 1024 or (size % 2 != 0):
-            raise ValueError("Invalid size: {}".format(size))
-
-        url = "{}/types/{}/icon".format(cls.EVE_IMAGESERVER_BASE_URL, int(type_id))
-        if size:
-            args = {"size": int(size)}
-            url += "?{}".format(urllib.parse.urlencode(args))
-
-        return url
+        return eveimageserver.type_icon_url(type_id=type_id, size=size)
 
     def icon_url(self, size=64):
         return self.generic_icon_url(self.id, size)
+
+    def render_url(self, size: int = 128) -> str:
+        """return an image URL to this type as render"""
+        return eveimageserver.type_render_url(self.id, size=size)
 
 
 class EveRegion(EveUniverse):
@@ -374,6 +367,11 @@ class EveRegion(EveUniverse):
     class EveUniverseMeta:
         esi_pk = "region_id"
         esi_method = "get_universe_regions_region_id"
+
+    @property
+    def profile_url(self) -> str:
+        """URL to display this type on the default third party webpage."""
+        return dotlan.region_url(self.name)
 
 
 class EveConstellation(EveUniverse):
@@ -420,6 +418,11 @@ class EveSolarSystem(EveUniverse):
     def is_w_space(self) -> bool:
         """returns True if this solar system is in wormhole space, else False"""
         return 31000000 <= self.id < 32000000
+
+    @property
+    def profile_url(self) -> str:
+        """URL to display this type on the default third party webpage."""
+        return dotlan.solar_system_url(self.name)
 
 
 class EvePlanet(EveUniverse):

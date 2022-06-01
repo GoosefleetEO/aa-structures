@@ -1,3 +1,4 @@
+import functools
 import urllib
 from collections import defaultdict
 from enum import IntEnum
@@ -243,7 +244,13 @@ def poco_details(request, structure_id):
 
     structure = get_object_or_404(
         Structure.objects.select_related(
-            "owner", "eve_type", "eve_solar_system", "poco_details", "eve_planet"
+            "owner",
+            "eve_type",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation",
+            "eve_solar_system__eve_constellation__eve_region",
+            "poco_details",
+            "eve_planet",
         ).filter(eve_type=EveTypeId.CUSTOMS_OFFICE, poco_details__isnull=False),
         id=structure_id,
     )
@@ -262,7 +269,13 @@ def starbase_detail(request, structure_id):
 
     structure = get_object_or_404(
         Structure.objects.select_related(
-            "owner", "eve_type", "eve_solar_system", "starbase_detail", "eve_moon"
+            "owner",
+            "eve_type",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation",
+            "eve_solar_system__eve_constellation__eve_region",
+            "starbase_detail",
+            "eve_moon",
         ).filter(starbase_detail__isnull=False),
         id=structure_id,
     )
@@ -272,19 +285,24 @@ def starbase_detail(request, structure_id):
     assets = defaultdict(int)
     for item in structure.items.select_related("eve_type"):
         assets[item.eve_type_id] += item.quantity
+    assets[structure.eve_type_id] += 1
     eve_types = EveType.objects.in_bulk(id_list=assets.keys())
-    fitting = sorted(
+    modules = sorted(
         [
             {"eve_type": eve_types.get(eve_type_id), "quantity": quantity}
             for eve_type_id, quantity in assets.items()
         ],
         key=lambda obj: obj["eve_type"].name,
     )
+    modules_count = functools.reduce(
+        lambda x, y: x + y, [obj["quantity"] for obj in modules]
+    )
     context = {
         "structure": structure,
         "detail": structure.starbase_detail,
         "fuels": fuels,
-        "fitting": fitting,
+        "modules": modules,
+        "modules_count": modules_count,
         "last_updated_at": structure.last_updated_at,
     }
     return render(request, "structures/modals/starbase_detail.html", context)

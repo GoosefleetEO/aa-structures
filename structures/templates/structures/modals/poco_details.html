@@ -1,6 +1,7 @@
 {% load i18n %}
 {% load static %}
 {% load humanize %}
+{% load evelinks %}
 {% load structures %}
 
 <div class="modal-header">
@@ -13,8 +14,13 @@
     <br>
     <ul class="list-group">
         {% list_title _("General") %}
+        {% list_item _("Corporation") structure.owner url=structure.owner.corporation|dotlan_corporation_url %}
+            {% with alliance=structure.owner.corporation.alliance %}
+                {% list_item _("Alliance") alliance|default:"-" url=alliance|dotlan_alliance_url %}
+            {% endwith %}
         {% list_item _("Location") structure.location_name %}
-        {% list_item _("Owner") structure.owner %}
+        {% list_item _("Constellation") structure.eve_solar_system.eve_constellation %}
+        {% list_item _("Region") structure.eve_solar_system.eve_constellation.eve_region.name %}
         {% list_item _("Planet Type") structure.eve_planet.eve_type_name_short %}
 
         {% list_title _("Reinforcement exit time") %}

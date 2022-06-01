@@ -12,6 +12,8 @@
                 <i class="fas fa-times text-danger" title="Disabled"></i>
             {% elif value is True %}
                 <i class="fas fa-check text-success" title="Enabled"></i>
+            {% elif url %}
+                <a href="{{ url }}" target="_blank">{{ value }}</a>
             {% else %}
                 {{ value }}
             {% endif %}

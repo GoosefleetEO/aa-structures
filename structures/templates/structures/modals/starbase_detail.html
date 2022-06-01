@@ -1,6 +1,7 @@
 {% load i18n %}
 {% load static %}
 {% load humanize %}
+{% load evelinks %}
 {% load structures %}
 
 <div class="modal-header">
@@ -11,44 +12,84 @@
 <div class="modal-body">
     {% detail_title structure %}
     <br>
-    <ul class="list-group">
-        {% list_title _("Hull") %}
-        {% list_item structure.eve_type.name eve_type=structure.eve_type %}
-        {% list_title _("General") %}
-        {% list_item _("Location") structure.location_name %}
-        {% list_item _("Owner") structure.owner %}
-        {% list_item _("Status") structure.get_state_display %}
-        {% list_item _("Allow alliance member usage") detail.allow_alliance_members %}
-        {% list_item _("Allow corporation member usage") detail.allow_corporation_members %}
-        {% list_item _("Use alliance standings") detail.use_alliance_standings %}
 
-        {% list_title _("Defense") %}
-        {% list_item _("Attack if standing lower than") detail.attack_standing_threshold %}
-        {% list_item _("Attack if security status lower than") detail.attack_security_status_threshold %}
-        {% list_item _("Attack if other security status is dropping") detail.attack_if_other_security_status_dropping %}
-        {% list_item _("Attack if at war") detail.attack_if_at_war %}
-
-        {% list_title _("Access") %}
-        {% list_item _("Anchor role") detail.get_anchor_role_display %}
-        {% list_item _("Unanchor role") detail.get_unanchor_role_display %}
-        {% list_item _("Online role") detail.get_online_role_display %}
-        {% list_item _("Offline role") detail.get_offline_role_display %}
-        {% list_item _("Fuel bay view role") detail.get_fuel_bay_view_role_display %}
-        {% list_item _("Fuel bay take role") detail.get_fuel_bay_take_role_display %}
-
-        {% list_title "Fuel" %}
-        {% for fuel in fuels %}
-            {% list_asset fuel.eve_type fuel.quantity %}
-        {% empty %}
-            {% list_item "empty" is_muted=True %}
-        {% endfor %}
-
-        {% list_title _("Fitting") %}
-        {% for item in fitting %}
-            {% list_asset item.eve_type item.quantity %}
-        {% empty %}
-            {% list_item "empty" is_muted=True %}
-        {% endfor %}
+     <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#tab-general" aria-controls="modules" role="tab" data-toggle="tab">General</a></li>
+        <li role="presentation">
+            <a href="#tab-fuels" aria-controls="fuels" role="tab" data-toggle="tab">
+                Fuels ({{ fuels|length|default:"-" }})
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#tab-modules" aria-controls="modules" role="tab" data-toggle="tab">
+                Modules ({{ modules_count }})
+            </a>
+        </li>
+        <li role="presentation"><a href="#tab-access" aria-controls="access" role="tab" data-toggle="tab">Access</a></li>
+        <li role="presentation"><a href="#tab-settings" aria-controls="settings" role="tab" data-toggle="tab">Settings</a></li>
     </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="tab-general">
+            {% list_item _("Name") structure.name|default:"-" %}
+            {% list_item _("Corporation") structure.owner url=structure.owner.corporation|dotlan_corporation_url %}
+            {% with alliance=structure.owner.corporation.alliance %}
+                {% list_item _("Alliance") alliance|default:"-" url=alliance|dotlan_alliance_url %}
+            {% endwith %}
+            {% list_item _("Location") structure.location_name url=structure.eve_solar_system.profile_url %}
+            {% list_item _("Constellation") structure.eve_solar_system.eve_constellation %}
+            {% with eve_region=structure.eve_solar_system.eve_constellation.eve_region %}
+                {% list_item _("Region") eve_region.name url=eve_region|dotlan_region_url %}
+            {% endwith %}
+            {% list_item _("Status") structure.get_state_display %}
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-fuels">
+            <ul class="list-group">
+                {% for fuel in fuels %}
+                    {% list_asset fuel.eve_type fuel.quantity %}
+                {% empty %}
+                    {% list_item "empty" is_muted=True %}
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-modules">
+            <ul class="list-group">
+                {% for item in modules %}
+                    {% list_asset item.eve_type item.quantity %}
+                {% empty %}
+                    {% list_item "empty" is_muted=True %}
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-settings">
+            <ul class="list-group">
+                {% list_item _("Allow alliance member usage") detail.allow_alliance_members %}
+                {% list_item _("Allow corporation member usage") detail.allow_corporation_members %}
+                {% list_item _("Attack if standing lower than") detail.attack_standing_threshold %}
+                {% list_item _("Attack if security status lower than") detail.attack_security_status_threshold %}
+                {% list_item _("Attack if other security status is dropping") detail.attack_if_other_security_status_dropping %}
+                {% list_item _("Attack if at war") detail.attack_if_at_war %}
+                {% list_item _("Use alliance standings") detail.use_alliance_standings %}
+            </ul>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="tab-access">
+            <ul class="list-group">
+                {% list_item _("Anchor role") detail.get_anchor_role_display %}
+                {% list_item _("Unanchor role") detail.get_unanchor_role_display %}
+                {% list_item _("Online role") detail.get_online_role_display %}
+                {% list_item _("Offline role") detail.get_offline_role_display %}
+                {% list_item _("Fuel bay view role") detail.get_fuel_bay_view_role_display %}
+                {% list_item _("Fuel bay take role") detail.get_fuel_bay_take_role_display %}
+            </ul>
+        </div>
+    </div>
+
+    <br>
     <p class="text-muted">Last updated {{ last_updated_at|naturaltime|default:"?" }}</p>
 </div>
