@@ -2,10 +2,9 @@
 {% load structures %}
 
 {% list_title slot_name %}
-{% if asset_list|length == 0 %}
-    <li class="list-group-item text-muted">{% translate "No Items" %}</li>
-{% else %}
-    {% for asset in asset_list %}
-        {% list_asset asset.eve_type asset.quantity asset.is_singleton %}
-    {% endfor %}
-{% endif %}
+
+{% for asset in asset_list %}
+    {% list_asset asset.eve_type asset.quantity asset.is_singleton %}
+{% empty %}
+    <li class="list-group-item text-muted">{% translate "empty" %}</li>
+{% endfor %}

@@ -20,8 +20,8 @@
             </a>
         </li>
         <li role="presentation">
-            <a href="#tab-starbase-fuels" aria-controls="fuels" role="tab" data-toggle="tab">
-                {% translate "Fuels" %} <small>({{ fuels|length|default:"-" }})</small>
+            <a href="#tab-starbase-fuel" aria-controls="fuels" role="tab" data-toggle="tab">
+                {% translate "Fuel" %} <small>({{ fuel_blocks_count|default:"-"|intcomma }})</small>
             </a>
         </li>
         <li role="presentation">
@@ -47,12 +47,12 @@
             {% include "structures/modals/tab_general_detail.html" %}
         </div>
 
-        <div role="tabpanel" class="tab-pane" id="tab-starbase-fuels">
+        <div role="tabpanel" class="tab-pane" id="tab-starbase-fuel">
             <ul class="list-group">
                 {% for fuel in fuels %}
                     {% list_asset fuel.eve_type fuel.quantity %}
                 {% empty %}
-                    {% list_item "empty" is_muted=True %}
+                    {% list_item _("empty") is_muted=True %}
                 {% endfor %}
             </ul>
         </div>
@@ -62,7 +62,7 @@
                 {% for item in modules %}
                     {% list_asset item.eve_type item.quantity %}
                 {% empty %}
-                    {% list_item "empty" is_muted=True %}
+                    {% list_item _("empty") is_muted=True %}
                 {% endfor %}
             </ul>
         </div>

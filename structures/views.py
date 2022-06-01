@@ -183,28 +183,40 @@ def structure_details(request, structure_id):
 
     def patch_fighter_tube_quantities(fighter_tubes):
         eve_type_ids = {item.eve_type_id for item in fighter_tubes}
-        eve_types = {
-            eve_type_id: EveType2.objects.get_or_create_esi(
+        eve_types = [
+            EveType2.objects.get_or_create_esi(
                 id=eve_type_id, enabled_sections=[EveType2.Section.DOGMAS]
             )[0]
             for eve_type_id in eve_type_ids
+        ]
+        squadron_sizes = {
+            eve_type.id: int(
+                eve_type.dogma_attributes.get(
+                    eve_dogma_attribute=EveAttributeId.SQUADRON_SIZE.value
+                ).value
+            )
+            for eve_type in eve_types
         }
         for item in fighter_tubes:
             try:
-                eve_type = eve_types[item.eve_type_id]
+                squadron_size = squadron_sizes[item.eve_type_id]
             except KeyError:
                 pass
             else:
-                squadron_size = int(
-                    eve_type.dogma_attributes.get(
-                        eve_dogma_attribute=EveAttributeId.SQUADRON_SIZE.value
-                    ).value
-                )
                 item.quantity = squadron_size
                 item.is_singleton = False
 
     structure = get_object_or_404(
-        Structure.objects.select_related("owner", "eve_type", "eve_solar_system"),
+        Structure.objects.select_related(
+            "owner",
+            "owner__corporation",
+            "owner__corporation__alliance",
+            "eve_type",
+            "eve_type__eve_group",
+            "eve_solar_system",
+            "eve_solar_system__eve_constellation",
+            "eve_solar_system__eve_constellation__eve_region",
+        ),
         id=structure_id,
     )
     type_attributes = {
@@ -324,7 +336,10 @@ def starbase_detail(request, structure_id):
     structure = get_object_or_404(
         Structure.objects.select_related(
             "owner",
+            "owner__corporation",
+            "owner__corporation__alliance",
             "eve_type",
+            "eve_type__eve_group",
             "eve_solar_system",
             "eve_solar_system__eve_constellation",
             "eve_solar_system__eve_constellation__eve_region",
@@ -352,12 +367,23 @@ def starbase_detail(request, structure_id):
         if modules
         else 0
     )
+    try:
+        fuel_blocks_count = (
+            structure.starbase_detail.fuels.filter(
+                eve_type__eve_group_id=EveGroupId.FUEL_BLOCK
+            )
+            .first()
+            .quantity
+        )
+    except AttributeError:
+        fuel_blocks_count = None
     context = {
         "structure": structure,
         "detail": structure.starbase_detail,
         "fuels": fuels,
         "modules": modules,
         "modules_count": modules_count,
+        "fuel_blocks_count": fuel_blocks_count,
         "last_updated_at": structure.last_updated_at,
     }
     return render(request, "structures/modals/starbase_detail.html", context)
