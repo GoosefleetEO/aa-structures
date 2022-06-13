@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.25.1] - 2022-06-13
+
+### Changed
+
+- Removes notifications and structures count from owner admin page, which was causing timeouts for users
+- Adds structures count to owner detail page
+
 ## [1.25.0] - 2022-06-01
 
 >**Upgrade note**<br>The new information for starbases will be available once the next structures update from ESI is completed. If you do not want to wait, you can manually start the update for an owner on the admin site. Or you can run this command:<br>`celery -A myauth call structures.tasks.update_all_structures`
