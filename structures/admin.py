@@ -4,7 +4,7 @@ from typing import Optional
 from django.conf import settings
 from django.contrib import admin
 from django.db import models
-from django.db.models import Count, Prefetch
+from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.utils.html import format_html
 
@@ -377,8 +377,6 @@ class OwnerAdmin(admin.ModelAdmin):
         "_ping_groups",
         "_is_alliance_main",
         "_is_sync_ok",
-        "_structures_count",
-        "_notifications_count",
     )
     list_filter = (
         "is_active",
@@ -404,6 +402,7 @@ class OwnerAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "corporation",
+                    "_structures_count",
                     "webhooks",
                     "is_alliance_main",
                     "are_pocos_public",
@@ -438,8 +437,6 @@ class OwnerAdmin(admin.ModelAdmin):
         return (
             qs.select_related("corporation", "corporation__alliance")
             .prefetch_related("ping_groups", "webhooks")
-            .annotate(notifications_count=Count("notifications", distinct=True))
-            .annotate(structures_count=Count("structures", distinct=True))
             .annotate_characters_count()
         )
 
@@ -488,14 +485,6 @@ class OwnerAdmin(admin.ModelAdmin):
         if not obj.is_active:
             return None
         return obj.is_up
-
-    @admin.display(description="notifications")
-    def _notifications_count(self, obj: Owner) -> int:
-        return obj.notifications_count
-
-    @admin.display(description="structures")
-    def _structures_count(self, obj: Owner) -> int:
-        return obj.structures_count
 
     @admin.display(description="Activate selected owners")
     def activate_owners(self, request, queryset):
@@ -556,6 +545,7 @@ class OwnerAdmin(admin.ModelAdmin):
                 "_notifications_last_update_fresh",
                 "_forwarding_last_update_fresh",
                 "_assets_last_update_fresh",
+                "_structures_count",
             )
         return self.readonly_fields
 
@@ -595,20 +585,24 @@ class OwnerAdmin(admin.ModelAdmin):
         return f"{my_format(short)} | {my_format(medium)} | {my_format(long)}"
 
     @admin.display(description="Structures update fresh", boolean=True)
-    def _structures_last_update_fresh(self, obj) -> int:
+    def _structures_last_update_fresh(self, obj) -> bool:
         return obj.is_structure_sync_fresh
 
     @admin.display(description="Notifications update fresh", boolean=True)
-    def _notifications_last_update_fresh(self, obj) -> int:
+    def _notifications_last_update_fresh(self, obj) -> bool:
         return obj.is_notification_sync_fresh
 
     @admin.display(description="Forwarding update fresh", boolean=True)
-    def _forwarding_last_update_fresh(self, obj) -> int:
+    def _forwarding_last_update_fresh(self, obj) -> bool:
         return obj.is_forwarding_sync_fresh
 
     @admin.display(description="Assets update fresh", boolean=True)
-    def _assets_last_update_fresh(self, obj) -> int:
+    def _assets_last_update_fresh(self, obj) -> bool:
         return obj.is_assets_sync_fresh
+
+    @admin.display(description="Structures Count")
+    def _structures_count(self, obj) -> int:
+        return obj.structures.count()
 
     def get_form(self, *args, **kwargs):
         """Add help text to custom field."""
