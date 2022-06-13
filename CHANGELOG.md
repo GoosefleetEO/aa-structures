@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Removes notifications and structures count from owner admin page, which was causing timeouts for users
+- Removes notifications and structures count from owner admin page, which was causing the page to time out for some users
 - Adds structures count to owner detail page
 
 ## [1.25.0] - 2022-06-01
