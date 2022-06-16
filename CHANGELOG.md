@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Deploy wheel to PyPI
+- Switched back to using local swagger spec file, so that is no longer necessary to restart AA after ESI endpoints reappeared (e.g Assets)
 
 ## [1.25.1] - 2022-06-13
 
