@@ -7,6 +7,7 @@ App for managing Eve Online structures with Alliance Auth.
 [![django](https://img.shields.io/pypi/djversions/aa-structures?label=django)](https://pypi.org/project/aa-structures/)
 [![pipeline](https://gitlab.com/ErikKalkoken/aa-structures/badges/master/pipeline.svg)](https://gitlab.com/ErikKalkoken/aa-structures/-/pipelines)
 [![codecov](https://codecov.io/gl/ErikKalkoken/aa-structures/branch/master/graph/badge.svg?token=wq6yixsYRE)](https://codecov.io/gl/ErikKalkoken/aa-structures)
+[![Documentation Status](https://readthedocs.org/projects/aa-structures/badge/?version=latest)](https://aa-structures.readthedocs.io/en/latest/?badge=latest)
 [![license](https://img.shields.io/badge/license-MIT-green)](https://gitlab.com/ErikKalkoken/aa-structures/-/blob/master/LICENSE)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
