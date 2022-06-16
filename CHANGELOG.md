@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+- Add dark mode to docs
+
 ## [1.25.2] - 2022-06-16
 
 ### Changed
