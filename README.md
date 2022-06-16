@@ -18,12 +18,14 @@ App for managing Eve Online structures with Alliance Auth.
 - [Overview](#overview)
 - [Features](#features)
 - [Screenshots](#screenshots)
-- [Documentation](#documentation)
+- [Documentation](https://aa-structures.readthedocs.io/en/latest/)
 - [Change Log](CHANGELOG.md)
 
 ## Overview
 
 This app is for managing Eve Online structures with [Alliance Auth](https://gitlab.com/allianceauth/allianceauth). It allows all member corporations to see a current list of all their structures in Auth. In addition it allows forwarding Eve Online notifications to Discord.
+
+For details on how to install and use *Structures* please see the [documentation](https://aa-structures.readthedocs.io/en/latest/).
 
 ## Features
 
@@ -70,7 +72,3 @@ The tax rate and access configuration of customs offices is visible too:
 This is an example for a notification posted on Discord:
 
 ![Notification example](https://i.imgur.com/oqBqeFy.png)
-
-## Documentation
-
-For details on how to install and use *Structures* please see the [documentation](https://aa-structures.readthedocs.io/en/latest/).
