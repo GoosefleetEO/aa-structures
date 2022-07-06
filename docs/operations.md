@@ -371,6 +371,7 @@ Name | Description | Default
 `STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED`| Enable default tags filter for structure list as default | `False`
 `STRUCTURES_DEFAULT_LANGUAGE`| Sets the default language to be used in case no language can be determined. e.g. this language will be used when creating timers. Please use the language codes as defined in the base.py settings file. | `en`
 `STRUCTURES_DEFAULT_PAGE_LENGTH`| Default page size for structure list. Must be an integer value from the available options in the app. | `10`
+`STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES`| Max retries before a character is deleted when ESI claims the character is not a director (Since this sometimes is reported wrongly by ESI). | `3`
 `STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | `True`
 `STRUCTURES_FEATURE_STARBASES`| Enable / disable starbases feature | `True`
 `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS`| Enable / disable refuled notifications feature | `False`

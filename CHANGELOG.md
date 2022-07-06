@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.25.3] - 2022-07-06
+
+### Changed
+
 - Add dark mode to docs
+- Allow up to 3 retries when ESI complains about a character not being a director
 
 ## [1.25.2] - 2022-06-16
 

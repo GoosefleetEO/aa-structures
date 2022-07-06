@@ -164,98 +164,6 @@ class TestOwner(NoSocketsTestCase):
             },
         )
 
-    def test_should_add_new_character(self):
-        # given
-        owner = Owner.objects.get(corporation__corporation_id=2002)
-        _, character_ownership = create_user_from_evecharacter(
-            1003,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )
-        # when
-        result = owner.add_character(character_ownership)
-        # then
-        self.assertIsInstance(result, OwnerCharacter)
-        self.assertEqual(result.owner, owner)
-        self.assertEqual(result.character_ownership, character_ownership)
-        self.assertIsNone(result.notifications_last_used_at)
-
-    def test_should_not_overwrite_existing_characters(self):
-        # given
-        character = self.owner.characters.first()
-        my_dt = datetime(year=2021, month=2, day=11, hour=12, tzinfo=utc)
-        character.notifications_last_used_at = my_dt
-        character.save()
-        # when
-        result = self.owner.add_character(character.character_ownership)
-        # then
-        self.assertIsInstance(result, OwnerCharacter)
-        self.assertEqual(result.owner, self.owner)
-        self.assertEqual(result.character_ownership, character.character_ownership)
-        self.assertEqual(result.notifications_last_used_at, my_dt)
-
-    def test_should_prevent_adding_character_from_other_corporation(self):
-        # given
-        _, character_ownership = create_user_from_evecharacter(
-            1003,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )
-        # when
-        with self.assertRaises(ValueError):
-            self.owner.add_character(character_ownership)
-
-    def test_should_add_character_to_existing_set(self):
-        # given
-        owner = Owner.objects.get(corporation__corporation_id=2102)
-        _, character_ownership_1011 = create_user_from_evecharacter(
-            1011,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )
-        owner.add_character(character_ownership_1011)
-        _, character_ownership_1102 = create_user_from_evecharacter(
-            1102,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )
-        # when
-        owner.add_character(character_ownership_1102)
-        # then
-        owner_character_pks = set(
-            owner.characters.values_list("character_ownership__pk", flat=True)
-        )
-        expected_pks = {character_ownership_1011.pk, character_ownership_1102.pk}
-        self.assertSetEqual(owner_character_pks, expected_pks)
-
-    def test_should_count_characters(self):
-        # given
-        owner = Owner.objects.get(corporation__corporation_id=2102)
-        _, character_ownership_1011 = create_user_from_evecharacter(
-            1011,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )
-        owner.add_character(character_ownership_1011)
-        _, character_ownership_1102 = create_user_from_evecharacter(
-            1102,
-            permissions=["structures.add_structure_owner"],
-            scopes=Owner.get_esi_scopes(),
-        )
-        owner.add_character(character_ownership_1102)
-        # when
-        result = owner.characters_count()
-        # then
-        self.assertEqual(result, 2)
-
-    def test_should_count_characters_when_empty(self):
-        # given
-        owner = Owner.objects.get(corporation__corporation_id=2102)
-        # when
-        result = owner.characters_count()
-        # then
-        self.assertEqual(result, 0)
-
     def test_should_ensure_only_one_owner_is_alliance_main_1(self):
         # given
         self.assertTrue(self.owner.is_alliance_main)
@@ -623,3 +531,159 @@ class TestOwnerFetchToken(NoSocketsTestCase):
         )
         # then
         self.assertListEqual(tokens_received, [1102, 1011, 1102, 1102])
+
+
+class TestOwnerCharacters(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        create_structures()
+        cls.user, cls.owner = set_owner_character(character_id=1001)
+
+    def test_should_add_new_character(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2002)
+        _, character_ownership = create_user_from_evecharacter(
+            1003,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        result = owner.add_character(character_ownership)
+        # then
+        self.assertIsInstance(result, OwnerCharacter)
+        self.assertEqual(result.owner, owner)
+        self.assertEqual(result.character_ownership, character_ownership)
+        self.assertIsNone(result.notifications_last_used_at)
+
+    def test_should_not_overwrite_existing_characters(self):
+        # given
+        character = self.owner.characters.first()
+        my_dt = datetime(year=2021, month=2, day=11, hour=12, tzinfo=utc)
+        character.notifications_last_used_at = my_dt
+        character.save()
+        # when
+        result = self.owner.add_character(character.character_ownership)
+        # then
+        self.assertIsInstance(result, OwnerCharacter)
+        self.assertEqual(result.owner, self.owner)
+        self.assertEqual(result.character_ownership, character.character_ownership)
+        self.assertEqual(result.notifications_last_used_at, my_dt)
+
+    def test_should_prevent_adding_character_from_other_corporation(self):
+        # given
+        _, character_ownership = create_user_from_evecharacter(
+            1003,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        with self.assertRaises(ValueError):
+            self.owner.add_character(character_ownership)
+
+    def test_should_add_character_to_existing_set(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1011)
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        # when
+        owner.add_character(character_ownership_1102)
+        # then
+        owner_character_pks = set(
+            owner.characters.values_list("character_ownership__pk", flat=True)
+        )
+        expected_pks = {character_ownership_1011.pk, character_ownership_1102.pk}
+        self.assertSetEqual(owner_character_pks, expected_pks)
+
+    def test_should_count_characters(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        _, character_ownership_1011 = create_user_from_evecharacter(
+            1011,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1011)
+        _, character_ownership_1102 = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner.add_character(character_ownership_1102)
+        # when
+        result = owner.characters_count()
+        # then
+        self.assertEqual(result, 2)
+
+    def test_should_count_characters_when_empty(self):
+        # given
+        owner = Owner.objects.get(corporation__corporation_id=2102)
+        # when
+        result = owner.characters_count()
+        # then
+        self.assertEqual(result, 0)
+
+
+@patch(MODULE_PATH + ".notify", spec=True)
+@patch(MODULE_PATH + ".notify_admins", spec=True)
+class TestOwnerDeleteCharacter(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities([EveCorporationInfo, EveCharacter])
+        load_eveuniverse()
+        cls.character = EveCharacter.objects.get(character_id=1001)
+        cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+
+    def test_should_delete_character_and_notify(self, mock_notify_admins, mock_notify):
+        # given
+        user, character_ownership = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        character = owner.add_character(character_ownership)
+        # when
+        owner.delete_character(character=character, error="dummy error")
+        # then
+        self.assertEqual(owner.characters.count(), 0)
+        self.assertTrue(mock_notify_admins.called)
+        _, kwargs = mock_notify_admins.call_args
+        self.assertIn("dummy error", kwargs["message"])
+        self.assertEqual(kwargs["level"], "danger")
+        self.assertTrue(mock_notify.called)
+        _, kwargs = mock_notify.call_args
+        self.assertIn("dummy error", kwargs["message"])
+        self.assertEqual(kwargs["user"], user)
+        self.assertEqual(kwargs["level"], "warning")
+
+    def test_should_not_delete_when_errors_are_allowed(
+        self, mock_notify_admins, mock_notify
+    ):
+        # given
+        _, character_ownership = create_user_from_evecharacter(
+            1001,
+            permissions=["structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner = Owner.objects.create(corporation=self.corporation)
+        character = owner.add_character(character_ownership)
+        # when
+        owner.delete_character(
+            character=character, error="dummy error", max_allowed_errors=1
+        )
+        # then
+        character.refresh_from_db()
+        self.assertEqual(character.error_count, 1)
+        self.assertFalse(mock_notify_admins.called)
+        self.assertFalse(mock_notify.called)

@@ -1,4 +1,4 @@
 default_app_config = "structures.apps.StructuresConfig"
 
-__version__ = "1.25.2"
+__version__ = "1.25.3"
 __title__ = "Structures"
