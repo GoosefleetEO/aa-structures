@@ -12,6 +12,7 @@ from django.contrib.auth.models import Group, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
+from django.db.models import F
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from esi.errors import TokenError
@@ -322,83 +323,39 @@ class Owner(models.Model):
             eve_solar_system=eve_solar_system, corporation=self.corporation
         )
 
-    def fetch_token(
+    def delete_character(
         self,
-        rotate_characters: RotateCharactersType = None,
-        ignore_schedule: bool = False,
-    ) -> Token:
-        """Fetch a valid token for the owner and return it.
-
-        Args:
-            rotate_characters: For which sync type to rotate through characters \
-                with every new call
-            ignore_schedule: Ignore current schedule when rotating
-
-        Raises TokenError when no valid token can be provided.
-        """
-        token = None
-        order_by_last_used = (
-            rotate_characters.last_used_at_name
-            if rotate_characters
-            else "notifications_last_used_at"
-        )
-        for character in self.characters.order_by(order_by_last_used):
-            if (
-                character.character_ownership.character.corporation_id
-                != self.corporation.corporation_id
-            ):
-                self._delete_character(
-                    ("Character does no longer belong to the owner's corporation."),
-                    character,
-                )
-                continue
-            elif not character.character_ownership.user.has_perm(
-                "structures.add_structure_owner"
-            ):
-                self._delete_character(
-                    "Character does not have sufficient permission to sync.",
-                    character,
-                )
-                continue
-            token = character.valid_token()
-            if not token:
-                self._delete_character(
-                    "Character has no valid token for sync.",
-                    character,
-                )
-                continue
-            break  # leave the for loop if we have found a valid token
-
-        if not token:
-            error = (
-                f"{self}: No valid character found for sync. "
-                "Service down for this owner."
-            )
-            raise TokenError(error)
-        if rotate_characters:
-            self._rotate_character(
-                character=character,
-                ignore_schedule=ignore_schedule,
-                rotate_characters=rotate_characters,
-            )
-        return token
-
-    def _delete_character(
-        self,
+        character: "OwnerCharacter",
         error: str,
-        character: CharacterOwnership,
-        level="warning",
+        level: str = "warning",
+        max_allowed_errors: int = 0,
     ) -> None:
         """Delete character and notify it's owner and admin about the reason
 
         Args:
-        - error: Error text
         - character: Character this error refers to
+        - error: Error text
         - level: context level for the notification
-        - delete_character: will delete the character object if set true
+        - max_error: how many errors are permitted before character is deleted
         """
+        if character.error_count < max_allowed_errors:
+            logger.warning(
+                (
+                    "%s: Character encountered an error and will be deleted "
+                    "if this occurs more often (%d/%d): %s"
+                ),
+                character,
+                character.error_count + 1,
+                max_allowed_errors,
+                error,
+            )
+            with transaction.atomic():
+                character.error_count = F("error_count") + 1
+                character.save(update_fields=["error_count"])
+            return
+
         title = f"{__title__}: {self}: Invalid character has been removed"
-        error = (
+        message = (
             f"{character.character_ownership}: {error}\n"
             "The character has been removed. "
             "Please add a new character to restore the previous service level."
@@ -406,16 +363,16 @@ class Owner(models.Model):
         notify(
             user=character.character_ownership.user,
             title=title,
-            message=error,
+            message=message,
             level=level,
         )
         if self.characters.count() == 1:
-            error += (
+            message += (
                 " This owner has no configured characters anymore "
                 "and it's services are now down."
             )
             level = "danger"
-        notify_admins(title=f"FYI: {title}", message=error, level=level)
+        notify_admins(title=f"FYI: {title}", message=message, level=level)
         character.delete()
 
     def _rotate_character(
@@ -448,6 +405,67 @@ class Owner(models.Model):
         ):
             setattr(character, rotate_characters.last_used_at_name, now())
             character.save()
+
+    def fetch_token(
+        self,
+        rotate_characters: RotateCharactersType = None,
+        ignore_schedule: bool = False,
+    ) -> Token:
+        """Fetch a valid token for the owner and return it.
+
+        Args:
+            rotate_characters: For which sync type to rotate through characters \
+                with every new call
+            ignore_schedule: Ignore current schedule when rotating
+
+        Raises TokenError when no valid token can be provided.
+        """
+        token = None
+        order_by_last_used = (
+            rotate_characters.last_used_at_name
+            if rotate_characters
+            else "notifications_last_used_at"
+        )
+        for character in self.characters.order_by(order_by_last_used):
+            if (
+                character.character_ownership.character.corporation_id
+                != self.corporation.corporation_id
+            ):
+                self.delete_character(
+                    character=character,
+                    error="Character does no longer belong to the owner's corporation.",
+                )
+                continue
+            elif not character.character_ownership.user.has_perm(
+                "structures.add_structure_owner"
+            ):
+                self.delete_character(
+                    character=character,
+                    error="Character does not have sufficient permission to sync.",
+                )
+                continue
+            token = character.valid_token()
+            if not token:
+                self.delete_character(
+                    character=character,
+                    error="Character has no valid token for sync.",
+                )
+                continue
+            break  # leave the for loop if we have found a valid token
+
+        if not token:
+            error = (
+                f"{self}: No valid character found for sync. "
+                "Service down for this owner."
+            )
+            raise TokenError(error)
+        if rotate_characters:
+            self._rotate_character(
+                character=character,
+                ignore_schedule=ignore_schedule,
+                rotate_characters=rotate_characters,
+            )
+        return token
 
     def _report_esi_issue(self, action: str, ex: Exception, token: Token):
         """Report an ESI issue to admins."""
@@ -859,10 +877,12 @@ class Owner(models.Model):
             except ObjectDoesNotExist:
                 pass
             else:
-                self._delete_character(
-                    "Character is not a director or CEO and therefore "
-                    "can not fetch starbases.",
-                    character,
+                self.delete_character(
+                    character=character,
+                    error=(
+                        "Character is not a director or CEO and therefore "
+                        "can not fetch starbases."
+                    ),
                 )
             return False
 
@@ -1295,6 +1315,11 @@ class OwnerCharacter(models.Model):
         editable=False,
         db_index=True,
         help_text="when this character was last used for syncing notifications",
+    )
+    error_count = models.PositiveIntegerField(
+        default=0,
+        editable=False,
+        help_text="Count of ESI errors which happened with this character.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
