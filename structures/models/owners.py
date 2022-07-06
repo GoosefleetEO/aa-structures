@@ -33,6 +33,7 @@ from ..app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
+    STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
     STRUCTURES_FEATURE_STARBASES,
     STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION,
@@ -883,6 +884,7 @@ class Owner(models.Model):
                         "Character is not a director or CEO and therefore "
                         "can not fetch starbases."
                     ),
+                    max_allowed_errors=STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES,
                 )
             return False
 

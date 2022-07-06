@@ -633,8 +633,8 @@ class TestOwnerCharacters(NoSocketsTestCase):
         self.assertEqual(result, 0)
 
 
-@patch(MODULE_PATH + ".notify")
-@patch(MODULE_PATH + ".notify_admins")
+@patch(MODULE_PATH + ".notify", spec=True)
+@patch(MODULE_PATH + ".notify_admins", spec=True)
 class TestOwnerDeleteCharacter(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):

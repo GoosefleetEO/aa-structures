@@ -865,10 +865,11 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         expected = {1000000000001, 1000000000002, 1000000000003}
         self.assertSetEqual(owner.structures.ids(), expected)
 
+    @patch(MODULE_PATH + ".STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES", 3)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(MODULE_PATH + ".notify", spec=True)
-    def test_should_remove_character_if_not_director_when_updating_starbases(
+    def test_should_mark_error_when_character_not_director_while_updating_starbases(
         self, mock_notify, mock_esi
     ):
         # given
@@ -879,6 +880,33 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
         mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
         owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertFalse(owner.is_structure_sync_fresh)
+        self.assertTrue(mock_notify)
+        character = owner.characters.first()
+        self.assertEqual(character.error_count, 1)
+
+    @patch(MODULE_PATH + ".STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES", 3)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    @patch(MODULE_PATH + ".notify", spec=True)
+    def test_should_remove_character_when_not_director_while_updating_starbases(
+        self, mock_notify, mock_esi
+    ):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Corporation",
+            "get_corporations_corporation_id_starbases",
+            http_error_code=403,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        character = owner.characters.first()
+        character.error_count = 3
+        character.save()
         # when
         owner.update_structures_esi()
         # then

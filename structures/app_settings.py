@@ -152,3 +152,9 @@ STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS = clean_setting(
 STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = clean_setting(
     "STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False
 )
+
+
+STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES = clean_setting(
+    "STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES", 3
+)
+"""Max retries before a character is deleted when ESI claims the character is not a director (Since this sometimes is reported wrongly by ESI)."""
