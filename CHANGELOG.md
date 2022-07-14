@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.25.4] - 2022-07-14
+
+### Changed
+
+- filterDropDown is bundled as template with AA (!28)
+
 ## [1.25.3] - 2022-07-06
 
 ### Changed
