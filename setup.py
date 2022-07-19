@@ -40,7 +40,7 @@ setup(
     ],
     python_requires="~=3.7",
     install_requires=[
-        "allianceauth>=2.14.0",
+        "allianceauth>=2.15.1",
         "dhooks-lite>=0.6.1",
         "allianceauth-app-utils>=1.13",
         "django-navhelper",

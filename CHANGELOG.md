@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.25.4] - 2022-07-14
+## [1.25.5] - 2022-07-19
+
+### Changed
+
+- Re-releasing after dependent feature in AA was fixed
+
+## [1.25.4] - 2022-07-14 [YANKED]
 
 ### Changed
 
