@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.25.6] - 2022-08-07
+
+### Fixed
+
+- Reinforced flag not set for POS (#76)
+
 ## [1.25.5] - 2022-07-19
 
 ### Changed
