@@ -471,6 +471,7 @@ class Structure(models.Model):
             self.State.HULL_REINFORCE,
             self.State.ANCHOR_VULNERABLE,
             self.State.HULL_VULNERABLE,
+            self.State.POS_REINFORCED,
         ]
 
     @property

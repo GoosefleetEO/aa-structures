@@ -7,7 +7,7 @@ from pytz import UTC
 from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCharacter
-from app_utils.testing import NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...constants import EveTypeId
 from ...models import (
@@ -25,6 +25,11 @@ from ..testdata import (
     create_structures,
     load_entities,
     set_owner_character,
+)
+from ..testdata.factories import (
+    create_owner_from_user,
+    create_starbase,
+    create_upwell_structure,
 )
 
 STRUCTURES_PATH = "structures.models.structures"
@@ -194,21 +199,6 @@ class TestStructure(NoSocketsTestCase):
         # none if missing information
         structure.last_online_at = None
         self.assertFalse(structure.is_abandoned)
-
-    def test_is_reinforced(self):
-        x = Structure.objects.get(id=1000000000001)
-
-        x.state = Structure.State.SHIELD_VULNERABLE
-        self.assertFalse(x.is_reinforced)
-
-        for state in [
-            Structure.State.ARMOR_REINFORCE,
-            Structure.State.HULL_REINFORCE,
-            Structure.State.ANCHOR_VULNERABLE,
-            Structure.State.HULL_VULNERABLE,
-        ]:
-            x.state = state
-            self.assertTrue(x.is_reinforced)
 
     def test_structure_service_str(self):
         structure = Structure.objects.get(id=1000000000001)
@@ -437,6 +427,44 @@ class TestStructure(NoSocketsTestCase):
         result = structure.structure_fuel_usage()
         # then
         self.assertEqual(result, 168)
+
+
+class TestStructure3(NoSocketsTestCase):
+    """New version of TestStructure using factories to create testdata."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities()
+        cls.user, _ = create_user_from_evecharacter(1001)
+        cls.owner = create_owner_from_user(cls.user)
+
+    def test_should_not_show_structure_as_reinforced(self):
+        # given
+        structure = create_upwell_structure(
+            owner=self.owner, state=Structure.State.SHIELD_VULNERABLE
+        )
+        # when/then
+        self.assertFalse(structure.is_reinforced)
+
+    def test_should_show_structure_as_reinforced(self):
+        for state in [
+            Structure.State.ARMOR_REINFORCE,
+            Structure.State.HULL_REINFORCE,
+            Structure.State.ANCHOR_VULNERABLE,
+            Structure.State.HULL_VULNERABLE,
+        ]:
+            with self.subTest(state=state):
+                structure = create_upwell_structure(owner=self.owner, state=state)
+                self.assertTrue(structure.is_reinforced)
+
+    def test_should_show_starbase_as_reinforced(self):
+        # given
+        structure = create_starbase(
+            owner=self.owner, state=Structure.State.POS_REINFORCED
+        )
+        # when/then
+        self.assertTrue(structure.is_reinforced)
 
 
 class TestStructureIsBurningFuel(NoSocketsTestCase):
