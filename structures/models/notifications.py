@@ -250,7 +250,7 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def relevant_for_alliance_level(cls) -> set:
-        """Notification types that requre the alliance level flag."""
+        """Notification types that require the alliance level flag."""
         return {
             # billing
             cls.BILLING_BILL_OUT_OF_MONEY_MSG,
@@ -567,7 +567,7 @@ class Notification(models.Model):
 
     @property
     def is_structure_related(self) -> bool:
-        """Wheater this notification related to a structure."""
+        """Weather this notification related to a structure."""
         return self.notif_type in NotificationType.structure_related
 
     # @classmethod

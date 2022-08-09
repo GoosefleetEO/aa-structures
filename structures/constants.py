@@ -15,7 +15,7 @@ class EveCategoryId(IntEnum):
 class EveGroupId(IntEnum):
     CITADEL = 1657
     CONTROL_TOWER = 365
-    ENGINERING_COMPLEX = 1404
+    ENGINEERING_COMPLEX = 1404
     FUEL_BLOCK = 1136
     REFINERY = 1406
 

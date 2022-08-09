@@ -191,7 +191,7 @@ class NotificationBaseEmbed:
         elif notif_type == NotificationType.STRUCTURE_JUMP_FUEL_ALERT:
             return NotificationStructureJumpFuelAlert(notification)
         elif notif_type == NotificationType.STRUCTURE_REFUELED_EXTRA:
-            return NotificationStructureRefuledExtra(notification)
+            return NotificationStructureRefueledExtra(notification)
         elif notif_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
             return NotificationStructureServicesOffline(notification)
         elif notif_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
@@ -435,7 +435,7 @@ class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
         self._color = Webhook.Color.WARNING
 
 
-class NotificationStructureRefuledExtra(NotificationStructureEmbed):
+class NotificationStructureRefueledExtra(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         if self._structure and self._structure.fuel_expires_at:
@@ -1471,7 +1471,7 @@ class NotificationWarCorporationBecameEligible(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._title = (
-            "Corporation or alliance is now eligable for formal war declarations"
+            "Corporation or alliance is now eligible for formal war declarations"
         )
         self._description = (
             "Your corporation or alliance is **now eligible** to participate in "
@@ -1548,7 +1548,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
         self._title = gettext("IHub Bill About to Expire")
         self._description = gettext(
-            "Maintainance bill for Infrastructure Hub in %(solar_system)s "
+            "Maintenance bill for Infrastructure Hub in %(solar_system)s "
             "expires at %(due_date)s, "
             "if not paid in time this Infrastructure Hub will self-destruct."
         ) % {
@@ -1573,12 +1573,12 @@ class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
         self._title = (
-            gettext("%s has self-destructed due to unpaid maintainance bills")
+            gettext("%s has self-destructed due to unpaid maintenance bills")
             % structure_type.name
         )
         self._description = gettext(
             "%(structure_type)s in %(solar_system)s has self-destructed, "
-            "as the standard maintainence bills where not paid."
+            "as the standard maintenance bills where not paid."
         ) % {"structure_type": structure_type.name, "solar_system": solar_system_link}
         self._color = Webhook.Color.DANGER
         self._thumbnail = dhooks_lite.Thumbnail(

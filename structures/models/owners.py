@@ -382,8 +382,8 @@ class Owner(models.Model):
         ignore_schedule: bool,
         rotate_characters: RotateCharactersType,
     ) -> None:
-        """Rotate this character such that all are spread evently
-        accross the ESI cache duration for each ESI call.
+        """Rotate this character such that all are spread evenly
+        across the ESI cache duration for each ESI call.
         """
         time_since_last_used = (
             (
@@ -564,7 +564,7 @@ class Owner(models.Model):
                     structure["name"] = "(no data)"
                     is_ok = False
                 else:
-                    structure["name"] = Structure.extract_name_from_esi_respose(
+                    structure["name"] = Structure.extract_name_from_esi_response(
                         structure_info["name"]
                     )
                     structure["position"] = structure_info["position"]
@@ -961,7 +961,7 @@ class Owner(models.Model):
         return detail
 
     def fetch_notifications_esi(self, user: User = None) -> None:
-        """Fetch notifications for this owner from ESI and proceses them."""
+        """Fetch notifications for this owner from ESI and process them."""
         notifications_count_all = 0
         token = self.fetch_token(
             rotate_characters=self.RotateCharactersType.NOTIFICATIONS
@@ -1068,7 +1068,7 @@ class Owner(models.Model):
             )
         return len(new_notifications)
 
-    # TODO: run this as seperate task
+    # TODO: run this as separate task
     def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
         if STRUCTURES_ADD_TIMERS:

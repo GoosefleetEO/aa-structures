@@ -560,7 +560,7 @@ class Structure(models.Model):
     def is_fuel_expiry_date_different(self, other: "Structure") -> True:
         """True when fuel expiry date from other structure is different.
 
-        Will compare using treshold setting.
+        Will compare using threshold setting.
         """
         change_threshold = (
             self.FUEL_DATES_EQUAL_THRESHOLD_UPWELL
@@ -675,7 +675,7 @@ class Structure(models.Model):
                 self.items.bulk_create(structure_items)
 
     @classmethod
-    def extract_name_from_esi_respose(cls, esi_name):
+    def extract_name_from_esi_response(cls, esi_name):
         """extracts the structure's name from the name in an ESI response"""
         matches = re.search(r"^\S+ - (.+)", esi_name)
         return matches.group(1) if matches else esi_name

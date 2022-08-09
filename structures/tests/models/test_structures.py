@@ -210,9 +210,9 @@ class TestStructure(NoSocketsTestCase):
     def test_extract_name_from_esi_respose(self):
         expected = "Alpha"
         self.assertEqual(
-            Structure.extract_name_from_esi_respose("Super - Alpha"), expected
+            Structure.extract_name_from_esi_response("Super - Alpha"), expected
         )
-        self.assertEqual(Structure.extract_name_from_esi_respose("Alpha"), expected)
+        self.assertEqual(Structure.extract_name_from_esi_response("Alpha"), expected)
 
     def test_owner_has_sov(self):
         # Wayne Tech has sov in 1-PG
