@@ -726,11 +726,12 @@
         {
             "id": 1300000000003,
             "name": "Panic Room",
-            "state": 22,
+            "state": 24,
             "eve_solar_system_id": 30000474,
             "eve_type_id": 20062,
             "owner_corporation_id": 2001,
-            "eve_moon_id": 40029527
+            "eve_moon_id": 40029527,
+            "state_timer_end": "2019-08-16T15:08:00Z"
         }
     ],
     "StructureTag": [

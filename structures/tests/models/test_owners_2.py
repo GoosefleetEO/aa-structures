@@ -246,8 +246,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                         },
                         {
                             "moon_id": 40029527,
+                            "reinforced_until": dt.datetime(2020, 1, 2, 3, tzinfo=utc),
                             "starbase_id": 1300000000003,
-                            "state": "online",
+                            "state": "reinforced",
                             "system_id": 30000474,
                             "type_id": 20062,
                         },
@@ -723,27 +724,24 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             structure.unanchors_at, dt.datetime(2020, 5, 5, 7, 0, 0, tzinfo=utc)
         )
         self.assertIsNone(structure.fuel_expires_at)
+        self.assertFalse(structure.generated_notifications.exists())
 
         structure = Structure.objects.get(id=1300000000003)
         self.assertEqual(structure.name, "Panic Room")
         self.assertEqual(structure.eve_solar_system_id, 30000474)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 20062)
-        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
+        self.assertEqual(structure.state, Structure.State.POS_REINFORCED)
         self.assertEqual(structure.eve_moon_id, 40029527)
-        # self.assertGreaterEqual(
-        #     structure.fuel_expires_at,
-        #     now() + dt.timedelta(hours=133) - dt.timedelta(seconds=10),
-        # )
-        # self.assertLessEqual(
-        #     structure.fuel_expires_at,
-        #     now() + dt.timedelta(hours=133) + dt.timedelta(seconds=10),
-        # )
         self.assertAlmostEqual(
             structure.fuel_expires_at,
             now() + dt.timedelta(hours=133, minutes=20),
             delta=dt.timedelta(seconds=30),
         )
+        self.assertEqual(
+            structure.state_timer_end, dt.datetime(2020, 1, 2, 3, tzinfo=utc)
+        )
+        self.assertTrue(structure.generated_notifications.exists())
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)

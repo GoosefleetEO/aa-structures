@@ -570,6 +570,7 @@ class GeneratedNotificationManager(models.Manager):
     def get_or_create_from_structure(
         self, structure: models.Model, notif_type: models.TextChoices
     ) -> Tuple[models.Model, bool]:
+        """Get or create an object from given structure."""
         from .models import NotificationType
 
         if notif_type not in {NotificationType.TOWER_REINFORCED_EXTRA}:

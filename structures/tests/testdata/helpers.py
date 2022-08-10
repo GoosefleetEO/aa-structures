@@ -92,6 +92,11 @@ def _load_testdata_entities() -> dict:
             state_timer_end = state_timer_start + dt.timedelta(minutes=15)
             structure["state_timer_end"] = state_timer_end
 
+        if "reinforced_until" in structure:
+            structure["reinforced_until"] = parse_datetime(
+                structure["reinforced_until"]
+            )
+
         if "unanchors_at" in structure:
             unanchors_at = now() + dt.timedelta(days=3 + randrange(5))
             structure["unanchors_at"] = unanchors_at
@@ -544,12 +549,12 @@ def esi_mock_client(version=1.6):
         mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
             esi_get_corporations_corporation_id_structures_2
         )
-    mock_client.Corporation.get_corporations_corporation_id_starbases.side_effect = (
-        esi_get_corporations_corporation_id_starbases
-    )
-    mock_client.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
-        esi_get_corporations_corporation_id_starbases_starbase_id
-    )
+    # mock_client.Corporation.get_corporations_corporation_id_starbases.side_effect = (
+    #     RuntimeError
+    # )
+    # mock_client.Corporation.get_corporations_corporation_id_starbases_starbase_id.side_effect = (
+    #     esi_get_corporations_corporation_id_starbases_starbase_id
+    # )
     # Planetary Interaction
     mock_client.Planetary_Interaction.get_corporations_corporation_id_customs_offices = (
         esi_get_corporations_corporation_id_customs_offices

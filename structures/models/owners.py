@@ -45,7 +45,13 @@ from ..constants import EveGroupId, EveTypeId
 from ..managers import OwnerManager
 from ..providers import esi
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSovereigntyMap, EveType
-from .notifications import EveEntity, Notification, NotificationType, Webhook
+from .notifications import (
+    EveEntity,
+    GeneratedNotification,
+    Notification,
+    NotificationType,
+    Webhook,
+)
 from .structures import (
     PocoDetails,
     StarbaseDetail,
@@ -866,8 +872,14 @@ class Owner(models.Model):
                     if fuel_expires_at:
                         structure_obj.fuel_expires_at = fuel_expires_at
                         structure_obj.save()
-                    if structure_obj.state == Structure.State.POS_REINFORCED:
-                        ...  # generate notification if needed
+                    if (
+                        structure_obj.state == Structure.State.POS_REINFORCED
+                        and structure_obj.state_timer_end
+                    ):
+                        GeneratedNotification.objects.get_or_create_from_structure(
+                            structure=structure_obj,
+                            notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                        )
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures)
