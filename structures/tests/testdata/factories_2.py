@@ -169,4 +169,4 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
 
     @factory.lazy_attribute
     def details(self):
-        return {"reinforced_until": self.reinforced_until.isoformat()}
+        return {"reinforced_until": self.structure.state_timer_end.isoformat()}

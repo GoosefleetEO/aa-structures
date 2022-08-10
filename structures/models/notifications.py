@@ -1256,14 +1256,14 @@ class GeneratedNotification(NotificationBase):
     objects = GeneratedNotificationManager()
 
     def __str__(self) -> str:
-        return f"{self.pk}:{self.notif_type}"
+        return f"{self.structure}:{self.notif_type}:{self.timestamp}:"
 
     def __repr__(self) -> str:
-        return "%s(id=%d, owner='%s', notif_type='%s')" % (
+        return "%s(structure='%s', notif_type='%s', timestamp='%s')" % (
             self.__class__.__name__,
-            self.pk,
-            self.owner,
+            self.structure,
             self.notif_type,
+            self.timestamp,
         )
 
     @property
