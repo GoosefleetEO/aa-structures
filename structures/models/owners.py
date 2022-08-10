@@ -1145,21 +1145,34 @@ class Owner(models.Model):
         cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
-        all_new_notifications = (
+        new_eve_notifications = (
             self.notifications.filter(
                 notif_type__in=(
                     Webhook.objects.enabled_notification_types()
                     & NotificationType.relevant_for_forwarding
                 )
             )
-            .filter(is_sent=False)
-            .filter(timestamp__gte=cutoff_dt_for_stale)
+            .filter(is_sent=False, timestamp__gte=cutoff_dt_for_stale)
             .select_related("owner", "sender", "owner__corporation")
             .order_by("timestamp")
         )
-        for notif in all_new_notifications:
+        for notif in new_eve_notifications:
             notif.send_to_configured_webhooks()
-        if not all_new_notifications:
+        new_generated_notifications = (
+            GeneratedNotification.objects.filter(
+                structure__owner=self, is_sent=False, timestamp__gte=cutoff_dt_for_stale
+            )
+            .select_related(
+                "structure", "structure__owner", "structure__owner__corporation"
+            )
+            .order_by("timestamp")
+        )
+        for notif in new_generated_notifications:
+            notif.send_to_configured_webhooks()
+        if (
+            not new_eve_notifications.exists()
+            and not new_generated_notifications.exists()
+        ):
             logger.info("%s: No new notifications found for forwarding", self)
         self.forwarding_last_update_at = now()
         self.save(update_fields=["forwarding_last_update_at"])
