@@ -21,6 +21,7 @@ from .notifications import (
     JumpFuelAlertConfig,
     Notification,
     NotificationType,
+    StructuresNotification,
     Webhook,
     get_default_notification_types,
 )

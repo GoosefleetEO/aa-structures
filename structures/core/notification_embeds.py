@@ -228,6 +228,8 @@ class NotificationBaseEmbed:
             return NotificationTowerResourceAlertMsg(notification)
         elif notif_type == NotificationType.TOWER_REFUELED_EXTRA:
             return NotificationTowerRefueledExtra(notification)
+        elif notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
+            return NotificationTowerReinforcedExtra(notification)
 
         # Sov
         elif notif_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
@@ -979,6 +981,18 @@ class NotificationTowerRefueledExtra(NotificationTowerEmbed):
             "has been refueled. Fuel will last until %s." % target_date
         )
         self._color = Webhook.Color.INFO
+
+
+class NotificationTowerReinforcedExtra(NotificationTowerEmbed):
+    def __init__(self, notification: Notification) -> None:
+        super().__init__(notification)
+        self._title = gettext("Starbase reinforced")
+        target_date = now()
+        self._description += gettext(
+            "has been reinforced and will come out at: %s."
+            % target_datetime_formatted(target_date)
+        )
+        self._color = Webhook.Color.DANGER
 
 
 class NotificationSovEmbed(NotificationBaseEmbed):
