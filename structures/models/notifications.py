@@ -752,6 +752,7 @@ class Notification(NotificationBase):
     objects = NotificationManager()
 
     class Meta:
+        verbose_name = "eve notification"
         unique_together = (("notification_id", "owner"),)
 
     def __str__(self) -> str:
