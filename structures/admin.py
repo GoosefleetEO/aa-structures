@@ -17,6 +17,7 @@ from . import __title__, app_settings, tasks
 from .models import (
     FuelAlert,
     FuelAlertConfig,
+    GeneratedNotification,
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
@@ -349,6 +350,18 @@ class NotificationAdmin(admin.ModelAdmin):
         self.message_user(request, message)
 
     def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(GeneratedNotification)
+class GeneratedNotificationAdmin(admin.ModelAdmin):
+    list_display = ("created", "notif_type", "structure", "is_sent", "details")
+    list_select_related = ("structure",)
+
+    def has_add_permission(self, request, obj=None):
         return False
 
     def has_change_permission(self, request, obj=None):
