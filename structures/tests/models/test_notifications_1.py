@@ -242,7 +242,7 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
         )
         # then
         self.assertIsInstance(notif, Notification)
-        self.assertTrue(notif.is_temporary)
+        self.assertTrue(notif.is_generated)
         self.assertAlmostEqual(notif.timestamp, now(), delta=dt.timedelta(seconds=10))
         self.assertAlmostEqual(
             notif.last_updated, now(), delta=dt.timedelta(seconds=10)
@@ -260,7 +260,7 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
         )
         # then
         self.assertIsInstance(notif, Notification)
-        self.assertTrue(notif.is_temporary)
+        self.assertTrue(notif.is_generated)
         self.assertAlmostEqual(notif.timestamp, now(), delta=dt.timedelta(seconds=10))
         self.assertAlmostEqual(
             notif.last_updated, now(), delta=dt.timedelta(seconds=10)

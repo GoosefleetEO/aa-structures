@@ -22,7 +22,14 @@ from .. import __title__
 from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..constants import EveTypeId
 from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
-from ..models.notifications import EveEntity, Notification, NotificationType, Webhook
+from ..models.notifications import (
+    EveEntity,
+    GeneratedNotification,
+    Notification,
+    NotificationBase,
+    NotificationType,
+    Webhook,
+)
 from ..models.structures import Structure
 from . import starbases
 
@@ -66,7 +73,7 @@ class NotificationBaseEmbed:
     ICON_DEFAULT_SIZE = 64
 
     def __init__(self, notification: Notification) -> None:
-        if not isinstance(notification, Notification):
+        if not isinstance(notification, NotificationBase):
             raise TypeError("notification must be of type Notification")
         self._notification = notification
         self._parsed_text = notification.parsed_text()
@@ -123,7 +130,7 @@ class NotificationBaseEmbed:
             self._ping_type = Webhook.PingType.HERE
         else:
             self._ping_type = Webhook.PingType.NONE
-        if self.notification.is_temporary:
+        if self.notification.is_generated:
             footer_text = __title__
             footer_icon_url = static_file_absolute_url(
                 "structures/img/structures_logo.png"
@@ -136,7 +143,7 @@ class NotificationBaseEmbed:
         if settings.DEBUG:
             footer_text += " #{}".format(
                 self.notification.notification_id
-                if not self.notification.is_temporary
+                if not self.notification.is_generated
                 else "GENERATED"
             )
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
@@ -153,8 +160,8 @@ class NotificationBaseEmbed:
     @staticmethod
     def create(notification: Notification) -> "NotificationBaseEmbed":
         """Creates a new instance of the respective subclass for given Notification."""
-        if not isinstance(notification, Notification):
-            raise TypeError("notification must be of type Notification")
+        if not isinstance(notification, NotificationBase):
+            raise TypeError("notification must be of type NotificationBase")
         notif_type = notification.notif_type
 
         # character
@@ -983,18 +990,6 @@ class NotificationTowerRefueledExtra(NotificationTowerEmbed):
         self._color = Webhook.Color.INFO
 
 
-class NotificationTowerReinforcedExtra(NotificationTowerEmbed):
-    def __init__(self, notification: Notification) -> None:
-        super().__init__(notification)
-        self._title = gettext("Starbase reinforced")
-        target_date = now()
-        self._description += gettext(
-            "has been reinforced and will come out at: %s."
-            % target_datetime_formatted(target_date)
-        )
-        self._color = Webhook.Color.DANGER
-
-
 class NotificationSovEmbed(NotificationBaseEmbed):
     """Base class for all sovereignty related notification embeds."""
 
@@ -1598,3 +1593,52 @@ class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
+
+
+class GeneratedNotificationBaseEmbed(NotificationBaseEmbed):
+    """Base class for generated notification embeds."""
+
+    def __init__(self, notification: GeneratedNotification) -> None:
+        super().__init__(notification)
+        if not isinstance(notification, GeneratedNotification):
+            raise TypeError(
+                "Can only create embeds from GeneratedNotification objects."
+            )
+        self._structure = notification.structure
+        self._thumbnail = dhooks_lite.Thumbnail(
+            self._structure.eve_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
+
+
+class GeneratedNotificationTowerEmbed(GeneratedNotificationBaseEmbed):
+    """Base class for all tower (aka POS) related generated notification embeds."""
+
+    def __init__(self, notification: GeneratedNotification) -> None:
+        super().__init__(notification)
+        self._description = gettext(
+            "The starbase %(structure_name)s at %(moon)s "
+            "in %(solar_system)s belonging to %(owner_link)s "
+        ) % {
+            "structure_name": Webhook.text_bold(self._structure.name),
+            "moon": self._structure.eve_moon.name,
+            "solar_system": self._gen_solar_system_text(
+                self._structure.eve_solar_system
+            ),
+            "owner_link": self._gen_corporation_link(str(notification.owner)),
+        }
+
+
+class NotificationTowerReinforcedExtra(GeneratedNotificationTowerEmbed):
+    def __init__(self, notification: GeneratedNotification) -> None:
+        super().__init__(notification)
+        self._title = gettext("Starbase reinforced")
+        try:
+            reinforced_until = target_datetime_formatted(
+                dt.datetime.fromisoformat(notification.details["reinforced_until"])
+            )
+        except (KeyError, ValueError):
+            reinforced_until = "(unknown)"
+        self._description += gettext(
+            "has been reinforced and will come out at: %s." % reinforced_until
+        )
+        self._color = Webhook.Color.DANGER

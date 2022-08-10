@@ -25,6 +25,17 @@ class TestGeneratedNotification(NoSocketsTestCase):
         # when/then
         self.assertTrue(str(notif))
 
+    def test_should_send_to_configured_webhooks(self):
+        # given
+        notif = GeneratedNotificationFactory()
+        webhook = notif.owner.webhooks.first()
+        webhook.notification_types = [NotificationType.TOWER_REINFORCED_EXTRA]
+        webhook.save()
+        # when
+        result = notif.send_to_configured_webhooks()
+        # then
+        self.assertTrue(result)
+
 
 class TestGeneratedNotificationManagerCreatePosReinforced(NoSocketsTestCase):
     @classmethod
