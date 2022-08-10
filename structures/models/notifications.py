@@ -646,7 +646,7 @@ class NotificationBase(models.Model):
         success = webhook.send_message(
             content=content, embeds=[embed], username=username, avatar_url=avatar_url
         )
-        if success and not self.is_generated:
+        if success and not self.is_temporary:
             self.is_sent = True
             self.save()
         return success
@@ -766,14 +766,18 @@ class Notification(NotificationBase):
         )
 
     def save(self, *args, **kwargs) -> None:
-        if self.is_generated:
+        if self.is_temporary:
             raise ValueError("Temporary notifications can not be saved")
         super().save(*args, **kwargs)
 
     @property
-    def is_generated(self) -> bool:
+    def is_temporary(self) -> bool:
         """True when this notification is temporary."""
         return self.notification_id == self.TEMPORARY_NOTIFICATION_ID
+
+    @property
+    def is_generated(self) -> bool:
+        return self.is_temporary
 
     # @classmethod
     # def get_all_types(cls) -> Set[int]:
@@ -1270,6 +1274,10 @@ class GeneratedNotification(NotificationBase):
     def owner(self):
         """Adopting to Notification API."""
         return self.structure.owner
+
+    @property
+    def is_temporary(self) -> bool:
+        return False
 
     @property
     def is_generated(self) -> bool:

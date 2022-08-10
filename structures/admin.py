@@ -360,12 +360,28 @@ class NotificationAdmin(admin.ModelAdmin):
 class GeneratedNotificationAdmin(admin.ModelAdmin):
     list_display = ("timestamp", "notif_type", "structure", "is_sent", "details")
     list_select_related = ("structure",)
+    actions = ("send_to_configured_webhooks",)
 
     def has_add_permission(self, request, obj=None):
         return False
 
     def has_change_permission(self, request, obj=None):
         return False
+
+    @admin.display(description="Send selected notifications to configured webhooks")
+    def send_to_configured_webhooks(self, request, queryset):
+        notifs_queued = 0
+        for obj in queryset:
+            if obj.can_be_rendered and obj.relevant_webhooks().exists():
+                if obj.send_to_configured_webhooks():
+                    notifs_queued += 1
+        if notifs_queued:
+            tasks.send_queued_messages_for_webhooks(
+                Webhook.objects.filter(is_active=True)
+            )
+        self.message_user(
+            request, f"Sent {notifs_queued}/{queryset.count()} generated messages."
+        )
 
 
 class OwnerCharacterAdminInline(admin.TabularInline):
