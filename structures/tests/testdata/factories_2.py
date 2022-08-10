@@ -16,11 +16,11 @@ from ...models import (
     EveMoon,
     EveSolarSystem,
     EveType,
+    GeneratedNotification,
     NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
-    StructuresNotification,
     Webhook,
 )
 
@@ -97,16 +97,6 @@ class OwnerFactory(factory.django.DjangoModelFactory):
         obj.webhooks.add(WebhookFactory())
 
 
-class StructuresNotificationFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = StructuresNotification
-
-    notif_type = factory.LazyAttribute(
-        lambda obj: NotificationType.TOWER_REINFORCED_EXTRA
-    )
-    owner = factory.SubFactory(OwnerFactory)
-
-
 class StructureFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Structure
@@ -153,3 +143,30 @@ class StarbaseFactory(StructureFactory):
     @factory.lazy_attribute
     def eve_type(self):
         return EveType.objects.get(name="Caldari Control Tower")
+
+
+class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = GeneratedNotification
+        exclude = ("reinforced_until",)
+
+    notif_type = factory.LazyAttribute(
+        lambda obj: NotificationType.TOWER_REINFORCED_EXTRA
+    )
+
+    @factory.lazy_attribute
+    def reinforced_until(self):
+        return factory.fuzzy.FuzzyDateTime(
+            start_dt=now() + dt.timedelta(hours=3),
+            end_dt=now() + dt.timedelta(hours=48),
+        ).fuzz()
+
+    @factory.lazy_attribute
+    def structure(self):
+        return StarbaseFactory(
+            state=Structure.State.POS_REINFORCED, state_timer_end=self.reinforced_until
+        )
+
+    @factory.lazy_attribute
+    def details(self):
+        return {"reinforced_until": self.reinforced_until.isoformat()}

@@ -17,11 +17,11 @@ from .notifications import (
     EveEntity,
     FuelAlert,
     FuelAlertConfig,
+    GeneratedNotification,
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
     NotificationType,
-    StructuresNotification,
     Webhook,
     get_default_notification_types,
 )

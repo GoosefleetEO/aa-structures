@@ -1,5 +1,6 @@
 import itertools
 from pydoc import locate
+from typing import Tuple
 
 from bravado.exception import HTTPError
 
@@ -565,28 +566,40 @@ class StructureTagManager(models.Manager):
         )
 
 
-class StructuresNotificationManager(models.Manager):
-    def get_or_create_pos_reinforced(self, structure):
+class GeneratedNotificationManager(models.Manager):
+    def get_or_create_from_structure(
+        self, structure: models.Model, notif_type: models.TextChoices
+    ) -> Tuple[models.Model, bool]:
+        from .models import NotificationType
+
+        if notif_type not in {NotificationType.TOWER_REINFORCED_EXTRA}:
+            raise ValueError(f"Unsupported notification type: {notif_type}")
+
+        return self._get_or_create_tower_reinforced(structure)
+
+    def _get_or_create_tower_reinforced(
+        self, structure: models.Model
+    ) -> Tuple[models.Model, bool]:
         from .models import NotificationType
 
         if not structure.is_starbase:
-            raise ValueError("Structure is not a starbase.")
+            raise ValueError(f"Structure is not a starbase: {structure}")
         if not structure.is_reinforced:
-            raise ValueError("Starbase is not reinforced.")
+            raise ValueError(f"Starbase is not reinforced: {structure}")
         if not structure.state_timer_end:
-            raise ValueError("Starbase has no reinforce time.")
+            raise ValueError(f"Starbase has no reinforce time: {structure}")
         reinforced_until = structure.state_timer_end.isoformat()
         with transaction.atomic():
             try:
                 obj = self.get(
-                    owner=structure.owner,
+                    structure=structure,
                     notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
                     details__reinforced_until=reinforced_until,
                 )
                 created = False
             except self.model.DoesNotExist:
                 obj = self.create(
-                    owner=structure.owner,
+                    structure=structure,
                     notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
                     details={"reinforced_until": reinforced_until},
                 )
