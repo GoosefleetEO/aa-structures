@@ -1,6 +1,9 @@
-import factory
-import factory.faker
+import datetime as dt
 
+import factory
+import factory.fuzzy
+
+from django.db.models import Max
 from django.utils.timezone import now
 
 from app_utils.testdata_factories import (
@@ -10,9 +13,13 @@ from app_utils.testdata_factories import (
 )
 
 from ...models import (
+    EveMoon,
+    EveSolarSystem,
+    EveType,
     NotificationType,
     Owner,
     OwnerCharacter,
+    Structure,
     StructuresNotification,
     Webhook,
 )
@@ -84,6 +91,7 @@ class OwnerFactory(factory.django.DjangoModelFactory):
     @factory.post_generation
     def add_webhook(obj, create, extracted, **kwargs):
         """Set this param to False to disable."""
+
         if not create or extracted is False:
             return
         obj.webhooks.add(WebhookFactory())
@@ -97,3 +105,51 @@ class StructuresNotificationFactory(factory.django.DjangoModelFactory):
         lambda obj: NotificationType.TOWER_REINFORCED_EXTRA
     )
     owner = factory.SubFactory(OwnerFactory)
+
+
+class StructureFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Structure
+        django_get_or_create = ("id",)
+
+    fuel_expires_at = factory.LazyAttribute(lambda obj: now() + dt.timedelta(days=3))
+    has_fitting = False
+    has_core = False
+    last_updated_at = factory.LazyFunction(now)
+    name = factory.Faker("last_name")
+    owner = factory.SubFactory(OwnerFactory)
+    position_x = factory.fuzzy.FuzzyFloat(-10_000_000_000_000, 10_000_000_000_000)
+    position_y = factory.fuzzy.FuzzyFloat(-10_000_000_000_000, 10_000_000_000_000)
+    position_z = factory.fuzzy.FuzzyFloat(-10_000_000_000_000, 10_000_000_000_000)
+    state = Structure.State.SHIELD_VULNERABLE
+
+    @factory.lazy_attribute
+    def eve_type(self):
+        return EveType.objects.get(name="Astrahus")
+
+    @factory.lazy_attribute
+    def eve_solar_system(self):
+        return EveSolarSystem.objects.order_by("?").first()
+
+    @factory.lazy_attribute
+    def id(self):
+        last_id = Structure.objects.aggregate(Max("id"))["id__max"] or 1_500_000_000_000
+        return last_id + 1
+
+
+class StarbaseFactory(StructureFactory):
+    has_fitting = None
+    has_core = None
+    state = Structure.State.POS_ONLINE
+
+    @factory.lazy_attribute
+    def eve_moon(self):
+        return EveMoon.objects.order_by("?").first()
+
+    @factory.lazy_attribute
+    def eve_solar_system(self):
+        return self.eve_moon.eve_solar_system
+
+    @factory.lazy_attribute
+    def eve_type(self):
+        return EveType.objects.get(name="Caldari Control Tower")

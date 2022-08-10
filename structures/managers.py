@@ -565,6 +565,35 @@ class StructureTagManager(models.Manager):
         )
 
 
+class StructuresNotificationManager(models.Manager):
+    def get_or_create_pos_reinforced(self, structure):
+        from .models import NotificationType
+
+        if not structure.is_starbase:
+            raise ValueError("Structure is not a starbase.")
+        if not structure.is_reinforced:
+            raise ValueError("Starbase is not reinforced.")
+        if not structure.state_timer_end:
+            raise ValueError("Starbase has no reinforce time.")
+        reinforced_until = structure.state_timer_end.isoformat()
+        with transaction.atomic():
+            try:
+                obj = self.get(
+                    owner=structure.owner,
+                    notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                    details__reinforced_until=reinforced_until,
+                )
+                created = False
+            except self.model.DoesNotExist:
+                obj = self.create(
+                    owner=structure.owner,
+                    notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                    details={"reinforced_until": reinforced_until},
+                )
+                created = True
+        return obj, created
+
+
 class WebhookManager(WebhookBaseManager):
     def enabled_notification_types(self) -> set:
         """Set of all currently enabled notification types."""

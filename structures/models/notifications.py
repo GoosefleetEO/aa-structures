@@ -41,7 +41,12 @@ from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from ..constants import EveCategoryId, EveCorporationId, EveTypeId
-from ..managers import EveEntityManager, NotificationManager, WebhookManager
+from ..managers import (
+    EveEntityManager,
+    NotificationManager,
+    StructuresNotificationManager,
+    WebhookManager,
+)
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
@@ -1506,6 +1511,8 @@ class StructuresNotification(models.Model):
         related_name="structures_notifications",
         help_text="Structures this notification is about (if any)",
     )
+
+    objects = StructuresNotificationManager()
 
     def __str__(self) -> str:
         return f"{self.pk}:{self.notif_type}"

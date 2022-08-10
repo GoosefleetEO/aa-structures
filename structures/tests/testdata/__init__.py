@@ -685,6 +685,21 @@ def load_entities(entities_def: list = None):
             load_entity(EntityClass)
 
 
+def load_eveuniverse():
+    load_entities(
+        [
+            EveCategory,
+            EveGroup,
+            EveType,
+            EveRegion,
+            EveConstellation,
+            EveSolarSystem,
+            EveMoon,
+            EvePlanet,
+        ]
+    )
+
+
 def create_structures(dont_load_entities: bool = False) -> object:
     """create structure entities from test data"""
     if not dont_load_entities:

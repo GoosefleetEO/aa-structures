@@ -866,6 +866,8 @@ class Owner(models.Model):
                     if fuel_expires_at:
                         structure_obj.fuel_expires_at = fuel_expires_at
                         structure_obj.save()
+                    if structure_obj.state == Structure.State.POS_REINFORCED:
+                        ...  # generate notification if needed
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures)
