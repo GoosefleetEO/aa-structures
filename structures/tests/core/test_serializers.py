@@ -6,12 +6,12 @@ from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...core.serializers import StructureListSerializer
 from ...models import Structure
-from ..testdata import load_entities
 from ..testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_upwell_structure,
 )
+from ..testdata.helpers import load_entities
 
 
 def to_dict(lst: List[dict], key="id"):

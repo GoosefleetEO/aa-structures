@@ -16,7 +16,7 @@ from ..models import (
     EveSolarSystem,
     EveType,
 )
-from .testdata import esi_mock_client, load_entities, load_entity
+from .testdata.helpers import esi_mock_client, load_entities, load_entity
 
 MODULE_PATH = "structures.managers"
 MODULE_PATH_ESI_FETCH = "structures.helpers.esi_fetch"

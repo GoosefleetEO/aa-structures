@@ -17,13 +17,6 @@ from ...models import (
     StructureItem,
     Webhook,
 )
-from ..testdata import (
-    create_structures,
-    load_entities,
-    load_notification_by_type,
-    load_notification_entities,
-    set_owner_character,
-)
 from ..testdata.factories import (
     create_jump_gate,
     create_notification,
@@ -33,6 +26,13 @@ from ..testdata.factories import (
     create_structure_item,
     create_upwell_structure,
     create_webhook,
+)
+from ..testdata.helpers import (
+    create_structures,
+    load_entities,
+    load_notification_by_type,
+    load_notification_entities,
+    set_owner_character,
 )
 
 MODULE_PATH = "structures.models.notifications"

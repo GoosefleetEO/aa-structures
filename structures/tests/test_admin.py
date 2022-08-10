@@ -27,7 +27,7 @@ from ..models import (
     StructureTag,
     Webhook,
 )
-from .testdata import (
+from .testdata.helpers import (
     create_structures,
     create_user,
     load_entities,

@@ -218,6 +218,7 @@ class NotificationType(models.TextChoices):
             cls.STRUCTURE_JUMP_FUEL_ALERT,
             cls.STRUCTURE_REFUELED_EXTRA,
             cls.TOWER_REFUELED_EXTRA,
+            cls.TOWER_REINFORCED_EXTRA,
         }
 
     @classproperty

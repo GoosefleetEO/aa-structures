@@ -15,7 +15,7 @@ from ...models import (
     EveType,
 )
 from ...models.eveuniverse import EveUniverse
-from ..testdata import load_entities
+from ..testdata.helpers import load_entities
 
 MODULE_PATH = "structures.models.eveuniverse"
 

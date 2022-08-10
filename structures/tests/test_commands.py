@@ -22,7 +22,7 @@ from ..models import (
     StructureTag,
     Webhook,
 )
-from .testdata import (
+from .testdata.helpers import (
     create_structures,
     esi_mock_client,
     load_entities,

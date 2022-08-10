@@ -19,7 +19,6 @@ from ...models import (
     Webhook,
 )
 from .. import to_json
-from ..testdata import load_entities
 from ..testdata.factories import (
     create_owner_from_user,
     create_poco,
@@ -27,6 +26,7 @@ from ..testdata.factories import (
     create_structure_service,
     create_upwell_structure,
 )
+from ..testdata.helpers import load_entities
 from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.owners"

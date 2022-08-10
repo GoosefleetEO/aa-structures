@@ -23,12 +23,12 @@ from ..models import (
     Webhook,
 )
 from . import to_json
-from .testdata import create_structures, load_entities
 from .testdata.factories import (
     create_eve_sovereignty_map,
     create_owner_from_user,
     create_upwell_structure,
 )
+from .testdata.helpers import create_structures, load_entities
 from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.managers"

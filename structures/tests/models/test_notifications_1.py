@@ -13,17 +13,17 @@ from app_utils.django import app_labels
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
-from ..testdata import (
-    create_structures,
-    load_entities,
-    load_notification_entities,
-    set_owner_character,
-)
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
     create_upwell_structure,
     create_webhook,
+)
+from ..testdata.helpers import (
+    create_structures,
+    load_entities,
+    load_notification_entities,
+    set_owner_character,
 )
 
 MODULE_PATH = "structures.models.notifications"

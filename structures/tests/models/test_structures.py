@@ -20,16 +20,16 @@ from ...models import (
     StructureService,
     StructureTag,
 )
-from ..testdata import (
-    create_owners,
-    create_structures,
-    load_entities,
-    set_owner_character,
-)
 from ..testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_upwell_structure,
+)
+from ..testdata.helpers import (
+    create_owners,
+    create_structures,
+    load_entities,
+    set_owner_character,
 )
 
 STRUCTURES_PATH = "structures.models.structures"

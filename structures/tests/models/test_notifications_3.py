@@ -5,12 +5,12 @@ from django.utils.timezone import now
 from app_utils.testing import NoSocketsTestCase
 
 from ...models import NotificationType, Structure, StructuresNotification
-from ..testdata import load_eveuniverse
 from ..testdata.factories_2 import (
     StarbaseFactory,
     StructureFactory,
     StructuresNotificationFactory,
 )
+from ..testdata.helpers import load_eveuniverse
 
 
 class TestStructuresNotification(NoSocketsTestCase):
