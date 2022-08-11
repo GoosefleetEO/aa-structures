@@ -32,3 +32,5 @@ class TestGeneratedNotification(NoSocketsTestCase):
         obj = embed.generate_embed()
         # then
         self.assertIsInstance(obj, dhooks_lite.Embed)
+        starbase = notif.structures.first()
+        self.assertIn(starbase.name, obj.description)

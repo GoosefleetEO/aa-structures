@@ -1604,7 +1604,7 @@ class GeneratedNotificationBaseEmbed(NotificationBaseEmbed):
             raise TypeError(
                 "Can only create embeds from GeneratedNotification objects."
             )
-        self._structure = notification.structure
+        self._structure = notification.structures.first()
         self._thumbnail = dhooks_lite.Thumbnail(
             self._structure.eve_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )

@@ -66,10 +66,12 @@ class TestGeneratedNotificationManagerCreatePosReinforced(NoSocketsTestCase):
             state=Structure.State.POS_REINFORCED, state_timer_end=reinforced_until
         )
         obj_old = GeneratedNotificationFactory(
-            structure=starbase,
+            owner=starbase.owner,
             notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
             details={"reinforced_until": reinforced_until.isoformat()},
+            create_structure=False,
         )
+        obj_old.structures.add(starbase)
         # when
         (
             obj_new,

@@ -1159,12 +1159,10 @@ class Owner(models.Model):
         for notif in new_eve_notifications:
             notif.send_to_configured_webhooks()
         new_generated_notifications = (
-            GeneratedNotification.objects.filter(
-                structure__owner=self, is_sent=False, timestamp__gte=cutoff_dt_for_stale
+            self.generated_notifications.filter(
+                owner=self, is_sent=False, timestamp__gte=cutoff_dt_for_stale
             )
-            .select_related(
-                "structure", "structure__owner", "structure__owner__corporation"
-            )
+            .select_related("owner", "owner__corporation")
             .order_by("timestamp")
         )
         for notif in new_generated_notifications:

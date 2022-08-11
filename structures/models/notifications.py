@@ -1253,15 +1253,23 @@ class GeneratedNotification(NotificationBase):
         db_index=True,
         verbose_name="type",
     )
-    structure = models.ForeignKey(
-        "Structure", on_delete=models.CASCADE, related_name="generated_notifications"
+    owner = models.ForeignKey(
+        "Owner",
+        on_delete=models.CASCADE,
+        related_name="generated_notifications",
+        help_text="Corporation that received this notification",
+    )
+    structures = models.ManyToManyField(
+        Structure,
+        related_name="generated_notifications",
+        help_text="Structures this notification is about (if any)",
     )
     timestamp = models.DateTimeField(auto_now_add=True)
 
     objects = GeneratedNotificationManager()
 
     def __str__(self) -> str:
-        return f"{self.structure}:{self.notif_type}:{self.timestamp}:"
+        return f"{self.owner}:{self.notif_type}:{self.timestamp}:"
 
     def __repr__(self) -> str:
         return "%s(structure='%s', notif_type='%s', timestamp='%s')" % (
@@ -1272,22 +1280,12 @@ class GeneratedNotification(NotificationBase):
         )
 
     @property
-    def owner(self):
-        """Adopting to Notification API."""
-        return self.structure.owner
-
-    @property
     def is_temporary(self) -> bool:
         return False
 
     @property
     def is_generated(self) -> bool:
         return True
-
-    @property
-    def structures(self):
-        """Adopting to Notification API."""
-        return Structure.objects.filter(pk=self.structure.pk)
 
     def is_npc_attacking(self) -> bool:
         return False

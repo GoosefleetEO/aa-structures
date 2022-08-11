@@ -593,17 +593,18 @@ class GeneratedNotificationManager(models.Manager):
         with transaction.atomic():
             try:
                 obj = self.get(
-                    structure=structure,
+                    structures=structure,
                     notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
                     details__reinforced_until=reinforced_until,
                 )
                 created = False
             except self.model.DoesNotExist:
                 obj = self.create(
-                    structure=structure,
+                    owner=structure.owner,
                     notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
                     details={"reinforced_until": reinforced_until},
                 )
+                obj.structures.add(structure)
                 created = True
         return obj, created
 

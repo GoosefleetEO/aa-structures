@@ -148,25 +148,27 @@ class StarbaseFactory(StructureFactory):
 class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GeneratedNotification
-        exclude = ("reinforced_until",)
 
     notif_type = factory.LazyAttribute(
         lambda obj: NotificationType.TOWER_REINFORCED_EXTRA
     )
-
-    @factory.lazy_attribute
-    def reinforced_until(self):
-        return factory.fuzzy.FuzzyDateTime(
-            start_dt=now() + dt.timedelta(hours=3),
-            end_dt=now() + dt.timedelta(hours=48),
-        ).fuzz()
-
-    @factory.lazy_attribute
-    def structure(self):
-        return StarbaseFactory(
-            state=Structure.State.POS_REINFORCED, state_timer_end=self.reinforced_until
-        )
+    owner = factory.SubFactory(OwnerFactory)
 
     @factory.lazy_attribute
     def details(self):
-        return {"reinforced_until": self.structure.state_timer_end.isoformat()}
+        reinforced_until = factory.fuzzy.FuzzyDateTime(
+            start_dt=now() + dt.timedelta(hours=3),
+            end_dt=now() + dt.timedelta(hours=48),
+        ).fuzz()
+        return {"reinforced_until": reinforced_until.isoformat()}
+
+    @factory.post_generation
+    def create_structure(obj, create, extracted, **kwargs):
+        """Set this param to False to disable."""
+        if not create or extracted is False:
+            return
+        reinforced_until = dt.datetime.fromisoformat(obj.details["reinforced_until"])
+        starbase = StarbaseFactory(
+            state=Structure.State.POS_REINFORCED, state_timer_end=reinforced_until
+        )
+        obj.structures.add(starbase)
