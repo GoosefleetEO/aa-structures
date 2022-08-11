@@ -22,11 +22,8 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from structures.models import Owner, Structure, Webhook  # noqa: E402, E501
-from structures.tests.testdata.factories_2 import (
-    GeneratedNotificationFactory,
-    StarbaseFactory,
-)
+from structures.models import Owner, Webhook  # noqa: E402, E501
+from structures.tests.testdata.factories_2 import GeneratedNotificationFactory
 
 # corporation the notifications will be generated for
 CORPORATION_ID = 1000127  # Guristas

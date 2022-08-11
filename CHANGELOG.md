@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.26.0] - TBD
+
 ### Update notes
 
-If you used the setting `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS` please replace it with the new version: `STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS`. Or if they are enabled you can remove the setting, because they are now enabled by default.
+If you used the setting `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS` please replace it with the new version: `STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS`. Or if it was enabled you can remove the setting, because it is now enabled by default.
 
 ### Added
 
