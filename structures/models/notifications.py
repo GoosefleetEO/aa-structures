@@ -1,5 +1,6 @@
 """Notification related models"""
 
+import datetime as dt
 import math
 from typing import Optional, Tuple
 
@@ -41,6 +42,7 @@ from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from ..constants import EveCategoryId, EveCorporationId, EveTypeId
+from ..core import starbases
 from ..managers import (
     EveEntityManager,
     GeneratedNotificationManager,
@@ -253,6 +255,7 @@ class NotificationType(models.TextChoices):
             cls.MOONMINING_EXTRACTION_STARTED,
             cls.MOONMINING_EXTRACTION_CANCELLED,
             cls.SOV_STRUCTURE_REINFORCED,
+            cls.TOWER_REINFORCED_EXTRA,
         }
 
     @classproperty
@@ -463,7 +466,18 @@ class EveEntity(models.Model):
 
 
 class NotificationBase(models.Model):
-    """Base model for notifications"""
+    """Base model for a notification."""
+
+    # event type structure map
+    MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
+        1: EveTypeId.TCU,
+        2: EveTypeId.IHUB,
+    }
+    MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
+        EveTypeId.CUSTOMS_OFFICE: "POCO",
+        EveTypeId.TCU: "TCU",
+        EveTypeId.IHUB: "I-HUB",
+    }
 
     is_sent = models.BooleanField(
         default=False,
@@ -716,114 +730,6 @@ class NotificationBase(models.Model):
 
         return username, avatar_url
 
-
-class Notification(NotificationBase):
-    """A notification in Eve Online.
-
-    Notifications are usually created from Eve Online notifications received from ESI,
-    but they can also be generated directly by Structures.
-    """
-
-    TEMPORARY_NOTIFICATION_ID = 999999999999
-
-    # event type structure map
-    MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
-        1: EveTypeId.TCU,
-        2: EveTypeId.IHUB,
-    }
-    MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
-        EveTypeId.CUSTOMS_OFFICE: "POCO",
-        EveTypeId.TCU: "TCU",
-        EveTypeId.IHUB: "I-HUB",
-    }
-
-    notification_id = models.PositiveBigIntegerField(verbose_name="id")
-    created = models.DateTimeField(
-        null=True,
-        default=None,
-        help_text="Date when this notification was first received from ESI",
-    )
-    is_read = models.BooleanField(
-        null=True,
-        default=None,
-        help_text="True when this notification has read in the eve client",
-    )
-    last_updated = models.DateTimeField(
-        help_text="Date when this notification has last been updated from ESI"
-    )
-    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
-
-    text = models.TextField(
-        null=True, default=None, blank=True, help_text="Notification details in YAML"
-    )
-    timestamp = models.DateTimeField(db_index=True)
-
-    objects = NotificationManager()
-
-    class Meta:
-        verbose_name = "eve notification"
-        unique_together = (("notification_id", "owner"),)
-
-    def save(self, *args, **kwargs) -> None:
-        if self.is_temporary:
-            raise ValueError("Temporary notifications can not be saved")
-        super().save(*args, **kwargs)
-
-    @property
-    def is_temporary(self) -> bool:
-        """True when this notification is temporary."""
-        return self.notification_id == self.TEMPORARY_NOTIFICATION_ID
-
-    @property
-    def is_generated(self) -> bool:
-        return self.is_temporary
-
-    # @classmethod
-    # def get_all_types(cls) -> Set[int]:
-    #     """returns a set with all supported notification types"""
-    #     return {x[0] for x in NotificationType.choices}
-
-    def parsed_text(self) -> dict:
-        """Returns the notifications's text as dict."""
-        return yaml.safe_load(self.text)
-
-    def is_npc_attacking(self) -> bool:
-        """Whether this notification is about a NPC attacking."""
-        if self.notif_type in [
-            NotificationType.ORBITAL_ATTACKED,
-            NotificationType.STRUCTURE_UNDER_ATTACK,
-        ]:
-            parsed_text = self.parsed_text()
-            corporation_id = None
-            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
-                if (
-                    "corpLinkData" in parsed_text
-                    and len(parsed_text["corpLinkData"]) >= 3
-                ):
-                    corporation_id = int(parsed_text["corpLinkData"][2])
-            if self.notif_type == NotificationType.ORBITAL_ATTACKED:
-                if "aggressorCorpID" in parsed_text:
-                    corporation_id = int(parsed_text["aggressorCorpID"])
-            if corporation_id:
-                corporation = EveEntity2(
-                    category=EveEntity2.CATEGORY_CORPORATION, id=corporation_id
-                )
-                return corporation.is_npc and not corporation.is_npc_starter_corporation
-        return False
-
-    def update_related_structures(self) -> bool:
-        """Update related structure for this notification.
-
-        Returns True if structures where updated, else False.
-        """
-        structures_qs = self.calc_related_structures()
-        self.structures.clear()
-        if structures_qs.exists():
-            objs = [obj for obj in structures_qs.all()]
-            self.structures.add(*objs)
-            return True
-        return False
-
     def process_for_timerboard(self, token: Token = None) -> bool:
         """Add/removes a timer related to this notification for some types
 
@@ -857,6 +763,10 @@ class Notification(NotificationBase):
                             timer_created = None
                         else:
                             timer_created = self._gen_timer_moon_extraction(parsed_text)
+                    elif self.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
+                        timer_created = self._gen_timer_tower_reinforcements(
+                            parsed_text
+                        )
                     else:
                         raise NotImplementedError()
 
@@ -1174,6 +1084,62 @@ class Notification(NotificationBase):
 
         return timer_added
 
+    def _gen_timer_tower_reinforcements(self, parsed_text: str) -> bool:
+        """Generate timer for tower reinforcements."""
+        structure = self.structures.first()
+        eve_time = dt.datetime.fromisoformat(self.details["reinforced_until"])
+        timer_added = False
+        if has_auth_timers:
+            structure_type_map = {
+                starbases.StarbaseSize.SMALL: "POS[S]",
+                starbases.StarbaseSize.MEDIUM: "POS[M]",
+                starbases.StarbaseSize.LARGE: "POS[L]",
+            }
+            structure_str = structure_type_map.get(
+                starbases.starbase_size(structure.eve_type), "POS[M]"
+            )
+            AuthTimer.objects.create(
+                details=gettext("Final timer"),
+                system=structure.eve_solar_system.name,
+                planet_moon=structure.eve_moon.name,
+                structure=structure_str,
+                objective="Friendly",
+                eve_time=eve_time,
+                eve_corp=self.owner.corporation,
+                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
+            )
+            timer_added = True
+
+        if has_structure_timers:
+            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+                id=structure.eve_solar_system.id
+            )
+            structure_type, _ = EveType2.objects.get_or_create_esi(
+                id=structure.eve_type.id
+            )
+            visibility = (
+                Timer.Visibility.CORPORATION
+                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
+                else Timer.Visibility.UNRESTRICTED
+            )
+            Timer.objects.create(
+                eve_solar_system=eve_solar_system,
+                structure_type=structure_type,
+                timer_type=Timer.Type.FINAL,
+                objective=Timer.Objective.FRIENDLY,
+                date=eve_time,
+                location_details=structure.eve_moon.name,
+                eve_corporation=self.owner.corporation,
+                eve_alliance=self.owner.corporation.alliance,
+                visibility=visibility,
+                structure_name=structure.name,
+                owner_name=self.owner.corporation.corporation_name,
+                details_notes=self._timer_details_notes(),
+            )
+            timer_added = True
+
+        return timer_added
+
     def _timer_details_notes(self) -> str:
         """Return generated details notes string for Timers."""
         return (
@@ -1186,6 +1152,103 @@ class Notification(NotificationBase):
         if event_type in cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
             return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
         return None
+
+
+class Notification(NotificationBase):
+    """A notification in Eve Online.
+
+    Notifications are usually created from Eve Online notifications received from ESI,
+    but they can also be generated directly by Structures.
+    """
+
+    TEMPORARY_NOTIFICATION_ID = 999999999999
+
+    notification_id = models.PositiveBigIntegerField(verbose_name="id")
+    created = models.DateTimeField(
+        null=True,
+        default=None,
+        help_text="Date when this notification was first received from ESI",
+    )
+    is_read = models.BooleanField(
+        null=True,
+        default=None,
+        help_text="True when this notification has read in the eve client",
+    )
+    last_updated = models.DateTimeField(
+        help_text="Date when this notification has last been updated from ESI"
+    )
+    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
+
+    text = models.TextField(
+        null=True, default=None, blank=True, help_text="Notification details in YAML"
+    )
+    timestamp = models.DateTimeField(db_index=True)
+
+    objects = NotificationManager()
+
+    class Meta:
+        verbose_name = "eve notification"
+        unique_together = (("notification_id", "owner"),)
+
+    def save(self, *args, **kwargs) -> None:
+        if self.is_temporary:
+            raise ValueError("Temporary notifications can not be saved")
+        super().save(*args, **kwargs)
+
+    @property
+    def is_temporary(self) -> bool:
+        """True when this notification is temporary."""
+        return self.notification_id == self.TEMPORARY_NOTIFICATION_ID
+
+    @property
+    def is_generated(self) -> bool:
+        return self.is_temporary
+
+    # @classmethod
+    # def get_all_types(cls) -> Set[int]:
+    #     """returns a set with all supported notification types"""
+    #     return {x[0] for x in NotificationType.choices}
+
+    def parsed_text(self) -> dict:
+        """Returns the notifications's text as dict."""
+        return yaml.safe_load(self.text)
+
+    def is_npc_attacking(self) -> bool:
+        """Whether this notification is about a NPC attacking."""
+        if self.notif_type in [
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.STRUCTURE_UNDER_ATTACK,
+        ]:
+            parsed_text = self.parsed_text()
+            corporation_id = None
+            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
+                if (
+                    "corpLinkData" in parsed_text
+                    and len(parsed_text["corpLinkData"]) >= 3
+                ):
+                    corporation_id = int(parsed_text["corpLinkData"][2])
+            if self.notif_type == NotificationType.ORBITAL_ATTACKED:
+                if "aggressorCorpID" in parsed_text:
+                    corporation_id = int(parsed_text["aggressorCorpID"])
+            if corporation_id:
+                corporation = EveEntity2(
+                    category=EveEntity2.CATEGORY_CORPORATION, id=corporation_id
+                )
+                return corporation.is_npc and not corporation.is_npc_starter_corporation
+        return False
+
+    def update_related_structures(self) -> bool:
+        """Update related structure for this notification.
+
+        Returns True if structures where updated, else False.
+        """
+        structures_qs = self.calc_related_structures()
+        self.structures.clear()
+        if structures_qs.exists():
+            objs = [obj for obj in structures_qs.all()]
+            self.structures.add(*objs)
+            return True
+        return False
 
     @classmethod
     def create_from_structure(

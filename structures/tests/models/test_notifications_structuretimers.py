@@ -16,6 +16,7 @@ if "structuretimers" in app_labels():
 
     from ...models import Notification
     from ..testdata.factories import create_webhook
+    from ..testdata.factories_2 import GeneratedNotificationFactory
     from ..testdata.helpers import (
         create_structures,
         load_notification_entities,
@@ -31,7 +32,7 @@ if "structuretimers" in app_labels():
     )
     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
     @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
-    class TestNotificationAddToTimerboard2(NoSocketsTestCase):
+    class TestNotificationAddToStructureTimers(NoSocketsTestCase):
         @classmethod
         def setUpClass(cls):
             super().setUpClass()
@@ -171,3 +172,30 @@ if "structuretimers" in app_labels():
             obj = Notification.objects.get(notification_id=1000000402)
             self.assertFalse(obj.process_for_timerboard())
             self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
+
+        def test_timer_starbase_reinforcement(self):
+            # given
+            notif = GeneratedNotificationFactory()
+            structure = notif.structures.first()
+            # when
+            result = notif.process_for_timerboard()
+            # then
+            self.assertTrue(result)
+            obj = Timer.objects.first()
+            self.assertEqual(
+                obj.eve_solar_system,
+                EveSolarSystem2.objects.get(id=structure.eve_solar_system.id),
+            )
+            self.assertEqual(
+                obj.structure_type, EveType2.objects.get(id=structure.eve_type.id)
+            )
+            self.assertEqual(obj.timer_type, Timer.Type.FINAL)
+            self.assertEqual(obj.objective, Timer.Objective.FRIENDLY)
+            self.assertAlmostEqual(obj.date, structure.state_timer_end)
+            self.assertEqual(obj.eve_corporation, structure.owner.corporation)
+            self.assertEqual(obj.visibility, Timer.Visibility.UNRESTRICTED)
+            self.assertEqual(obj.structure_name, structure.name)
+            self.assertEqual(
+                obj.owner_name, structure.owner.corporation.corporation_name
+            )
+            self.assertTrue(obj.details_notes)

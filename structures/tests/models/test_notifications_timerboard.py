@@ -9,6 +9,7 @@ if "timerboard" in app_labels():
 
     from ...models import Notification
     from ..testdata.factories import create_webhook
+    from ..testdata.factories_2 import GeneratedNotificationFactory
     from ..testdata.helpers import (
         create_structures,
         load_notification_entities,
@@ -121,3 +122,16 @@ if "timerboard" in app_labels():
             self.assertTrue(x.process_for_timerboard())
             t = AuthTimer.objects.first()
             self.assertTrue(t.corp_timer)
+
+        def test_timer_starbase_reinforcement(self):
+            # given
+            notif = GeneratedNotificationFactory()
+            structure = notif.structures.first()
+            # when
+            result = notif.process_for_timerboard()
+            # then
+            self.assertTrue(result)
+            obj = AuthTimer.objects.first()
+            self.assertEqual(obj.system, structure.eve_solar_system.name)
+            self.assertEqual(obj.planet_moon, structure.eve_moon.name)
+            self.assertEqual(obj.eve_time, structure.state_timer_end)

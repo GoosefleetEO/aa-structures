@@ -14,6 +14,7 @@ If you used the setting `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS` please repl
 ### Added
 
 - Generate notifications on Discord when a starbase gets reinforced (#78)
+- Generate timers for Timerboard and Structure Timers when a starbase gets reinforced (#77)
 - Added technical infrastructure for "generated notifications" which enables Structures to create additional notifications to those coming from Eve and use them within the existing notification framework.
 
 ### Changed
