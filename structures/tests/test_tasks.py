@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from allianceauth.eveonline.models import EveCorporationInfo
@@ -10,8 +9,6 @@ from app_utils.testing import (
     create_user_from_evecharacter,
     generate_invalid_pk,
 )
-
-from structures.models.notifications import Notification
 
 from .. import tasks
 from ..models import FuelAlertConfig, NotificationType, Owner, Webhook
@@ -315,26 +312,7 @@ class TestSendTestNotification(NoSocketsTestCase):
         self.assertEqual(args["level"], "danger")
 
 
-class TestSendNotifications(TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        create_structures()
-        cls.user, cls.owner = set_owner_character(character_id=1001)
-        cache.clear()
-
-    @patch(MODULE_PATH + ".send_messages_for_webhook")
-    def test_normal(self, mock_send_messages_for_webhook):
-        # given
-        load_notification_entities(self.owner)
-        notification_pk = Notification.objects.get(notification_id=1000000509).pk
-        # when
-        tasks.send_notifications([notification_pk])
-        # then
-        self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
-
-
-@patch(MODULE_PATH + ".Notification.update_related_structures")
+@patch("structures.models.notifications.Notification.update_related_structures")
 class TestUpdateExistingNotifications(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls) -> None:

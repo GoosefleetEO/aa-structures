@@ -44,11 +44,5 @@ if created and not owner.webhooks.exists():
         owner.webhooks.add(webhook)
 
 reinforced_until = now() + dt.timedelta(hours=24)
-structure = StarbaseFactory(
-    owner=owner,
-    state=Structure.State.POS_REINFORCED,
-    state_timer_end=reinforced_until,
-)
-print(f"Created new starbase: {structure}")
-notif = GeneratedNotificationFactory(structure=structure)
+notif = GeneratedNotificationFactory(owner=owner)
 print(f"Created new generated notification: {notif}")

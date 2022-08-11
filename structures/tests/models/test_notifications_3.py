@@ -25,6 +25,12 @@ class TestGeneratedNotification(NoSocketsTestCase):
         # when/then
         self.assertTrue(str(notif))
 
+    def test_should_have_repr(self):
+        # given
+        notif = GeneratedNotificationFactory()
+        # when/then
+        self.assertTrue(repr(notif))
+
     def test_should_send_to_configured_webhooks(self):
         # given
         notif = GeneratedNotificationFactory()

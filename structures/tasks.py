@@ -16,7 +16,6 @@ from .models import (
     EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
-    Notification,
     NotificationType,
     Owner,
     Webhook,
@@ -180,21 +179,6 @@ def send_structure_fuel_notifications_for_config(config_pk: int):
 def send_jump_fuel_notifications_for_config(config_pk: int):
     JumpFuelAlertConfig.objects.get(pk=config_pk).send_new_notifications()
     send_queued_messages_for_webhooks(JumpFuelAlertConfig.relevant_webhooks())
-
-
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_notifications(notification_pks: list) -> None:
-    """Send notifications defined by list of pks (used for admin action)."""
-    notifications_qs = Notification.objects.filter(pk__in=notification_pks)
-    notifs_sent = 0
-    if notifications_qs.exists():
-        for notif in notifications_qs:
-            if notif.send_to_configured_webhooks():
-                notifs_sent += 1
-        send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
-    logger.info(
-        "Sent %d of %d notifications to webhooks", notifs_sent, len(notification_pks)
-    )
 
 
 def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):
