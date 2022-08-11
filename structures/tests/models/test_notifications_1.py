@@ -183,7 +183,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000509)
+        notif = self.owner.notification_set.get(notification_id=1000000509)
         # when/then
         self.assertFalse(notif.filter_for_alliance_level())
 
@@ -191,7 +191,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000509)
+        notif = self.owner.notification_set.get(notification_id=1000000509)
         # when/then
         self.assertFalse(notif.filter_for_alliance_level())
 
@@ -199,7 +199,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000803)
+        notif = self.owner.notification_set.get(notification_id=1000000803)
         # when/then
         self.assertTrue(notif.filter_for_alliance_level())
 
@@ -208,21 +208,21 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         self.owner.is_alliance_main = True
         self.owner.save()
         # when/then
-        notif = self.owner.notifications.get(notification_id=1000000803)
+        notif = self.owner.notification_set.get(notification_id=1000000803)
         self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_2(self):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000803)
+        notif = self.owner.notification_set.get(notification_id=1000000803)
         self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_3(self):
         # given
         _, owner = set_owner_character(character_id=1102)  # corp with no alliance
         load_notification_entities(owner)
-        notif = owner.notifications.get(notification_id=1000000803)
+        notif = owner.notification_set.get(notification_id=1000000803)
         self.assertFalse(notif.filter_for_alliance_level())
 
 

@@ -144,7 +144,7 @@ def update_existing_notifications(owner_pk: int) -> int:
     Returns number of updated notifications.
     """
     owner = Owner.objects.get(pk=owner_pk)
-    notif_need_update_qs = owner.notifications.filter(
+    notif_need_update_qs = owner.notification_set.filter(
         notif_type__in=NotificationType.structure_related, structures__isnull=True
     )
     notif_need_update_count = notif_need_update_qs.count()

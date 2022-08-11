@@ -600,7 +600,7 @@ class OwnerAdmin(admin.ModelAdmin):
         max_medium = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM
         max_long = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_LONG
         max_valid = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID
-        notifications = obj.notifications.filter(created__isnull=False).order_by(
+        notifications = obj.notification_set.filter(created__isnull=False).order_by(
             "-timestamp"
         )
         data = [

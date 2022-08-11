@@ -480,9 +480,13 @@ class NotificationBase(models.Model):
         verbose_name="type",
         help_text="type of this notification",
     )
+    owner = models.ForeignKey(
+        "Owner",
+        on_delete=models.CASCADE,
+        help_text="Corporation that owns this notification",
+    )
     structures = models.ManyToManyField(
-        Structure,
-        help_text="Structures this notification is about (if any)",
+        Structure, help_text="Structures this notification is about (if any)"
     )
 
     class Meta:
@@ -722,12 +726,6 @@ class Notification(NotificationBase):
     }
 
     notification_id = models.PositiveBigIntegerField(verbose_name="id")
-    owner = models.ForeignKey(
-        "Owner",
-        on_delete=models.CASCADE,
-        related_name="notifications",
-        help_text="Corporation that received this notification",
-    )
     created = models.DateTimeField(
         null=True,
         default=None,
@@ -1238,12 +1236,6 @@ class GeneratedNotification(NotificationBase):
 
     details = models.JSONField(default=dict)
     last_updated = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(
-        "Owner",
-        on_delete=models.CASCADE,
-        related_name="generated_notifications",
-        help_text="Corporation that received this notification",
-    )
     timestamp = models.DateTimeField(auto_now_add=True)
 
     objects = GeneratedNotificationManager()
@@ -1254,7 +1246,7 @@ class GeneratedNotification(NotificationBase):
     def __repr__(self) -> str:
         return "%s(structure='%s', notif_type='%s', timestamp='%s')" % (
             self.__class__.__name__,
-            self.structure,
+            self.owner,
             self.notif_type,
             self.timestamp,
         )

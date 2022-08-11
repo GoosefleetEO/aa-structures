@@ -271,7 +271,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
             for args in mock_send_message.call_args_list
         }
         notifications_expected = set(
-            self.owner.notifications.filter(
+            self.owner.notification_set.filter(
                 notif_type__in=NotificationType.values
             ).values_list("notification_id", flat=True)
         )
@@ -326,7 +326,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
             for args in mock_send_message.call_args_list
         }
         notifications_expected = set(
-            owner.notifications.filter(
+            owner.notification_set.filter(
                 notif_type__in=NotificationType.values
             ).values_list("notification_id", flat=True)
         )

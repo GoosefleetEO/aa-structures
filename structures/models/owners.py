@@ -1045,7 +1045,7 @@ class Owner(models.Model):
         """
         # identify new notifications
         existing_notification_ids = set(
-            self.notifications.values_list("notification_id", flat=True)
+            self.notification_set.values_list("notification_id", flat=True)
         )
         new_notifications = [
             obj
@@ -1090,7 +1090,7 @@ class Owner(models.Model):
                 hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
             )
             notifications = (
-                self.notifications.filter(
+                self.notification_set.filter(
                     notif_type__in=NotificationType.relevant_for_timerboard
                 )
                 .exclude(is_timer_added=True)
@@ -1118,7 +1118,7 @@ class Owner(models.Model):
                 empty_refineries.count(),
             )
             notifications = (
-                self.notifications.filter(
+                self.notification_set.filter(
                     notif_type__in=NotificationType.relevant_for_moonmining
                 )
                 .select_related("owner", "sender")
@@ -1154,14 +1154,14 @@ class Owner(models.Model):
             "timestamp__gte": cutoff_dt_for_stale,
         }
         new_eve_notifications = (
-            self.notifications.filter(**my_filter)
+            self.notification_set.filter(**my_filter)
             .select_related("owner", "sender", "owner__corporation")
             .order_by("timestamp")
         )
         for notif in new_eve_notifications:
             notif.send_to_configured_webhooks()
         new_generated_notifications = (
-            self.generated_notifications.filter(**my_filter)
+            self.generatednotification_set.filter(**my_filter)
             .select_related("owner", "owner__corporation")
             .order_by("timestamp")
         )
