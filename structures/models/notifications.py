@@ -123,8 +123,8 @@ class NotificationType(models.TextChoices):
     # starbases
     TOWER_ALERT_MSG = "TowerAlertMsg", _("Starbase attacked")
     TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg", _("Starbase fuel alert")
-    TOWER_REFUELED_EXTRA = "TowerRefueledExtra", _("Starbase refueled")
-    TOWER_REINFORCED_EXTRA = "TowerReinforcedExtra", _("Starbase reinforced")
+    TOWER_REFUELED_EXTRA = "TowerRefueledExtra", _("Starbase refueled (BETA)")
+    TOWER_REINFORCED_EXTRA = "TowerReinforcedExtra", _("Starbase reinforced (BETA)")
 
     # moon mining
     MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted", _(
@@ -178,10 +178,10 @@ class NotificationType(models.TextChoices):
         "War retracted by Concord"
     )
     WAR_CORPORATION_BECAME_ELIGIBLE = "CorpBecameWarEligible", _(
-        "War corporation became eligable"
+        "War corporation became eligible"
     )
     WAR_CORPORATION_NO_LONGER_ELIGIBLE = "CorpNoLongerWarEligible", _(
-        "War corporation no longer eligable"
+        "War corporation no longer eligible"
     )
     WAR_WAR_SURRENDER_OFFER_MSG = "WarSurrenderOfferMsg", _("War surrender offered")
 

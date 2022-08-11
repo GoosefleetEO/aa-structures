@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Added
+
+- Generate notifications on Discord when a starbase gets reinforced (#78)
+- Added technical infrastructure for "generated notifications" which enables Structures to create additional notifications to those coming from Eve and use them within the existing notification framework.
+
 ## [1.25.6] - 2022-08-07
 
 ### Fixed

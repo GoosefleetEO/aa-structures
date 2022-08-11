@@ -169,6 +169,8 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
             return
         reinforced_until = dt.datetime.fromisoformat(obj.details["reinforced_until"])
         starbase = StarbaseFactory(
-            state=Structure.State.POS_REINFORCED, state_timer_end=reinforced_until
+            owner=obj.owner,
+            state=Structure.State.POS_REINFORCED,
+            state_timer_end=reinforced_until,
         )
         obj.structures.add(starbase)
