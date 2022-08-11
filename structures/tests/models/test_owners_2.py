@@ -724,7 +724,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             structure.unanchors_at, dt.datetime(2020, 5, 5, 7, 0, 0, tzinfo=utc)
         )
         self.assertIsNone(structure.fuel_expires_at)
-        self.assertFalse(structure.generated_notifications.exists())
+        self.assertFalse(structure.generatednotification_set.exists())
 
         structure = Structure.objects.get(id=1300000000003)
         self.assertEqual(structure.name, "Panic Room")
@@ -741,7 +741,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(
             structure.state_timer_end, dt.datetime(2020, 1, 2, 3, tzinfo=utc)
         )
-        self.assertTrue(structure.generated_notifications.exists())
+        self.assertTrue(structure.generatednotification_set.exists())
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)

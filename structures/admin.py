@@ -358,8 +358,8 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(GeneratedNotification)
 class GeneratedNotificationAdmin(admin.ModelAdmin):
-    # list_display = ("timestamp", "notif_type", "structure", "is_sent", "details")
-    # list_select_related = ("structure",)
+    list_display = ("timestamp", "notif_type", "owner", "is_sent", "details")
+    list_select_related = ("owner",)
     actions = ("send_to_configured_webhooks",)
 
     def has_add_permission(self, request, obj=None):

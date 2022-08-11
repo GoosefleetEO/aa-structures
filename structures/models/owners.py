@@ -1145,23 +1145,23 @@ class Owner(models.Model):
         cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
+        my_filter = {
+            "notif_type__in": (
+                Webhook.objects.enabled_notification_types()
+                & NotificationType.relevant_for_forwarding
+            ),
+            "is_sent": False,
+            "timestamp__gte": cutoff_dt_for_stale,
+        }
         new_eve_notifications = (
-            self.notifications.filter(
-                notif_type__in=(
-                    Webhook.objects.enabled_notification_types()
-                    & NotificationType.relevant_for_forwarding
-                )
-            )
-            .filter(is_sent=False, timestamp__gte=cutoff_dt_for_stale)
+            self.notifications.filter(**my_filter)
             .select_related("owner", "sender", "owner__corporation")
             .order_by("timestamp")
         )
         for notif in new_eve_notifications:
             notif.send_to_configured_webhooks()
         new_generated_notifications = (
-            self.generated_notifications.filter(
-                owner=self, is_sent=False, timestamp__gte=cutoff_dt_for_stale
-            )
+            self.generated_notifications.filter(**my_filter)
             .select_related("owner", "owner__corporation")
             .order_by("timestamp")
         )
