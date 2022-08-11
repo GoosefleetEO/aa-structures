@@ -1140,7 +1140,7 @@ if "structuretimers" in app_labels():
 class TestNotificationType(NoSocketsTestCase):
     def test_should_return_enabled_values_only(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", False):
             values = NotificationType.values_enabled
         # then
         self.assertNotIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
@@ -1148,7 +1148,7 @@ class TestNotificationType(NoSocketsTestCase):
 
     def test_should_return_all_values(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True):
             values = NotificationType.values_enabled
         # then
         self.assertIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
@@ -1156,7 +1156,7 @@ class TestNotificationType(NoSocketsTestCase):
 
     def test_should_return_enabled_choices_only(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", False):
             choices = NotificationType.choices_enabled
         # then
         types = {choice[0] for choice in choices}
@@ -1165,7 +1165,7 @@ class TestNotificationType(NoSocketsTestCase):
 
     def test_should_return_all_choices(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True):
             choices = NotificationType.choices_enabled
         # then
         types = {choice[0] for choice in choices}

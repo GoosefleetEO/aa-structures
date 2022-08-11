@@ -325,7 +325,7 @@ Refueled notifications are available for Upwell structures and POSes, however th
 To enable getting refuled notifications you need to activate this feature with a setting:
 
 ```python
-STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = True
+STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS = True
 ```
 
 #### Structure fuel alerts
@@ -374,7 +374,7 @@ Name | Description | Default
 `STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES`| Max retries before a character is deleted when ESI claims the character is not a director (Since this sometimes is reported wrongly by ESI). | `3`
 `STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | `True`
 `STRUCTURES_FEATURE_STARBASES`| Enable / disable starbases feature | `True`
-`STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS`| Enable / disable refuled notifications feature | `False`
+`STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS`| Enable / disable refuled notifications feature | `False`
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | `24`
 `STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | `True`
 `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS`| This allows you to turn off ESI fuel alert notifications to use the Structure's generated fuel notifications exclusively.  | `False`

@@ -34,7 +34,7 @@ from app_utils.urls import static_file_absolute_url
 from .. import __title__
 from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_DEFAULT_LANGUAGE,
-    STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS,
+    STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
     STRUCTURES_NOTIFICATION_SET_AVATAR,
     STRUCTURES_REPORT_NPC_ATTACKS,
@@ -341,7 +341,7 @@ class NotificationType(models.TextChoices):
     def values_enabled(cls) -> set:
         """Values of enabled notif types only."""
         my_set = set(cls.values)
-        if not STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS:
+        if not STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS:
             my_set.discard(cls.STRUCTURE_REFUELED_EXTRA)
             my_set.discard(cls.TOWER_REFUELED_EXTRA)
         return my_set

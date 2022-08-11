@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Update notes
+
+If you used the setting `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS` please replace it with the new version: `STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS`
+
 ### Added
 
 - Generate notifications on Discord when a starbase gets reinforced (#78)
 - Added technical infrastructure for "generated notifications" which enables Structures to create additional notifications to those coming from Eve and use them within the existing notification framework.
+
+### Fixed
+
+- Fix spelling for STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS (#74)
 
 ## [1.25.6] - 2022-08-07
 
