@@ -47,5 +47,6 @@ setup(
         "django-multiselectfield",
         "redis-simple-mq>=0.4",
         "django-eveuniverse>=0.14",
+        "pytz!=2022.2",  # this version breaks Django, so tests no longer pass
     ],
 )
