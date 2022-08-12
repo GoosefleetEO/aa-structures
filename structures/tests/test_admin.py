@@ -27,7 +27,7 @@ from ..models import (
     StructureTag,
     Webhook,
 )
-from .testdata import (
+from .testdata.helpers import (
     create_structures,
     create_user,
     load_entities,
@@ -221,10 +221,10 @@ class TestNotificationAdmin(TestCase):
         self.assertTrue(mock_message_user.called)
 
     @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
-    @patch(MODULE_PATH + ".tasks.send_notifications")
+    @patch(MODULE_PATH + ".tasks.send_queued_messages_for_webhooks")
     def test_action_send_to_webhook(self, mock_task, mock_message_user):
         self.modeladmin.send_to_configured_webhooks(MockRequest(self.user), self.obj_qs)
-        self.assertEqual(mock_task.delay.call_count, 1)
+        self.assertEqual(mock_task.call_count, 1)
         self.assertTrue(mock_message_user.called)
 
     @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)

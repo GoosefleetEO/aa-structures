@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.26.0] - 2022-08-12
+
+### Update notes
+
+If you used the setting `STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS` please replace it with the new version: `STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS`. Or if it was enabled you can remove the setting, because it is now enabled by default.
+
+### Added
+
+- Generate notifications on Discord when a starbase gets reinforced (#78)
+- Generate timers for Timerboard and Structure Timers when a starbase gets reinforced (#77)
+- Added technical infrastructure for "generated notifications" which enables Structures to create additional notifications to those coming from Eve and use them within the existing notification framework.
+
+### Changed
+
+- The feature structure refueled notifications is now enabled by default. They can be turned off with a setting.
+
+### Fixed
+
+- Fix spelling for 'STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS' (#74)
+
 ## [1.25.6] - 2022-08-07
 
 ### Fixed

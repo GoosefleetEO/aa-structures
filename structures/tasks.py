@@ -16,7 +16,6 @@ from .models import (
     EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
-    Notification,
     NotificationType,
     Owner,
     Webhook,
@@ -144,7 +143,7 @@ def update_existing_notifications(owner_pk: int) -> int:
     Returns number of updated notifications.
     """
     owner = Owner.objects.get(pk=owner_pk)
-    notif_need_update_qs = owner.notifications.filter(
+    notif_need_update_qs = owner.notification_set.filter(
         notif_type__in=NotificationType.structure_related, structures__isnull=True
     )
     notif_need_update_count = notif_need_update_qs.count()
@@ -182,21 +181,6 @@ def send_jump_fuel_notifications_for_config(config_pk: int):
     send_queued_messages_for_webhooks(JumpFuelAlertConfig.relevant_webhooks())
 
 
-@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_notifications(notification_pks: list) -> None:
-    """Send notifications defined by list of pks (used for admin action)."""
-    notifications_qs = Notification.objects.filter(pk__in=notification_pks)
-    notifs_sent = 0
-    if notifications_qs.exists():
-        for notif in notifications_qs:
-            if notif.send_to_configured_webhooks():
-                notifs_sent += 1
-        send_queued_messages_for_webhooks(Webhook.objects.filter(is_active=True))
-    logger.info(
-        "Sent %d of %d notifications to webhooks", notifs_sent, len(notification_pks)
-    )
-
-
 def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):
     """Send queued message for given webhooks."""
     for webhook in webhooks:
@@ -215,41 +199,31 @@ def send_messages_for_webhook(webhook_pk: int) -> None:
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
     """Send test notification to given webhook."""
-    try:
-        webhook = Webhook.objects.get(pk=webhook_pk)
-        if user_pk:
-            user = User.objects.get(pk=user_pk)
-        else:
-            user = None
-    except Webhook.DoesNotExist:
-        logger.error("Webhook with pk = %s does not exist. Aborting.", webhook_pk)
-    except User.DoesNotExist:
-        logger.error("User with pk = %s does not exist. Aborting.", user_pk)
-    else:
-        send_report, send_success = webhook.send_test_message(user)
-        if user:
-            message = 'Test notification to webhook "{}" {}.\n'.format(
-                webhook, "completed successfully" if send_success else "has failed"
-            )
-            if not send_success:
-                message += "Error: {}".format(send_report)
-
-            notify(
-                user=user,
-                title='{}: Test notification to "{}": {}'.format(
-                    __title__, webhook, "OK" if send_success else "FAILED"
-                ),
-                message=message,
-                level="success" if send_success else "danger",
-            )
+    webhook = Webhook.objects.get(pk=webhook_pk)
+    user = _get_user(user_pk)
+    send_report, send_success = webhook.send_test_message(user)
+    if user:
+        message = 'Test notification to webhook "{}" {}.\n'.format(
+            webhook, "completed successfully" if send_success else "has failed"
+        )
+        if not send_success:
+            message += "Error: {}".format(send_report)
+        notify(
+            user=user,
+            title='{}: Test notification to "{}": {}'.format(
+                __title__, webhook, "OK" if send_success else "FAILED"
+            ),
+            message=message,
+            level="success" if send_success else "danger",
+        )
 
 
 def _get_user(user_pk: int) -> Optional[User]:
     """Fetch the user or return None."""
-    user = None
-    if user_pk:
-        try:
-            user = User.objects.get(pk=user_pk)
-        except User.DoesNotExist:
-            logger.warning("Ignoring non-existing user with pk %s", user_pk)
-    return user
+    if not user_pk:
+        return None
+    try:
+        return User.objects.get(pk=user_pk)
+    except User.DoesNotExist:
+        logger.warning("Ignoring non-existing user with pk %s", user_pk)
+        return None

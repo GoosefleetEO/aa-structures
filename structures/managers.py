@@ -1,5 +1,6 @@
 import itertools
 from pydoc import locate
+from typing import Tuple
 
 from bravado.exception import HTTPError
 
@@ -202,7 +203,7 @@ class EveEntityManager(models.Manager):
         return obj, created
 
 
-class NotificationQuerySet(models.QuerySet):
+class NotificationBaseQuerySet(models.QuerySet):
     def annotate_can_be_rendered(self) -> models.QuerySet:
         """annotates field indicating if a notification can be rendered"""
         from .models import NotificationType
@@ -216,11 +217,67 @@ class NotificationQuerySet(models.QuerySet):
         )
 
 
+class NotificationQuerySet(NotificationBaseQuerySet):
+    pass
+
+
 class NotificationManagerBase(models.Manager):
     pass
 
 
 NotificationManager = NotificationManagerBase.from_queryset(NotificationQuerySet)
+
+
+class GeneratedNotificationQuerySet(NotificationBaseQuerySet):
+    pass
+
+
+class GeneratedNotificationManagerBase(models.Manager):
+    def get_or_create_from_structure(
+        self, structure: models.Model, notif_type: models.TextChoices
+    ) -> Tuple[models.Model, bool]:
+        """Get or create an object from given structure."""
+        from .models import NotificationType
+
+        if notif_type not in {NotificationType.TOWER_REINFORCED_EXTRA}:
+            raise ValueError(f"Unsupported notification type: {notif_type}")
+
+        return self._get_or_create_tower_reinforced(structure)
+
+    def _get_or_create_tower_reinforced(
+        self, structure: models.Model
+    ) -> Tuple[models.Model, bool]:
+        from .models import NotificationType
+
+        if not structure.is_starbase:
+            raise ValueError(f"Structure is not a starbase: {structure}")
+        if not structure.is_reinforced:
+            raise ValueError(f"Starbase is not reinforced: {structure}")
+        if not structure.state_timer_end:
+            raise ValueError(f"Starbase has no reinforce time: {structure}")
+        reinforced_until = structure.state_timer_end.isoformat()
+        with transaction.atomic():
+            try:
+                obj = self.get(
+                    structures=structure,
+                    notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                    details__reinforced_until=reinforced_until,
+                )
+                created = False
+            except self.model.DoesNotExist:
+                obj = self.create(
+                    owner=structure.owner,
+                    notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                    details={"reinforced_until": reinforced_until},
+                )
+                obj.structures.add(structure)
+                created = True
+        return obj, created
+
+
+GeneratedNotificationManager = GeneratedNotificationManagerBase.from_queryset(
+    GeneratedNotificationQuerySet
+)
 
 
 class OwnerQuerySet(models.QuerySet):
@@ -383,7 +440,7 @@ class StructureManagerBase(models.Manager):
         ).results()
         structure = {
             "structure_id": structure_id,
-            "name": self.model.extract_name_from_esi_respose(structure_info["name"]),
+            "name": self.model.extract_name_from_esi_response(structure_info["name"]),
             "position": structure_info["position"],
             "type_id": structure_info["type_id"],
             "system_id": structure_info["solar_system_id"],

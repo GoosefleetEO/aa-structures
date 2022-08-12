@@ -2,7 +2,7 @@ import json
 
 from eveuniverse.tools.testdata import load_testdata_from_dict
 
-from . import test_data_filename
+from .helpers import test_data_filename
 
 
 def _load_eveuniverse_from_file():

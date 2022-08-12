@@ -251,11 +251,11 @@ Timers can be created from the following notification types:
 It is possible to add multiple sync characters for a structure owner / corporation. This serves two purposes:
 
 - Improved reaction time for notifications
-- Improved resilence against character becoming invalid
+- Improved resilience against character becoming invalid
 
 #### Improved reaction time for notifications
 
-One of the most popular features of Structures is it's ability to automatically forward notications from the Eve server to Discord. However, there is a significant delay between the time a notification is create in game and it apearing on Discord, which on average is about 10 minutes.
+One of the most popular features of Structures is it's ability to automatically forward notifications from the Eve server to Discord. However, there is a significant delay between the time a notification is create in game and it appearing on Discord, which on average is about 10 minutes.
 
 That delay is caused by the API of the Eve Server (ESI), which is caching all notification requests for 10 minutes.
 
@@ -265,7 +265,7 @@ Every added sync character will reduce the delay up to a maximum of 10, which br
 
 #### Improved resilence against character becoming invalid
 
-Another benefit of having multple sync characters is that it increases the resilence of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for tha towner until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but notify admins about it) and use any of the remaining valid characters to complete the update.
+Another benefit of having multiple sync characters is that it increases the resilience of the update process against failures. E.g. it can happen that a sync character becomes invalid, because it has been moved to another corporation or it's token is no longer valid. If you only have one sync character configured then all updates will stop for the tower until a new character is provided. However, if you have more then one sync character configured, then Structures will ignore the invalid character (but notify admins about it) and use any of the remaining valid characters to complete the update.
 
 #### Measuring notification delay
 
@@ -286,7 +286,7 @@ When a character that us used to sync an owner from ESI becomes invalid, it is a
 
 #### Services are down
 
-In addition Structures is constantly monitoring that all updates from ESI are running. Should a service fail to update within the alloted time the services for that owner will be reported as down and the admins will be notified. Once that service has resumed updating another notification is issued informating the admins that the services for that owner are back up.
+In addition Structures is constantly monitoring that all updates from ESI are running. Should a service fail to update within the alloted time the services for that owner will be reported as down and the admins will be notified. Once that service has resumed updating another notification is issued informing the admins that the services for that owner are back up.
 
 > **Hint**<br>You can adjust maximum time since it's last successful sync before a service is reported as down with the [settings](#settings) `STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES` and `STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES`.
 
@@ -318,19 +318,19 @@ All of these notifications can be enabled for webhooks, just like any of the sta
 
 #### Refueled notification
 
-Refueled notification are generated once a structure has been refueled and will help you coordinate refueling efforts. i.e. when the refuled notification appers in your Discord channel, you know that someone else has taken care of refuelung that particular structures.
+Refueled notification are generated once a structure has been refueled and will help you coordinate refueling efforts. i.e. when the refueled notification appears in your Discord channel, you know that someone else has taken care of refuelling that particular structures.
 
 Refueled notifications are available for Upwell structures and POSes, however the POS version is currently experimental.
 
-To enable getting refuled notifications you need to activate this feature with a setting:
+To enable getting refueled notifications you need to activate this feature with a setting:
 
 ```python
-STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS = True
+STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS = True
 ```
 
 #### Structure fuel alerts
 
-Structure fuel alerts can be configured to provide additional alert notification about low fuel levels of your structures. They are highly customizable to accomodate all kinds of use cases. You can configure one ore multiple structure fuel alerts. All configuration is done through the admin site.
+Structure fuel alerts can be configured to provide additional alert notification about low fuel levels of your structures. They are highly customizable to accommodate all kinds of use cases. You can configure one ore multiple structure fuel alerts. All configuration is done through the admin site.
 
 Here is an example:
 
@@ -350,13 +350,13 @@ When fuel is down to 24 hours, send a danger notification every 6 hours and ping
 
 - start: 24
 - end: 0
-- intervall: 6
-- channel pings: @everone
+- interval: 6
+- channel pings: @everyone
 - color: danger
 
 #### Jump fuel alerts
 
-Jump fuel alerts are simular to structure fuel alerts, but made specifically to deal with Liquid Ozone levels of jump gates. They have many of the same customization options and you also configure them on the admin site. They are triggered by the current fuel level measured in units of Liquid Ozone in a jump gate.
+Jump fuel alerts are similar to structure fuel alerts, but made specifically to deal with Liquid Ozone levels of jump gates. They have many of the same customization options and you also configure them on the admin site. They are triggered by the current fuel level measured in units of Liquid Ozone in a jump gate.
 
 ## Settings
 
@@ -374,7 +374,7 @@ Name | Description | Default
 `STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES`| Max retries before a character is deleted when ESI claims the character is not a director (Since this sometimes is reported wrongly by ESI). | `3`
 `STRUCTURES_FEATURE_CUSTOMS_OFFICES`| Enable / disable custom offices feature | `True`
 `STRUCTURES_FEATURE_STARBASES`| Enable / disable starbases feature | `True`
-`STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS`| Enable / disable refuled notifications feature | `False`
+`STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS`| Enable / disable refueled notifications feature | `False`
 `STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION`| Defines after how many hours a notification is regarded as stale. Stale notifications are no longer sent automatically. | `24`
 `STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED`| whether to create / remove timers from moon extraction notifications  | `True`
 `STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS`| This allows you to turn off ESI fuel alert notifications to use the Structure's generated fuel notifications exclusively.  | `False`

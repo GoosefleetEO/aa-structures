@@ -17,6 +17,7 @@ from .notifications import (
     EveEntity,
     FuelAlert,
     FuelAlertConfig,
+    GeneratedNotification,
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,

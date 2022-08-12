@@ -19,8 +19,13 @@ from app_utils.testing import create_user_from_evecharacter, json_response_to_py
 from .. import views
 from ..constants import EveTypeId
 from ..models import Owner, PocoDetails, Structure, StructureItem, Webhook
-from .testdata import create_structures, load_entities, load_entity, set_owner_character
 from .testdata.factories import create_owner_from_user, create_poco, create_starbase
+from .testdata.helpers import (
+    create_structures,
+    load_entities,
+    load_entity,
+    set_owner_character,
+)
 
 VIEWS_PATH = "structures.views"
 OWNERS_PATH = "structures.models.owners"

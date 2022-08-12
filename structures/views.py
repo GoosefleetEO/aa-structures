@@ -532,7 +532,7 @@ def structure_summary_data(request) -> JsonResponse:
         )
         .annotate(
             ec_count=Count(
-                "id", filter=Q(eve_type__eve_group=EveGroupId.ENGINERING_COMPLEX)
+                "id", filter=Q(eve_type__eve_group=EveGroupId.ENGINEERING_COMPLEX)
             )
         )
         .annotate(

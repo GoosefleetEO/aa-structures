@@ -42,10 +42,11 @@ setup(
     install_requires=[
         "allianceauth>=2.15.1",
         "dhooks-lite>=0.6.1",
-        "allianceauth-app-utils>=1.13",
+        "allianceauth-app-utils>=1.14.1",
         "django-navhelper",
         "django-multiselectfield",
         "redis-simple-mq>=0.4",
         "django-eveuniverse>=0.14",
+        "pytz!=2022.2",  # this version breaks Django, so tests no longer pass
     ],
 )

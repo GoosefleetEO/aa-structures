@@ -45,7 +45,13 @@ from ..constants import EveGroupId, EveTypeId
 from ..managers import OwnerManager
 from ..providers import esi
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSovereigntyMap, EveType
-from .notifications import EveEntity, Notification, NotificationType, Webhook
+from .notifications import (
+    EveEntity,
+    GeneratedNotification,
+    Notification,
+    NotificationType,
+    Webhook,
+)
 from .structures import (
     PocoDetails,
     StarbaseDetail,
@@ -382,8 +388,8 @@ class Owner(models.Model):
         ignore_schedule: bool,
         rotate_characters: RotateCharactersType,
     ) -> None:
-        """Rotate this character such that all are spread evently
-        accross the ESI cache duration for each ESI call.
+        """Rotate this character such that all are spread evenly
+        across the ESI cache duration for each ESI call.
         """
         time_since_last_used = (
             (
@@ -564,7 +570,7 @@ class Owner(models.Model):
                     structure["name"] = "(no data)"
                     is_ok = False
                 else:
-                    structure["name"] = Structure.extract_name_from_esi_respose(
+                    structure["name"] = Structure.extract_name_from_esi_response(
                         structure_info["name"]
                     )
                     structure["position"] = structure_info["position"]
@@ -866,6 +872,14 @@ class Owner(models.Model):
                     if fuel_expires_at:
                         structure_obj.fuel_expires_at = fuel_expires_at
                         structure_obj.save()
+                    if (
+                        structure_obj.state == Structure.State.POS_REINFORCED
+                        and structure_obj.state_timer_end
+                    ):
+                        GeneratedNotification.objects.get_or_create_from_structure(
+                            structure=structure_obj,
+                            notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                        )
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures)
@@ -961,7 +975,7 @@ class Owner(models.Model):
         return detail
 
     def fetch_notifications_esi(self, user: User = None) -> None:
-        """Fetch notifications for this owner from ESI and proceses them."""
+        """Fetch notifications for this owner from ESI and process them."""
         notifications_count_all = 0
         token = self.fetch_token(
             rotate_characters=self.RotateCharactersType.NOTIFICATIONS
@@ -1031,7 +1045,7 @@ class Owner(models.Model):
         """
         # identify new notifications
         existing_notification_ids = set(
-            self.notifications.values_list("notification_id", flat=True)
+            self.notification_set.values_list("notification_id", flat=True)
         )
         new_notifications = [
             obj
@@ -1068,7 +1082,7 @@ class Owner(models.Model):
             )
         return len(new_notifications)
 
-    # TODO: run this as seperate task
+    # TODO: run this as separate task
     def _process_timers_for_notifications(self, token: Token):
         """processes notifications for timers if any"""
         if STRUCTURES_ADD_TIMERS:
@@ -1076,7 +1090,7 @@ class Owner(models.Model):
                 hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
             )
             notifications = (
-                self.notifications.filter(
+                self.notification_set.filter(
                     notif_type__in=NotificationType.relevant_for_timerboard
                 )
                 .exclude(is_timer_added=True)
@@ -1104,7 +1118,7 @@ class Owner(models.Model):
                 empty_refineries.count(),
             )
             notifications = (
-                self.notifications.filter(
+                self.notification_set.filter(
                     notif_type__in=NotificationType.relevant_for_moonmining
                 )
                 .select_related("owner", "sender")
@@ -1131,21 +1145,32 @@ class Owner(models.Model):
         cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
-        all_new_notifications = (
-            self.notifications.filter(
-                notif_type__in=(
-                    Webhook.objects.enabled_notification_types()
-                    & NotificationType.relevant_for_forwarding
-                )
-            )
-            .filter(is_sent=False)
-            .filter(timestamp__gte=cutoff_dt_for_stale)
+        my_filter = {
+            "notif_type__in": (
+                Webhook.objects.enabled_notification_types()
+                & NotificationType.relevant_for_forwarding
+            ),
+            "is_sent": False,
+            "timestamp__gte": cutoff_dt_for_stale,
+        }
+        new_eve_notifications = (
+            self.notification_set.filter(**my_filter)
             .select_related("owner", "sender", "owner__corporation")
             .order_by("timestamp")
         )
-        for notif in all_new_notifications:
+        for notif in new_eve_notifications:
             notif.send_to_configured_webhooks()
-        if not all_new_notifications:
+        new_generated_notifications = (
+            self.generatednotification_set.filter(**my_filter)
+            .select_related("owner", "owner__corporation")
+            .order_by("timestamp")
+        )
+        for notif in new_generated_notifications:
+            notif.send_to_configured_webhooks()
+        if (
+            not new_eve_notifications.exists()
+            and not new_generated_notifications.exists()
+        ):
             logger.info("%s: No new notifications found for forwarding", self)
         self.forwarding_last_update_at = now()
         self.save(update_fields=["forwarding_last_update_at"])

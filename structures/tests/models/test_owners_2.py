@@ -19,7 +19,6 @@ from ...models import (
     Webhook,
 )
 from .. import to_json
-from ..testdata import load_entities
 from ..testdata.factories import (
     create_owner_from_user,
     create_poco,
@@ -27,6 +26,7 @@ from ..testdata.factories import (
     create_structure_service,
     create_upwell_structure,
 )
+from ..testdata.helpers import load_entities
 from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.owners"
@@ -246,8 +246,9 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
                         },
                         {
                             "moon_id": 40029527,
+                            "reinforced_until": dt.datetime(2020, 1, 2, 3, tzinfo=utc),
                             "starbase_id": 1300000000003,
-                            "state": "online",
+                            "state": "reinforced",
                             "system_id": 30000474,
                             "type_id": 20062,
                         },
@@ -723,27 +724,24 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             structure.unanchors_at, dt.datetime(2020, 5, 5, 7, 0, 0, tzinfo=utc)
         )
         self.assertIsNone(structure.fuel_expires_at)
+        self.assertFalse(structure.generatednotification_set.exists())
 
         structure = Structure.objects.get(id=1300000000003)
         self.assertEqual(structure.name, "Panic Room")
         self.assertEqual(structure.eve_solar_system_id, 30000474)
         self.assertEqual(int(structure.owner.corporation.corporation_id), 2001)
         self.assertEqual(structure.eve_type_id, 20062)
-        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
+        self.assertEqual(structure.state, Structure.State.POS_REINFORCED)
         self.assertEqual(structure.eve_moon_id, 40029527)
-        # self.assertGreaterEqual(
-        #     structure.fuel_expires_at,
-        #     now() + dt.timedelta(hours=133) - dt.timedelta(seconds=10),
-        # )
-        # self.assertLessEqual(
-        #     structure.fuel_expires_at,
-        #     now() + dt.timedelta(hours=133) + dt.timedelta(seconds=10),
-        # )
         self.assertAlmostEqual(
             structure.fuel_expires_at,
             now() + dt.timedelta(hours=133, minutes=20),
             delta=dt.timedelta(seconds=30),
         )
+        self.assertEqual(
+            structure.state_timer_end, dt.datetime(2020, 1, 2, 3, tzinfo=utc)
+        )
+        self.assertTrue(structure.generatednotification_set.exists())
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
@@ -1167,7 +1165,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(
-        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True
     )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_send_refueled_notification_when_fuel_level_increased(
@@ -1175,6 +1173,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi.client = self.esi_client_stub
+        mock_send_message.return_value = 1
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",
@@ -1197,7 +1196,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(
-        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True
+        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True
     )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
@@ -1205,6 +1204,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi.client = self.esi_client_stub
+        mock_send_message.side_effect = RuntimeError
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",
@@ -1229,6 +1229,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi.client = self.esi_client_stub
+        mock_send_message.return_value = 1
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",

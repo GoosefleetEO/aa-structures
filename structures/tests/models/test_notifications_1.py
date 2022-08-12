@@ -1,36 +1,25 @@
 import datetime as dt
-import re
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import pytz
-from requests.exceptions import HTTPError
-
-from django.contrib.auth.models import Group
 from django.utils.timezone import now
 
-from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
-from app_utils.django import app_labels
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
-from ..testdata import (
-    create_structures,
-    load_entities,
-    load_notification_entities,
-    set_owner_character,
-)
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
     create_upwell_structure,
     create_webhook,
 )
+from ..testdata.helpers import (
+    create_structures,
+    load_entities,
+    load_notification_entities,
+    set_owner_character,
+)
 
 MODULE_PATH = "structures.models.notifications"
-
-
-if "structuretimers" in app_labels():
-    from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestEveEntities(NoSocketsTestCase):
@@ -183,7 +172,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000509)
+        notif = self.owner.notification_set.get(notification_id=1000000509)
         # when/then
         self.assertFalse(notif.filter_for_alliance_level())
 
@@ -191,7 +180,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000509)
+        notif = self.owner.notification_set.get(notification_id=1000000509)
         # when/then
         self.assertFalse(notif.filter_for_alliance_level())
 
@@ -199,7 +188,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000803)
+        notif = self.owner.notification_set.get(notification_id=1000000803)
         # when/then
         self.assertTrue(notif.filter_for_alliance_level())
 
@@ -208,21 +197,21 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         self.owner.is_alliance_main = True
         self.owner.save()
         # when/then
-        notif = self.owner.notifications.get(notification_id=1000000803)
+        notif = self.owner.notification_set.get(notification_id=1000000803)
         self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_2(self):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        notif = self.owner.notifications.get(notification_id=1000000803)
+        notif = self.owner.notification_set.get(notification_id=1000000803)
         self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_3(self):
         # given
         _, owner = set_owner_character(character_id=1102)  # corp with no alliance
         load_notification_entities(owner)
-        notif = owner.notifications.get(notification_id=1000000803)
+        notif = owner.notification_set.get(notification_id=1000000803)
         self.assertFalse(notif.filter_for_alliance_level())
 
 
@@ -519,6 +508,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
         self.assertTrue(mock_send_to_webhook.called)
 
 
+@patch(MODULE_PATH + ".Webhook.send_message")
 class TestNotificationSendToWebhook(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -528,9 +518,9 @@ class TestNotificationSendToWebhook(NoSocketsTestCase):
         _, cls.owner = set_owner_character(character_id=1001)
         Webhook.objects.all().delete()
 
-    @patch(MODULE_PATH + ".Webhook.send_message")
     def test_should_override_ping_type(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA]
         )
@@ -545,9 +535,9 @@ class TestNotificationSendToWebhook(NoSocketsTestCase):
         _, kwargs = mock_send_message.call_args
         self.assertIn("@here", kwargs["content"])
 
-    @patch(MODULE_PATH + ".Webhook.send_message")
     def test_should_override_color(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA]
         )
@@ -577,10 +567,12 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         cls.owner.webhooks.add(cls.webhook)
 
     def test_can_send_message_normal(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
         self.assertIsNotNone(kwargs["content"])
@@ -588,7 +580,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     def test_should_ignore_unsupported_notif_types(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         obj = Notification.objects.create(
             notification_id=666,
             owner=self.owner,
@@ -611,16 +603,18 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         self.assertTrue(obj.is_sent)
 
     def test_dont_mark_notification_as_sent_when_error(self, mock_send_message):
-        mock_send_message.return_value = False
-
+        # given
+        mock_send_message.return_value = 0
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         obj.send_to_webhook(self.webhook)
+        # then
         obj.refresh_from_db()
         self.assertFalse(obj.is_sent)
 
     def test_send_to_webhook_all_notification_types(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         types_tested = set()
         # when /then
         for notif in Notification.objects.all():
@@ -635,7 +629,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     def test_should_create_notification_for_structure_refueled(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         structure = Structure.objects.get(id=1000000000001)
         notif = Notification.create_from_structure(
             structure, NotificationType.STRUCTURE_REFUELED_EXTRA
@@ -647,7 +641,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     def test_should_create_notification_for_tower_refueled(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         structure = Structure.objects.get(id=1300000000001)
         notif = Notification.create_from_structure(
             structure, NotificationType.TOWER_REFUELED_EXTRA
@@ -659,11 +653,13 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         Structure.objects.all().delete()
         obj = Notification.objects.get(notification_id=1000000505)
+        # when
         obj.send_to_webhook(self.webhook)
+        # then
         embed = mock_send_message.call_args[1]["embeds"][0]
         self.assertEqual(
             embed.description[:39], "The Astrahus **(unknown)** in [Amamake]"
@@ -671,18 +667,22 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_notification_with_null_aggressor_alliance(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", True)
     def test_can_send_message_with_setting_avatar(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
         self.assertIsNotNone(kwargs["avatar_url"])
@@ -690,16 +690,19 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", False)
     def test_can_send_message_without_setting_avatar(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
         self.assertIsNone(kwargs["avatar_url"])
         self.assertIsNone(kwargs["username"])
 
 
+@patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestNotificationPings(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -711,41 +714,32 @@ class TestNotificationPings(NoSocketsTestCase):
         _, self.owner = set_owner_character(character_id=1001)
         load_notification_entities(self.owner)
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_ping(self, mock_send_message):
         # given
-        args = {"status_code": 200, "status_ok": True, "content": None}
-        mock_response = Mock(**args)
-        mock_send_message.return_value = mock_response
+        mock_send_message.return_value = 1
         webhook_normal = create_webhook()
         obj = Notification.objects.get(notification_id=1000000509)
         # when
         result = obj.send_to_webhook(webhook_normal)
         # then
         self.assertTrue(result)
-        args, kwargs = mock_send_message.call_args
+        _, kwargs = mock_send_message.call_args
         self.assertTrue(kwargs["content"] and "@everyone" in kwargs["content"])
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_disable_pinging_webhook(self, mock_send_message):
         # given
-        args = {"status_code": 200, "status_ok": True, "content": None}
-        mock_response = Mock(**args)
-        mock_send_message.return_value = mock_response
+        mock_send_message.return_value = 1
         webhook_no_pings = create_webhook(has_default_pings_enabled=False)
         obj = Notification.objects.get(notification_id=1000000509)
         # when
         result = obj.send_to_webhook(webhook_no_pings)
         self.assertTrue(result)
-        args, kwargs = mock_send_message.call_args
+        _, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_disable_pinging_owner(self, mock_send_message):
         # given
-        args = {"status_code": 200, "status_ok": True, "content": None}
-        mock_response = Mock(**args)
-        mock_send_message.return_value = mock_response
+        mock_send_message.return_value = 1
         webhook_normal = create_webhook()
         self.owner.webhooks.add(webhook_normal)
         self.owner.has_default_pings_enabled = False
@@ -755,392 +749,14 @@ class TestNotificationPings(NoSocketsTestCase):
         result = obj.send_to_webhook(webhook_normal)
         # then
         self.assertTrue(result)
-        args, kwargs = mock_send_message.call_args
+        _, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
-
-
-if "discord" in app_labels():
-
-    @patch(MODULE_PATH + ".Notification._import_discord")
-    class TestGroupPings(NoSocketsTestCase):
-        @classmethod
-        def setUpClass(cls):
-            super().setUpClass()
-            load_entities()
-            cls.group_1 = Group.objects.create(name="Dummy Group 1")
-            cls.group_2 = Group.objects.create(name="Dummy Group 2")
-            create_structures(dont_load_entities=True)
-
-        def setUp(self):
-            _, self.owner = set_owner_character(character_id=1001)
-            load_notification_entities(self.owner)
-
-        @staticmethod
-        def _my_group_to_role(group: Group) -> dict:
-            if not isinstance(group, Group):
-                raise TypeError("group must be of type Group")
-
-            return {"id": group.pk, "name": group.name}
-
-        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-        def test_can_ping_via_webhook(self, mock_send_message, mock_import_discord):
-            args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_send_message.return_value = Mock(**args)
-            mock_import_discord.return_value.objects.group_to_role.side_effect = (
-                self._my_group_to_role
-            )
-            webhook = create_webhook()
-            webhook.ping_groups.add(self.group_1)
-
-            obj = Notification.objects.get(notification_id=1000000509)
-            self.assertTrue(obj.send_to_webhook(webhook))
-
-            self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_send_message.call_args
-            self.assertIn(f"<@&{self.group_1.pk}>", kwargs["content"])
-
-        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-        def test_can_ping_via_owner(self, mock_send_message, mock_import_discord):
-            args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_send_message.return_value = Mock(**args)
-            mock_import_discord.return_value.objects.group_to_role.side_effect = (
-                self._my_group_to_role
-            )
-            webhook = create_webhook()
-            self.owner.ping_groups.add(self.group_2)
-
-            obj = Notification.objects.get(notification_id=1000000509)
-            self.assertTrue(obj.send_to_webhook(webhook))
-
-            self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_send_message.call_args
-            self.assertIn(f"<@&{self.group_2.pk}>", kwargs["content"])
-
-        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-        def test_can_ping_both(self, mock_send_message, mock_import_discord):
-            args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_send_message.return_value = Mock(**args)
-            mock_import_discord.return_value.objects.group_to_role.side_effect = (
-                self._my_group_to_role
-            )
-            webhook = create_webhook()
-            webhook.ping_groups.add(self.group_1)
-            self.owner.ping_groups.add(self.group_2)
-
-            obj = Notification.objects.get(notification_id=1000000509)
-            self.assertTrue(obj.send_to_webhook(webhook))
-
-            self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_send_message.call_args
-            self.assertIn(f"<@&{self.group_1.pk}>", kwargs["content"])
-            self.assertIn(f"<@&{self.group_2.pk}>", kwargs["content"])
-
-        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-        def test_no_ping_if_not_set(self, mock_send_message, mock_import_discord):
-            # given
-            args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_send_message.return_value = Mock(**args)
-            mock_import_discord.return_value.objects.group_to_role.side_effect = (
-                self._my_group_to_role
-            )
-            webhook = create_webhook()
-            obj = Notification.objects.get(notification_id=1000000509)
-            # when
-            result = obj.send_to_webhook(webhook)
-            # then
-            self.assertTrue(result)
-            self.assertFalse(mock_import_discord.called)
-            args, kwargs = mock_send_message.call_args
-            self.assertFalse(re.search(r"(<@&\d+>)", kwargs["content"]))
-
-        @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
-        def test_can_handle_http_error(self, mock_send_message, mock_import_discord):
-            # given
-            args = {"status_code": 200, "status_ok": True, "content": None}
-            mock_send_message.return_value = Mock(**args)
-            mock_import_discord.return_value.objects.group_to_role.side_effect = (
-                HTTPError
-            )
-            webhook = create_webhook()
-            webhook.ping_groups.add(self.group_1)
-            obj = Notification.objects.get(notification_id=1000000509)
-            # when
-            result = obj.send_to_webhook(webhook)
-            # then
-            self.assertTrue(result)
-            self.assertTrue(mock_import_discord.called)
-            args, kwargs = mock_send_message.call_args
-            self.assertFalse(re.search(r"(<@&\d+>)", kwargs["content"]))
-
-
-if "timerboard" in app_labels():
-
-    from allianceauth.timerboard.models import Timer as AuthTimer
-
-    @patch(
-        "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-        Mock(),
-    )
-    @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    class TestNotificationAddToTimerboard(NoSocketsTestCase):
-        @classmethod
-        def setUpClass(cls):
-            super().setUpClass()
-            create_structures()
-            load_eveuniverse()
-            _, cls.owner = set_owner_character(character_id=1001)
-            load_notification_entities(cls.owner)
-            cls.owner.webhooks.add(create_webhook())
-
-        def setUp(self) -> None:
-            AuthTimer.objects.all().delete()
-
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-        @patch("allianceauth.timerboard.models.Timer", spec=True)
-        def test_moon_timers_disabled(self, mock_Timer):
-            x = Notification.objects.get(notification_id=1000000404)
-            self.assertFalse(x.process_for_timerboard())
-            self.assertFalse(mock_Timer.objects.create.called)
-
-            x = Notification.objects.get(notification_id=1000000402)
-            self.assertFalse(x.process_for_timerboard())
-            self.assertFalse(mock_Timer.delete.called)
-
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
-        def test_normal(self):
-            notification_without_timer_query = Notification.objects.filter(
-                notification_id__in=[
-                    1000000401,
-                    1000000403,
-                    1000000405,
-                    1000000502,
-                    1000000503,
-                    1000000506,
-                    1000000507,
-                    1000000508,
-                    1000000509,
-                    1000000510,
-                    1000000511,
-                    1000000512,
-                    1000000513,
-                    1000000601,
-                    1000010509,
-                    1000010601,
-                ]
-            )
-            for x in notification_without_timer_query:
-                self.assertFalse(x.process_for_timerboard())
-
-            self.assertEqual(AuthTimer.objects.count(), 0)
-
-            x = Notification.objects.get(notification_id=1000000501)
-            self.assertFalse(x.process_for_timerboard())
-
-            x = Notification.objects.get(notification_id=1000000504)
-            self.assertTrue(x.process_for_timerboard())
-
-            x = Notification.objects.get(notification_id=1000000505)
-            self.assertTrue(x.process_for_timerboard())
-
-            x = Notification.objects.get(notification_id=1000000602)
-            self.assertTrue(x.process_for_timerboard())
-
-            ids_set_1 = {x.id for x in AuthTimer.objects.all()}
-            x = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(x.process_for_timerboard())
-
-            self.assertEqual(AuthTimer.objects.count(), 4)
-
-            # this should remove the right timer only
-            x = Notification.objects.get(notification_id=1000000402)
-            x.process_for_timerboard()
-            self.assertEqual(AuthTimer.objects.count(), 3)
-            ids_set_2 = {x.id for x in AuthTimer.objects.all()}
-            self.assertSetEqual(ids_set_1, ids_set_2)
-
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
-        def test_run_all(self):
-            for x in Notification.objects.all():
-                x.process_for_timerboard()
-
-        @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False)
-        def test_corp_restriction_1(self):
-            # given
-            notif = Notification.objects.get(notification_id=1000000504)
-            # when
-            result = notif.process_for_timerboard()
-            # then
-            self.assertTrue(result)
-            timer = AuthTimer.objects.first()
-            self.assertFalse(timer.corp_timer)
-
-        @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", True)
-        def test_corp_restriction_2(self):
-            x = Notification.objects.get(notification_id=1000000504)
-            self.assertTrue(x.process_for_timerboard())
-            t = AuthTimer.objects.first()
-            self.assertTrue(t.corp_timer)
-
-
-if "structuretimers" in app_labels():
-
-    from structuretimers.models import Timer
-
-    from eveuniverse.models import EveSolarSystem as EveSolarSystem2
-    from eveuniverse.models import EveType as EveType2
-
-    @patch(
-        "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-        Mock(),
-    )
-    @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
-    class TestNotificationAddToTimerboard2(NoSocketsTestCase):
-        @classmethod
-        def setUpClass(cls):
-            super().setUpClass()
-            create_structures()
-            load_eveuniverse()
-
-        def setUp(self) -> None:
-            _, self.owner = set_owner_character(character_id=1001)
-            load_notification_entities(self.owner)
-            self.owner.webhooks.add(create_webhook())
-            Timer.objects.all().delete()
-
-        def test_timer_structure_reinforcement(self):
-            notification = Notification.objects.get(notification_id=1000000505)
-            self.assertTrue(notification.process_for_timerboard())
-            timer = Timer.objects.first()
-            self.assertIsInstance(timer, Timer)
-            self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
-            )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=35832))
-            self.assertEqual(timer.timer_type, Timer.Type.ARMOR)
-            self.assertEqual(timer.objective, Timer.Objective.FRIENDLY)
-            self.assertAlmostEqual(
-                timer.date, now() + dt.timedelta(hours=47), delta=dt.timedelta(hours=1)
-            )
-            self.assertEqual(
-                timer.eve_corporation,
-                EveCorporationInfo.objects.get(corporation_id=2001),
-            )
-            self.assertEqual(
-                timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
-            )
-            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
-            self.assertEqual(timer.structure_name, "Test Structure Alpha")
-            self.assertEqual(timer.owner_name, "Wayne Technologies")
-            self.assertTrue(timer.details_notes)
-
-        def test_timer_sov_reinforcement(self):
-            notification = Notification.objects.get(notification_id=1000000804)
-
-            # do not process if owner is not set as main for alliance
-            self.assertFalse(notification.process_for_timerboard())
-
-            # process for alliance main
-            self.owner.is_alliance_main = True
-            self.owner.save()
-            notification.owner.refresh_from_db()
-            self.assertTrue(notification.process_for_timerboard())
-
-            timer = Timer.objects.first()
-            self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.Type.FINAL)
-            self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30000474)
-            )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=32226))
-            self.assertAlmostEqual(
-                timer.date,
-                pytz.utc.localize(dt.datetime(2018, 12, 20, 17, 3, 22)),
-                delta=dt.timedelta(seconds=120),
-            )
-            self.assertEqual(
-                timer.eve_corporation,
-                EveCorporationInfo.objects.get(corporation_id=2001),
-            )
-            self.assertEqual(
-                timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
-            )
-            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
-            self.assertEqual(timer.owner_name, "Wayne Enterprises")
-            self.assertTrue(timer.details_notes)
-
-        def test_timer_orbital_reinforcements(self):
-            notification = Notification.objects.get(notification_id=1000000602)
-            self.assertTrue(notification.process_for_timerboard())
-            timer = Timer.objects.first()
-            self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.Type.FINAL)
-            self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
-            )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=2233))
-            self.assertEqual(timer.location_details, "Amamake IV")
-            self.assertAlmostEqual(
-                timer.date,
-                pytz.utc.localize(dt.datetime(2019, 10, 13, 20, 32, 27)),
-                delta=dt.timedelta(seconds=120),
-            )
-            self.assertEqual(
-                timer.eve_corporation,
-                EveCorporationInfo.objects.get(corporation_id=2001),
-            )
-            self.assertEqual(
-                timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
-            )
-            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
-            self.assertEqual(timer.owner_name, "Wayne Technologies")
-            self.assertTrue(timer.details_notes)
-
-        def test_timer_moon_extraction(self):
-            notification = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(notification.process_for_timerboard())
-            timer = Timer.objects.first()
-            self.assertIsInstance(timer, Timer)
-            self.assertEqual(timer.timer_type, Timer.Type.MOONMINING)
-            self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
-            )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=35835))
-            self.assertEqual(
-                timer.eve_corporation,
-                EveCorporationInfo.objects.get(corporation_id=2001),
-            )
-            self.assertEqual(
-                timer.eve_alliance, EveAllianceInfo.objects.get(alliance_id=3001)
-            )
-            self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
-            self.assertEqual(timer.location_details, "Amamake II - Moon 1")
-            self.assertEqual(timer.owner_name, "Wayne Technologies")
-            self.assertEqual(timer.structure_name, "Dummy")
-            self.assertTrue(timer.details_notes)
-
-        def test_anchoring_timer_not_created_for_null_sec(self):
-            obj = Notification.objects.get(notification_id=1000010501)
-            self.assertFalse(obj.process_for_timerboard())
-            self.assertIsNone(Timer.objects.first())
-
-        def test_can_delete_extraction_timer(self):
-            # create timer
-            obj = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(obj.process_for_timerboard())
-            timer = Timer.objects.first()
-            self.assertIsInstance(timer, Timer)
-
-            # delete timer
-            obj = Notification.objects.get(notification_id=1000000402)
-            self.assertFalse(obj.process_for_timerboard())
-            self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
 
 
 class TestNotificationType(NoSocketsTestCase):
     def test_should_return_enabled_values_only(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", False):
             values = NotificationType.values_enabled
         # then
         self.assertNotIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
@@ -1148,7 +764,7 @@ class TestNotificationType(NoSocketsTestCase):
 
     def test_should_return_all_values(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True):
             values = NotificationType.values_enabled
         # then
         self.assertIn(NotificationType.STRUCTURE_REFUELED_EXTRA, values)
@@ -1156,7 +772,7 @@ class TestNotificationType(NoSocketsTestCase):
 
     def test_should_return_enabled_choices_only(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", False):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", False):
             choices = NotificationType.choices_enabled
         # then
         types = {choice[0] for choice in choices}
@@ -1165,7 +781,7 @@ class TestNotificationType(NoSocketsTestCase):
 
     def test_should_return_all_choices(self):
         # when
-        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True):
+        with patch(MODULE_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True):
             choices = NotificationType.choices_enabled
         # then
         types = {choice[0] for choice in choices}
@@ -1398,7 +1014,3 @@ class TestNotificationType(NoSocketsTestCase):
         for ntype in NotificationType.esi_notifications:
             with self.subTest(notification_type=ntype):
                 self.assertIn(ntype, esi_valid_notification_types)
-
-
-class TestWebhook(NoSocketsTestCase):
-    pass

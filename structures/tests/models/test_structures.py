@@ -20,16 +20,16 @@ from ...models import (
     StructureService,
     StructureTag,
 )
-from ..testdata import (
-    create_owners,
-    create_structures,
-    load_entities,
-    set_owner_character,
-)
 from ..testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_upwell_structure,
+)
+from ..testdata.helpers import (
+    create_owners,
+    create_structures,
+    load_entities,
+    set_owner_character,
 )
 
 STRUCTURES_PATH = "structures.models.structures"
@@ -210,9 +210,9 @@ class TestStructure(NoSocketsTestCase):
     def test_extract_name_from_esi_respose(self):
         expected = "Alpha"
         self.assertEqual(
-            Structure.extract_name_from_esi_respose("Super - Alpha"), expected
+            Structure.extract_name_from_esi_response("Super - Alpha"), expected
         )
-        self.assertEqual(Structure.extract_name_from_esi_respose("Alpha"), expected)
+        self.assertEqual(Structure.extract_name_from_esi_response("Alpha"), expected)
 
     def test_owner_has_sov(self):
         # Wayne Tech has sov in 1-PG
@@ -514,7 +514,7 @@ class TestStructureIsBurningFuel(NoSocketsTestCase):
         self.assertFalse(poco.is_burning_fuel)
 
 
-@patch(STRUCTURES_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS", True)
+@patch(STRUCTURES_PATH + ".STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True)
 @patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_UPWELL", 900)
 @patch(STRUCTURES_PATH + ".Structure.FUEL_DATES_EQUAL_THRESHOLD_STARBASE", 7200)
 class TestStructureFuelLevels(NoSocketsTestCase):

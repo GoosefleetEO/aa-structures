@@ -12,7 +12,7 @@ from app_utils.testing import NoSocketsTestCase, add_new_token, create_fake_user
 
 from structures.helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from structures.models.eveuniverse import EsiNameLocalization
-from structures.tests.testdata import (
+from structures.tests.testdata.helpers import (
     esi_get_corporations_corporation_id_structures,
     esi_get_universe_categories_category_id,
     esi_mock_client,

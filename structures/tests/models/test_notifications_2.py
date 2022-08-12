@@ -17,13 +17,6 @@ from ...models import (
     StructureItem,
     Webhook,
 )
-from ..testdata import (
-    create_structures,
-    load_entities,
-    load_notification_by_type,
-    load_notification_entities,
-    set_owner_character,
-)
 from ..testdata.factories import (
     create_jump_gate,
     create_notification,
@@ -33,6 +26,13 @@ from ..testdata.factories import (
     create_structure_item,
     create_upwell_structure,
     create_webhook,
+)
+from ..testdata.helpers import (
+    create_structures,
+    load_entities,
+    load_notification_by_type,
+    load_notification_entities,
+    set_owner_character,
 )
 
 MODULE_PATH = "structures.models.notifications"
@@ -51,6 +51,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_output_str(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         alert = FuelAlert.objects.create(structure=structure, config=config, hours=36)
@@ -61,6 +62,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + dt.timedelta(hours=25)
@@ -77,6 +79,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() - dt.timedelta(hours=2)
@@ -91,6 +94,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + dt.timedelta(hours=25)
@@ -105,6 +109,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_for_starbase(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1300000000001)
         structure.fuel_expires_at = now() + dt.timedelta(hours=25)
@@ -121,6 +126,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1300000000001)
         structure.state = Structure.State.POS_OFFLINE
@@ -134,6 +140,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(
             start=48,
             end=0,
@@ -153,6 +160,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_use_configured_level_for_notifications(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(
             start=48,
             end=0,
@@ -173,6 +181,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_at_start(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=12, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + dt.timedelta(
@@ -217,6 +226,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         config = FuelAlertConfig.objects.create(start=12, end=0, repeat=0)
         structure = Structure.objects.get(id=1000000000001)
         structure.fuel_expires_at = now() + dt.timedelta(
@@ -236,6 +246,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         webhook_2 = create_webhook(
             notification_types=[
                 NotificationType.STRUCTURE_DESTROYED,
@@ -261,6 +272,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         webhook_2 = create_webhook(
             notification_types=[
                 NotificationType.STRUCTURE_DESTROYED,
@@ -283,6 +295,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_remove_alerts_when_config_changes_1(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         FuelAlert.objects.create(structure=structure, config=config, hours=36)
@@ -294,6 +307,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_remove_alerts_when_config_changes_2(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         FuelAlert.objects.create(structure=structure, config=config, hours=36)
@@ -305,6 +319,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_remove_alerts_when_config_changes_3(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         FuelAlert.objects.create(structure=structure, config=config, hours=36)
@@ -318,6 +333,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.side_effect = RuntimeError
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure = Structure.objects.get(id=1000000000001)
         FuelAlert.objects.create(structure=structure, config=config, hours=36)
@@ -328,6 +344,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
 
     def test_should_return_correct_webhooks(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook_wrong_type = create_webhook(
             notification_types=[NotificationType.STRUCTURE_DESTROYED]
         )
@@ -365,6 +382,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_output_str(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         owner = create_owner_from_user(user=self.user)
         structure = create_jump_gate(owner=owner)
         config = JumpFuelAlertConfig.objects.create(threshold=100)
@@ -376,6 +394,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_send_fuel_notification_for_structure(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -401,6 +420,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -421,6 +441,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_handle_no_fuel_situation(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -437,6 +458,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -462,6 +484,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -483,6 +506,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_use_configured_ping_type_for_notifications(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -507,6 +531,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_use_configured_level_for_notifications(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -535,6 +560,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_to_webhook, mock_send_message
     ):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -563,6 +589,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_remove_alerts_when_config_changes(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -586,6 +613,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
         self, mock_send_message
     ):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )
@@ -606,6 +634,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
 
     def test_should_return_correct_webhooks(self, mock_send_message):
         # given
+        mock_send_message.side_effect = RuntimeError
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_JUMP_FUEL_ALERT]
         )

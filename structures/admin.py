@@ -17,6 +17,7 @@ from . import __title__, app_settings, tasks
 from .models import (
     FuelAlert,
     FuelAlertConfig,
+    GeneratedNotification,
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
@@ -184,55 +185,36 @@ class RenderableNotificationFilter(admin.SimpleListFilter):
             return queryset
 
 
-class OwnerFilter(admin.SimpleListFilter):
-    title = "owner"
-    parameter_name = "owner_filter"
-
-    def lookups(self, request, model_admin):
-        return (
-            Notification.objects.values_list(
-                "owner__pk", "owner__corporation__corporation_name"
-            )
-            .distinct()
-            .order_by("owner__corporation__corporation_name")
-        )
-
-    def queryset(self, request, queryset):
-        """Return the filtered queryset"""
-        value = self.value()
-        if value:
-            return queryset.filter(owner__pk=self.value())
-        else:
-            return queryset
-
-
-@admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
+class NotificationBaseAdmin(admin.ModelAdmin):
     list_display = (
-        "notification_id",
+        "_notification_id",
+        "timestamp",
         "owner",
         "notif_type",
-        "timestamp",
-        "created",
         "_webhooks",
         "_structures",
         "_is_sent",
         "_is_timer_added",
     )
-    ordering = ["-timestamp", "-notification_id"]
     list_filter = (
-        OwnerFilter,
-        # "owner",
+        ("owner", admin.RelatedOnlyFieldListFilter),
         RenderableNotificationFilter,
         "is_sent",
         "notif_type",
     )
+    ordering = ["-timestamp"]
     actions = (
         "mark_as_sent",
         "mark_as_unsent",
         "send_to_configured_webhooks",
         "process_for_timerboard",
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -247,7 +229,10 @@ class NotificationAdmin(admin.ModelAdmin):
                 queryset=Structure.objects.filter(webhooks__isnull=False),
                 to_attr="structures_with_webhooks",
             ),
-        ).select_related("owner", "owner__corporation", "sender")
+        ).select_related("owner", "owner__corporation")
+
+    def _notification_id(self, obj):
+        return obj.notification_id
 
     def _webhooks(self, obj):
         if not obj.can_be_rendered:
@@ -286,51 +271,32 @@ class NotificationAdmin(admin.ModelAdmin):
 
     @admin.display(description="Mark selected notifications as sent")
     def mark_as_sent(self, request, queryset):
-        notifications_count = 0
-        for obj in queryset:
-            obj.is_sent = True
-            obj.save()
-            notifications_count += 1
-
+        queryset.update(is_sent=True)
         self.message_user(
-            request, "{} notifications marked as sent".format(notifications_count)
+            request, "{} notifications marked as sent".format(queryset.count())
         )
 
     @admin.display(description="Mark selected notifications as unsent")
     def mark_as_unsent(self, request, queryset):
-        notifications_count = 0
-        for obj in queryset:
-            obj.is_sent = False
-            obj.save()
-            notifications_count += 1
+        queryset.update(is_sent=False)
         self.message_user(
-            request, "{} notifications marked as unsent".format(notifications_count)
+            request, "{} notifications marked as unsent".format(queryset.count())
         )
 
     @admin.display(description="Send selected notifications to configured webhooks")
     def send_to_configured_webhooks(self, request, queryset):
-        obj_pks = [
-            obj.pk
-            for obj in queryset
-            if obj.can_be_rendered and obj.relevant_webhooks().exists()
-        ]
-        total_count = queryset.count()
-        ignored_count = total_count - len(obj_pks)
-        if obj_pks:
-            tasks.send_notifications.delay(obj_pks)
-            message = (
-                f"Initiated sending of {len(obj_pks)} notification(s) to "
-                f"configured webhooks."
+        notifs_queued = 0
+        for obj in queryset:
+            if obj.can_be_rendered and obj.relevant_webhooks().exists():
+                if obj.send_to_configured_webhooks():
+                    notifs_queued += 1
+        if notifs_queued:
+            tasks.send_queued_messages_for_webhooks(
+                Webhook.objects.filter(is_active=True)
             )
-            level = "SUCCESS"
-        else:
-            message = ""
-            level = "WARNING"
-        if ignored_count:
-            message += (
-                f" Ignored {ignored_count} notification(s), which can not be rendered."
-            )
-        self.message_user(request, message, level=level)
+        self.message_user(
+            request, f"Sent {notifs_queued}/{queryset.count()} generated messages."
+        )
 
     @admin.display(description="Process selected notifications for timerboard")
     def process_for_timerboard(self, request, queryset):
@@ -348,11 +314,15 @@ class NotificationAdmin(admin.ModelAdmin):
             message += f" Ignored {ignored_count} notification(s), which has no relation to timers."
         self.message_user(request, message)
 
-    def has_add_permission(self, request):
-        return False
 
-    def has_change_permission(self, request, obj=None):
-        return False
+@admin.register(Notification)
+class NotificationAdmin(NotificationBaseAdmin):
+    pass
+
+
+@admin.register(GeneratedNotification)
+class GeneratedNotificationAdmin(NotificationBaseAdmin):
+    pass
 
 
 class OwnerCharacterAdminInline(admin.TabularInline):
@@ -571,7 +541,7 @@ class OwnerAdmin(admin.ModelAdmin):
         max_medium = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MEDIUM
         max_long = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_LONG
         max_valid = app_settings.STRUCTURES_NOTIFICATION_TURNAROUND_MAX_VALID
-        notifications = obj.notifications.filter(created__isnull=False).order_by(
+        notifications = obj.notification_set.filter(created__isnull=False).order_by(
             "-timestamp"
         )
         data = [

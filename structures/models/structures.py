@@ -20,7 +20,7 @@ from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
 from .. import __title__
-from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS
+from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS
 from ..constants import EveCategoryId, EveGroupId, EveTypeId
 from ..core import starbases
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
@@ -560,7 +560,7 @@ class Structure(models.Model):
     def is_fuel_expiry_date_different(self, other: "Structure") -> True:
         """True when fuel expiry date from other structure is different.
 
-        Will compare using treshold setting.
+        Will compare using threshold setting.
         """
         change_threshold = (
             self.FUEL_DATES_EQUAL_THRESHOLD_UPWELL
@@ -606,7 +606,7 @@ class Structure(models.Model):
                     logger_tag,
                 )
                 self.structure_fuel_alerts.all().delete()
-                if STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS and (
+                if STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS and (
                     not old_instance.fuel_expires_at
                     or old_instance.fuel_expires_at < self.fuel_expires_at
                 ):
@@ -675,7 +675,7 @@ class Structure(models.Model):
                 self.items.bulk_create(structure_items)
 
     @classmethod
-    def extract_name_from_esi_respose(cls, esi_name):
+    def extract_name_from_esi_response(cls, esi_name):
         """extracts the structure's name from the name in an ESI response"""
         matches = re.search(r"^\S+ - (.+)", esi_name)
         return matches.group(1) if matches else esi_name

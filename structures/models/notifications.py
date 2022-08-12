@@ -1,5 +1,6 @@
 """Notification related models"""
 
+import datetime as dt
 import math
 from typing import Optional, Tuple
 
@@ -34,14 +35,20 @@ from app_utils.urls import static_file_absolute_url
 from .. import __title__
 from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_DEFAULT_LANGUAGE,
-    STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS,
+    STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
     STRUCTURES_NOTIFICATION_SET_AVATAR,
     STRUCTURES_REPORT_NPC_ATTACKS,
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from ..constants import EveCategoryId, EveCorporationId, EveTypeId
-from ..managers import EveEntityManager, NotificationManager, WebhookManager
+from ..core import starbases
+from ..managers import (
+    EveEntityManager,
+    GeneratedNotificationManager,
+    NotificationManager,
+    WebhookManager,
+)
 from ..webhooks.models import WebhookBase
 from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
@@ -118,7 +125,8 @@ class NotificationType(models.TextChoices):
     # starbases
     TOWER_ALERT_MSG = "TowerAlertMsg", _("Starbase attacked")
     TOWER_RESOURCE_ALERT_MSG = "TowerResourceAlertMsg", _("Starbase fuel alert")
-    TOWER_REFUELED_EXTRA = "TowerRefueledExtra", _("Starbase refueled")
+    TOWER_REFUELED_EXTRA = "TowerRefueledExtra", _("Starbase refueled (BETA)")
+    TOWER_REINFORCED_EXTRA = "TowerReinforcedExtra", _("Starbase reinforced (BETA)")
 
     # moon mining
     MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted", _(
@@ -172,10 +180,10 @@ class NotificationType(models.TextChoices):
         "War retracted by Concord"
     )
     WAR_CORPORATION_BECAME_ELIGIBLE = "CorpBecameWarEligible", _(
-        "War corporation became eligable"
+        "War corporation became eligible"
     )
     WAR_CORPORATION_NO_LONGER_ELIGIBLE = "CorpNoLongerWarEligible", _(
-        "War corporation no longer eligable"
+        "War corporation no longer eligible"
     )
     WAR_WAR_SURRENDER_OFFER_MSG = "WarSurrenderOfferMsg", _("War surrender offered")
 
@@ -212,6 +220,7 @@ class NotificationType(models.TextChoices):
             cls.STRUCTURE_JUMP_FUEL_ALERT,
             cls.STRUCTURE_REFUELED_EXTRA,
             cls.TOWER_REFUELED_EXTRA,
+            cls.TOWER_REINFORCED_EXTRA,
         }
 
     @classproperty
@@ -246,11 +255,12 @@ class NotificationType(models.TextChoices):
             cls.MOONMINING_EXTRACTION_STARTED,
             cls.MOONMINING_EXTRACTION_CANCELLED,
             cls.SOV_STRUCTURE_REINFORCED,
+            cls.TOWER_REINFORCED_EXTRA,
         }
 
     @classproperty
     def relevant_for_alliance_level(cls) -> set:
-        """Notification types that requre the alliance level flag."""
+        """Notification types that require the alliance level flag."""
         return {
             # billing
             cls.BILLING_BILL_OUT_OF_MONEY_MSG,
@@ -318,6 +328,7 @@ class NotificationType(models.TextChoices):
             cls.TOWER_ALERT_MSG,
             cls.TOWER_RESOURCE_ALERT_MSG,
             cls.TOWER_REFUELED_EXTRA,
+            cls.TOWER_REINFORCED_EXTRA,
         }
 
     @classproperty
@@ -333,7 +344,7 @@ class NotificationType(models.TextChoices):
     def values_enabled(cls) -> set:
         """Values of enabled notif types only."""
         my_set = set(cls.values)
-        if not STRUCTURES_FEATURE_REFUELED_NOTIFICIATIONS:
+        if not STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS:
             my_set.discard(cls.STRUCTURE_REFUELED_EXTRA)
             my_set.discard(cls.TOWER_REFUELED_EXTRA)
         return my_set
@@ -454,15 +465,8 @@ class EveEntity(models.Model):
             raise NotImplementedError()
 
 
-class Notification(models.Model):
-    """A notification
-
-    Notifications are usually created from Eve Online notifications received from ESI,
-    but they can also be generated directly by Structures.
-    """
-
-    HTTP_CODE_TOO_MANY_REQUESTS = 429
-    TEMPORARY_NOTIFICATION_ID = 999999999999
+class NotificationBase(models.Model):
+    """Base model for a notification."""
 
     # event type structure map
     MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
@@ -475,25 +479,6 @@ class Notification(models.Model):
         EveTypeId.IHUB: "I-HUB",
     }
 
-    notification_id = models.PositiveBigIntegerField(verbose_name="id")
-    owner = models.ForeignKey(
-        "Owner",
-        on_delete=models.CASCADE,
-        related_name="notifications",
-        help_text="Corporation that received this notification",
-    )
-
-    created = models.DateTimeField(
-        null=True,
-        default=None,
-        help_text="Date when this notification was first received from ESI",
-    )
-
-    is_read = models.BooleanField(
-        null=True,
-        default=None,
-        help_text="True when this notification has read in the eve client",
-    )
     is_sent = models.BooleanField(
         default=False,
         help_text="True when this notification has been forwarded to Discord",
@@ -503,31 +488,24 @@ class Notification(models.Model):
         default=False,
         help_text="True when a timer has been added for this notification",
     )
-    last_updated = models.DateTimeField(
-        help_text="Date when this notification has last been updated from ESI"
-    )
     notif_type = models.CharField(
         max_length=100,
         default="",
         db_index=True,
         verbose_name="type",
-        help_text="type of this notification as reported by ESI",
+        help_text="type of this notification",
     )
-    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        "Owner",
+        on_delete=models.CASCADE,
+        help_text="Corporation that owns this notification",
+    )
     structures = models.ManyToManyField(
-        Structure,
-        related_name="notifications",
-        help_text="Structures this notification is about (if any)",
+        Structure, help_text="Structures this notification is about (if any)"
     )
-    text = models.TextField(
-        null=True, default=None, blank=True, help_text="Notification details in YAML"
-    )
-    timestamp = models.DateTimeField(db_index=True)
-
-    objects = NotificationManager()
 
     class Meta:
-        unique_together = (("notification_id", "owner"),)
+        abstract = True
 
     def __str__(self) -> str:
         return f"{self.notification_id}:{self.notif_type}"
@@ -539,16 +517,6 @@ class Notification(models.Model):
             self.owner,
             self.notif_type,
         )
-
-    def save(self, *args, **kwargs) -> None:
-        if self.is_temporary:
-            raise ValueError("Temporary notifications can not be saved")
-        super().save(*args, **kwargs)
-
-    @property
-    def is_temporary(self) -> bool:
-        """True when this notification is temporary."""
-        return self.notification_id == self.TEMPORARY_NOTIFICATION_ID
 
     @property
     def is_alliance_level(self) -> bool:
@@ -567,41 +535,43 @@ class Notification(models.Model):
 
     @property
     def is_structure_related(self) -> bool:
-        """Wheater this notification related to a structure."""
+        """Weather this notification related to a structure."""
         return self.notif_type in NotificationType.structure_related
 
-    # @classmethod
-    # def get_all_types(cls) -> Set[int]:
-    #     """returns a set with all supported notification types"""
-    #     return {x[0] for x in NotificationType.choices}
+    def send_to_configured_webhooks(
+        self,
+        ping_type_override: Webhook.PingType = None,
+        use_color_override: bool = False,
+        color_override: int = None,
+    ) -> Optional[bool]:
+        """Send this notification to all active webhooks which have this
+        notification type configured
+        and apply filter for NPC attacks and alliance level if needed.
 
-    def parsed_text(self) -> dict:
-        """Returns the notifications's text as dict."""
-        return yaml.safe_load(self.text)
-
-    def is_npc_attacking(self) -> bool:
-        """Whether this notification is about a NPC attacking."""
-        if self.notif_type in [
-            NotificationType.ORBITAL_ATTACKED,
-            NotificationType.STRUCTURE_UNDER_ATTACK,
-        ]:
-            parsed_text = self.parsed_text()
-            corporation_id = None
-            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
-                if (
-                    "corpLinkData" in parsed_text
-                    and len(parsed_text["corpLinkData"]) >= 3
-                ):
-                    corporation_id = int(parsed_text["corpLinkData"][2])
-            if self.notif_type == NotificationType.ORBITAL_ATTACKED:
-                if "aggressorCorpID" in parsed_text:
-                    corporation_id = int(parsed_text["aggressorCorpID"])
-            if corporation_id:
-                corporation = EveEntity2(
-                    category=EveEntity2.CATEGORY_CORPORATION, id=corporation_id
-                )
-                return corporation.is_npc and not corporation.is_npc_starter_corporation
-        return False
+        Returns True, if notifications has been successfully send to webhooks
+        Returns None, if owner has no fitting webhook
+        Returns False, if sending to any webhooks failed
+        """
+        if self.filter_for_npc_attacks():
+            logger.debug("%s: Will not send NPC attacks", self)
+            return None
+        if self.filter_for_alliance_level():
+            logger.debug(
+                "%s: Alliance level notifications are not enabled for this owner", self
+            )
+            return None
+        webhooks_qs = self.relevant_webhooks()
+        if not webhooks_qs.exists():
+            logger.debug("%s: No relevant webhook found", self)
+            return None
+        if ping_type_override:
+            self.ping_type_override = ping_type_override
+        if use_color_override:
+            self.color_override = color_override
+        success = True
+        for webhook in webhooks_qs:
+            success &= self.send_to_webhook(webhook)
+        return success
 
     def filter_for_npc_attacks(self) -> bool:
         """True when notification to be filtered out due to npc attacks."""
@@ -615,18 +585,21 @@ class Notification(models.Model):
             and not self.owner.is_alliance_main
         )
 
-    def update_related_structures(self) -> bool:
-        """Update related structure for this notification.
-
-        Returns True if structures where updated, else False.
-        """
-        structures_qs = self.calc_related_structures()
-        self.structures.clear()
-        if structures_qs.exists():
-            objs = [obj for obj in structures_qs.all()]
-            self.structures.add(*objs)
-            return True
-        return False
+    def relevant_webhooks(self) -> models.QuerySet:
+        """Determine relevant webhooks matching this notification type."""
+        if not self.is_structure_related:
+            structures_qs = None
+        else:
+            structures_qs = self.calc_related_structures()
+        if structures_qs and structures_qs.filter(webhooks__isnull=False).count() == 1:
+            webhooks_qs = structures_qs.first().webhooks.filter(
+                notification_types__contains=self.notif_type, is_active=True
+            )
+        else:
+            webhooks_qs = self.owner.webhooks.filter(
+                notification_types__contains=self.notif_type, is_active=True
+            )
+        return webhooks_qs
 
     def calc_related_structures(self) -> models.QuerySet[Structure]:
         """Identify structures this notification is related to.
@@ -684,6 +657,52 @@ class Notification(models.Model):
             )
         return Structure.objects.none()
 
+    def send_to_webhook(self, webhook: Webhook) -> bool:
+        """Sends this notification to the configured webhook.
+
+        returns True if successful, else False
+        """
+        logger.info("%s: Trying to sent to webhook: %s", self, webhook)
+        try:
+            embed, ping_type = self._generate_embed(webhook.language_code)
+        except (OSError, NotImplementedError) as ex:
+            logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
+            return False
+        if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
+            if ping_type == Webhook.PingType.EVERYONE:
+                content = "@everyone"
+            elif ping_type == Webhook.PingType.HERE:
+                content = "@here"
+            else:
+                content = ""
+        else:
+            content = ""
+        if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
+            if "discord" in app_labels():
+                DiscordUser = self._import_discord()
+
+                groups = set(self.owner.ping_groups.all()) | set(
+                    webhook.ping_groups.all()
+                )
+                for group in groups:
+                    try:
+                        role = DiscordUser.objects.group_to_role(group)
+                    except HTTPError:
+                        logger.warning("Failed to get Discord roles", exc_info=True)
+                    else:
+                        if role:
+                            content += f" <@&{role['id']}>"
+
+        username, avatar_url = self._gen_avatar()
+        new_queue_size = webhook.send_message(
+            content=content, embeds=[embed], username=username, avatar_url=avatar_url
+        )
+        success = new_queue_size > 0
+        if success and not self.is_temporary:
+            self.is_sent = True
+            self.save()
+        return success
+
     def _generate_embed(
         self, language_code: str
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
@@ -695,6 +714,22 @@ class Notification(models.Model):
             notification_embed = NotificationBaseEmbed.create(self)
             embed = notification_embed.generate_embed()
             return embed, notification_embed.ping_type
+
+    @staticmethod
+    def _import_discord() -> object:
+        from allianceauth.services.modules.discord.models import DiscordUser
+
+        return DiscordUser
+
+    def _gen_avatar(self) -> Tuple[str, str]:
+        if STRUCTURES_NOTIFICATION_SET_AVATAR:
+            username = "Notifications"
+            avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
+        else:
+            username = None
+            avatar_url = None
+
+        return username, avatar_url
 
     def process_for_timerboard(self, token: Token = None) -> bool:
         """Add/removes a timer related to this notification for some types
@@ -729,6 +764,10 @@ class Notification(models.Model):
                             timer_created = None
                         else:
                             timer_created = self._gen_timer_moon_extraction(parsed_text)
+                    elif self.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
+                        timer_created = self._gen_timer_tower_reinforcements(
+                            parsed_text
+                        )
                     else:
                         raise NotImplementedError()
 
@@ -1046,6 +1085,62 @@ class Notification(models.Model):
 
         return timer_added
 
+    def _gen_timer_tower_reinforcements(self, parsed_text: str) -> bool:
+        """Generate timer for tower reinforcements."""
+        structure = self.structures.first()
+        eve_time = dt.datetime.fromisoformat(self.details["reinforced_until"])
+        timer_added = False
+        if has_auth_timers:
+            structure_type_map = {
+                starbases.StarbaseSize.SMALL: "POS[S]",
+                starbases.StarbaseSize.MEDIUM: "POS[M]",
+                starbases.StarbaseSize.LARGE: "POS[L]",
+            }
+            structure_str = structure_type_map.get(
+                starbases.starbase_size(structure.eve_type), "POS[M]"
+            )
+            AuthTimer.objects.create(
+                details=gettext("Final timer"),
+                system=structure.eve_solar_system.name,
+                planet_moon=structure.eve_moon.name,
+                structure=structure_str,
+                objective="Friendly",
+                eve_time=eve_time,
+                eve_corp=self.owner.corporation,
+                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
+            )
+            timer_added = True
+
+        if has_structure_timers:
+            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+                id=structure.eve_solar_system.id
+            )
+            structure_type, _ = EveType2.objects.get_or_create_esi(
+                id=structure.eve_type.id
+            )
+            visibility = (
+                Timer.Visibility.CORPORATION
+                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
+                else Timer.Visibility.UNRESTRICTED
+            )
+            Timer.objects.create(
+                eve_solar_system=eve_solar_system,
+                structure_type=structure_type,
+                timer_type=Timer.Type.FINAL,
+                objective=Timer.Objective.FRIENDLY,
+                date=eve_time,
+                location_details=structure.eve_moon.name,
+                eve_corporation=self.owner.corporation,
+                eve_alliance=self.owner.corporation.alliance,
+                visibility=visibility,
+                structure_name=structure.name,
+                owner_name=self.owner.corporation.corporation_name,
+                details_notes=self._timer_details_notes(),
+            )
+            timer_added = True
+
+        return timer_added
+
     def _timer_details_notes(self) -> str:
         """Return generated details notes string for Timers."""
         return (
@@ -1053,123 +1148,108 @@ class Notification(models.Model):
             f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
         )
 
-    def send_to_configured_webhooks(
-        self,
-        ping_type_override: Webhook.PingType = None,
-        use_color_override: bool = False,
-        color_override: int = None,
-    ) -> Optional[bool]:
-        """Send this notification to all active webhooks which have this
-        notification type configured
-        and apply filter for NPC attacks and alliance level if needed.
-
-        Returns True, if notifications has been successfully send to webhooks
-        Returns None, if owner has no fitting webhook
-        Returns False, if sending to any webhooks failed
-        """
-        if self.filter_for_npc_attacks():
-            logger.debug("%s: Will not send NPC attacks", self)
-            return None
-        if self.filter_for_alliance_level():
-            logger.debug(
-                "%s: Alliance level notifications are not enabled for this owner", self
-            )
-            return None
-        webhooks_qs = self.relevant_webhooks()
-        if not webhooks_qs.exists():
-            logger.debug("%s: No relevant webhook found", self)
-            return None
-        if ping_type_override:
-            self.ping_type_override = ping_type_override
-        if use_color_override:
-            self.color_override = color_override
-        success = True
-        for webhook in webhooks_qs:
-            success &= self.send_to_webhook(webhook)
-        return success
-
-    def relevant_webhooks(self) -> models.QuerySet:
-        """Determine relevant webhooks matching this notification type."""
-        if not self.is_structure_related:
-            structures_qs = None
-        else:
-            structures_qs = self.calc_related_structures()
-        if structures_qs and structures_qs.filter(webhooks__isnull=False).count() == 1:
-            webhooks_qs = structures_qs.first().webhooks.filter(
-                notification_types__contains=self.notif_type, is_active=True
-            )
-        else:
-            webhooks_qs = self.owner.webhooks.filter(
-                notification_types__contains=self.notif_type, is_active=True
-            )
-        return webhooks_qs
-
-    def send_to_webhook(self, webhook: Webhook) -> bool:
-        """Sends this notification to the configured webhook.
-
-        returns True if successful, else False
-        """
-        logger.info("%s: Trying to sent to webhook: %s", self, webhook)
-        try:
-            embed, ping_type = self._generate_embed(webhook.language_code)
-        except (OSError, NotImplementedError) as ex:
-            logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
-            return False
-        if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
-            if ping_type == Webhook.PingType.EVERYONE:
-                content = "@everyone"
-            elif ping_type == Webhook.PingType.HERE:
-                content = "@here"
-            else:
-                content = ""
-        else:
-            content = ""
-        if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
-            if "discord" in app_labels():
-                DiscordUser = self._import_discord()
-
-                groups = set(self.owner.ping_groups.all()) | set(
-                    webhook.ping_groups.all()
-                )
-                for group in groups:
-                    try:
-                        role = DiscordUser.objects.group_to_role(group)
-                    except HTTPError:
-                        logger.warning("Failed to get Discord roles", exc_info=True)
-                    else:
-                        if role:
-                            content += f" <@&{role['id']}>"
-
-        username, avatar_url = self._gen_avatar()
-        success = webhook.send_message(
-            content=content, embeds=[embed], username=username, avatar_url=avatar_url
-        )
-        if success and not self.is_temporary:
-            self.is_sent = True
-            self.save()
-        return success
-
-    @staticmethod
-    def _import_discord() -> object:
-        from allianceauth.services.modules.discord.models import DiscordUser
-
-        return DiscordUser
-
-    def _gen_avatar(self) -> Tuple[str, str]:
-        if STRUCTURES_NOTIFICATION_SET_AVATAR:
-            username = "Notifications"
-            avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
-        else:
-            username = None
-            avatar_url = None
-
-        return username, avatar_url
-
     @classmethod
     def type_id_from_event_type(cls, event_type: int) -> Optional[int]:
         if event_type in cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
             return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
         return None
+
+
+class Notification(NotificationBase):
+    """A notification in Eve Online.
+
+    Notifications are usually created from Eve Online notifications received from ESI,
+    but they can also be generated directly by Structures.
+    """
+
+    TEMPORARY_NOTIFICATION_ID = 999999999999
+
+    notification_id = models.PositiveBigIntegerField(verbose_name="id")
+    created = models.DateTimeField(
+        null=True,
+        default=None,
+        help_text="Date when this notification was first received from ESI",
+    )
+    is_read = models.BooleanField(
+        null=True,
+        default=None,
+        help_text="True when this notification has read in the eve client",
+    )
+    last_updated = models.DateTimeField(
+        help_text="Date when this notification has last been updated from ESI"
+    )
+    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
+
+    text = models.TextField(
+        null=True, default=None, blank=True, help_text="Notification details in YAML"
+    )
+    timestamp = models.DateTimeField(db_index=True)
+
+    objects = NotificationManager()
+
+    class Meta:
+        verbose_name = "eve notification"
+        unique_together = (("notification_id", "owner"),)
+
+    def save(self, *args, **kwargs) -> None:
+        if self.is_temporary:
+            raise ValueError("Temporary notifications can not be saved")
+        super().save(*args, **kwargs)
+
+    @property
+    def is_temporary(self) -> bool:
+        """True when this notification is temporary."""
+        return self.notification_id == self.TEMPORARY_NOTIFICATION_ID
+
+    @property
+    def is_generated(self) -> bool:
+        return self.is_temporary
+
+    # @classmethod
+    # def get_all_types(cls) -> Set[int]:
+    #     """returns a set with all supported notification types"""
+    #     return {x[0] for x in NotificationType.choices}
+
+    def parsed_text(self) -> dict:
+        """Returns the notifications's text as dict."""
+        return yaml.safe_load(self.text)
+
+    def is_npc_attacking(self) -> bool:
+        """Whether this notification is about a NPC attacking."""
+        if self.notif_type in [
+            NotificationType.ORBITAL_ATTACKED,
+            NotificationType.STRUCTURE_UNDER_ATTACK,
+        ]:
+            parsed_text = self.parsed_text()
+            corporation_id = None
+            if self.notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
+                if (
+                    "corpLinkData" in parsed_text
+                    and len(parsed_text["corpLinkData"]) >= 3
+                ):
+                    corporation_id = int(parsed_text["corpLinkData"][2])
+            if self.notif_type == NotificationType.ORBITAL_ATTACKED:
+                if "aggressorCorpID" in parsed_text:
+                    corporation_id = int(parsed_text["aggressorCorpID"])
+            if corporation_id:
+                corporation = EveEntity2(
+                    category=EveEntity2.CATEGORY_CORPORATION, id=corporation_id
+                )
+                return corporation.is_npc and not corporation.is_npc_starter_corporation
+        return False
+
+    def update_related_structures(self) -> bool:
+        """Update related structure for this notification.
+
+        Returns True if structures where updated, else False.
+        """
+        structures_qs = self.calc_related_structures()
+        self.structures.clear()
+        if structures_qs.exists():
+            objs = [obj for obj in structures_qs.all()]
+            self.structures.add(*objs)
+            return True
+        return False
 
     @classmethod
     def create_from_structure(
@@ -1214,6 +1294,35 @@ class Notification(models.Model):
         kwargs["owner"] = structure.owner
         kwargs["notif_type"] = notif_type
         return cls(**kwargs)
+
+
+class GeneratedNotification(NotificationBase):
+    """A notification generated by the Structures app, not by Eve Online."""
+
+    details = models.JSONField(default=dict)
+    last_updated = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    objects = GeneratedNotificationManager()
+
+    @property
+    def notification_id(self) -> int:
+        return self.pk
+
+    @property
+    def is_temporary(self) -> bool:
+        return False
+
+    @property
+    def is_generated(self) -> bool:
+        return True
+
+    def is_npc_attacking(self) -> bool:
+        return False
+
+    def parsed_text(self) -> dict:
+        """Adopting to Notification API."""
+        return self.details
 
 
 class BaseFuelAlertConfig(models.Model):
