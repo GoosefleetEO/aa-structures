@@ -694,9 +694,10 @@ class NotificationBase(models.Model):
                             content += f" <@&{role['id']}>"
 
         username, avatar_url = self._gen_avatar()
-        success = webhook.send_message(
+        new_queue_size = webhook.send_message(
             content=content, embeds=[embed], username=username, avatar_url=avatar_url
         )
+        success = new_queue_size > 0
         if success and not self.is_temporary:
             self.is_sent = True
             self.save()

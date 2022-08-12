@@ -257,7 +257,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
     # )
     def test_should_send_all_notifications(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         self.user = AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )
@@ -308,7 +308,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
 
     def test_should_send_all_notifications_corp(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         user, owner = set_owner_character(character_id=1011)
         load_notification_entities(owner)
         owner.is_alliance_main = True
@@ -334,7 +334,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
 
     def test_should_only_send_selected_notification_types(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         self.user = AuthUtils.add_permission_to_user_by_name(
             "structures.add_structure_owner", self.user
         )

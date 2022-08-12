@@ -1,5 +1,5 @@
 import datetime as dt
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.utils.timezone import now
 
@@ -508,6 +508,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
         self.assertTrue(mock_send_to_webhook.called)
 
 
+@patch(MODULE_PATH + ".Webhook.send_message")
 class TestNotificationSendToWebhook(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -517,9 +518,9 @@ class TestNotificationSendToWebhook(NoSocketsTestCase):
         _, cls.owner = set_owner_character(character_id=1001)
         Webhook.objects.all().delete()
 
-    @patch(MODULE_PATH + ".Webhook.send_message")
     def test_should_override_ping_type(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA]
         )
@@ -534,9 +535,9 @@ class TestNotificationSendToWebhook(NoSocketsTestCase):
         _, kwargs = mock_send_message.call_args
         self.assertIn("@here", kwargs["content"])
 
-    @patch(MODULE_PATH + ".Webhook.send_message")
     def test_should_override_color(self, mock_send_message):
         # given
+        mock_send_message.return_value = 1
         webhook = create_webhook(
             notification_types=[NotificationType.STRUCTURE_REFUELED_EXTRA]
         )
@@ -566,10 +567,12 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         cls.owner.webhooks.add(cls.webhook)
 
     def test_can_send_message_normal(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
         self.assertIsNotNone(kwargs["content"])
@@ -577,7 +580,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     def test_should_ignore_unsupported_notif_types(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         obj = Notification.objects.create(
             notification_id=666,
             owner=self.owner,
@@ -600,16 +603,18 @@ class TestNotificationSendMessage(NoSocketsTestCase):
         self.assertTrue(obj.is_sent)
 
     def test_dont_mark_notification_as_sent_when_error(self, mock_send_message):
-        mock_send_message.return_value = False
-
+        # given
+        mock_send_message.return_value = 0
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         obj.send_to_webhook(self.webhook)
+        # then
         obj.refresh_from_db()
         self.assertFalse(obj.is_sent)
 
     def test_send_to_webhook_all_notification_types(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         types_tested = set()
         # when /then
         for notif in Notification.objects.all():
@@ -624,7 +629,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     def test_should_create_notification_for_structure_refueled(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         structure = Structure.objects.get(id=1000000000001)
         notif = Notification.create_from_structure(
             structure, NotificationType.STRUCTURE_REFUELED_EXTRA
@@ -636,7 +641,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     def test_should_create_notification_for_tower_refueled(self, mock_send_message):
         # given
-        mock_send_message.return_value = True
+        mock_send_message.return_value = 1
         structure = Structure.objects.get(id=1300000000001)
         notif = Notification.create_from_structure(
             structure, NotificationType.TOWER_REFUELED_EXTRA
@@ -648,11 +653,13 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_send_notification_without_existing_structure(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         Structure.objects.all().delete()
         obj = Notification.objects.get(notification_id=1000000505)
+        # when
         obj.send_to_webhook(self.webhook)
+        # then
         embed = mock_send_message.call_args[1]["embeds"][0]
         self.assertEqual(
             embed.description[:39], "The Astrahus **(unknown)** in [Amamake]"
@@ -660,18 +667,22 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "en")
     def test_notification_with_null_aggressor_alliance(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", True)
     def test_can_send_message_with_setting_avatar(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
         self.assertIsNotNone(kwargs["avatar_url"])
@@ -679,16 +690,19 @@ class TestNotificationSendMessage(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".STRUCTURES_NOTIFICATION_SET_AVATAR", False)
     def test_can_send_message_without_setting_avatar(self, mock_send_message):
-        mock_send_message.return_value = True
-
+        # given
+        mock_send_message.return_value = 1
         obj = Notification.objects.get(notification_id=1000020601)
+        # when
         result = obj.send_to_webhook(self.webhook)
+        # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
         self.assertIsNone(kwargs["avatar_url"])
         self.assertIsNone(kwargs["username"])
 
 
+@patch(MODULE_PATH + ".Webhook.send_message", spec=True)
 class TestNotificationPings(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
@@ -700,41 +714,32 @@ class TestNotificationPings(NoSocketsTestCase):
         _, self.owner = set_owner_character(character_id=1001)
         load_notification_entities(self.owner)
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_ping(self, mock_send_message):
         # given
-        args = {"status_code": 200, "status_ok": True, "content": None}
-        mock_response = Mock(**args)
-        mock_send_message.return_value = mock_response
+        mock_send_message.return_value = 1
         webhook_normal = create_webhook()
         obj = Notification.objects.get(notification_id=1000000509)
         # when
         result = obj.send_to_webhook(webhook_normal)
         # then
         self.assertTrue(result)
-        args, kwargs = mock_send_message.call_args
+        _, kwargs = mock_send_message.call_args
         self.assertTrue(kwargs["content"] and "@everyone" in kwargs["content"])
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_disable_pinging_webhook(self, mock_send_message):
         # given
-        args = {"status_code": 200, "status_ok": True, "content": None}
-        mock_response = Mock(**args)
-        mock_send_message.return_value = mock_response
+        mock_send_message.return_value = 1
         webhook_no_pings = create_webhook(has_default_pings_enabled=False)
         obj = Notification.objects.get(notification_id=1000000509)
         # when
         result = obj.send_to_webhook(webhook_no_pings)
         self.assertTrue(result)
-        args, kwargs = mock_send_message.call_args
+        _, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
-    @patch(MODULE_PATH + ".Webhook.send_message", spec=True)
     def test_can_disable_pinging_owner(self, mock_send_message):
         # given
-        args = {"status_code": 200, "status_ok": True, "content": None}
-        mock_response = Mock(**args)
-        mock_send_message.return_value = mock_response
+        mock_send_message.return_value = 1
         webhook_normal = create_webhook()
         self.owner.webhooks.add(webhook_normal)
         self.owner.has_default_pings_enabled = False
@@ -744,7 +749,7 @@ class TestNotificationPings(NoSocketsTestCase):
         result = obj.send_to_webhook(webhook_normal)
         # then
         self.assertTrue(result)
-        args, kwargs = mock_send_message.call_args
+        _, kwargs = mock_send_message.call_args
         self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
 
 

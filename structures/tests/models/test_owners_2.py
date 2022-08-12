@@ -1173,6 +1173,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi.client = self.esi_client_stub
+        mock_send_message.return_value = 1
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",
@@ -1203,6 +1204,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi.client = self.esi_client_stub
+        mock_send_message.side_effect = RuntimeError
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",
@@ -1227,6 +1229,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     ):
         # given
         mock_esi.client = self.esi_client_stub
+        mock_send_message.return_value = 1
         webhook = Webhook.objects.create(
             name="Webhook 1",
             url="webhook-1",

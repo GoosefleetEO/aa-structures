@@ -73,7 +73,7 @@ class DiscordWebhookMixin:
         """Adds Discord message to queue for later sending
 
         Returns updated size of queue
-        Raises ValueError if mesage is incomplete
+        Raises ValueError if message is incomplete
         """
         if not content and not embeds:
             raise ValueError("Message must have content or embeds to be valid")
@@ -110,7 +110,7 @@ class DiscordWebhookMixin:
     def send_queued_messages(self) -> int:
         """sends all messages in the queue to this webhook
 
-        returns number of successfull sent messages
+        returns number of successfully sent messages
 
         Messages that could not be sent are put back into the queue for later retry
         """
