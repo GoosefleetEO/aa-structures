@@ -16,13 +16,31 @@ from ...models import (
     EveMoon,
     EveSolarSystem,
     EveType,
+    FuelAlertConfig,
     GeneratedNotification,
+    JumpFuelAlertConfig,
     NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
     Webhook,
 )
+
+
+class FuelAlertConfigFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = FuelAlertConfig
+
+    start = 48
+    end = 0
+    repeat = 12
+
+
+class JumpFuelAlertConfigFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = JumpFuelAlertConfig
+
+    threshold = 100
 
 
 class UserMainDefaultFactory(UserMainFactory):

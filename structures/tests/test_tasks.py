@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
 from allianceauth.eveonline.models import EveCorporationInfo
+from app_utils.testdata_factories import UserFactory
 from app_utils.testing import (
     NoSocketsTestCase,
     create_user_from_evecharacter,
@@ -13,6 +14,12 @@ from app_utils.testing import (
 from .. import tasks
 from ..models import FuelAlertConfig, NotificationType, Owner, Webhook
 from .testdata.factories import create_notification, create_owner_from_user
+from .testdata.factories_2 import (
+    FuelAlertConfigFactory,
+    JumpFuelAlertConfigFactory,
+    OwnerFactory,
+    WebhookFactory,
+)
 from .testdata.helpers import (
     create_structures,
     load_entities,
@@ -117,24 +124,6 @@ class TestUpdateStructures(NoSocketsTestCase):
         call_args_list = mock_update_structures_for_owner.delay.call_args_list
         args, kwargs = call_args_list[0]
         self.assertEqual(args[0], owner_2001.pk)
-
-    """
-    TODO: Fix this test
-    @patch(MODULE_PATH + ".EveSovereigntyMap.objects.update_from_esi")
-    @patch(MODULE_PATH + ".update_structures_for_owner")
-    def test_update_all_structures(
-        self, mock_update_structures_for_owner, mock_update_from_esi
-    ):
-        Owner.objects.filter().delete()
-        Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2001),
-            is_active=True,
-        )
-        tasks.update_all_structures()
-
-        self.assertTrue(mock_update_structures_for_owner.delay.called)
-        self.assertTrue(mock_update_from_esi.called)
-    """
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
@@ -347,3 +336,120 @@ class TestUpdateExistingNotifications(NoSocketsTestCase):
         result = tasks.update_existing_notifications(owner.pk)
         # then
         self.assertEqual(result, 0)
+
+
+class TestOtherTasks(NoSocketsTestCase):
+    @patch(MODULE_PATH + ".EveSovereigntyMap.objects.update_from_esi", spec=True)
+    def test_should_call_update_sov_map_from_esi(self, mock_update_from_esi):
+        # when
+        tasks.update_sov_map()
+        # then
+        self.assertTrue(mock_update_from_esi.called)
+
+    @patch(MODULE_PATH + ".Owner.fetch_notifications_esi", spec=True)
+    def test_should_fetch_notifications_for_owner(self, mock_fetch_notifications_esi):
+        # given
+        owner = OwnerFactory()
+        # when
+        tasks.fetch_notification_for_owner(owner.pk)
+        # then
+        self.assertTrue(mock_fetch_notifications_esi.called)
+
+    @patch(MODULE_PATH + ".send_queued_messages_for_webhooks", spec=True)
+    @patch(MODULE_PATH + ".Owner.send_new_notifications", spec=True)
+    def test_should_send_notifications_for_owner(
+        self, mock_send_new_notifications, mock_send_queued_messages_for_webhooks
+    ):
+        # given
+        owner = OwnerFactory()
+        # when
+        tasks.send_new_notifications_for_owner(owner.pk)
+        # then
+        self.assertTrue(mock_send_new_notifications.called)
+        self.assertTrue(mock_send_queued_messages_for_webhooks.called)
+
+    @patch(MODULE_PATH + ".send_queued_messages_for_webhooks", spec=True)
+    @patch(MODULE_PATH + ".FuelAlertConfig.send_new_notifications", spec=True)
+    def test_should_send_fuel_notifications(
+        self, mock_send_new_notifications, mock_send_queued_messages_for_webhooks
+    ):
+        # given
+        config = FuelAlertConfigFactory()
+        # when
+        tasks.send_structure_fuel_notifications_for_config(config.pk)
+        # then
+        self.assertTrue(mock_send_new_notifications.called)
+        self.assertTrue(mock_send_queued_messages_for_webhooks.called)
+
+    @patch(MODULE_PATH + ".send_queued_messages_for_webhooks", spec=True)
+    @patch(MODULE_PATH + ".JumpFuelAlertConfig.send_new_notifications", spec=True)
+    def test_should_send_jump_fuel_notifications(
+        self, mock_send_new_notifications, mock_send_queued_messages_for_webhooks
+    ):
+        # given
+        config = JumpFuelAlertConfigFactory()
+        # when
+        tasks.send_jump_fuel_notifications_for_config(config.pk)
+        # then
+        self.assertTrue(mock_send_new_notifications.called)
+        self.assertTrue(mock_send_queued_messages_for_webhooks.called)
+
+    @patch(MODULE_PATH + ".send_messages_for_webhook", spec=True)
+    @patch(MODULE_PATH + ".Webhook.queue_size", spec=True)
+    def test_should_send_queued_messages_to_webhooks_1(
+        self, mock_queue_size, mock_send_messages_for_webhook
+    ):
+        # given
+        mock_queue_size.return_value = 1
+        webhook_1 = WebhookFactory()
+        webhook_2 = WebhookFactory()
+        # when
+        tasks.send_queued_messages_for_webhooks([webhook_1, webhook_2])
+        # then
+        called_webhook_pks = {
+            obj[1]["kwargs"]["webhook_pk"]
+            for obj in mock_send_messages_for_webhook.apply_async.call_args_list
+        }
+        expected = {webhook_1.pk, webhook_2.pk}
+        self.assertSetEqual(called_webhook_pks, expected)
+
+    @patch(MODULE_PATH + ".send_messages_for_webhook", spec=True)
+    @patch(MODULE_PATH + ".Webhook.queue_size", spec=True)
+    def test_should_send_queued_messages_to_webhooks_2(
+        self, mock_queue_size, mock_send_messages_for_webhook
+    ):
+        # given
+        mock_queue_size.return_value = 0
+        webhook_1 = WebhookFactory()
+        webhook_2 = WebhookFactory()
+        # when
+        tasks.send_queued_messages_for_webhooks([webhook_1, webhook_2])
+        # then
+        called_webhook_pks = {
+            obj[1]["kwargs"]["webhook_pk"]
+            for obj in mock_send_messages_for_webhook.apply_async.call_args_list
+        }
+        expected = set()
+        self.assertSetEqual(called_webhook_pks, expected)
+
+
+class TestGetUser(NoSocketsTestCase):
+    def test_should_return_user(self):
+        # given
+        user = UserFactory()
+        # when
+        result = tasks._get_user(user.pk)
+        # then
+        self.assertEqual(result, user)
+
+    def test_should_return_none_when_not_found(self):
+        # when
+        result = tasks._get_user(generate_invalid_pk(User))
+        # then
+        self.assertIsNone(result)
+
+    def test_should_return_none_when_called_with_none(self):
+        # when
+        result = tasks._get_user(None)
+        # then
+        self.assertIsNone(result)

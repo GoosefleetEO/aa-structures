@@ -199,41 +199,31 @@ def send_messages_for_webhook(webhook_pk: int) -> None:
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
     """Send test notification to given webhook."""
-    try:
-        webhook = Webhook.objects.get(pk=webhook_pk)
-        if user_pk:
-            user = User.objects.get(pk=user_pk)
-        else:
-            user = None
-    except Webhook.DoesNotExist:
-        logger.error("Webhook with pk = %s does not exist. Aborting.", webhook_pk)
-    except User.DoesNotExist:
-        logger.error("User with pk = %s does not exist. Aborting.", user_pk)
-    else:
-        send_report, send_success = webhook.send_test_message(user)
-        if user:
-            message = 'Test notification to webhook "{}" {}.\n'.format(
-                webhook, "completed successfully" if send_success else "has failed"
-            )
-            if not send_success:
-                message += "Error: {}".format(send_report)
-
-            notify(
-                user=user,
-                title='{}: Test notification to "{}": {}'.format(
-                    __title__, webhook, "OK" if send_success else "FAILED"
-                ),
-                message=message,
-                level="success" if send_success else "danger",
-            )
+    webhook = Webhook.objects.get(pk=webhook_pk)
+    user = _get_user(user_pk)
+    send_report, send_success = webhook.send_test_message(user)
+    if user:
+        message = 'Test notification to webhook "{}" {}.\n'.format(
+            webhook, "completed successfully" if send_success else "has failed"
+        )
+        if not send_success:
+            message += "Error: {}".format(send_report)
+        notify(
+            user=user,
+            title='{}: Test notification to "{}": {}'.format(
+                __title__, webhook, "OK" if send_success else "FAILED"
+            ),
+            message=message,
+            level="success" if send_success else "danger",
+        )
 
 
 def _get_user(user_pk: int) -> Optional[User]:
     """Fetch the user or return None."""
-    user = None
-    if user_pk:
-        try:
-            user = User.objects.get(pk=user_pk)
-        except User.DoesNotExist:
-            logger.warning("Ignoring non-existing user with pk %s", user_pk)
-    return user
+    if not user_pk:
+        return None
+    try:
+        return User.objects.get(pk=user_pk)
+    except User.DoesNotExist:
+        logger.warning("Ignoring non-existing user with pk %s", user_pk)
+        return None
