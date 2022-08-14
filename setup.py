@@ -42,7 +42,7 @@ setup(
     install_requires=[
         "allianceauth>=2.15.1",
         "dhooks-lite>=0.6.1",
-        "allianceauth-app-utils>=1.14.1",
+        "allianceauth-app-utils>=1.14.2",
         "django-navhelper",
         "django-multiselectfield",
         "redis-simple-mq>=0.4",

@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import factory
 import factory.fuzzy
+import pytz
 import yaml
 
 from django.db.models import Max
@@ -30,6 +31,8 @@ from ...models import (
     Structure,
     Webhook,
 )
+
+# Structures objects
 
 
 class FuelAlertConfigFactory(factory.django.DjangoModelFactory):
@@ -206,6 +209,9 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
         obj.structures.add(starbase)
 
 
+# eve universe (within structures)
+
+
 class EveEntityFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = EveEntity
@@ -242,6 +248,9 @@ class EveEntityAllianceFactory(EveEntityFactory):
     category = EveEntity.Category.ALLIANCE
 
 
+# ESI objects
+
+
 class EsiNotificationFactory(factory.DictFactory):
     class Meta:
         exclude = ("details", "sender")
@@ -256,7 +265,7 @@ class EsiNotificationFactory(factory.DictFactory):
     sender_id = factory.LazyAttribute(lambda o: o.sender.id)  # generated
     sender_type = "corporation"
     text = factory.LazyAttribute(lambda o: yaml.dump(o.details))  # generated
-    timestamp = factory.LazyAttribute(lambda o: now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+    timestamp = factory.LazyAttribute(lambda o: datetime_to_esi(now()))
     type = "InsurancePayoutMsg"
 
 
@@ -299,3 +308,9 @@ class StructureWentHighPowerEsiNotificationFactory(StructureEsiNotificationFacto
             "structureTypeID": o.structure.eve_type.id,
         }
     )
+
+
+def datetime_to_esi(my_dt: dt.datetime) -> str:
+    """Convert datetime to ESI datetime string."""
+    utc_dt = my_dt.astimezone(pytz.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
