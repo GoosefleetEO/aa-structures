@@ -1,18 +1,23 @@
 import datetime as dt
+from typing import List, Optional
 
 import factory
 import factory.fuzzy
+import yaml
 
 from django.db.models import Max
 from django.utils.timezone import now
 
+from allianceauth.authentication.models import CharacterOwnership
 from app_utils.testdata_factories import (
+    EveAllianceInfoFactory,
     EveCharacterFactory,
     EveCorporationInfoFactory,
     UserMainFactory,
 )
 
 from ...models import (
+    EveEntity,
     EveMoon,
     EveSolarSystem,
     EveType,
@@ -88,7 +93,7 @@ class OwnerFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ("corporation",)
 
     assets_last_update_at = factory.LazyFunction(now)
-    character_ownership = None
+    character_ownership = None  # no longer used
     forwarding_last_update_at = factory.LazyFunction(now)
     is_alliance_main = True
     is_up = True
@@ -97,9 +102,16 @@ class OwnerFactory(factory.django.DjangoModelFactory):
     corporation = factory.SubFactory(EveCorporationInfoFactory)
 
     @factory.post_generation
-    def add_owner_character(obj, create, extracted, **kwargs):
-        """Set this param to False to disable."""
-        if not create or extracted is False:
+    def characters(
+        obj, create: bool, extracted: Optional[List[CharacterOwnership]], **kwargs
+    ):
+        if not create:
+            return
+        if extracted:
+            for character_ownership in extracted:
+                OwnerCharacterFactory(
+                    owner=obj, character_ownership=character_ownership
+                )
             return
         character = EveCharacterFactory(corporation=obj.corporation)
         user = UserMainDefaultOwnerFactory(main_character__character=character)
@@ -192,3 +204,98 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
             state_timer_end=reinforced_until,
         )
         obj.structures.add(starbase)
+
+
+class EveEntityFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = EveEntity
+        django_get_or_create = ("id", "name")
+
+    category = EveEntity.Category.CHARACTER
+
+    @factory.lazy_attribute
+    def id(self):
+        if self.category == EveEntity.Category.CHARACTER:
+            obj = EveCharacterFactory()
+            return obj.character_id
+        if self.category == EveEntity.Category.CORPORATION:
+            obj = EveCorporationInfoFactory()
+            return obj.corporation_id
+        if self.category == EveEntity.Category.ALLIANCE:
+            obj = EveAllianceInfoFactory()
+            return obj.alliance_id
+        raise NotImplementedError(f"Unknown category: {self.category}")
+
+
+class EveEntityCharacterFactory(EveEntityFactory):
+    name = factory.Faker("name")
+    category = EveEntity.Category.CHARACTER
+
+
+class EveEntityCorporationFactory(EveEntityFactory):
+    name = factory.Faker("company")
+    category = EveEntity.Category.CORPORATION
+
+
+class EveEntityAllianceFactory(EveEntityFactory):
+    name = factory.Faker("company")
+    category = EveEntity.Category.ALLIANCE
+
+
+class EsiNotificationFactory(factory.DictFactory):
+    class Meta:
+        exclude = ("details", "sender")
+
+    details = {"amount": 3702036.0, "itemID": 1034663675219, "payout": 1}
+    sender = factory.SubFactory(
+        EveEntityCorporationFactory, id="1000132", name="Secure Commerce Commission"
+    )
+
+    is_read = False
+    notification_id = factory.Sequence(lambda n: 1_900_000_001 + n)
+    sender_id = factory.LazyAttribute(lambda o: o.sender.id)  # generated
+    sender_type = "corporation"
+    text = factory.LazyAttribute(lambda o: yaml.dump(o.details))  # generated
+    timestamp = factory.LazyAttribute(lambda o: now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+    type = "InsurancePayoutMsg"
+
+
+class StructureEsiNotificationFactory(EsiNotificationFactory):
+    class Meta:
+        exclude = ("structure",)
+
+    structure = factory.LazyAttribute(lambda o: StructureFactory.build())
+    sender = factory.SubFactory(EveEntityCorporationFactory, id="1000137", name="DED")
+
+
+class StructureFuelAlertEsiNotificationFactory(StructureEsiNotificationFactory):
+    type = "StructureFuelAlert"
+    details = factory.LazyAttribute(
+        lambda o: {
+            "listOfTypesAndQty": [[161, 4246]],
+            "solarsystemID": o.structure.eve_solar_system.id,
+            "structureID": o.structure.id,
+            "structureShowInfoData": [
+                "showinfo",
+                o.structure.eve_type.id,
+                o.structure.id,
+            ],
+            "structureTypeID": o.structure.eve_type.id,
+        }
+    )
+
+
+class StructureWentHighPowerEsiNotificationFactory(StructureEsiNotificationFactory):
+    type = "StructureWentHighPower"
+    details = factory.LazyAttribute(
+        lambda o: {
+            "solarsystemID": o.structure.eve_solar_system.id,
+            "structureID": o.structure.id,
+            "structureShowInfoData": [
+                "showinfo",
+                o.structure.eve_type.id,
+                o.structure.id,
+            ],
+            "structureTypeID": o.structure.eve_type.id,
+        }
+    )
