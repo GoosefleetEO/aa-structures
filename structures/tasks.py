@@ -23,7 +23,7 @@ from .models import (
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
-TASK_PRIO_HIGH = 2
+TASK_PRIORITY_HIGH = 2
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -104,7 +104,7 @@ def fetch_all_notifications():
         if owner.is_active:
             owner.update_is_up()
             process_notifications_for_owner.apply_async(
-                kwargs={"owner_pk": owner.pk}, priority=TASK_PRIO_HIGH
+                kwargs={"owner_pk": owner.pk}, priority=TASK_PRIORITY_HIGH
             )
     for config_pk in FuelAlertConfig.objects.filter(is_enabled=True).values_list(
         "pk", flat=True
@@ -126,7 +126,7 @@ def process_notifications_for_owner(owner_pk: int, user_pk: int = None):
         fetch_notification_for_owner.si(owner_pk=owner_pk, user_pk=user_pk),
         update_existing_notifications.si(owner_pk=owner_pk),
         send_new_notifications_for_owner.si(owner_pk=owner_pk),
-    ).apply_async(priority=TASK_PRIO_HIGH)
+    ).apply_async(priority=TASK_PRIORITY_HIGH)
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
@@ -186,7 +186,7 @@ def send_queued_messages_for_webhooks(webhooks: Iterable[Webhook]):
     for webhook in webhooks:
         if webhook.queue_size() > 0:
             send_messages_for_webhook.apply_async(
-                kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIO_HIGH
+                kwargs={"webhook_pk": webhook.pk}, priority=TASK_PRIORITY_HIGH
             )
 
 

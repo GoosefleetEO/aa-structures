@@ -4,7 +4,6 @@ from typing import List, Optional
 import factory
 import factory.fuzzy
 import pytz
-import yaml
 
 from django.db.models import Max
 from django.utils.timezone import now
@@ -246,68 +245,6 @@ class EveEntityCorporationFactory(EveEntityFactory):
 class EveEntityAllianceFactory(EveEntityFactory):
     name = factory.Faker("company")
     category = EveEntity.Category.ALLIANCE
-
-
-# ESI objects
-
-
-class EsiNotificationFactory(factory.DictFactory):
-    class Meta:
-        exclude = ("details", "sender")
-
-    details = {"amount": 3702036.0, "itemID": 1034663675219, "payout": 1}
-    sender = factory.SubFactory(
-        EveEntityCorporationFactory, id="1000132", name="Secure Commerce Commission"
-    )
-
-    is_read = False
-    notification_id = factory.Sequence(lambda n: 1_900_000_001 + n)
-    sender_id = factory.LazyAttribute(lambda o: o.sender.id)  # generated
-    sender_type = "corporation"
-    text = factory.LazyAttribute(lambda o: yaml.dump(o.details))  # generated
-    timestamp = factory.LazyAttribute(lambda o: datetime_to_esi(now()))
-    type = "InsurancePayoutMsg"
-
-
-class StructureEsiNotificationFactory(EsiNotificationFactory):
-    class Meta:
-        exclude = ("structure",)
-
-    structure = factory.LazyAttribute(lambda o: StructureFactory.build())
-    sender = factory.SubFactory(EveEntityCorporationFactory, id="1000137", name="DED")
-
-
-class StructureFuelAlertEsiNotificationFactory(StructureEsiNotificationFactory):
-    type = "StructureFuelAlert"
-    details = factory.LazyAttribute(
-        lambda o: {
-            "listOfTypesAndQty": [[161, 4246]],
-            "solarsystemID": o.structure.eve_solar_system.id,
-            "structureID": o.structure.id,
-            "structureShowInfoData": [
-                "showinfo",
-                o.structure.eve_type.id,
-                o.structure.id,
-            ],
-            "structureTypeID": o.structure.eve_type.id,
-        }
-    )
-
-
-class StructureWentHighPowerEsiNotificationFactory(StructureEsiNotificationFactory):
-    type = "StructureWentHighPower"
-    details = factory.LazyAttribute(
-        lambda o: {
-            "solarsystemID": o.structure.eve_solar_system.id,
-            "structureID": o.structure.id,
-            "structureShowInfoData": [
-                "showinfo",
-                o.structure.eve_type.id,
-                o.structure.id,
-            ],
-            "structureTypeID": o.structure.eve_type.id,
-        }
-    )
 
 
 def datetime_to_esi(my_dt: dt.datetime) -> str:
