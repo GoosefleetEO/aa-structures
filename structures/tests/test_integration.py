@@ -33,6 +33,7 @@ else:
 
 MANAGERS_PATH = "structures.managers"
 OWNERS_PATH = "structures.models.owners"
+NOTIFICATIONS_PATH = "structures.models.notifications"
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
@@ -416,6 +417,7 @@ class TestEnd2EndTasks(TestCase):
     #     if AuthTimer:
     #         self.assertTrue(AuthTimer.objects.exists())
 
+    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
     def test_should_fetch_new_notification_from_esi_and_send_to_webhook_and_create_timers(
         self, mock_esi_2, mock_esi, mock_execute
     ):

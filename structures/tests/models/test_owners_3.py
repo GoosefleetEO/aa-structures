@@ -1,5 +1,5 @@
 import datetime as dt
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 from pytz import utc
@@ -9,7 +9,6 @@ from esi.models import Token
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.tests.auth_utils import AuthUtils
-from app_utils.django import app_labels
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import (
     BravadoResponseStub,
@@ -34,19 +33,6 @@ from ..testdata.helpers import (
     set_owner_character,
 )
 from ..testdata.load_eveuniverse import load_eveuniverse
-
-if "timerboard" in app_labels():
-    from allianceauth.timerboard.models import Timer as AuthTimer
-
-    has_auth_timers_app = True
-
-else:
-    has_auth_timers_app = False
-
-if "structuretimers" in app_labels():
-    has_structure_timers_app = True
-else:
-    has_structure_timers_app = False
 
 OWNERS_PATH = "structures.models.owners"
 NOTIFICATIONS_PATH = "structures.models.notifications"
@@ -87,8 +73,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         ]
         cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
 
-    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
     @patch(OWNERS_PATH + ".now")
     def test_should_create_notifications_from_scratch(self, mock_now, mock_esi):
         # given
@@ -107,8 +91,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         )
         self.assertSetEqual(notif_ids_current, {1000000505})
 
-    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
     @patch(OWNERS_PATH + ".notify", spec=True)
     @patch(OWNERS_PATH + ".now", spec=True)
     def test_should_inform_user_about_successful_update(
@@ -126,49 +108,22 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         self.assertTrue(owner.is_notification_sync_fresh)
         self.assertTrue(mock_notify.called)
 
-    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", True)
-    def test_should_create_notifications_and_timers_from_scratch(self, mock_esi):
+    def test_should_create_notifications(self, mock_esi):
         # given
         mock_esi.client = self.esi_client_stub
         owner = create_owner_from_user(self.user)
         create_upwell_structure(owner=owner, id=1000000000001)
         # when
-        with patch(OWNERS_PATH + ".now") as mock_now:
-            mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
-            if has_structure_timers_app:
-                with patch(
-                    "structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED",
-                    False,
-                ), patch(
-                    "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
-                    lambda: Mock(),
-                ):
-                    owner.fetch_notifications_esi()
-            else:
-                owner.fetch_notifications_esi()
-            # then
-            owner.refresh_from_db()
-            self.assertTrue(owner.is_notification_sync_fresh)
-            # should only contain the right notifications
-            notif_ids_current = set(
-                Notification.objects.values_list("notification_id", flat=True)
-            )
-            self.assertSetEqual(notif_ids_current, {1000000505})
+        owner.fetch_notifications_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_notification_sync_fresh)
+        # should only contain the right notifications
+        notif_ids_current = set(
+            Notification.objects.values_list("notification_id", flat=True)
+        )
+        self.assertSetEqual(notif_ids_current, {1000000505})
 
-            if has_auth_timers_app:
-                # should have added timers
-                self.assertEqual(AuthTimer.objects.count(), 1)
-
-                # run sync again
-                owner.fetch_notifications_esi()
-                self.assertTrue(owner.is_notification_sync_fresh)
-
-                # should not have more timers
-                self.assertEqual(AuthTimer.objects.count(), 1)
-
-    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
-    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
     @patch(OWNERS_PATH + ".now")
     def test_should_set_moon_for_structure_if_missing(self, mock_now, mock_esi_client):
         # given
@@ -207,7 +162,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         structure.refresh_from_db()
         self.assertEqual(structure.eve_moon_id, 40161465)
 
-    @patch(OWNERS_PATH + ".STRUCTURES_ADD_TIMERS", False)
     def test_report_error_when_esi_returns_error_during_sync(self, mock_esi):
         def my_callback(*args, **kwargs):
             raise HTTPBadGateway(

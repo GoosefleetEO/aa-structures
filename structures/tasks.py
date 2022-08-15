@@ -126,6 +126,7 @@ def process_notifications_for_owner(owner_pk: int, user_pk: int = None):
         fetch_notification_for_owner.si(owner_pk=owner_pk, user_pk=user_pk),
         update_existing_notifications.si(owner_pk=owner_pk),
         send_new_notifications_for_owner.si(owner_pk=owner_pk),
+        generate_new_timers_for_owner.si(owner_pk=owner_pk),
     ).apply_async(priority=TASK_PRIORITY_HIGH)
 
 
@@ -159,6 +160,12 @@ def update_existing_notifications(owner_pk: int) -> int:
             notif_need_update_count,
         )
     return updated_count
+
+
+@shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
+def generate_new_timers_for_owner(owner_pk: int):
+    owner = Owner.objects.get(pk=owner_pk)
+    owner.generate_new_timers_from_notifications()
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

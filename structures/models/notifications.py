@@ -34,6 +34,7 @@ from app_utils.urls import static_file_absolute_url
 
 from .. import __title__
 from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
+    STRUCTURES_ADD_TIMERS,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS,
     STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
@@ -732,62 +733,58 @@ class NotificationBase(models.Model):
         return username, avatar_url
 
     def process_for_timerboard(self, token: Token = None) -> bool:
-        """Add/removes a timer related to this notification for some types
+        """Add/remove a timer related to this notification for some types.
 
         Returns True when a timer was processed, else False
         """
-        timer_created = False
+        if not STRUCTURES_ADD_TIMERS:
+            return False
+
         if (
-            has_auth_timers or has_structure_timers
-        ) and self.notif_type in NotificationType.relevant_for_timerboard:
-            parsed_text = self.parsed_text()
-            try:
-                with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
-                    if self.notif_type in [
-                        NotificationType.STRUCTURE_LOST_ARMOR,
-                        NotificationType.STRUCTURE_LOST_SHIELD,
-                    ]:
-                        timer_created = self._gen_timer_structure_reinforcement(
-                            parsed_text, token
-                        )
-                    elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
-                        timer_created = self._gen_timer_sov_reinforcements(parsed_text)
-                    elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
-                        timer_created = self._gen_timer_orbital_reinforcements(
-                            parsed_text
-                        )
-                    elif self.notif_type in [
-                        NotificationType.MOONMINING_EXTRACTION_STARTED,
-                        NotificationType.MOONMINING_EXTRACTION_CANCELLED,
-                    ]:
-                        if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
-                            timer_created = None
-                        else:
-                            timer_created = self._gen_timer_moon_extraction(parsed_text)
-                    elif self.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
-                        timer_created = self._gen_timer_tower_reinforcements(
-                            parsed_text
-                        )
-                    else:
-                        raise NotImplementedError()
+            not has_auth_timers and not has_structure_timers
+        ) or self.notif_type not in NotificationType.relevant_for_timerboard:
+            return False
 
-                if timer_created:
-                    logger.info(
-                        "{}: added timer_created related notification".format(
-                            self.notification_id
-                        )
+        parsed_text = self.parsed_text()
+        try:
+            with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
+                if self.notif_type in [
+                    NotificationType.STRUCTURE_LOST_ARMOR,
+                    NotificationType.STRUCTURE_LOST_SHIELD,
+                ]:
+                    timer_created = self._gen_timer_structure_reinforcement(
+                        parsed_text, token
                     )
+                elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
+                    timer_created = self._gen_timer_sov_reinforcements(parsed_text)
+                elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
+                    timer_created = self._gen_timer_orbital_reinforcements(parsed_text)
+                elif self.notif_type in [
+                    NotificationType.MOONMINING_EXTRACTION_STARTED,
+                    NotificationType.MOONMINING_EXTRACTION_CANCELLED,
+                ]:
+                    if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
+                        timer_created = None
+                    else:
+                        timer_created = self._gen_timer_moon_extraction(parsed_text)
+                elif self.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
+                    timer_created = self._gen_timer_tower_reinforcements(parsed_text)
+                else:
+                    raise NotImplementedError()
 
-                self.is_timer_added = timer_created
-                self.save()
+            if timer_created:
+                logger.info("%s: Created timer for notification", self.notification_id)
 
-            except OSError as ex:
-                logger.warning(
-                    "%s: Failed to add timer from notification: %s",
-                    self,
-                    ex,
-                    exc_info=True,
-                )
+            self.is_timer_added = timer_created
+            self.save()
+
+        except OSError as ex:
+            logger.warning(
+                "%s: Failed to add timer from notification: %s",
+                self,
+                ex,
+                exc_info=True,
+            )
 
         return timer_created
 
