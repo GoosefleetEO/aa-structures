@@ -4,6 +4,7 @@ from typing import List, Optional
 import factory
 import factory.fuzzy
 import pytz
+import yaml
 
 from django.db.models import Max
 from django.utils.timezone import now
@@ -24,12 +25,52 @@ from ...models import (
     FuelAlertConfig,
     GeneratedNotification,
     JumpFuelAlertConfig,
+    Notification,
     NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
     Webhook,
 )
+
+# eve universe (within structures)
+
+
+class EveEntityFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = EveEntity
+        django_get_or_create = ("id", "name")
+
+    category = EveEntity.Category.CHARACTER
+
+    @factory.lazy_attribute
+    def id(self):
+        if self.category == EveEntity.Category.CHARACTER:
+            obj = EveCharacterFactory()
+            return obj.character_id
+        if self.category == EveEntity.Category.CORPORATION:
+            obj = EveCorporationInfoFactory()
+            return obj.corporation_id
+        if self.category == EveEntity.Category.ALLIANCE:
+            obj = EveAllianceInfoFactory()
+            return obj.alliance_id
+        raise NotImplementedError(f"Unknown category: {self.category}")
+
+
+class EveEntityCharacterFactory(EveEntityFactory):
+    name = factory.Faker("name")
+    category = EveEntity.Category.CHARACTER
+
+
+class EveEntityCorporationFactory(EveEntityFactory):
+    name = factory.Faker("company")
+    category = EveEntity.Category.CORPORATION
+
+
+class EveEntityAllianceFactory(EveEntityFactory):
+    name = factory.Faker("company")
+    category = EveEntity.Category.ALLIANCE
+
 
 # Structures objects
 
@@ -177,13 +218,50 @@ class StarbaseFactory(StructureFactory):
         return EveType.objects.get(name="Caldari Control Tower")
 
 
+class NotificationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Notification
+        exclude = ("text_from_dict",)
+
+    text_from_dict = None
+
+    created = factory.LazyFunction(now)
+    is_read = False
+    last_updated = factory.LazyAttribute(lambda o: o.created)
+    notif_type = NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE.value
+    owner = factory.SubFactory(OwnerFactory)
+    sender = factory.SubFactory(EveEntityCorporationFactory, id=1000137, name="DED")
+    text = ""
+    timestamp = factory.LazyAttribute(lambda o: o.created)
+
+    @factory.lazy_attribute
+    def notification_id(self):
+        last_id = (
+            Notification.objects.aggregate(Max("notification_id"))[
+                "notification_id__max"
+            ]
+            or 1_500_000_000
+        )
+        return last_id + 1
+
+    @factory.lazy_attribute
+    def text(self):
+        if not self.text_from_dict:
+            return ""
+        return yaml.dump(self.text_from_dict)
+
+    @classmethod
+    def _adjust_kwargs(cls, **kwargs):
+        if isinstance(kwargs["notif_type"], NotificationType):
+            kwargs["notif_type"] = kwargs["notif_type"].value
+        return kwargs
+
+
 class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GeneratedNotification
 
-    notif_type = factory.LazyAttribute(
-        lambda obj: NotificationType.TOWER_REINFORCED_EXTRA
-    )
+    notif_type = NotificationType.TOWER_REINFORCED_EXTRA.value
     owner = factory.SubFactory(OwnerFactory)
 
     @factory.lazy_attribute
@@ -206,45 +284,6 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
             state_timer_end=reinforced_until,
         )
         obj.structures.add(starbase)
-
-
-# eve universe (within structures)
-
-
-class EveEntityFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = EveEntity
-        django_get_or_create = ("id", "name")
-
-    category = EveEntity.Category.CHARACTER
-
-    @factory.lazy_attribute
-    def id(self):
-        if self.category == EveEntity.Category.CHARACTER:
-            obj = EveCharacterFactory()
-            return obj.character_id
-        if self.category == EveEntity.Category.CORPORATION:
-            obj = EveCorporationInfoFactory()
-            return obj.corporation_id
-        if self.category == EveEntity.Category.ALLIANCE:
-            obj = EveAllianceInfoFactory()
-            return obj.alliance_id
-        raise NotImplementedError(f"Unknown category: {self.category}")
-
-
-class EveEntityCharacterFactory(EveEntityFactory):
-    name = factory.Faker("name")
-    category = EveEntity.Category.CHARACTER
-
-
-class EveEntityCorporationFactory(EveEntityFactory):
-    name = factory.Faker("company")
-    category = EveEntity.Category.CORPORATION
-
-
-class EveEntityAllianceFactory(EveEntityFactory):
-    name = factory.Faker("company")
-    category = EveEntity.Category.ALLIANCE
 
 
 def datetime_to_esi(my_dt: dt.datetime) -> str:
