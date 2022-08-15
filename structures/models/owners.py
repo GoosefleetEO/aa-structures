@@ -973,24 +973,9 @@ class Owner(models.Model):
                 )
         return detail
 
-    def add_or_remove_timers_from_new_notifications(self):
+    def add_or_remove_timers_from_notifications(self):
         """Add/remove timers from all new notification of this owner."""
-        cutoff_dt_for_stale = now() - dt.timedelta(
-            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-        )
-        notifications = (
-            self.notification_set.filter(
-                notif_type__in=NotificationType.relevant_for_timerboard
-            )
-            .exclude(is_timer_added=True)
-            .filter(timestamp__gte=cutoff_dt_for_stale)
-            .select_related("owner", "sender")
-            .order_by("timestamp")
-        )
-        if notifications.exists():
-            token = self.fetch_token()
-            for notification in notifications:
-                notification.add_or_remove_timer_from_notification(token)
+        self.notification_set.add_or_remove_timers()
 
     def fetch_notifications_esi(self, user: User = None) -> None:
         """Fetch notifications for this owner from ESI and process them."""

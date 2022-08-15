@@ -28,6 +28,6 @@ class TestOwnerAddOrRemoveTimersFromNotifications(NoSocketsTestCase):
             owner=owner, notif_type=NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE
         )
         # when
-        owner.add_or_remove_timers_from_new_notifications()
+        owner.add_or_remove_timers_from_notifications()
         # then
         self.assertEqual(mock_add_or_remove_timer_from_notification.call_count, 1)

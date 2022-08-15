@@ -18,7 +18,6 @@ from django.utils.functional import classproperty
 from django.utils.timezone import now
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from esi.models import Token
 from eveuniverse.models import EveEntity as EveEntity2
 
 from allianceauth.eveonline.evelinks import dotlan, eveimageserver
@@ -732,7 +731,7 @@ class NotificationBase(models.Model):
 
         return username, avatar_url
 
-    def add_or_remove_timer_from_notification(self, token: Token = None) -> bool:
+    def add_or_remove_timer_from_notification(self) -> bool:
         """Add/remove a timer related to this notification for some types.
 
         Returns True when a timer was processed, else False
@@ -752,9 +751,7 @@ class NotificationBase(models.Model):
                     NotificationType.STRUCTURE_LOST_ARMOR,
                     NotificationType.STRUCTURE_LOST_SHIELD,
                 ]:
-                    timer_created = self._gen_timer_structure_reinforcement(
-                        parsed_text, token
-                    )
+                    timer_created = self._gen_timer_structure_reinforcement(parsed_text)
                 elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
                     timer_created = self._gen_timer_sov_reinforcements(parsed_text)
                 elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
@@ -788,10 +785,9 @@ class NotificationBase(models.Model):
 
         return timer_created
 
-    def _gen_timer_structure_reinforcement(
-        self, parsed_text: str, token: Token
-    ) -> bool:
+    def _gen_timer_structure_reinforcement(self, parsed_text: str) -> bool:
         """Generate timer for structure reinforcements"""
+        token = self.owner.fetch_token()
         structure_obj, _ = Structure.objects.get_or_create_esi(
             parsed_text["structureID"], token
         )
