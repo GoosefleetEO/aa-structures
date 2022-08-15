@@ -165,7 +165,7 @@ def update_existing_notifications(owner_pk: int) -> int:
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def generate_new_timers_for_owner(owner_pk: int):
     owner = Owner.objects.get(pk=owner_pk)
-    owner.generate_new_timers_from_notifications()
+    owner.add_or_remove_timers_from_new_notifications()
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

@@ -973,8 +973,8 @@ class Owner(models.Model):
                 )
         return detail
 
-    def generate_new_timers_from_notifications(self):
-        """Create new timers from existing notifications."""
+    def add_or_remove_timers_from_new_notifications(self):
+        """Add/remove timers from all new notification of this owner."""
         cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
@@ -990,7 +990,7 @@ class Owner(models.Model):
         if notifications.exists():
             token = self.fetch_token()
             for notification in notifications:
-                notification.process_for_timerboard(token)
+                notification.add_or_remove_timer_from_notification(token)
 
     def fetch_notifications_esi(self, user: User = None) -> None:
         """Fetch notifications for this owner from ESI and process them."""

@@ -50,7 +50,7 @@ if "structuretimers" in app_labels():
             # given
             notification = Notification.objects.get(notification_id=1000000505)
             # when
-            result = notification.process_for_timerboard()
+            result = notification.add_or_remove_timer_from_notification()
             # then
             self.assertTrue(result)
             timer = Timer.objects.first()
@@ -81,13 +81,13 @@ if "structuretimers" in app_labels():
             notification = Notification.objects.get(notification_id=1000000804)
 
             # do not process if owner is not set as main for alliance
-            self.assertFalse(notification.process_for_timerboard())
+            self.assertFalse(notification.add_or_remove_timer_from_notification())
 
             # process for alliance main
             self.owner.is_alliance_main = True
             self.owner.save()
             notification.owner.refresh_from_db()
-            self.assertTrue(notification.process_for_timerboard())
+            self.assertTrue(notification.add_or_remove_timer_from_notification())
 
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
@@ -117,7 +117,7 @@ if "structuretimers" in app_labels():
             # given
             notification = Notification.objects.get(notification_id=1000000602)
             # when
-            result = notification.process_for_timerboard()
+            result = notification.add_or_remove_timer_from_notification()
             # then
             self.assertTrue(result)
             timer = Timer.objects.first()
@@ -149,7 +149,7 @@ if "structuretimers" in app_labels():
             # given
             notification = Notification.objects.get(notification_id=1000000404)
             # when
-            result = notification.process_for_timerboard()
+            result = notification.add_or_remove_timer_from_notification()
             # then
             self.assertTrue(result)
             timer = Timer.objects.first()
@@ -175,9 +175,9 @@ if "structuretimers" in app_labels():
         @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_anchoring_timer_not_created_for_null_sec(self):
             obj = Notification.objects.get(notification_id=1000010501)
-            self.assertFalse(obj.process_for_timerboard())
+            self.assertFalse(obj.add_or_remove_timer_from_notification())
             # when
-            result = obj.process_for_timerboard()
+            result = obj.add_or_remove_timer_from_notification()
             # then
             self.assertFalse(result)
             self.assertIsNone(Timer.objects.first())
@@ -186,13 +186,13 @@ if "structuretimers" in app_labels():
         def test_can_delete_extraction_timer(self):
             # create timer
             obj = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(obj.process_for_timerboard())
+            self.assertTrue(obj.add_or_remove_timer_from_notification())
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
 
             # delete timer
             obj = Notification.objects.get(notification_id=1000000402)
-            self.assertFalse(obj.process_for_timerboard())
+            self.assertFalse(obj.add_or_remove_timer_from_notification())
             self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
 
         @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
@@ -201,7 +201,7 @@ if "structuretimers" in app_labels():
             notif = GeneratedNotificationFactory()
             structure = notif.structures.first()
             # when
-            result = notif.process_for_timerboard()
+            result = notif.add_or_remove_timer_from_notification()
             # then
             self.assertTrue(result)
             obj = Timer.objects.first()
@@ -228,7 +228,7 @@ if "structuretimers" in app_labels():
         # given
         notification = Notification.objects.get(notification_id=1000000505)
         # when
-        result = notification.process_for_timerboard()
+        result = notification.add_or_remove_timer_from_notification()
         # then
         self.assertFalse(result)
         self.assertTrue(Timer.objects.exists())

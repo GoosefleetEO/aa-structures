@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from django.utils.timezone import now
 
 from app_utils.django import app_labels
+from app_utils.esi import EsiStatus
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 
 from .. import tasks
@@ -34,12 +35,14 @@ else:
 MANAGERS_PATH = "structures.managers"
 OWNERS_PATH = "structures.models.owners"
 NOTIFICATIONS_PATH = "structures.models.notifications"
+TASKS_PATH = "structures.tasks"
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 @patch(OWNERS_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
 @patch(OWNERS_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
 @patch("structures.webhooks.core.dhooks_lite.Webhook.execute", spec=True)
+@patch(TASKS_PATH + ".fetch_esi_status", lambda: EsiStatus(True, 99, 60))
 @patch(MANAGERS_PATH + ".esi")
 @patch(OWNERS_PATH + ".esi")
 class TestEnd2EndTasks(TestCase):

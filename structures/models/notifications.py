@@ -732,7 +732,7 @@ class NotificationBase(models.Model):
 
         return username, avatar_url
 
-    def process_for_timerboard(self, token: Token = None) -> bool:
+    def add_or_remove_timer_from_notification(self, token: Token = None) -> bool:
         """Add/remove a timer related to this notification for some types.
 
         Returns True when a timer was processed, else False

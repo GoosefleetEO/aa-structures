@@ -858,3 +858,8 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.is_up)
         self.assertTrue(self.owner.is_alliance_main)
+
+
+class TestOwnerGenerateNewTimersFromNotifications(NoSocketsTestCase):
+    def test_should_create_new_timers(self):
+        ...

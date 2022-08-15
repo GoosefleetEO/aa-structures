@@ -41,11 +41,11 @@ if "timerboard" in app_labels():
         @patch("allianceauth.timerboard.models.Timer", spec=True)
         def test_moon_timers_disabled(self, mock_Timer):
             x = Notification.objects.get(notification_id=1000000404)
-            self.assertFalse(x.process_for_timerboard())
+            self.assertFalse(x.add_or_remove_timer_from_notification())
             self.assertFalse(mock_Timer.objects.create.called)
 
             x = Notification.objects.get(notification_id=1000000402)
-            self.assertFalse(x.process_for_timerboard())
+            self.assertFalse(x.add_or_remove_timer_from_notification())
             self.assertFalse(mock_Timer.delete.called)
 
         @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
@@ -71,31 +71,31 @@ if "timerboard" in app_labels():
                 ]
             )
             for x in notification_without_timer_query:
-                self.assertFalse(x.process_for_timerboard())
+                self.assertFalse(x.add_or_remove_timer_from_notification())
 
             self.assertEqual(AuthTimer.objects.count(), 0)
 
             x = Notification.objects.get(notification_id=1000000501)
-            self.assertFalse(x.process_for_timerboard())
+            self.assertFalse(x.add_or_remove_timer_from_notification())
 
             x = Notification.objects.get(notification_id=1000000504)
-            self.assertTrue(x.process_for_timerboard())
+            self.assertTrue(x.add_or_remove_timer_from_notification())
 
             x = Notification.objects.get(notification_id=1000000505)
-            self.assertTrue(x.process_for_timerboard())
+            self.assertTrue(x.add_or_remove_timer_from_notification())
 
             x = Notification.objects.get(notification_id=1000000602)
-            self.assertTrue(x.process_for_timerboard())
+            self.assertTrue(x.add_or_remove_timer_from_notification())
 
             ids_set_1 = {x.id for x in AuthTimer.objects.all()}
             x = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(x.process_for_timerboard())
+            self.assertTrue(x.add_or_remove_timer_from_notification())
 
             self.assertEqual(AuthTimer.objects.count(), 4)
 
             # this should remove the right timer only
             x = Notification.objects.get(notification_id=1000000402)
-            x.process_for_timerboard()
+            x.add_or_remove_timer_from_notification()
             self.assertEqual(AuthTimer.objects.count(), 3)
             ids_set_2 = {x.id for x in AuthTimer.objects.all()}
             self.assertSetEqual(ids_set_1, ids_set_2)
@@ -103,14 +103,14 @@ if "timerboard" in app_labels():
         @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
         def test_run_all(self):
             for x in Notification.objects.all():
-                x.process_for_timerboard()
+                x.add_or_remove_timer_from_notification()
 
         @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False)
         def test_corp_restriction_1(self):
             # given
             notif = Notification.objects.get(notification_id=1000000504)
             # when
-            result = notif.process_for_timerboard()
+            result = notif.add_or_remove_timer_from_notification()
             # then
             self.assertTrue(result)
             timer = AuthTimer.objects.first()
@@ -119,7 +119,7 @@ if "timerboard" in app_labels():
         @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", True)
         def test_corp_restriction_2(self):
             x = Notification.objects.get(notification_id=1000000504)
-            self.assertTrue(x.process_for_timerboard())
+            self.assertTrue(x.add_or_remove_timer_from_notification())
             t = AuthTimer.objects.first()
             self.assertTrue(t.corp_timer)
 
@@ -128,7 +128,7 @@ if "timerboard" in app_labels():
             notif = GeneratedNotificationFactory()
             structure = notif.structures.first()
             # when
-            result = notif.process_for_timerboard()
+            result = notif.add_or_remove_timer_from_notification()
             # then
             self.assertTrue(result)
             obj = AuthTimer.objects.first()
