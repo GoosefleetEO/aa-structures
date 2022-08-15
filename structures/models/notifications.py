@@ -731,10 +731,10 @@ class NotificationBase(models.Model):
 
         return username, avatar_url
 
-    def add_or_remove_timer_from_notification(self) -> bool:
+    def add_or_remove_timer(self) -> bool:
         """Add/remove a timer related to this notification for some types.
 
-        Returns True when a timer was processed, else False
+        Returns True when timers where added or removed, else False
         """
         if not STRUCTURES_ADD_TIMERS:
             return False
@@ -751,28 +751,32 @@ class NotificationBase(models.Model):
                     NotificationType.STRUCTURE_LOST_ARMOR,
                     NotificationType.STRUCTURE_LOST_SHIELD,
                 ]:
-                    timer_created = self._gen_timer_structure_reinforcement(parsed_text)
+                    timer_processed = self._gen_timer_structure_reinforcement(
+                        parsed_text
+                    )
                 elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
-                    timer_created = self._gen_timer_sov_reinforcements(parsed_text)
+                    timer_processed = self._gen_timer_sov_reinforcements(parsed_text)
                 elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
-                    timer_created = self._gen_timer_orbital_reinforcements(parsed_text)
+                    timer_processed = self._gen_timer_orbital_reinforcements(
+                        parsed_text
+                    )
                 elif self.notif_type in [
                     NotificationType.MOONMINING_EXTRACTION_STARTED,
                     NotificationType.MOONMINING_EXTRACTION_CANCELLED,
                 ]:
                     if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
-                        timer_created = None
+                        timer_processed = None
                     else:
-                        timer_created = self._gen_timer_moon_extraction(parsed_text)
+                        timer_processed = self._gen_timer_moon_extraction(parsed_text)
                 elif self.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
-                    timer_created = self._gen_timer_tower_reinforcements(parsed_text)
+                    timer_processed = self._gen_timer_tower_reinforcements(parsed_text)
                 else:
                     raise NotImplementedError()
 
-            if timer_created:
+            if timer_processed:
                 logger.info("%s: Created timer for notification", self.notification_id)
 
-            self.is_timer_added = timer_created
+            self.is_timer_added = timer_processed
             self.save()
 
         except OSError as ex:
@@ -783,7 +787,7 @@ class NotificationBase(models.Model):
                 exc_info=True,
             )
 
-        return timer_created
+        return timer_processed
 
     def _gen_timer_structure_reinforcement(self, parsed_text: str) -> bool:
         """Generate timer for structure reinforcements"""
@@ -792,7 +796,7 @@ class NotificationBase(models.Model):
             parsed_text["structureID"], token
         )
         eve_time = self.timestamp + ldap_timedelta_2_timedelta(parsed_text["timeLeft"])
-        timer_added = False
+        timer_processed = False
         if has_auth_timers:
             details_map = {
                 NotificationType.STRUCTURE_LOST_SHIELD: gettext("Armor timer"),
@@ -808,7 +812,7 @@ class NotificationBase(models.Model):
                 eve_corp=self.owner.corporation,
                 corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
             )
-            timer_added = True
+            timer_processed = True
 
         if has_structure_timers:
             timer_map = {
@@ -839,9 +843,9 @@ class NotificationBase(models.Model):
                 owner_name=self.owner.corporation.corporation_name,
                 details_notes=self._timer_details_notes(),
             )
-            timer_added = True
+            timer_processed = True
 
-        return timer_added
+        return timer_processed
 
     def _gen_timer_sov_reinforcements(self, parsed_text: str) -> bool:
         """Generate timer for sov reinforcements."""
@@ -860,7 +864,7 @@ class NotificationBase(models.Model):
             structure_type_name = "Other"
 
         eve_time = ldap_time_2_datetime(parsed_text["decloakTime"])
-        timer_added = False
+        timer_processed = False
         if has_auth_timers:
             AuthTimer.objects.create(
                 details=gettext("Sov timer"),
@@ -872,7 +876,7 @@ class NotificationBase(models.Model):
                 eve_corp=self.owner.corporation,
                 corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
             )
-            timer_added = True
+            timer_processed = True
 
         if has_structure_timers:
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
@@ -898,9 +902,9 @@ class NotificationBase(models.Model):
                 owner_name=self.sender.name,
                 details_notes=self._timer_details_notes(),
             )
-            timer_added = True
+            timer_processed = True
 
-        return timer_added
+        return timer_processed
 
     def _gen_timer_orbital_reinforcements(self, parsed_text: str) -> bool:
         """Generate timer for orbital reinforcements."""
@@ -909,7 +913,7 @@ class NotificationBase(models.Model):
         )
         planet, _ = EvePlanet.objects.get_or_create_esi(parsed_text["planetID"])
         eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
-        timer_added = False
+        timer_processed = False
         if has_auth_timers:
             AuthTimer.objects.create(
                 details=gettext("Final timer"),
@@ -921,7 +925,7 @@ class NotificationBase(models.Model):
                 eve_corp=self.owner.corporation,
                 corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
             )
-            timer_added = True
+            timer_processed = True
 
         if has_structure_timers:
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
@@ -949,9 +953,9 @@ class NotificationBase(models.Model):
                 owner_name=self.owner.corporation.corporation_name,
                 details_notes=self._timer_details_notes(),
             )
-            timer_added = True
+            timer_processed = True
 
-        return timer_added
+        return timer_processed
 
     def _gen_timer_moon_extraction(self, parsed_text: str) -> bool:
         """Generate timer for moon mining extractions."""
@@ -968,7 +972,7 @@ class NotificationBase(models.Model):
         planet_moon = moon.name
         structure_type_name = "Moon Mining Cycle"
         objective = "Friendly"
-        timer_added = False
+        timer_processed = False
 
         if has_structure_timers:
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
@@ -999,7 +1003,7 @@ class NotificationBase(models.Model):
                     eve_corp=self.owner.corporation,
                     corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
                 )
-                timer_added = True
+                timer_processed = True
 
             if has_structure_timers:
                 eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
@@ -1027,16 +1031,16 @@ class NotificationBase(models.Model):
                     owner_name=self.owner.corporation.corporation_name,
                     details_notes=self._timer_details_notes(),
                 )
-                timer_added = True
+                timer_processed = True
 
         elif self.notif_type == NotificationType.MOONMINING_EXTRACTION_CANCELLED:
+            timer_processed = True
             notifications_qs = Notification.objects.filter(
                 notif_type=NotificationType.MOONMINING_EXTRACTION_STARTED,
                 owner=self.owner,
                 is_timer_added=True,
                 timestamp__lte=self.timestamp,
             ).order_by("-timestamp")
-
             for notification in notifications_qs:
                 parsed_text_2 = notification.parsed_text()
                 my_structure_type_id = parsed_text_2["structureTypeID"]
@@ -1076,13 +1080,13 @@ class NotificationBase(models.Model):
                             "obsolete structure timers related to notification"
                         )
 
-        return timer_added
+        return timer_processed
 
     def _gen_timer_tower_reinforcements(self, parsed_text: str) -> bool:
         """Generate timer for tower reinforcements."""
         structure = self.structures.first()
         eve_time = dt.datetime.fromisoformat(self.details["reinforced_until"])
-        timer_added = False
+        timer_processed = False
         if has_auth_timers:
             structure_type_map = {
                 starbases.StarbaseSize.SMALL: "POS[S]",
@@ -1102,7 +1106,7 @@ class NotificationBase(models.Model):
                 eve_corp=self.owner.corporation,
                 corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
             )
-            timer_added = True
+            timer_processed = True
 
         if has_structure_timers:
             eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
@@ -1130,9 +1134,9 @@ class NotificationBase(models.Model):
                 owner_name=self.owner.corporation.corporation_name,
                 details_notes=self._timer_details_notes(),
             )
-            timer_added = True
+            timer_processed = True
 
-        return timer_added
+        return timer_processed
 
     def _timer_details_notes(self) -> str:
         """Return generated details notes string for Timers."""

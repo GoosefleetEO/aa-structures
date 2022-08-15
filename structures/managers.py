@@ -231,12 +231,12 @@ class NotificationBaseManagerBase(models.Manager):
             self.filter(notif_type__in=NotificationType.relevant_for_timerboard)
             .exclude(is_timer_added=True)
             .filter(timestamp__gte=cutoff_dt_for_stale)
-            .select_related("owner", "sender")
+            .select_related("owner")
             .order_by("timestamp")
         )
         if notifications.exists():
             for notification in notifications:
-                notification.add_or_remove_timer_from_notification()
+                notification.add_or_remove_timer()
 
 
 class NotificationQuerySet(NotificationBaseQuerySet):

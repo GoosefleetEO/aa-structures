@@ -281,7 +281,7 @@ class TestEnd2EndTasks(TestCase):
         # then
         self.assertTrue(owner.structures.filter(id=structure_id).exists())
 
-    def test_should_create_notification_for_reinforced_starbase(
+    def test_should_create_notification_and_timers_for_reinforced_starbase(
         self, mock_esi_2, mock_esi, mock_execute
     ):
         # given
@@ -414,11 +414,11 @@ class TestEnd2EndTasks(TestCase):
         # then
         self.assertTrue(owner.generatednotification_set.exists())
 
-    #     if StructureTimer:
-    #         self.assertTrue(StructureTimer.objects.exists())
+        if StructureTimer:
+            self.assertTrue(StructureTimer.objects.exists())
 
-    #     if AuthTimer:
-    #         self.assertTrue(AuthTimer.objects.exists())
+        if AuthTimer:
+            self.assertTrue(AuthTimer.objects.exists())
 
     @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
     def test_should_fetch_new_notification_from_esi_and_send_to_webhook_and_create_timers(

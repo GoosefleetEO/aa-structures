@@ -228,13 +228,11 @@ class TestNotificationAdmin(TestCase):
         self.assertTrue(mock_message_user.called)
 
     @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
-    @patch(MODULE_PATH + ".Notification.add_or_remove_timer_from_notification")
+    @patch(MODULE_PATH + ".Notification.add_or_remove_timer")
     def test_action_process_for_timerboard(
         self, mock_process_for_timerboard, mock_message_user
     ):
-        self.modeladmin.add_or_remove_timer_from_notification(
-            MockRequest(self.user), self.obj_qs
-        )
+        self.modeladmin.add_or_remove_timer(MockRequest(self.user), self.obj_qs)
         self.assertEqual(mock_process_for_timerboard.call_count, 2)
         self.assertTrue(mock_message_user.called)
 

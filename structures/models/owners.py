@@ -974,8 +974,9 @@ class Owner(models.Model):
         return detail
 
     def add_or_remove_timers_from_notifications(self):
-        """Add/remove timers from all new notification of this owner."""
+        """Add/remove timers from esi and generated notification of this owner."""
         self.notification_set.add_or_remove_timers()
+        self.generatednotification_set.add_or_remove_timers()
 
     def fetch_notifications_esi(self, user: User = None) -> None:
         """Fetch notifications for this owner from ESI and process them."""

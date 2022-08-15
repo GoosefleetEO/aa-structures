@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Fixed
+
+- Timers are not created for reinforced POS notifications
+
 ## [1.26.0] - 2022-08-12
 
 ### Update notes
