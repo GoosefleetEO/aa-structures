@@ -207,7 +207,7 @@ class NotificationBaseAdmin(admin.ModelAdmin):
         "mark_as_sent",
         "mark_as_unsent",
         "send_to_configured_webhooks",
-        "process_for_timerboard",
+        "add_or_remove_timer",
     )
 
     def has_add_permission(self, request):
@@ -299,11 +299,11 @@ class NotificationBaseAdmin(admin.ModelAdmin):
         )
 
     @admin.display(description="Process selected notifications for timerboard")
-    def process_for_timerboard(self, request, queryset):
+    def add_or_remove_timer(self, request, queryset):
         notifications_count = 0
         ignored_count = 0
         for obj in queryset:
-            if obj.process_for_timerboard():
+            if obj.add_or_remove_timer():
                 notifications_count += 1
             else:
                 ignored_count += 1

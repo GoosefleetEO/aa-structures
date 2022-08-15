@@ -45,9 +45,14 @@ if "structuretimers" in app_labels():
             self.owner.webhooks.add(create_webhook())
             Timer.objects.all().delete()
 
-        def test_timer_structure_reinforcement(self):
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        def test_should_create_timer_for_reinforced_structure(self):
+            # given
             notification = Notification.objects.get(notification_id=1000000505)
-            self.assertTrue(notification.process_for_timerboard())
+            # when
+            result = notification.add_or_remove_timer()
+            # then
+            self.assertTrue(result)
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
             self.assertEqual(
@@ -70,19 +75,20 @@ if "structuretimers" in app_labels():
             self.assertEqual(timer.structure_name, "Test Structure Alpha")
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertTrue(timer.details_notes)
+            notification.refresh_from_db()
+            self.assertTrue(notification.is_timer_added)
 
-        def test_timer_sov_reinforcement(self):
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        def test_should_create_timer_for_sov_reinforcement(self):
+            # given
             notification = Notification.objects.get(notification_id=1000000804)
-
-            # do not process if owner is not set as main for alliance
-            self.assertFalse(notification.process_for_timerboard())
-
-            # process for alliance main
             self.owner.is_alliance_main = True
             self.owner.save()
             notification.owner.refresh_from_db()
-            self.assertTrue(notification.process_for_timerboard())
-
+            # when
+            result = notification.add_or_remove_timer()
+            self.assertTrue(result)
+            # then
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.Type.FINAL)
@@ -105,10 +111,32 @@ if "structuretimers" in app_labels():
             self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
             self.assertEqual(timer.owner_name, "Wayne Enterprises")
             self.assertTrue(timer.details_notes)
+            notification.refresh_from_db()
+            self.assertTrue(notification.is_timer_added)
 
-        def test_timer_orbital_reinforcements(self):
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        def test_should_create_timer_for_sov_reinforcement_2(self):
+            # given
+            notification = Notification.objects.get(notification_id=1000000804)
+            self.owner.is_alliance_main = False
+            self.owner.save()
+            notification.owner.refresh_from_db()
+            # when
+            result = notification.add_or_remove_timer()
+            # then
+            self.assertFalse(result)
+            self.assertFalse(Timer.objects.exists())
+            notification.refresh_from_db()
+            self.assertFalse(notification.is_timer_added)
+
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        def test_should_create_timer_for_orbital_reinforcements(self):
+            # given
             notification = Notification.objects.get(notification_id=1000000602)
-            self.assertTrue(notification.process_for_timerboard())
+            # when
+            result = notification.add_or_remove_timer()
+            # then
+            self.assertTrue(result)
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.Type.FINAL)
@@ -132,10 +160,17 @@ if "structuretimers" in app_labels():
             self.assertEqual(timer.visibility, Timer.Visibility.UNRESTRICTED)
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertTrue(timer.details_notes)
+            notification.refresh_from_db()
+            self.assertTrue(notification.is_timer_added)
 
-        def test_timer_moon_extraction(self):
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        def test_should_create_timer_for_moon_extraction(self):
+            # given
             notification = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(notification.process_for_timerboard())
+            # when
+            result = notification.add_or_remove_timer()
+            # then
+            self.assertTrue(result)
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.Type.MOONMINING)
@@ -155,30 +190,45 @@ if "structuretimers" in app_labels():
             self.assertEqual(timer.owner_name, "Wayne Technologies")
             self.assertEqual(timer.structure_name, "Dummy")
             self.assertTrue(timer.details_notes)
+            notification.refresh_from_db()
+            self.assertTrue(notification.is_timer_added)
 
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_anchoring_timer_not_created_for_null_sec(self):
             obj = Notification.objects.get(notification_id=1000010501)
-            self.assertFalse(obj.process_for_timerboard())
-            self.assertIsNone(Timer.objects.first())
+            self.assertFalse(obj.add_or_remove_timer())
+            # when
+            result = obj.add_or_remove_timer()
+            # then
+            self.assertFalse(result)
+            self.assertFalse(Timer.objects.exists())
+            obj.refresh_from_db()
+            self.assertFalse(obj.is_timer_added)
 
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_can_delete_extraction_timer(self):
             # create timer
             obj = Notification.objects.get(notification_id=1000000404)
-            self.assertTrue(obj.process_for_timerboard())
+            self.assertTrue(obj.add_or_remove_timer())
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
+            obj.refresh_from_db()
+            self.assertTrue(obj.is_timer_added)
 
             # delete timer
             obj = Notification.objects.get(notification_id=1000000402)
-            self.assertFalse(obj.process_for_timerboard())
+            self.assertTrue(obj.add_or_remove_timer())
             self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
+            obj.refresh_from_db()
+            self.assertTrue(obj.is_timer_added)
 
-        def test_timer_starbase_reinforcement(self):
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        def test_should_create_timer_for_starbase_reinforcement(self):
             # given
             notif = GeneratedNotificationFactory()
             structure = notif.structures.first()
             # when
-            result = notif.process_for_timerboard()
+            result = notif.add_or_remove_timer()
             # then
             self.assertTrue(result)
             obj = Timer.objects.first()
@@ -199,3 +249,15 @@ if "structuretimers" in app_labels():
                 obj.owner_name, structure.owner.corporation.corporation_name
             )
             self.assertTrue(obj.details_notes)
+            notif.refresh_from_db()
+            self.assertTrue(notif.is_timer_added)
+
+        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
+        def test_should_abort_when_timers_are_disabled(self):
+            # given
+            notification = Notification.objects.get(notification_id=1000000505)
+            # when
+            result = notification.add_or_remove_timer()
+            # then
+            self.assertFalse(result)
+            self.assertFalse(Timer.objects.exists())

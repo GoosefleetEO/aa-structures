@@ -29,7 +29,6 @@ from app_utils.logging import LoggerAddTag
 
 from .. import __title__
 from ..app_settings import (
-    STRUCTURES_ADD_TIMERS,
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
@@ -974,6 +973,11 @@ class Owner(models.Model):
                 )
         return detail
 
+    def add_or_remove_timers_from_notifications(self):
+        """Add/remove timers from esi and generated notification of this owner."""
+        self.notification_set.add_or_remove_timers()
+        self.generatednotification_set.add_or_remove_timers()
+
     def fetch_notifications_esi(self, user: User = None) -> None:
         """Fetch notifications for this owner from ESI and process them."""
         notifications_count_all = 0
@@ -989,7 +993,6 @@ class Owner(models.Model):
                 self,
                 notifications_count_new,
             )
-            self._process_timers_for_notifications(token)
             notifications_count_all += notifications_count_new
         else:
             logger.info("%s: No new notifications received from ESI", self)
@@ -1081,28 +1084,6 @@ class Owner(models.Model):
                 created=now(),
             )
         return len(new_notifications)
-
-    # TODO: run this as separate task
-    def _process_timers_for_notifications(self, token: Token):
-        """processes notifications for timers if any"""
-        if STRUCTURES_ADD_TIMERS:
-            cutoff_dt_for_stale = now() - dt.timedelta(
-                hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
-            )
-            notifications = (
-                self.notification_set.filter(
-                    notif_type__in=NotificationType.relevant_for_timerboard
-                )
-                .exclude(is_timer_added=True)
-                .filter(timestamp__gte=cutoff_dt_for_stale)
-                .select_related("owner", "sender")
-                .order_by("timestamp")
-            )
-            if notifications.exists():
-                if not token:
-                    token = self.fetch_token()
-                for notification in notifications:
-                    notification.process_for_timerboard(token)
 
     def _process_moon_notifications(self):
         """processes notifications for timers if any"""

@@ -1,3 +1,4 @@
+import datetime as dt
 import itertools
 from pydoc import locate
 from typing import Tuple
@@ -15,6 +16,7 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from . import __title__
+from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from .constants import EveCategoryId, EveTypeId
 from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from .providers import esi
@@ -217,11 +219,31 @@ class NotificationBaseQuerySet(models.QuerySet):
         )
 
 
+class NotificationBaseManagerBase(models.Manager):
+    def add_or_remove_timers(self):
+        """Add or remove timers from notifications."""
+        from .models import NotificationType
+
+        cutoff_dt_for_stale = now() - dt.timedelta(
+            hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
+        )
+        notifications = (
+            self.filter(notif_type__in=NotificationType.relevant_for_timerboard)
+            .exclude(is_timer_added=True)
+            .filter(timestamp__gte=cutoff_dt_for_stale)
+            .select_related("owner")
+            .order_by("timestamp")
+        )
+        if notifications.exists():
+            for notification in notifications:
+                notification.add_or_remove_timer()
+
+
 class NotificationQuerySet(NotificationBaseQuerySet):
     pass
 
 
-class NotificationManagerBase(models.Manager):
+class NotificationManagerBase(NotificationBaseManagerBase):
     pass
 
 
@@ -232,7 +254,7 @@ class GeneratedNotificationQuerySet(NotificationBaseQuerySet):
     pass
 
 
-class GeneratedNotificationManagerBase(models.Manager):
+class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
     def get_or_create_from_structure(
         self, structure: models.Model, notif_type: models.TextChoices
     ) -> Tuple[models.Model, bool]:
