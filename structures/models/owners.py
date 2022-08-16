@@ -1060,7 +1060,7 @@ class Owner(models.Model):
             sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
             if sender_type != EveEntity.Category.OTHER:
                 sender, _ = EveEntity.objects.get_or_create_esi(
-                    eve_entity_id=notification["sender_id"]
+                    id=notification["sender_id"]
                 )
             else:
                 sender, _ = EveEntity.objects.get_or_create(

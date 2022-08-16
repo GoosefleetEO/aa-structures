@@ -339,7 +339,7 @@ class NotificationBaseEmbed:
     def _gen_eveentity_link_from_id(cls, id: int) -> str:
         if not id:
             return ""
-        entity, _ = EveEntity.objects.get_or_create_esi(id)
+        entity, _ = EveEntity.objects.get_or_create_esi(id=id)
         return cls._gen_eveentity_link(entity)
 
     @staticmethod
@@ -358,7 +358,7 @@ class NotificationBaseEmbed:
             key = "aggressorID"
         else:
             return "(Unknown aggressor)"
-        entity, _ = EveEntity.objects.get_or_create_esi(self._parsed_text[key])
+        entity, _ = EveEntity.objects.get_or_create_esi(id=self._parsed_text[key])
         return Webhook.create_link(entity.name, entity.profile_url)
 
 
@@ -569,12 +569,14 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             "solar_system": self._gen_solar_system_text(solar_system),
         }
         from_corporation, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["oldOwnerCorpID"]
+            id=self._parsed_text["oldOwnerCorpID"]
         )
         to_corporation, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["newOwnerCorpID"]
+            id=self._parsed_text["newOwnerCorpID"]
         )
-        character, _ = EveEntity.objects.get_or_create_esi(self._parsed_text["charID"])
+        character, _ = EveEntity.objects.get_or_create_esi(
+            id=self._parsed_text["charID"]
+        )
         self._description += gettext(
             "has been transferred from %(from_corporation)s "
             "to %(to_corporation)s by %(character)s."
@@ -715,7 +717,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         started_by, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["startedBy"]
+            id=self._parsed_text["startedBy"]
         )
         ready_time = ldap_time_2_datetime(self._parsed_text["readyTime"])
         auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
@@ -797,7 +799,7 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
         super().__init__(notification)
         if self._parsed_text["cancelledBy"]:
             cancelled_by, _ = EveEntity.objects.get_or_create_esi(
-                self._parsed_text["cancelledBy"]
+                id=self._parsed_text["cancelledBy"]
             )
         else:
             cancelled_by = gettext("(unknown)")
@@ -819,7 +821,9 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
 class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        fired_by, _ = EveEntity.objects.get_or_create_esi(self._parsed_text["firedBy"])
+        fired_by, _ = EveEntity.objects.get_or_create_esi(
+            id=self._parsed_text["firedBy"]
+        )
         self._title = gettext("Moondrill fired")
         self._description = gettext(
             "The moondrill fitted to %(structure_name)s at %(moon)s "
@@ -1063,10 +1067,10 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         alliance, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["allianceID"]
+            id=self._parsed_text["allianceID"]
         )
         corporation, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["corpID"]
+            id=self._parsed_text["corpID"]
         )
         self._title = (
             gettext("DED Sovereignty claim acknowledgment: %s")
@@ -1088,10 +1092,10 @@ class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         alliance, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["allianceID"]
+            id=self._parsed_text["allianceID"]
         )
         corporation, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text["corpID"]
+            id=self._parsed_text["corpID"]
         )
         self._title = gettext("Lost sovereignty in: %s") % self._solar_system.name
         self._description = gettext(
@@ -1154,12 +1158,12 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         corporation, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text.get("corpID")
+            id=self._parsed_text.get("corpID")
         )
         corp_link = self._gen_eveentity_link(corporation)
         alliance_id = self._parsed_text.get("allianceID")
         if alliance_id:
-            alliance, _ = EveEntity.objects.get_or_create_esi(alliance_id)
+            alliance, _ = EveEntity.objects.get_or_create_esi(id=alliance_id)
             structure_owner = f"{corp_link} ({alliance.name})"
         else:
             structure_owner = corp_link
@@ -1198,10 +1202,10 @@ class NotificationCorpCharEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._character, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["charID"]
+            id=self._parsed_text["charID"]
         )
         self._corporation, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["corpID"]
+            id=self._parsed_text["corpID"]
         )
         self._character_link = self._gen_eveentity_link(self._character)
         self._corporation_link = self._gen_corporation_link(self._corporation.name)
@@ -1332,13 +1336,11 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
         super().__init__(notification)
         self._title = "Ally Has Joined a War"
         aggressor, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["aggressorID"]
+            id=self._parsed_text["aggressorID"]
         )
-        ally, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["allyID"]
-        )
+        ally, _ = EveEntity.objects.get_or_create_esi(id=self._parsed_text["allyID"])
         defender, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["defenderID"]
+            id=self._parsed_text["defenderID"]
         )
         start_time = ldap_time_2_datetime(self._parsed_text["startTime"])
         self._description = (
@@ -1360,10 +1362,10 @@ class NotificationWarEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._declared_by, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["declaredByID"]
+            id=self._parsed_text["declaredByID"]
         )
         self._against, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["againstID"]
+            id=self._parsed_text["againstID"]
         )
         self._thumbnail = dhooks_lite.Thumbnail(
             self._declared_by.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -1389,7 +1391,7 @@ class NotificationWarAdopted(NotificationWarEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         alliance, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["allianceID"]
+            id=self._parsed_text["allianceID"]
         )
         self._title = "War update: %(against)s has left %(alliance)s" % {
             "against": self._against.name,
@@ -1433,13 +1435,13 @@ class NotificationWarInherited(NotificationWarEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         alliance, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["allianceID"]
+            id=self._parsed_text["allianceID"]
         )
         opponent, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["opponentID"]
+            id=self._parsed_text["opponentID"]
         )
         quitter, _ = EveEntity.objects.get_or_create_esi(
-            eve_entity_id=self._parsed_text["quitterID"]
+            id=self._parsed_text["quitterID"]
         )
         self._title = "%(alliance)s inherits war against %(opponent)s" % {
             "alliance": alliance.name,
@@ -1513,7 +1515,7 @@ class NotificationWarSurrenderOfferMsg(NotificationBaseEmbed):
         super().__init__(notification)
         isk_value = self._parsed_text.get("iskValue", 0)
         owner_1, _ = EveEntity.objects.get_or_create_esi(
-            self._parsed_text.get("ownerID1")
+            id=self._parsed_text.get("ownerID1")
         )
         owner_1_link = self._gen_eveentity_link(owner_1)
         owner_2_link = self._gen_eveentity_link_from_id(

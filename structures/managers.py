@@ -163,40 +163,40 @@ class EveSovereigntyMapManager(models.Manager):
 
 
 class EveEntityManager(models.Manager):
-    def get_or_create_esi(self, eve_entity_id: int) -> tuple:
+    def get_or_create_esi(self, *, id: int) -> tuple:
         """gets or creates EveEntity obj with data fetched from ESI if needed
 
         eve_id: Eve Online ID of object
 
         Returns: object, created
         """
-        eve_entity_id = int(eve_entity_id)
+        id = int(id)
         try:
-            obj = self.get(id=eve_entity_id)
+            obj = self.get(id=id)
             created = False
         except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(eve_entity_id)
+            obj, created = self.update_or_create_esi(id=id)
 
         return obj, created
 
-    def update_or_create_esi(self, eve_entity_id: int) -> tuple:
+    def update_or_create_esi(self, *, id: int) -> tuple:
         """updates or creates EveEntity object with data fetched from ESI
 
         eve_id: Eve Online ID of object
 
         Returns: object, created
         """
-        eve_entity_id = int(eve_entity_id)
-        log_prefix = make_log_prefix(self, eve_entity_id)
+        id = int(id)
+        log_prefix = make_log_prefix(self, id)
         response = esi_fetch(
             esi_path="Universe.post_universe_names",
-            args={"ids": [eve_entity_id]},
+            args={"ids": [id]},
         )
         if len(response) > 0:
             first = response[0]
             category = self.model.Category.from_esi_name(first["category"])
             obj, created = self.update_or_create(
-                id=eve_entity_id,
+                id=id,
                 defaults={"category": category, "name": first["name"]},
             )
         else:

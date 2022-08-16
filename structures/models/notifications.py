@@ -1220,9 +1220,7 @@ class Notification(NotificationBase):
                 raise ValueError("text property not provided and can not be generated.")
             kwargs["text"] = yaml.dump(data)
         if "sender" not in kwargs:
-            sender, _ = EveEntity.objects.get_or_create_esi(
-                eve_entity_id=EveCorporationId.DED
-            )
+            sender, _ = EveEntity.objects.get_or_create_esi(id=EveCorporationId.DED)
             kwargs["sender"] = sender
         kwargs["notification_id"] = cls.TEMPORARY_NOTIFICATION_ID
         kwargs["owner"] = structure.owner

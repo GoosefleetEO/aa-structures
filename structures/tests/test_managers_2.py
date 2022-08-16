@@ -485,7 +485,7 @@ class TestEveEntityManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveEntity)
 
-        structure, created = EveEntity.objects.get_or_create_esi(3011)
+        structure, created = EveEntity.objects.get_or_create_esi(id=3011)
 
         self.assertFalse(created)
         self.assertEqual(structure.id, 3011)
@@ -494,7 +494,7 @@ class TestEveEntityManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveEntity.objects.get_or_create_esi(3011)
+        structure, created = EveEntity.objects.get_or_create_esi(id=3011)
 
         self.assertTrue(created)
         self.assertEqual(structure.id, 3011)
@@ -510,7 +510,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         structure.refresh_from_db()
         self.assertEqual(structure.name, "Fantastic Four")
 
-        structure, created = EveEntity.objects.update_or_create_esi(3011)
+        structure, created = EveEntity.objects.update_or_create_esi(id=3011)
 
         self.assertFalse(created)
         self.assertEqual(structure.id, 3011)
@@ -523,7 +523,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         )
 
         with self.assertRaises(ValueError):
-            EveEntity.objects.update_or_create_esi(3011)
+            EveEntity.objects.update_or_create_esi(id=3011)
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_raises_exception_when_create_fails(self, mock_esi_client):
@@ -532,4 +532,4 @@ class TestEveEntityManager(NoSocketsTestCase):
         )
 
         with self.assertRaises(RuntimeError):
-            EveEntity.objects.update_or_create_esi(3011)
+            EveEntity.objects.update_or_create_esi(id=3011)
