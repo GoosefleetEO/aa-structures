@@ -30,36 +30,36 @@ def make_log_prefix(model_manager, id):
 
 
 class EveUniverseManager(models.Manager):
-    def get_or_create_esi(self, eve_id: int) -> tuple:
+    def get_or_create_esi(self, *, id: int) -> tuple:
         """gets or creates eve universe object fetched from ESI if needed.
         Will always get/create parent objects.
 
-        eve_id: Eve Online ID of object
+        id: Eve Online ID of object
 
         Returns: object, created
         """
-        eve_id = int(eve_id)
+        id = int(id)
         try:
-            obj = self.get(id=eve_id)
+            obj = self.get(id=id)
             created = False
         except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(eve_id)
+            obj, created = self.update_or_create_esi(id=id)
 
         return obj, created
 
-    def update_or_create_esi(self, eve_id: int) -> tuple:
+    def update_or_create_esi(self, *, id: int) -> tuple:
         """updates or creates Eve Universe object with data fetched from ESI.
         Will always update/create children and get/create parent objects.
 
-        eve_id: Eve Online ID of object
+        id: Eve Online ID of object
 
         Returns: object, created
         """
         from .models import EsiNameLocalization
 
-        eve_id = int(eve_id)
+        id = int(id)
         esi_path = "Universe." + self.model.esi_method()
-        args = {self.model.esi_pk(): eve_id}
+        args = {self.model.esi_pk(): id}
         if self.model.has_esi_localization():
             eve_data_objects = esi_fetch_with_localization(
                 esi_path=esi_path,
@@ -72,7 +72,7 @@ class EveUniverseManager(models.Manager):
                 esi_path=esi_path, args=args
             )  # noqa E123
         defaults = self.model.map_esi_fields_to_model(eve_data_objects)
-        obj, created = self.update_or_create(id=eve_id, defaults=defaults)
+        obj, created = self.update_or_create(id=id, defaults=defaults)
         obj.set_generated_translations()
         obj.save()
         self._update_or_create_children(eve_data_objects)
@@ -84,8 +84,8 @@ class EveUniverseManager(models.Manager):
         for key, child_class in self.model.child_mappings().items():
             ChildClass = locate(__package__ + ".models." + child_class)
             for eve_data_obj_2 in eve_data_obj[key]:
-                eve_id = eve_data_obj_2[ChildClass.esi_pk()]
-                ChildClass.objects.update_or_create_esi(eve_id)
+                id = eve_data_obj_2[ChildClass.esi_pk()]
+                ChildClass.objects.update_or_create_esi(id=id)
 
     def update_all_esi(self) -> int:
         """update all objects from ESI. Returns count of updated  objects"""
@@ -97,7 +97,7 @@ class EveUniverseManager(models.Manager):
         count_updated = 0
         for eve_obj in self.all().order_by("last_updated"):
             try:
-                self.update_or_create_esi(eve_obj.id)
+                self.update_or_create_esi(id=eve_obj.id)
                 count_updated += 1
             except HTTPError:
                 logger.exception("Update interrupted by exception")
@@ -166,7 +166,8 @@ class EveEntityManager(models.Manager):
     def get_or_create_esi(self, *, id: int) -> tuple:
         """gets or creates EveEntity obj with data fetched from ESI if needed
 
-        eve_id: Eve Online ID of object
+        Args:
+            id: Eve Online ID of object
 
         Returns: object, created
         """
@@ -182,7 +183,8 @@ class EveEntityManager(models.Manager):
     def update_or_create_esi(self, *, id: int) -> tuple:
         """updates or creates EveEntity object with data fetched from ESI
 
-        eve_id: Eve Online ID of object
+        Args:
+            id: Eve Online ID of object
 
         Returns: object, created
         """
@@ -486,9 +488,9 @@ class StructureManagerBase(models.Manager):
         )
         from .models.eveuniverse import EveUniverse
 
-        eve_type, _ = EveType.objects.get_or_create_esi(structure["type_id"])
+        eve_type, _ = EveType.objects.get_or_create_esi(id=structure["type_id"])
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            structure["system_id"]
+            id=structure["system_id"]
         )
         fuel_expires_at = (
             structure["fuel_expires"] if "fuel_expires" in structure else None
@@ -524,11 +526,13 @@ class StructureManagerBase(models.Manager):
         position_y = structure["position"]["y"] if "position" in structure else None
         position_z = structure["position"]["z"] if "position" in structure else None
         if "planet_id" in structure:
-            eve_planet, _ = EvePlanet.objects.get_or_create_esi(structure["planet_id"])
+            eve_planet, _ = EvePlanet.objects.get_or_create_esi(
+                id=structure["planet_id"]
+            )
         else:
             eve_planet = None
         if "moon_id" in structure:
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(structure["moon_id"])
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=structure["moon_id"])
         else:
             eve_moon = None
         try:

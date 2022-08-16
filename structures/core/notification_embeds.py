@@ -375,10 +375,10 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             structure = None
             structure_name = gettext("(unknown)")
             structure_type, _ = EveType.objects.get_or_create_esi(
-                self._parsed_text["structureTypeID"]
+                id=self._parsed_text["structureTypeID"]
             )
             structure_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                self._parsed_text["solarsystemID"]
+                id=self._parsed_text["solarsystemID"]
             )
             owner_link = "(unknown)"
             location = ""
@@ -556,10 +556,10 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text["structureTypeID"]
+            id=self._parsed_text["structureTypeID"]
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         self._description = gettext(
             "The %(structure_type)s %(structure_name)s " "in %(solar_system)s "
@@ -596,10 +596,10 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text["structureTypeID"]
+            id=self._parsed_text["structureTypeID"]
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarsystemID"]
+            id=self._parsed_text["solarsystemID"]
         )
         owner_link = self._gen_corporation_link(
             self._parsed_text.get("ownerCorpName", "(unknown)")
@@ -636,7 +636,9 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
                 all_structure_info.append(
                     self.StructureInfo(
                         name=structure_info[1],
-                        eve_type=EveType.objects.get_or_create_esi(structure_info[2]),
+                        eve_type=EveType.objects.get_or_create_esi(
+                            id=structure_info[2]
+                        ),
                         eve_solar_system=None,
                         owner_link="(unknown)",
                     )
@@ -681,15 +683,17 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._moon, _ = EveMoon.objects.get_or_create_esi(self._parsed_text["moonID"])
+        self._moon, _ = EveMoon.objects.get_or_create_esi(
+            id=self._parsed_text["moonID"]
+        )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         self._solar_system_link = self._gen_solar_system_text(solar_system)
         self._structure_name = self._parsed_text["structureName"]
         self._owner_link = self._gen_corporation_link(str(notification.owner))
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text["structureTypeID"]
+            id=self._parsed_text["structureTypeID"]
         )
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -701,7 +705,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
 
         ore_list = list()
         for ore_type_id, volume in self._parsed_text["oreVolumeByType"].items():
-            ore_type, _ = EveType.objects.get_or_create_esi(ore_type_id)
+            ore_type, _ = EveType.objects.get_or_create_esi(id=ore_type_id)
             if ore_type:
                 ore_list.append(
                     {"id": ore_type_id, "name": ore_type.name, "volume": volume}
@@ -850,13 +854,13 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._planet, _ = EvePlanet.objects.get_or_create_esi(
-            self._parsed_text["planetID"]
+            id=self._parsed_text["planetID"]
         )
         self._structure_type, _ = EveType.objects.get_or_create_esi(
-            EveTypeId.CUSTOMS_OFFICE
+            id=EveTypeId.CUSTOMS_OFFICE
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         self._solar_system_link = self._gen_solar_system_text(solar_system)
         self._owner_link = self._gen_corporation_link(str(notification.owner))
@@ -913,10 +917,10 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self.eve_moon, _ = EveMoon.objects.get_or_create_esi(
-            self._parsed_text["moonID"]
+            id=self._parsed_text["moonID"]
         )
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text["typeID"]
+            id=self._parsed_text["typeID"]
         )
         self._structure = Structure.objects.filter(eve_moon=self.eve_moon).first()
         if self._structure:
@@ -956,10 +960,10 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
         if "wants" in self._parsed_text and self._parsed_text["wants"]:
             fuel_quantity = self._parsed_text["wants"][0]["quantity"]
             starbase_type, _ = EveType.objects.get_or_create_esi(
-                self._parsed_text["typeID"]
+                id=self._parsed_text["typeID"]
             )
             solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                self._parsed_text["solarSystemID"]
+                id=self._parsed_text["solarSystemID"]
             )
             seconds = starbases.fuel_duration(
                 starbase_type=starbase_type,
@@ -1000,7 +1004,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         self._solar_system_link = self._gen_solar_system_text(self._solar_system)
         if "structureTypeID" in self._parsed_text:
@@ -1011,7 +1015,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
             )
         else:
             structure_type_id = EveTypeId.TCU
-        structure_type, _ = EveType.objects.get_or_create_esi(structure_type_id)
+        structure_type, _ = EveType.objects.get_or_create_esi(id=structure_type_id)
         self._structure_type_name = structure_type.name
         self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
         self._thumbnail = dhooks_lite.Thumbnail(
@@ -1168,14 +1172,14 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         else:
             structure_owner = corp_link
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text["typeID"]
+            id=self._parsed_text["typeID"]
         )
         moon_id = self._parsed_text.get("moonID")
         if moon_id:
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(moon_id)
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
             location_text = gettext(" near **%s**") % eve_moon.name
         else:
             location_text = ""
@@ -1553,7 +1557,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
@@ -1567,7 +1571,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
             "due_date": target_datetime_formatted(due_date),
         }
         self._color = Webhook.Color.DANGER
-        structure_type, _ = EveType.objects.get_or_create_esi(EveTypeId.IHUB)
+        structure_type, _ = EveType.objects.get_or_create_esi(id=EveTypeId.IHUB)
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
@@ -1577,10 +1581,10 @@ class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         structure_type, _ = EveType.objects.get_or_create_esi(
-            self._parsed_text["structureTypeID"]
+            id=self._parsed_text["structureTypeID"]
         )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            self._parsed_text["solarSystemID"]
+            id=self._parsed_text["solarSystemID"]
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
         self._title = (

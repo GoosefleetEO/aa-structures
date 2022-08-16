@@ -31,7 +31,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveCategory)
 
-        structure, created = EveCategory.objects.get_or_create_esi(65)
+        structure, created = EveCategory.objects.get_or_create_esi(id=65)
 
         self.assertFalse(created)
         self.assertIsInstance(structure, EveCategory)
@@ -42,7 +42,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
     def test_can_create_object_from_esi(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveCategory.objects.update_or_create_esi(65)
+        structure, created = EveCategory.objects.update_or_create_esi(id=65)
         self.assertTrue(created)
         self.assertIsInstance(structure, EveCategory)
         self.assertEqual(structure.id, 65)
@@ -64,7 +64,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         structure.refresh_from_db()
         self.assertEqual(structure.name, "Superheroes")
 
-        structure, created = EveCategory.objects.update_or_create_esi(65)
+        structure, created = EveCategory.objects.update_or_create_esi(id=65)
         self.assertFalse(created)
         self.assertIsInstance(structure, EveCategory)
         self.assertEqual(structure.id, 65)
@@ -74,7 +74,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveCategory.objects.get_or_create_esi(65)
+        structure, created = EveCategory.objects.get_or_create_esi(id=65)
         self.assertTrue(created)
         self.assertIsInstance(structure, EveCategory)
         self.assertEqual(structure.id, 65)
@@ -87,7 +87,7 @@ class TestEveCategoryManager(NoSocketsTestCase):
         )
 
         with self.assertRaises(RuntimeError):
-            EveCategory.objects.update_or_create_esi(65)
+            EveCategory.objects.update_or_create_esi(id=65)
 
     @patch(MODULE_PATH_ESI_FETCH + "._esi_client")
     def test_can_update_all_objects_from_esi(self, mock_esi_client):
@@ -130,7 +130,7 @@ class TestEveGroupManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveGroup)
 
-        structure, created = EveGroup.objects.get_or_create_esi(1657)
+        structure, created = EveGroup.objects.get_or_create_esi(id=1657)
         self.assertFalse(created)
         self.assertIsInstance(structure, EveGroup)
         self.assertEqual(structure.id, 1657)
@@ -141,7 +141,7 @@ class TestEveGroupManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveGroup.objects.get_or_create_esi(1657)
+        structure, created = EveGroup.objects.get_or_create_esi(id=1657)
         self.assertTrue(created)
         self.assertIsInstance(structure, EveGroup)
         self.assertEqual(structure.id, 1657)
@@ -155,7 +155,7 @@ class TestEveGroupManager(NoSocketsTestCase):
         EveCategory.objects.get(id=65).delete()
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveGroup.objects.get_or_create_esi(1657)
+        structure, created = EveGroup.objects.get_or_create_esi(id=1657)
         self.assertTrue(created)
         self.assertIsInstance(structure, EveGroup)
         self.assertEqual(structure.id, 1657)
@@ -182,7 +182,7 @@ class TestEveGroupManager(NoSocketsTestCase):
         obj_parent.refresh_from_db()
         self.assertEqual(obj_parent.name, "Superheros")
 
-        structure, created = EveGroup.objects.update_or_create_esi(1657)
+        structure, created = EveGroup.objects.update_or_create_esi(id=1657)
         self.assertFalse(created)
         self.assertIsInstance(structure, EveGroup)
         self.assertEqual(structure.id, 1657)
@@ -201,7 +201,7 @@ class TestEveTypeManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveType)
 
-        structure, created = EveType.objects.get_or_create_esi(35832)
+        structure, created = EveType.objects.get_or_create_esi(id=35832)
         self.assertFalse(created)
         self.assertEqual(structure.id, 35832)
 
@@ -209,7 +209,7 @@ class TestEveTypeManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveType.objects.get_or_create_esi(35832)
+        structure, created = EveType.objects.get_or_create_esi(id=35832)
         self.assertTrue(created)
         self.assertEqual(structure.id, 35832)
         self.assertIsInstance(EveType.objects.get(id=35832), EveType)
@@ -221,7 +221,7 @@ class TestEveTypeManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveGroup.objects.get(id=1657).delete()
 
-        structure, created = EveType.objects.get_or_create_esi(35832)
+        structure, created = EveType.objects.get_or_create_esi(id=35832)
         self.assertTrue(created)
         self.assertIsInstance(structure, EveType)
         self.assertEqual(structure.id, 35832)
@@ -236,7 +236,7 @@ class TestEveRegionManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveRegion)
 
-        structure, created = EveRegion.objects.get_or_create_esi(10000005)
+        structure, created = EveRegion.objects.get_or_create_esi(id=10000005)
         self.assertFalse(created)
         self.assertEqual(structure.id, 10000005)
 
@@ -244,7 +244,7 @@ class TestEveRegionManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveRegion.objects.get_or_create_esi(10000005)
+        structure, created = EveRegion.objects.get_or_create_esi(id=10000005)
         self.assertTrue(created)
         self.assertEqual(structure.id, 10000005)
         self.assertEqual(structure.name, "Detorid")
@@ -259,7 +259,7 @@ class TestEveConstellationManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveConstellation)
 
-        structure, created = EveConstellation.objects.get_or_create_esi(20000069)
+        structure, created = EveConstellation.objects.get_or_create_esi(id=20000069)
 
         self.assertFalse(created)
         self.assertEqual(structure.id, 20000069)
@@ -270,7 +270,7 @@ class TestEveConstellationManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         load_entity(EveRegion)
 
-        structure, created = EveConstellation.objects.get_or_create_esi(20000069)
+        structure, created = EveConstellation.objects.get_or_create_esi(id=20000069)
         self.assertTrue(created)
         self.assertEqual(structure.id, 20000069)
         self.assertEqual(structure.name, "1RG-GU")
@@ -280,7 +280,7 @@ class TestEveConstellationManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveRegion.objects.get(id=10000005).delete()
 
-        structure, created = EveConstellation.objects.get_or_create_esi(20000069)
+        structure, created = EveConstellation.objects.get_or_create_esi(id=20000069)
         self.assertTrue(created)
         self.assertEqual(structure.id, 20000069)
         self.assertEqual(structure.name, "1RG-GU")
@@ -300,7 +300,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         load_entity(EveSolarSystem)
         load_entity(EvePlanet)
 
-        structure, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.get_or_create_esi(id=30000474)
 
         self.assertFalse(created)
         self.assertIsInstance(structure, EveSolarSystem)
@@ -313,7 +313,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.get_or_create_esi(id=30000474)
         self.assertTrue(created)
         self.assertIsInstance(structure, EveSolarSystem)
         self.assertEqual(structure.id, 30000474)
@@ -328,7 +328,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveConstellation.objects.get(id=20000069).delete()
 
-        structure, created = EveSolarSystem.objects.get_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.get_or_create_esi(id=30000474)
 
         self.assertTrue(created)
         self.assertEqual(structure.id, 30000474)
@@ -363,7 +363,7 @@ class TestEveSolarSystemManager(NoSocketsTestCase):
         obj_child.refresh_from_db()
         self.assertEqual(obj_child.name, "Alpha I")
 
-        structure, created = EveSolarSystem.objects.update_or_create_esi(30000474)
+        structure, created = EveSolarSystem.objects.update_or_create_esi(id=30000474)
 
         self.assertFalse(created)
         self.assertEqual(structure.id, 30000474)
@@ -391,7 +391,7 @@ class TestEveMoonManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EveMoon)
 
-        structure, created = EveMoon.objects.get_or_create_esi(40161465)
+        structure, created = EveMoon.objects.get_or_create_esi(id=40161465)
         self.assertFalse(created)
         self.assertEqual(structure.id, 40161465)
 
@@ -399,7 +399,7 @@ class TestEveMoonManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EveMoon.objects.get_or_create_esi(40161465)
+        structure, created = EveMoon.objects.get_or_create_esi(id=40161465)
         self.assertTrue(created)
         self.assertEqual(structure.id, 40161465)
         self.assertEqual(structure.name, "Amamake II - Moon 1")
@@ -413,7 +413,7 @@ class TestEveMoonManager(NoSocketsTestCase):
         mock_esi_client.side_effect = esi_mock_client
         EveSolarSystem.objects.get(id=30000474).delete()
 
-        structure, created = EveMoon.objects.get_or_create_esi(40161465)
+        structure, created = EveMoon.objects.get_or_create_esi(id=40161465)
         self.assertTrue(created)
         self.assertEqual(structure.id, 40161465)
 
@@ -439,7 +439,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
     def test_can_get_stored_object(self):
         load_entity(EvePlanet)
 
-        structure, created = EvePlanet.objects.get_or_create_esi(40161469)
+        structure, created = EvePlanet.objects.get_or_create_esi(id=40161469)
 
         self.assertFalse(created)
         self.assertEqual(structure.id, 40161469)
@@ -448,7 +448,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
     def test_can_create_object_from_esi_if_not_found(self, mock_esi_client):
         mock_esi_client.side_effect = esi_mock_client
 
-        structure, created = EvePlanet.objects.get_or_create_esi(40161469)
+        structure, created = EvePlanet.objects.get_or_create_esi(id=40161469)
         self.assertTrue(created)
         self.assertEqual(structure.id, 40161469)
         self.assertEqual(structure.name, "Amamake IV")
@@ -470,7 +470,7 @@ class TestEvePlanetManager(NoSocketsTestCase):
         EveSolarSystem.objects.get(id=30000474).delete()
         EveType.objects.get(id=2016).delete()
 
-        structure, created = EvePlanet.objects.get_or_create_esi(40161469)
+        structure, created = EvePlanet.objects.get_or_create_esi(id=40161469)
         self.assertTrue(created)
         self.assertEqual(structure.id, 40161469)
 

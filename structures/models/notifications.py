@@ -790,7 +790,7 @@ class NotificationBase(models.Model):
             return False
 
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarSystemID"]
+            id=parsed_text["solarSystemID"]
         )
         event_type = parsed_text["campaignEventType"]
         if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
@@ -846,9 +846,9 @@ class NotificationBase(models.Model):
     def _gen_timer_orbital_reinforcements(self, parsed_text: str) -> bool:
         """Generate timer for orbital reinforcements."""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarSystemID"]
+            id=parsed_text["solarSystemID"]
         )
-        planet, _ = EvePlanet.objects.get_or_create_esi(parsed_text["planetID"])
+        planet, _ = EvePlanet.objects.get_or_create_esi(id=parsed_text["planetID"])
         eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
         timer_processed = False
         if has_auth_timers:
@@ -897,9 +897,9 @@ class NotificationBase(models.Model):
     def _gen_timer_moon_extraction(self, parsed_text: str) -> bool:
         """Generate timer for moon mining extractions."""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarSystemID"]
+            id=parsed_text["solarSystemID"]
         )
-        moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
+        moon, _ = EveMoon.objects.get_or_create_esi(id=parsed_text["moonID"])
         if "readyTime" in parsed_text:
             eve_time = ldap_time_2_datetime(parsed_text["readyTime"])
         else:

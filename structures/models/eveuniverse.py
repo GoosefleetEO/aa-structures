@@ -267,7 +267,9 @@ class EveUniverse(EsiNameLocalization, models.Model):
         for key in cls._field_names_not_pk():
             if key in fk_mappings:
                 esi_key, ParentClass = fk_mappings[key]
-                value, _ = ParentClass.objects.get_or_create_esi(eve_data_obj[esi_key])
+                value, _ = ParentClass.objects.get_or_create_esi(
+                    id=eve_data_obj[esi_key]
+                )
             else:
                 if key in field_mappings:
                     mapping = field_mappings[key]

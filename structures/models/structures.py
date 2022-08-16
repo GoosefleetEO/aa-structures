@@ -728,7 +728,7 @@ class StructureItem(models.Model):
     @classmethod
     def from_esi_asset(cls, item: dict, structure: "Structure") -> "StructureItem":
         """Create new object from ESI asset item."""
-        eve_type, _ = EveType.objects.get_or_create_esi(item["type_id"])
+        eve_type, _ = EveType.objects.get_or_create_esi(id=item["type_id"])
         return StructureItem(
             id=item["item_id"],
             structure=structure,
