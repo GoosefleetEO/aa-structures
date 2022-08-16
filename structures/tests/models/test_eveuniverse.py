@@ -278,12 +278,6 @@ class TestEvePlanet(NoSocketsTestCase):
         expected = "Amamake_de I"
         self.assertEqual(obj._name_localized_generated("de"), expected)
 
-    def test_eve_type_name_short(self):
-        # given
-        obj = EvePlanet.objects.get(id=40161463)
-        # when/then
-        self.assertEqual(obj.eve_type_name_short(), "Barren")
-
 
 class TestEveMoon(NoSocketsTestCase):
     @classmethod

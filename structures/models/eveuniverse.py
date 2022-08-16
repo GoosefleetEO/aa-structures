@@ -1,6 +1,5 @@
 """Eve Universe models"""
 
-import re
 from enum import Enum
 
 from django.db import models
@@ -349,16 +348,16 @@ class EveType(EveUniverse):
     def profile_url(self) -> str:
         return eveitems.type_url(self.id)
 
-    @classmethod
-    def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
-        return eveimageserver.type_icon_url(type_id=type_id, size=size)
-
     def icon_url(self, size=64):
         return self.generic_icon_url(self.id, size)
 
     def render_url(self, size: int = 128) -> str:
         """return an image URL to this type as render"""
         return eveimageserver.type_render_url(self.id, size=size)
+
+    @classmethod
+    def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
+        return eveimageserver.type_icon_url(type_id=type_id, size=size)
 
 
 class EveRegion(EveUniverse):
@@ -450,11 +449,6 @@ class EvePlanet(EveUniverse):
         )
         return name_localized
 
-    def eve_type_name_short(self) -> str:
-        """Short name of planet type."""
-        matches = re.findall(r"Planet \((\S*)\)", self.eve_type.name)
-        return matches[0] if matches else ""
-
     class EveUniverseMeta:
         esi_pk = "planet_id"
         esi_method = "get_universe_planets_planet_id"
@@ -480,6 +474,7 @@ class EveMoon(EveUniverse):
     position_z = models.FloatField(
         null=True, default=None, blank=True, help_text="z position in the solar system"
     )
+    # TODO: Variation from eveuniverse
     eve_solar_system = models.ForeignKey(
         EveSolarSystem, on_delete=models.CASCADE, related_name="eve_moons"
     )
