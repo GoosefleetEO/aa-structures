@@ -730,7 +730,7 @@ class NotificationBase(models.Model):
         """Generate timer for structure reinforcements"""
         token = self.owner.fetch_token()
         structure_obj, _ = Structure.objects.get_or_create_esi(
-            parsed_text["structureID"], token
+            id=parsed_text["structureID"], token=token
         )
         eve_time = self.timestamp + ldap_timedelta_2_timedelta(parsed_text["timeLeft"])
         timer_processed = False

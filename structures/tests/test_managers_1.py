@@ -246,7 +246,7 @@ class TestStructureManagerEsi(NoSocketsTestCase):
         )
         # when
         structure, created = Structure.objects.get_or_create_esi(
-            1000000000001, self.token
+            id=1000000000001, token=self.token
         )
         # then
         self.assertFalse(created)
@@ -257,7 +257,7 @@ class TestStructureManagerEsi(NoSocketsTestCase):
         mock_esi.client = self.esi_client_stub
         # when
         structure, created = Structure.objects.get_or_create_esi(
-            1000000000001, self.token
+            id=1000000000001, token=self.token
         )
         # then
         self.assertTrue(created)
@@ -278,7 +278,7 @@ class TestStructureManagerEsi(NoSocketsTestCase):
         )
         # when
         structure, created = Structure.objects.update_or_create_esi(
-            1000000000001, self.token
+            id=1000000000001, token=self.token
         )
         # then
         self.assertFalse(created)
@@ -299,14 +299,14 @@ class TestStructureManagerEsi(NoSocketsTestCase):
         mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
         # when/then
         with self.assertRaises(RuntimeError):
-            Structure.objects.update_or_create_esi(1000000000001, self.token)
+            Structure.objects.update_or_create_esi(id=1000000000001, token=self.token)
 
     def test_raises_exception_when_create_without_token(self, mock_esi):
         # given
         mock_esi.client = self.esi_client_stub
         # when
         with self.assertRaises(ValueError):
-            Structure.objects.update_or_create_esi(987, None)
+            Structure.objects.update_or_create_esi(id=987, token=None)
 
 
 class TestStructureManagerQuerySet(NoSocketsTestCase):

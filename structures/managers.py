@@ -425,29 +425,30 @@ class StructureQuerySet(models.QuerySet):
 
 
 class StructureManagerBase(models.Manager):
-    def get_or_create_esi(self, structure_id: int, token: Token) -> tuple:
-        """get or create a structure with data from ESI if needed
+    def get_or_create_esi(self, *, id: int, token: Token) -> tuple:
+        """get or create a structure with data from ESI if needed.
 
-        structure_id: Structure ID of object in Eve Online
+        Args:
+            id: Structure ID of object in Eve Online
+            token: ``esi.models.Token`` object with scope:
+                ``esi-universe.read_structures.v1``
 
-        token: ``esi.models.Token`` object with scope:
-        ``esi-universe.read_structures.v1``
-
-        Returns: object, created
+        Returns:
+            object, created
         """
+        id = int(id)
         try:
-            obj = self.get(id=structure_id)
+            obj = self.get(id=id)
             return obj, False
         except self.model.DoesNotExist:
-            return self.update_or_create_esi(structure_id, token)
+            return self.update_or_create_esi(id=id, token=token)
 
-    def update_or_create_esi(self, structure_id: int, token: Token) -> tuple:
+    def update_or_create_esi(self, *, id: int, token: Token) -> tuple:
         """update or create a structure from ESI for given structure ID
         This will only fetch basic info about a structure
 
         Args:
-            structure_id: Structure ID of object in Eve Online
-
+            id: Structure ID of object in Eve Online
             token: ``esi.models.Token`` object with scope: ``esi-universe.read_structures.v1``
 
         Returns:
@@ -455,15 +456,16 @@ class StructureManagerBase(models.Manager):
         """
         from .models import Owner
 
-        logger.info("Trying to fetch structure from ESI with ID %s", structure_id)
+        id = int(id)
+        logger.info("Trying to fetch structure from ESI with ID %s", id)
         if token is None:
             raise ValueError("Can not fetch structure without token")
 
         structure_info = esi.client.Universe.get_universe_structures_structure_id(
-            structure_id=structure_id, token=token.valid_access_token()
+            structure_id=id, token=token.valid_access_token()
         ).results()
         structure = {
-            "structure_id": structure_id,
+            "structure_id": id,
             "name": self.model.extract_name_from_esi_response(structure_info["name"]),
             "position": structure_info["position"],
             "type_id": structure_info["type_id"],
