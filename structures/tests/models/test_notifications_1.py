@@ -22,61 +22,6 @@ from ..testdata.helpers import (
 MODULE_PATH = "structures.models.notifications"
 
 
-class TestEveEntities(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        load_entities([EveEntity])
-
-    def test_str(self):
-        obj = EveEntity.objects.get(id=3011)
-        self.assertEqual(str(obj), "Big Bad Alliance")
-
-    def test_repr(self):
-        obj = EveEntity.objects.get(id=3011)
-        expected = "EveEntity(id=3011, category='alliance', name='Big Bad Alliance')"
-        self.assertEqual(repr(obj), expected)
-
-    def test_get_matching_entity_type(self):
-        self.assertEqual(
-            EveEntity.Category.from_esi_name("character"),
-            EveEntity.Category.CHARACTER,
-        )
-        self.assertEqual(
-            EveEntity.Category.from_esi_name("corporation"),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.Category.from_esi_name("alliance"),
-            EveEntity.Category.ALLIANCE,
-        )
-        self.assertEqual(
-            EveEntity.Category.from_esi_name("faction"),
-            EveEntity.Category.FACTION,
-        )
-        self.assertEqual(
-            EveEntity.Category.from_esi_name("other"),
-            EveEntity.Category.OTHER,
-        )
-        self.assertEqual(
-            EveEntity.Category.from_esi_name("does not exist"),
-            EveEntity.Category.OTHER,
-        )
-
-    def test_profile_url(self):
-        x = EveEntity.objects.get(id=3001)
-        self.assertEqual(
-            x.profile_url, "http://evemaps.dotlan.net/alliance/Wayne_Enterprises"
-        )
-
-        x = EveEntity.objects.get(id=2001)
-        self.assertEqual(
-            x.profile_url, "http://evemaps.dotlan.net/corp/Wayne_Technologies"
-        )
-        x = EveEntity.objects.get(id=1011)
-        self.assertEqual(x.profile_url, "")
-
-
 class TestNotification(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
