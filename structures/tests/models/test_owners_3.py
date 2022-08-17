@@ -5,6 +5,7 @@ from bravado.exception import HTTPBadGateway, HTTPInternalServerError
 from pytz import utc
 
 from django.test import override_settings
+from django.utils.timezone import now
 from esi.models import Token
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
@@ -17,14 +18,25 @@ from app_utils.testing import (
     queryset_pks,
 )
 
-from ...models import JumpFuelAlertConfig, Notification, Owner, StructureItem, Webhook
-from ...models.notifications import NotificationType
+from ...models import (
+    JumpFuelAlertConfig,
+    Notification,
+    NotificationType,
+    Owner,
+    StructureItem,
+    Webhook,
+)
 from ..testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_structure_item,
     create_upwell_structure,
     create_webhook,
+)
+from ..testdata.factories_2 import (
+    EveEntityCorporationFactory,
+    OwnerFactory,
+    datetime_to_esi,
 )
 from ..testdata.helpers import (
     create_structures,
@@ -72,24 +84,6 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
             )
         ]
         cls.esi_client_stub = EsiClientStub.create_from_endpoints(endpoints)
-
-    @patch(OWNERS_PATH + ".now")
-    def test_should_create_notifications_from_scratch(self, mock_now, mock_esi):
-        # given
-        mock_esi.client = self.esi_client_stub
-        mock_now.return_value = dt.datetime(2019, 8, 16, 14, 15, tzinfo=utc)
-        owner = create_owner_from_user(self.user)
-        create_upwell_structure(owner=owner, id=1000000000001)
-        # when
-        owner.fetch_notifications_esi()
-        # then
-        owner.refresh_from_db()
-        self.assertTrue(owner.is_notification_sync_fresh)
-        # should only contain the right notifications
-        notif_ids_current = set(
-            Notification.objects.values_list("notification_id", flat=True)
-        )
-        self.assertSetEqual(notif_ids_current, {1000000505})
 
     @patch(OWNERS_PATH + ".notify", spec=True)
     @patch(OWNERS_PATH + ".now", spec=True)
@@ -188,6 +182,83 @@ class TestFetchNotificationsEsi(NoSocketsTestCase):
         # then
         owner.refresh_from_db()
         self.assertFalse(owner.is_notification_sync_fresh)
+
+
+@patch(OWNERS_PATH + ".esi")
+class TestFetchNotificationsEsi2(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+    def test_should_create_notifications_from_scratch(self, mock_esi):
+        # given
+        owner = OwnerFactory()
+        sender = EveEntityCorporationFactory()
+        eve_character = owner.characters.first().character_ownership.character
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data={
+                    str(eve_character.character_id): [
+                        {
+                            "notification_id": 42,
+                            "is_read": False,
+                            "sender_id": sender.id,
+                            "sender_type": "corporation",
+                            "text": "{}\n",
+                            "timestamp": datetime_to_esi(now()),
+                            "type": "CorpBecameWarEligible",
+                        }
+                    ]
+                },
+            )
+        ]
+        mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
+        # when
+        owner.fetch_notifications_esi()
+        # then
+        owner.refresh_from_db()
+        self.assertTrue(owner.is_notification_sync_fresh)
+        self.assertEqual(owner.notification_set.count(), 1)
+        obj = owner.notification_set.first()
+        self.assertEqual(
+            obj.notif_type, NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE
+        )
+
+    def test_should_handle_other_sender_correctly(self, mock_esi):
+        # given
+        owner = OwnerFactory()
+        eve_character = owner.characters.first().character_ownership.character
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data={
+                    str(eve_character.character_id): [
+                        {
+                            "notification_id": 42,
+                            "is_read": False,
+                            "sender_id": 1,
+                            "sender_type": "other",
+                            "text": "{}\n",
+                            "timestamp": datetime_to_esi(now()),
+                            "type": "CorpBecameWarEligible",
+                        }
+                    ]
+                },
+            )
+        ]
+        mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
+        # when
+        owner.fetch_notifications_esi()
+        # then
+        obj = owner.notification_set.get(notification_id=42)
+        self.assertIsNone(obj.sender)
 
 
 @override_settings(DEBUG=True)

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Renamed management command **structures_load_structures** to **structures_load_eve**
+- Senders of category "other" are now stored as None
 
 ## [1.26.2] - 2022-08-17
 

@@ -1058,15 +1058,11 @@ class Owner(models.Model):
         ]
         # create new notification objects
         for notification in new_notifications:
-            sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
-            if sender_type != EveEntity.Category.OTHER:
+            if notification["sender_type"] == "other":
+                sender = None
+            else:
                 sender, _ = EveEntity.objects.get_or_create_esi(
                     id=notification["sender_id"]
-                )
-            else:
-                sender, _ = EveEntity.objects.get_or_create(
-                    id=notification["sender_id"],
-                    defaults={"category": sender_type},
                 )
             text = notification["text"] if "text" in notification else None
             is_read = notification["is_read"] if "is_read" in notification else None
