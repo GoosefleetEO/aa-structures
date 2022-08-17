@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.26.2] - 2022-08-17
+
+### Changed
+
+- Technical preparations: Prepare migration to eveuniverse (!32)
+
 ## [1.26.1] - 2022-08-15
 
 ### Fixed
