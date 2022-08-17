@@ -105,6 +105,51 @@ class EveUniverseManager(models.Manager):
         return count_updated
 
 
+class EveEntityManager(models.Manager):
+    def get_or_create_esi(self, *, id: int) -> tuple:
+        """gets or creates EveEntity obj with data fetched from ESI if needed
+
+        Args:
+            id: Eve Online ID of object
+
+        Returns: object, created
+        """
+        id = int(id)
+        try:
+            obj = self.get(id=id)
+            created = False
+        except self.model.DoesNotExist:
+            obj, created = self.update_or_create_esi(id=id)
+
+        return obj, created
+
+    def update_or_create_esi(self, *, id: int) -> tuple:
+        """updates or creates EveEntity object with data fetched from ESI
+
+        Args:
+            id: Eve Online ID of object
+
+        Returns: object, created
+        """
+        id = int(id)
+        log_prefix = make_log_prefix(self, id)
+        response = esi_fetch(
+            esi_path="Universe.post_universe_names",
+            args={"ids": [id]},
+        )
+        if len(response) > 0:
+            first = response[0]
+            category = self.model.Category.from_esi_name(first["category"])
+            obj, created = self.update_or_create(
+                id=id,
+                defaults={"category": category, "name": first["name"]},
+            )
+        else:
+            raise ValueError(f"{log_prefix}: Did not find a match")
+
+        return obj, created
+
+
 class EveSovereigntyMapManager(models.Manager):
     def update_from_esi(self):
         sov_map = esi.client.Sovereignty.get_sovereignty_map().results()
@@ -160,51 +205,6 @@ class EveSovereigntyMapManager(models.Manager):
             return sov_map.alliance_id if sov_map.alliance_id else None
         except self.model.DoesNotExist:
             return None
-
-
-class EveEntityManager(models.Manager):
-    def get_or_create_esi(self, *, id: int) -> tuple:
-        """gets or creates EveEntity obj with data fetched from ESI if needed
-
-        Args:
-            id: Eve Online ID of object
-
-        Returns: object, created
-        """
-        id = int(id)
-        try:
-            obj = self.get(id=id)
-            created = False
-        except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(id=id)
-
-        return obj, created
-
-    def update_or_create_esi(self, *, id: int) -> tuple:
-        """updates or creates EveEntity object with data fetched from ESI
-
-        Args:
-            id: Eve Online ID of object
-
-        Returns: object, created
-        """
-        id = int(id)
-        log_prefix = make_log_prefix(self, id)
-        response = esi_fetch(
-            esi_path="Universe.post_universe_names",
-            args={"ids": [id]},
-        )
-        if len(response) > 0:
-            first = response[0]
-            category = self.model.Category.from_esi_name(first["category"])
-            obj, created = self.update_or_create(
-                id=id,
-                defaults={"category": category, "name": first["name"]},
-            )
-        else:
-            raise ValueError(f"{log_prefix}: Did not find a match")
-
-        return obj, created
 
 
 class NotificationBaseQuerySet(models.QuerySet):

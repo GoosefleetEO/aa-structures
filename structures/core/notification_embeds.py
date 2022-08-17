@@ -1017,7 +1017,10 @@ class NotificationSovEmbed(NotificationBaseEmbed):
             structure_type_id = EveTypeId.TCU
         structure_type, _ = EveType.objects.get_or_create_esi(id=structure_type_id)
         self._structure_type_name = structure_type.name
-        self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
+        try:
+            self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
+        except AttributeError:
+            self._sov_owner_link = "(unknown)"
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )

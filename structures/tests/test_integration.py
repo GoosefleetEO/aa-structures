@@ -452,6 +452,7 @@ class TestEnd2EndTasks(TestCase):
                     str(eve_character.character_id): [
                         {
                             "notification_id": 1,
+                            "is_read": False,
                             "sender_id": sender.id,
                             "sender_type": "corporation",
                             "text": yaml.dump(

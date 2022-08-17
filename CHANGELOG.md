@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.26.3] - 2022-08-17
+
+### Added
+
+- New management command to preload missing eveuniverse objects for later big migration (BETA)
+- Data migration to remove "other" senders from notifications
+
+### Changed
+
+- Renamed management command **structures_load_structures** to **structures_load_eve** and added additional types needed for later big migration
+- Senders of category "other" are now stored as None
+
 ## [1.26.2] - 2022-08-17
 
 ### Changed

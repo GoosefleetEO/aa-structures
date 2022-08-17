@@ -19,6 +19,51 @@ logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 NAMES_MAX_LENGTH = 255
 
 
+class EveSovereigntyMap(models.Model):
+    """Shows which alliance / corporation / faction owns a system
+
+    Note: This model does not hold FKs to respective objects like
+    EveSolarSystem to avoid having load all those object from ESI
+    """
+
+    solar_system_id = models.PositiveIntegerField(primary_key=True)
+    alliance_id = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="alliance who holds sov for this system",
+    )
+    corporation_id = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="corporation who holds sov for this system",
+    )
+    faction_id = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="faction who holds sov for this system",
+    )
+    last_updated = models.DateTimeField(
+        default=None,
+        null=True,
+        blank=True,
+        help_text="When this object was last updated from ESI",
+        db_index=True,
+    )
+
+    objects = EveSovereigntyMapManager()
+
+    def __str__(self):
+        return str(self.solar_system_id)
+
+    def __repr__(self):
+        return "{}(solar_system_id='{}')".format(
+            self.__class__.__name__, self.solar_system_id
+        )
+
+
 class EveSpaceType(str, Enum):
     UNKNOWN = "unknown"
     HIGHSEC = "highsec"
@@ -500,51 +545,6 @@ class EveMoon(EveUniverse):
         }
         has_esi_localization = False
         generate_localization = True
-
-
-class EveSovereigntyMap(models.Model):
-    """Shows which alliance / corporation / faction owns a system
-
-    Note: This model does not hold FKs to respective objects like
-    EveSolarSystem to avoid having load all those object from ESI
-    """
-
-    solar_system_id = models.PositiveIntegerField(primary_key=True)
-    alliance_id = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="alliance who holds sov for this system",
-    )
-    corporation_id = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="corporation who holds sov for this system",
-    )
-    faction_id = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="faction who holds sov for this system",
-    )
-    last_updated = models.DateTimeField(
-        default=None,
-        null=True,
-        blank=True,
-        help_text="When this object was last updated from ESI",
-        db_index=True,
-    )
-
-    objects = EveSovereigntyMapManager()
-
-    def __str__(self):
-        return str(self.solar_system_id)
-
-    def __repr__(self):
-        return "{}(solar_system_id='{}')".format(
-            self.__class__.__name__, self.solar_system_id
-        )
 
 
 class EveEntity(models.Model):

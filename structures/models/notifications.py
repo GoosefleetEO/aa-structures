@@ -1112,7 +1112,7 @@ class Notification(NotificationBase):
     last_updated = models.DateTimeField(
         help_text="Date when this notification has last been updated from ESI"
     )
-    sender = models.ForeignKey(EveEntity, on_delete=models.CASCADE)
+    sender = models.ForeignKey(EveEntity, on_delete=models.SET_NULL, null=True)
 
     text = models.TextField(
         null=True, default=None, blank=True, help_text="Notification details in YAML"
