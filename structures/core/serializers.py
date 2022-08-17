@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -24,7 +25,7 @@ from app_utils.views import (
 
 from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
 from ..constants import EveTypeId
-from ..models import EveSpaceType, Structure, StructureItem, StructureService
+from ..models import EvePlanet, EveSpaceType, Structure, StructureItem, StructureService
 
 
 class _AbstractStructureListSerializer(ABC):
@@ -339,6 +340,12 @@ class _AbstractStructureListSerializer(ABC):
         else:
             row["details"] = ""
 
+    @staticmethod
+    def extract_planet_type_name(eve_planet: EvePlanet) -> str:
+        """Extract short name of planet type."""
+        matches = re.findall(r"Planet \((\S*)\)", eve_planet.eve_type.name)
+        return matches[0] if matches else ""
+
 
 class StructureListSerializer(_AbstractStructureListSerializer):
     def __init__(self, queryset: models.QuerySet, request=None):
@@ -452,7 +459,7 @@ class PocoListSerializer(_AbstractStructureListSerializer):
 
     def _add_planet(self, structure, row):
         if structure.eve_planet:
-            planet_type_name = structure.eve_planet.eve_type_name_short()
+            planet_type_name = self.extract_planet_type_name(structure.eve_planet)
             planet_name = structure.eve_planet.name
             planet_type_icon = self._icon_html(
                 structure.eve_planet.eve_type.icon_url(size=self.ICON_RENDER_SIZE)

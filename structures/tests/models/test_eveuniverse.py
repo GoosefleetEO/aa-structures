@@ -5,6 +5,7 @@ from app_utils.testing import NoSocketsTestCase
 from ...models import (
     EveCategory,
     EveConstellation,
+    EveEntity,
     EveGroup,
     EveMoon,
     EvePlanet,
@@ -278,12 +279,6 @@ class TestEvePlanet(NoSocketsTestCase):
         expected = "Amamake_de I"
         self.assertEqual(obj._name_localized_generated("de"), expected)
 
-    def test_eve_type_name_short(self):
-        # given
-        obj = EvePlanet.objects.get(id=40161463)
-        # when/then
-        self.assertEqual(obj.eve_type_name_short(), "Barren")
-
 
 class TestEveMoon(NoSocketsTestCase):
     @classmethod
@@ -324,3 +319,58 @@ class TestEveSovereigntyMap(NoSocketsTestCase):
         obj = EveSovereigntyMap(solar_system_id=99)
         expected = "EveSovereigntyMap(solar_system_id='99')"
         self.assertEqual(repr(obj), expected)
+
+
+class TestEveEntity(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_entities([EveEntity])
+
+    def test_str(self):
+        obj = EveEntity.objects.get(id=3011)
+        self.assertEqual(str(obj), "Big Bad Alliance")
+
+    def test_repr(self):
+        obj = EveEntity.objects.get(id=3011)
+        expected = "EveEntity(id=3011, category='alliance', name='Big Bad Alliance')"
+        self.assertEqual(repr(obj), expected)
+
+    def test_get_matching_entity_type(self):
+        self.assertEqual(
+            EveEntity.Category.from_esi_name("character"),
+            EveEntity.Category.CHARACTER,
+        )
+        self.assertEqual(
+            EveEntity.Category.from_esi_name("corporation"),
+            EveEntity.Category.CORPORATION,
+        )
+        self.assertEqual(
+            EveEntity.Category.from_esi_name("alliance"),
+            EveEntity.Category.ALLIANCE,
+        )
+        self.assertEqual(
+            EveEntity.Category.from_esi_name("faction"),
+            EveEntity.Category.FACTION,
+        )
+        self.assertEqual(
+            EveEntity.Category.from_esi_name("other"),
+            EveEntity.Category.OTHER,
+        )
+        self.assertEqual(
+            EveEntity.Category.from_esi_name("does not exist"),
+            EveEntity.Category.OTHER,
+        )
+
+    def test_profile_url(self):
+        x = EveEntity.objects.get(id=3001)
+        self.assertEqual(
+            x.profile_url, "https://evemaps.dotlan.net/alliance/Wayne_Enterprises"
+        )
+
+        x = EveEntity.objects.get(id=2001)
+        self.assertEqual(
+            x.profile_url, "https://evemaps.dotlan.net/corp/Wayne_Technologies"
+        )
+        x = EveEntity.objects.get(id=1011)
+        self.assertEqual(x.profile_url, "")

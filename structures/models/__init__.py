@@ -4,6 +4,7 @@ from .eveuniverse import (
     EsiNameLocalization,
     EveCategory,
     EveConstellation,
+    EveEntity,
     EveGroup,
     EveMoon,
     EvePlanet,
@@ -14,7 +15,6 @@ from .eveuniverse import (
     EveType,
 )
 from .notifications import (
-    EveEntity,
     FuelAlert,
     FuelAlertConfig,
     GeneratedNotification,

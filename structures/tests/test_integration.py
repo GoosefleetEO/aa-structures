@@ -1,6 +1,6 @@
 import datetime as dt
 import os
-from unittest import skipIf
+import unittest
 from unittest.mock import patch
 
 import yaml
@@ -13,12 +13,13 @@ from app_utils.esi import EsiStatus
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 
 from .. import tasks
-from ..models import EveSolarSystem, Structure
+from ..models import EveSolarSystem, NotificationType, Structure
 from .testdata.factories_2 import (
     EveEntityCorporationFactory,
     OwnerFactory,
     StarbaseFactory,
     StructureFactory,
+    WebhookFactory,
     datetime_to_esi,
 )
 from .testdata.helpers import load_eveuniverse as structures_load_eveuniverse
@@ -40,7 +41,7 @@ NOTIFICATIONS_PATH = "structures.models.notifications"
 TASKS_PATH = "structures.tasks"
 
 
-@skipIf(
+@unittest.skipIf(
     os.environ.get("TOX_IS_ACTIVE"), reason="Test does not run with tox"
 )  # TODO: Fix tox issue
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
@@ -286,11 +287,14 @@ class TestEnd2EndTasks(TestCase):
         # then
         self.assertTrue(owner.structures.filter(id=structure_id).exists())
 
-    def test_should_create_notification_and_timers_for_reinforced_starbase(
+    def test_should_send_notification_and_create_timers_for_reinforced_starbase(
         self, mock_esi_2, mock_esi, mock_execute
     ):
         # given
-        owner = OwnerFactory()
+        webhook = WebhookFactory(
+            notification_types=[NotificationType.TOWER_REINFORCED_EXTRA]
+        )
+        owner = OwnerFactory(webhooks=[webhook])
         structure = StarbaseFactory(owner=owner, state=Structure.State.POS_REINFORCED)
         eve_character = owner.characters.first().character_ownership.character
         corporation_id = owner.corporation.corporation_id
@@ -417,7 +421,9 @@ class TestEnd2EndTasks(TestCase):
         tasks.update_all_structures.delay()
         tasks.fetch_all_notifications.delay()
         # then
-        self.assertTrue(owner.generatednotification_set.exists())
+        self.assertTrue(mock_execute.called)
+        embed = mock_execute.call_args[1]["embeds"][0]
+        self.assertIn(structure.name, embed.description)
 
         if StructureTimer:
             self.assertTrue(StructureTimer.objects.exists())

@@ -20,7 +20,6 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.models import EveEntity as EveEntity2
 
-from allianceauth.eveonline.evelinks import dotlan, eveimageserver
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import (
     DATETIME_FORMAT,
@@ -43,14 +42,9 @@ from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
 )
 from ..constants import EveCategoryId, EveCorporationId, EveTypeId
 from ..core import starbases
-from ..managers import (
-    EveEntityManager,
-    GeneratedNotificationManager,
-    NotificationManager,
-    WebhookManager,
-)
+from ..managers import GeneratedNotificationManager, NotificationManager, WebhookManager
 from ..webhooks.models import WebhookBase
-from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem
+from .eveuniverse import EveEntity, EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
 
 if "timerboard" in app_labels():
@@ -408,63 +402,6 @@ class Webhook(WebhookBase):
         return f"**{text}**" if text else ""
 
 
-class EveEntity(models.Model):
-    """An EVE entity like a character or an alliance."""
-
-    class Category(models.IntegerChoices):
-        CHARACTER = 1, "character"
-        CORPORATION = 2, "corporation"
-        ALLIANCE = 3, "alliance"
-        FACTION = 4, "faction"
-        OTHER = 5, "other"
-
-        @classmethod
-        def from_esi_name(cls, esi_name: str) -> "EveEntity.Category":
-            """Returns category for given ESI name."""
-            for choice in cls.choices:
-                if esi_name == choice[1]:
-                    return cls(choice[0])
-            return cls.OTHER
-
-    id = models.PositiveIntegerField(primary_key=True, help_text="Eve Online ID")
-    category = models.IntegerField(choices=Category.choices)
-    name = models.CharField(max_length=255, null=True, default=None, blank=True)
-
-    objects = EveEntityManager()
-
-    def __str__(self) -> str:
-        return str(self.name)
-
-    def __repr__(self) -> str:
-        return "{}(id={}, category='{}', name='{}')".format(
-            self.__class__.__name__, self.id, self.get_category_display(), self.name
-        )
-
-    @property
-    def profile_url(self) -> str:
-        """Returns link to website with profile info about this entity."""
-        if self.category == self.Category.CORPORATION:
-            url = dotlan.corporation_url(self.name)
-        elif self.category == self.Category.ALLIANCE:
-            url = dotlan.alliance_url(self.name)
-        else:
-            url = ""
-        return url
-
-    def icon_url(self, size: int = 32) -> str:
-        if self.category == self.Category.ALLIANCE:
-            return eveimageserver.alliance_logo_url(self.id, size)
-        elif (
-            self.category == self.Category.CORPORATION
-            or self.category == self.Category.FACTION
-        ):
-            return eveimageserver.corporation_logo_url(self.id, size)
-        elif self.category == self.Category.CHARACTER:
-            return eveimageserver.character_portrait_url(self.id, size)
-        else:
-            raise NotImplementedError()
-
-
 class NotificationBase(models.Model):
     """Base model for a notification."""
 
@@ -793,7 +730,7 @@ class NotificationBase(models.Model):
         """Generate timer for structure reinforcements"""
         token = self.owner.fetch_token()
         structure_obj, _ = Structure.objects.get_or_create_esi(
-            parsed_text["structureID"], token
+            id=parsed_text["structureID"], token=token
         )
         eve_time = self.timestamp + ldap_timedelta_2_timedelta(parsed_text["timeLeft"])
         timer_processed = False
@@ -853,7 +790,7 @@ class NotificationBase(models.Model):
             return False
 
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarSystemID"]
+            id=parsed_text["solarSystemID"]
         )
         event_type = parsed_text["campaignEventType"]
         if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
@@ -909,9 +846,9 @@ class NotificationBase(models.Model):
     def _gen_timer_orbital_reinforcements(self, parsed_text: str) -> bool:
         """Generate timer for orbital reinforcements."""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarSystemID"]
+            id=parsed_text["solarSystemID"]
         )
-        planet, _ = EvePlanet.objects.get_or_create_esi(parsed_text["planetID"])
+        planet, _ = EvePlanet.objects.get_or_create_esi(id=parsed_text["planetID"])
         eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
         timer_processed = False
         if has_auth_timers:
@@ -960,9 +897,9 @@ class NotificationBase(models.Model):
     def _gen_timer_moon_extraction(self, parsed_text: str) -> bool:
         """Generate timer for moon mining extractions."""
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            parsed_text["solarSystemID"]
+            id=parsed_text["solarSystemID"]
         )
-        moon, _ = EveMoon.objects.get_or_create_esi(parsed_text["moonID"])
+        moon, _ = EveMoon.objects.get_or_create_esi(id=parsed_text["moonID"])
         if "readyTime" in parsed_text:
             eve_time = ldap_time_2_datetime(parsed_text["readyTime"])
         else:
@@ -1283,9 +1220,7 @@ class Notification(NotificationBase):
                 raise ValueError("text property not provided and can not be generated.")
             kwargs["text"] = yaml.dump(data)
         if "sender" not in kwargs:
-            sender, _ = EveEntity.objects.get_or_create_esi(
-                eve_entity_id=EveCorporationId.DED
-            )
+            sender, _ = EveEntity.objects.get_or_create_esi(id=EveCorporationId.DED)
             kwargs["sender"] = sender
         kwargs["notification_id"] = cls.TEMPORARY_NOTIFICATION_ID
         kwargs["owner"] = structure.owner

@@ -676,7 +676,7 @@ class Owner(models.Model):
                 # making sure we have all solar systems loaded
                 # incl. their planets for later name matching
                 for solar_system_id in {int(x["system_id"]) for x in pocos}:
-                    EveSolarSystem.objects.get_or_create_esi(solar_system_id)
+                    EveSolarSystem.objects.get_or_create_esi(id=solar_system_id)
 
                 # compile pocos into structures list
                 for office_id, poco in pocos_2.items():
@@ -967,7 +967,8 @@ class Owner(models.Model):
             )
             detail.fuels.all().delete()
             for fuel in data["fuels"]:
-                eve_type, _ = EveType.objects.get_or_create_esi(fuel["type_id"])
+                # TODO: Move outside of transaction
+                eve_type, _ = EveType.objects.get_or_create_esi(id=fuel["type_id"])
                 StarbaseDetailFuel.objects.create(
                     eve_type=eve_type, detail=detail, quantity=fuel["quantity"]
                 )
@@ -1060,7 +1061,7 @@ class Owner(models.Model):
             sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
             if sender_type != EveEntity.Category.OTHER:
                 sender, _ = EveEntity.objects.get_or_create_esi(
-                    eve_entity_id=notification["sender_id"]
+                    id=notification["sender_id"]
                 )
             else:
                 sender, _ = EveEntity.objects.get_or_create(
@@ -1115,7 +1116,7 @@ class Owner(models.Model):
                 if refinery.id in structure_id_2_moon_id:
                     logger.info("%s: Updating moon for structure %s", self, refinery)
                     eve_moon, _ = EveMoon.objects.get_or_create_esi(
-                        eve_id=structure_id_2_moon_id[refinery.id]
+                        id=structure_id_2_moon_id[refinery.id]
                     )
                     refinery.eve_moon = eve_moon
                     refinery.save()

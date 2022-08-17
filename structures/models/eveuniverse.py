@@ -1,6 +1,5 @@
 """Eve Universe models"""
 
-import re
 from enum import Enum
 
 from django.db import models
@@ -13,7 +12,7 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
 from .. import __title__
-from ..managers import EveSovereigntyMapManager, EveUniverseManager
+from ..managers import EveEntityManager, EveSovereigntyMapManager, EveUniverseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -268,7 +267,9 @@ class EveUniverse(EsiNameLocalization, models.Model):
         for key in cls._field_names_not_pk():
             if key in fk_mappings:
                 esi_key, ParentClass = fk_mappings[key]
-                value, _ = ParentClass.objects.get_or_create_esi(eve_data_obj[esi_key])
+                value, _ = ParentClass.objects.get_or_create_esi(
+                    id=eve_data_obj[esi_key]
+                )
             else:
                 if key in field_mappings:
                     mapping = field_mappings[key]
@@ -349,16 +350,16 @@ class EveType(EveUniverse):
     def profile_url(self) -> str:
         return eveitems.type_url(self.id)
 
-    @classmethod
-    def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
-        return eveimageserver.type_icon_url(type_id=type_id, size=size)
-
     def icon_url(self, size=64):
         return self.generic_icon_url(self.id, size)
 
     def render_url(self, size: int = 128) -> str:
         """return an image URL to this type as render"""
         return eveimageserver.type_render_url(self.id, size=size)
+
+    @classmethod
+    def generic_icon_url(cls, type_id: int, size: int = 64) -> str:
+        return eveimageserver.type_icon_url(type_id=type_id, size=size)
 
 
 class EveRegion(EveUniverse):
@@ -450,11 +451,6 @@ class EvePlanet(EveUniverse):
         )
         return name_localized
 
-    def eve_type_name_short(self) -> str:
-        """Short name of planet type."""
-        matches = re.findall(r"Planet \((\S*)\)", self.eve_type.name)
-        return matches[0] if matches else ""
-
     class EveUniverseMeta:
         esi_pk = "planet_id"
         esi_method = "get_universe_planets_planet_id"
@@ -480,6 +476,7 @@ class EveMoon(EveUniverse):
     position_z = models.FloatField(
         null=True, default=None, blank=True, help_text="z position in the solar system"
     )
+    # TODO: Variation from eveuniverse
     eve_solar_system = models.ForeignKey(
         EveSolarSystem, on_delete=models.CASCADE, related_name="eve_moons"
     )
@@ -548,3 +545,60 @@ class EveSovereigntyMap(models.Model):
         return "{}(solar_system_id='{}')".format(
             self.__class__.__name__, self.solar_system_id
         )
+
+
+class EveEntity(models.Model):
+    """An EVE entity like a character or an alliance."""
+
+    class Category(models.IntegerChoices):
+        CHARACTER = 1, "character"
+        CORPORATION = 2, "corporation"
+        ALLIANCE = 3, "alliance"
+        FACTION = 4, "faction"
+        OTHER = 5, "other"
+
+        @classmethod
+        def from_esi_name(cls, esi_name: str) -> "EveEntity.Category":
+            """Returns category for given ESI name."""
+            for choice in cls.choices:
+                if esi_name == choice[1]:
+                    return cls(choice[0])
+            return cls.OTHER
+
+    id = models.PositiveIntegerField(primary_key=True, help_text="Eve Online ID")
+    category = models.IntegerField(choices=Category.choices)
+    name = models.CharField(max_length=255, null=True, default=None, blank=True)
+
+    objects = EveEntityManager()
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+    def __repr__(self) -> str:
+        return "{}(id={}, category='{}', name='{}')".format(
+            self.__class__.__name__, self.id, self.get_category_display(), self.name
+        )
+
+    @property
+    def profile_url(self) -> str:
+        """Returns link to website with profile info about this entity."""
+        if self.category == self.Category.CORPORATION:
+            url = dotlan.corporation_url(self.name)
+        elif self.category == self.Category.ALLIANCE:
+            url = dotlan.alliance_url(self.name)
+        else:
+            url = ""
+        return url
+
+    def icon_url(self, size: int = 32) -> str:
+        if self.category == self.Category.ALLIANCE:
+            return eveimageserver.alliance_logo_url(self.id, size)
+        elif (
+            self.category == self.Category.CORPORATION
+            or self.category == self.Category.FACTION
+        ):
+            return eveimageserver.corporation_logo_url(self.id, size)
+        elif self.category == self.Category.CHARACTER:
+            return eveimageserver.character_portrait_url(self.id, size)
+        else:
+            raise NotImplementedError()

@@ -162,12 +162,14 @@ class OwnerFactory(factory.django.DjangoModelFactory):
         OwnerCharacterFactory(owner=obj, character_ownership=character_ownership)
 
     @factory.post_generation
-    def add_webhook(obj, create, extracted, **kwargs):
-        """Set this param to False to disable."""
-
-        if not create or extracted is False:
+    def webhooks(obj, create, extracted, **kwargs):
+        if not create:
             return
-        obj.webhooks.add(WebhookFactory())
+        if extracted:
+            for webhook in extracted:
+                obj.webhooks.add(webhook)
+        else:
+            obj.webhooks.add(WebhookFactory())
 
 
 class StructureFactory(factory.django.DjangoModelFactory):
@@ -198,6 +200,14 @@ class StructureFactory(factory.django.DjangoModelFactory):
     def id(self):
         last_id = Structure.objects.aggregate(Max("id"))["id__max"] or 1_500_000_000_000
         return last_id + 1
+
+    @factory.post_generation
+    def webhooks(obj, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            for webhook in extracted:
+                obj.webhooks.add(webhook)
 
 
 class StarbaseFactory(StructureFactory):

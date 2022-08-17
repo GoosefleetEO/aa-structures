@@ -141,7 +141,9 @@ with transaction.atomic():
     for notification in notifications:
         sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
         if sender_type != EveEntity.Category.OTHER:
-            sender, _ = EveEntity.objects.get_or_create_esi(notification["sender_id"])
+            sender, _ = EveEntity.objects.get_or_create_esi(
+                id=notification["sender_id"]
+            )
         else:
             sender, _ = EveEntity.objects.get_or_create(
                 id=notification["sender_id"], defaults={"category": sender_type}
