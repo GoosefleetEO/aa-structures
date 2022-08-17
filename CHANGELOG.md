@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Added
+
+- New management command to preload missing eveuniverse objects for later big migration
+
+### Changed
+
+- Renamed management command **structures_load_structures** to **structures_load_eve**
+
 ## [1.26.2] - 2022-08-17
 
 ### Changed

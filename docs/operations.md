@@ -90,7 +90,7 @@ If you already have run those commands previously you can skip this step.
 Load Eve Online structure types
 
 ```bash
-python manage.py structures_load_structures
+python manage.py structures_load_eve
 ```
 
 ### Step 7 - Setup permissions
