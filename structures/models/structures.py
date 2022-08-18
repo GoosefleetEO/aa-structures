@@ -48,7 +48,6 @@ class StructureTag(models.Model):
         LIGHT_BLUE = "info", "light blue"
         ORANGE = "warning", "orange"
         RED = "danger", "red"
-        # TODO: add localization
 
     SPACE_TYPE_MAP = {
         EveSpaceType.HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": Style.GREEN},

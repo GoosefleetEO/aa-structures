@@ -7,11 +7,12 @@ from pytz import UTC
 from django.utils.timezone import now
 from eveuniverse.models import EveSolarSystem
 
-from allianceauth.eveonline.models import EveCharacter
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...constants import EveTypeId
 from ...models import (
+    EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
     NotificationType,
@@ -206,7 +207,7 @@ class TestStructure(NoSocketsTestCase):
         )
         self.assertEqual(str(obj), "Amamake - Test Structure Alpha - Dummy")
 
-    def test_extract_name_from_esi_respose(self):
+    def test_extract_name_from_esi_response(self):
         expected = "Alpha"
         self.assertEqual(
             Structure.extract_name_from_esi_response("Super - Alpha"), expected
@@ -770,6 +771,7 @@ class TestStructurePowerMode(NoSocketsTestCase):
 class TestStructure2(NoSocketsTestCase):
     def setUp(self):
         load_eveuniverse()
+        load_entities([EveSovereigntyMap])
         create_structures()
         set_owner_character(character_id=1001)
 
@@ -811,7 +813,10 @@ class TestStructureSave(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_eveuniverse()
-        cls.owner = OwnerFactory()
+        load_entities([EveCharacter, EveSovereigntyMap])
+        cls.owner = OwnerFactory(
+            corporation=EveCorporationInfo.objects.get(corporation_id=2001)
+        )
 
     def test_can_save_tags_low_sec(self):
         obj = StructureFactory(
@@ -824,16 +829,15 @@ class TestStructureSave(NoSocketsTestCase):
             StructureTag.objects.filter(name=StructureTag.NAME_SOV_TAG).first()
         )
 
-    # TODO: Fix sov tag
-    # def test_can_save_tags_null_sec_w_sov(self):
-    #     obj = StructureFactory(
-    #         owner=self.owner,
-    #         eve_solar_system=EveSolarSystem.objects.get(name="1-PGSG"),
-    #     )
-    #     nullsec_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
-    #     self.assertIn(nullsec_tag, obj.tags.all())
-    #     sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
-    #     self.assertIn(sov_tag, obj.tags.all())
+    def test_can_save_tags_null_sec_w_sov(self):
+        obj = StructureFactory(
+            owner=self.owner,
+            eve_solar_system=EveSolarSystem.objects.get(name="1-PGSG"),
+        )
+        nullsec_tag = StructureTag.objects.get(name=StructureTag.NAME_NULLSEC_TAG)
+        self.assertIn(nullsec_tag, obj.tags.all())
+        sov_tag = StructureTag.objects.get(name=StructureTag.NAME_SOV_TAG)
+        self.assertIn(sov_tag, obj.tags.all())
 
     def test_should_create_default_tags(self):
         # given

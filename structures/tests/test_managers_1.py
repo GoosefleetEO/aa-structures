@@ -101,48 +101,47 @@ class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
         self.assertEqual(structure.alliance_id, 3001)
 
 
-# TODO: Fix sov feature
-# class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         super().setUpClass()
-#         load_eveuniverse()
-#         load_entities([EveCharacter])
+class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+        load_entities([EveCharacter, EveSovereigntyMap])
 
-#     def test_sov_alliance_id(self):
-#         # returns alliance ID for sov system in null
-#         obj = EveSolarSystem.objects.get(id=30000474)
-#         self.assertEqual(
-#             EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj), 3001
-#         )
+    def test_sov_alliance_id(self):
+        # returns alliance ID for sov system in null
+        obj = EveSolarSystem.objects.get(id=30000474)
+        self.assertEqual(
+            EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj), 3001
+        )
 
-#         # returns None if there is not sov info
-#         obj = EveSolarSystem.objects.get(id=30000476)
-#         self.assertIsNone(EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj))
+        # returns None if there is not sov info
+        obj = EveSolarSystem.objects.get(id=30000476)
+        self.assertIsNone(EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj))
 
-#         # returns None if system is not in Null sec
-#         obj = EveSolarSystem.objects.get(id=30002537)
-#         self.assertIsNone(EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj))
+        # returns None if system is not in Null sec
+        obj = EveSolarSystem.objects.get(id=30002537)
+        self.assertIsNone(EveSovereigntyMap.objects.solar_system_sov_alliance_id(obj))
 
-# def test_corporation_has_sov(self):
-#     corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-#     # Wayne Tech has sov in 1-PG
-#     eve_solar_system = EveSolarSystem.objects.get(name="1-PGSG")
-#     self.assertTrue(
-#         EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
-#     )
+    def test_corporation_has_sov(self):
+        corporation = EveCorporationInfo.objects.get(corporation_id=2001)
+        # Wayne Tech has sov in 1-PG
+        eve_solar_system = EveSolarSystem.objects.get(name="1-PGSG")
+        self.assertTrue(
+            EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
+        )
 
-#     # Wayne Tech has no sov in A-C5TC
-#     eve_solar_system = EveSolarSystem.objects.get(name="A-C5TC")
-#     self.assertFalse(
-#         EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
-#     )
+        # Wayne Tech has no sov in A-C5TC
+        eve_solar_system = EveSolarSystem.objects.get(name="A-C5TC")
+        self.assertFalse(
+            EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
+        )
 
-#     # There can't be any sov outside nullsec
-#     eve_solar_system = EveSolarSystem.objects.get(name="Amamake")
-#     self.assertIsNone(
-#         EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
-#     )
+        # There can't be any sov outside nullsec
+        eve_solar_system = EveSolarSystem.objects.get(name="Amamake")
+        self.assertIsNone(
+            EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
+        )
 
 
 @patch(MODULE_PATH + ".esi")
@@ -510,6 +509,7 @@ class TestStructureTagManager(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_eveuniverse()
+        load_entities([EveSovereigntyMap])
 
     def test_can_get_space_type_tag_that_exists(self):
         solar_system = EveSolarSystem.objects.get(id=30002537)
@@ -587,37 +587,36 @@ class TestStructureTagManager(NoSocketsTestCase):
         self.assertEqual(structure.is_default, False)
         self.assertEqual(structure.order, 50)
 
-    # TODO: Fix sov tag
-    # def test_can_get_existing_sov_tag(self):
-    #     tag = StructureTag.objects.create(name="sov")
-    #     structure, created = StructureTag.objects.update_or_create_for_sov()
-    #     self.assertFalse(created)
-    #     self.assertEqual(structure, tag)
+    def test_can_get_existing_sov_tag(self):
+        tag = StructureTag.objects.create(name="sov")
+        structure, created = StructureTag.objects.update_or_create_for_sov()
+        self.assertFalse(created)
+        self.assertEqual(structure, tag)
 
-    # def test_can_get_non_existing_sov_tag(self):
-    #     structure, created = StructureTag.objects.update_or_create_for_sov()
-    #     self.assertTrue(created)
-    #     self.assertEqual(structure.name, "sov")
-    #     self.assertEqual(structure.style, StructureTag.Style.DARK_BLUE)
-    #     self.assertEqual(structure.is_user_managed, False)
-    #     self.assertEqual(structure.is_default, False)
-    #     self.assertEqual(structure.order, 20)
+    def test_can_get_non_existing_sov_tag(self):
+        structure, created = StructureTag.objects.update_or_create_for_sov()
+        self.assertTrue(created)
+        self.assertEqual(structure.name, "sov")
+        self.assertEqual(structure.style, StructureTag.Style.DARK_BLUE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 20)
 
-    # def test_can_update_sov_tag(self):
-    #     StructureTag.objects.create(
-    #         name="sov",
-    #         style=StructureTag.Style.GREEN,
-    #         is_user_managed=True,
-    #         is_default=True,
-    #         order=100,
-    #     )
-    #     structure, created = StructureTag.objects.update_or_create_for_sov()
-    #     self.assertFalse(created)
-    #     self.assertEqual(structure.name, "sov")
-    #     self.assertEqual(structure.style, StructureTag.Style.DARK_BLUE)
-    #     self.assertEqual(structure.is_user_managed, False)
-    #     self.assertEqual(structure.is_default, False)
-    #     self.assertEqual(structure.order, 20)
+    def test_can_update_sov_tag(self):
+        StructureTag.objects.create(
+            name="sov",
+            style=StructureTag.Style.GREEN,
+            is_user_managed=True,
+            is_default=True,
+            order=100,
+        )
+        structure, created = StructureTag.objects.update_or_create_for_sov()
+        self.assertFalse(created)
+        self.assertEqual(structure.name, "sov")
+        self.assertEqual(structure.style, StructureTag.Style.DARK_BLUE)
+        self.assertEqual(structure.is_user_managed, False)
+        self.assertEqual(structure.is_default, False)
+        self.assertEqual(structure.order, 20)
 
     """
     def test_update_nullsec_tag(self):
