@@ -25,14 +25,7 @@ from ..constants import EveCategoryId, EveGroupId, EveTypeId
 from ..core import starbases
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
-from .eveuniverse import (
-    EsiNameLocalization,
-    EveMoon,
-    EvePlanet,
-    EveSolarSystem,
-    EveSpaceType,
-    EveType,
-)
+from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSpaceType, EveType
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -739,8 +732,8 @@ class StructureItem(models.Model):
         )
 
 
-class StructureService(EsiNameLocalization, models.Model):
-    """service of a structure"""
+class StructureService(models.Model):
+    """Service of a Structure."""
 
     class State(models.IntegerChoices):
         OFFLINE = 1, _("offline")
