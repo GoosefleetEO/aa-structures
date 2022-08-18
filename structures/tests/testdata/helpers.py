@@ -690,7 +690,7 @@ def load_entities(entities_def: list = None):
             load_entity(EntityClass)
 
 
-def load_eveuniverse():
+def structures_load_eveuniverse():
     load_entities(
         [
             EveCategory,

@@ -22,7 +22,7 @@ from .testdata.factories_2 import (
     WebhookFactory,
     datetime_to_esi,
 )
-from .testdata.helpers import load_eveuniverse as structures_load_eveuniverse
+from .testdata.helpers import structures_load_eveuniverse
 from .testdata.load_eveuniverse import load_eveuniverse
 
 if "structuretimers" in app_labels():

@@ -8,7 +8,7 @@ from .testdata.factories_2 import (
     NotificationFactory,
     OwnerFactory,
 )
-from .testdata.helpers import load_eveuniverse as structure_load_eveuniverse
+from .testdata.helpers import structures_load_eveuniverse
 
 MANAGERS_PATH = "structures.managers"
 
@@ -21,7 +21,7 @@ class TestNotificationBaseAddOrRemoveTimers(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structure_load_eveuniverse()
+        structures_load_eveuniverse()
 
     def test_should_create_new_timers_from_notifications(
         self, mock_add_or_remove_timer_from_notification
