@@ -1148,20 +1148,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_planet_id, 40161472)
         self.assertEqual(structure.name, "Planet (Barren)")
 
-    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "de")
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_define_poco_name_from_planet_type_localized(self, mock_esi):
-        # given
-        mock_esi.client = self.esi_client_stub
-        owner = create_owner_from_user(self.user)
-        # when
-        owner.update_structures_esi()
-        # then
-        structure = Structure.objects.get(id=1200000000003)
-        self.assertEqual(structure.eve_planet_id, 40161472)
-        self.assertEqual(structure.name, "Planet (Barren)_de")
-
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(

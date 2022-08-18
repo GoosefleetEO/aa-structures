@@ -22,6 +22,7 @@ class TestOwner(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
@@ -214,6 +215,7 @@ class TestOwnerHasSov(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -538,6 +540,7 @@ class TestOwnerCharacters(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 

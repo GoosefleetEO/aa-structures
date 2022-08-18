@@ -189,6 +189,7 @@ class TestFetchNotificationsEsi2(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
 
     def test_should_create_notifications_from_scratch(self, mock_esi):
         # given
@@ -268,6 +269,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.owner.is_alliance_main = True
@@ -392,6 +394,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_entities()
+        load_eveuniverse()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
         )
@@ -796,6 +799,7 @@ class TestOwnerToken(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities([EveCorporationInfo, EveCharacter])
         cls.character = EveCharacter.objects.get(character_id=1001)
         cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
@@ -844,6 +848,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.owner.is_alliance_main = True
