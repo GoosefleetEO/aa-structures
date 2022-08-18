@@ -27,10 +27,17 @@ from ...models import (
     Owner,
     OwnerCharacter,
     Structure,
+    StructureTag,
     Webhook,
 )
 
 # eve universe (within structures)
+
+
+def datetime_to_esi(my_dt: dt.datetime) -> str:
+    """Convert datetime to ESI datetime string."""
+    utc_dt = my_dt.astimezone(pytz.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class EveEntityFactory(factory.django.DjangoModelFactory):
@@ -225,6 +232,15 @@ class StarbaseFactory(StructureFactory):
         return EveType.objects.get(name="Caldari Control Tower")
 
 
+class StructureTagFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = StructureTag
+        django_get_or_create = ("name",)
+
+    name = factory.Faker("color")
+    description = factory.Faker("sentence")
+
+
 class NotificationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Notification
@@ -291,9 +307,3 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
             state_timer_end=reinforced_until,
         )
         obj.structures.add(starbase)
-
-
-def datetime_to_esi(my_dt: dt.datetime) -> str:
-    """Convert datetime to ESI datetime string."""
-    utc_dt = my_dt.astimezone(pytz.utc)
-    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
