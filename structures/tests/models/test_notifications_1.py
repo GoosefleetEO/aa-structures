@@ -2,10 +2,11 @@ import datetime as dt
 from unittest.mock import patch
 
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
+from ...models import Notification, NotificationType, Structure, Webhook
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,

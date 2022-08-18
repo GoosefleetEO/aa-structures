@@ -8,8 +8,7 @@ if "structuretimers" in app_labels():
     from structuretimers.models import Timer
 
     from django.utils.timezone import now
-    from eveuniverse.models import EveSolarSystem as EveSolarSystem2
-    from eveuniverse.models import EveType as EveType2
+    from eveuniverse.models import EveSolarSystem, EveType
 
     from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
     from app_utils.testing import NoSocketsTestCase
@@ -56,9 +55,9 @@ if "structuretimers" in app_labels():
             timer = Timer.objects.first()
             self.assertIsInstance(timer, Timer)
             self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
+                timer.eve_solar_system, EveSolarSystem.objects.get(id=30002537)
             )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=35832))
+            self.assertEqual(timer.structure_type, EveType.objects.get(id=35832))
             self.assertEqual(timer.timer_type, Timer.Type.ARMOR)
             self.assertEqual(timer.objective, Timer.Objective.FRIENDLY)
             self.assertAlmostEqual(
@@ -93,9 +92,9 @@ if "structuretimers" in app_labels():
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.Type.FINAL)
             self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30000474)
+                timer.eve_solar_system, EveSolarSystem.objects.get(id=30000474)
             )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=32226))
+            self.assertEqual(timer.structure_type, EveType.objects.get(id=32226))
             self.assertAlmostEqual(
                 timer.date,
                 pytz.utc.localize(dt.datetime(2018, 12, 20, 17, 3, 22)),
@@ -141,9 +140,9 @@ if "structuretimers" in app_labels():
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.Type.FINAL)
             self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
+                timer.eve_solar_system, EveSolarSystem.objects.get(id=30002537)
             )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=2233))
+            self.assertEqual(timer.structure_type, EveType.objects.get(id=2233))
             self.assertEqual(timer.location_details, "Amamake IV")
             self.assertAlmostEqual(
                 timer.date,
@@ -175,9 +174,9 @@ if "structuretimers" in app_labels():
             self.assertIsInstance(timer, Timer)
             self.assertEqual(timer.timer_type, Timer.Type.MOONMINING)
             self.assertEqual(
-                timer.eve_solar_system, EveSolarSystem2.objects.get(id=30002537)
+                timer.eve_solar_system, EveSolarSystem.objects.get(id=30002537)
             )
-            self.assertEqual(timer.structure_type, EveType2.objects.get(id=35835))
+            self.assertEqual(timer.structure_type, EveType.objects.get(id=35835))
             self.assertEqual(
                 timer.eve_corporation,
                 EveCorporationInfo.objects.get(corporation_id=2001),
@@ -234,10 +233,10 @@ if "structuretimers" in app_labels():
             obj = Timer.objects.first()
             self.assertEqual(
                 obj.eve_solar_system,
-                EveSolarSystem2.objects.get(id=structure.eve_solar_system.id),
+                EveSolarSystem.objects.get(id=structure.eve_solar_system.id),
             )
             self.assertEqual(
-                obj.structure_type, EveType2.objects.get(id=structure.eve_type.id)
+                obj.structure_type, EveType.objects.get(id=structure.eve_type.id)
             )
             self.assertEqual(obj.timer_type, Timer.Type.FINAL)
             self.assertEqual(obj.objective, Timer.Objective.FRIENDLY)

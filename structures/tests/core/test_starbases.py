@@ -1,7 +1,8 @@
+from eveuniverse.models import EveCategory, EveGroup, EveType
+
 from app_utils.testing import NoSocketsTestCase
 
 from ...core import starbases
-from ...models import EveCategory, EveGroup, EveType
 from ..testdata.helpers import load_entities
 
 

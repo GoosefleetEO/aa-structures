@@ -322,11 +322,11 @@ class NotificationBaseEmbed:
 
     @staticmethod
     def _gen_eveentity_external_url(eve_entity: EveEntity) -> str:
-        if eve_entity.category == EveEntity.Category.ALLIANCE:
+        if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
             return dotlan.alliance_url(eve_entity.name)
-        elif eve_entity.category == EveEntity.Category.CORPORATION:
+        elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
             return dotlan.corporation_url(eve_entity.name)
-        elif eve_entity.category == EveEntity.Category.CHARACTER:
+        elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
             return evewho.character_url(eve_entity.id)
 
     @classmethod

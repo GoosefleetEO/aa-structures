@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
@@ -19,7 +20,6 @@ from ..admin import (
     WebhookAdmin,
 )
 from ..models import (
-    EveEntity,
     FuelAlertConfig,
     Notification,
     Owner,

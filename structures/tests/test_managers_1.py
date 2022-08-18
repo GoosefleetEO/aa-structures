@@ -2,19 +2,21 @@ import datetime as dt
 from unittest.mock import patch
 
 from django.utils.timezone import now
+from eveuniverse.models import (
+    EveCategory,
+    EveConstellation,
+    EveGroup,
+    EveRegion,
+    EveSolarSystem,
+    EveType,
+)
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ..models import (
-    EveCategory,
-    EveConstellation,
-    EveGroup,
-    EveRegion,
-    EveSolarSystem,
     EveSovereigntyMap,
-    EveType,
     NotificationType,
     Owner,
     Structure,

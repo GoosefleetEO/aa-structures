@@ -8,6 +8,7 @@ import yaml
 
 from django.db.models import Max
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from app_utils.testdata_factories import (
@@ -18,10 +19,6 @@ from app_utils.testdata_factories import (
 )
 
 from ...models import (
-    EveEntity,
-    EveMoon,
-    EveSolarSystem,
-    EveType,
     FuelAlertConfig,
     GeneratedNotification,
     JumpFuelAlertConfig,
@@ -41,17 +38,17 @@ class EveEntityFactory(factory.django.DjangoModelFactory):
         model = EveEntity
         django_get_or_create = ("id", "name")
 
-    category = EveEntity.Category.CHARACTER
+    category = EveEntity.CATEGORY_CHARACTER
 
     @factory.lazy_attribute
     def id(self):
-        if self.category == EveEntity.Category.CHARACTER:
+        if self.category == EveEntity.CATEGORY_CHARACTER:
             obj = EveCharacterFactory()
             return obj.character_id
-        if self.category == EveEntity.Category.CORPORATION:
+        if self.category == EveEntity.CATEGORY_CORPORATION:
             obj = EveCorporationInfoFactory()
             return obj.corporation_id
-        if self.category == EveEntity.Category.ALLIANCE:
+        if self.category == EveEntity.CATEGORY_ALLIANCE:
             obj = EveAllianceInfoFactory()
             return obj.alliance_id
         raise NotImplementedError(f"Unknown category: {self.category}")
@@ -59,17 +56,17 @@ class EveEntityFactory(factory.django.DjangoModelFactory):
 
 class EveEntityCharacterFactory(EveEntityFactory):
     name = factory.Faker("name")
-    category = EveEntity.Category.CHARACTER
+    category = EveEntity.CATEGORY_CHARACTER
 
 
 class EveEntityCorporationFactory(EveEntityFactory):
     name = factory.Faker("company")
-    category = EveEntity.Category.CORPORATION
+    category = EveEntity.CATEGORY_CORPORATION
 
 
 class EveEntityAllianceFactory(EveEntityFactory):
     name = factory.Faker("company")
-    category = EveEntity.Category.ALLIANCE
+    category = EveEntity.CATEGORY_ALLIANCE
 
 
 # Structures objects
@@ -221,7 +218,7 @@ class StarbaseFactory(StructureFactory):
 
     @factory.lazy_attribute
     def eve_solar_system(self):
-        return self.eve_moon.eve_solar_system
+        return self.eve_moon.eve_planet.eve_solar_system
 
     @factory.lazy_attribute
     def eve_type(self):

@@ -17,6 +17,7 @@ from markdown import markdown
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import (
@@ -28,16 +29,7 @@ from app_utils.esi_testing import BravadoOperationStub, BravadoResponseStub
 from app_utils.testing import create_user_from_evecharacter
 
 from ...models import (
-    EveCategory,
-    EveConstellation,
-    EveEntity,
-    EveGroup,
-    EveMoon,
-    EvePlanet,
-    EveRegion,
-    EveSolarSystem,
     EveSovereigntyMap,
-    EveType,
     Notification,
     NotificationType,
     Owner,
@@ -46,7 +38,6 @@ from ...models import (
     StructureTag,
     Webhook,
 )
-from ...models.eveuniverse import EveUniverse
 from .factories import create_notification
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
@@ -639,11 +630,7 @@ def load_entity(EntityClass):
     entity_name = EntityClass.__name__
     EntityClass.objects.all().delete()
     for obj in entities_testdata[entity_name]:
-        if issubclass(EntityClass, EveUniverse) and EntityClass.has_esi_localization():
-            for _, lc_model, lc_esi in EveUniverse.LANG_CODES_MAPPING:
-                if lc_esi != EveUniverse.ESI_DEFAULT_LANGUAGE:
-                    obj["name_" + lc_model] = obj["name"] + "_" + lc_model
-        elif EntityClass is EveCharacter:
+        if EntityClass is EveCharacter:
             EveCharacter.objects.create(**obj)
             corp_defaults = {
                 "corporation_name": obj["corporation_name"],
@@ -671,14 +658,6 @@ def load_entity(EntityClass):
 def load_entities(entities_def: list = None):
     """loads testdata for given entities classes"""
     entities_def_master = [
-        EveCategory,
-        EveGroup,
-        EveType,
-        EveRegion,
-        EveConstellation,
-        EveSolarSystem,
-        EveMoon,
-        EvePlanet,
         EveSovereigntyMap,
         EveCharacter,
         EveEntity,
@@ -688,21 +667,6 @@ def load_entities(entities_def: list = None):
     for EntityClass in entities_def_master:
         if not entities_def or EntityClass in entities_def:
             load_entity(EntityClass)
-
-
-def structures_load_eveuniverse():
-    load_entities(
-        [
-            EveCategory,
-            EveGroup,
-            EveType,
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EvePlanet,
-        ]
-    )
 
 
 def create_structures(dont_load_entities: bool = False) -> object:
@@ -716,7 +680,7 @@ def create_structures(dont_load_entities: bool = False) -> object:
         EveEntity.objects.get_or_create(
             id=character.character_id,
             defaults={
-                "category": EveEntity.Category.CHARACTER,
+                "category": EveEntity.CATEGORY_CHARACTER,
                 "name": character.character_name,
             },
         )
@@ -772,7 +736,7 @@ def create_owners():
         EveEntity.objects.get_or_create(
             id=corporation.corporation_id,
             defaults={
-                "category": EveEntity.Category.CORPORATION,
+                "category": EveEntity.CATEGORY_CORPORATION,
                 "name": corporation.corporation_name,
             },
         )

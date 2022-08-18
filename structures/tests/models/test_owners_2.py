@@ -2,12 +2,12 @@ import datetime as dt
 from unittest.mock import patch
 
 from django.utils.timezone import now, utc
+from eveuniverse.models import EvePlanet
 
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...models import (
-    EvePlanet,
     FuelAlertConfig,
     NotificationType,
     Owner,
