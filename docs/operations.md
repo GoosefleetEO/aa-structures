@@ -432,5 +432,4 @@ See the respective actions list on the admin site for details.
 
 Some admin tools are available only as Django management command:
 
-- **structures_purge_all**: This task will purge ALL data of the structures app. Run this command before trying to reverse migrations (e.g. `migrate structures zero` for de-installation) or you will run into foreign key constraints.
-- **structures_updatesde**: This command will reload all locally stored Eve Online data from the Eve Online server.
+- **structures_load_eve**: Preload static eve objects from ESI to speed up the app
