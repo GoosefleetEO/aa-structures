@@ -10,7 +10,7 @@ from ..testdata.factories_2 import (
     StarbaseFactory,
     StructureFactory,
 )
-from ..testdata.helpers import load_eveuniverse as structures_load_eveuniverse
+from ..testdata.helpers import structures_load_eveuniverse
 
 
 class TestGeneratedNotification(NoSocketsTestCase):
