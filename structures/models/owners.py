@@ -17,6 +17,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from esi.errors import TokenError
 from esi.models import Token
+from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
@@ -30,7 +31,6 @@ from app_utils.logging import LoggerAddTag
 from .. import __title__
 from ..app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
-    STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
@@ -43,7 +43,7 @@ from ..app_settings import (
 from ..constants import EveGroupId, EveTypeId
 from ..managers import OwnerManager
 from ..providers import esi
-from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSovereigntyMap, EveType
+from .eveuniverse import EveSovereigntyMap
 from .notifications import (
     EveEntity,
     GeneratedNotification,
@@ -689,9 +689,7 @@ class Owner(models.Model):
                             planet_id = None
                         else:
                             planet_id = eve_planet.id
-                            name = eve_planet.eve_type.name_localized_for_language(
-                                STRUCTURES_DEFAULT_LANGUAGE
-                            )
+                            name = eve_planet.eve_type.name
                     else:
                         name = None
                         planet_id = None

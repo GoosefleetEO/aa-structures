@@ -1,15 +1,13 @@
 import datetime as dt
 import itertools
-from pydoc import locate
 from typing import Tuple
-
-from bravado.exception import HTTPError
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
 from django.db.models import Case, Count, Exists, OuterRef, Q, Value, When
 from django.utils.timezone import now
 from esi.models import Token
+from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.eveonline.models import EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
@@ -18,136 +16,10 @@ from app_utils.logging import LoggerAddTag
 from . import __title__
 from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from .constants import EveCategoryId, EveTypeId
-from .helpers.esi_fetch import esi_fetch, esi_fetch_with_localization
 from .providers import esi
 from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
-
-
-def make_log_prefix(model_manager, id):
-    return f"{model_manager.model.__name__}(id={id})"
-
-
-class EveUniverseManager(models.Manager):
-    def get_or_create_esi(self, *, id: int) -> tuple:
-        """gets or creates eve universe object fetched from ESI if needed.
-        Will always get/create parent objects.
-
-        id: Eve Online ID of object
-
-        Returns: object, created
-        """
-        id = int(id)
-        try:
-            obj = self.get(id=id)
-            created = False
-        except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(id=id)
-
-        return obj, created
-
-    def update_or_create_esi(self, *, id: int) -> tuple:
-        """updates or creates Eve Universe object with data fetched from ESI.
-        Will always update/create children and get/create parent objects.
-
-        id: Eve Online ID of object
-
-        Returns: object, created
-        """
-        from .models import EsiNameLocalization
-
-        id = int(id)
-        esi_path = "Universe." + self.model.esi_method()
-        args = {self.model.esi_pk(): id}
-        if self.model.has_esi_localization():
-            eve_data_objects = esi_fetch_with_localization(
-                esi_path=esi_path,
-                languages=EsiNameLocalization.ESI_LANGUAGES,
-                args=args,
-            )
-        else:
-            eve_data_objects = dict()
-            eve_data_objects[EsiNameLocalization.ESI_DEFAULT_LANGUAGE] = esi_fetch(
-                esi_path=esi_path, args=args
-            )  # noqa E123
-        defaults = self.model.map_esi_fields_to_model(eve_data_objects)
-        obj, created = self.update_or_create(id=id, defaults=defaults)
-        obj.set_generated_translations()
-        obj.save()
-        self._update_or_create_children(eve_data_objects)
-        return obj, created
-
-    def _update_or_create_children(self, eve_data_objects: dict) -> None:
-        """updates or creates child objects if specified"""
-        eve_data_obj = eve_data_objects[self.model.ESI_DEFAULT_LANGUAGE]
-        for key, child_class in self.model.child_mappings().items():
-            ChildClass = locate(__package__ + ".models." + child_class)
-            for eve_data_obj_2 in eve_data_obj[key]:
-                id = eve_data_obj_2[ChildClass.esi_pk()]
-                ChildClass.objects.update_or_create_esi(id=id)
-
-    def update_all_esi(self) -> int:
-        """update all objects from ESI. Returns count of updated  objects"""
-        logger.info(
-            "%s: Updating %d objects from from ESI...",
-            self.model.__name__,
-            self.count(),
-        )
-        count_updated = 0
-        for eve_obj in self.all().order_by("last_updated"):
-            try:
-                self.update_or_create_esi(id=eve_obj.id)
-                count_updated += 1
-            except HTTPError:
-                logger.exception("Update interrupted by exception")
-
-        return count_updated
-
-
-class EveEntityManager(models.Manager):
-    def get_or_create_esi(self, *, id: int) -> tuple:
-        """gets or creates EveEntity obj with data fetched from ESI if needed
-
-        Args:
-            id: Eve Online ID of object
-
-        Returns: object, created
-        """
-        id = int(id)
-        try:
-            obj = self.get(id=id)
-            created = False
-        except self.model.DoesNotExist:
-            obj, created = self.update_or_create_esi(id=id)
-
-        return obj, created
-
-    def update_or_create_esi(self, *, id: int) -> tuple:
-        """updates or creates EveEntity object with data fetched from ESI
-
-        Args:
-            id: Eve Online ID of object
-
-        Returns: object, created
-        """
-        id = int(id)
-        log_prefix = make_log_prefix(self, id)
-        response = esi_fetch(
-            esi_path="Universe.post_universe_names",
-            args={"ids": [id]},
-        )
-        if len(response) > 0:
-            first = response[0]
-            category = self.model.Category.from_esi_name(first["category"])
-            obj, created = self.update_or_create(
-                id=id,
-                defaults={"category": category, "name": first["name"]},
-            )
-        else:
-            raise ValueError(f"{log_prefix}: Did not find a match")
-
-        return obj, created
 
 
 class EveSovereigntyMapManager(models.Manager):
@@ -479,15 +351,8 @@ class StructureManagerBase(models.Manager):
 
     def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:
         """update or create structure from given dict"""
-        from eveuniverse.models import EveType as EveUniverseType
 
-        from .models import (
-            EveMoon,
-            EvePlanet,
-            EveSolarSystem,
-            EveType,
-            StructureService,
-        )
+        from .models import StructureService
 
         eve_type, _ = EveType.objects.get_or_create_esi(id=structure["type_id"])
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -566,8 +431,8 @@ class StructureManagerBase(models.Manager):
         if old_obj:
             obj.handle_fuel_notifications(old_obj)
         # Make sure we have dogmas loaded for this type for fittings
-        EveUniverseType.objects.get_or_create_esi(
-            id=structure["type_id"], enabled_sections=[EveUniverseType.Section.DOGMAS]
+        EveType.objects.get_or_create_esi(
+            id=structure["type_id"], enabled_sections=[EveType.Section.DOGMAS]
         )
         # save related structure services
         StructureService.objects.filter(structure=obj).delete()

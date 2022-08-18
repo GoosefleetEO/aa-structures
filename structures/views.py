@@ -14,8 +14,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
-from eveuniverse.models import EveType as EveType2
-from eveuniverse.models import EveTypeDogmaAttribute
+from eveuniverse.models import EveType, EveTypeDogmaAttribute
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
@@ -41,7 +40,7 @@ from .core.serializers import (
     StructureListSerializer,
 )
 from .forms import TagsFilterForm
-from .models import EveType, Owner, Structure, StructureItem, StructureTag, Webhook
+from .models import Owner, Structure, StructureItem, StructureTag, Webhook
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -184,8 +183,8 @@ def structure_details(request, structure_id):
     def patch_fighter_tube_quantities(fighter_tubes):
         eve_type_ids = {item.eve_type_id for item in fighter_tubes}
         eve_types = [
-            EveType2.objects.get_or_create_esi(
-                id=eve_type_id, enabled_sections=[EveType2.Section.DOGMAS]
+            EveType.objects.get_or_create_esi(
+                id=eve_type_id, enabled_sections=[EveType.Section.DOGMAS]
             )[0]
             for eve_type_id in eve_type_ids
         ]

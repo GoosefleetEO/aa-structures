@@ -9,6 +9,7 @@ from django.template import Context, Template
 from django.utils.html import strip_tags
 from django.utils.timezone import now
 from django.utils.translation import gettext, gettext_lazy
+from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
 from app_utils.datetime import (
@@ -21,7 +22,6 @@ from app_utils.urls import reverse_absolute, static_file_absolute_url
 from .. import __title__
 from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..constants import EveTypeId
-from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import (
     EveEntity,
     GeneratedNotification,

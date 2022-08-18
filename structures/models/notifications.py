@@ -18,7 +18,7 @@ from django.utils.functional import classproperty
 from django.utils.timezone import now
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.models import EveEntity as EveEntity2
+from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem
 
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import (
@@ -44,7 +44,6 @@ from ..constants import EveCategoryId, EveCorporationId, EveTypeId
 from ..core import starbases
 from ..managers import GeneratedNotificationManager, NotificationManager, WebhookManager
 from ..webhooks.models import WebhookBase
-from .eveuniverse import EveEntity, EveMoon, EvePlanet, EveSolarSystem
 from .structures import Structure
 
 if "timerboard" in app_labels():
@@ -1166,8 +1165,8 @@ class Notification(NotificationBase):
                 if "aggressorCorpID" in parsed_text:
                     corporation_id = int(parsed_text["aggressorCorpID"])
             if corporation_id:
-                corporation = EveEntity2(
-                    category=EveEntity2.CATEGORY_CORPORATION, id=corporation_id
+                corporation = EveEntity(
+                    category=EveEntity.CATEGORY_CORPORATION, id=corporation_id
                 )
                 return corporation.is_npc and not corporation.is_npc_starter_corporation
         return False
