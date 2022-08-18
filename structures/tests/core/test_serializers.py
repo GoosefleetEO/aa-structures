@@ -13,6 +13,7 @@ from ..testdata.factories import (
     create_upwell_structure,
 )
 from ..testdata.helpers import load_entities
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 def to_dict(lst: List[dict], key="id"):
@@ -25,6 +26,7 @@ class TestStructureListSerializer(NoSocketsTestCase):
         super().setUpClass()
         cls.factory = RequestFactory()
         load_entities()
+        load_eveuniverse()
         cls.user, _ = create_user_from_evecharacter(1001)
         cls.owner = create_owner_from_user(cls.user)
         cls.request = cls.factory.get("/")
@@ -85,6 +87,7 @@ class TestPocoListSerializer(NoSocketsTestCase):
         super().setUpClass()
         cls.factory = RequestFactory()
         load_entities()
+        load_eveuniverse()
         cls.user, _ = create_user_from_evecharacter(1001)
         cls.owner = create_owner_from_user(cls.user)
         cls.request = cls.factory.get("/")

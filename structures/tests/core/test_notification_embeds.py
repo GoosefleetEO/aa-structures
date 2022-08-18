@@ -22,6 +22,7 @@ from ..testdata.helpers import (
     markdown_to_plain,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.core.notification_embeds"
 
@@ -30,6 +31,7 @@ class TestNotificationEmbeds(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -213,6 +215,7 @@ class TestNotificationEmbedsClasses(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_entities()
+        load_eveuniverse()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
         )

@@ -1,16 +1,16 @@
-from eveuniverse.models import EveCategory, EveGroup, EveType
+from eveuniverse.models import EveType
 
 from app_utils.testing import NoSocketsTestCase
 
 from ...core import starbases
-from ..testdata.helpers import load_entities
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestStarbases(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        load_entities([EveCategory, EveGroup, EveType])
+        load_eveuniverse()
         cls.type_astrahus = EveType.objects.get(id=35832)
         cls.type_poco = EveType.objects.get(id=2233)
         cls.type_starbase = EveType.objects.get(id=16213)
@@ -61,7 +61,7 @@ class TestStarbasesFuelDuration(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        load_entities([EveCategory, EveGroup, EveType])
+        load_eveuniverse()
 
     def test_can_calculate_for_large_tower(self):
         # given
