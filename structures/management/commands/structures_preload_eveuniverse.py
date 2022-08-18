@@ -1,4 +1,6 @@
-from django.core.management.base import BaseCommand
+from enum import Enum, auto
+
+from django.core.management.base import BaseCommand, CommandError
 from eveuniverse.models import EveCategory as EveCategory2
 from eveuniverse.models import EveConstellation as EveConstellation2
 from eveuniverse.models import EveEntity as EveEntity2
@@ -33,10 +35,15 @@ def get_input(text):
     return input(text)
 
 
+class ProcessMode(Enum):
+    COPY = auto()
+    CHECK = auto()
+
+
 class Command(BaseCommand):
     help = "Preload missing eveuniverse objects in preparation for migrating to eveuniverse with release 2."
 
-    def handle(self, *args, **options):
+    def process(self, mode: ProcessMode):
         models_map = {
             EveEntity: EveEntity2,
             EveCategory: EveCategory2,
@@ -49,15 +56,32 @@ class Command(BaseCommand):
             EveMoon: EveMoon2,
         }
         for OldModel, NewModel in models_map.items():
-            ids_target = set(OldModel.objects.values_list("id", flat=True))
-            ids_current = set(NewModel.objects.values_list("id", flat=True))
-            ids_diff = ids_target.difference(ids_current)
-            if ids_diff:
-                self.stdout.write(
-                    f"{OldModel.__name__}: Need to fetch {len(ids_diff)} "
-                    "missing object(s) from ESI."
+            qs_old = OldModel.objects.all()
+            if OldModel is EveEntity:
+                qs_old = (
+                    qs_old.exclude(category=EveEntity.Category.OTHER)
+                    .exclude(id=1)
+                    .exclude(name__isnull=True)
                 )
+            ids_target = set(qs_old.values_list("id", flat=True))
+            ids_current = set(NewModel.objects.values_list("id", flat=True))
+            ids_missing = ids_target.difference(ids_current)
+            if mode is ProcessMode.COPY:
+                if ids_missing:
+                    self.stdout.write(
+                        f"{OldModel.__name__}: Need to fetch {len(ids_missing)} "
+                        "missing object(s) from ESI."
+                    )
+                else:
+                    self.stdout.write(f"{OldModel.__name__}: No outstanding objects.")
+                NewModel.objects.bulk_get_or_create_esi(ids=ids_target)
+            elif mode is ProcessMode.CHECK:
+                if ids_missing:
+                    raise CommandError(f"Missing objects for {OldModel}. Please retry.")
             else:
-                self.stdout.write(f"{OldModel.__name__}: No outstanding objects.")
-            NewModel.objects.bulk_get_or_create_esi(ids=ids_target)
+                raise NotImplementedError(f"Invalid mode: {mode}")
+
+    def handle(self, *args, **options):
+        self.process(ProcessMode.COPY)
+        self.process(ProcessMode.CHECK)
         self.stdout.write(self.style.SUCCESS("DONE"))

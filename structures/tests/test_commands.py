@@ -1,17 +1,7 @@
-import unittest
 from io import StringIO
 from unittest.mock import patch
 
 from django.core.management import call_command
-from eveuniverse.models import EveCategory as EveCategory2
-from eveuniverse.models import EveConstellation as EveConstellation2
-from eveuniverse.models import EveEntity as EveEntity2
-from eveuniverse.models import EveGroup as EveGroup2
-from eveuniverse.models import EveMoon as EveMoon2
-from eveuniverse.models import EvePlanet as EvePlanet2
-from eveuniverse.models import EveRegion as EveRegion2
-from eveuniverse.models import EveSolarSystem as EveSolarSystem2
-from eveuniverse.models import EveType as EveType2
 
 from app_utils.testing import NoSocketsTestCase
 
@@ -38,7 +28,6 @@ from .testdata.helpers import (
     load_entities,
     load_notification_entities,
     set_owner_character,
-    structures_load_eveuniverse,
 )
 
 PACKAGE_PATH = "structures.management.commands"
@@ -146,29 +135,3 @@ class TestPurgeAll(NoSocketsTestCase):
 
         for MyModel in models:
             self.assertEqual(MyModel.objects.count(), 0)
-
-
-@unittest.skip("temporary")
-class TestPreloadEveuniverse(NoSocketsTestCase):
-    def test_should_load_all_types(self):
-        # given
-        models_map = {
-            EveEntity: EveEntity2,
-            EveCategory: EveCategory2,
-            EveGroup: EveGroup2,
-            EveType: EveType2,
-            EveRegion: EveRegion2,
-            EveConstellation: EveConstellation2,
-            EveSolarSystem: EveSolarSystem2,
-            EvePlanet: EvePlanet2,
-            EveMoon: EveMoon2,
-        }
-        structures_load_eveuniverse()
-        # when
-        out = StringIO()
-        call_command("structures_preload_eveuniverse", stdout=out)
-        # then
-        for OldModel, NewModel in models_map.items():
-            ids_target = set(OldModel.objects.values_list("id", flat=True))
-            ids_current = set(NewModel.objects.values_list("id", flat=True))
-            self.assertSetEqual(ids_target, ids_current)
