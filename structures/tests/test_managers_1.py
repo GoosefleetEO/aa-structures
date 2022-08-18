@@ -22,7 +22,6 @@ from ..models import (
     StructureTag,
     Webhook,
 )
-from . import to_json
 from .testdata.factories import (
     create_eve_sovereignty_map,
     create_owner_from_user,
@@ -397,14 +396,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "services": [
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
                     "state": "online",
                 },
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
                     "state": "offline",
                 },
             ],
@@ -441,39 +436,12 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         self.assertAlmostEqual(
             (now() - structure.last_online_at).total_seconds(), 0, delta=2
         )
+        self.assertEqual(structure.services.count(), 2)
+        service_1 = structure.services.get(name="Clone Bay")
+        self.assertEqual(service_1.state, StructureService.State.ONLINE)
+        service_1 = structure.services.get(name="Market Hub")
+        self.assertEqual(service_1.state, StructureService.State.OFFLINE)
         # todo: add more content tests
-
-        # check services
-        services = {
-            to_json(
-                {
-                    "name": x.name,
-                    "name_de": x.name_de,
-                    "name_ko": x.name_ko,
-                    "state": x.state,
-                }
-            )
-            for x in structure.services.all()
-        }
-        expected = {
-            to_json(
-                {
-                    "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
-                    "state": StructureService.State.ONLINE,
-                }
-            ),
-            to_json(
-                {
-                    "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
-                    "state": StructureService.State.OFFLINE,
-                }
-            ),
-        }
-        self.assertEqual(services, expected)
 
     def test_can_update_full(self):
         create_structures()
@@ -493,14 +461,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "services": [
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
                     "state": "online",
                 },
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
                     "state": "offline",
                 },
             ],
@@ -552,14 +516,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "services": [
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
                     "state": "offline",
                 },
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
                     "state": "offline",
                 },
             ],

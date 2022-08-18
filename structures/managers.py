@@ -488,7 +488,6 @@ class StructureManagerBase(models.Manager):
             EveType,
             StructureService,
         )
-        from .models.eveuniverse import EveUniverse
 
         eve_type, _ = EveType.objects.get_or_create_esi(id=structure["type_id"])
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
@@ -576,12 +575,6 @@ class StructureManagerBase(models.Manager):
             for service in structure["services"]:
                 state = StructureService.State.from_esi_name(service["state"])
                 args = {"structure": obj, "name": service["name"], "state": state}
-                for lang in EveUniverse.ESI_LANGUAGES:
-                    if lang != EveUniverse.ESI_DEFAULT_LANGUAGE:
-                        field_name = "name_%s" % lang
-                        if field_name in service:
-                            args[field_name] = service[field_name]
-
                 StructureService.objects.create(**args)
 
         if obj.services.filter(state=StructureService.State.ONLINE).exists():
