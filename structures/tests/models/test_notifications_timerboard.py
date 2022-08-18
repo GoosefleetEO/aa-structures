@@ -28,8 +28,8 @@ if "timerboard" in app_labels():
         @classmethod
         def setUpClass(cls):
             super().setUpClass()
-            create_structures()
             load_eveuniverse()
+            create_structures()
             _, cls.owner = set_owner_character(character_id=1001)
             load_notification_entities(cls.owner)
             cls.owner.webhooks.add(create_webhook())

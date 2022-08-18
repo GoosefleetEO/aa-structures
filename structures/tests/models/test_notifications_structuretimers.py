@@ -35,8 +35,8 @@ if "structuretimers" in app_labels():
         @classmethod
         def setUpClass(cls):
             super().setUpClass()
-            create_structures()
             load_eveuniverse()
+            create_structures()
 
         def setUp(self) -> None:
             _, self.owner = set_owner_character(character_id=1001)

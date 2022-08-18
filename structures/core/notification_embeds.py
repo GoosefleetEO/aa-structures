@@ -937,7 +937,9 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         ) % {
             "structure_name": Webhook.text_bold(structure_name),
             "moon": self.eve_moon.name,
-            "solar_system": self._gen_solar_system_text(self.eve_moon.eve_solar_system),
+            "solar_system": self._gen_solar_system_text(
+                self.eve_moon.eve_planet.eve_solar_system
+            ),
             "owner_link": self._gen_corporation_link(str(notification.owner)),
         }
 

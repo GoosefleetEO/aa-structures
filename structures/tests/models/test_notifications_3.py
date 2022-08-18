@@ -10,14 +10,14 @@ from ..testdata.factories_2 import (
     StarbaseFactory,
     StructureFactory,
 )
-from ..testdata.helpers import structures_load_eveuniverse
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestGeneratedNotification(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
+        load_eveuniverse()
 
     def test_should_have_str(self):
         # given
@@ -47,7 +47,7 @@ class TestGeneratedNotificationManagerCreatePosReinforced(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
+        load_eveuniverse()
 
     def test_should_create_new_notif(self):
         # given

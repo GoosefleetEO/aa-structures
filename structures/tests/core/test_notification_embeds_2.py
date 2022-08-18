@@ -13,14 +13,14 @@ from ..testdata.factories_2 import (
     NotificationFactory,
     OwnerFactory,
 )
-from ..testdata.helpers import structures_load_eveuniverse
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestGeneratedNotification(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
+        load_eveuniverse()
 
     def test_should_create_tower_reinforced_embed(self):
         # given
@@ -46,7 +46,7 @@ class TestEveNotificationEmbeds(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
+        load_eveuniverse()
         cls.owner = OwnerFactory()
 
     def test_should_create_sov_embed(self):

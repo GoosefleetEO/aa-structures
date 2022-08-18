@@ -34,6 +34,7 @@ from ..testdata.helpers import (
     load_notification_entities,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.notifications"
 
@@ -43,6 +44,7 @@ class TestStructureFuelAlerts(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -374,6 +376,7 @@ class TestJumpFuelAlerts(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         cls.user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -668,6 +671,7 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]

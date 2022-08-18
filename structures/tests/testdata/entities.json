@@ -75,67 +75,67 @@
     "EveEntity": [
         {
             "id": 1011,
-            "category": 1,
+            "category": "character",
             "name": "Bad Dude"
         },
         {
             "id": 2001,
-            "category": 2,
+            "category": "corporation",
             "name": "Wayne Technologies"
         },
         {
             "id": 2011,
-            "category": 2,
+            "category": "corporation",
             "name": "Bad Company"
         },
         {
             "id": 2021,
-            "category": 2,
+            "category": "corporation",
             "name": "Dummy Corp 1"
         },
         {
             "id": 2022,
-            "category": 2,
+            "category": "corporation",
             "name": "Dummy Corp 2"
         },
         {
             "id": 2901,
-            "category": 2,
+            "category": "corporation",
             "name": "DED"
         },
         {
             "id": 2902,
-            "category": 2,
+            "category": "corporation",
             "name": "CONCORD"
         },
         {
             "id": 3001,
-            "category": 3,
+            "category": "alliance",
             "name": "Wayne Enterprises"
         },
         {
             "id": 3002,
-            "category": 3,
+            "category": "alliance",
             "name": "Justice League"
         },
         {
             "id": 3011,
-            "category": 3,
+            "category": "alliance",
             "name": "Big Bad Alliance"
         },
         {
             "id": 500012,
-            "category": 3,
+            "category": "alliance",
             "name": "NPC Alliance"
         },
         {
             "id": 1000134,
-            "category": 2,
+            "category": "corporation",
             "name": "NPC Corp"
         },
         {
             "id": 1000137,
-            "category": 2,
+            "category": "corporation",
             "name": "NPC Corp DED"
         }
     ],

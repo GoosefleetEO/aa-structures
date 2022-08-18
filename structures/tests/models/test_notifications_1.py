@@ -19,6 +19,7 @@ from ..testdata.helpers import (
     load_notification_entities,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.notifications"
 
@@ -27,6 +28,7 @@ class TestNotification(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -110,6 +112,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -165,6 +168,7 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
 
@@ -230,6 +234,7 @@ class TestNotificationRelevantWebhooks(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -332,6 +337,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -459,6 +465,7 @@ class TestNotificationSendToWebhook(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.structure = Structure.objects.get(id=1000000000001)
         _, cls.owner = set_owner_character(character_id=1001)
@@ -506,6 +513,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -653,6 +661,7 @@ class TestNotificationPings(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
 
     def setUp(self):
