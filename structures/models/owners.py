@@ -959,16 +959,18 @@ class Owner(models.Model):
             "unanchor_role": StarbaseDetail.Role.from_esi(data["unanchor"]),
             "use_alliance_standings": data["use_alliance_standings"],
         }
+        for fuel in data["fuels"]:
+            EveType.objects.get_or_create_esi(id=fuel["type_id"])
         with transaction.atomic():
             detail, _ = StarbaseDetail.objects.update_or_create(
                 structure=structure, defaults=defaults
             )
             detail.fuels.all().delete()
             for fuel in data["fuels"]:
-                # TODO: Move outside of transaction
-                eve_type, _ = EveType.objects.get_or_create_esi(id=fuel["type_id"])
                 StarbaseDetailFuel.objects.create(
-                    eve_type=eve_type, detail=detail, quantity=fuel["quantity"]
+                    eve_type_id=fuel["type_id"],
+                    detail=detail,
+                    quantity=fuel["quantity"],
                 )
         return detail
 
