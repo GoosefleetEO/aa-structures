@@ -32,9 +32,9 @@ def ensure_eveuniverse_objects_exist(apps, schema_editor):
                 "Migration to 2.x can not proceed, because you are missing "
                 f"Eveuniverse objects for {StructuresModel.__name__}.{structures_field} "
                 "in your database. "
-                "Please downgrade Structures to 1.x and re-run the "
-                "structures_preload_eveuniverse command to load those missing objects. "
-                "Then retry upgrading. "
+                "Please run the structures_preload_eveuniverse command "
+                "to load those missing objects as instructed in the update notes. "
+                "Then retry to migrate. "
                 f"Missing ids are: {missing_ids}"
             )
 

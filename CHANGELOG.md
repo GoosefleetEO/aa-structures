@@ -17,15 +17,15 @@ This release includes a major change to Structures's database structure and ther
 
 Please follow these instructions for updating Structures from 1.. If you are already on 2.0.0 alpha you can ignore these special instructions.
 
-1. Make sure you are on the latest stable version of Structures (1.26.3): `pip show aa-structures`
+1. Make sure you are on the latest stable version of Structures (1.26.3). If not please fully upgrade first: `pip show aa-structures`
 1. Load generic eveuniverse data with this command: `python manage.py structures_load_eve`
 1. Wait for tasks related to the above command to finish before proceeding (e.g. refresh the dashboard occasionally until the task queue is back to zero.)
 1. Make sure your current AA installation has no errors: `python manage.py check`
 1. Shut down your AA instance completely: `sudo supervisorctl stop myauth:`
 1. Clear your cache: `sudo redis-cli flushall;`
 1. Backup your AA database: `sudo mysqldump alliance_auth -u root > alliance_auth_backup.sql`
-1. Preload eveuniverse data specific to your installation with this command: `python manage.py structures_preload_eveuniverse`
 1. Install the update: `pip install -U aa-structures`
+1. Load missing eveuniverse data specific to your installation with this command: `python manage.py structures_preload_eveuniverse`
 1. Run migrate: `python manage.py migrate`
 1. Verify that the migration went through without any errors or warnings by checking the console output of the last command
 1. Copy static files: `python manage.py collectstatic --noinput`
