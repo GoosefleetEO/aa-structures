@@ -1,7 +1,8 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.services.hooks import get_extension_logger
+from app_utils.esi import fetch_esi_status
 from app_utils.logging import LoggerAddTag
 
 from ... import __title__
@@ -10,15 +11,12 @@ from ...models import Notification, StarbaseDetailFuel, Structure
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 
-def get_input(text):
-    """wrapped input to enable unit testing / patching"""
-    return input(text)
-
-
 class Command(BaseCommand):
     help = "Preload missing eveuniverse objects in preparation for migrating to eveuniverse with release 2."
 
     def handle(self, *args, **options):
+        if not fetch_esi_status().is_ok:
+            raise CommandError("ESI currently not available. Aborting.")
         logger.info("Running command for preloading eveuniverse objects.")
         models_map = [
             (Notification, "sender", EveEntity),
