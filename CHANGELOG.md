@@ -9,17 +9,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [2.0.0-ALPHA] - tbd
 
-This release includes a major change to Structures's database structure and therefore requires some additional care when updating. Therefore please follow our special update instructions below.
+>**Important**:<br>This release includes a major change to Structures's database structure and therefore requires some additional care when updating. Therefore please follow our special update instructions below.
 
 >**Hint**:<br>Should you run into any issues and need help please give us a shout on the AA Discord (#community-packages).
 
+This major release is technical update. Structures has lately been using both the newer django-eveuniverse and it's own older variant for fetching and storing Eve universe data from ESI (e.g. for solar systems). This has lead to data redundancy and made the app more complicated to maintain. With this release Structures is fully migrated to django-eveuniverse and it's own eveuniverse variant is removed.
+
 ### Update instructions
 
-Please follow these instructions for updating Structures from 1.. If you are already on 2.0.0 alpha you can ignore these special instructions.
+Please follow these instructions for updating Structures 1.x. If you are already on 2.x and just installing a patch you can ignore these special instructions:
 
 1. Make sure you are on the latest stable version of Structures (1.26.3). If not please fully upgrade first: `pip show aa-structures`
 1. Make sure your current AA installation has no errors: `python manage.py check`
-1. Install the update: `pip install -U aa-structures`
+1. Install the alpha update: `pip install -U git+https://gitlab.com/ErikKalkoken/aa-structures.git@v2.x`
 1. Load generic eveuniverse data with this command: `python manage.py structures_load_eve`
 1. Wait for tasks related to the above command to finish before proceeding (e.g. refresh the dashboard occasionally until the task queue is back to zero.)
 1. Shut down your AA instance completely: `sudo supervisorctl stop myauth:`
