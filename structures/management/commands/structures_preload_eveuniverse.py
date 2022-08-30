@@ -6,7 +6,7 @@ from app_utils.esi import fetch_esi_status
 from app_utils.logging import LoggerAddTag
 
 from ... import __title__
-from ...models import Notification, StarbaseDetailFuel, Structure
+from ...models import Notification, StarbaseDetailFuel, Structure, StructureItem
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -25,7 +25,7 @@ class Command(BaseCommand):
             (Structure, "eve_planet", EvePlanet),
             (Structure, "eve_solar_system", EveSolarSystem),
             (Structure, "eve_type", EveType),
-            (Structure, "eve_type", EveType),
+            (StructureItem, "eve_type", EveType),
         ]
         for (
             StructuresModel,
@@ -49,9 +49,7 @@ class Command(BaseCommand):
                 )
             else:
                 logger.info("%s: No missing IDs", StructuresModel.__name__)
-                self.stdout.write(
-                    f"{StructuresModel.__name__}: No outstanding objects."
-                )
+                self.stdout.write(f"{StructuresModel.__name__}: OK")
             EveuniverseModel.objects.bulk_get_or_create_esi(ids=ids_target)
         logger.info("Preloading eveuniverse objects completed")
         self.stdout.write(self.style.SUCCESS("DONE"))
