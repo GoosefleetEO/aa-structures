@@ -7,12 +7,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.26.4] - tbd
-
-### Changed
-
-- Added logging to preload command
-
 ## [1.26.3] - 2022-08-17
 
 ### Added
