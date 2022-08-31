@@ -840,9 +840,36 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # then
         owner.refresh_from_db()
         self.assertFalse(owner.is_structure_sync_fresh)
-        structure_ids = {x["id"] for x in owner.structures.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_break_on_http_error_when_fetching_custom_office_names(
+        self, mock_esi
+    ):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Assets",
+            "post_corporations_corporation_id_assets_names",
+            http_error_code=404,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
