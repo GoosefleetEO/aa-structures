@@ -6,7 +6,7 @@ import re
 from email.utils import format_datetime, parsedate_to_datetime
 from typing import Optional
 
-from bravado.exception import HTTPForbidden
+from bravado.exception import HTTPForbidden, HTTPNotFound
 
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ObjectDoesNotExist
@@ -516,14 +516,18 @@ class Owner(models.Model):
         )
         locations_data = list()
         for item_ids_chunk in chunks(list(item_ids), 999):
-            locations_data_chunk = (
-                esi.client.Assets.post_corporations_corporation_id_assets_locations(
-                    corporation_id=self.corporation.corporation_id,
-                    item_ids=item_ids_chunk,
-                    token=token.valid_access_token(),
-                )
-            ).results()
-            locations_data += locations_data_chunk
+            try:
+                locations_data_chunk = (
+                    esi.client.Assets.post_corporations_corporation_id_assets_locations(
+                        corporation_id=self.corporation.corporation_id,
+                        item_ids=item_ids_chunk,
+                        token=token.valid_access_token(),
+                    )
+                ).results()
+            except HTTPNotFound:
+                pass
+            else:
+                locations_data += locations_data_chunk
         positions = {x["item_id"]: x["position"] for x in locations_data}
         return positions
 
