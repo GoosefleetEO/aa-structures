@@ -921,14 +921,18 @@ class Owner(models.Model):
         logger.info("%s: Fetching names for %d starbases from ESI", self, len(item_ids))
         names_data = list()
         for item_ids_chunk in chunks(list(item_ids), 999):
-            names_data_chunk = (
-                esi.client.Assets.post_corporations_corporation_id_assets_names(
-                    corporation_id=self.corporation.corporation_id,
-                    item_ids=item_ids_chunk,
-                    token=token.valid_access_token(),
-                )
-            ).results()
-            names_data += names_data_chunk
+            try:
+                names_data_chunk = (
+                    esi.client.Assets.post_corporations_corporation_id_assets_names(
+                        corporation_id=self.corporation.corporation_id,
+                        item_ids=item_ids_chunk,
+                        token=token.valid_access_token(),
+                    )
+                ).results()
+            except HTTPNotFound:
+                pass
+            else:
+                names_data += names_data_chunk
         names = {x["item_id"]: x["name"] for x in names_data}
         return names
 

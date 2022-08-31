@@ -1264,6 +1264,31 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # then
         self.assertEqual(structure.structure_fuel_alerts.count(), 0)
 
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_break_when_starbase_names_not_found(self, mock_esi):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Assets",
+            "post_corporations_corporation_id_assets_names",
+            http_error_code=404,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
+
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     # def test_should_notify_admins_when_service_is_restored(

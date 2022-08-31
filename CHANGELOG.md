@@ -37,6 +37,12 @@ Please follow these instructions for updating Structures 1.x. If you are already
 
 - Migrate to eveuniverse
 
+### Fixed
+
+- Structure update breaks when trying to fetch locations for outdated item IDs
+- POCO update breaks when trying to fetch names for outdated POCOs
+- Starbase update breaks when trying to fetch names for outdated starbases
+
 ## [1.26.4] - 2022-09-10
 
 ### Fixed
