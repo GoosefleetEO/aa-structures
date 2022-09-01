@@ -17,7 +17,8 @@ if "timerboard" in app_labels():
     )
     from ..testdata.load_eveuniverse import load_eveuniverse
 
-    MODULE_PATH = "structures.models.notifications"
+    NOTIFICATIONS_PATH = "structures.models.notifications"
+    NOTIFICATION_TIMERS_PATH = "structures.core.notification_timers"
 
     @patch(
         "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
@@ -37,7 +38,10 @@ if "timerboard" in app_labels():
         def setUp(self) -> None:
             AuthTimer.objects.all().delete()
 
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
+        @patch(
+            NOTIFICATION_TIMERS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
+            False,
+        )
         @patch("allianceauth.timerboard.models.Timer", spec=True)
         def test_moon_timers_disabled(self, mock_Timer):
             x = Notification.objects.get(notification_id=1000000404)
@@ -48,7 +52,10 @@ if "timerboard" in app_labels():
             self.assertFalse(x.add_or_remove_timer())
             self.assertFalse(mock_Timer.delete.called)
 
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
+        @patch(
+            NOTIFICATION_TIMERS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
+            True,
+        )
         def test_normal(self):
             notification_without_timer_query = Notification.objects.filter(
                 notification_id__in=[
@@ -100,12 +107,17 @@ if "timerboard" in app_labels():
             ids_set_2 = {x.id for x in AuthTimer.objects.all()}
             self.assertSetEqual(ids_set_1, ids_set_2)
 
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
+        @patch(
+            NOTIFICATION_TIMERS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
+            True,
+        )
         def test_run_all(self):
             for x in Notification.objects.all():
                 x.add_or_remove_timer()
 
-        @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False)
+        @patch(
+            NOTIFICATION_TIMERS_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", False
+        )
         def test_corp_restriction_1(self):
             # given
             notif = Notification.objects.get(notification_id=1000000504)
@@ -116,7 +128,9 @@ if "timerboard" in app_labels():
             timer = AuthTimer.objects.first()
             self.assertFalse(timer.corp_timer)
 
-        @patch(MODULE_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", True)
+        @patch(
+            NOTIFICATION_TIMERS_PATH + ".STRUCTURES_TIMERS_ARE_CORP_RESTRICTED", True
+        )
         def test_corp_restriction_2(self):
             x = Notification.objects.get(notification_id=1000000504)
             self.assertTrue(x.add_or_remove_timer())

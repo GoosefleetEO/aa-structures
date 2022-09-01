@@ -1,6 +1,5 @@
 """Notification related models"""
 
-import datetime as dt
 import math
 from typing import Optional, Tuple
 
@@ -16,16 +15,10 @@ from django.db.models import Q
 from django.utils import translation
 from django.utils.functional import classproperty
 from django.utils.timezone import now
-from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity
 
 from allianceauth.services.hooks import get_extension_logger
-from app_utils.datetime import (
-    DATETIME_FORMAT,
-    ldap_time_2_datetime,
-    ldap_timedelta_2_timedelta,
-)
 from app_utils.django import app_labels
 from app_utils.logging import LoggerAddTag
 from app_utils.urls import static_file_absolute_url
@@ -35,30 +28,13 @@ from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_ADD_TIMERS,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS,
-    STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED,
     STRUCTURES_NOTIFICATION_SET_AVATAR,
     STRUCTURES_REPORT_NPC_ATTACKS,
-    STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from ..constants import EveCategoryId, EveCorporationId, EveTypeId
-from ..core import starbases
 from ..managers import GeneratedNotificationManager, NotificationManager, WebhookManager
 from ..webhooks.models import WebhookBase
 from .structures import Structure
-
-if "timerboard" in app_labels():
-    from allianceauth.timerboard.models import Timer as AuthTimer
-
-    has_auth_timers = True
-else:
-    has_auth_timers = False
-
-if "structuretimers" in app_labels():
-    from structuretimers.models import Timer
-
-    has_structure_timers = True
-else:
-    has_structure_timers = False
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -401,17 +377,6 @@ class Webhook(WebhookBase):
 class NotificationBase(models.Model):
     """Base model for a notification."""
 
-    # event type structure map
-    MAP_CAMPAIGN_EVENT_2_TYPE_ID = {
-        1: EveTypeId.TCU,
-        2: EveTypeId.IHUB,
-    }
-    MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
-        EveTypeId.CUSTOMS_OFFICE: "POCO",
-        EveTypeId.TCU: "TCU",
-        EveTypeId.IHUB: "I-HUB",
-    }
-
     is_sent = models.BooleanField(
         default=False,
         help_text="True when this notification has been forwarded to Discord",
@@ -673,49 +638,19 @@ class NotificationBase(models.Model):
 
         Returns True when timers where added or removed, else False
         """
-        if not STRUCTURES_ADD_TIMERS:
-            return False
-
         if (
-            not has_auth_timers and not has_structure_timers
-        ) or self.notif_type not in NotificationType.relevant_for_timerboard:
+            not STRUCTURES_ADD_TIMERS
+            or self.notif_type not in NotificationType.relevant_for_timerboard
+        ):
             return False
 
-        parsed_text = self.parsed_text()
+        from ..core import notification_timers
+
         try:
             with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
-                if self.notif_type in [
-                    NotificationType.STRUCTURE_LOST_ARMOR,
-                    NotificationType.STRUCTURE_LOST_SHIELD,
-                ]:
-                    timer_processed = self._gen_timer_structure_reinforcement(
-                        parsed_text
-                    )
-                elif self.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
-                    timer_processed = self._gen_timer_sov_reinforcements(parsed_text)
-                elif self.notif_type == NotificationType.ORBITAL_REINFORCED:
-                    timer_processed = self._gen_timer_orbital_reinforcements(
-                        parsed_text
-                    )
-                elif self.notif_type in [
-                    NotificationType.MOONMINING_EXTRACTION_STARTED,
-                    NotificationType.MOONMINING_EXTRACTION_CANCELLED,
-                ]:
-                    if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
-                        timer_processed = None
-                    else:
-                        timer_processed = self._gen_timer_moon_extraction(parsed_text)
-                elif self.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
-                    timer_processed = self._gen_timer_tower_reinforcements(parsed_text)
-                else:
-                    raise NotImplementedError()
-
-            if timer_processed:
-                logger.info("%s: Created timer for notification", self.notification_id)
-
+                timer_processed = notification_timers.add_or_remove_timer(self)
             self.is_timer_added = timer_processed
             self.save()
-
         except OSError as ex:
             logger.warning(
                 "%s: Failed to add timer from notification: %s",
@@ -723,364 +658,7 @@ class NotificationBase(models.Model):
                 ex,
                 exc_info=True,
             )
-
         return timer_processed
-
-    def _gen_timer_structure_reinforcement(self, parsed_text: str) -> bool:
-        """Generate timer for structure reinforcements"""
-        token = self.owner.fetch_token()
-        structure_obj, _ = Structure.objects.get_or_create_esi(
-            id=parsed_text["structureID"], token=token
-        )
-        eve_time = self.timestamp + ldap_timedelta_2_timedelta(parsed_text["timeLeft"])
-        timer_processed = False
-        if has_auth_timers:
-            details_map = {
-                NotificationType.STRUCTURE_LOST_SHIELD: gettext("Armor timer"),
-                NotificationType.STRUCTURE_LOST_ARMOR: gettext("Final timer"),
-            }
-            AuthTimer.objects.create(
-                details=details_map.get(self.notif_type, ""),
-                system=structure_obj.eve_solar_system.name,
-                planet_moon="",
-                structure=structure_obj.eve_type.name,
-                objective="Friendly",
-                eve_time=eve_time,
-                eve_corp=self.owner.corporation,
-                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
-            )
-            timer_processed = True
-
-        if has_structure_timers:
-            timer_map = {
-                NotificationType.STRUCTURE_LOST_SHIELD: Timer.Type.ARMOR,
-                NotificationType.STRUCTURE_LOST_ARMOR: Timer.Type.HULL,
-            }
-            visibility = (
-                Timer.Visibility.CORPORATION
-                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.Visibility.UNRESTRICTED
-            )
-            Timer.objects.create(
-                eve_solar_system=structure_obj.eve_solar_system,
-                structure_type=structure_obj.eve_type,
-                timer_type=timer_map.get(self.notif_type),
-                objective=Timer.Objective.FRIENDLY,
-                date=eve_time,
-                eve_corporation=self.owner.corporation,
-                eve_alliance=self.owner.corporation.alliance,
-                visibility=visibility,
-                structure_name=structure_obj.name,
-                owner_name=self.owner.corporation.corporation_name,
-                details_notes=self._timer_details_notes(),
-            )
-            timer_processed = True
-
-        return timer_processed
-
-    def _gen_timer_sov_reinforcements(self, parsed_text: str) -> bool:
-        """Generate timer for sov reinforcements."""
-        if not self.owner.is_alliance_main:
-            return False
-
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=parsed_text["solarSystemID"]
-        )
-        event_type = parsed_text["campaignEventType"]
-        if event_type in self.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
-            structure_type_name = self.MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME[
-                self.type_id_from_event_type(parsed_text["campaignEventType"])
-            ]
-        else:
-            structure_type_name = "Other"
-
-        eve_time = ldap_time_2_datetime(parsed_text["decloakTime"])
-        timer_processed = False
-        if has_auth_timers:
-            AuthTimer.objects.create(
-                details=gettext("Sov timer"),
-                system=solar_system.name,
-                planet_moon="",
-                structure=structure_type_name,
-                objective="Friendly",
-                eve_time=eve_time,
-                eve_corp=self.owner.corporation,
-                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
-            )
-            timer_processed = True
-
-        if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=parsed_text["solarSystemID"]
-            )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                id=self.type_id_from_event_type(parsed_text["campaignEventType"])
-            )
-            visibility = (
-                Timer.Visibility.CORPORATION
-                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.Visibility.UNRESTRICTED
-            )
-            Timer.objects.create(
-                eve_solar_system=eve_solar_system,
-                structure_type=structure_type,
-                timer_type=Timer.Type.FINAL,
-                objective=Timer.Objective.FRIENDLY,
-                date=eve_time,
-                eve_corporation=self.owner.corporation,
-                eve_alliance=self.owner.corporation.alliance,
-                visibility=visibility,
-                owner_name=self.sender.name,
-                details_notes=self._timer_details_notes(),
-            )
-            timer_processed = True
-
-        return timer_processed
-
-    def _gen_timer_orbital_reinforcements(self, parsed_text: str) -> bool:
-        """Generate timer for orbital reinforcements."""
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=parsed_text["solarSystemID"]
-        )
-        planet, _ = EvePlanet.objects.get_or_create_esi(id=parsed_text["planetID"])
-        eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
-        timer_processed = False
-        if has_auth_timers:
-            AuthTimer.objects.create(
-                details=gettext("Final timer"),
-                system=solar_system.name,
-                planet_moon=planet.name,
-                structure="POCO",
-                objective="Friendly",
-                eve_time=eve_time,
-                eve_corp=self.owner.corporation,
-                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
-            )
-            timer_processed = True
-
-        if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=parsed_text["solarSystemID"]
-            )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                id=EveTypeId.CUSTOMS_OFFICE
-            )
-            visibility = (
-                Timer.Visibility.CORPORATION
-                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.Visibility.UNRESTRICTED
-            )
-            Timer.objects.create(
-                eve_solar_system=eve_solar_system,
-                structure_type=structure_type,
-                timer_type=Timer.Type.FINAL,
-                objective=Timer.Objective.FRIENDLY,
-                date=eve_time,
-                location_details=planet.name,
-                eve_corporation=self.owner.corporation,
-                eve_alliance=self.owner.corporation.alliance,
-                visibility=visibility,
-                structure_name="Customs Office",
-                owner_name=self.owner.corporation.corporation_name,
-                details_notes=self._timer_details_notes(),
-            )
-            timer_processed = True
-
-        return timer_processed
-
-    def _gen_timer_moon_extraction(self, parsed_text: str) -> bool:
-        """Generate timer for moon mining extractions."""
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=parsed_text["solarSystemID"]
-        )
-        moon, _ = EveMoon.objects.get_or_create_esi(id=parsed_text["moonID"])
-        if "readyTime" in parsed_text:
-            eve_time = ldap_time_2_datetime(parsed_text["readyTime"])
-        else:
-            eve_time = None
-        details = gettext("Extraction ready")
-        system = solar_system.name
-        planet_moon = moon.name
-        structure_type_name = "Moon Mining Cycle"
-        objective = "Friendly"
-        timer_processed = False
-
-        if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=parsed_text["solarSystemID"]
-            )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                id=parsed_text["structureTypeID"]
-            )
-            visibility = (
-                Timer.Visibility.CORPORATION
-                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.Visibility.UNRESTRICTED
-            )
-        else:
-            eve_solar_system = None
-            structure_type = None
-            visibility = None
-
-        if self.notif_type == NotificationType.MOONMINING_EXTRACTION_STARTED:
-            if has_auth_timers:
-                AuthTimer.objects.create(
-                    details=details,
-                    system=system,
-                    planet_moon=planet_moon,
-                    structure=structure_type_name,
-                    objective=objective,
-                    eve_time=eve_time,
-                    eve_corp=self.owner.corporation,
-                    corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
-                )
-                timer_processed = True
-
-            if has_structure_timers:
-                eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                    id=parsed_text["solarSystemID"]
-                )
-                structure_type, _ = EveType.objects.get_or_create_esi(
-                    id=parsed_text["structureTypeID"]
-                )
-                visibility = (
-                    Timer.Visibility.CORPORATION
-                    if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                    else Timer.Visibility.UNRESTRICTED
-                )
-                Timer.objects.create(
-                    eve_solar_system=eve_solar_system,
-                    structure_type=structure_type,
-                    timer_type=Timer.Type.MOONMINING,
-                    objective=Timer.Objective.FRIENDLY,
-                    date=eve_time,
-                    location_details=moon.name,
-                    eve_corporation=self.owner.corporation,
-                    eve_alliance=self.owner.corporation.alliance,
-                    visibility=visibility,
-                    structure_name=parsed_text["structureName"],
-                    owner_name=self.owner.corporation.corporation_name,
-                    details_notes=self._timer_details_notes(),
-                )
-                timer_processed = True
-
-        elif self.notif_type == NotificationType.MOONMINING_EXTRACTION_CANCELLED:
-            timer_processed = True
-            notifications_qs = Notification.objects.filter(
-                notif_type=NotificationType.MOONMINING_EXTRACTION_STARTED,
-                owner=self.owner,
-                is_timer_added=True,
-                timestamp__lte=self.timestamp,
-            ).order_by("-timestamp")
-            for notification in notifications_qs:
-                parsed_text_2 = notification.parsed_text()
-                my_structure_type_id = parsed_text_2["structureTypeID"]
-                if my_structure_type_id == parsed_text["structureTypeID"]:
-                    eve_time = ldap_time_2_datetime(parsed_text_2["readyTime"])
-                    if has_auth_timers:
-                        timer_query = AuthTimer.objects.filter(
-                            system=system,
-                            planet_moon=planet_moon,
-                            structure=structure_type_name,
-                            objective=objective,
-                            eve_time=eve_time,
-                        )
-                        deleted_count, _ = timer_query.delete()
-                        logger.info(
-                            f"{self.notification_id}: removed {deleted_count} "
-                            "obsolete Auth timers related to notification"
-                        )
-
-                    if has_structure_timers:
-                        timer_query = Timer.objects.filter(
-                            eve_solar_system=eve_solar_system,
-                            structure_type=structure_type,
-                            timer_type=Timer.Type.MOONMINING,
-                            location_details=moon.name,
-                            date=eve_time,
-                            objective=Timer.Objective.FRIENDLY,
-                            eve_corporation=self.owner.corporation,
-                            eve_alliance=self.owner.corporation.alliance,
-                            visibility=visibility,
-                            structure_name=parsed_text["structureName"],
-                            owner_name=self.owner.corporation.corporation_name,
-                        )
-                        deleted_count, _ = timer_query.delete()
-                        logger.info(
-                            f"{self.notification_id}: removed {deleted_count} "
-                            "obsolete structure timers related to notification"
-                        )
-
-        return timer_processed
-
-    def _gen_timer_tower_reinforcements(self, parsed_text: str) -> bool:
-        """Generate timer for tower reinforcements."""
-        structure = self.structures.first()
-        eve_time = dt.datetime.fromisoformat(self.details["reinforced_until"])
-        timer_processed = False
-        if has_auth_timers:
-            structure_type_map = {
-                starbases.StarbaseSize.SMALL: "POS[S]",
-                starbases.StarbaseSize.MEDIUM: "POS[M]",
-                starbases.StarbaseSize.LARGE: "POS[L]",
-            }
-            structure_str = structure_type_map.get(
-                starbases.starbase_size(structure.eve_type), "POS[M]"
-            )
-            AuthTimer.objects.create(
-                details=gettext("Final timer"),
-                system=structure.eve_solar_system.name,
-                planet_moon=structure.eve_moon.name,
-                structure=structure_str,
-                objective="Friendly",
-                eve_time=eve_time,
-                eve_corp=self.owner.corporation,
-                corp_timer=STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
-            )
-            timer_processed = True
-
-        if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=structure.eve_solar_system.id
-            )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                id=structure.eve_type.id
-            )
-            visibility = (
-                Timer.Visibility.CORPORATION
-                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.Visibility.UNRESTRICTED
-            )
-            Timer.objects.create(
-                eve_solar_system=eve_solar_system,
-                structure_type=structure_type,
-                timer_type=Timer.Type.FINAL,
-                objective=Timer.Objective.FRIENDLY,
-                date=eve_time,
-                location_details=structure.eve_moon.name,
-                eve_corporation=self.owner.corporation,
-                eve_alliance=self.owner.corporation.alliance,
-                visibility=visibility,
-                structure_name=structure.name,
-                owner_name=self.owner.corporation.corporation_name,
-                details_notes=self._timer_details_notes(),
-            )
-            timer_processed = True
-
-        return timer_processed
-
-    def _timer_details_notes(self) -> str:
-        """Return generated details notes string for Timers."""
-        return (
-            "Automatically created from structure notification for "
-            f"{self.owner.corporation} at {self.timestamp.strftime(DATETIME_FORMAT)}"
-        )
-
-    @classmethod
-    def type_id_from_event_type(cls, event_type: int) -> Optional[int]:
-        if event_type in cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID:
-            return cls.MAP_CAMPAIGN_EVENT_2_TYPE_ID[event_type]
-        return None
 
 
 class Notification(NotificationBase):

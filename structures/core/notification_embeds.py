@@ -31,7 +31,7 @@ from ..models.notifications import (
     Webhook,
 )
 from ..models.structures import Structure
-from . import starbases
+from . import sovereignty, starbases
 
 
 class BillType(models.IntegerChoices):
@@ -1012,7 +1012,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         if "structureTypeID" in self._parsed_text:
             structure_type_id = self._parsed_text["structureTypeID"]
         elif "campaignEventType" in self._parsed_text:
-            structure_type_id = Notification.type_id_from_event_type(
+            structure_type_id = sovereignty.type_id_from_event_type(
                 self._parsed_text["campaignEventType"]
             )
         else:

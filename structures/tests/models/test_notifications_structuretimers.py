@@ -23,14 +23,17 @@ if "structuretimers" in app_labels():
     )
     from ..testdata.load_eveuniverse import load_eveuniverse
 
-    MODULE_PATH = "structures.models.notifications"
+    NOTIFICATIONS_PATH = "structures.models.notifications"
+    NOTIFICATION_TIMERS_PATH = "structures.core.notification_timers"
 
     @patch(
         "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
         Mock(),
     )
     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
+    @patch(
+        NOTIFICATION_TIMERS_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True
+    )
     class TestNotificationAddToStructureTimers(NoSocketsTestCase):
         @classmethod
         def setUpClass(cls):
@@ -44,7 +47,7 @@ if "structuretimers" in app_labels():
             self.owner.webhooks.add(create_webhook())
             Timer.objects.all().delete()
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_should_create_timer_for_reinforced_structure(self):
             # given
             notification = Notification.objects.get(notification_id=1000000505)
@@ -77,7 +80,7 @@ if "structuretimers" in app_labels():
             notification.refresh_from_db()
             self.assertTrue(notification.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_should_create_timer_for_sov_reinforcement(self):
             # given
             notification = Notification.objects.get(notification_id=1000000804)
@@ -113,7 +116,7 @@ if "structuretimers" in app_labels():
             notification.refresh_from_db()
             self.assertTrue(notification.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_should_create_timer_for_sov_reinforcement_2(self):
             # given
             notification = Notification.objects.get(notification_id=1000000804)
@@ -128,7 +131,7 @@ if "structuretimers" in app_labels():
             notification.refresh_from_db()
             self.assertFalse(notification.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_should_create_timer_for_orbital_reinforcements(self):
             # given
             notification = Notification.objects.get(notification_id=1000000602)
@@ -162,7 +165,7 @@ if "structuretimers" in app_labels():
             notification.refresh_from_db()
             self.assertTrue(notification.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_should_create_timer_for_moon_extraction(self):
             # given
             notification = Notification.objects.get(notification_id=1000000404)
@@ -192,7 +195,7 @@ if "structuretimers" in app_labels():
             notification.refresh_from_db()
             self.assertTrue(notification.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_anchoring_timer_not_created_for_null_sec(self):
             obj = Notification.objects.get(notification_id=1000010501)
             self.assertFalse(obj.add_or_remove_timer())
@@ -204,7 +207,7 @@ if "structuretimers" in app_labels():
             obj.refresh_from_db()
             self.assertFalse(obj.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_can_delete_extraction_timer(self):
             # create timer
             obj = Notification.objects.get(notification_id=1000000404)
@@ -221,7 +224,7 @@ if "structuretimers" in app_labels():
             obj.refresh_from_db()
             self.assertTrue(obj.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
         def test_should_create_timer_for_starbase_reinforcement(self):
             # given
             notif = GeneratedNotificationFactory()
@@ -251,7 +254,7 @@ if "structuretimers" in app_labels():
             notif.refresh_from_db()
             self.assertTrue(notif.is_timer_added)
 
-        @patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False)
+        @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", False)
         def test_should_abort_when_timers_are_disabled(self):
             # given
             notification = Notification.objects.get(notification_id=1000000505)
