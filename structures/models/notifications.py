@@ -18,7 +18,7 @@ from django.utils.functional import classproperty
 from django.utils.timezone import now
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem
+from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import (
@@ -55,9 +55,6 @@ else:
 
 if "structuretimers" in app_labels():
     from structuretimers.models import Timer
-
-    from eveuniverse.models import EveSolarSystem as EveSolarSystem2
-    from eveuniverse.models import EveType as EveType2
 
     has_structure_timers = True
 else:
@@ -443,6 +440,11 @@ class NotificationBase(models.Model):
     class Meta:
         abstract = True
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._ping_type_override = None
+        self._color_override = None
+
     def __str__(self) -> str:
         return f"{self.notification_id}:{self.notif_type}"
 
@@ -501,9 +503,9 @@ class NotificationBase(models.Model):
             logger.debug("%s: No relevant webhook found", self)
             return None
         if ping_type_override:
-            self.ping_type_override = ping_type_override
+            self._ping_type_override = ping_type_override
         if use_color_override:
-            self.color_override = color_override
+            self._color_override = color_override
         success = True
         for webhook in webhooks_qs:
             success &= self.send_to_webhook(webhook)
@@ -664,7 +666,6 @@ class NotificationBase(models.Model):
         else:
             username = None
             avatar_url = None
-
         return username, avatar_url
 
     def add_or_remove_timer(self) -> bool:
@@ -755,20 +756,14 @@ class NotificationBase(models.Model):
                 NotificationType.STRUCTURE_LOST_SHIELD: Timer.Type.ARMOR,
                 NotificationType.STRUCTURE_LOST_ARMOR: Timer.Type.HULL,
             }
-            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
-                id=structure_obj.eve_solar_system_id
-            )
-            structure_type, _ = EveType2.objects.get_or_create_esi(
-                id=structure_obj.eve_type_id
-            )
             visibility = (
                 Timer.Visibility.CORPORATION
                 if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
                 else Timer.Visibility.UNRESTRICTED
             )
             Timer.objects.create(
-                eve_solar_system=eve_solar_system,
-                structure_type=structure_type,
+                eve_solar_system=structure_obj.eve_solar_system,
+                structure_type=structure_obj.eve_type,
                 timer_type=timer_map.get(self.notif_type),
                 objective=Timer.Objective.FRIENDLY,
                 date=eve_time,
@@ -815,10 +810,10 @@ class NotificationBase(models.Model):
             timer_processed = True
 
         if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 id=parsed_text["solarSystemID"]
             )
-            structure_type, _ = EveType2.objects.get_or_create_esi(
+            structure_type, _ = EveType.objects.get_or_create_esi(
                 id=self.type_id_from_event_type(parsed_text["campaignEventType"])
             )
             visibility = (
@@ -864,10 +859,10 @@ class NotificationBase(models.Model):
             timer_processed = True
 
         if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 id=parsed_text["solarSystemID"]
             )
-            structure_type, _ = EveType2.objects.get_or_create_esi(
+            structure_type, _ = EveType.objects.get_or_create_esi(
                 id=EveTypeId.CUSTOMS_OFFICE
             )
             visibility = (
@@ -911,10 +906,10 @@ class NotificationBase(models.Model):
         timer_processed = False
 
         if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 id=parsed_text["solarSystemID"]
             )
-            structure_type, _ = EveType2.objects.get_or_create_esi(
+            structure_type, _ = EveType.objects.get_or_create_esi(
                 id=parsed_text["structureTypeID"]
             )
             visibility = (
@@ -942,10 +937,10 @@ class NotificationBase(models.Model):
                 timer_processed = True
 
             if has_structure_timers:
-                eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+                eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                     id=parsed_text["solarSystemID"]
                 )
-                structure_type, _ = EveType2.objects.get_or_create_esi(
+                structure_type, _ = EveType.objects.get_or_create_esi(
                     id=parsed_text["structureTypeID"]
                 )
                 visibility = (
@@ -1045,10 +1040,10 @@ class NotificationBase(models.Model):
             timer_processed = True
 
         if has_structure_timers:
-            eve_solar_system, _ = EveSolarSystem2.objects.get_or_create_esi(
+            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
                 id=structure.eve_solar_system.id
             )
-            structure_type, _ = EveType2.objects.get_or_create_esi(
+            structure_type, _ = EveType.objects.get_or_create_esi(
                 id=structure.eve_type.id
             )
             visibility = (

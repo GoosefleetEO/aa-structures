@@ -1,5 +1,5 @@
 from django.test import TestCase
-from eveuniverse.models import EveType as EveUniverseType
+from eveuniverse.models import EveType
 from eveuniverse.tools.testdata import ModelSpec, create_testdata
 
 from ...constants import EveCategoryId, EveGroupId, EveTypeId
@@ -13,19 +13,19 @@ class CreateEveUniverseTestData(TestCase):
                 "EveCategory",
                 ids=[EveCategoryId.STRUCTURE],
                 include_children=True,
-                enabled_sections=[EveUniverseType.Section.DOGMAS],
+                enabled_sections=[EveType.Section.DOGMAS],
             ),
             ModelSpec(
                 "EveGroup",
                 ids=[EveGroupId.CONTROL_TOWER],
                 include_children=True,
-                enabled_sections=[EveUniverseType.Section.DOGMAS],
+                enabled_sections=[EveType.Section.DOGMAS],
             ),
             ModelSpec(
                 "EveType",
                 ids=[EveTypeId.TCU, EveTypeId.IHUB, EveTypeId.CUSTOMS_OFFICE],
                 include_children=True,
-                enabled_sections=[EveUniverseType.Section.DOGMAS],
+                enabled_sections=[EveType.Section.DOGMAS],
             ),
             ModelSpec(
                 "EveGroup",

@@ -120,10 +120,10 @@ class NotificationBaseEmbed:
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
-        if hasattr(self.notification, "color_override"):
-            self._color = self.notification.color_override
-        if hasattr(self.notification, "ping_type_override"):
-            self._ping_type = self.notification.ping_type_override
+        if self.notification._color_override:
+            self._color = self.notification._color_override
+        if self.notification._ping_type_override:
+            self._ping_type = self.notification._ping_type_override
         elif self._color == Webhook.Color.DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == Webhook.Color.WARNING:
@@ -562,7 +562,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             id=self._parsed_text["solarSystemID"]
         )
         self._description = gettext(
-            "The %(structure_type)s %(structure_name)s " "in %(solar_system)s "
+            "The %(structure_type)s %(structure_name)s in %(solar_system)s "
         ) % {
             "structure_type": structure_type.name,
             "structure_name": Webhook.text_bold(self._parsed_text["structureName"]),
@@ -1123,7 +1123,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
         super().__init__(notification)
         timer_starts = ldap_time_2_datetime(self._parsed_text["decloakTime"])
         self._title = gettext(
-            "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
+            "%(structure_type)s in %(solar_system)s has entered reinforced mode"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,

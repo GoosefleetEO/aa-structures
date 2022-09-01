@@ -3,7 +3,7 @@
 from enum import Enum
 
 from django.db import models
-from eveuniverse.models import EveSolarSystem as _EveSolarSystem
+from eveuniverse.models import EveSolarSystem
 
 from ..managers import EveSovereigntyMapManager
 
@@ -61,7 +61,7 @@ class EveSpaceType(str, Enum):
     W_SPACE = "w-space"
 
     @classmethod
-    def from_solar_system(cls, eve_solar_system: _EveSolarSystem) -> "EveSpaceType":
+    def from_solar_system(cls, eve_solar_system: EveSolarSystem) -> "EveSpaceType":
         """returns the space type"""
         if eve_solar_system.is_null_sec:
             return cls.NULLSEC

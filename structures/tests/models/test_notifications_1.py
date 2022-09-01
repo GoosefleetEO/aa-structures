@@ -679,7 +679,7 @@ class TestNotificationPings(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
-        self.assertTrue(kwargs["content"] and "@everyone" in kwargs["content"])
+        self.assertIn("@everyone", kwargs["content"])
 
     def test_can_disable_pinging_webhook(self, mock_send_message):
         # given
@@ -690,7 +690,7 @@ class TestNotificationPings(NoSocketsTestCase):
         result = obj.send_to_webhook(webhook_no_pings)
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
-        self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
+        self.assertNotIn("@everyone", kwargs["content"])
 
     def test_can_disable_pinging_owner(self, mock_send_message):
         # given
@@ -705,7 +705,7 @@ class TestNotificationPings(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
-        self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
+        self.assertNotIn("@everyone", kwargs["content"])
 
 
 class TestNotificationType(NoSocketsTestCase):

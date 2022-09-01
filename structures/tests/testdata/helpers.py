@@ -116,7 +116,7 @@ ESI_LANGUAGES = {
 }
 
 
-def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs):
+def esi_get_universe_planets_planet_id(planet_id, language=None, **kwargs):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
     unless the function property override_data is set
@@ -143,7 +143,7 @@ def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs
 
 
 def esi_get_corporations_corporation_id_structures(
-    corporation_id, token, page=None, language=None, *args, **kwargs
+    corporation_id, token, page=None, language=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -201,7 +201,7 @@ esi_get_corporations_corporation_id_structures.override_data = None
 
 
 def esi_get_corporations_corporation_id_structures_2(
-    corporation_id, token, page=None, language=None, *args, **kwargs
+    corporation_id, token, page=None, language=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -209,23 +209,6 @@ def esi_get_corporations_corporation_id_structures_2(
 
     VARIANT that simulates django-esi 2.0
     """
-
-    class RequestConfig:
-        def __init__(self, also_return_response):
-            self.also_return_response = also_return_response
-
-    class BravadoOperationStub:
-        def __init__(self, headers, data, also_return_response=False):
-            self._headers = headers
-            self._data = data
-            self.request_config = RequestConfig(also_return_response)
-
-        def result(self, **kwargs):
-            if self.request_config.also_return_response:
-                mock_response = Mock(**{"headers": self._headers})
-                return [self._data, mock_response]
-            else:
-                return self._data
 
     if not isinstance(token, str):
         raise ValueError("token must be a string")
@@ -274,7 +257,7 @@ def esi_get_corporations_corporation_id_structures_2(
 
 
 def esi_get_corporations_corporation_id_starbases(
-    corporation_id, token, page=None, *args, **kwargs
+    corporation_id, token, page=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -373,7 +356,7 @@ def esi_get_characters_character_id_notifications(character_id, token, *args, **
 
 
 def esi_get_corporations_corporation_id_customs_offices(
-    corporation_id, token, page=None, *args, **kwargs
+    corporation_id, token, page=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -431,7 +414,7 @@ def esi_get_corporations_corporation_id_assets(
             response=BravadoResponseStub(
                 404, f"No asset data found for {corporation_id} "
             )
-        )
+        ) from None
     return BravadoOperationStub(data=my_esi_data)
 
 
@@ -532,14 +515,9 @@ def esi_mock_client(version=1.6):
         esi_get_characters_character_id_notifications
     )
     # Corporation
-    if version == 1.6:
-        mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures
-        )
-    elif version == 2.0:
-        mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures_2
-        )
+    mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
+        esi_get_corporations_corporation_id_structures_2
+    )
     # mock_client.Corporation.get_corporations_corporation_id_starbases.side_effect = (
     #     RuntimeError
     # )

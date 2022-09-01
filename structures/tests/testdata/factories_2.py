@@ -254,7 +254,6 @@ class NotificationFactory(factory.django.DjangoModelFactory):
     notif_type = NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE.value
     owner = factory.SubFactory(OwnerFactory)
     sender = factory.SubFactory(EveEntityCorporationFactory, id=1000137, name="DED")
-    text = ""
     timestamp = factory.LazyAttribute(lambda o: o.created)
 
     @factory.lazy_attribute
