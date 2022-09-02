@@ -35,7 +35,8 @@ Please follow these instructions for updating Structures 1.x. If you are already
 
 ### Changed
 
-- Migrate to eveuniverse
+- Migrates to eveuniverse
+- Consolidates all database migrations
 
 ### Fixed
 
