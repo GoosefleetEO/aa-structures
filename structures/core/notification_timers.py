@@ -71,6 +71,8 @@ def add_or_remove_timer(notif: Notification) -> bool:
         )
     if timer_processed:
         logger.info("%s: Created timer for notification", notif.notification_id)
+        notif.is_timer_added = True
+        notif.save()
     return timer_processed
 
 

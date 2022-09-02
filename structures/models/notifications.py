@@ -649,8 +649,6 @@ class NotificationBase(models.Model):
         try:
             with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
                 timer_processed = notification_timers.add_or_remove_timer(self)
-            self.is_timer_added = timer_processed
-            self.save()
         except OSError as ex:
             logger.warning(
                 "%s: Failed to add timer from notification: %s",
