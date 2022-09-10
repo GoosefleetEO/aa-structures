@@ -5,6 +5,8 @@ from django.utils.timezone import now
 
 def hours_until_deadline(deadline: dt, start: dt = None) -> float:
     """Currently remaining hours until a given deadline."""
+    if not isinstance(deadline, dt.datetime):
+        raise TypeError("deadline must be of type datetime")
     if not start:
         start = now()
     return (deadline - start).total_seconds() / 3600
