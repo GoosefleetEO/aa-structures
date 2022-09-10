@@ -532,6 +532,8 @@ class Structure(models.Model):
 
     def structure_fuel_usage(self) -> Optional[int]:
         """Needed fuel blocks per day."""
+        if not self.fuel_expires_at:
+            return None
         fuel_quantity = self.structure_fuel_quantity
         if not fuel_quantity:
             return None

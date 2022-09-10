@@ -428,6 +428,31 @@ class TestStructure(NoSocketsTestCase):
         # then
         self.assertEqual(result, 168)
 
+    def test_should_not_break_when_no_fuel_date(self):
+        # given
+        structure = Structure.objects.create(
+            id=1900000000001,
+            owner=self.owner,
+            eve_solar_system_id=30002537,
+            name="Dummy",
+            state=Structure.State.SHIELD_VULNERABLE,
+            eve_type_id=35832,
+            fuel_expires_at=None,
+        )
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = dt.datetime(2021, 12, 17, 15, 13, tzinfo=UTC)
+            structure.items.create(
+                id=1,
+                eve_type_id=EVE_ID_NITROGEN_FUEL_BLOCK,
+                location_flag=StructureItem.LocationFlag.STRUCTURE_FUEL,
+                is_singleton=False,
+                quantity=6309,
+            )
+        # when
+        result = structure.structure_fuel_usage()
+        # then
+        self.assertIsNone(result)
+
 
 class TestStructure3(NoSocketsTestCase):
     """New version of TestStructure using factories to create testdata."""
