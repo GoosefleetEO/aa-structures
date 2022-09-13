@@ -674,11 +674,11 @@ class OwnerCorporationsFilter(admin.SimpleListFilter):
         )
         return tuple([(x["corporation_id"], x["corporation_name"]) for x in qs])
 
-    def queryset(self, request, qs):
+    def queryset(self, request, queryset):
         if self.value() is None:
-            return qs.all()
+            return queryset.all()
         else:
-            return qs.filter(owner__corporation__corporation_id=self.value())
+            return queryset.filter(owner__corporation__corporation_id=self.value())
 
 
 class OwnerAllianceFilter(admin.SimpleListFilter):
@@ -698,11 +698,13 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
         )
         return tuple([(x["alliance_id"], x["alliance_name"]) for x in qs])
 
-    def queryset(self, request, qs):
+    def queryset(self, request, queryset):
         if self.value() is None:
-            return qs.all()
+            return queryset.all()
         else:
-            return qs.filter(owner__corporation__alliance__alliance_id=self.value())
+            return queryset.filter(
+                owner__corporation__alliance__alliance_id=self.value()
+            )
 
 
 class HasWebhooksListFilter(admin.SimpleListFilter):

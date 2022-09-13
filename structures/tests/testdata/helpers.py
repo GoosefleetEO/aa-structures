@@ -17,6 +17,7 @@ from markdown import markdown
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import (
@@ -28,16 +29,7 @@ from app_utils.esi_testing import BravadoOperationStub, BravadoResponseStub
 from app_utils.testing import create_user_from_evecharacter
 
 from ...models import (
-    EveCategory,
-    EveConstellation,
-    EveEntity,
-    EveGroup,
-    EveMoon,
-    EvePlanet,
-    EveRegion,
-    EveSolarSystem,
     EveSovereigntyMap,
-    EveType,
     Notification,
     NotificationType,
     Owner,
@@ -46,7 +38,6 @@ from ...models import (
     StructureTag,
     Webhook,
 )
-from ...models.eveuniverse import EveUniverse
 from .factories import create_notification
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
@@ -125,7 +116,7 @@ ESI_LANGUAGES = {
 }
 
 
-def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs):
+def esi_get_universe_planets_planet_id(planet_id, language=None, **kwargs):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
     unless the function property override_data is set
@@ -152,7 +143,7 @@ def esi_get_universe_planets_planet_id(planet_id, language=None, *args, **kwargs
 
 
 def esi_get_corporations_corporation_id_structures(
-    corporation_id, token, page=None, language=None, *args, **kwargs
+    corporation_id, token, page=None, language=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -210,7 +201,7 @@ esi_get_corporations_corporation_id_structures.override_data = None
 
 
 def esi_get_corporations_corporation_id_structures_2(
-    corporation_id, token, page=None, language=None, *args, **kwargs
+    corporation_id, token, page=None, language=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -218,23 +209,6 @@ def esi_get_corporations_corporation_id_structures_2(
 
     VARIANT that simulates django-esi 2.0
     """
-
-    class RequestConfig:
-        def __init__(self, also_return_response):
-            self.also_return_response = also_return_response
-
-    class BravadoOperationStub:
-        def __init__(self, headers, data, also_return_response=False):
-            self._headers = headers
-            self._data = data
-            self.request_config = RequestConfig(also_return_response)
-
-        def result(self, **kwargs):
-            if self.request_config.also_return_response:
-                mock_response = Mock(**{"headers": self._headers})
-                return [self._data, mock_response]
-            else:
-                return self._data
 
     if not isinstance(token, str):
         raise ValueError("token must be a string")
@@ -283,7 +257,7 @@ def esi_get_corporations_corporation_id_structures_2(
 
 
 def esi_get_corporations_corporation_id_starbases(
-    corporation_id, token, page=None, *args, **kwargs
+    corporation_id, token, page=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -382,7 +356,7 @@ def esi_get_characters_character_id_notifications(character_id, token, *args, **
 
 
 def esi_get_corporations_corporation_id_customs_offices(
-    corporation_id, token, page=None, *args, **kwargs
+    corporation_id, token, page=None, **kwargs
 ):
     """simulates ESI endpoint of same name for mock test
     will use the respective test data
@@ -440,7 +414,7 @@ def esi_get_corporations_corporation_id_assets(
             response=BravadoResponseStub(
                 404, f"No asset data found for {corporation_id} "
             )
-        )
+        ) from None
     return BravadoOperationStub(data=my_esi_data)
 
 
@@ -541,14 +515,9 @@ def esi_mock_client(version=1.6):
         esi_get_characters_character_id_notifications
     )
     # Corporation
-    if version == 1.6:
-        mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures
-        )
-    elif version == 2.0:
-        mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
-            esi_get_corporations_corporation_id_structures_2
-        )
+    mock_client.Corporation.get_corporations_corporation_id_structures.side_effect = (
+        esi_get_corporations_corporation_id_structures_2
+    )
     # mock_client.Corporation.get_corporations_corporation_id_starbases.side_effect = (
     #     RuntimeError
     # )
@@ -639,11 +608,7 @@ def load_entity(EntityClass):
     entity_name = EntityClass.__name__
     EntityClass.objects.all().delete()
     for obj in entities_testdata[entity_name]:
-        if issubclass(EntityClass, EveUniverse) and EntityClass.has_esi_localization():
-            for _, lc_model, lc_esi in EveUniverse.LANG_CODES_MAPPING:
-                if lc_esi != EveUniverse.ESI_DEFAULT_LANGUAGE:
-                    obj["name_" + lc_model] = obj["name"] + "_" + lc_model
-        elif EntityClass is EveCharacter:
+        if EntityClass is EveCharacter:
             EveCharacter.objects.create(**obj)
             corp_defaults = {
                 "corporation_name": obj["corporation_name"],
@@ -671,14 +636,6 @@ def load_entity(EntityClass):
 def load_entities(entities_def: list = None):
     """loads testdata for given entities classes"""
     entities_def_master = [
-        EveCategory,
-        EveGroup,
-        EveType,
-        EveRegion,
-        EveConstellation,
-        EveSolarSystem,
-        EveMoon,
-        EvePlanet,
         EveSovereigntyMap,
         EveCharacter,
         EveEntity,
@@ -688,21 +645,6 @@ def load_entities(entities_def: list = None):
     for EntityClass in entities_def_master:
         if not entities_def or EntityClass in entities_def:
             load_entity(EntityClass)
-
-
-def load_eveuniverse():
-    load_entities(
-        [
-            EveCategory,
-            EveGroup,
-            EveType,
-            EveRegion,
-            EveConstellation,
-            EveSolarSystem,
-            EveMoon,
-            EvePlanet,
-        ]
-    )
 
 
 def create_structures(dont_load_entities: bool = False) -> object:
@@ -716,7 +658,7 @@ def create_structures(dont_load_entities: bool = False) -> object:
         EveEntity.objects.get_or_create(
             id=character.character_id,
             defaults={
-                "category": EveEntity.Category.CHARACTER,
+                "category": EveEntity.CATEGORY_CHARACTER,
                 "name": character.character_name,
             },
         )
@@ -772,7 +714,7 @@ def create_owners():
         EveEntity.objects.get_or_create(
             id=corporation.corporation_id,
             defaults={
-                "category": EveEntity.Category.CORPORATION,
+                "category": EveEntity.CATEGORY_CORPORATION,
                 "name": corporation.corporation_name,
             },
         )

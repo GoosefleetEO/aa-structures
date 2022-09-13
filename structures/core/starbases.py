@@ -2,8 +2,9 @@ import math
 from enum import IntEnum, auto
 from typing import Optional
 
+from eveuniverse.models import EveType
+
 from ..constants import EveGroupId
-from ..models.eveuniverse import EveType
 
 
 class StarbaseSize(IntEnum):

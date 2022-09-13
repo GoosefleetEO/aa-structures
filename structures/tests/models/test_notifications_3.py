@@ -1,23 +1,29 @@
 import datetime as dt
+from unittest import mock
 
 from django.utils.timezone import now
 
 from app_utils.testing import NoSocketsTestCase
 
-from ...models import GeneratedNotification, NotificationType, Structure
+from structures.models import GeneratedNotification, NotificationType, Structure
+
 from ..testdata.factories_2 import (
     GeneratedNotificationFactory,
+    NotificationFactory,
+    OwnerFactory,
     StarbaseFactory,
     StructureFactory,
 )
-from ..testdata.helpers import load_eveuniverse as structures_load_eveuniverse
+from ..testdata.load_eveuniverse import load_eveuniverse
+
+MODULE_PATH = "structures.models.notifications"
 
 
 class TestGeneratedNotification(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
+        load_eveuniverse()
 
     def test_should_have_str(self):
         # given
@@ -47,7 +53,7 @@ class TestGeneratedNotificationManagerCreatePosReinforced(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
+        load_eveuniverse()
 
     def test_should_create_new_notif(self):
         # given
@@ -108,3 +114,54 @@ class TestGeneratedNotificationManagerCreatePosReinforced(NoSocketsTestCase):
         # when
         with self.assertRaises(ValueError):
             GeneratedNotification.objects._get_or_create_tower_reinforced(starbase)
+
+
+@mock.patch("structures.core.notification_timers.add_or_remove_timer")
+class TestProcessTimers(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.owner = OwnerFactory()
+
+    @mock.patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+    def test_should_process_timers_for_all_supported_notification_types(
+        self, mock_add_or_remove_timer
+    ):
+        mock_add_or_remove_timer.return_value = True
+        for notif_type in [
+            NotificationType.STRUCTURE_LOST_SHIELD,
+            NotificationType.STRUCTURE_LOST_ARMOR,
+            NotificationType.ORBITAL_REINFORCED,
+            NotificationType.MOONMINING_EXTRACTION_STARTED,
+            NotificationType.MOONMINING_EXTRACTION_CANCELLED,
+            NotificationType.SOV_STRUCTURE_REINFORCED,
+            NotificationType.TOWER_REINFORCED_EXTRA,
+        ]:
+            with self.subTest(notif_type=notif_type):
+                notif = NotificationFactory(owner=self.owner, notif_type=notif_type)
+                self.assertTrue(notif.add_or_remove_timer())
+
+    @mock.patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", True)
+    def test_should_not_process_timers_for_non_supported_notification_types(
+        self, mock_add_or_remove_timer
+    ):
+        mock_add_or_remove_timer.return_value = True
+        unsupported_notif_types = {
+            obj for obj in NotificationType
+        } - NotificationType.relevant_for_timerboard
+        for notif_type in unsupported_notif_types:
+            with self.subTest(notif_type=notif_type):
+                notif = NotificationFactory(owner=self.owner, notif_type=notif_type)
+                self.assertFalse(notif.add_or_remove_timer())
+
+    def test_should_not_process_timers_when_disabled(self, mock_add_or_remove_timer):
+        # given
+        mock_add_or_remove_timer.side_effect = RuntimeError
+        notif = NotificationFactory(
+            owner=self.owner, notif_type=NotificationType.CHAR_APP_ACCEPT_MSG
+        )
+        # when
+        with mock.patch(MODULE_PATH + ".STRUCTURES_ADD_TIMERS", False):
+            result = notif.add_or_remove_timer()
+        # then
+        self.assertFalse(result)

@@ -13,7 +13,7 @@ from ..testdata.factories_2 import (
     NotificationFactory,
     OwnerFactory,
 )
-from ..testdata.helpers import load_eveuniverse
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestGeneratedNotification(NoSocketsTestCase):

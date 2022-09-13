@@ -17,10 +17,10 @@ myauth_dir = (
 sys.path.insert(0, myauth_dir)
 
 
-import django  # noqa: E402
-from django.apps import apps  # noqa: E402
-from django.db import transaction  # noqa: E402
-from django.utils.timezone import now  # noqa: E402
+import django
+from django.apps import apps
+from django.db import transaction
+from django.utils.timezone import now
 
 # init and setup django project
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myauth.settings.local")
@@ -29,17 +29,12 @@ django.setup()
 if not apps.is_installed("structures"):
     raise RuntimeError("The app structures is not installed")
 
-from esi.clients import esi_client_factory  # noqa: E402
+from esi.clients import esi_client_factory
+from eveuniverse.models import EveEntity
 
-from allianceauth.eveonline.models import EveCorporationInfo  # noqa: E402
+from allianceauth.eveonline.models import EveCorporationInfo
 
-from structures.models import (  # noqa: E402, E501
-    EveEntity,
-    Notification,
-    Owner,
-    Structure,
-    Webhook,
-)
+from structures.models import Notification, Owner, Structure, Webhook
 
 # corporation / structure the notifications will be added to
 CORPORATION_ID = 98587692  # RABIS
@@ -139,15 +134,10 @@ for notification in notifications:
 with transaction.atomic():
     timestamp_start = now() - timedelta(hours=2)
     for notification in notifications:
-        sender_type = EveEntity.Category.from_esi_name(notification["sender_type"])
-        if sender_type != EveEntity.Category.OTHER:
-            sender, _ = EveEntity.objects.get_or_create_esi(
-                id=notification["sender_id"]
-            )
-        else:
-            sender, _ = EveEntity.objects.get_or_create(
-                id=notification["sender_id"], defaults={"category": sender_type}
-            )
+        if notification["sender_type"] != "other":
+            continue
+
+        sender, _ = EveEntity.objects.get_or_create_esi(id=notification["sender_id"])
         text = notification["text"] if "text" in notification else None
         is_read = notification["is_read"] if "is_read" in notification else None
         timestamp_start = timestamp_start + timedelta(minutes=5)

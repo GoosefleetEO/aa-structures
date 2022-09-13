@@ -2,10 +2,11 @@ import datetime as dt
 from unittest.mock import patch
 
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...models import EveEntity, Notification, NotificationType, Structure, Webhook
+from ...models import Notification, NotificationType, Structure, Webhook
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
@@ -18,6 +19,7 @@ from ..testdata.helpers import (
     load_notification_entities,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.notifications"
 
@@ -26,6 +28,7 @@ class TestNotification(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -109,6 +112,7 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -164,6 +168,7 @@ class TestNotificationCreateFromStructure(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
 
@@ -229,6 +234,7 @@ class TestNotificationRelevantWebhooks(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -331,6 +337,7 @@ class TestNotificationSendToConfiguredWebhooks(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -458,6 +465,7 @@ class TestNotificationSendToWebhook(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.structure = Structure.objects.get(id=1000000000001)
         _, cls.owner = set_owner_character(character_id=1001)
@@ -505,6 +513,7 @@ class TestNotificationSendMessage(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -652,6 +661,7 @@ class TestNotificationPings(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
 
     def setUp(self):
@@ -669,7 +679,7 @@ class TestNotificationPings(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
-        self.assertTrue(kwargs["content"] and "@everyone" in kwargs["content"])
+        self.assertIn("@everyone", kwargs["content"])
 
     def test_can_disable_pinging_webhook(self, mock_send_message):
         # given
@@ -680,7 +690,7 @@ class TestNotificationPings(NoSocketsTestCase):
         result = obj.send_to_webhook(webhook_no_pings)
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
-        self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
+        self.assertNotIn("@everyone", kwargs["content"])
 
     def test_can_disable_pinging_owner(self, mock_send_message):
         # given
@@ -695,7 +705,7 @@ class TestNotificationPings(NoSocketsTestCase):
         # then
         self.assertTrue(result)
         _, kwargs = mock_send_message.call_args
-        self.assertFalse(kwargs["content"] and "@everyone" in kwargs["content"])
+        self.assertNotIn("@everyone", kwargs["content"])
 
 
 class TestNotificationType(NoSocketsTestCase):

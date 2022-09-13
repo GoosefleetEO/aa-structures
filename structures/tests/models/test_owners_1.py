@@ -5,11 +5,12 @@ from unittest.mock import patch
 from django.utils.timezone import now, utc
 from esi.errors import TokenError
 from esi.models import Token
+from eveuniverse.models import EveSolarSystem
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...models import EveSolarSystem, Owner, OwnerCharacter
+from ...models import Owner, OwnerCharacter
 from ..testdata.factories import create_owner_from_user
 from ..testdata.helpers import create_structures, load_entities, set_owner_character
 from ..testdata.load_eveuniverse import load_eveuniverse
@@ -21,6 +22,7 @@ class TestOwner(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
@@ -213,6 +215,7 @@ class TestOwnerHasSov(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
@@ -537,6 +540,7 @@ class TestOwnerCharacters(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 

@@ -7,7 +7,9 @@ if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer
     from app_utils.testing import NoSocketsTestCase
 
-    from ...models import Notification
+    from structures.core import notification_timers
+    from structures.models import Notification
+
     from ..testdata.factories import create_webhook
     from ..testdata.factories_2 import GeneratedNotificationFactory
     from ..testdata.helpers import (
@@ -17,7 +19,7 @@ if "timerboard" in app_labels():
     )
     from ..testdata.load_eveuniverse import load_eveuniverse
 
-    MODULE_PATH = "structures.models.notifications"
+    MODULE_PATH = "structures.core.notification_timers"
 
     @patch(
         "structuretimers.models._task_calc_timer_distances_for_all_staging_systems",
@@ -28,24 +30,24 @@ if "timerboard" in app_labels():
         @classmethod
         def setUpClass(cls):
             super().setUpClass()
-            create_structures()
             load_eveuniverse()
+            create_structures()
             _, cls.owner = set_owner_character(character_id=1001)
             load_notification_entities(cls.owner)
             cls.owner.webhooks.add(create_webhook())
 
-        def setUp(self) -> None:
-            AuthTimer.objects.all().delete()
-
         @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", False)
         @patch("allianceauth.timerboard.models.Timer", spec=True)
         def test_moon_timers_disabled(self, mock_Timer):
-            x = Notification.objects.get(notification_id=1000000404)
-            self.assertFalse(x.add_or_remove_timer())
+            # given
+            notif = Notification.objects.get(notification_id=1000000404)
+            # when
+            result = notification_timers.add_or_remove_timer(notif)
+            # then
+            self.assertFalse(result)
             self.assertFalse(mock_Timer.objects.create.called)
-
-            x = Notification.objects.get(notification_id=1000000402)
-            self.assertFalse(x.add_or_remove_timer())
+            notif.refresh_from_db()
+            self.assertFalse(notif.add_or_remove_timer())
             self.assertFalse(mock_Timer.delete.called)
 
         @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
@@ -100,7 +102,10 @@ if "timerboard" in app_labels():
             ids_set_2 = {x.id for x in AuthTimer.objects.all()}
             self.assertSetEqual(ids_set_1, ids_set_2)
 
-        @patch(MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED", True)
+        @patch(
+            MODULE_PATH + ".STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED",
+            True,
+        )
         def test_run_all(self):
             for x in Notification.objects.all():
                 x.add_or_remove_timer()

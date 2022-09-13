@@ -9,6 +9,7 @@ from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext as _
+from eveuniverse.models import EvePlanet
 
 from allianceauth.eveonline.evelinks import dotlan
 from app_utils.datetime import DATETIME_FORMAT, timeuntil_str
@@ -25,7 +26,7 @@ from app_utils.views import (
 
 from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
 from ..constants import EveTypeId
-from ..models import EvePlanet, EveSpaceType, Structure, StructureItem, StructureService
+from ..models import EveSpaceType, Structure, StructureItem, StructureService
 
 
 class _AbstractStructureListSerializer(ABC):

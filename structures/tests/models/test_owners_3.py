@@ -189,6 +189,7 @@ class TestFetchNotificationsEsi2(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
 
     def test_should_create_notifications_from_scratch(self, mock_esi):
         # given
@@ -268,6 +269,7 @@ class TestSendNewNotifications1(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.owner.is_alliance_main = True
@@ -392,6 +394,7 @@ class TestSendNewNotifications2(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_entities()
+        load_eveuniverse()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
         )
@@ -791,11 +794,57 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
         self.assertTrue(owner.is_assets_sync_fresh)
         self.assertSetEqual(queryset_pks(StructureItem.objects.all()), {1500000000002})
 
+    def test_should_update_upwell_items_for_owner_with_invalid_locations(
+        self, mock_esi
+    ):
+        # given
+        endpoints = [
+            EsiEndpoint(
+                "Assets",
+                "get_corporations_corporation_id_assets",
+                "corporation_id",
+                needs_token=True,
+                data={
+                    "2102": [
+                        {
+                            "is_singleton": False,
+                            "item_id": 1300000003001,
+                            "location_flag": "StructureFuel",
+                            "location_id": 1000000000004,
+                            "location_type": "item",
+                            "quantity": 5000,
+                            "type_id": 16273,
+                        }
+                    ]
+                },
+            ),
+            EsiEndpoint(
+                "Assets",
+                "post_corporations_corporation_id_assets_locations",
+                "corporation_id",
+                needs_token=True,
+                http_error_code=404,
+            ),
+        ]
+        mock_esi.client = EsiClientStub.create_from_endpoints(endpoints)
+        user, _ = create_user_from_evecharacter(
+            1102,
+            permissions=["structures.basic_access", "structures.add_structure_owner"],
+            scopes=Owner.get_esi_scopes(),
+        )
+        owner = create_owner_from_user(user)
+        structure = create_upwell_structure(owner=owner, id=1000000000004)
+        # when
+        owner.update_asset_esi()
+        # then
+        self.assertTrue(structure.items.filter(id=1300000003001).exists())
+
 
 class TestOwnerToken(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities([EveCorporationInfo, EveCharacter])
         cls.character = EveCharacter.objects.get(character_id=1001)
         cls.corporation = EveCorporationInfo.objects.get(corporation_id=2001)
@@ -844,6 +893,7 @@ class TestOwnerUpdateIsUp(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.owner.is_alliance_main = True

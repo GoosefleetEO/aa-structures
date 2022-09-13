@@ -2,12 +2,12 @@ import datetime as dt
 from unittest.mock import patch
 
 from django.utils.timezone import now, utc
+from eveuniverse.models import EvePlanet
 
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...models import (
-    EvePlanet,
     FuelAlertConfig,
     NotificationType,
     Owner,
@@ -840,9 +840,36 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         # then
         owner.refresh_from_db()
         self.assertFalse(owner.is_structure_sync_fresh)
-        structure_ids = {x["id"] for x in owner.structures.values("id")}
         expected = {1000000000001, 1000000000002, 1000000000003}
-        self.assertSetEqual(structure_ids, expected)
+        self.assertSetEqual(owner.structures.ids(), expected)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
+    def test_should_not_break_on_http_error_when_fetching_custom_office_names(
+        self, mock_esi
+    ):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Assets",
+            "post_corporations_corporation_id_assets_names",
+            http_error_code=404,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1200000000003,
+            1200000000004,
+            1200000000005,
+            1200000000006,
+            1200000000099,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
@@ -1148,20 +1175,6 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         self.assertEqual(structure.eve_planet_id, 40161472)
         self.assertEqual(structure.name, "Planet (Barren)")
 
-    @patch(MODULE_PATH + ".STRUCTURES_DEFAULT_LANGUAGE", "de")
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
-    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", True)
-    def test_define_poco_name_from_planet_type_localized(self, mock_esi):
-        # given
-        mock_esi.client = self.esi_client_stub
-        owner = create_owner_from_user(self.user)
-        # when
-        owner.update_structures_esi()
-        # then
-        structure = Structure.objects.get(id=1200000000003)
-        self.assertEqual(structure.eve_planet_id, 40161472)
-        self.assertEqual(structure.name, "Planet (Barren)_de")
-
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(
@@ -1250,6 +1263,31 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
             owner.update_structures_esi()
         # then
         self.assertEqual(structure.structure_fuel_alerts.count(), 0)
+
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", True)
+    @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
+    def test_should_not_break_when_starbase_names_not_found(self, mock_esi):
+        # given
+        new_endpoint = EsiEndpoint(
+            "Assets",
+            "post_corporations_corporation_id_assets_names",
+            http_error_code=404,
+        )
+        mock_esi.client = self.esi_client_stub.replace_endpoints([new_endpoint])
+        owner = create_owner_from_user(self.user)
+        # when
+        owner.update_structures_esi()
+        # then
+        owner.refresh_from_db()
+        expected = {
+            1000000000001,
+            1000000000002,
+            1000000000003,
+            1300000000001,
+            1300000000002,
+            1300000000003,
+        }
+        self.assertSetEqual(owner.structures.ids(), expected)
 
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     # @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)

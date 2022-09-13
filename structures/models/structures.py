@@ -13,6 +13,7 @@ from django.utils.html import escape
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
+from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
@@ -25,14 +26,7 @@ from ..constants import EveCategoryId, EveGroupId, EveTypeId
 from ..core import starbases
 from ..helpers.general import datetime_almost_equal, hours_until_deadline
 from ..managers import StructureManager, StructureTagManager
-from .eveuniverse import (
-    EsiNameLocalization,
-    EveMoon,
-    EvePlanet,
-    EveSolarSystem,
-    EveSpaceType,
-    EveType,
-)
+from .eveuniverse import EveSpaceType
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -54,7 +48,6 @@ class StructureTag(models.Model):
         LIGHT_BLUE = "info", "light blue"
         ORANGE = "warning", "orange"
         RED = "danger", "red"
-        # TODO: add localization
 
     SPACE_TYPE_MAP = {
         EveSpaceType.HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": Style.GREEN},
@@ -741,8 +734,8 @@ class StructureItem(models.Model):
         )
 
 
-class StructureService(EsiNameLocalization, models.Model):
-    """service of a structure"""
+class StructureService(models.Model):
+    """Service of a Structure."""
 
     class State(models.IntegerChoices):
         OFFLINE = 1, _("offline")

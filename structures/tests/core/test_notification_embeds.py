@@ -4,17 +4,12 @@ import dhooks_lite
 
 from django.test import TestCase, override_settings
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ...core import notification_embeds as ne
-from ...models.notifications import (
-    EveEntity,
-    Notification,
-    NotificationType,
-    Structure,
-    Webhook,
-)
+from ...models.notifications import Notification, NotificationType, Structure, Webhook
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
@@ -27,6 +22,7 @@ from ..testdata.helpers import (
     markdown_to_plain,
     set_owner_character,
 )
+from ..testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.core.notification_embeds"
 
@@ -35,6 +31,7 @@ class TestNotificationEmbeds(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -76,7 +73,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_generate_embed_from_notification_with_custom_color(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification.color_override = Webhook.Color.SUCCESS
+        notification._color_override = Webhook.Color.SUCCESS
         notification_embed = ne.NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
@@ -97,7 +94,7 @@ class TestNotificationEmbeds(TestCase):
     def test_should_generate_embed_from_notification_with_ping_type_override(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification.ping_type_override = Webhook.PingType.EVERYONE
+        notification._ping_type_override = Webhook.PingType.EVERYONE
         notification_embed = ne.NotificationBaseEmbed.create(notification)
         # when
         notification_embed.generate_embed()
@@ -218,6 +215,7 @@ class TestNotificationEmbedsClasses(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_entities()
+        load_eveuniverse()
         user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.add_structure_owner"]
         )

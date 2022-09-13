@@ -1,19 +1,6 @@
 # flake8: noqa
 
-from .eveuniverse import (
-    EsiNameLocalization,
-    EveCategory,
-    EveConstellation,
-    EveEntity,
-    EveGroup,
-    EveMoon,
-    EvePlanet,
-    EveRegion,
-    EveSolarSystem,
-    EveSovereigntyMap,
-    EveSpaceType,
-    EveType,
-)
+from .eveuniverse import EveSovereigntyMap, EveSpaceType
 from .notifications import (
     FuelAlert,
     FuelAlertConfig,

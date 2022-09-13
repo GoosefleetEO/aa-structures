@@ -1,6 +1,5 @@
 from django import template
-
-from ..models import EveType
+from eveuniverse.models import EveType
 
 register = template.Library()
 

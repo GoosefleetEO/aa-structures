@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.0.0] - 2022-09-13
+
+>**Important**:<br>This release includes a major change to Structures's database and therefore requires some additional care when updating. Please follow our special update instructions below.
+
+>**Hint**:<br>Should you run into any issues and need help please give us a shout on the AA Discord (#community-packages).
+
+This release is a major technical update. Structures has been using both the newer django-eveuniverse and it's own older variant for fetching and storing Eve universe data from ESI (e.g. for solar systems). This has lead to data redundancy and made the app more complicated to maintain. With this release Structures is fully migrated to django-eveuniverse and it's own eveuniverse variant is removed.
+
+### Update instructions
+
+Please follow these instructions for updating Structures 1.x. If you are already on 2.x and just installing a patch you can ignore these special instructions:
+
+1. Make sure you are on the latest stable version of Structures (1.26.3). If not please fully upgrade first: `pip install aa-structures==1.26.3`
+1. Make sure your current AA installation has no errors: `python manage.py check`
+1. Install the 2.x update: `pip install -U structures`
+1. Load generic eveuniverse data with this command: `python manage.py structures_load_eve`
+1. Wait for tasks related to the above command to finish before proceeding (e.g. refresh the dashboard occasionally until the task queue is back to zero.)
+1. Shut down your AA instance completely: `sudo supervisorctl stop myauth:`
+1. Backup your AA database: `sudo mysqldump alliance_auth -u root > alliance_auth_backup.sql`
+1. Load missing eveuniverse data specific to your installation with this command: `python manage.py structures_preload_eveuniverse`
+1. Clear your cache: `sudo redis-cli flushall;`
+1. Run migrate: `python manage.py migrate`
+1. Verify that the migration went through without any errors or warnings by checking the console output of the last command
+1. Copy static files: `python manage.py collectstatic --noinput`
+1. When you have no errors: Restart your AA instance: `sudo supervisorctl start myauth:`
+
+### Changed
+
+- Complete migration to django-eveuniverse
+- Consolidates all database migrations
+
+### Fixed
+
+- Structure update breaks when trying to fetch locations for outdated item IDs
+- POCO update breaks when trying to fetch names for outdated POCOs
+- Starbase update breaks when trying to fetch names for outdated starbases
+
 ## [1.26.4] - 2022-09-10
 
 ### Fixed

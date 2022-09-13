@@ -26,6 +26,7 @@ from .testdata.helpers import (
     load_entity,
     set_owner_character,
 )
+from .testdata.load_eveuniverse import load_eveuniverse
 
 VIEWS_PATH = "structures.views"
 OWNERS_PATH = "structures.models.owners"
@@ -41,6 +42,7 @@ class TestStructureListFormat(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
+        load_eveuniverse()
         create_structures()
 
     def test_should_format_rows_correctly(self):
@@ -84,6 +86,7 @@ class TestStructureList(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
+        load_eveuniverse()
         create_structures()
 
     def test_should_have_access_to_main_view(self):
@@ -140,6 +143,7 @@ class TestStructureListDataPermissions(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
+        load_eveuniverse()
         create_structures()
 
     def _structure_list_data_view(self, user) -> dict:
@@ -296,6 +300,7 @@ class TestStructureListFilters(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.user = AuthUtils.add_permission_to_user_by_name(
@@ -416,6 +421,7 @@ class TestStructurePowerModes(TestCase):
         super().setUpClass()
         cls.factory = RequestFactory()
         load_entities()
+        load_eveuniverse()
 
     def setUp(self):
         create_structures(dont_load_entities=True)
@@ -522,6 +528,7 @@ class TestAddStructureOwner(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         load_entities([EveCorporationInfo, EveAllianceInfo, EveCharacter, Webhook])
         cls.user, cls.character_ownership = create_user_from_evecharacter(
             1001,
@@ -674,6 +681,7 @@ class TestStatus(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         my_user, _ = set_owner_character(character_id=1001)
         AuthUtils.add_permission_to_user_by_name("structures.basic_access", my_user)
@@ -748,6 +756,7 @@ class TestPocoList(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.user = AuthUtils.add_permission_to_user_by_name(
@@ -822,6 +831,7 @@ class TestStructureFittingModal(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
+        load_eveuniverse()
         create_structures()
 
     def test_should_have_access_to_fitting(self):
@@ -859,6 +869,7 @@ class TestDetailsModal(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.factory = RequestFactory()
+        load_eveuniverse()
         load_entities()
         cls.user, _ = create_user_from_evecharacter(
             1001, permissions=["structures.basic_access"]
@@ -894,6 +905,7 @@ class TestJumpGateList(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.user = AuthUtils.add_permission_to_user_by_name(

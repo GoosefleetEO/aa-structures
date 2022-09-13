@@ -7,13 +7,14 @@ import yaml
 
 from django.test import TestCase, override_settings
 from django.utils.timezone import now
+from eveuniverse.models import EveSolarSystem
 
 from app_utils.django import app_labels
 from app_utils.esi import EsiStatus
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 
 from .. import tasks
-from ..models import EveSolarSystem, NotificationType, Structure
+from ..models import NotificationType, Structure
 from .testdata.factories_2 import (
     EveEntityCorporationFactory,
     OwnerFactory,
@@ -22,7 +23,6 @@ from .testdata.factories_2 import (
     WebhookFactory,
     datetime_to_esi,
 )
-from .testdata.helpers import load_eveuniverse as structures_load_eveuniverse
 from .testdata.load_eveuniverse import load_eveuniverse
 
 if "structuretimers" in app_labels():
@@ -55,7 +55,6 @@ class TestEnd2EndTasks(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        structures_load_eveuniverse()
         load_eveuniverse()
 
     def test_should_fetch_new_upwell_structure_from_esi(

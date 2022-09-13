@@ -58,6 +58,7 @@ class TestSendMessagesForWebhook(TestCase):
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestUpdateStructures(NoSocketsTestCase):
     def setUp(self):
+        load_eveuniverse()
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
 
@@ -129,6 +130,7 @@ class TestUpdateStructures(NoSocketsTestCase):
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestUpdateOwnerAsset(NoSocketsTestCase):
     def setUp(self):
+        load_eveuniverse()
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
 
@@ -170,6 +172,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
 
@@ -267,6 +270,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
 @patch("structures.models.notifications.Webhook.send_test_message")
 class TestSendTestNotification(NoSocketsTestCase):
     def setUp(self):
+        load_eveuniverse()
         create_structures()
         self.user, self.owner = set_owner_character(character_id=1001)
         self.owner.is_alliance_main = True
@@ -305,8 +309,8 @@ class TestUpdateExistingNotifications(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        load_entities()
         load_eveuniverse()
+        load_entities()
         cls.user, _ = create_user_from_evecharacter(
             1001,
             permissions=["structures.basic_access", "structures.add_structure_owner"],

@@ -2,19 +2,14 @@ import datetime as dt
 from unittest.mock import patch
 
 from django.utils.timezone import now
+from eveuniverse.models import EveSolarSystem
 
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from ..models import (
-    EveCategory,
-    EveConstellation,
-    EveGroup,
-    EveRegion,
-    EveSolarSystem,
     EveSovereigntyMap,
-    EveType,
     NotificationType,
     Owner,
     Structure,
@@ -22,7 +17,6 @@ from ..models import (
     StructureTag,
     Webhook,
 )
-from . import to_json
 from .testdata.factories import (
     create_eve_sovereignty_map,
     create_owner_from_user,
@@ -111,18 +105,8 @@ class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-                EveRegion,
-                EveConstellation,
-                EveSolarSystem,
-                EveSovereigntyMap,
-                EveCharacter,
-            ]
-        )
+        load_eveuniverse()
+        load_entities([EveCharacter, EveSovereigntyMap])
 
     def test_sov_alliance_id(self):
         # returns alliance ID for sov system in null
@@ -166,17 +150,7 @@ class TestStructureManagerEsi(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         load_eveuniverse()
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-                EveRegion,
-                EveConstellation,
-                EveSolarSystem,
-                EveCharacter,
-            ]
-        )
+        load_entities([EveCharacter])
         user, _ = create_user_from_evecharacter(
             1001,
             permissions=["structures.add_structure_owner"],
@@ -371,18 +345,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         load_eveuniverse()
 
     def test_can_create_full(self):
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-                EveRegion,
-                EveConstellation,
-                EveSolarSystem,
-                EveCharacter,
-                EveSovereigntyMap,
-            ]
-        )
+        load_entities([EveCharacter, EveSovereigntyMap])
         owner = Owner.objects.create(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
@@ -397,14 +360,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "services": [
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
                     "state": "online",
                 },
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
                     "state": "offline",
                 },
             ],
@@ -441,39 +400,12 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         self.assertAlmostEqual(
             (now() - structure.last_online_at).total_seconds(), 0, delta=2
         )
+        self.assertEqual(structure.services.count(), 2)
+        service_1 = structure.services.get(name="Clone Bay")
+        self.assertEqual(service_1.state, StructureService.State.ONLINE)
+        service_1 = structure.services.get(name="Market Hub")
+        self.assertEqual(service_1.state, StructureService.State.OFFLINE)
         # todo: add more content tests
-
-        # check services
-        services = {
-            to_json(
-                {
-                    "name": x.name,
-                    "name_de": x.name_de,
-                    "name_ko": x.name_ko,
-                    "state": x.state,
-                }
-            )
-            for x in structure.services.all()
-        }
-        expected = {
-            to_json(
-                {
-                    "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
-                    "state": StructureService.State.ONLINE,
-                }
-            ),
-            to_json(
-                {
-                    "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
-                    "state": StructureService.State.OFFLINE,
-                }
-            ),
-        }
-        self.assertEqual(services, expected)
 
     def test_can_update_full(self):
         create_structures()
@@ -493,14 +425,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "services": [
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
                     "state": "online",
                 },
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
                     "state": "offline",
                 },
             ],
@@ -552,14 +480,10 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
             "services": [
                 {
                     "name": "Clone Bay",
-                    "name_de": "Clone Bay_de",
-                    "name_ko": "Clone Bay_ko",
                     "state": "offline",
                 },
                 {
                     "name": "Market Hub",
-                    "name_de": "Market Hub_de",
-                    "name_ko": "Market Hub_ko",
                     "state": "offline",
                 },
             ],
@@ -584,16 +508,8 @@ class TestStructureTagManager(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        load_entities(
-            [
-                EveCategory,
-                EveGroup,
-                EveType,
-                EveRegion,
-                EveConstellation,
-                EveSolarSystem,
-            ]
-        )
+        load_eveuniverse()
+        load_entities([EveSovereigntyMap])
 
     def test_can_get_space_type_tag_that_exists(self):
         solar_system = EveSolarSystem.objects.get(id=30002537)
@@ -636,7 +552,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         self.assertEqual(structure.order, 50)
 
     def test_can_create_for_space_type_highsec(self):
-        solar_system = EveSolarSystem.objects.get(id=30002506)
+        solar_system = EveSolarSystem.objects.get(name="Osoggur")
         structure, created = StructureTag.objects.update_or_create_for_space_type(
             solar_system
         )
@@ -648,7 +564,7 @@ class TestStructureTagManager(NoSocketsTestCase):
         self.assertEqual(structure.order, 50)
 
     def test_can_create_for_space_type_nullsec(self):
-        solar_system = EveSolarSystem.objects.get(id=30000474)
+        solar_system = EveSolarSystem.objects.get(name="1-PGSG")
         structure, created = StructureTag.objects.update_or_create_for_space_type(
             solar_system
         )

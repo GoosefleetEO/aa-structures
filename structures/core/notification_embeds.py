@@ -9,6 +9,7 @@ from django.template import Context, Template
 from django.utils.html import strip_tags
 from django.utils.timezone import now
 from django.utils.translation import gettext, gettext_lazy
+from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
 from app_utils.datetime import (
@@ -21,7 +22,6 @@ from app_utils.urls import reverse_absolute, static_file_absolute_url
 from .. import __title__
 from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from ..constants import EveTypeId
-from ..models.eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveType
 from ..models.notifications import (
     EveEntity,
     GeneratedNotification,
@@ -31,7 +31,7 @@ from ..models.notifications import (
     Webhook,
 )
 from ..models.structures import Structure
-from . import starbases
+from . import sovereignty, starbases
 
 
 class BillType(models.IntegerChoices):
@@ -120,10 +120,10 @@ class NotificationBaseEmbed:
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
-        if hasattr(self.notification, "color_override"):
-            self._color = self.notification.color_override
-        if hasattr(self.notification, "ping_type_override"):
-            self._ping_type = self.notification.ping_type_override
+        if self.notification._color_override:
+            self._color = self.notification._color_override
+        if self.notification._ping_type_override:
+            self._ping_type = self.notification._ping_type_override
         elif self._color == Webhook.Color.DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == Webhook.Color.WARNING:
@@ -322,11 +322,11 @@ class NotificationBaseEmbed:
 
     @staticmethod
     def _gen_eveentity_external_url(eve_entity: EveEntity) -> str:
-        if eve_entity.category == EveEntity.Category.ALLIANCE:
+        if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
             return dotlan.alliance_url(eve_entity.name)
-        elif eve_entity.category == EveEntity.Category.CORPORATION:
+        elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
             return dotlan.corporation_url(eve_entity.name)
-        elif eve_entity.category == EveEntity.Category.CHARACTER:
+        elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
             return evewho.character_url(eve_entity.id)
 
     @classmethod
@@ -562,7 +562,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             id=self._parsed_text["solarSystemID"]
         )
         self._description = gettext(
-            "The %(structure_type)s %(structure_name)s " "in %(solar_system)s "
+            "The %(structure_type)s %(structure_name)s in %(solar_system)s "
         ) % {
             "structure_type": structure_type.name,
             "structure_name": Webhook.text_bold(self._parsed_text["structureName"]),
@@ -937,7 +937,9 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         ) % {
             "structure_name": Webhook.text_bold(structure_name),
             "moon": self.eve_moon.name,
-            "solar_system": self._gen_solar_system_text(self.eve_moon.eve_solar_system),
+            "solar_system": self._gen_solar_system_text(
+                self.eve_moon.eve_planet.eve_solar_system
+            ),
             "owner_link": self._gen_corporation_link(str(notification.owner)),
         }
 
@@ -1010,7 +1012,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         if "structureTypeID" in self._parsed_text:
             structure_type_id = self._parsed_text["structureTypeID"]
         elif "campaignEventType" in self._parsed_text:
-            structure_type_id = Notification.type_id_from_event_type(
+            structure_type_id = sovereignty.type_id_from_event_type(
                 self._parsed_text["campaignEventType"]
             )
         else:
@@ -1121,7 +1123,7 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
         super().__init__(notification)
         timer_starts = ldap_time_2_datetime(self._parsed_text["decloakTime"])
         self._title = gettext(
-            "%(structure_type)s in %(solar_system)s " "has entered reinforced mode"
+            "%(structure_type)s in %(solar_system)s has entered reinforced mode"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,

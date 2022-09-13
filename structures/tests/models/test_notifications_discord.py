@@ -18,6 +18,7 @@ if "discord" in app_labels():
         load_notification_entities,
         set_owner_character,
     )
+    from ..testdata.load_eveuniverse import load_eveuniverse
 
     MODULE_PATH = "structures.models.notifications"
 
@@ -27,6 +28,7 @@ if "discord" in app_labels():
         @classmethod
         def setUpClass(cls):
             super().setUpClass()
+            load_eveuniverse()
             load_entities()
             cls.group_1 = Group.objects.create(name="Dummy Group 1")
             cls.group_2 = Group.objects.create(name="Dummy Group 2")

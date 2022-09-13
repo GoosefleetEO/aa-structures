@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils.timezone import now
+from eveuniverse.models import EveEntity
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
@@ -19,7 +20,6 @@ from ..admin import (
     WebhookAdmin,
 )
 from ..models import (
-    EveEntity,
     FuelAlertConfig,
     Notification,
     Owner,
@@ -34,6 +34,7 @@ from .testdata.helpers import (
     load_notification_entities,
     set_owner_character,
 )
+from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.admin"
 
@@ -53,6 +54,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
             "color": Webhook.Color.WARNING,
         }
         cls.user = User.objects.create_superuser("Clark Kent")
+        load_eveuniverse()
         create_structures()
 
     def test_should_create_new_config(self):
@@ -171,6 +173,7 @@ class TestNotificationAdmin(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.modeladmin = NotificationAdmin(model=Notification, admin_site=AdminSite())
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
@@ -243,6 +246,7 @@ class TestOwnerAdmin(TestCase):
         super().setUpClass()
         cls.factory = RequestFactory()
         cls.modeladmin = OwnerAdmin(model=Owner, admin_site=AdminSite())
+        load_eveuniverse()
         create_structures()
         cls.user, cls.obj = set_owner_character(character_id=1001)
 
@@ -327,6 +331,7 @@ class TestStructureAdmin(TestCase):
         super().setUpClass()
         cls.factory = RequestFactory()
         cls.modeladmin = StructureAdmin(model=Structure, admin_site=AdminSite())
+        load_eveuniverse()
         create_structures()
         cls.user, cls.owner = set_owner_character(character_id=1001)
         cls.obj = Structure.objects.get(id=1000000000001)

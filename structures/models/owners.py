@@ -6,7 +6,7 @@ import re
 from email.utils import format_datetime, parsedate_to_datetime
 from typing import Optional
 
-from bravado.exception import HTTPForbidden
+from bravado.exception import HTTPForbidden, HTTPNotFound
 
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,6 +17,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from esi.errors import TokenError
 from esi.models import Token
+from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCorporationInfo
@@ -30,7 +31,6 @@ from app_utils.logging import LoggerAddTag
 from .. import __title__
 from ..app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
-    STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES,
     STRUCTURES_FEATURE_CUSTOMS_OFFICES,
@@ -43,7 +43,7 @@ from ..app_settings import (
 from ..constants import EveGroupId, EveTypeId
 from ..managers import OwnerManager
 from ..providers import esi
-from .eveuniverse import EveMoon, EvePlanet, EveSolarSystem, EveSovereigntyMap, EveType
+from .eveuniverse import EveSovereigntyMap
 from .notifications import (
     EveEntity,
     GeneratedNotification,
@@ -516,14 +516,18 @@ class Owner(models.Model):
         )
         locations_data = list()
         for item_ids_chunk in chunks(list(item_ids), 999):
-            locations_data_chunk = (
-                esi.client.Assets.post_corporations_corporation_id_assets_locations(
-                    corporation_id=self.corporation.corporation_id,
-                    item_ids=item_ids_chunk,
-                    token=token.valid_access_token(),
-                )
-            ).results()
-            locations_data += locations_data_chunk
+            try:
+                locations_data_chunk = (
+                    esi.client.Assets.post_corporations_corporation_id_assets_locations(
+                        corporation_id=self.corporation.corporation_id,
+                        item_ids=item_ids_chunk,
+                        token=token.valid_access_token(),
+                    )
+                ).results()
+            except HTTPNotFound:
+                pass
+            else:
+                locations_data += locations_data_chunk
         positions = {x["item_id"]: x["position"] for x in locations_data}
         return positions
 
@@ -599,61 +603,6 @@ class Owner(models.Model):
         )
         return is_ok
 
-    @staticmethod
-    def _compress_services_localization(
-        structures_w_lang: dict, default_lang: str
-    ) -> list:
-        """compress service names localizations for each structure
-        We are assuming that services are returned from ESI in the same order
-        for each language.
-        """
-        structures_services = Owner._collect_services_with_localizations(
-            structures_w_lang, default_lang
-        )
-        structures = Owner._condense_services_localizations_into_structures(
-            structures_w_lang, default_lang, structures_services
-        )
-        return structures
-
-    @staticmethod
-    def _collect_services_with_localizations(structures_w_lang, default_lang):
-        """collect services with name localizations for all structures"""
-        structures_services = dict()
-        for lang, structures in structures_w_lang.items():
-            if lang != default_lang:
-                for structure in structures:
-                    if "services" in structure and structure["services"]:
-                        structure_id = structure["structure_id"]
-                        if structure_id not in structures_services:
-                            structures_services[structure_id] = dict()
-                        structures_services[structure_id][lang] = list()
-                        for service in structure["services"]:
-                            structures_services[structure_id][lang].append(
-                                service["name"]
-                            )
-        return structures_services
-
-    @staticmethod
-    def _condense_services_localizations_into_structures(
-        structures_w_lang, default_lang, structures_services
-    ):
-        """add corresponding service name localizations to structure's services"""
-        structures = structures_w_lang[default_lang]
-        for structure in structures:
-            if "services" in structure and structure["services"]:
-                structure_id = structure["structure_id"]
-                for lang in structures_w_lang.keys():
-                    if (
-                        lang != default_lang
-                        and lang in structures_services[structure_id]
-                    ):
-                        for service, name_loc in zip(
-                            structure["services"],
-                            structures_services[structure_id][lang],
-                        ):
-                            service["name_" + lang] = name_loc
-        return structures
-
     def _fetch_custom_offices(self, token: Token) -> bool:
         """Fetch custom offices from ESI for this owner.
 
@@ -689,9 +638,7 @@ class Owner(models.Model):
                             planet_id = None
                         else:
                             planet_id = eve_planet.id
-                            name = eve_planet.eve_type.name_localized_for_language(
-                                STRUCTURES_DEFAULT_LANGUAGE
-                            )
+                            name = eve_planet.eve_type.name
                     else:
                         name = None
                         planet_id = None
@@ -791,14 +738,18 @@ class Owner(models.Model):
         )
         names_data = list()
         for item_ids_chunk in chunks(item_ids, 999):
-            names_data_chunk = (
-                esi.client.Assets.post_corporations_corporation_id_assets_names(
-                    corporation_id=self.corporation.corporation_id,
-                    item_ids=item_ids_chunk,
-                    token=token.valid_access_token(),
-                )
-            ).results()
-            names_data += names_data_chunk
+            try:
+                names_data_chunk = (
+                    esi.client.Assets.post_corporations_corporation_id_assets_names(
+                        corporation_id=self.corporation.corporation_id,
+                        item_ids=item_ids_chunk,
+                        token=token.valid_access_token(),
+                    )
+                ).results()
+            except HTTPNotFound:
+                pass
+            else:
+                names_data += names_data_chunk
         names = {x["item_id"]: self._extract_planet_name(x["name"]) for x in names_data}
         return names
 
@@ -915,14 +866,18 @@ class Owner(models.Model):
         logger.info("%s: Fetching names for %d starbases from ESI", self, len(item_ids))
         names_data = list()
         for item_ids_chunk in chunks(list(item_ids), 999):
-            names_data_chunk = (
-                esi.client.Assets.post_corporations_corporation_id_assets_names(
-                    corporation_id=self.corporation.corporation_id,
-                    item_ids=item_ids_chunk,
-                    token=token.valid_access_token(),
-                )
-            ).results()
-            names_data += names_data_chunk
+            try:
+                names_data_chunk = (
+                    esi.client.Assets.post_corporations_corporation_id_assets_names(
+                        corporation_id=self.corporation.corporation_id,
+                        item_ids=item_ids_chunk,
+                        token=token.valid_access_token(),
+                    )
+                ).results()
+            except HTTPNotFound:
+                pass
+            else:
+                names_data += names_data_chunk
         names = {x["item_id"]: x["name"] for x in names_data}
         return names
 
@@ -961,16 +916,18 @@ class Owner(models.Model):
             "unanchor_role": StarbaseDetail.Role.from_esi(data["unanchor"]),
             "use_alliance_standings": data["use_alliance_standings"],
         }
+        for fuel in data["fuels"]:
+            EveType.objects.get_or_create_esi(id=fuel["type_id"])
         with transaction.atomic():
             detail, _ = StarbaseDetail.objects.update_or_create(
                 structure=structure, defaults=defaults
             )
             detail.fuels.all().delete()
             for fuel in data["fuels"]:
-                # TODO: Move outside of transaction
-                eve_type, _ = EveType.objects.get_or_create_esi(id=fuel["type_id"])
                 StarbaseDetailFuel.objects.create(
-                    eve_type=eve_type, detail=detail, quantity=fuel["quantity"]
+                    eve_type_id=fuel["type_id"],
+                    detail=detail,
+                    quantity=fuel["quantity"],
                 )
         return detail
 
@@ -1163,7 +1120,7 @@ class Owner(models.Model):
             "topic": topic,
         }
         message = _(
-            'Syncing of %(topic)s for "%(owner)s" %(result)s.\n' "%(message_details)s"
+            "Syncing of %(topic)s for %(owner)s %(result)s.\n %(message_details)s"
         ) % {
             "topic": topic,
             "owner": self.corporation.corporation_name,
@@ -1172,7 +1129,7 @@ class Owner(models.Model):
         }
         notify(
             user,
-            title=_("%(title)s: %(topic)s updated for " "%(owner)s: %(result)s")
+            title=_("%(title)s: %(topic)s updated for %(owner)s: %(result)s")
             % {
                 "title": _(__title__),
                 "topic": topic,
