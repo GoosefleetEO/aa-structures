@@ -7,13 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [2.0.0] - 2022-09-09
+## [2.0.0] - 2022-09-13
 
 >**Important**:<br>This release includes a major change to Structures's database and therefore requires some additional care when updating. Please follow our special update instructions below.
 
 >**Hint**:<br>Should you run into any issues and need help please give us a shout on the AA Discord (#community-packages).
 
-This major release is technical update. Structures has lately been using both the newer django-eveuniverse and it's own older variant for fetching and storing Eve universe data from ESI (e.g. for solar systems). This has lead to data redundancy and made the app more complicated to maintain. With this release Structures is fully migrated to django-eveuniverse and it's own eveuniverse variant is removed.
+This release is a major technical update. Structures has been using both the newer django-eveuniverse and it's own older variant for fetching and storing Eve universe data from ESI (e.g. for solar systems). This has lead to data redundancy and made the app more complicated to maintain. With this release Structures is fully migrated to django-eveuniverse and it's own eveuniverse variant is removed.
 
 ### Update instructions
 
@@ -35,7 +35,7 @@ Please follow these instructions for updating Structures 1.x. If you are already
 
 ### Changed
 
-- Migrates to eveuniverse
+- Complete migration to django-eveuniverse
 - Consolidates all database migrations
 
 ### Fixed
