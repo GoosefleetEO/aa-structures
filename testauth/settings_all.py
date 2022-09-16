@@ -277,6 +277,7 @@ STATIC_ROOT = "/var/www/testauth/static/"
 # Change this to change the name of the auth site displayed
 # in page titles and the site header.
 SITE_NAME = "testauth"
+SITE_URL = "https://www.example.com"
 
 # Change this to enable/disable debug mode, which displays
 # useful error messages but can leak sensitive data.

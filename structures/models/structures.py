@@ -199,6 +199,7 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
+        related_name="+",
         help_text="Moon next to this structure - if any",
     )
     eve_planet = models.ForeignKey(
@@ -207,11 +208,20 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
+        related_name="+",
         help_text="Planet next to this structure - if any",
     )
-    eve_solar_system = models.ForeignKey(EveSolarSystem, on_delete=models.CASCADE)
+    eve_solar_system = models.ForeignKey(
+        EveSolarSystem,
+        on_delete=models.CASCADE,
+        related_name="+",
+        help_text="Solar System the structure is located",
+    )
     eve_type = models.ForeignKey(
-        EveType, on_delete=models.CASCADE, help_text="type of the structure"
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="+",
+        help_text="Type of the structure",
     )
     fuel_expires_at = models.DateTimeField(
         null=True,
