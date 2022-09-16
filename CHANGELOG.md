@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.0.1] - 2022-09-16
+
+>**Important**:<br>In case you have not updated to Structures 2.x yet, please follow the special update instructions for updating to 2.0.0 first, before installing this update!
+
+### Fix
+
+- Relation of Structures to eveuniverse.EveType is clashing with aa-market-manager app
+
 ## [2.0.0] - 2022-09-13
 
 >**Important**:<br>This release includes a major change to Structures's database and therefore requires some additional care when updating. Please follow our special update instructions below.
