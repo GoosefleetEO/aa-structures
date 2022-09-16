@@ -46,7 +46,7 @@ setup(
         "django-navhelper",
         "django-multiselectfield",
         "redis-simple-mq>=0.4",
-        "django-eveuniverse>=0.14",
+        "django-eveuniverse>=0.17",
         "pytz!=2022.2",  # this version breaks Django, so tests no longer pass
     ],
 )
