@@ -37,7 +37,7 @@ Please follow these instructions for updating Structures 1.x. If you are already
 
 1. Make sure you are on the latest stable version of Structures (1.26.3). If not please fully upgrade first: `pip install aa-structures==1.26.3`
 1. Make sure your current AA installation has no errors: `python manage.py check`
-1. Install the 2.x update: `pip install -U structures`
+1. Install the 2.x update: `pip install -U aa-structures`
 1. Load generic eveuniverse data with this command: `python manage.py structures_load_eve`
 1. Wait for tasks related to the above command to finish before proceeding (e.g. refresh the dashboard occasionally until the task queue is back to zero.)
 1. Shut down your AA instance completely: `sudo supervisorctl stop myauth:`
