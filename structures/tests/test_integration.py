@@ -17,6 +17,7 @@ from .. import tasks
 from ..models import NotificationType, Structure
 from .testdata.factories_2 import (
     EveEntityCorporationFactory,
+    NotificationFactory,
     OwnerFactory,
     StarbaseFactory,
     StructureFactory,
@@ -51,7 +52,7 @@ TASKS_PATH = "structures.tasks"
 @patch(TASKS_PATH + ".fetch_esi_status", lambda: EsiStatus(True, 99, 60))
 @patch(MANAGERS_PATH + ".esi")
 @patch(OWNERS_PATH + ".esi")
-class TestEnd2EndTasks(TestCase):
+class TestTasks(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -493,3 +494,34 @@ class TestEnd2EndTasks(TestCase):
         if AuthTimer:
             obj = AuthTimer.objects.first()
             self.assertEqual(obj.system, structure.eve_solar_system.name)
+
+    @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", False)
+    def test_should_send_selected_notif_types_only(
+        self, mock_esi_2, mock_esi, mock_webhook_execute
+    ):
+        # given
+        webhook = WebhookFactory(
+            notification_types=[
+                NotificationType.SOV_STRUCTURE_REINFORCED,
+                NotificationType.SOV_STRUCTURE_DESTROYED,
+                NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG,
+                NotificationType.SOV_ALL_CLAIM_LOST_MSG,
+            ]
+        )
+        owner = OwnerFactory(webhooks=[webhook])
+        NotificationFactory(
+            owner=owner, notif_type=NotificationType.STRUCTURE_DESTROYED
+        )
+        NotificationFactory(
+            owner=owner,
+            notif_type=NotificationType.SOV_STRUCTURE_DESTROYED,
+            text_from_dict={"solarSystemID": 30000474, "structureTypeID": 32226},
+        )
+        # when
+        tasks.process_notifications_for_owner.delay(owner_pk=owner.pk)
+        # then
+        self.assertTrue(mock_webhook_execute.called)
+        embeds = mock_webhook_execute.call_args[1]["embeds"]
+        self.assertEqual(len(embeds), 1)
+        embed = embeds[0]
+        self.assertIn("Territorial Claim Unit", embed.title)

@@ -123,7 +123,7 @@ class NotificationType(models.TextChoices):
         "Sovereignty command node event started"
     )
     SOV_ALL_CLAIM_ACQUIRED_MSG = "SovAllClaimAquiredMsg", _(
-        "Sovereignty claim acknowledgment"
+        "Sovereignty claim acknowledgment"  # SovAllClaimAquiredMsg [sic!]
     )
     SOV_ALL_CLAIM_LOST_MSG = "SovAllClaimLostMsg", _("Sovereignty lost")
     SOV_ALL_ANCHORING_MSG = "AllAnchoringMsg", _(

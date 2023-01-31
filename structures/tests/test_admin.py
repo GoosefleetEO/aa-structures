@@ -203,7 +203,7 @@ class TestNotificationAdmin(TestCase):
     #         self.modeladmin._webhooks(self.obj), "Test Webhook 1, Test Webhook 2"
     #     )
 
-    @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".NotificationAdmin.message_user", autospec=True)
     def test_action_mark_as_sent(self, mock_message_user):
         for obj in self.obj_qs:
             obj.is_sent = False
@@ -213,7 +213,7 @@ class TestNotificationAdmin(TestCase):
             self.assertTrue(obj.is_sent)
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".NotificationAdmin.message_user", autospec=True)
     def test_action_mark_as_unsent(self, mock_message_user):
         for obj in self.obj_qs:
             obj.is_sent = True
@@ -223,14 +223,14 @@ class TestNotificationAdmin(TestCase):
             self.assertFalse(obj.is_sent)
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".NotificationAdmin.message_user", autospec=True)
     @patch(MODULE_PATH + ".tasks.send_queued_messages_for_webhooks")
     def test_action_send_to_webhook(self, mock_task, mock_message_user):
         self.modeladmin.send_to_configured_webhooks(MockRequest(self.user), self.obj_qs)
         self.assertEqual(mock_task.call_count, 1)
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".NotificationAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".NotificationAdmin.message_user", autospec=True)
     @patch(MODULE_PATH + ".Notification.add_or_remove_timer")
     def test_action_process_for_timerboard(
         self, mock_process_for_timerboard, mock_message_user
@@ -266,7 +266,7 @@ class TestOwnerAdmin(TestCase):
             self.modeladmin._webhooks(self.obj), "Test Webhook 1<br>Test Webhook 2"
         )
 
-    @patch(MODULE_PATH + ".OwnerAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".OwnerAdmin.message_user", autospec=True)
     @patch(MODULE_PATH + ".tasks.update_structures_for_owner")
     def test_action_update_structures(self, mock_task, mock_message_user):
         owner_qs = Owner.objects.filter(corporation__corporation_id__in=[2001, 2002])
@@ -274,7 +274,7 @@ class TestOwnerAdmin(TestCase):
         self.assertEqual(mock_task.delay.call_count, 2)
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".OwnerAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".OwnerAdmin.message_user", autospec=True)
     @patch(MODULE_PATH + ".tasks.process_notifications_for_owner")
     def test_action_fetch_notifications(self, mock_task, mock_message_user):
         owner_qs = Owner.objects.filter(corporation__corporation_id__in=[2001, 2002])
@@ -361,7 +361,7 @@ class TestStructureAdmin(TestCase):
         self.obj.tags.clear()
         self.assertListEqual(self.modeladmin._tags(self.obj), [])
 
-    @patch(MODULE_PATH + ".StructureAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".StructureAdmin.message_user", autospec=True)
     def test_action_add_default_tags(self, mock_message_user):
         for obj in self.obj_qs:
             obj.tags.clear()
@@ -371,7 +371,7 @@ class TestStructureAdmin(TestCase):
             self.assertSetEqual(set(obj.tags.all()), set(default_tags))
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".StructureAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".StructureAdmin.message_user", autospec=True)
     def test_action_remove_user_tags(self, mock_message_user):
         self.modeladmin.remove_user_tags(MockRequest(self.user), self.obj_qs)
         for obj in self.obj_qs:
@@ -449,14 +449,14 @@ class TestWebhookAdmin(TestCase):
         cls.user = create_user(character_id=1001, load_data=True)
         cls.obj_qs = Webhook.objects.all()
 
-    @patch(MODULE_PATH + ".WebhookAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".WebhookAdmin.message_user", autospec=True)
     @patch(MODULE_PATH + ".tasks.send_test_notifications_to_webhook")
     def test_action_test_notification(self, mock_task, mock_message_user):
         self.modeladmin.test_notification(MockRequest(self.user), self.obj_qs)
         self.assertEqual(mock_task.delay.call_count, 2)
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".WebhookAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".WebhookAdmin.message_user", autospec=True)
     def test_action_activate(self, mock_message_user):
         for obj in self.obj_qs:
             obj.is_active = False
@@ -467,7 +467,7 @@ class TestWebhookAdmin(TestCase):
 
         self.assertTrue(mock_message_user.called)
 
-    @patch(MODULE_PATH + ".WebhookAdmin.message_user", auto_spec=True)
+    @patch(MODULE_PATH + ".WebhookAdmin.message_user", autospec=True)
     def test_action_deactivate(self, mock_message_user):
         for obj in self.obj_qs:
             obj.is_active = True
