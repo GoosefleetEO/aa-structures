@@ -142,7 +142,7 @@ def structure_details(request, structure_id):
             try:
                 slot_num = type_attributes[self.value]
                 return staticfiles_storage.url(
-                    f"structures/img/pannel/{slot_num}{id_map[self.value]}.png"
+                    f"structures/img/panel/{slot_num}{id_map[self.value]}.png"
                 )
             except KeyError:
                 return ""
