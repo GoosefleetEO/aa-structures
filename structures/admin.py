@@ -1,17 +1,17 @@
 import statistics
 from typing import Optional
 
+from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
+from allianceauth.services.hooks import get_extension_logger
+from app_utils.django import admin_boolean_icon_html
+from app_utils.logging import LoggerAddTag
 from django.conf import settings
 from django.contrib import admin
 from django.db import models
 from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.utils.html import format_html
-
-from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
-from allianceauth.services.hooks import get_extension_logger
-from app_utils.django import admin_boolean_icon_html
-from app_utils.logging import LoggerAddTag
+from django.utils.translation import gettext as _
 
 from . import __title__, app_settings, tasks
 from .models import (
@@ -107,7 +107,7 @@ class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
             color.label,
         )
 
-    @admin.display(description="Sent fuel notifications for selected configuration")
+    @admin.display(description=_("Sent fuel notifications for selected configuration"))
     def send_fuel_notifications(self, request, queryset):
         item_count = 0
         for obj in queryset:
@@ -236,7 +236,7 @@ class NotificationBaseAdmin(admin.ModelAdmin):
 
     def _webhooks(self, obj):
         if not obj.can_be_rendered:
-            return format_html("<i>N/A</i>")
+            return format_html("<i>{}</i>", _("N/A"))
         webhooks_qs = obj.owner.webhooks.all()
         if obj.structures_with_webhooks:
             webhooks_qs = Webhook.objects.none()
@@ -251,7 +251,7 @@ class NotificationBaseAdmin(admin.ModelAdmin):
         )
         if not names:
             return format_html(
-                '<b><span style="color: orange">⚠ Not configured</span></b>'
+                '<b><span style="color: orange">⚠ {}</span></b>', _("Not configured")
             )
         return lines_sorted_html(names)
 
@@ -269,21 +269,21 @@ class NotificationBaseAdmin(admin.ModelAdmin):
         value = obj.is_timer_added if obj.can_have_timer else None
         return admin_boolean_icon_html(value)
 
-    @admin.display(description="Mark selected notifications as sent")
+    @admin.display(description=_("Mark selected notifications as sent"))
     def mark_as_sent(self, request, queryset):
         queryset.update(is_sent=True)
         self.message_user(
             request, "{} notifications marked as sent".format(queryset.count())
         )
 
-    @admin.display(description="Mark selected notifications as unsent")
+    @admin.display(description=_("Mark selected notifications as unsent"))
     def mark_as_unsent(self, request, queryset):
         queryset.update(is_sent=False)
         self.message_user(
             request, "{} notifications marked as unsent".format(queryset.count())
         )
 
-    @admin.display(description="Send selected notifications to configured webhooks")
+    @admin.display(description=_("Send selected notifications to configured webhooks"))
     def send_to_configured_webhooks(self, request, queryset):
         notifs_queued = 0
         for obj in queryset:
@@ -298,7 +298,7 @@ class NotificationBaseAdmin(admin.ModelAdmin):
             request, f"Sent {notifs_queued}/{queryset.count()} generated messages."
         )
 
-    @admin.display(description="Process selected notifications for timerboard")
+    @admin.display(description=_("Process selected notifications for timerboard"))
     def add_or_remove_timer(self, request, queryset):
         notifications_count = 0
         ignored_count = 0
@@ -437,8 +437,11 @@ class OwnerAdmin(admin.ModelAdmin):
         if names:
             return lines_sorted_html(names)
         return format_html(
-            '<span style="color: red">⚠ Notifications can not be sent, '
-            "because there is no webhook configured for this owner.</span>"
+            '<span style="color: red">⚠ {}</span>',
+            _(
+                "Notifications can not be sent, "
+                "because there is no webhook configured for this owner."
+            ),
         )
 
     @admin.display(description="active", boolean=True)
@@ -456,27 +459,29 @@ class OwnerAdmin(admin.ModelAdmin):
             return None
         return obj.is_up
 
-    @admin.display(description="Activate selected owners")
+    @admin.display(description=_("Activate selected owners"))
     def activate_owners(self, request, queryset):
         queryset.update(is_active=True)
         self.message_user(request, f"Activated {queryset.count()} owners")
 
-    @admin.display(description="Deactivate selected owner")
+    @admin.display(description=_("Deactivate selected owner"))
     def deactivate_owners(self, request, queryset):
         queryset.update(is_active=False)
         self.message_user(request, f"Deactivated {queryset.count()} owners")
 
-    @admin.display(description="Update all from EVE server for selected owners")
+    @admin.display(description=_("Update all from EVE server for selected owners"))
     def update_all(self, request, queryset):
         for obj in queryset:
             tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)
-            text = (
-                f"Started updating structures and notifications for {obj}. "
-                "You will receive a notification once it is completed."
+            text = _(
+                "Started updating structures and notifications for %s. "
+                "You will receive a notification once it is completed." % obj
             )
             self.message_user(request, text)
 
-    @admin.display(description="Update structures from EVE server for selected owners")
+    @admin.display(
+        description=_("Update structures from EVE server for selected owners")
+    )
     def update_structures(self, request, queryset):
         for obj in queryset:
             tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)
@@ -487,7 +492,7 @@ class OwnerAdmin(admin.ModelAdmin):
             self.message_user(request, text)
 
     @admin.display(
-        description="Fetch notifications from EVE server for selected owners"
+        description=_("Fetch notifications from EVE server for selected owners")
     )
     def fetch_notifications(self, request, queryset):
         for obj in queryset:
@@ -904,7 +909,7 @@ class StructureAdmin(admin.ModelAdmin):
             ),
         )
 
-    @admin.display(description="Remove user tags for selected structures")
+    @admin.display(description=_("Remove user tags for selected structures"))
     def remove_user_tags(self, request, queryset):
         structure_count = 0
         for structure in queryset:
@@ -916,7 +921,7 @@ class StructureAdmin(admin.ModelAdmin):
             "Removed all user tags from {:,} structures".format(structure_count),
         )
 
-    @admin.display(description="Update generated tags for selected structures")
+    @admin.display(description=_("Update generated tags for selected structures"))
     def update_generated_tags(self, request, queryset):
         structure_count = 0
         for structure in queryset:
@@ -1025,9 +1030,8 @@ class WebhookAdmin(admin.ModelAdmin):
         ]
         if not configurations:
             return format_html(
-                '<b><span style="color: orange;">'
-                "⚠ Please add this webhook to an owner or structure to enable it."
-                "</span></b>"
+                '<b><span style="color: orange;">⚠ {}</span></b>',
+                _("Please add this webhook to an owner or structure to enable it."),
             )
         return lines_sorted_html(configurations)
 
@@ -1038,7 +1042,7 @@ class WebhookAdmin(admin.ModelAdmin):
     def _messages_in_queue(self, obj):
         return obj.queue_size()
 
-    @admin.display(description="Send test notification to selected webhook")
+    @admin.display(description=_("Send test notification to selected webhook"))
     def test_notification(self, request, queryset):
         for obj in queryset:
             tasks.send_test_notifications_to_webhook.delay(
@@ -1050,21 +1054,21 @@ class WebhookAdmin(admin.ModelAdmin):
                 "You will receive a report on completion.".format(obj),
             )
 
-    @admin.display(description="Activate selected webhook")
+    @admin.display(description=_("Activate selected webhook"))
     def activate(self, request, queryset):
         for obj in queryset:
             obj.is_active = True
             obj.save()
             self.message_user(request, f'You have activated webhook "{obj}"')
 
-    @admin.display(description="Deactivate selected webhook")
+    @admin.display(description=_("Deactivate selected webhook"))
     def deactivate(self, request, queryset):
         for obj in queryset:
             obj.is_active = False
             obj.save()
             self.message_user(request, f'You have de-activated webhook "{obj}"')
 
-    @admin.display(description="Purge queued messages from selected webhooks")
+    @admin.display(description=_("Purge queued messages from selected webhooks"))
     def purge_messages(self, request, queryset):
         actions_count = 0
         killmails_deleted = 0
@@ -1077,7 +1081,7 @@ class WebhookAdmin(admin.ModelAdmin):
             f"deleting a total of {killmails_deleted} messages.",
         )
 
-    @admin.display(description="Send queued messages from selected webhooks")
+    @admin.display(description=_("Send queued messages from selected webhooks"))
     def send_messages(self, request, queryset):
         items_count = 0
         for webhook in queryset:

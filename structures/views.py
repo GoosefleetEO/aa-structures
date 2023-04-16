@@ -3,6 +3,13 @@ import urllib
 from collections import defaultdict
 from enum import IntEnum
 
+from allianceauth.authentication.models import CharacterOwnership
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from allianceauth.services.hooks import get_extension_logger
+from app_utils.allianceauth import notify_admins
+from app_utils.logging import LoggerAddTag
+from app_utils.messages import messages_plus
+from app_utils.views import image_html
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.db.models import Count, Q
@@ -15,14 +22,6 @@ from django.utils.translation import gettext as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
 from eveuniverse.models import EveType, EveTypeDogmaAttribute
-
-from allianceauth.authentication.models import CharacterOwnership
-from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
-from allianceauth.services.hooks import get_extension_logger
-from app_utils.allianceauth import notify_admins
-from app_utils.logging import LoggerAddTag
-from app_utils.messages import messages_plus
-from app_utils.views import image_html
 
 from . import __title__, tasks
 from .app_settings import (
@@ -95,7 +94,7 @@ def main(request):
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
-        "page_title": _(__title__),
+        "page_title": __title__,
         "active_tags": active_tags,
         "tags_filter_form": form,
         "tags_exist": StructureTag.objects.exists(),
@@ -252,7 +251,7 @@ def structure_details(request, structure_id):
     if structure.is_upwell_structure:
         assets_grouped["fuel_usage"] = [
             FakeAsset(
-                name="Fuel blocks per day (est.)",
+                name=_("Fuel blocks per day (est.)"),
                 quantity=structure.structure_fuel_usage(),
                 eve_type_id=24756,
             )
