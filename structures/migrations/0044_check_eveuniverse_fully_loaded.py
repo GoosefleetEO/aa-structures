@@ -40,7 +40,6 @@ def ensure_eveuniverse_objects_exist(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("structures", "0043_remove_services_localization"),
     ]

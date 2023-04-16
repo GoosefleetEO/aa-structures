@@ -1,7 +1,6 @@
 from app_utils.django import app_labels
 
 if "timerboard" in app_labels():
-
     from unittest.mock import Mock, patch
 
     from allianceauth.timerboard.models import Timer as AuthTimer

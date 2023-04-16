@@ -22,7 +22,6 @@ def backwards(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("structures", "0041_notification_sender_can_be_null"),
     ]

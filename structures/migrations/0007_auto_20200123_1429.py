@@ -10,7 +10,6 @@ import structures.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("structures", "0006_auto_20200120_0147"),
     ]

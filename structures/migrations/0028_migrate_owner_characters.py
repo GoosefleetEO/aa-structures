@@ -27,7 +27,6 @@ def migrate_backwards(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("structures", "0027_create_owner_characters"),
     ]

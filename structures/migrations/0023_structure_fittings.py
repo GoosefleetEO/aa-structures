@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("authentication", "0017_remove_fleetup_permission"),
         ("eveonline", "0014_auto_20210105_1413"),

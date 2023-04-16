@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("authentication", "0017_remove_fleetup_permission"),
         ("structures", "0026_rework_update_status"),

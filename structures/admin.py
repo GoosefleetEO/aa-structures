@@ -1,10 +1,6 @@
 import statistics
 from typing import Optional
 
-from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
-from allianceauth.services.hooks import get_extension_logger
-from app_utils.django import admin_boolean_icon_html
-from app_utils.logging import LoggerAddTag
 from django.conf import settings
 from django.contrib import admin
 from django.db import models
@@ -12,6 +8,11 @@ from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
+
+from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
+from allianceauth.services.hooks import get_extension_logger
+from app_utils.django import admin_boolean_icon_html
+from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
 from .models import (

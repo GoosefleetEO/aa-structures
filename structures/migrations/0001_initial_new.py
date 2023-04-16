@@ -11,7 +11,6 @@ import structures.webhooks.core
 
 
 class Migration(migrations.Migration):
-
     replaces = [
         ("structures", "0001_initial"),
         ("structures", "0002_auto_20191121_2335"),
