@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Additional localizations in templates, views and admin site
 
+### Changed
+
+- Dropped support for AA 2 / Django 3
+
 ## [2.1.0] - 2023-01-30
 
 >**Important**:<br>In case you have not updated to Structures 2.x yet, please follow the special update instructions for updating to 2.0.0 first, before installing this update!

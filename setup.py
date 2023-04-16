@@ -27,7 +27,7 @@ setup(
     classifiers=[
         "Environment :: Web Environment",
         "Framework :: Django",
-        "Framework :: Django :: 3.2",
+        "Framework :: Django :: 4.0",
         "Intended Audience :: End Users/Desktop",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -38,9 +38,9 @@ setup(
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     ],
-    python_requires="~=3.8",
+    python_requires=">=3.8",
     install_requires=[
-        "allianceauth>=2.15.1",
+        "allianceauth>=3.0.0",
         "dhooks-lite>=0.6.1",
         "allianceauth-app-utils>=1.14.2",
         "django-navhelper",
