@@ -1,4 +1,4 @@
-"""Structure related models"""
+"""Structure related models."""
 
 import datetime as dt
 import math
@@ -42,12 +42,12 @@ class StructureTag(models.Model):
     NAME_W_SPACE_TAG = gettext_noop("w_space")
 
     class Style(models.TextChoices):
-        GREY = "default", "grey"
-        DARK_BLUE = "primary", "dark blue"
-        GREEN = "success", "green"
-        LIGHT_BLUE = "info", "light blue"
-        ORANGE = "warning", "orange"
-        RED = "danger", "red"
+        GREY = "default", _("grey")
+        DARK_BLUE = "primary", _("dark blue")
+        GREEN = "success", _("green")
+        LIGHT_BLUE = "info", _("light blue")
+        ORANGE = "warning", _("orange")
+        RED = "danger", _("red")
 
     SPACE_TYPE_MAP = {
         EveSpaceType.HIGHSEC: {"name": NAME_HIGHSEC_TAG, "style": Style.GREEN},
@@ -57,36 +57,47 @@ class StructureTag(models.Model):
     }
 
     name = models.CharField(
-        max_length=255, unique=True, help_text="name of the tag - must be unique"
+        max_length=255,
+        unique=True,
+        verbose_name=_("name"),
+        help_text=_("name of the tag - must be unique"),
     )
     description = models.TextField(
-        null=True, default=None, blank=True, help_text="description for this tag"
+        null=True,
+        default=None,
+        blank=True,
+        verbose_name=_("description"),
+        help_text=_("description for this tag"),
     )
     style = models.CharField(
         max_length=16,
         choices=Style.choices,
         default="default",
         blank=True,
-        help_text="color style of tag",
+        verbose_name=_("style"),
+        help_text=_("color style of tag"),
     )
     order = models.PositiveIntegerField(
         default=100,
         blank=True,
         validators=[MinValueValidator(100)],
-        help_text=(
+        verbose_name=_("order"),
+        help_text=_(
             "number defining the order tags are shown. "
             "custom tags can not have an order below 100"
         ),
     )
     is_default = models.BooleanField(
         default=False,
-        help_text=(
+        verbose_name=_("is default"),
+        help_text=_(
             "if true this custom tag will automatically be added " "to new structures"
         ),
     )
     is_user_managed = models.BooleanField(
         default=True,
-        help_text=(
+        verbose_name=_("is user managed"),
+        help_text=_(
             "if False this tag is created and managed by the system "
             "and can not be modified by users"
         ),
@@ -186,12 +197,15 @@ class Structure(models.Model):
         UNKNOWN = "UN", _("Unknown")
 
     id = models.BigIntegerField(
-        primary_key=True, help_text="The Item ID of the structure"
+        primary_key=True,
+        verbose_name=_("id"),
+        help_text=_("The Item ID of the structure"),
     )
 
     created_at = models.DateTimeField(
         default=now,
-        help_text="date this structure was received from ESI for the first time",
+        verbose_name=_("created at"),
+        help_text=_("date this structure was received from ESI for the first time"),
     )
     eve_moon = models.ForeignKey(
         EveMoon,
@@ -200,7 +214,8 @@ class Structure(models.Model):
         default=None,
         blank=True,
         related_name="+",
-        help_text="Moon next to this structure - if any",
+        verbose_name=_("moon"),
+        help_text=_("Moon next to this structure - if any"),
     )
     eve_planet = models.ForeignKey(
         EvePlanet,
@@ -209,59 +224,72 @@ class Structure(models.Model):
         default=None,
         blank=True,
         related_name="+",
-        help_text="Planet next to this structure - if any",
+        verbose_name=_("planet"),
+        help_text=_("Planet next to this structure - if any"),
     )
     eve_solar_system = models.ForeignKey(
         EveSolarSystem,
         on_delete=models.CASCADE,
         related_name="+",
-        help_text="Solar System the structure is located",
+        verbose_name=_("solar system"),
+        help_text=_("Solar System the structure is located"),
     )
     eve_type = models.ForeignKey(
         EveType,
         on_delete=models.CASCADE,
         related_name="+",
-        help_text="Type of the structure",
+        verbose_name=_("type"),
+        help_text=_("Type of the structure"),
     )
     fuel_expires_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="Date on which the structure will run out of fuel",
+        verbose_name=_("fuel expires at"),
+        help_text=_("Date on which the structure will run out of fuel"),
     )
     has_fitting = models.BooleanField(
         null=True,
         default=None,
         blank=True,
         db_index=True,
-        help_text="bool indicating if the structure has a fitting",
+        verbose_name=_("has fitting"),
+        help_text=_("bool indicating if the structure has a fitting"),
     )
     has_core = models.BooleanField(
         null=True,
         default=None,
         blank=True,
         db_index=True,
-        help_text="bool indicating if the structure has a quantum core",
+        verbose_name=_("has core"),
+        help_text=_("bool indicating if the structure has a quantum core"),
     )
     last_online_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="date this structure had any of it's services online",
+        verbose_name=_("last online at"),
+        help_text=_("date this structure had any of it's services online"),
     )
     last_updated_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="date this structure was last updated from the EVE server",
+        verbose_name=_("last updated at"),
+        help_text=_("date this structure was last updated from the EVE server"),
     )
-    name = models.CharField(max_length=255, help_text="The full name of the structure")
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_("name"),
+        help_text=_("The full name of the structure"),
+    )
     next_reinforce_hour = models.PositiveIntegerField(
         null=True,
         default=None,
         blank=True,
         validators=[MaxValueValidator(23)],
-        help_text=(
+        verbose_name=_("next reinforce hour"),
+        help_text=_(
             "The requested change to reinforce_hour that will take "
             "effect at the time shown by next_reinforce_apply"
         ),
@@ -270,7 +298,8 @@ class Structure(models.Model):
         null=True,
         default=None,
         blank=True,
-        help_text=(
+        verbose_name=_("next reinforce apply"),
+        help_text=_(
             "The requested change to reinforce_hour that will take "
             "effect at the time shown by next_reinforce_apply"
         ),
@@ -279,67 +308,85 @@ class Structure(models.Model):
         "Owner",
         on_delete=models.CASCADE,
         related_name="structures",
-        help_text="Corporation that owns the structure",
+        verbose_name=_("owner"),
+        help_text=_("Corporation that owns the structure"),
     )
     reinforce_hour = models.PositiveIntegerField(
         validators=[MaxValueValidator(23)],
         null=True,
         default=None,
         blank=True,
-        help_text=(
-            "The hour of day that determines the four hour window "
+        verbose_name=_("reinforce hour"),
+        help_text=_(
+            "The average hour of day that determines the time +/- some hours "
             "when the structure will randomly exit its reinforcement periods "
             "and become vulnerable to attack against its armor and/or hull. "
-            "The structure will become vulnerable at a random time that "
-            "is +/- 2 hours centered on the value of this property"
         ),
     )
     position_x = models.FloatField(
-        null=True, default=None, blank=True, help_text="x position in the solar system"
+        null=True,
+        default=None,
+        blank=True,
+        verbose_name=_("position x"),
+        help_text=_("x position in the solar system"),
     )
     position_y = models.FloatField(
-        null=True, default=None, blank=True, help_text="y position in the solar system"
+        null=True,
+        default=None,
+        blank=True,
+        verbose_name=_("position y"),
+        help_text=_("y position in the solar system"),
     )
     position_z = models.FloatField(
-        null=True, default=None, blank=True, help_text="z position in the solar system"
+        null=True,
+        default=None,
+        blank=True,
+        verbose_name=_("position z"),
+        help_text=_("z position in the solar system"),
     )
     state = models.IntegerField(
         choices=State.choices,
         default=State.UNKNOWN,
         blank=True,
-        help_text="Current state of the structure",
+        verbose_name=_("state"),
+        help_text=_("Current state of the structure"),
     )
     state_timer_end = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="Date at which the structure entered it’s current state",
+        verbose_name=_("state timer end"),
+        help_text=_("Date at which the structure entered it's current state"),
     )
     state_timer_start = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="Date at which the structure will move to it’s next state",
+        verbose_name=_("state timer start"),
+        help_text=_("Date at which the structure will move to it's next state"),
     )
     tags = models.ManyToManyField(
         StructureTag,
         default=None,
         blank=True,
         related_name="structures",
-        help_text="List of tags for this structure. ",
+        verbose_name=_("tags"),
+        help_text=_("List of tags for this structure. "),
     )
     unanchors_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="Date at which the structure will unanchor",
+        verbose_name=_("unanchors at"),
+        help_text=_("Date at which the structure will unanchor"),
     )
     webhooks = models.ManyToManyField(
         "Webhook",
         default=None,
         blank=True,
         related_name="structures",
-        help_text=(
+        verbose_name=_("webhooks"),
+        help_text=_(
             "Webhooks for sending notifications to. "
             "If any webhook is enabled, these will be used instead of the webhooks "
             "defined for the respective owner. "
@@ -703,24 +750,30 @@ class StructureItem(models.Model):
         SECONDARY_STORAGE = "SecondaryStorage"
         STRUCTURE_FUEL = "StructureFuel"
 
-    id = models.BigIntegerField(primary_key=True, help_text="The Eve item ID")
+    id = models.BigIntegerField(
+        primary_key=True, verbose_name=_("id"), help_text=_("The Eve item ID")
+    )
     structure = models.ForeignKey(
         Structure,
         on_delete=models.CASCADE,
         related_name="items",
-        help_text="Structure this item is located in",
+        verbose_name=_("structure"),
+        help_text=_("Structure this item is located in"),
     )
 
     eve_type = models.ForeignKey(
         EveType,
         on_delete=models.CASCADE,
-        help_text="eve type of the item",
         related_name="+",
+        verbose_name=_("type"),
+        help_text=_("type of the item"),
     )
-    is_singleton = models.BooleanField(null=False)
-    last_updated_at = models.DateTimeField(auto_now=True)
-    location_flag = models.CharField(max_length=255)
-    quantity = models.IntegerField(null=False)
+    is_singleton = models.BooleanField(verbose_name=_("is singleton"))
+    last_updated_at = models.DateTimeField(
+        auto_now=True, verbose_name=_("last updated at")
+    )
+    location_flag = models.CharField(max_length=255, verbose_name=_("location flag"))
+    quantity = models.IntegerField(verbose_name=_("quantity"))
 
     def __str__(self) -> str:
         return str(self.eve_type.name)
@@ -765,12 +818,17 @@ class StructureService(models.Model):
         Structure,
         on_delete=models.CASCADE,
         related_name="services",
-        help_text="Structure this service is installed to",
+        verbose_name=_("structure"),
+        help_text=_("Structure this service is installed to"),
     )
-    name = models.CharField(max_length=100, help_text="Name of the service")
+    name = models.CharField(
+        max_length=100, verbose_name=_("name"), help_text=_("Name of the service")
+    )
 
     state = models.IntegerField(
-        choices=State.choices, help_text="Current state of this service"
+        choices=State.choices,
+        verbose_name=_("state"),
+        help_text=_("Current state of this service"),
     )
 
     class Meta:

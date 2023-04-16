@@ -1,4 +1,5 @@
-"""Owner related models"""
+"""Owner related models."""
+
 import datetime as dt
 import json
 import os
@@ -115,18 +116,21 @@ class Owner(models.Model):
         primary_key=True,
         on_delete=models.CASCADE,
         related_name="structure_owner",
-        help_text="Corporation owning structures",
+        verbose_name=_("corporation"),
+        help_text=_("Corporation owning structures"),
     )
     # regular
     are_pocos_public = models.BooleanField(
         default=False,
-        help_text=("whether pocos of this owner are shown on public POCO page"),
+        verbose_name=_("are pocos public"),
+        help_text=_("whether pocos of this owner are shown on public POCO page"),
     )
     assets_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("assets last update at"),
+        help_text=_("when the last successful update happened"),
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,
@@ -135,35 +139,40 @@ class Owner(models.Model):
         null=True,
         blank=True,
         related_name="+",
-        help_text="OUTDATED. Has been replaced by OwnerCharacter",
+        help_text="OUTDATED. Has been replaced by OwnerCharacter",  # TODO: Remove
     )
     forwarding_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("forwarding last update at"),
+        help_text=_("when the last successful update happened"),
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
-        help_text=(
+        verbose_name=_("has default pings enabled"),
+        help_text=_(
             "to enable or disable pinging of notifications for this owner "
             "e.g. with @everyone and @here"
         ),
     )
     is_active = models.BooleanField(
         default=True,
-        help_text=("whether this owner is currently included in the sync process"),
+        verbose_name=_("is active"),
+        help_text=_("whether this owner is currently included in the sync process"),
     )
     is_alliance_main = models.BooleanField(
         default=False,
-        help_text=(
+        verbose_name=_("is alliance main"),
+        help_text=_(
             "whether alliance wide notifications "
             "are forwarded for this owner (e.g. sov notifications)"
         ),
     )
     is_included_in_service_status = models.BooleanField(
         default=True,
-        help_text=(
+        verbose_name=_("is included in service status"),
+        help_text=_(
             "whether the sync status of this owner is included in "
             "the overall status of this services"
         ),
@@ -172,33 +181,38 @@ class Owner(models.Model):
         null=True,
         default=None,
         editable=False,
-        help_text="whether all services for this owner are currently up",
+        verbose_name=_("is up"),
+        help_text=_("whether all services for this owner are currently up"),
     )
     notifications_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("notifications last update at"),
+        help_text=_("when the last successful update happened"),
     )
     ping_groups = models.ManyToManyField(
         Group,
         default=None,
         blank=True,
         related_name="+",
-        help_text="Groups to be pinged for each notification. ",
+        verbose_name=_("ping groups"),
+        help_text=_("Groups to be pinged for each notification. "),
     )
     structures_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("structures last update at"),
+        help_text=_("when the last successful update happened"),
     )
     webhooks = models.ManyToManyField(
         "Webhook",
         default=None,
         blank=True,
         related_name="owners",
-        help_text="Notifications are sent to these webhooks. ",
+        verbose_name=_("webhooks"),
+        help_text=_("Notifications are sent to these webhooks."),
     )
 
     objects = OwnerManager()
@@ -1256,12 +1270,16 @@ class OwnerCharacter(models.Model):
     """Character for syncing owner data with ESI."""
 
     owner = models.ForeignKey(
-        Owner, on_delete=models.CASCADE, related_name="characters"
+        Owner,
+        on_delete=models.CASCADE,
+        related_name="characters",
+        verbose_name=_("owner"),
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,
         on_delete=models.CASCADE,
         related_name="+",
+        verbose_name=_("character_ownership"),
         help_text="character used for syncing",
     )
     structures_last_used_at = models.DateTimeField(
@@ -1269,6 +1287,7 @@ class OwnerCharacter(models.Model):
         default=None,
         editable=False,
         db_index=True,
+        verbose_name=_("structures last used at"),
         help_text="when this character was last used for syncing structures",
     )
     notifications_last_used_at = models.DateTimeField(
@@ -1276,11 +1295,13 @@ class OwnerCharacter(models.Model):
         default=None,
         editable=False,
         db_index=True,
+        verbose_name=_("notifications last used at"),
         help_text="when this character was last used for syncing notifications",
     )
     error_count = models.PositiveIntegerField(
         default=0,
         editable=False,
+        verbose_name=_("error count"),
         help_text="Count of ESI errors which happened with this character.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
