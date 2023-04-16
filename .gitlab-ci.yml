@@ -12,7 +12,7 @@ before_script:
 
 pre-commit-check:
   stage: checks
-  image: python:3.8-bullseye
+  image: python:3.10-bullseye
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
@@ -41,13 +41,11 @@ test-38-django32:
   extends: .test-py38
   script:
   - tox -e py38-django32
-  - bash <(curl -s https://codecov.io/bash)
 
 test-39-django32:
   extends: .test-py39
   script:
   - tox -e py39-django32
-  - bash <(curl -s https://codecov.io/bash)
 
 test-310-django32:
   extends: .test-py310
@@ -59,7 +57,6 @@ test-core:
   extends: .test-py38
   script:
   - tox -e core
-  - bash <(curl -s https://codecov.io/bash)
 
 test-docs:
   extends: .test-py38
@@ -68,7 +65,7 @@ test-docs:
 
 deploy-pypi:
   stage: deploy
-  image: python:3.8-bullseye
+  image: python:3.10-bullseye
 
   before_script:
     - pip install twine
