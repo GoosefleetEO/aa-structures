@@ -1,6 +1,6 @@
 import datetime as dt
 import itertools
-from typing import Tuple
+from typing import Set, Tuple
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
@@ -509,7 +509,7 @@ class StructureTagManager(models.Manager):
 
 
 class WebhookManager(WebhookBaseManager):
-    def enabled_notification_types(self) -> set:
+    def enabled_notification_types(self) -> Set[str]:
         """Set of all currently enabled notification types."""
         notif_types_list = list(
             self.filter(is_active=True).values_list("notification_types", flat=True)

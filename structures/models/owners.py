@@ -5,7 +5,7 @@ import json
 import os
 import re
 from email.utils import format_datetime, parsedate_to_datetime
-from typing import Optional
+from typing import Any, Iterable, List, Optional
 
 from bravado.exception import HTTPForbidden, HTTPNotFound
 
@@ -243,30 +243,34 @@ class Owner(models.Model):
     @property
     def is_structure_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return self.structures_last_update_at and self.structures_last_update_at > (
+        return bool(
+            self.structures_last_update_at
+        ) and self.structures_last_update_at > (
             now() - dt.timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_notification_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return (
+        return bool(
             self.notifications_last_update_at
-            and self.notifications_last_update_at
-            > (now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
+        ) and self.notifications_last_update_at > (
+            now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_forwarding_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return self.forwarding_last_update_at and self.forwarding_last_update_at > (
+        return bool(
+            self.forwarding_last_update_at
+        ) and self.forwarding_last_update_at > (
             now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_assets_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return self.assets_last_update_at and self.assets_last_update_at > (
+        return bool(self.assets_last_update_at) and self.assets_last_update_at > (
             now() - dt.timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
@@ -432,7 +436,7 @@ class Owner(models.Model):
 
     def fetch_token(
         self,
-        rotate_characters: RotateCharactersType = None,
+        rotate_characters: Optional[RotateCharactersType] = None,
         ignore_schedule: bool = False,
     ) -> Token:
         """Fetch a valid token for the owner and return it.
@@ -494,7 +498,7 @@ class Owner(models.Model):
         message = f"{self}: Failed to {action} from ESI with token {token} due to {ex}"
         logger.warning(message, exc_info=True)
 
-    def update_structures_esi(self, user: User = None):
+    def update_structures_esi(self, user: Optional[User] = None):
         """Updates all structures from ESI."""
         token = self.fetch_token(rotate_characters=self.RotateCharactersType.STRUCTURES)
         is_ok = self._fetch_upwell_structures(token)
@@ -512,7 +516,7 @@ class Owner(models.Model):
                 )
 
     def _remove_structures_not_returned_from_esi(
-        self, structures_qs: models.QuerySet, new_structures: list
+        self, structures_qs: models.QuerySet, new_structures: Iterable
     ):
         """Remove structures no longer returned from ESI."""
         ids_local = {x.id for x in structures_qs}
@@ -525,13 +529,16 @@ class Owner(models.Model):
                 len(ids_to_remove),
             )
 
-    def _fetch_locations_for_assets(self, item_ids: list, token: Token) -> dict:
+    def _fetch_locations_for_assets(
+        self, item_ids: Iterable[int], token: Token
+    ) -> dict:
         """Fetch locations for given asset items from ESI."""
+        item_ids = list(item_ids)
         logger.info(
             "%s: Fetching locations for %d assets from ESI", self, len(item_ids)
         )
         locations_data = list()
-        for item_ids_chunk in chunks(list(item_ids), 999):
+        for item_ids_chunk in chunks(item_ids, 999):
             try:
                 locations_data_chunk = (
                     esi.client.Assets.post_corporations_corporation_id_assets_locations(
@@ -878,10 +885,11 @@ class Owner(models.Model):
         )
         return True
 
-    def _fetch_starbases_names(self, item_ids: list, token: Token) -> dict:
+    def _fetch_starbases_names(self, item_ids: Iterable, token: Token) -> dict:
+        item_ids = list(item_ids)
         logger.info("%s: Fetching names for %d starbases from ESI", self, len(item_ids))
         names_data = list()
-        for item_ids_chunk in chunks(list(item_ids), 999):
+        for item_ids_chunk in chunks(item_ids, 999):
             try:
                 names_data_chunk = (
                     esi.client.Assets.post_corporations_corporation_id_assets_names(
@@ -1156,14 +1164,14 @@ class Owner(models.Model):
             level="success",
         )
 
-    def _store_raw_data(self, name: str, data: list):
+    def _store_raw_data(self, name: str, data: Any):
         """store raw data for debug purposes"""
         with open(
             f"{name}_raw_{self.corporation.corporation_id}.json", "w", encoding="utf-8"
         ) as f:
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
-    def update_asset_esi(self, user: User = None):
+    def update_asset_esi(self, user: Optional[User] = None):
         token = self.fetch_token()
         assets_data = self._fetch_structure_assets_from_esi(token)
         self._store_items_for_upwell_structures(assets_data)
@@ -1254,8 +1262,8 @@ class Owner(models.Model):
                     )
             structure.update_items(structure_items)
 
-    @classmethod
-    def get_esi_scopes(cls) -> list:
+    @staticmethod
+    def get_esi_scopes() -> List[str]:
         scopes = [
             "esi-corporations.read_structures.v1",
             "esi-universe.read_structures.v1",

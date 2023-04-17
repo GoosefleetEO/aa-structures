@@ -666,7 +666,7 @@ class TestOwnerUpdateAssetEsi(NoSocketsTestCase):
             owner.update_asset_esi()
         # then
         owner.refresh_from_db()
-        self.assertIsNone(owner.is_assets_sync_fresh)
+        self.assertFalse(owner.is_assets_sync_fresh)
 
     def test_should_remove_assets_that_no_longer_exist_for_existing_structure(
         self, mock_esi
