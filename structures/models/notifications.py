@@ -454,6 +454,16 @@ class NotificationBase(models.Model):
         """Weather this notification related to a structure."""
         return self.notif_type in NotificationType.structure_related
 
+    @property
+    def is_temporary(self) -> bool:
+        raise NotImplementedError()
+
+    def is_npc_attacking(self) -> bool:
+        raise NotImplementedError()
+
+    def parsed_text(self) -> dict:
+        raise NotImplementedError()
+
     def send_to_configured_webhooks(
         self,
         ping_type_override: Webhook.PingType = None,

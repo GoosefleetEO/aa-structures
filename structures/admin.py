@@ -990,8 +990,8 @@ class WebhookAdmin(admin.ModelAdmin):
         ),
     )
 
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
         form.base_fields[
             "notification_types"
         ].choices = NotificationType.choices_enabled
