@@ -444,7 +444,6 @@ class Owner(models.Model):
 
         Raises TokenError when no valid token can be provided.
         """
-        token = None
         order_by_last_used = (
             rotate_characters.last_used_at_name
             if rotate_characters
@@ -475,17 +474,16 @@ class Owner(models.Model):
                     error="Character has no valid token for sync.",
                 )
                 continue
+            found_character = character
             break  # leave the for loop if we have found a valid token
-
-        if not token:
-            error = (
+        else:
+            raise TokenError(
                 f"{self}: No valid character found for sync. "
                 "Service down for this owner."
             )
-            raise TokenError(error)
         if rotate_characters:
             self._rotate_character(
-                character=character,
+                character=found_character,
                 ignore_schedule=ignore_schedule,
                 rotate_characters=rotate_characters,
             )

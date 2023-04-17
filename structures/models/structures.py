@@ -91,7 +91,7 @@ class StructureTag(models.Model):
         default=False,
         verbose_name=_("is default"),
         help_text=_(
-            "if true this custom tag will automatically be added " "to new structures"
+            "if true this custom tag will automatically be added to new structures"
         ),
     )
     is_user_managed = models.BooleanField(
