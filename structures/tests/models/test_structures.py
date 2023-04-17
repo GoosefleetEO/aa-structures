@@ -10,8 +10,8 @@ from eveuniverse.models import EveSolarSystem
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...constants import EveTypeId
-from ...models import (
+from structures.constants import EveTypeId
+from structures.models import (
     EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
@@ -22,12 +22,20 @@ from ...models import (
     StructureService,
     StructureTag,
 )
+
 from ..testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_upwell_structure,
 )
-from ..testdata.factories_2 import OwnerFactory, StructureFactory, StructureTagFactory
+from ..testdata.factories_2 import (
+    JumpGateFactory,
+    OwnerFactory,
+    PocoFactory,
+    StarbaseFactory,
+    StructureFactory,
+    StructureTagFactory,
+)
 from ..testdata.helpers import create_structures, load_entities, set_owner_character
 from ..testdata.load_eveuniverse import load_eveuniverse
 
@@ -265,9 +273,9 @@ class TestStructure(NoSocketsTestCase):
 
     def test_is_poco(self):
         # given
-        structure = Structure.objects.get(id=1000000000001)
-        poco = Structure.objects.get(id=1200000000003)
-        starbase = Structure.objects.get(id=1300000000001)
+        structure = StructureFactory.build()
+        poco = PocoFactory.build()
+        starbase = StarbaseFactory.build()
         # then
         self.assertFalse(structure.is_poco)
         self.assertTrue(poco.is_poco)
@@ -275,9 +283,9 @@ class TestStructure(NoSocketsTestCase):
 
     def test_is_starbase(self):
         # given
-        structure = Structure.objects.get(id=1000000000001)
-        poco = Structure.objects.get(id=1200000000003)
-        starbase = Structure.objects.get(id=1300000000001)
+        structure = StructureFactory.build()
+        poco = PocoFactory.build()
+        starbase = StarbaseFactory.build()
         # then
         self.assertFalse(structure.is_starbase)
         self.assertFalse(poco.is_starbase)
@@ -285,13 +293,25 @@ class TestStructure(NoSocketsTestCase):
 
     def test_is_upwell_structure(self):
         # given
-        structure = Structure.objects.get(id=1000000000001)
-        poco = Structure.objects.get(id=1200000000003)
-        starbase = Structure.objects.get(id=1300000000001)
+        structure = StructureFactory.build()
+        poco = PocoFactory.build()
+        starbase = StarbaseFactory.build()
         # then
         self.assertTrue(structure.is_upwell_structure)
         self.assertFalse(poco.is_upwell_structure)
         self.assertFalse(starbase.is_upwell_structure)
+
+    def test_is_jump_gate(self):
+        # given
+        normal_structure = Structure.objects.get(id=1000000000001)
+        poco = PocoFactory.build()
+        starbase = StarbaseFactory.build()
+        jump_gate = JumpGateFactory.build()
+        # then
+        self.assertFalse(normal_structure.is_jump_gate)
+        self.assertFalse(poco.is_jump_gate)
+        self.assertFalse(starbase.is_jump_gate)
+        self.assertTrue(jump_gate.is_jump_gate)
 
     # TODO: activate
     # def test_is_upwell_structure_data_error(self):
@@ -301,6 +321,20 @@ class TestStructure(NoSocketsTestCase):
     #         id=199999, name="invalid type", eve_group=my_group
     #     )
     #     self.assertFalse(my_type.is_upwell_structure)
+
+    def test_should_detect_structure_has_position(self):
+        # given
+        structure = StructureFactory.build()
+        # then
+        self.assertTrue(structure.has_position)
+
+    def test_should_detect_structure_has_no_position(self):
+        # given
+        structure = StructureFactory.build(
+            position_x=None, position_y=None, position_z=None
+        )
+        # then
+        self.assertFalse(structure.has_position)
 
     def test_should_return_jump_fuel_quantity(self):
         # given

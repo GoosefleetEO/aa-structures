@@ -12,7 +12,7 @@ before_script:
 
 pre-commit-check:
   stage: checks
-  image: python:3.8-bullseye
+  image: python:3.10-bullseye
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
@@ -23,43 +23,37 @@ pre-commit-check:
     - pre-commit run --all-files
 
 .test-py38:
-  needs: []
   stage: test
   image: python:3.8-bullseye
 
 .test-py39:
-  needs: []
   stage: test
   image: python:3.9-bullseye
 
 .test-py310:
-  needs: []
   stage: test
   image: python:3.10-bullseye
 
-test-38-django32:
+test-38-django40:
   extends: .test-py38
   script:
-  - tox -e py38-django32
-  - bash <(curl -s https://codecov.io/bash)
+  - tox -e py38-django40
 
-test-39-django32:
+test-39-django40:
   extends: .test-py39
   script:
-  - tox -e py39-django32
-  - bash <(curl -s https://codecov.io/bash)
+  - tox -e py39-django40
 
-test-310-django32:
+test-310-django40:
   extends: .test-py310
   script:
-  - tox -e py310-django32
+  - tox -e py310-django40
   - bash <(curl -s https://codecov.io/bash)
 
 test-core:
   extends: .test-py38
   script:
   - tox -e core
-  - bash <(curl -s https://codecov.io/bash)
 
 test-docs:
   extends: .test-py38
@@ -68,13 +62,13 @@ test-docs:
 
 deploy-pypi:
   stage: deploy
-  image: python:3.8-bullseye
+  image: python:3.10-bullseye
 
   before_script:
-    - pip install twine
+    - pip install build twine
 
   script:
-    - python setup.py sdist bdist_wheel
+    - python -m build
     - twine upload dist/*
 
   only:

@@ -8,7 +8,7 @@ import yaml
 
 from django.db.models import Max
 from django.utils.timezone import now
-from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from app_utils.testdata_factories import (
@@ -62,17 +62,17 @@ class EveEntityFactory(factory.django.DjangoModelFactory):
 
 
 class EveEntityCharacterFactory(EveEntityFactory):
-    name = factory.Faker("name")
+    name = factory.Sequence(lambda n: f"character_name_{n}")
     category = EveEntity.CATEGORY_CHARACTER
 
 
 class EveEntityCorporationFactory(EveEntityFactory):
-    name = factory.Faker("company")
+    name = factory.Sequence(lambda n: f"corporation_name_{n}")
     category = EveEntity.CATEGORY_CORPORATION
 
 
 class EveEntityAllianceFactory(EveEntityFactory):
-    name = factory.Faker("company")
+    name = factory.Sequence(lambda n: f"alliance_name_{n}")
     category = EveEntity.CATEGORY_ALLIANCE
 
 
@@ -121,8 +121,8 @@ class WebhookFactory(factory.django.DjangoModelFactory):
         model = Webhook
         django_get_or_create = ("name",)
 
-    name = factory.Faker("city")
-    url = factory.Faker("url")
+    name = factory.Sequence(lambda n: f"name_{n}")
+    url = factory.Sequence(lambda n: f"url_{n}")
     notes = factory.Faker("sentence")
 
 
@@ -185,7 +185,7 @@ class StructureFactory(factory.django.DjangoModelFactory):
     has_fitting = False
     has_core = False
     last_updated_at = factory.LazyFunction(now)
-    name = factory.Faker("last_name")
+    name = factory.Sequence(lambda n: f"name_{n}")
     owner = factory.SubFactory(OwnerFactory)
     position_x = factory.fuzzy.FuzzyFloat(-10_000_000_000_000, 10_000_000_000_000)
     position_y = factory.fuzzy.FuzzyFloat(-10_000_000_000_000, 10_000_000_000_000)
@@ -232,12 +232,36 @@ class StarbaseFactory(StructureFactory):
         return EveType.objects.get(name="Caldari Control Tower")
 
 
+class PocoFactory(StructureFactory):
+    has_fitting = None
+    has_core = None
+    state = Structure.State.NA
+
+    @factory.lazy_attribute
+    def eve_planet(self):
+        return EvePlanet.objects.order_by("?").first()
+
+    @factory.lazy_attribute
+    def eve_solar_system(self):
+        return self.eve_planet.eve_solar_system
+
+    @factory.lazy_attribute
+    def eve_type(self):
+        return EveType.objects.get(name="Customs Office")
+
+
+class JumpGateFactory(StructureFactory):
+    @factory.lazy_attribute
+    def eve_type(self):
+        return EveType.objects.get(name="Ansiblex Jump Gate")
+
+
 class StructureTagFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = StructureTag
         django_get_or_create = ("name",)
 
-    name = factory.Faker("color")
+    name = factory.Sequence(lambda n: f"name_{n}")
     description = factory.Faker("sentence")
 
 

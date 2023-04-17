@@ -1,13 +1,12 @@
 """functions for loading test data and for building mocks"""
 import datetime as dt
-import inspect
 import json
 import math
-import os
 import unicodedata
 from copy import deepcopy
+from pathlib import Path
 from random import randrange
-from typing import Tuple
+from typing import Optional, Tuple
 from unittest.mock import Mock
 
 from bravado.exception import HTTPNotFound
@@ -42,12 +41,12 @@ from .factories import create_notification
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2
 
-_currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+_current_folder = Path(__file__).parent
 _FILENAME_EVEUNIVERSE_TESTDATA = "eveuniverse.json"
 
 
 def test_data_filename():
-    return f"{_currentdir}/{_FILENAME_EVEUNIVERSE_TESTDATA}"
+    return f"{_current_folder}/{_FILENAME_EVEUNIVERSE_TESTDATA}"
 
 
 ##############################
@@ -55,14 +54,14 @@ def test_data_filename():
 
 
 def _load_esi_data():
-    with open(_currentdir + "/esi_data.json", "r", encoding="utf-8") as f:
+    with (_current_folder / "esi_data.json").open("r") as f:
         data = json.load(f)
 
     return data
 
 
 def _load_testdata_entities() -> dict:
-    with open(_currentdir + "/entities.json", "r", encoding="utf-8") as f:
+    with (_current_folder / "entities.json").open("r") as f:
         entities = json.load(f)
 
     # update timestamp to current
@@ -403,7 +402,7 @@ esi_get_corporations_corporation_id_customs_offices.override_data = None
 
 def esi_get_corporations_corporation_id_assets(
     corporation_id: int, token: str, **kwargs
-) -> list:
+):
     """simulates ESI endpoint of same name for mock test"""
     try:
         my_esi_data = esi_data["Assets"]["get_corporations_corporation_id_assets"][
@@ -419,7 +418,10 @@ def esi_get_corporations_corporation_id_assets(
 
 
 def _esi_post_corporations_corporation_id_assets(
-    category: str, corporation_id: int, item_ids: list, my_esi_data: list = None
+    category: str,
+    corporation_id: int,
+    item_ids: list,
+    my_esi_data: Optional[list] = None,
 ) -> list:
     """simulates ESI endpoint of same name for mock test"""
 
@@ -633,7 +635,7 @@ def load_entity(EntityClass):
     assert len(entities_testdata[entity_name]) == EntityClass.objects.count()
 
 
-def load_entities(entities_def: list = None):
+def load_entities(entities_def: Optional[list] = None):
     """loads testdata for given entities classes"""
     entities_def_master = [
         EveSovereigntyMap,
@@ -776,6 +778,7 @@ def load_notification_by_type(
                 notif_type=notif_type.value,
                 text=notification.get("text", ""),
             )
+    raise ValueError(f"Could not find notif for type: {notif_type}")
 
 
 def load_notification_entities(owner: Owner):

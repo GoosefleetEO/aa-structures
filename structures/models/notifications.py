@@ -1,7 +1,7 @@
-"""Notification related models"""
+"""Notification related models."""
 
 import math
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import dhooks_lite
 import yaml
@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import translation
-from django.utils.functional import classproperty
+from django.utils.functional import classproperty  # type: ignore
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.models import EveEntity
@@ -96,17 +96,17 @@ class NotificationType(models.TextChoices):
 
     # moon mining
     MOONMINING_EXTRACTION_STARTED = "MoonminingExtractionStarted", _(
-        "Moonmining extraction started"
+        "Moon mining extraction started"
     )
     MOONMINING_LASER_FIRED = "MoonminingLaserFired", _("Moonmining laser fired")
     MOONMINING_EXTRACTION_CANCELLED = "MoonminingExtractionCancelled", _(
-        "Moonmining extraction cancelled"
+        "Moon mining extraction cancelled"
     )
     MOONMINING_EXTRACTION_FINISHED = "MoonminingExtractionFinished", _(
-        "Moonmining extraction finished"
+        "Moon mining extraction finished"
     )
     MOONMINING_AUTOMATIC_FRACTURE = "MoonminingAutomaticFracture", _(
-        "Moonmining automatic fracture triggered"
+        "Moon mining automatic fracture triggered"
     )
 
     # sov
@@ -333,8 +333,9 @@ class Webhook(WebhookBase):
     notification_types = MultiSelectField(
         choices=NotificationType.choices,
         default=NotificationType.webhook_defaults,
-        help_text=(
-            "select which type of notifications should be forwarded to this webhook"
+        verbose_name=_("notification types"),
+        help_text=_(
+            "Select which type of notifications should be forwarded to this webhook"
         ),
     )
     language_code = models.CharField(
@@ -343,19 +344,21 @@ class Webhook(WebhookBase):
         default=None,
         null=True,
         blank=True,
-        verbose_name="language",
-        help_text="language of notifications send to this webhook",
+        verbose_name=_("language"),
+        help_text=_("language of notifications send to this webhook"),
     )
     is_default = models.BooleanField(
         default=False,
-        help_text=(
-            "whether owners have this webhook automatically pre-set when created"
+        verbose_name=_("is default"),
+        help_text=_(
+            "Whether owners have this webhook automatically pre-set when created"
         ),
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
+        verbose_name=_("has default pings enabled"),
         help_text=(
-            "to enable or disable pinging of notifications for this webhook "
+            "To enable or disable pinging of notifications for this webhook "
             "e.g. with @everyone and @here"
         ),
     )
@@ -364,9 +367,14 @@ class Webhook(WebhookBase):
         default=None,
         blank=True,
         related_name="+",
-        help_text="Groups to be pinged for each notification - ",
+        verbose_name=_("ping groups"),
+        help_text=_("Groups to be pinged for each notification - "),
     )
     objects = WebhookManager()
+
+    class Meta:
+        verbose_name = _("webhook")
+        verbose_name_plural = _("webhooks")
 
     @staticmethod
     def text_bold(text) -> str:
@@ -379,27 +387,32 @@ class NotificationBase(models.Model):
 
     is_sent = models.BooleanField(
         default=False,
-        help_text="True when this notification has been forwarded to Discord",
+        verbose_name=_("is sent"),
+        help_text=_("True when this notification has been forwarded to Discord"),
     )
     is_timer_added = models.BooleanField(
         null=True,
         default=False,
-        help_text="True when a timer has been added for this notification",
+        verbose_name=_("is timer added"),
+        help_text=_("True when a timer has been added for this notification"),
     )
     notif_type = models.CharField(
         max_length=100,
         default="",
         db_index=True,
-        verbose_name="type",
-        help_text="type of this notification",
+        verbose_name=_("type"),
+        help_text=_("type of this notification"),
     )
     owner = models.ForeignKey(
         "Owner",
         on_delete=models.CASCADE,
-        help_text="Corporation that owns this notification",
+        verbose_name=_("owner"),
+        help_text=_("Corporation that owns this notification"),
     )
     structures = models.ManyToManyField(
-        Structure, help_text="Structures this notification is about (if any)"
+        Structure,
+        verbose_name=_("structures"),
+        help_text=_("Structures this notification is about (if any)"),
     )
 
     class Meta:
@@ -441,11 +454,21 @@ class NotificationBase(models.Model):
         """Weather this notification related to a structure."""
         return self.notif_type in NotificationType.structure_related
 
+    @property
+    def is_temporary(self) -> bool:
+        raise NotImplementedError()
+
+    def is_npc_attacking(self) -> bool:
+        raise NotImplementedError()
+
+    def parsed_text(self) -> dict:
+        raise NotImplementedError()
+
     def send_to_configured_webhooks(
         self,
-        ping_type_override: Webhook.PingType = None,
+        ping_type_override: Optional[Union[Webhook.PingType, str]] = None,
         use_color_override: bool = False,
-        color_override: int = None,
+        color_override: Optional[int] = None,
     ) -> Optional[bool]:
         """Send this notification to all active webhooks which have this
         notification type configured
@@ -468,7 +491,7 @@ class NotificationBase(models.Model):
             logger.debug("%s: No relevant webhook found", self)
             return None
         if ping_type_override:
-            self._ping_type_override = ping_type_override
+            self._ping_type_override = Webhook.PingType(ping_type_override)
         if use_color_override:
             self._color_override = color_override
         success = True
@@ -607,7 +630,7 @@ class NotificationBase(models.Model):
         return success
 
     def _generate_embed(
-        self, language_code: str
+        self, language_code: Optional[str]
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
         """Generates a Discord embed for this notification."""
         from ..core.notification_embeds import NotificationBaseEmbed
@@ -624,7 +647,7 @@ class NotificationBase(models.Model):
 
         return DiscordUser
 
-    def _gen_avatar(self) -> Tuple[str, str]:
+    def _gen_avatar(self) -> Tuple[Optional[str], Optional[str]]:
         if STRUCTURES_NOTIFICATION_SET_AVATAR:
             username = "Notifications"
             avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
@@ -648,7 +671,7 @@ class NotificationBase(models.Model):
 
         try:
             with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
-                timer_processed = notification_timers.add_or_remove_timer(self)
+                return notification_timers.add_or_remove_timer(self)
         except OSError as ex:
             logger.warning(
                 "%s: Failed to add timer from notification: %s",
@@ -656,7 +679,7 @@ class NotificationBase(models.Model):
                 ex,
                 exc_info=True,
             )
-        return timer_processed
+        return False
 
 
 class Notification(NotificationBase):
@@ -668,36 +691,45 @@ class Notification(NotificationBase):
 
     TEMPORARY_NOTIFICATION_ID = 999999999999
 
-    notification_id = models.PositiveBigIntegerField(verbose_name="id")
+    notification_id = models.PositiveBigIntegerField(verbose_name=_("id"))
     created = models.DateTimeField(
         null=True,
         default=None,
-        help_text="Date when this notification was first received from ESI",
+        verbose_name=_("created"),
+        help_text=_("Date when this notification was first received from ESI"),
     )
     is_read = models.BooleanField(
         null=True,
         default=None,
-        help_text="True when this notification has read in the eve client",
+        verbose_name=_("is read"),
+        help_text=_("True when this notification has read in the eve client"),
     )
     last_updated = models.DateTimeField(
-        help_text="Date when this notification has last been updated from ESI"
+        verbose_name=_("last updated"),
+        help_text=_("Date when this notification has last been updated from ESI"),
     )
     sender = models.ForeignKey(
         EveEntity,
         on_delete=models.SET_NULL,
         null=True,
         related_name="+",
+        verbose_name=_("sender"),
     )
 
     text = models.TextField(
-        null=True, default=None, blank=True, help_text="Notification details in YAML"
+        null=True,
+        default=None,
+        blank=True,
+        verbose_name=_("text"),
+        help_text=_("Notification details in YAML"),
     )
-    timestamp = models.DateTimeField(db_index=True)
+    timestamp = models.DateTimeField(db_index=True, verbose_name=_("timestamp"))
 
     objects = NotificationManager()
 
     class Meta:
-        verbose_name = "eve notification"
+        verbose_name = _("eve notification")
+        verbose_name_plural = _("eve notifications")
         unique_together = (("notification_id", "owner"),)
 
     def save(self, *args, **kwargs) -> None:
@@ -721,7 +753,7 @@ class Notification(NotificationBase):
 
     def parsed_text(self) -> dict:
         """Returns the notifications's text as dict."""
-        return yaml.safe_load(self.text)
+        return yaml.safe_load(self.text) if self.text else {}
 
     def is_npc_attacking(self) -> bool:
         """Whether this notification is about a NPC attacking."""
@@ -806,11 +838,15 @@ class Notification(NotificationBase):
 class GeneratedNotification(NotificationBase):
     """A notification generated by the Structures app, not by Eve Online."""
 
-    details = models.JSONField(default=dict)
-    last_updated = models.DateTimeField(auto_now=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    details = models.JSONField(default=dict, verbose_name=_("details"))
+    last_updated = models.DateTimeField(auto_now=True, verbose_name=_("last_updated"))
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name=_("timestamp"))
 
     objects = GeneratedNotificationManager()
+
+    class Meta:
+        verbose_name = _("generated notification")
+        verbose_name_plural = _("generated  notifications")
 
     @property
     def notification_id(self) -> int:
@@ -839,8 +875,8 @@ class BaseFuelAlertConfig(models.Model):
         max_length=2,
         choices=Webhook.PingType.choices,
         default=Webhook.PingType.HERE,
-        verbose_name="channel pings",
-        help_text=(
+        verbose_name=_("channel pings"),
+        help_text=_(
             "Option to ping every member of the channel. "
             "This setting can be overruled by the respective owner "
             "or webhook configuration"
@@ -851,11 +887,13 @@ class BaseFuelAlertConfig(models.Model):
         default=Webhook.Color.WARNING,
         blank=True,
         null=True,
-        help_text="Context color of these notification on Discord",
+        verbose_name=_("color"),
+        help_text=_("Context color of these notification on Discord"),
     )
     is_enabled = models.BooleanField(
         default=True,
-        help_text="Disabled configurations will not create any new alerts.",
+        verbose_name=_("is_enabled"),
+        help_text=_("Disabled configurations will not create any new alerts."),
     )
 
     class Meta:
@@ -878,21 +916,26 @@ class FuelAlertConfig(BaseFuelAlertConfig):
     """Configuration of structure fuel notifications."""
 
     end = models.PositiveIntegerField(
-        help_text="End of alerts in hours before fuel expires"
+        verbose_name=_("end"), help_text=_("End of alerts in hours before fuel expires")
     )
     repeat = models.PositiveIntegerField(
-        help_text=(
+        verbose_name=_("repeat"),
+        help_text=_(
             "Notifications will be repeated every x hours. Set to 0 for no repeats"
-        )
+        ),
     )
     start = models.PositiveIntegerField(
-        help_text="Start of alerts in hours before fuel expires"
+        verbose_name=_("start"),
+        help_text=_("Start of alerts in hours before fuel expires"),
     )
 
     class Meta:
-        verbose_name = "structure fuel alert config"
+        verbose_name = _("structure fuel alert config")
+        verbose_name_plural = _("structure fuel alert configs")
 
     def clean(self) -> None:
+        if self.start is None or self.end is None or self.repeat is None:  # Fixes #83
+            return  # these will be caught by the form validation later
         if self.start <= self.end:
             raise ValidationError(
                 _("Start must be before end, i.e. have a larger value.")
@@ -975,10 +1018,15 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
     """Configuration of jump fuel notifications."""
 
     threshold = models.PositiveIntegerField(
-        help_text=(
+        verbose_name=_("threshold"),
+        help_text=_(
             "Notifications will be sent once fuel level in units reaches this threshold"
-        )
+        ),
     )
+
+    class Meta:
+        verbose_name = _("jump fuel alert config")
+        verbose_name_plural = _("jump fuel alert configs")
 
     def save(self, *args, **kwargs) -> None:
         try:
@@ -1024,20 +1072,26 @@ class FuelAlert(BaseFuelAlert):
     """A generated notification alerting about fuel getting low in structures."""
 
     structure = models.ForeignKey(
-        Structure, on_delete=models.CASCADE, related_name="structure_fuel_alerts"
+        Structure,
+        on_delete=models.CASCADE,
+        related_name="structure_fuel_alerts",
+        verbose_name=_("structure"),
     )
     config = models.ForeignKey(
         FuelAlertConfig,
         on_delete=models.CASCADE,
         related_name="structure_fuel_alerts",
+        verbose_name=_("configuration"),
     )
     hours = models.PositiveIntegerField(
         db_index=True,
-        help_text="number of hours before fuel expiration this alert was sent",
+        verbose_name=_("hours"),
+        help_text=_("number of hours before fuel expiration this alert was sent"),
     )
 
     class Meta:
-        verbose_name = "structure fuel alert"
+        verbose_name = _("structure fuel alert")
+        verbose_name_plural = _("structure fuel alerts")
         constraints = [
             models.UniqueConstraint(
                 fields=["structure", "config", "hours"],
@@ -1068,11 +1122,21 @@ class JumpFuelAlert(BaseFuelAlert):
     """A generated notification alerting about jump fuel getting low."""
 
     structure = models.ForeignKey(
-        Structure, on_delete=models.CASCADE, related_name="jump_fuel_alerts"
+        Structure,
+        on_delete=models.CASCADE,
+        related_name="jump_fuel_alerts",
+        verbose_name=_("structure"),
     )
     config = models.ForeignKey(
-        JumpFuelAlertConfig, on_delete=models.CASCADE, related_name="jump_fuel_alerts"
+        JumpFuelAlertConfig,
+        on_delete=models.CASCADE,
+        related_name="jump_fuel_alerts",
+        verbose_name=_("configuration"),
     )
+
+    class Meta:
+        verbose_name = _("jump fuel alert")
+        verbose_name_plural = _("jump fuel alerts")
 
     def __str__(self) -> str:
         return f"{self.structure}-{self.config}"

@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aa-structures"
+dynamic = ["version"]
+description = "App for managing Eve Online structures with Alliance Auth"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "Erik Kalkoken", email = "kalkoken87@gmail.com" },
+]
+classifiers = [
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.0",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+dependencies = [
+    "allianceauth-app-utils>=1.14.2",
+    "allianceauth>=3.0.0",
+    "dhooks-lite>=0.6.1",
+    "django-eveuniverse>=0.17",
+    "django-multiselectfield",
+    "django-navhelper",
+    "pytz!=2022.2",
+    "redis-simple-mq>=0.4",
+]
+
+[project.urls]
+Homepage = "https://gitlab.com/ErikKalkoken/aa-structures"
+Documentation = "https://aa-structures.readthedocs.io/en/latest/"
+Source = "https://gitlab.com/ErikKalkoken/aa-structures"
+Changelog = "https://gitlab.com/ErikKalkoken/aa-structures/-/blob/master/CHANGELOG.md"
+Tracker = "https://gitlab.com/ErikKalkoken/aa-structures/-/issues"
+
+[tool.hatch.version]
+path = "structures/__init__.py"
+
+[tool.hatch.build]
+include = [
+    "/structures",
+]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+sections = [
+    "FUTURE",
+    "STDLIB",
+    "THIRDPARTY",
+    "DJANGO",
+    "ALLIANCEAUTH",
+    "FIRSTPARTY",
+    "LOCALFOLDER"
+]
+known_allianceauth = ["allianceauth", "app_utils"]
+known_django = ["django", "django_webtest", "esi", "eveuniverse"]
+
+[tool.pylint.'MASTER']
+ignore-patterns = ["test_.*.py,__init__.py", "generate_.*.py"]
+
+[tool.pylint.'BASIC']
+good-names = ["i", "j", "k", "x", "f", "ex"]
+
+[tool.pylint.'FORMAT']
+max-line-length = 100
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = ["R", "C"]

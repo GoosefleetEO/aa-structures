@@ -1,7 +1,7 @@
 import functools
-import urllib
 from collections import defaultdict
 from enum import IntEnum
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
@@ -64,7 +64,7 @@ def index(request):
                 [x.name for x in StructureTag.objects.filter(is_default=True)]
             )
         }
-        url += "?{}".format(urllib.parse.urlencode(params))
+        url += "?{}".format(urlencode(params))
     return redirect(url)
 
 
@@ -83,7 +83,7 @@ def main(request):
             url = reverse("structures:main")
             if active_tags:
                 params = {QUERY_PARAM_TAGS: ",".join([x.name for x in active_tags])}
-                url += "?{}".format(urllib.parse.urlencode(params))
+                url += "?{}".format(urlencode(params))
             return redirect(url)
     else:
         tags_raw = request.GET.get(QUERY_PARAM_TAGS)
@@ -95,7 +95,7 @@ def main(request):
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
-        "page_title": _(__title__),
+        "page_title": __title__,
         "active_tags": active_tags,
         "tags_filter_form": form,
         "tags_exist": StructureTag.objects.exists(),
@@ -141,8 +141,9 @@ def structure_details(request, structure_id):
             }
             try:
                 slot_num = type_attributes[self.value]
+                my_id = id_map[Slot(self.value)]
                 return staticfiles_storage.url(
-                    f"structures/img/pannel/{slot_num}{id_map[self.value]}.png"
+                    f"structures/img/panel/{slot_num}{my_id}.png"
                 )
             except KeyError:
                 return ""
@@ -252,7 +253,7 @@ def structure_details(request, structure_id):
     if structure.is_upwell_structure:
         assets_grouped["fuel_usage"] = [
             FakeAsset(
-                name="Fuel blocks per day (est.)",
+                name=_("Fuel blocks per day (est.)"),
                 quantity=structure.structure_fuel_usage(),
                 eve_type_id=24756,
             )
@@ -390,7 +391,7 @@ def starbase_detail(request, structure_id):
 
 @login_required
 @permission_required("structures.add_structure_owner")
-@token_required(scopes=Owner.get_esi_scopes())
+@token_required(scopes=Owner.get_esi_scopes())  # type: ignore
 def add_structure_owner(request, token):
     token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     try:

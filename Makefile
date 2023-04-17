@@ -29,7 +29,7 @@ compilemessages:
 	django-admin compilemessages -l zh_Hans
 
 coverage:
-	coverage run ../myauth/manage.py test --keepdb -v 2 && coverage html && coverage report -m
+	coverage run ../myauth/manage.py test --keepdb && coverage html && coverage report -m
 
 test:
 	# runs a full test incl. re-creating of the test DB
@@ -40,11 +40,6 @@ pylint:
 
 check_complexity:
 	flake8 $(package) --max-complexity=10
-
-nuke_testdb:
-	# This will delete the current test database
-	# very userful after large changes to the models
-	sudo mysql -u root -e "drop database test_aa_dev_4;"
 
 flake8:
 	flake8 $(package) --count

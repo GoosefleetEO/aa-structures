@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.2.0] - 2023-04-17
+
+>**Important**:<br>In case you have not updated to Structures 2.x yet, please follow the special update instructions for updating to 2.0.0 first, before installing this update!
+
+### Added
+
+- Improved localization coverage in templates, views and admin site
+
+### Changed
+
+- Dropped support for AA 2 / Django 3
+- Removed old migrations which were squashed in 2.0.0
+- Added copy button to docs
+- Moved build process to PEP 621 / pyproject.toml
+- Added more type hints
+
+### Fixes
+
+- When not entering numbers on all fields Errors out (#83)
+
 ## [2.1.0] - 2023-01-30
 
 >**Important**:<br>In case you have not updated to Structures 2.x yet, please follow the special update instructions for updating to 2.0.0 first, before installing this update!

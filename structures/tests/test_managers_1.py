@@ -139,7 +139,7 @@ class TestEveSovereigntyMapManagerOther(NoSocketsTestCase):
 
         # There can't be any sov outside nullsec
         eve_solar_system = EveSolarSystem.objects.get(name="Amamake")
-        self.assertIsNone(
+        self.assertFalse(
             EveSovereigntyMap.objects.corporation_has_sov(eve_solar_system, corporation)
         )
 

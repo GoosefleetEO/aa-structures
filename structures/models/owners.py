@@ -1,10 +1,11 @@
-"""Owner related models"""
+"""Owner related models."""
+
 import datetime as dt
 import json
 import os
 import re
 from email.utils import format_datetime, parsedate_to_datetime
-from typing import Optional
+from typing import Any, Iterable, List, Optional
 
 from bravado.exception import HTTPForbidden, HTTPNotFound
 
@@ -115,18 +116,21 @@ class Owner(models.Model):
         primary_key=True,
         on_delete=models.CASCADE,
         related_name="structure_owner",
-        help_text="Corporation owning structures",
+        verbose_name=_("corporation"),
+        help_text=_("Corporation owning structures"),
     )
     # regular
     are_pocos_public = models.BooleanField(
         default=False,
-        help_text=("whether pocos of this owner are shown on public POCO page"),
+        verbose_name=_("are pocos public"),
+        help_text=_("whether pocos of this owner are shown on public POCO page"),
     )
     assets_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("assets last update at"),
+        help_text=_("when the last successful update happened"),
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,
@@ -135,35 +139,40 @@ class Owner(models.Model):
         null=True,
         blank=True,
         related_name="+",
-        help_text="OUTDATED. Has been replaced by OwnerCharacter",
+        help_text="OUTDATED. Has been replaced by OwnerCharacter",  # TODO: Remove
     )
     forwarding_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("forwarding last update at"),
+        help_text=_("when the last successful update happened"),
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
-        help_text=(
+        verbose_name=_("has default pings enabled"),
+        help_text=_(
             "to enable or disable pinging of notifications for this owner "
             "e.g. with @everyone and @here"
         ),
     )
     is_active = models.BooleanField(
         default=True,
-        help_text=("whether this owner is currently included in the sync process"),
+        verbose_name=_("is active"),
+        help_text=_("whether this owner is currently included in the sync process"),
     )
     is_alliance_main = models.BooleanField(
         default=False,
-        help_text=(
+        verbose_name=_("is alliance main"),
+        help_text=_(
             "whether alliance wide notifications "
             "are forwarded for this owner (e.g. sov notifications)"
         ),
     )
     is_included_in_service_status = models.BooleanField(
         default=True,
-        help_text=(
+        verbose_name=_("is included in service status"),
+        help_text=_(
             "whether the sync status of this owner is included in "
             "the overall status of this services"
         ),
@@ -172,36 +181,45 @@ class Owner(models.Model):
         null=True,
         default=None,
         editable=False,
-        help_text="whether all services for this owner are currently up",
+        verbose_name=_("is up"),
+        help_text=_("whether all services for this owner are currently up"),
     )
     notifications_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("notifications last update at"),
+        help_text=_("when the last successful update happened"),
     )
     ping_groups = models.ManyToManyField(
         Group,
         default=None,
         blank=True,
         related_name="+",
-        help_text="Groups to be pinged for each notification. ",
+        verbose_name=_("ping groups"),
+        help_text=_("Groups to be pinged for each notification. "),
     )
     structures_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
-        help_text="when the last successful update happened",
+        verbose_name=_("structures last update at"),
+        help_text=_("when the last successful update happened"),
     )
     webhooks = models.ManyToManyField(
         "Webhook",
         default=None,
         blank=True,
         related_name="owners",
-        help_text="Notifications are sent to these webhooks. ",
+        verbose_name=_("webhooks"),
+        help_text=_("Notifications are sent to these webhooks."),
     )
 
     objects = OwnerManager()
+
+    class Meta:
+        verbose_name = _("owner")
+        verbose_name_plural = _("owners")
 
     def __str__(self) -> str:
         return str(self.corporation.corporation_name)
@@ -225,30 +243,34 @@ class Owner(models.Model):
     @property
     def is_structure_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return self.structures_last_update_at and self.structures_last_update_at > (
+        return bool(
+            self.structures_last_update_at
+        ) and self.structures_last_update_at > (
             now() - dt.timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_notification_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return (
+        return bool(
             self.notifications_last_update_at
-            and self.notifications_last_update_at
-            > (now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES))
+        ) and self.notifications_last_update_at > (
+            now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_forwarding_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return self.forwarding_last_update_at and self.forwarding_last_update_at > (
+        return bool(
+            self.forwarding_last_update_at
+        ) and self.forwarding_last_update_at > (
             now() - dt.timedelta(minutes=STRUCTURES_NOTIFICATION_SYNC_GRACE_MINUTES)
         )
 
     @property
     def is_assets_sync_fresh(self) -> bool:
         """True if last sync happened with grace time, else False."""
-        return self.assets_last_update_at and self.assets_last_update_at > (
+        return bool(self.assets_last_update_at) and self.assets_last_update_at > (
             now() - dt.timedelta(minutes=STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES)
         )
 
@@ -414,7 +436,7 @@ class Owner(models.Model):
 
     def fetch_token(
         self,
-        rotate_characters: RotateCharactersType = None,
+        rotate_characters: Optional[RotateCharactersType] = None,
         ignore_schedule: bool = False,
     ) -> Token:
         """Fetch a valid token for the owner and return it.
@@ -426,7 +448,6 @@ class Owner(models.Model):
 
         Raises TokenError when no valid token can be provided.
         """
-        token = None
         order_by_last_used = (
             rotate_characters.last_used_at_name
             if rotate_characters
@@ -457,17 +478,16 @@ class Owner(models.Model):
                     error="Character has no valid token for sync.",
                 )
                 continue
+            found_character = character
             break  # leave the for loop if we have found a valid token
-
-        if not token:
-            error = (
+        else:
+            raise TokenError(
                 f"{self}: No valid character found for sync. "
                 "Service down for this owner."
             )
-            raise TokenError(error)
         if rotate_characters:
             self._rotate_character(
-                character=character,
+                character=found_character,
                 ignore_schedule=ignore_schedule,
                 rotate_characters=rotate_characters,
             )
@@ -478,7 +498,7 @@ class Owner(models.Model):
         message = f"{self}: Failed to {action} from ESI with token {token} due to {ex}"
         logger.warning(message, exc_info=True)
 
-    def update_structures_esi(self, user: User = None):
+    def update_structures_esi(self, user: Optional[User] = None):
         """Updates all structures from ESI."""
         token = self.fetch_token(rotate_characters=self.RotateCharactersType.STRUCTURES)
         is_ok = self._fetch_upwell_structures(token)
@@ -496,7 +516,7 @@ class Owner(models.Model):
                 )
 
     def _remove_structures_not_returned_from_esi(
-        self, structures_qs: models.QuerySet, new_structures: list
+        self, structures_qs: models.QuerySet, new_structures: Iterable
     ):
         """Remove structures no longer returned from ESI."""
         ids_local = {x.id for x in structures_qs}
@@ -509,13 +529,16 @@ class Owner(models.Model):
                 len(ids_to_remove),
             )
 
-    def _fetch_locations_for_assets(self, item_ids: list, token: Token) -> dict:
+    def _fetch_locations_for_assets(
+        self, item_ids: Iterable[int], token: Token
+    ) -> dict:
         """Fetch locations for given asset items from ESI."""
+        item_ids = list(item_ids)
         logger.info(
             "%s: Fetching locations for %d assets from ESI", self, len(item_ids)
         )
         locations_data = list()
-        for item_ids_chunk in chunks(list(item_ids), 999):
+        for item_ids_chunk in chunks(item_ids, 999):
             try:
                 locations_data_chunk = (
                     esi.client.Assets.post_corporations_corporation_id_assets_locations(
@@ -862,10 +885,11 @@ class Owner(models.Model):
         )
         return True
 
-    def _fetch_starbases_names(self, item_ids: list, token: Token) -> dict:
+    def _fetch_starbases_names(self, item_ids: Iterable, token: Token) -> dict:
+        item_ids = list(item_ids)
         logger.info("%s: Fetching names for %d starbases from ESI", self, len(item_ids))
         names_data = list()
-        for item_ids_chunk in chunks(list(item_ids), 999):
+        for item_ids_chunk in chunks(item_ids, 999):
             try:
                 names_data_chunk = (
                     esi.client.Assets.post_corporations_corporation_id_assets_names(
@@ -936,7 +960,7 @@ class Owner(models.Model):
         self.notification_set.add_or_remove_timers()
         self.generatednotification_set.add_or_remove_timers()
 
-    def fetch_notifications_esi(self, user: User = None) -> None:
+    def fetch_notifications_esi(self, user: Optional[User] = None) -> None:
         """Fetch notifications for this owner from ESI and process them."""
         notifications_count_all = 0
         token = self.fetch_token(
@@ -964,7 +988,7 @@ class Owner(models.Model):
                 user=user,
             )
 
-    def _fetch_notifications_from_esi(self, token: Token) -> dict:
+    def _fetch_notifications_from_esi(self, token: Token) -> List[dict]:
         """fetching all notifications from ESI for current owner"""
         notifications = esi.client.Character.get_characters_character_id_notifications(
             character_id=token.character_id, token=token.valid_access_token()
@@ -1000,7 +1024,7 @@ class Owner(models.Model):
             json.dump(notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
             f.write("\n")
 
-    def _store_notifications(self, notifications: list) -> int:
+    def _store_notifications(self, notifications: List[dict]) -> int:
         """Store new notifications in database.
         Returns number of newly created objects.
         """
@@ -1074,7 +1098,7 @@ class Owner(models.Model):
                     refinery.eve_moon = eve_moon
                     refinery.save()
 
-    def send_new_notifications(self, user: User = None):
+    def send_new_notifications(self, user: Optional[User] = None):
         """Forward all new notification of this owner to configured webhooks."""
         notifications_count = 0
         cutoff_dt_for_stale = now() - dt.timedelta(
@@ -1140,14 +1164,14 @@ class Owner(models.Model):
             level="success",
         )
 
-    def _store_raw_data(self, name: str, data: list):
+    def _store_raw_data(self, name: str, data: Any):
         """store raw data for debug purposes"""
         with open(
             f"{name}_raw_{self.corporation.corporation_id}.json", "w", encoding="utf-8"
         ) as f:
             json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
-    def update_asset_esi(self, user: User = None):
+    def update_asset_esi(self, user: Optional[User] = None):
         token = self.fetch_token()
         assets_data = self._fetch_structure_assets_from_esi(token)
         self._store_items_for_upwell_structures(assets_data)
@@ -1225,6 +1249,7 @@ class Owner(models.Model):
                     and item["location_flag"] == "AutoFit"
                     and item_id != structure.id
                     and item["position"]
+                    and structure.has_position
                     and structure.distance_to_object(
                         item["position"]["x"],
                         item["position"]["y"],
@@ -1237,8 +1262,8 @@ class Owner(models.Model):
                     )
             structure.update_items(structure_items)
 
-    @classmethod
-    def get_esi_scopes(cls) -> list:
+    @staticmethod
+    def get_esi_scopes() -> List[str]:
         scopes = [
             "esi-corporations.read_structures.v1",
             "esi-universe.read_structures.v1",
@@ -1256,12 +1281,16 @@ class OwnerCharacter(models.Model):
     """Character for syncing owner data with ESI."""
 
     owner = models.ForeignKey(
-        Owner, on_delete=models.CASCADE, related_name="characters"
+        Owner,
+        on_delete=models.CASCADE,
+        related_name="characters",
+        verbose_name=_("owner"),
     )
     character_ownership = models.ForeignKey(
         CharacterOwnership,
         on_delete=models.CASCADE,
         related_name="+",
+        verbose_name=_("character_ownership"),
         help_text="character used for syncing",
     )
     structures_last_used_at = models.DateTimeField(
@@ -1269,6 +1298,7 @@ class OwnerCharacter(models.Model):
         default=None,
         editable=False,
         db_index=True,
+        verbose_name=_("structures last used at"),
         help_text="when this character was last used for syncing structures",
     )
     notifications_last_used_at = models.DateTimeField(
@@ -1276,16 +1306,20 @@ class OwnerCharacter(models.Model):
         default=None,
         editable=False,
         db_index=True,
+        verbose_name=_("notifications last used at"),
         help_text="when this character was last used for syncing notifications",
     )
     error_count = models.PositiveIntegerField(
         default=0,
         editable=False,
+        verbose_name=_("error count"),
         help_text="Count of ESI errors which happened with this character.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = _("owner character")
+        verbose_name_plural = _("owner characters")
         constraints = [
             models.UniqueConstraint(
                 fields=["owner", "character_ownership"], name="functional_pk_ownertoken"

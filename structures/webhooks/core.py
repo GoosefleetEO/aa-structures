@@ -1,6 +1,6 @@
 import json
 from time import sleep
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 import dhooks_lite
@@ -64,11 +64,11 @@ class DiscordWebhookMixin:
 
     def send_message(
         self,
-        content: str = None,
-        embeds: List[dhooks_lite.Embed] = None,
-        tts: bool = None,
-        username: str = None,
-        avatar_url: str = None,
+        content: Optional[str] = None,
+        embeds: Optional[List[dhooks_lite.Embed]] = None,
+        tts: Optional[bool] = None,
+        username: Optional[str] = None,
+        avatar_url: Optional[str] = None,
     ) -> int:
         """Adds Discord message to queue for later sending
 
@@ -148,7 +148,7 @@ class DiscordWebhookMixin:
         if message.get("embeds"):
             embeds = [
                 dhooks_lite.Embed.from_dict(embed_dict)
-                for embed_dict in message.get("embeds")
+                for embed_dict in message.get("embeds", [])
             ]
         else:
             embeds = None
@@ -165,12 +165,12 @@ class DiscordWebhookMixin:
         logger.debug("content: %s", response.content)
         if response.status_ok:
             return True
-        message = (
+        msg = (
             f"Webhook {self} failed to send message to Discord.\n"
             f"HTTP status code: {response.status_code}\n"
             f"API response: {response.content}"
         )
-        logger.warning(message, exc_info=True)
+        logger.warning(msg, exc_info=True)
         return False
 
     @classmethod
@@ -178,7 +178,7 @@ class DiscordWebhookMixin:
         """creates a link for messages of this webhook"""
         return f"[{str(name)}]({str(url)})"
 
-    def send_test_message(self, user: User = None) -> Tuple[str, bool]:
+    def send_test_message(self, user: Optional[User] = None) -> Tuple[str, bool]:
         """Sends a test notification to this webhook and returns send report"""
         user_text = f" sent by **{user}**" if user else ""
         message = {
