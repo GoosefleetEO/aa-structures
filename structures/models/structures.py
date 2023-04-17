@@ -470,7 +470,7 @@ class Structure(models.Model):
         return power_mode == self.PowerMode.FULL_POWER
 
     @property
-    def is_low_power(self) -> bool:
+    def is_low_power(self) -> Optional[bool]:
         """return True if structure is low power, False if not.
 
         Returns None if state can not be determined
@@ -481,7 +481,7 @@ class Structure(models.Model):
         return power_mode == self.PowerMode.LOW_POWER
 
     @property
-    def is_abandoned(self) -> bool:
+    def is_abandoned(self) -> Optional[bool]:
         """return True if structure is abandoned, False if not.
 
         Returns None if state can not be determined
@@ -492,7 +492,7 @@ class Structure(models.Model):
         return power_mode == self.PowerMode.ABANDONED
 
     @property
-    def is_maybe_abandoned(self) -> bool:
+    def is_maybe_abandoned(self) -> Optional[bool]:
         """return True if structure is maybe abandoned, False if not.
 
         Returns None if state can not be determined
@@ -543,6 +543,15 @@ class Structure(models.Model):
             return True
         return False
 
+    @property
+    def has_position(self) -> bool:
+        """Evaluate if this structure has a position."""
+        return (
+            self.position_x is not None
+            and self.position_y is not None
+            and self.position_z is not None
+        )
+
     @cached_property
     def owner_has_sov(self) -> bool:
         return self.owner.has_sov(self.eve_solar_system)
@@ -565,10 +574,14 @@ class Structure(models.Model):
 
     def distance_to_object(self, x: float, y: float, z: float) -> float:
         """Distance to object with given coordinates (within same solar system)."""
+        if not self.has_position:
+            raise ValueError(
+                f"{self}: Can not calculate distance from a structure without a position"
+            )
         return math.sqrt(
-            pow(x - self.position_x, 2)
-            + pow(y - self.position_y, 2)
-            + pow(z - self.position_z, 2)
+            pow(x - self.position_x, 2)  # type: ignore
+            + pow(y - self.position_y, 2)  # type: ignore
+            + pow(z - self.position_z, 2)  # type: ignore
         )
 
     @cached_property

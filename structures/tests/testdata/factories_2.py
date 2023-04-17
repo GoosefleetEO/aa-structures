@@ -8,7 +8,7 @@ import yaml
 
 from django.db.models import Max
 from django.utils.timezone import now
-from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.authentication.models import CharacterOwnership
 from app_utils.testdata_factories import (
@@ -230,6 +230,30 @@ class StarbaseFactory(StructureFactory):
     @factory.lazy_attribute
     def eve_type(self):
         return EveType.objects.get(name="Caldari Control Tower")
+
+
+class PocoFactory(StructureFactory):
+    has_fitting = None
+    has_core = None
+    state = Structure.State.NA
+
+    @factory.lazy_attribute
+    def eve_planet(self):
+        return EvePlanet.objects.order_by("?").first()
+
+    @factory.lazy_attribute
+    def eve_solar_system(self):
+        return self.eve_planet.eve_solar_system
+
+    @factory.lazy_attribute
+    def eve_type(self):
+        return EveType.objects.get(name="Customs Office")
+
+
+class JumpGateFactory(StructureFactory):
+    @factory.lazy_attribute
+    def eve_type(self):
+        return EveType.objects.get(name="Ansiblex Jump Gate")
 
 
 class StructureTagFactory(factory.django.DjangoModelFactory):

@@ -1241,6 +1241,7 @@ class Owner(models.Model):
                     and item["location_flag"] == "AutoFit"
                     and item_id != structure.id
                     and item["position"]
+                    and structure.has_position
                     and structure.distance_to_object(
                         item["position"]["x"],
                         item["position"]["y"],
