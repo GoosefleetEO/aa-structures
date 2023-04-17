@@ -1,9 +1,12 @@
 import datetime as dt
+from typing import Optional
 
 from django.utils.timezone import now
 
 
-def hours_until_deadline(deadline: dt, start: dt = None) -> float:
+def hours_until_deadline(
+    deadline: dt.datetime, start: Optional[dt.datetime] = None
+) -> float:
     """Currently remaining hours until a given deadline."""
     if not isinstance(deadline, dt.datetime):
         raise TypeError("deadline must be of type datetime")
