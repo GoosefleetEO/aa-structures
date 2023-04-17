@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Dropped support for AA 2 / Django 3
 - Removed old migrations which were squashed in 2.0.0
 - Added copy button to docs
+- Moved build process to PEP 621 / pyproject.toml
 
 ### Fixes
 

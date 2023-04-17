@@ -34,20 +34,20 @@ pre-commit-check:
   stage: test
   image: python:3.10-bullseye
 
-test-38-django32:
+test-38-django40:
   extends: .test-py38
   script:
-  - tox -e py38-django32
+  - tox -e py38-django40
 
-test-39-django32:
+test-39-django40:
   extends: .test-py39
   script:
-  - tox -e py39-django32
+  - tox -e py39-django40
 
-test-310-django32:
+test-310-django40:
   extends: .test-py310
   script:
-  - tox -e py310-django32
+  - tox -e py310-django40
   - bash <(curl -s https://codecov.io/bash)
 
 test-core:
@@ -65,10 +65,10 @@ deploy-pypi:
   image: python:3.10-bullseye
 
   before_script:
-    - pip install twine
+    - pip install build twine
 
   script:
-    - python setup.py sdist bdist_wheel
+    - python -m build
     - twine upload dist/*
 
   only:
