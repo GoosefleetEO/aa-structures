@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Dropped support for AA 2 / Django 3
+- Removed old migrations which were squashed in 2.0.0
 
 ## [2.1.0] - 2023-01-30
 
