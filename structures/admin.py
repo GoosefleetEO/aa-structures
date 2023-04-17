@@ -256,7 +256,7 @@ class NotificationBaseAdmin(admin.ModelAdmin):
             )
         return lines_sorted_html(names)
 
-    def _structures(self, obj) -> Optional[list]:
+    def _structures(self, obj) -> Optional[str]:
         if obj.is_structure_related:
             structures = [str(structure) for structure in obj.structures.all()]
             return lines_sorted_html(structures) if structures else "?"
@@ -632,10 +632,10 @@ class StructureTagAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("is_user_managed",)
 
-    def has_delete_permission(self, request, obj=None):
+    def has_delete_permission(self, request, obj: Optional[StructureTag] = None):
         return False if obj and not obj.is_user_managed else True
 
-    def has_change_permission(self, request, obj=None):
+    def has_change_permission(self, request, obj: Optional[StructureTag] = None):
         return False if obj and not obj.is_user_managed else True
 
 
@@ -888,7 +888,7 @@ class StructureAdmin(admin.ModelAdmin):
         return structure.get_power_mode_display()
 
     @admin.display(description="Tags")
-    def _tags(self, structure) -> str:
+    def _tags(self, structure) -> list:
         return sorted([tag.name for tag in structure.tags.all()])
 
     def _webhooks(self, obj):

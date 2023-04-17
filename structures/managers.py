@@ -188,18 +188,12 @@ class OwnerQuerySet(models.QuerySet):
             )
         )
 
-    def structures_last_updated(self):
+    def structures_last_updated(self) -> Optional[dt.datetime]:
         """Date/time when structures were last updated for any of the active owners."""
-        active_owners = self.filter(is_active=True)
-        return (
-            (
-                active_owners.order_by("-structures_last_update_at")
-                .first()
-                .structures_last_update_at
-            )
-            if active_owners
-            else None
-        )
+        obj = self.filter(is_active=True).order_by("-structures_last_update_at").first()
+        if not obj:
+            return None
+        return obj.structures_last_update_at
 
 
 class OwnerManagerBase(models.Manager):
@@ -219,7 +213,7 @@ class StructureQuerySet(models.QuerySet):
     def filter_starbases(self) -> models.QuerySet:
         return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STARBASE)
 
-    def ids(self) -> set():
+    def ids(self) -> Set[int]:
         """Return ids as set."""
         return set(self.values_list("id", flat=True))
 
@@ -455,7 +449,7 @@ StructureManager = StructureManagerBase.from_queryset(StructureQuerySet)
 
 
 class StructureTagManager(models.Manager):
-    def get_or_create_for_space_type(self, solar_system: models.Model) -> tuple:
+    def get_or_create_for_space_type(self, solar_system) -> tuple:
         from .models import EveSpaceType
 
         space_type = EveSpaceType.from_solar_system(solar_system)

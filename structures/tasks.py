@@ -63,7 +63,7 @@ def update_structures():
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_all_for_owner(owner_pk, user_pk=None):
+def update_all_for_owner(owner_pk, user_pk: Optional[int] = None):
     """Update structures and notifications for owner from ESI."""
     chain(
         update_structures_for_owner.si(owner_pk, user_pk),
@@ -72,7 +72,7 @@ def update_all_for_owner(owner_pk, user_pk=None):
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_structures_for_owner(owner_pk, user_pk=None):
+def update_structures_for_owner(owner_pk, user_pk: Optional[int] = None):
     """Fetch all structures for owner and update related corp assets from ESI."""
     if not fetch_esi_status().is_ok:
         logger.warning("ESI currently not available. Aborting.")
@@ -84,14 +84,14 @@ def update_structures_for_owner(owner_pk, user_pk=None):
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_structures_esi_for_owner(owner_pk, user_pk=None):
+def update_structures_esi_for_owner(owner_pk, user_pk: Optional[int] = None):
     """Update all structures for owner for ESI."""
     owner = Owner.objects.get(pk=owner_pk)
     owner.update_structures_esi(_get_user(user_pk))
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def update_structures_assets_for_owner(owner_pk, user_pk=None):
+def update_structures_assets_for_owner(owner_pk, user_pk: Optional[int] = None):
     """Update all related assets for owner."""
     owner = Owner.objects.get(pk=owner_pk)
     owner.update_asset_esi(_get_user(user_pk))
@@ -117,7 +117,7 @@ def fetch_all_notifications():
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def process_notifications_for_owner(owner_pk: int, user_pk: int = None):
+def process_notifications_for_owner(owner_pk: int, user_pk: Optional[int] = None):
     """Fetch all notification for owner from ESI and processes them."""
     if not fetch_esi_status().is_ok:
         logger.warning("ESI currently not available. Aborting.")
@@ -139,7 +139,7 @@ def process_notifications_for_owner(owner_pk: int, user_pk: int = None):
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def fetch_notification_for_owner(owner_pk: int, user_pk: int = None):
+def fetch_notification_for_owner(owner_pk: int, user_pk: Optional[int] = None):
     """Fetch notifications from ESI."""
     owner = Owner.objects.get(pk=owner_pk)
     owner.fetch_notifications_esi(_get_user(user_pk))
@@ -212,7 +212,9 @@ def send_messages_for_webhook(webhook_pk: int) -> None:
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
-def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
+def send_test_notifications_to_webhook(
+    webhook_pk, user_pk: Optional[int] = None
+) -> None:
     """Send test notification to given webhook."""
     webhook = Webhook.objects.get(pk=webhook_pk)
     user = _get_user(user_pk)
@@ -233,7 +235,7 @@ def send_test_notifications_to_webhook(webhook_pk, user_pk=None) -> None:
         )
 
 
-def _get_user(user_pk: int) -> Optional[User]:
+def _get_user(user_pk: Optional[int]) -> Optional[User]:
     """Fetch the user or return None."""
     if not user_pk:
         return None

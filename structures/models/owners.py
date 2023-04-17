@@ -960,7 +960,7 @@ class Owner(models.Model):
         self.notification_set.add_or_remove_timers()
         self.generatednotification_set.add_or_remove_timers()
 
-    def fetch_notifications_esi(self, user: User = None) -> None:
+    def fetch_notifications_esi(self, user: Optional[User] = None) -> None:
         """Fetch notifications for this owner from ESI and process them."""
         notifications_count_all = 0
         token = self.fetch_token(
@@ -988,7 +988,7 @@ class Owner(models.Model):
                 user=user,
             )
 
-    def _fetch_notifications_from_esi(self, token: Token) -> dict:
+    def _fetch_notifications_from_esi(self, token: Token) -> List[dict]:
         """fetching all notifications from ESI for current owner"""
         notifications = esi.client.Character.get_characters_character_id_notifications(
             character_id=token.character_id, token=token.valid_access_token()
@@ -1024,7 +1024,7 @@ class Owner(models.Model):
             json.dump(notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
             f.write("\n")
 
-    def _store_notifications(self, notifications: list) -> int:
+    def _store_notifications(self, notifications: List[dict]) -> int:
         """Store new notifications in database.
         Returns number of newly created objects.
         """
@@ -1098,7 +1098,7 @@ class Owner(models.Model):
                     refinery.eve_moon = eve_moon
                     refinery.save()
 
-    def send_new_notifications(self, user: User = None):
+    def send_new_notifications(self, user: Optional[User] = None):
         """Forward all new notification of this owner to configured webhooks."""
         notifications_count = 0
         cutoff_dt_for_stale = now() - dt.timedelta(

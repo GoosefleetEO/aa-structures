@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Removed old migrations which were squashed in 2.0.0
 - Added copy button to docs
 - Moved build process to PEP 621 / pyproject.toml
+- Added more type hints
 
 ### Fixes
 
