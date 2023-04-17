@@ -133,7 +133,7 @@ class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
         (
             "Timeing",
             {
-                "description": (
+                "description": _(
                     "Timing configuration for sending fuel notifications. "
                     "Note that the first notification will be sent at the exact "
                     "start hour, and the last notification will be sent one repeat "

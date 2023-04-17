@@ -924,6 +924,8 @@ class FuelAlertConfig(BaseFuelAlertConfig):
         verbose_name_plural = _("structure fuel alert configs")
 
     def clean(self) -> None:
+        if self.start is None or self.end is None or self.repeat is None:  # Fixes #83
+            return  # these will be caught by the form validation later
         if self.start <= self.end:
             raise ValidationError(
                 _("Start must be before end, i.e. have a larger value.")

@@ -167,6 +167,45 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.assertContains(response, "errornote")
         self.assertEqual(FuelAlertConfig.objects.count(), 1)
 
+    def test_should_work_with_empty_end_field(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 36, "repeat": 8}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
+    def test_should_work_with_empty_start_field(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 36, "end": 8}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
+    def test_should_work_with_empty_repeat_field(self):
+        # given
+        self.client.force_login(self.user)
+        # when
+        response = self.client.post(
+            reverse("admin:structures_fuelalertconfig_add"),
+            data={**self.defaults, **{"start": 36, "end": 8}},
+        )
+        # then
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "errornote")
+        self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
 
 class TestNotificationAdmin(TestCase):
     @classmethod
