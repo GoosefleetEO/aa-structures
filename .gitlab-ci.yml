@@ -23,17 +23,14 @@ pre-commit-check:
     - pre-commit run --all-files
 
 .test-py38:
-  needs: []
   stage: test
   image: python:3.8-bullseye
 
 .test-py39:
-  needs: []
   stage: test
   image: python:3.9-bullseye
 
 .test-py310:
-  needs: []
   stage: test
   image: python:3.10-bullseye
 
