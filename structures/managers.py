@@ -1,6 +1,6 @@
 import datetime as dt
 import itertools
-from typing import Set, Tuple
+from typing import Optional, Set, Tuple
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
@@ -59,16 +59,18 @@ class EveSovereigntyMapManager(models.Manager):
         else False
         """
         if not eve_solar_system.is_null_sec:
-            return None
+            return False
         else:
             alliance_id = (
                 int(corporation.alliance.alliance_id) if corporation.alliance else None
             )
-            return alliance_id and (
+            return bool(alliance_id) and (
                 self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
             )
 
-    def solar_system_sov_alliance_id(self, eve_solar_system: models.Model) -> int:
+    def solar_system_sov_alliance_id(
+        self, eve_solar_system: models.Model
+    ) -> Optional[int]:
         """returns ID of sov owning alliance for this system or None"""
         if not eve_solar_system.is_null_sec:
             return None
