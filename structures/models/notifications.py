@@ -1,7 +1,7 @@
 """Notification related models."""
 
 import math
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import dhooks_lite
 import yaml
@@ -466,7 +466,7 @@ class NotificationBase(models.Model):
 
     def send_to_configured_webhooks(
         self,
-        ping_type_override: Optional[Webhook.PingType | str] = None,
+        ping_type_override: Optional[Union[Webhook.PingType, str]] = None,
         use_color_override: bool = False,
         color_override: Optional[int] = None,
     ) -> Optional[bool]:
