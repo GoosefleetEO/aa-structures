@@ -333,8 +333,9 @@ class Webhook(WebhookBase):
     notification_types = MultiSelectField(
         choices=NotificationType.choices,
         default=NotificationType.webhook_defaults,
-        help_text=(
-            "select which type of notifications should be forwarded to this webhook"
+        verbose_name=_("notification types"),
+        help_text=_(
+            "Select which type of notifications should be forwarded to this webhook"
         ),
     )
     language_code = models.CharField(
@@ -343,19 +344,21 @@ class Webhook(WebhookBase):
         default=None,
         null=True,
         blank=True,
-        verbose_name="language",
-        help_text="language of notifications send to this webhook",
+        verbose_name=_("language"),
+        help_text=_("language of notifications send to this webhook"),
     )
     is_default = models.BooleanField(
         default=False,
-        help_text=(
-            "whether owners have this webhook automatically pre-set when created"
+        verbose_name=_("is default"),
+        help_text=_(
+            "Whether owners have this webhook automatically pre-set when created"
         ),
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
+        verbose_name=_("has default pings enabled"),
         help_text=(
-            "to enable or disable pinging of notifications for this webhook "
+            "To enable or disable pinging of notifications for this webhook "
             "e.g. with @everyone and @here"
         ),
     )
@@ -364,9 +367,14 @@ class Webhook(WebhookBase):
         default=None,
         blank=True,
         related_name="+",
-        help_text="Groups to be pinged for each notification - ",
+        verbose_name=_("ping groups"),
+        help_text=_("Groups to be pinged for each notification - "),
     )
     objects = WebhookManager()
+
+    class Meta:
+        verbose_name = _("webhook")
+        verbose_name_plural = _("webhooks")
 
     @staticmethod
     def text_bold(text) -> str:
@@ -710,7 +718,8 @@ class Notification(NotificationBase):
     objects = NotificationManager()
 
     class Meta:
-        verbose_name = "eve notification"
+        verbose_name = _("eve notification")
+        verbose_name_plural = _("eve notifications")
         unique_together = (("notification_id", "owner"),)
 
     def save(self, *args, **kwargs) -> None:
@@ -825,6 +834,10 @@ class GeneratedNotification(NotificationBase):
 
     objects = GeneratedNotificationManager()
 
+    class Meta:
+        verbose_name = _("generated notification")
+        verbose_name_plural = _("generated  notifications")
+
     @property
     def notification_id(self) -> int:
         return self.pk
@@ -907,7 +920,8 @@ class FuelAlertConfig(BaseFuelAlertConfig):
     )
 
     class Meta:
-        verbose_name = "structure fuel alert config"
+        verbose_name = _("structure fuel alert config")
+        verbose_name_plural = _("structure fuel alert configs")
 
     def clean(self) -> None:
         if self.start <= self.end:
@@ -998,6 +1012,10 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
         ),
     )
 
+    class Meta:
+        verbose_name = _("jump fuel alert config")
+        verbose_name_plural = _("jump fuel alert configs")
+
     def save(self, *args, **kwargs) -> None:
         try:
             old_instance = JumpFuelAlertConfig.objects.get(pk=self.pk)
@@ -1060,7 +1078,8 @@ class FuelAlert(BaseFuelAlert):
     )
 
     class Meta:
-        verbose_name = "structure fuel alert"
+        verbose_name = _("structure fuel alert")
+        verbose_name_plural = _("structure fuel alerts")
         constraints = [
             models.UniqueConstraint(
                 fields=["structure", "config", "hours"],
@@ -1102,6 +1121,10 @@ class JumpFuelAlert(BaseFuelAlert):
         related_name="jump_fuel_alerts",
         verbose_name=_("configuration"),
     )
+
+    class Meta:
+        verbose_name = _("jump fuel alert")
+        verbose_name_plural = _("jump fuel alerts")
 
     def __str__(self) -> str:
         return f"{self.structure}-{self.config}"

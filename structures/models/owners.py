@@ -217,6 +217,10 @@ class Owner(models.Model):
 
     objects = OwnerManager()
 
+    class Meta:
+        verbose_name = _("owner")
+        verbose_name_plural = _("owners")
+
     def __str__(self) -> str:
         return str(self.corporation.corporation_name)
 
@@ -1307,6 +1311,8 @@ class OwnerCharacter(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = _("owner character")
+        verbose_name_plural = _("owner characters")
         constraints = [
             models.UniqueConstraint(
                 fields=["owner", "character_ownership"], name="functional_pk_ownertoken"

@@ -105,14 +105,16 @@ class StructureTag(models.Model):
 
     objects = StructureTagManager()
 
+    class Meta:
+        verbose_name = _("structure tag")
+        verbose_name_plural = _("structure tags")
+        ordering = ["order", "name"]
+
     def __str__(self) -> str:
         return self.name
 
     def __repr__(self):
         return "{}(name='{}')".format(self.__class__.__name__, self.name)
-
-    class Meta:
-        ordering = ordering = ["order", "name"]
 
     @property
     def html(self) -> str:
@@ -395,6 +397,10 @@ class Structure(models.Model):
     )
 
     objects = StructureManager()
+
+    class Meta:
+        verbose_name = _("structure")
+        verbose_name_plural = _("structures")
 
     def __str__(self) -> str:
         if self.is_upwell_structure:
@@ -775,6 +781,10 @@ class StructureItem(models.Model):
     location_flag = models.CharField(max_length=255, verbose_name=_("location flag"))
     quantity = models.IntegerField(verbose_name=_("quantity"))
 
+    class Meta:
+        verbose_name = _("structure item")
+        verbose_name_plural = _("structure items")
+
     def __str__(self) -> str:
         return str(self.eve_type.name)
 
@@ -832,6 +842,8 @@ class StructureService(models.Model):
     )
 
     class Meta:
+        verbose_name = _("structure service")
+        verbose_name_plural = _("structure services")
         unique_together = (("structure", "name"),)
 
     def __str__(self):
@@ -1011,7 +1023,12 @@ class StarbaseDetailFuel(models.Model):
     )
     quantity = models.IntegerField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["detail", "eve_type"], name="functional_pk_starbasedetailfuel"
+            )
+        ]
+
     def __str__(self) -> str:
         return f"{self.detail}-{self.eve_type}"
-
-    # TODO: Add unique constraints for detail, eve_type
