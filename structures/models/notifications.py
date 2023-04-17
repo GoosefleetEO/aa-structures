@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import translation
-from django.utils.functional import classproperty
+from django.utils.functional import classproperty  # type: ignore
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.models import EveEntity
@@ -466,9 +466,9 @@ class NotificationBase(models.Model):
 
     def send_to_configured_webhooks(
         self,
-        ping_type_override: Webhook.PingType = None,
+        ping_type_override: Optional[Webhook.PingType | str] = None,
         use_color_override: bool = False,
-        color_override: int = None,
+        color_override: Optional[int] = None,
     ) -> Optional[bool]:
         """Send this notification to all active webhooks which have this
         notification type configured
@@ -491,7 +491,7 @@ class NotificationBase(models.Model):
             logger.debug("%s: No relevant webhook found", self)
             return None
         if ping_type_override:
-            self._ping_type_override = ping_type_override
+            self._ping_type_override = Webhook.PingType(ping_type_override)
         if use_color_override:
             self._color_override = color_override
         success = True
@@ -630,7 +630,7 @@ class NotificationBase(models.Model):
         return success
 
     def _generate_embed(
-        self, language_code: str
+        self, language_code: Optional[str]
     ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
         """Generates a Discord embed for this notification."""
         from ..core.notification_embeds import NotificationBaseEmbed
@@ -647,7 +647,7 @@ class NotificationBase(models.Model):
 
         return DiscordUser
 
-    def _gen_avatar(self) -> Tuple[str, str]:
+    def _gen_avatar(self) -> Tuple[Optional[str], Optional[str]]:
         if STRUCTURES_NOTIFICATION_SET_AVATAR:
             username = "Notifications"
             avatar_url = static_file_absolute_url("structures/img/structures_logo.png")
@@ -671,7 +671,7 @@ class NotificationBase(models.Model):
 
         try:
             with translation.override(STRUCTURES_DEFAULT_LANGUAGE):
-                timer_processed = notification_timers.add_or_remove_timer(self)
+                return notification_timers.add_or_remove_timer(self)
         except OSError as ex:
             logger.warning(
                 "%s: Failed to add timer from notification: %s",
@@ -679,7 +679,7 @@ class NotificationBase(models.Model):
                 ex,
                 exc_info=True,
             )
-        return timer_processed
+        return False
 
 
 class Notification(NotificationBase):
@@ -753,7 +753,7 @@ class Notification(NotificationBase):
 
     def parsed_text(self) -> dict:
         """Returns the notifications's text as dict."""
-        return yaml.safe_load(self.text)
+        return yaml.safe_load(self.text) if self.text else {}
 
     def is_npc_attacking(self) -> bool:
         """Whether this notification is about a NPC attacking."""

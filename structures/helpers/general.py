@@ -16,7 +16,7 @@ def hours_until_deadline(
 
 
 def datetime_almost_equal(
-    first: dt.datetime, second: dt.datetime, threshold: int
+    first: Optional[dt.datetime], second: Optional[dt.datetime], threshold: int
 ) -> bool:
     """True when first and second datetime are within threshold in seconds.
     False when first or second is None.

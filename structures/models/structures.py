@@ -459,7 +459,7 @@ class Structure(models.Model):
         return self.eve_type.eve_group.eve_category_id == EveCategoryId.STRUCTURE
 
     @property
-    def is_full_power(self) -> bool:
+    def is_full_power(self) -> Optional[bool]:
         """return True if structure is full power, False if not.
 
         Returns None if state can not be determined
@@ -628,7 +628,7 @@ class Structure(models.Model):
             return hours_until_deadline(self.fuel_expires_at)
         return None
 
-    def is_fuel_expiry_date_different(self, other: "Structure") -> True:
+    def is_fuel_expiry_date_different(self, other: "Structure") -> bool:
         """True when fuel expiry date from other structure is different.
 
         Will compare using threshold setting.
