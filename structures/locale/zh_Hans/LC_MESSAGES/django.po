@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-23 21:40+0200\n"
+"POT-Creation-Date: 2023-04-24 23:05+0200\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Last-Translator: Erik Kalkoken <erik.kalkoken@gmail.com>, 2020\n"
 "Language-Team: Chinese (China) (https://www.transifex.com/kalkoken-apps/"
@@ -336,8 +336,8 @@ msgid ""
 "A moon mining extraction has been started for %(structure_name)s at %(moon)s "
 "in %(solar_system)s belonging to %(owner_link)s. Extraction was started by "
 "%(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will autofracture "
-"on %(auto_time)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will fracture "
+"automatically on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
 "%(structure_name)s开始了在%(solar_system)s的%(moon)s月球的月矿采集。"
@@ -390,7 +390,7 @@ msgstr "自动裂解"
 #| "%(solar_system)s has automatically been fired and the moon products are "
 #| "ready to be harvested.\n"
 msgid ""
-"The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has automatically been fired and the moon "
 "products are ready to be harvested.\n"
 "%(ore_text)s"
@@ -414,7 +414,9 @@ msgstr ""
 "在%(solar_system)s的%(moon)s月球的%(structure_name)s已被%(character)s取消"
 
 #: core/notification_embeds.py:831
-msgid "Moondrill fired"
+#, fuzzy
+#| msgid "Moondrill fired"
+msgid "Moon drill fired"
 msgstr "月球矿枪已开火"
 
 #: core/notification_embeds.py:833
@@ -424,7 +426,7 @@ msgstr "月球矿枪已开火"
 #| "%(solar_system)s has been fired by %(character)s and the moon products "
 #| "are ready to be harvested."
 msgid ""
-"The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has been fired by %(character)s and the moon "
 "products are ready to be harvested.\n"
 "%(ore_text)s"
@@ -464,7 +466,7 @@ msgstr ""
 "在%(solar_system)s%(planet)s的%(structure_type)s已被%(aggressor)s增强，将会"
 "在%(date)s退出增强"
 
-#: core/notification_embeds.py:935 core/notification_embeds.py:1630
+#: core/notification_embeds.py:935 core/notification_embeds.py:1631
 #, fuzzy, python-format
 #| msgid ""
 #| "The starbase %(structure_name)s at %(moon)s in %(solar_system)s is low on "
@@ -624,7 +626,7 @@ msgstr ""
 #, python-format
 msgid ""
 "%s has offered to end the war with %s in the exchange for %s ISK. If "
-"accepted, the war will end in 24 hours and your organizations willbe unable "
+"accepted, the war will end in 24 hours and your organizations will be unable "
 "to declare new wars against each other for the next 2 weeks."
 msgstr ""
 
@@ -635,29 +637,29 @@ msgstr ""
 #: core/notification_embeds.py:1550
 #, python-format
 msgid ""
-"The selected corporation wallet division for autopayments does not have "
-"enough current funds available to pay the %(bill_type)s due to be paid by "
-"%(due_date)s. Transfer additional funds to the selected wallet division in "
-"order to meet your pending automatic bills."
+"The selected corporation wallet division for automatic payments does not "
+"have enough current funds available to pay the %(bill_type)s due to be paid "
+"by %(due_date)s. Transfer additional funds to the selected wallet division "
+"in order to meet your pending automatic bills."
 msgstr ""
 
-#: core/notification_embeds.py:1569
+#: core/notification_embeds.py:1570
 msgid "IHub Bill About to Expire"
 msgstr ""
 
-#: core/notification_embeds.py:1571
+#: core/notification_embeds.py:1572
 #, python-format
 msgid ""
 "Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
 "%(due_date)s, if not paid in time this Infrastructure Hub will self-destruct."
 msgstr ""
 
-#: core/notification_embeds.py:1596
+#: core/notification_embeds.py:1597
 #, python-format
 msgid "%s has self-destructed due to unpaid maintenance bills"
 msgstr ""
 
-#: core/notification_embeds.py:1600
+#: core/notification_embeds.py:1601
 #, fuzzy, python-format
 #| msgid "%(structure_type)s in %(solar_system)s has entered reinforced mode"
 msgid ""
@@ -665,13 +667,13 @@ msgid ""
 "maintenance bills where not paid."
 msgstr "在%(solar_system)s的%(structure_type)s已进入增强模式"
 
-#: core/notification_embeds.py:1645
+#: core/notification_embeds.py:1646
 #, fuzzy
 #| msgid "Orbital reinforced"
 msgid "Starbase reinforced"
 msgstr "轨道 增强"
 
-#: core/notification_embeds.py:1653
+#: core/notification_embeds.py:1654
 #, python-format
 msgid "has been reinforced and will come out at: %s."
 msgstr ""

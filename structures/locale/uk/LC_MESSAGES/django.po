@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-23 21:40+0200\n"
+"POT-Creation-Date: 2023-04-24 23:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -321,8 +321,8 @@ msgid ""
 "A moon mining extraction has been started for %(structure_name)s at %(moon)s "
 "in %(solar_system)s belonging to %(owner_link)s. Extraction was started by "
 "%(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will autofracture "
-"on %(auto_time)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will fracture "
+"automatically on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
 
@@ -362,7 +362,7 @@ msgstr ""
 #: core/notification_embeds.py:784
 #, python-format
 msgid ""
-"The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has automatically been fired and the moon "
 "products are ready to be harvested.\n"
 "%(ore_text)s"
@@ -380,13 +380,13 @@ msgid ""
 msgstr ""
 
 #: core/notification_embeds.py:831
-msgid "Moondrill fired"
+msgid "Moon drill fired"
 msgstr ""
 
 #: core/notification_embeds.py:833
 #, python-format
 msgid ""
-"The moondrill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has been fired by %(character)s and the moon "
 "products are ready to be harvested.\n"
 "%(ore_text)s"
@@ -415,7 +415,7 @@ msgid ""
 "%(date)s."
 msgstr ""
 
-#: core/notification_embeds.py:935 core/notification_embeds.py:1630
+#: core/notification_embeds.py:935 core/notification_embeds.py:1631
 #, python-format
 msgid ""
 "The starbase %(structure_name)s at %(moon)s in %(solar_system)s belonging to "
@@ -542,7 +542,7 @@ msgstr ""
 #, python-format
 msgid ""
 "%s has offered to end the war with %s in the exchange for %s ISK. If "
-"accepted, the war will end in 24 hours and your organizations willbe unable "
+"accepted, the war will end in 24 hours and your organizations will be unable "
 "to declare new wars against each other for the next 2 weeks."
 msgstr ""
 
@@ -553,40 +553,40 @@ msgstr ""
 #: core/notification_embeds.py:1550
 #, python-format
 msgid ""
-"The selected corporation wallet division for autopayments does not have "
-"enough current funds available to pay the %(bill_type)s due to be paid by "
-"%(due_date)s. Transfer additional funds to the selected wallet division in "
-"order to meet your pending automatic bills."
+"The selected corporation wallet division for automatic payments does not "
+"have enough current funds available to pay the %(bill_type)s due to be paid "
+"by %(due_date)s. Transfer additional funds to the selected wallet division "
+"in order to meet your pending automatic bills."
 msgstr ""
 
-#: core/notification_embeds.py:1569
+#: core/notification_embeds.py:1570
 msgid "IHub Bill About to Expire"
 msgstr ""
 
-#: core/notification_embeds.py:1571
+#: core/notification_embeds.py:1572
 #, python-format
 msgid ""
 "Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
 "%(due_date)s, if not paid in time this Infrastructure Hub will self-destruct."
 msgstr ""
 
-#: core/notification_embeds.py:1596
+#: core/notification_embeds.py:1597
 #, python-format
 msgid "%s has self-destructed due to unpaid maintenance bills"
 msgstr ""
 
-#: core/notification_embeds.py:1600
+#: core/notification_embeds.py:1601
 #, python-format
 msgid ""
 "%(structure_type)s in %(solar_system)s has self-destructed, as the standard "
 "maintenance bills where not paid."
 msgstr ""
 
-#: core/notification_embeds.py:1645
+#: core/notification_embeds.py:1646
 msgid "Starbase reinforced"
 msgstr ""
 
-#: core/notification_embeds.py:1653
+#: core/notification_embeds.py:1654
 #, python-format
 msgid "has been reinforced and will come out at: %s."
 msgstr ""
