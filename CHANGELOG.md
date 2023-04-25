@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [2.2.1] - 2023-04-25
+## [2.3.0] - 2023-04-25
 
 ### Added
 
-- Localization update
+- Support for additional languages: fr, it, jp, uk
+
+### Changed
+
+- Improved localization
 - Improved type hints
 
 ## [2.2.0] - 2023-04-17
