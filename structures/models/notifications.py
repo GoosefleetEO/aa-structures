@@ -1,7 +1,7 @@
 """Notification related models."""
 
 import math
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Set, Tuple, Union
 
 import dhooks_lite
 import yaml
@@ -177,11 +177,11 @@ class NotificationType(models.TextChoices):
     )
 
     @classproperty
-    def esi_notifications(cls) -> set:
-        return set(cls.values) - cls.generated_notifications
+    def esi_notifications(cls) -> Set["NotificationType"]:
+        return set(cls.values) - cls.generated_notifications  # type: ignore
 
     @classproperty
-    def generated_notifications(cls) -> set:
+    def generated_notifications(cls) -> Set["NotificationType"]:
         return {
             cls.STRUCTURE_JUMP_FUEL_ALERT,
             cls.STRUCTURE_REFUELED_EXTRA,
@@ -190,7 +190,7 @@ class NotificationType(models.TextChoices):
         }
 
     @classproperty
-    def webhook_defaults(cls) -> list:
+    def webhook_defaults(cls) -> List["NotificationType"]:
         """List of default notifications for new webhooks."""
         return [
             cls.STRUCTURE_ANCHORING,
@@ -212,7 +212,7 @@ class NotificationType(models.TextChoices):
         ]
 
     @classproperty
-    def relevant_for_timerboard(cls) -> set:
+    def relevant_for_timerboard(cls) -> Set["NotificationType"]:
         """Notification types that can create timers."""
         return {
             cls.STRUCTURE_LOST_SHIELD,
@@ -225,7 +225,7 @@ class NotificationType(models.TextChoices):
         }
 
     @classproperty
-    def relevant_for_alliance_level(cls) -> set:
+    def relevant_for_alliance_level(cls) -> Set["NotificationType"]:
         """Notification types that require the alliance level flag."""
         return {
             # billing
@@ -255,7 +255,7 @@ class NotificationType(models.TextChoices):
         }
 
     @classproperty
-    def relevant_for_moonmining(cls) -> set:
+    def relevant_for_moonmining(cls) -> Set["NotificationType"]:
         """Notification types about moon mining."""
         return {
             cls.MOONMINING_EXTRACTION_STARTED,
@@ -266,7 +266,7 @@ class NotificationType(models.TextChoices):
         }
 
     @classproperty
-    def structure_related(cls) -> set:
+    def structure_related(cls) -> Set["NotificationType"]:
         """Notification types that are related to a structure."""
         return {
             cls.STRUCTURE_ONLINE,
@@ -298,18 +298,18 @@ class NotificationType(models.TextChoices):
         }
 
     @classproperty
-    def relevant_for_forwarding(cls) -> set:
+    def relevant_for_forwarding(cls) -> Set["NotificationType"]:
         """Notification types that are forwarded to Discord."""
-        my_set = set(cls.values_enabled)
+        my_set = set(cls.values_enabled)  # type: ignore
         # if STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS:
         #     my_set.discard(cls.STRUCTURE_FUEL_ALERT)
         #     my_set.discard(cls.TOWER_RESOURCE_ALERT_MSG)
         return my_set
 
     @classproperty
-    def values_enabled(cls) -> set:
+    def values_enabled(cls) -> Set["NotificationType"]:
         """Values of enabled notif types only."""
-        my_set = set(cls.values)
+        my_set = set(cls.values)  # type: ignore
         if not STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS:
             my_set.discard(cls.STRUCTURE_REFUELED_EXTRA)
             my_set.discard(cls.TOWER_REFUELED_EXTRA)
@@ -514,10 +514,13 @@ class NotificationBase(models.Model):
     def relevant_webhooks(self) -> models.QuerySet:
         """Determine relevant webhooks matching this notification type."""
         if not self.is_structure_related:
-            structures_qs = None
+            structures_qs = Structure.objects.none()
         else:
             structures_qs = self.calc_related_structures()
-        if structures_qs and structures_qs.filter(webhooks__isnull=False).count() == 1:
+        if (
+            structures_qs.exists()
+            and structures_qs.filter(webhooks__isnull=False).count() == 1
+        ):
             webhooks_qs = structures_qs.first().webhooks.filter(
                 notification_types__contains=self.notif_type, is_active=True
             )
@@ -631,7 +634,7 @@ class NotificationBase(models.Model):
 
     def _generate_embed(
         self, language_code: Optional[str]
-    ) -> Tuple[dhooks_lite.Embed, Webhook.PingType]:
+    ) -> Tuple[dhooks_lite.Embed, Optional[Webhook.PingType]]:
         """Generates a Discord embed for this notification."""
         from ..core.notification_embeds import NotificationBaseEmbed
 

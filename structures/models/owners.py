@@ -905,9 +905,7 @@ class Owner(models.Model):
         names = {x["item_id"]: x["name"] for x in names_data}
         return names
 
-    def _update_starbase_detail(
-        self, structure: object, token: Token
-    ) -> StarbaseDetail:
+    def _update_starbase_detail(self, structure, token: Token) -> StarbaseDetail:
         """Update detail for the starbase from ESI."""
         operation = esi.client.Corporation.get_corporations_corporation_id_starbases_starbase_id(
             corporation_id=structure.owner.corporation.corporation_id,

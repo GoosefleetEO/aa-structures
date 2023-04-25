@@ -1,5 +1,6 @@
 import datetime as dt
 from collections import namedtuple
+from typing import Optional
 
 import dhooks_lite
 
@@ -19,10 +20,10 @@ from app_utils.datetime import (
 )
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
-from .. import __title__
-from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
-from ..constants import EveTypeId
-from ..models.notifications import (
+from structures import __title__
+from structures.app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+from structures.constants import EveTypeId
+from structures.models.notifications import (
     EveEntity,
     GeneratedNotification,
     Notification,
@@ -30,7 +31,8 @@ from ..models.notifications import (
     NotificationType,
     Webhook,
 )
-from ..models.structures import Structure
+from structures.models.structures import Structure
+
 from . import sovereignty, starbases
 
 
@@ -46,7 +48,7 @@ class BillType(models.IntegerChoices):
             return cls.UNKNOWN
 
 
-def timeuntil(to_date: dt.datetime, from_date: dt.datetime = None) -> str:
+def timeuntil(to_date: dt.datetime, from_date: Optional[dt.datetime] = None) -> str:
     """Render timeuntil template tag for given datetime to string."""
     if not from_date:
         from_date = now()
@@ -94,7 +96,7 @@ class NotificationBaseEmbed:
         return self._notification
 
     @property
-    def ping_type(self) -> Webhook.PingType:
+    def ping_type(self) -> Optional[Webhook.PingType]:
         return self._ping_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
@@ -158,7 +160,7 @@ class NotificationBaseEmbed:
         )
 
     @staticmethod
-    def create(notification: Notification) -> "NotificationBaseEmbed":
+    def create(notification: "NotificationBase") -> "NotificationBaseEmbed":
         """Creates a new instance of the respective subclass for given Notification."""
         if not isinstance(notification, NotificationBase):
             raise TypeError("notification must be of type NotificationBase")
@@ -328,6 +330,7 @@ class NotificationBaseEmbed:
             return dotlan.corporation_url(eve_entity.name)
         elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
             return evewho.character_url(eve_entity.id)
+        return ""
 
     @classmethod
     def _gen_eve_entity_link(cls, eve_entity: EveEntity) -> str:

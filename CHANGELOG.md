@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.2.1] - 2023-04-25
+
+### Added
+
+- Localization update
+- Improved type hints
+
 ## [2.2.0] - 2023-04-17
 
 >**Important**:<br>In case you have not updated to Structures 2.x yet, please follow the special update instructions for updating to 2.0.0 first, before installing this update!

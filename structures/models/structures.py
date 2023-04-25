@@ -1009,7 +1009,7 @@ class StarbaseDetail(models.Model):
     def __str__(self) -> str:
         return str(self.structure)
 
-    def calc_fuel_expires(self) -> dt.datetime:
+    def calc_fuel_expires(self) -> Optional[dt.datetime]:
         """Estimate when fuel will expire for this starbase.
 
         Estimate will vary due to server caching of remaining fuel blocks.
