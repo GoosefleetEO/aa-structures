@@ -79,7 +79,7 @@ class NotificationBaseEmbed:
             raise TypeError("notification must be of type Notification")
         self._notification = notification
         self._parsed_text = notification.parsed_text()
-        self._title = None
+        self._title = ""
         self._description = ""
         self._color = None
         self._thumbnail = None
@@ -109,10 +109,6 @@ class NotificationBaseEmbed:
             property "ping_type_override" defined
 
         """
-        if self._title is None:
-            raise ValueError(f"title not defined for {type(self)}")
-        if self._description is None:
-            raise ValueError(f"description not defined for {type(self)}")
         corporation = self.notification.owner.corporation
         if self.notification.is_alliance_level and corporation.alliance:
             author_name = corporation.alliance.alliance_name

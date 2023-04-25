@@ -30,6 +30,7 @@ from ..testdata.factories_2 import (
     GeneratedNotificationFactory,
     NotificationFactory,
     OwnerFactory,
+    WebhookFactory,
 )
 from ..testdata.helpers import (
     create_structures,
@@ -61,10 +62,6 @@ class TestNotificationEmbeds(TestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
-        cls.owner.webhooks.add(cls.webhook)
 
     def test_should_create_obj_from_notification(self):
         # given
@@ -85,6 +82,28 @@ class TestNotificationEmbeds(TestCase):
             "notif_type='MoonminingExtractionFinished'))",
         )
 
+    def test_should_raise_exception_for_unsupported_notif_types(self):
+        # given
+        notification = Notification.objects.create(
+            notification_id=666,
+            owner=self.owner,
+            sender=EveEntity.objects.get(id=2001),
+            timestamp=now(),
+            notif_type="XXXUnsupportedNotificationTypeXXX",
+            last_updated=now(),
+        )
+        # when / then
+        with self.assertRaises(NotImplementedError):
+            ne.NotificationBaseEmbed.create(notification)
+
+    def test_should_require_notification_for_init(self):
+        with self.assertRaises(TypeError):
+            ne.NotificationBaseEmbed(notification="dummy")
+
+    def test_should_require_notification_for_factory(self):
+        with self.assertRaises(TypeError):
+            ne.NotificationBaseEmbed.create(notification="dummy")
+
 
 class TestNotificationEmbedsGenerate(TestCase):
     @classmethod
@@ -94,9 +113,7 @@ class TestNotificationEmbedsGenerate(TestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
+        cls.webhook = WebhookFactory()
         cls.owner.webhooks.add(cls.webhook)
 
     def test_should_generate_embed_from_notification(self):
@@ -155,36 +172,6 @@ class TestNotificationEmbedsGenerate(TestCase):
                 self.assertIsInstance(discord_embed, dhooks_lite.Embed)
                 types_tested.add(notification.notif_type)
         self.assertSetEqual(NotificationType.esi_notifications, types_tested)
-
-    def test_should_raise_exception_for_unsupported_notif_types(self):
-        # given
-        notification = Notification.objects.create(
-            notification_id=666,
-            owner=self.owner,
-            sender=EveEntity.objects.get(id=2001),
-            timestamp=now(),
-            notif_type="XXXUnsupportedNotificationTypeXXX",
-            last_updated=now(),
-        )
-        # when / then
-        with self.assertRaises(NotImplementedError):
-            ne.NotificationBaseEmbed.create(notification)
-
-    def test_should_require_notification_for_init(self):
-        with self.assertRaises(TypeError):
-            ne.NotificationBaseEmbed(notification="dummy")
-
-    def test_should_require_notification_for_factory(self):
-        with self.assertRaises(TypeError):
-            ne.NotificationBaseEmbed.create(notification="dummy")
-
-    def test_should_not_allow_generating_embed_for_base_class(self):
-        # given
-        notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationBaseEmbed(notification=notification)
-        # when
-        with self.assertRaises(ValueError):
-            notification_embed.generate_embed()
 
     def test_should_set_ping_everyone_for_color_danger(self):
         # given
