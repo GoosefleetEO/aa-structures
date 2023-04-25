@@ -3,21 +3,16 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-# Translators:
-# rainbow ck <kaijiant@gmail.com>, 2020
-# Erik Kalkoken <erik.kalkoken@gmail.com>, 2020
-#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-04-24 23:05+0200\n"
-"PO-Revision-Date: 2020-03-09 19:25+0000\n"
-"Last-Translator: Erik Kalkoken <erik.kalkoken@gmail.com>, 2020\n"
-"Language-Team: Chinese (China) (https://www.transifex.com/kalkoken-apps/"
-"teams/107978/zh_CN/)\n"
-"Language: zh_CN\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -36,7 +31,7 @@ msgstr ""
 
 #: admin.py:240 models/structures.py:163
 msgid "N/A"
-msgstr "N/A"
+msgstr ""
 
 #: admin.py:255
 msgid "Not configured"
@@ -124,10 +119,8 @@ msgid "Send queued messages from selected webhooks"
 msgstr ""
 
 #: core/notification_embeds.py:38
-#, fuzzy
-#| msgid "unknown"
 msgid "Unknown Bill"
-msgstr "未知"
+msgstr ""
 
 #: core/notification_embeds.py:39
 msgid "Infrastructure Hub Bill"
@@ -135,39 +128,38 @@ msgstr ""
 
 #: core/notification_embeds.py:295
 msgid "shield"
-msgstr "护盾"
+msgstr ""
 
 #: core/notification_embeds.py:296
 msgid "armor"
-msgstr "装甲"
+msgstr ""
 
 #: core/notification_embeds.py:297
 msgid "hull"
-msgstr "结构"
+msgstr ""
 
 #: core/notification_embeds.py:376 core/notification_embeds.py:809
 msgid "(unknown)"
-msgstr "（未知）"
+msgstr ""
 
 #: core/notification_embeds.py:394
-#, fuzzy, python-format
-#| msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
+#, python-format
 msgid ""
 "The %(structure_type)s %(structure_name)s%(location)s in %(solar_system)s "
 "belonging to %(owner_link)s "
-msgstr "在%(solar_system)s的%(structure_type)s%(structure_name)s"
+msgstr ""
 
 #: core/notification_embeds.py:411
 msgid "Structure online"
-msgstr "建筑上线"
+msgstr ""
 
 #: core/notification_embeds.py:412
 msgid "is now online."
-msgstr "已上线"
+msgstr ""
 
 #: core/notification_embeds.py:423
 msgid "Structure fuel alert"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: core/notification_embeds.py:425 core/notification_embeds.py:984
 #, python-format
@@ -186,10 +178,8 @@ msgid ""
 msgstr ""
 
 #: core/notification_embeds.py:454
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "Structure refueled"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: core/notification_embeds.py:456 core/notification_embeds.py:998
 #, python-format
@@ -198,102 +188,100 @@ msgstr ""
 
 #: core/notification_embeds.py:464
 msgid "Structure services off-line"
-msgstr "建筑服务下线"
+msgstr ""
 
 #: core/notification_embeds.py:465
 msgid "has all services off-lined."
-msgstr "全服务已下线"
+msgstr ""
 
 #: core/notification_embeds.py:476
 msgid "Structure low power"
-msgstr "建筑低能量"
+msgstr ""
 
 #: core/notification_embeds.py:477
 msgid "went to low power mode."
-msgstr "进入低能量模式"
+msgstr ""
 
 #: core/notification_embeds.py:484
 msgid "Structure full power"
-msgstr "建筑满能量"
+msgstr ""
 
 #: core/notification_embeds.py:485
 msgid "went to full power mode."
-msgstr "进入满能量模式"
+msgstr ""
 
 #: core/notification_embeds.py:492
 msgid "Structure un-anchoring"
-msgstr "建筑解铆中"
+msgstr ""
 
 #: core/notification_embeds.py:497
 #, python-format
 msgid "has started un-anchoring. It will be fully un-anchored at: %s"
-msgstr "开始解铆，将会在%s完全解铆"
+msgstr ""
 
 #: core/notification_embeds.py:505
 msgid "Structure under attack"
-msgstr "建筑收到攻击"
+msgstr ""
 
 #: core/notification_embeds.py:506
-#, fuzzy, python-format
-#| msgid "is under attack by %s"
+#, python-format
 msgid ""
 "is under attack by %s.\n"
 "%s"
-msgstr "被%s攻击"
+msgstr ""
 
 #: core/notification_embeds.py:524
 msgid "Structure lost shield"
-msgstr "建筑失去护盾"
+msgstr ""
 
 #: core/notification_embeds.py:529
 #, python-format
 msgid "has lost its shields. Armor timer end at: %s"
-msgstr "已失去护盾，装甲增强在%s后结束"
+msgstr ""
 
 #: core/notification_embeds.py:537
 msgid "Structure lost armor"
-msgstr "建筑失去护甲"
+msgstr ""
 
 #: core/notification_embeds.py:542
 #, python-format
 msgid "has lost its armor. Hull timer end at: %s"
-msgstr "已失去护甲，结构增强在%s后结束"
+msgstr ""
 
 #: core/notification_embeds.py:550
 msgid "Structure destroyed"
-msgstr "建筑已被击毁"
+msgstr ""
 
 #: core/notification_embeds.py:551
 msgid "has been destroyed."
-msgstr "已被击毁"
+msgstr ""
 
 #: core/notification_embeds.py:565
 #, python-format
 msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
-msgstr "在%(solar_system)s的%(structure_type)s%(structure_name)s"
+msgstr ""
 
 #: core/notification_embeds.py:581
 #, python-format
 msgid ""
 "has been transferred from %(from_corporation)s to %(to_corporation)s by "
 "%(character)s."
-msgstr "已被%(character)s从%(from_corporation)s转移到%(to_corporation)s"
+msgstr ""
 
 #: core/notification_embeds.py:588
 msgid "Ownership transferred"
-msgstr "所有权已转移"
+msgstr ""
 
 #: core/notification_embeds.py:608
-#, fuzzy, python-format
-#| msgid "%(structure_type)s has started anchoring in %(solar_system)s. "
+#, python-format
 msgid ""
 "A %(structure_type)s belonging to %(owner_link)s has started anchoring in "
 "%(solar_system)s. "
-msgstr "%(structure_type)s开始在%(solar_system)s铆定"
+msgstr ""
 
 #: core/notification_embeds.py:615
 msgid "Structure anchoring"
-msgstr "建筑正在铆钉"
+msgstr ""
 
 #: core/notification_embeds.py:656
 msgid "Structure reinforcement time changed"
@@ -306,12 +294,11 @@ msgid ""
 msgstr ""
 
 #: core/notification_embeds.py:664
-#, fuzzy, python-format
-#| msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
+#, python-format
 msgid ""
 "- %(structure_type)s %(structure_name)s in %(solar_system)s belonging to "
 "%(owner_link)s"
-msgstr "在%(solar_system)s的%(structure_type)s%(structure_name)s"
+msgstr ""
 
 #: core/notification_embeds.py:676
 #, python-format
@@ -323,15 +310,10 @@ msgstr ""
 
 #: core/notification_embeds.py:728 models/notifications.py:99
 msgid "Moon mining extraction started"
-msgstr "月矿采集开始"
+msgstr ""
 
 #: core/notification_embeds.py:730
-#, fuzzy, python-format
-#| msgid ""
-#| "A moon mining extraction has been started for %(structure_name)s at "
-#| "%(moon)s in %(solar_system)s. Extraction was started by %(character)s.\n"
-#| "The chunk will be ready on location at %(ready_time)s, and will "
-#| "autofracture on %(auto_time)s.\n"
+#, python-format
 msgid ""
 "A moon mining extraction has been started for %(structure_name)s at %(moon)s "
 "in %(solar_system)s belonging to %(owner_link)s. Extraction was started by "
@@ -340,9 +322,6 @@ msgid ""
 "automatically on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
-"%(structure_name)s开始了在%(solar_system)s的%(moon)s月球的月矿采集。"
-"是%(character)s启动的采集。\n"
-"月矿将在%(ready_time)s开采完毕，并在%(auto_time)s自动裂解。\n"
 
 #: core/notification_embeds.py:746
 #, python-format
@@ -353,14 +332,10 @@ msgstr ""
 
 #: core/notification_embeds.py:758
 msgid "Extraction finished"
-msgstr "采集结束"
+msgstr ""
 
 #: core/notification_embeds.py:760
-#, fuzzy, python-format
-#| msgid ""
-#| "The extraction for %(structure_name)s at %(moon)s in %(solar_system)s is "
-#| "finished and the chunk is ready to be shot at.\n"
-#| "The chunk will automatically fracture on %(auto_time)s."
+#, python-format
 msgid ""
 "The extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s is finished and the chunk is ready to be shot "
@@ -368,8 +343,6 @@ msgid ""
 "The chunk will automatically fracture on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
-"%(structure_name)s在%(solar_system)s的%(moon)s月球已完成采集。\n"
-"矿石将在%(auto_time)s自动裂解"
 
 #: core/notification_embeds.py:772 core/notification_embeds.py:794
 #: core/notification_embeds.py:844
@@ -381,167 +354,120 @@ msgstr ""
 
 #: core/notification_embeds.py:782
 msgid "Automatic Fracture"
-msgstr "自动裂解"
+msgstr ""
 
 #: core/notification_embeds.py:784
-#, fuzzy, python-format
-#| msgid ""
-#| "The moondrill fitted to %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s has automatically been fired and the moon products are "
-#| "ready to be harvested.\n"
+#, python-format
 msgid ""
 "The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has automatically been fired and the moon "
 "products are ready to be harvested.\n"
 "%(ore_text)s"
 msgstr ""
-"在%(solar_system)s的%(moon)s月球的%(structure_name)s矿枪已自动开火，月矿已准"
-"备可开采\n"
 
 #: core/notification_embeds.py:810
 msgid "Extraction cancelled"
-msgstr "采集取消"
+msgstr ""
 
 #: core/notification_embeds.py:812
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s has been cancelled by %(character)s."
+#, python-format
 msgid ""
 "An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has been cancelled by %(character)s."
 msgstr ""
-"在%(solar_system)s的%(moon)s月球的%(structure_name)s已被%(character)s取消"
 
 #: core/notification_embeds.py:831
-#, fuzzy
-#| msgid "Moondrill fired"
 msgid "Moon drill fired"
-msgstr "月球矿枪已开火"
+msgstr ""
 
 #: core/notification_embeds.py:833
-#, fuzzy, python-format
-#| msgid ""
-#| "The moondrill fitted to %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s has been fired by %(character)s and the moon products "
-#| "are ready to be harvested."
+#, python-format
 msgid ""
 "The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
 "belonging to %(owner_link)s has been fired by %(character)s and the moon "
 "products are ready to be harvested.\n"
 "%(ore_text)s"
 msgstr ""
-"%(solar_system)s%(moon)s月球的%(structure_name)s的矿枪已被%(character)s启用，"
-"月矿已可采集。"
 
 #: core/notification_embeds.py:876
 msgid "Orbital under attack"
-msgstr "受攻击的轨道"
+msgstr ""
 
 #: core/notification_embeds.py:878
-#, fuzzy, python-format
-#| msgid ""
-#| "The %(structure_type)s at %(planet)s in %(solar_system)s is under attack "
-#| "by %(aggressor)s."
+#, python-format
 msgid ""
 "The %(structure_type)s at %(planet)s in %(solar_system)s belonging to "
 "%(owner_link)s is under attack by %(aggressor)s."
 msgstr ""
-"%(structure_type)s在%(solar_system)s%(planet)s正遭受%(aggressor)s的攻击"
 
 #: core/notification_embeds.py:897
 msgid "Orbital reinforced"
-msgstr "轨道 增强"
+msgstr ""
 
 #: core/notification_embeds.py:899
-#, fuzzy, python-format
-#| msgid ""
-#| "The %(structure_type)s at %(planet)s in %(solar_system)s has been "
-#| "reinforced by %(aggressor)s and will come out at: %(date)s."
+#, python-format
 msgid ""
 "The %(structure_type)s at %(planet)s in %(solar_system)s belonging to "
 "%(owner_link)s has been reinforced by %(aggressor)s and will come out at: "
 "%(date)s."
 msgstr ""
-"在%(solar_system)s%(planet)s的%(structure_type)s已被%(aggressor)s增强，将会"
-"在%(date)s退出增强"
 
 #: core/notification_embeds.py:935 core/notification_embeds.py:1631
-#, fuzzy, python-format
-#| msgid ""
-#| "The starbase %(structure_name)s at %(moon)s in %(solar_system)s is low on "
-#| "fuel. It has %(quantity)d fuel blocks left."
+#, python-format
 msgid ""
 "The starbase %(structure_name)s at %(moon)s in %(solar_system)s belonging to "
 "%(owner_link)s "
 msgstr ""
-"在%(solar_system)s%(moon)s的POS%(structure_name)s缺少燃料，只剩%(quantity)d燃"
-"料块剩余"
 
 #: core/notification_embeds.py:952
 msgid "Starbase under attack"
-msgstr "POS正在被攻击"
+msgstr ""
 
 #: core/notification_embeds.py:954
-#, fuzzy, python-format
-#| msgid ""
-#| "The starbase %(structure_name)s at %(moon)s in %(solar_system)s is under "
-#| "attack by %(aggressor)s.\n"
-#| "%(damage_text)s"
+#, python-format
 msgid ""
 "is under attack by %(aggressor)s.\n"
 "%(damage_text)s"
 msgstr ""
-"在%(solar_system)s%(moon)s的POS%(structure_name)s正在遭到%(aggressor)s攻击\n"
-"%(damage_text)s"
 
 #: core/notification_embeds.py:982 models/notifications.py:93
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "Starbase fuel alert"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: core/notification_embeds.py:996
-#, fuzzy
-#| msgid "Starbase low on fuel"
 msgid "Starbase refueled"
-msgstr "POS低燃料"
+msgstr ""
 
 #: core/notification_embeds.py:1035
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s is being captured"
-msgstr "在%(solar_system)s的%(structure_type)s已被占领"
+msgstr ""
 
 #: core/notification_embeds.py:1041
 #, python-format
 msgid ""
 "A capsuleer has started to influence the %(type)s in %(solar_system)s "
 "belonging to %(owner)s with an Entosis Link."
-msgstr "一个玩家正在对%(owner)s在%(solar_system)s的%(type)s使用侵蚀链接"
+msgstr ""
 
 #: core/notification_embeds.py:1056
 #, python-format
 msgid ""
 "Command nodes for %(structure_type)s in %(solar_system)s have begun to "
 "decloak"
-msgstr "在%(solar_system)s的%(structure_type)s的指挥节点开始解除隐形"
+msgstr ""
 
 #: core/notification_embeds.py:1063
-#, fuzzy, python-format
-#| msgid ""
-#| "Command nodes for %(structure_type)s in %(solar_system)s can now be found "
-#| "throughout the %(constellation)s constellation"
+#, python-format
 msgid ""
 "Command nodes for %(structure_type)s in %(solar_system)s belonging to "
 "%(owner)s can now be found throughout the %(constellation)s constellation"
 msgstr ""
-"在%(solar_system)s的%(structure_type)s的指挥节点将能在%(constellation)s星座找"
-"到"
 
 #: core/notification_embeds.py:1085
 #, python-format
 msgid "DED Sovereignty claim acknowledgment: %s"
-msgstr "DED主权夺取通知：%s"
+msgstr ""
 
 #: core/notification_embeds.py:1089
 #, python-format
@@ -549,8 +475,6 @@ msgid ""
 "DED now officially acknowledges that your member corporation %(corporation)s "
 "has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
 msgstr ""
-"DED将正式通知你的子公司%(corporation)s已代表%(alliance)s将%(solar_system)s的"
-"主权夺下。"
 
 #: core/notification_embeds.py:1109
 #, python-format
@@ -558,22 +482,16 @@ msgid "Lost sovereignty in: %s"
 msgstr ""
 
 #: core/notification_embeds.py:1111
-#, fuzzy, python-format
-#| msgid ""
-#| "DED now officially acknowledges that your member corporation "
-#| "%(corporation)s has claimed sovereignty on behalf of %(alliance)s in "
-#| "%(solar_system)s."
+#, python-format
 msgid ""
 "DED acknowledges that member corporation %(corporation)s has lost its claim "
 "to sovereignty on behalf of %(alliance)s in %(solar_system)s."
 msgstr ""
-"DED将正式通知你的子公司%(corporation)s已代表%(alliance)s将%(solar_system)s的"
-"主权夺下。"
 
 #: core/notification_embeds.py:1126
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s has entered reinforced mode"
-msgstr "在%(solar_system)s的%(structure_type)s已进入增强模式"
+msgstr ""
 
 #: core/notification_embeds.py:1132
 #, python-format
@@ -582,13 +500,11 @@ msgid ""
 "reinforced by hostile forces and command nodes will begin decloaking at "
 "%(date)s"
 msgstr ""
-"%(owner)s在%(solar_system)s的%(structure_type)s已被敌方增强，指挥节点将"
-"在%(date)s开始解除隐身"
 
 #: core/notification_embeds.py:1149
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s has been destroyed"
-msgstr "在%(solar_system)s的%(structure_type)s已被击毁"
+msgstr ""
 
 #: core/notification_embeds.py:1155
 #, python-format
@@ -596,7 +512,6 @@ msgid ""
 "The command nodes for %(structure_type)s in %(solar_system)s belonging to "
 "%(owner)s have been destroyed by hostile forces."
 msgstr ""
-"属于%(owner)s在%(solar_system)s的%(structure_type)s指挥节点已被敌方摧毁"
 
 #: core/notification_embeds.py:1188
 #, python-format
@@ -604,18 +519,16 @@ msgid " near **%s**"
 msgstr ""
 
 #: core/notification_embeds.py:1191
-#, fuzzy, python-format
-#| msgid "%(structure_type)s has started anchoring in %(solar_system)s. "
+#, python-format
 msgid "%(structure_type)s anchored in %(solar_system)s"
-msgstr "%(structure_type)s开始在%(solar_system)s铆定"
+msgstr ""
 
 #: core/notification_embeds.py:1196
-#, fuzzy, python-format
-#| msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
+#, python-format
 msgid ""
 "A %(structure_type)s from %(structure_owner)s has anchored in "
 "%(solar_system)s%(location_text)s."
-msgstr "在%(solar_system)s的%(structure_type)s%(structure_name)s"
+msgstr ""
 
 #: core/notification_embeds.py:1533
 #, python-format
@@ -660,18 +573,15 @@ msgid "%s has self-destructed due to unpaid maintenance bills"
 msgstr ""
 
 #: core/notification_embeds.py:1601
-#, fuzzy, python-format
-#| msgid "%(structure_type)s in %(solar_system)s has entered reinforced mode"
+#, python-format
 msgid ""
 "%(structure_type)s in %(solar_system)s has self-destructed, as the standard "
 "maintenance bills where not paid."
-msgstr "在%(solar_system)s的%(structure_type)s已进入增强模式"
+msgstr ""
 
 #: core/notification_embeds.py:1646
-#, fuzzy
-#| msgid "Orbital reinforced"
 msgid "Starbase reinforced"
-msgstr "轨道 增强"
+msgstr ""
 
 #: core/notification_embeds.py:1654
 #, python-format
@@ -680,140 +590,112 @@ msgstr ""
 
 #: core/notification_timers.py:89
 msgid "Armor timer"
-msgstr "装甲timer"
+msgstr ""
 
 #: core/notification_timers.py:90 core/notification_timers.py:197
 #: core/notification_timers.py:380
 msgid "Final timer"
-msgstr "最终timer"
+msgstr ""
 
 #: core/notification_timers.py:147
 msgid "Sov timer"
-msgstr "主权timer"
+msgstr ""
 
 #: core/notification_timers.py:249
 msgid "Extraction ready"
-msgstr "准备采集"
+msgstr ""
 
 #: core/serializers.py:491
 msgid "yes"
-msgstr "是"
+msgstr ""
 
 #: core/serializers.py:496
 msgid "no"
-msgstr "没有"
+msgstr ""
 
 #: models/notifications.py:43
 msgid "English"
-msgstr "英语"
+msgstr ""
 
 #: models/notifications.py:44
 msgid "German"
-msgstr "德语"
+msgstr ""
 
 #: models/notifications.py:45
 msgid "Spanish"
-msgstr "西班牙文"
+msgstr ""
 
 #: models/notifications.py:46
 msgid "Chinese Simplified"
-msgstr "简体中文"
+msgstr ""
 
 #: models/notifications.py:47
 msgid "Russian"
-msgstr "俄语"
+msgstr ""
 
 #: models/notifications.py:48
 msgid "Korean"
-msgstr " 韩语"
+msgstr ""
 
 #: models/notifications.py:56
-#, fuzzy
-#| msgid "Structure anchoring"
 msgid "Upwell structure anchoring"
-msgstr "建筑正在铆钉"
+msgstr ""
 
 #: models/notifications.py:57
-#, fuzzy
-#| msgid "Structure online"
 msgid "Upwell structure went online"
-msgstr "建筑上线"
+msgstr ""
 
 #: models/notifications.py:59
-#, fuzzy
-#| msgid "Structure services off-line"
 msgid "Upwell structure services went offline"
-msgstr "建筑服务下线"
+msgstr ""
 
 #: models/notifications.py:62
-#, fuzzy
-#| msgid "Structure low power"
 msgid "Upwell structure went high power"
-msgstr "建筑低能量"
+msgstr ""
 
 #: models/notifications.py:65
-#, fuzzy
-#| msgid "Structure low power"
 msgid "Upwell structure went low power"
-msgstr "建筑低能量"
+msgstr ""
 
 #: models/notifications.py:67
-#, fuzzy
-#| msgid "Structure un-anchoring"
 msgid "Upwell structure unanchoring"
-msgstr "建筑解铆中"
+msgstr ""
 
 #: models/notifications.py:68
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "Upwell structure fuel alert"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:69
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "Upwell structure refueled"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:71
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "Upwell structure jump fuel alert"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:74
-#, fuzzy
-#| msgid "Structure under attack"
 msgid "Upwell structure is under attack"
-msgstr "建筑收到攻击"
+msgstr ""
 
 #: models/notifications.py:76
-#, fuzzy
-#| msgid "Structure lost shield"
 msgid "Upwell structure lost shields"
-msgstr "建筑失去护盾"
+msgstr ""
 
 #: models/notifications.py:77
-#, fuzzy
-#| msgid "Structure lost armor"
 msgid "Upwell structure lost armor"
-msgstr "建筑失去护甲"
+msgstr ""
 
 #: models/notifications.py:78
-#, fuzzy
-#| msgid "Structure destroyed"
 msgid "Upwell structure destroyed"
-msgstr "建筑已被击毁"
+msgstr ""
 
 #: models/notifications.py:81
 msgid "Upwell structure reinforcement time changed"
 msgstr ""
 
 #: models/notifications.py:84
-#, fuzzy
-#| msgid "Ownership transferred"
 msgid "Upwell structure ownership transferred"
-msgstr "所有权已转移"
+msgstr ""
 
 #: models/notifications.py:88
 msgid "Customs office attacked"
@@ -824,54 +706,40 @@ msgid "Customs office reinforced"
 msgstr ""
 
 #: models/notifications.py:92
-#, fuzzy
-#| msgid "Starbase under attack"
 msgid "Starbase attacked"
-msgstr "POS正在被攻击"
+msgstr ""
 
 #: models/notifications.py:94
 msgid "Starbase refueled (BETA)"
 msgstr ""
 
 #: models/notifications.py:95
-#, fuzzy
-#| msgid "Orbital reinforced"
 msgid "Starbase reinforced (BETA)"
-msgstr "轨道 增强"
+msgstr ""
 
 #: models/notifications.py:101
-#, fuzzy
-#| msgid "Moon mining extraction started"
 msgid "Moonmining laser fired"
-msgstr "月矿采集开始"
+msgstr ""
 
 #: models/notifications.py:103
-#, fuzzy
-#| msgid "Moon mining extraction started"
 msgid "Moon mining extraction cancelled"
-msgstr "月矿采集开始"
+msgstr ""
 
 #: models/notifications.py:106
-#, fuzzy
-#| msgid "Moon mining extraction started"
 msgid "Moon mining extraction finished"
-msgstr "月矿采集开始"
+msgstr ""
 
 #: models/notifications.py:109
-#, fuzzy
-#| msgid "Moon mining extraction started"
 msgid "Moon mining automatic fracture triggered"
-msgstr "月矿采集开始"
+msgstr ""
 
 #: models/notifications.py:114
 msgid "Sovereignty structure reinforced"
 msgstr ""
 
 #: models/notifications.py:117
-#, fuzzy
-#| msgid "Structure destroyed"
 msgid "Sovereignty structure destroyed"
-msgstr "建筑已被击毁"
+msgstr ""
 
 #: models/notifications.py:120
 msgid "Sovereignty entosis capture started"
@@ -882,20 +750,16 @@ msgid "Sovereignty command node event started"
 msgstr ""
 
 #: models/notifications.py:126
-#, fuzzy
-#| msgid "DED Sovereignty claim acknowledgment: %s"
 msgid "Sovereignty claim acknowledgment"
-msgstr "DED主权夺取通知：%s"
+msgstr ""
 
 #: models/notifications.py:128
 msgid "Sovereignty lost"
 msgstr ""
 
 #: models/notifications.py:130
-#, fuzzy
-#| msgid "Structure anchoring"
 msgid "Structure anchoring in alliance space"
-msgstr "建筑正在铆钉"
+msgstr ""
 
 #: models/notifications.py:134
 msgid "War declared"
@@ -1043,27 +907,21 @@ msgid "type"
 msgstr ""
 
 #: models/notifications.py:404
-#, fuzzy
-#| msgid "%(ticker)s Notification"
 msgid "type of this notification"
-msgstr "%(ticker)s提示"
+msgstr ""
 
 #: models/notifications.py:409 models/owners.py:221 models/owners.py:1287
 #: models/structures.py:313
-#, fuzzy
-#| msgid "Owner"
 msgid "owner"
-msgstr "所有人"
+msgstr ""
 
 #: models/notifications.py:410
 msgid "Corporation that owns this notification"
 msgstr ""
 
 #: models/notifications.py:414 models/structures.py:403
-#, fuzzy
-#| msgid "Structure List"
 msgid "structures"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/notifications.py:415
 msgid "Structures this notification is about (if any)"
@@ -1071,10 +929,8 @@ msgstr ""
 
 #: models/notifications.py:694 models/structures.py:203
 #: models/structures.py:773
-#, fuzzy
-#| msgid "d"
 msgid "id"
-msgstr "日"
+msgstr ""
 
 #: models/notifications.py:698
 msgid "created"
@@ -1117,16 +973,12 @@ msgid "timestamp"
 msgstr ""
 
 #: models/notifications.py:731
-#, fuzzy
-#| msgid "%(ticker)s Notification"
 msgid "eve notification"
-msgstr "%(ticker)s提示"
+msgstr ""
 
 #: models/notifications.py:732
-#, fuzzy
-#| msgid "%(ticker)s Notification"
 msgid "eve notifications"
-msgstr "%(ticker)s提示"
+msgstr ""
 
 #: models/notifications.py:841
 msgid "details"
@@ -1137,16 +989,12 @@ msgid "last_updated"
 msgstr ""
 
 #: models/notifications.py:848
-#, fuzzy
-#| msgid "%(ticker)s Notification"
 msgid "generated notification"
-msgstr "%(ticker)s提示"
+msgstr ""
 
 #: models/notifications.py:849
-#, fuzzy
-#| msgid "%(ticker)s Notification"
 msgid "generated  notifications"
-msgstr "%(ticker)s提示"
+msgstr ""
 
 #: models/notifications.py:878
 msgid "channel pings"
@@ -1199,16 +1047,12 @@ msgid "Start of alerts in hours before fuel expires"
 msgstr ""
 
 #: models/notifications.py:933
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "structure fuel alert config"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:934
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "structure fuel alert configs"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:941
 msgid "Start must be before end, i.e. have a larger value."
@@ -1241,10 +1085,8 @@ msgstr ""
 
 #: models/notifications.py:1078 models/notifications.py:1128
 #: models/structures.py:402 models/structures.py:779 models/structures.py:844
-#, fuzzy
-#| msgid "Structure List"
 msgid "structure"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/notifications.py:1084 models/notifications.py:1134
 msgid "configuration"
@@ -1259,34 +1101,24 @@ msgid "number of hours before fuel expiration this alert was sent"
 msgstr ""
 
 #: models/notifications.py:1093
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "structure fuel alert"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:1094
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "structure fuel alerts"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:1138
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "jump fuel alert"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/notifications.py:1139
-#, fuzzy
-#| msgid "Structure fuel alert"
 msgid "jump fuel alerts"
-msgstr "建筑燃料警报"
+msgstr ""
 
 #: models/owners.py:119
-#, fuzzy
-#| msgid "Corporation"
 msgid "corporation"
-msgstr "公司"
+msgstr ""
 
 #: models/owners.py:120
 msgid "Corporation owning structures"
@@ -1328,10 +1160,8 @@ msgid "whether this owner is currently included in the sync process"
 msgstr ""
 
 #: models/owners.py:166
-#, fuzzy
-#| msgid "Alliance"
 msgid "is alliance main"
-msgstr "联盟"
+msgstr ""
 
 #: models/owners.py:168
 msgid ""
@@ -1366,55 +1196,44 @@ msgid "Groups to be pinged for each notification. "
 msgstr ""
 
 #: models/owners.py:206
-#, fuzzy
-#| msgid "Structure under attack"
 msgid "structures last update at"
-msgstr "建筑收到攻击"
+msgstr ""
 
 #: models/owners.py:215
 msgid "Notifications are sent to these webhooks."
 msgstr ""
 
 #: models/owners.py:222
-#, fuzzy
-#| msgid "Owner"
 msgid "owners"
-msgstr "所有人"
+msgstr ""
 
 #: models/owners.py:1147
-#, fuzzy, python-format
-#| msgid ""
-#| "Syncing of %(topic)s for \"%(owner)s\" %(result)s.\n"
-#| "%(message_details)s"
+#, python-format
 msgid ""
 "Syncing of %(topic)s for %(owner)s %(result)s.\n"
 " %(message_details)s"
 msgstr ""
-"正在同步 %(topic)s 对于 %(owner)s %(result)s.\n"
-"%(message_details)s"
 
 #: models/owners.py:1151
 msgid "completed successfully"
-msgstr "成功完成"
+msgstr ""
 
 #: models/owners.py:1156
 #, python-format
 msgid "%(title)s: %(topic)s updated for %(owner)s: %(result)s"
-msgstr "%(title)s: %(topic)s 更新为 %(owner)s: %(result)s"
+msgstr ""
 
 #: models/owners.py:1161
 msgid "OK"
-msgstr "好"
+msgstr ""
 
 #: models/owners.py:1293
 msgid "character_ownership"
 msgstr ""
 
 #: models/owners.py:1301
-#, fuzzy
-#| msgid "Structure lost shield"
 msgid "structures last used at"
-msgstr "建筑失去护盾"
+msgstr ""
 
 #: models/owners.py:1309
 msgid "notifications last used at"
@@ -1525,16 +1344,12 @@ msgid ""
 msgstr ""
 
 #: models/structures.py:109
-#, fuzzy
-#| msgid "Structure List"
 msgid "structure tag"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/structures.py:110
-#, fuzzy
-#| msgid "Structure List"
 msgid "structure tags"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/structures.py:144
 msgid "anchor vulnerable"
@@ -1586,11 +1401,11 @@ msgstr ""
 
 #: models/structures.py:157 models/structures.py:827
 msgid "offline"
-msgstr "离线"
+msgstr ""
 
 #: models/structures.py:158 models/structures.py:828
 msgid "online"
-msgstr "线上"
+msgstr ""
 
 #: models/structures.py:159
 msgid "onlining"
@@ -1606,17 +1421,15 @@ msgstr ""
 
 #: models/structures.py:164
 msgid "unknown"
-msgstr "未知"
+msgstr ""
 
 #: models/structures.py:195
-#, fuzzy
-#| msgid "Low Power"
 msgid "Full Power"
-msgstr "低能量"
+msgstr ""
 
 #: models/structures.py:196
 msgid "Low Power"
-msgstr "低能量"
+msgstr ""
 
 #: models/structures.py:197
 msgid "Abandoned"
@@ -1627,10 +1440,8 @@ msgid "Abandoned?"
 msgstr ""
 
 #: models/structures.py:199
-#, fuzzy
-#| msgid "unknown"
 msgid "Unknown"
-msgstr "未知"
+msgstr ""
 
 #: models/structures.py:204
 msgid "The Item ID of the structure"
@@ -1661,10 +1472,8 @@ msgid "Planet next to this structure - if any"
 msgstr ""
 
 #: models/structures.py:236
-#, fuzzy
-#| msgid "Solar System"
 msgid "solar system"
-msgstr "星系"
+msgstr ""
 
 #: models/structures.py:237
 msgid "Solar System the structure is located"
@@ -1675,10 +1484,8 @@ msgid "Type of the structure"
 msgstr ""
 
 #: models/structures.py:250
-#, fuzzy
-#| msgid "Fuel Expires"
 msgid "fuel expires at"
-msgstr "燃料消耗"
+msgstr ""
 
 #: models/structures.py:251
 msgid "Date on which the structure will run out of fuel"
@@ -1701,10 +1508,8 @@ msgid "bool indicating if the structure has a quantum core"
 msgstr ""
 
 #: models/structures.py:273
-#, fuzzy
-#| msgid "online"
 msgid "last online at"
-msgstr "线上"
+msgstr ""
 
 #: models/structures.py:274
 msgid "date this structure had any of it's services online"
@@ -1741,10 +1546,8 @@ msgid "Corporation that owns the structure"
 msgstr ""
 
 #: models/structures.py:321
-#, fuzzy
-#| msgid "Reinforced?"
 msgid "reinforce hour"
-msgstr "增强？"
+msgstr ""
 
 #: models/structures.py:323
 msgid ""
@@ -1778,10 +1581,8 @@ msgid "z position in the solar system"
 msgstr ""
 
 #: models/structures.py:353 models/structures.py:853
-#, fuzzy
-#| msgid "State"
 msgid "state"
-msgstr "状态"
+msgstr ""
 
 #: models/structures.py:354
 msgid "Current state of the structure"
@@ -1816,10 +1617,8 @@ msgid "unanchors at"
 msgstr ""
 
 #: models/structures.py:383
-#, fuzzy
-#| msgid "Structure un-anchoring"
 msgid "Date at which the structure will unanchor"
-msgstr "建筑解铆中"
+msgstr ""
 
 #: models/structures.py:392
 msgid ""
@@ -1833,10 +1632,8 @@ msgid "The Eve item ID"
 msgstr ""
 
 #: models/structures.py:780
-#, fuzzy
-#| msgid "Structure services off-line"
 msgid "Structure this item is located in"
-msgstr "建筑服务下线"
+msgstr ""
 
 #: models/structures.py:788
 msgid "type of the item"
@@ -1847,32 +1644,24 @@ msgid "is singleton"
 msgstr ""
 
 #: models/structures.py:794
-#, fuzzy
-#| msgid "Location"
 msgid "location flag"
-msgstr "位置"
+msgstr ""
 
 #: models/structures.py:795
 msgid "quantity"
 msgstr ""
 
 #: models/structures.py:798
-#, fuzzy
-#| msgid "Structure List"
 msgid "structure item"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/structures.py:799
-#, fuzzy
-#| msgid "Structure List"
 msgid "structure items"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/structures.py:845
-#, fuzzy
-#| msgid "Structure services off-line"
 msgid "Structure this service is installed to"
-msgstr "建筑服务下线"
+msgstr ""
 
 #: models/structures.py:848
 msgid "Name of the service"
@@ -1883,16 +1672,12 @@ msgid "Current state of this service"
 msgstr ""
 
 #: models/structures.py:858
-#, fuzzy
-#| msgid "Structure List"
 msgid "structure service"
-msgstr "建筑列表"
+msgstr ""
 
 #: models/structures.py:859
-#, fuzzy
-#| msgid "Structure services off-line"
 msgid "structure services"
-msgstr "建筑服务下线"
+msgstr ""
 
 #: models/structures.py:875 webhooks/models.py:12
 msgid "none"
@@ -1919,30 +1704,24 @@ msgid "excellent"
 msgstr ""
 
 #: models/structures.py:974
-#, fuzzy
-#| msgid "Alliance"
 msgid "alliance member"
-msgstr "联盟"
+msgstr ""
 
 #: models/structures.py:975
 msgid "config starbase equipment role"
 msgstr ""
 
 #: models/structures.py:976
-#, fuzzy
-#| msgid "Corporation"
 msgid "corporation member"
-msgstr "公司"
+msgstr ""
 
 #: models/structures.py:977
 msgid "starbase fuel technician role"
 msgstr ""
 
 #: templates/structures/base.html:4
-#, fuzzy
-#| msgid "Structure List"
 msgid "Structures"
-msgstr "建筑列表"
+msgstr ""
 
 #: templates/structures/main.html:11
 msgid ""
@@ -1955,10 +1734,8 @@ msgid "Add Owner / Sync Character"
 msgstr ""
 
 #: templates/structures/main.html:20
-#, fuzzy
-#| msgid "Alliance Structures"
 msgid "All Structures"
-msgstr "联盟建筑"
+msgstr ""
 
 #: templates/structures/main.html:22
 msgid "Jump Gates"
@@ -1975,11 +1752,11 @@ msgstr ""
 
 #: templates/structures/main.html:49
 msgid "All dates are EVE time"
-msgstr "所有时间均为EVE时间"
+msgstr ""
 
 #: templates/structures/main.html:50
 msgid "Data can be outdated by up to 1 hour due to API caching."
-msgstr "数据可能会因为API数据导致至多1小时的延迟"
+msgstr ""
 
 #: templates/structures/main.html:51
 msgid "Last updated"
@@ -1989,43 +1766,43 @@ msgstr ""
 #: templates/structures/modals/tab_general_detail.html:10
 #: templates/structures/partials/structure_summary.html:11
 msgid "Alliance"
-msgstr "联盟"
+msgstr ""
 
 #: templates/structures/main.html:158 templates/structures/main.html:467
 #: templates/structures/modals/tab_general_detail.html:8
 #: templates/structures/partials/structure_summary.html:10
 msgid "Corporation"
-msgstr "公司"
+msgstr ""
 
 #: templates/structures/main.html:163 templates/structures/main.html:472
 #: templates/structures/modals/tab_general_detail.html:15
 #: templates/structures/partials/poco_list.html:10
 msgid "Region"
-msgstr "星域"
+msgstr ""
 
 #: templates/structures/main.html:168 templates/structures/main.html:325
 #: templates/structures/main.html:477
 #: templates/structures/partials/poco_list.html:11
 msgid "Solar System"
-msgstr "星系"
+msgstr ""
 
 #: templates/structures/main.html:173
 msgid "Category"
-msgstr "类别"
+msgstr ""
 
 #: templates/structures/main.html:178
 msgid "Group"
-msgstr "组"
+msgstr ""
 
 #: templates/structures/main.html:183 templates/structures/main.html:482
 msgid "Reinforced?"
-msgstr "增强？"
+msgstr ""
 
 #: templates/structures/main.html:188
 #: templates/structures/modals/tab_general_detail.html:18
 #: templates/structures/partials/structure_list.html:74
 msgid "State"
-msgstr "状态"
+msgstr ""
 
 #: templates/structures/main.html:193 templates/structures/main.html:487
 msgid "Power Mode"
@@ -2057,10 +1834,8 @@ msgid "General"
 msgstr ""
 
 #: templates/structures/modals/poco_details.html:24
-#, fuzzy
-#| msgid "Reinforced?"
 msgid "Reinforcement Time"
-msgstr "增强？"
+msgstr ""
 
 #: templates/structures/modals/poco_details.html:29
 msgid "Tax Rates & Access"
@@ -2075,16 +1850,12 @@ msgid "Latest"
 msgstr ""
 
 #: templates/structures/modals/poco_details.html:49
-#, fuzzy
-#| msgid "Corporation"
 msgid "Corporation members"
-msgstr "公司"
+msgstr ""
 
 #: templates/structures/modals/poco_details.html:50
-#, fuzzy
-#| msgid "Alliance"
 msgid "Alliance members"
-msgstr "联盟"
+msgstr ""
 
 #: templates/structures/modals/poco_details.html:51
 msgid "Terrible standing"
@@ -2153,10 +1924,8 @@ msgid "Use alliance standings"
 msgstr ""
 
 #: templates/structures/modals/starbase_detail.html:84
-#, fuzzy
-#| msgid "Anchor timer"
 msgid "Anchor role"
-msgstr "铆钉timer"
+msgstr ""
 
 #: templates/structures/modals/starbase_detail.html:85
 msgid "Unanchor role"
@@ -2167,10 +1936,8 @@ msgid "Online role"
 msgstr ""
 
 #: templates/structures/modals/starbase_detail.html:87
-#, fuzzy
-#| msgid "offline"
 msgid "Offline role"
-msgstr "离线"
+msgstr ""
 
 #: templates/structures/modals/starbase_detail.html:88
 msgid "Fuel bay view role"
@@ -2225,10 +1992,8 @@ msgid "Rig Slots"
 msgstr ""
 
 #: templates/structures/modals/structure_details.html:77
-#, fuzzy
-#| msgid "Services"
 msgid "Service Slots"
-msgstr "服务"
+msgstr ""
 
 #: templates/structures/modals/tab_general_detail.html:6
 #: templates/structures/partials/jump_gates_list.html:14
@@ -2238,13 +2003,13 @@ msgstr ""
 #: templates/structures/modals/tab_general_detail.html:7
 #: templates/structures/partials/structure_list.html:68
 msgid "Type"
-msgstr "类别"
+msgstr ""
 
 #: templates/structures/modals/tab_general_detail.html:12
 #: templates/structures/partials/jump_gates_list.html:13
 #: templates/structures/partials/structure_list.html:66
 msgid "Location"
-msgstr "位置"
+msgstr ""
 
 #: templates/structures/modals/tab_general_detail.html:13
 msgid "Constellation"
@@ -2253,7 +2018,7 @@ msgstr ""
 #: templates/structures/partials/jump_gates_list.html:12
 #: templates/structures/partials/structure_list.html:65
 msgid "Owner"
-msgstr "所有人"
+msgstr ""
 
 #: templates/structures/partials/jump_gates_list.html:15
 #: templates/structures/partials/structure_list.html:71
@@ -2263,7 +2028,7 @@ msgstr ""
 #: templates/structures/partials/jump_gates_list.html:16
 #: templates/structures/partials/structure_list.html:72
 msgid "Fuel Expires"
-msgstr "燃料消耗"
+msgstr ""
 
 #: templates/structures/partials/jump_gates_list.html:17
 msgid "Liquid Ozone (units)"
@@ -2272,7 +2037,7 @@ msgstr ""
 #: templates/structures/partials/jump_gates_list.html:22
 #: templates/structures/partials/structure_list.html:91
 msgid "Reinforced structures (except POCOs) are highlighted in red"
-msgstr "增强建筑（除了海关）将用红色高亮"
+msgstr ""
 
 #: templates/structures/partials/jump_gates_list.html:28
 #: templates/structures/partials/structure_list.html:97
@@ -2293,41 +2058,41 @@ msgstr ""
 
 #: templates/structures/partials/structure_list.html:13
 msgid "Tags Filter (Active)"
-msgstr "标签过滤（激活）"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:17
 #: templates/structures/partials/structure_list.html:22
 #: templates/structures/partials/structure_list.html:36
 msgid "Tags Filter"
-msgstr "标签过滤"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:44
 msgid "Reset Filter"
-msgstr "重置过滤"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:47
 msgid "Clear Filter"
-msgstr "清除过滤"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:50
 msgid "Cancel"
-msgstr "取消"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:53
 msgid "Apply Filter"
-msgstr "应用过滤"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:69
 msgid "Name & Tags"
-msgstr "名字和标签"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:70
 msgid "Services"
-msgstr "服务"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:73
 msgid "R-Hour"
-msgstr "小时"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:75
 msgid "Core"
@@ -2335,15 +2100,15 @@ msgstr ""
 
 #: templates/structures/partials/structure_list.html:83
 msgid "Active Tags Filter"
-msgstr "激活的标签过滤"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:90
 msgid "Offlined services are shown as"
-msgstr "下线模块将显示为"
+msgstr ""
 
 #: templates/structures/partials/structure_list.html:90
 msgid "service"
-msgstr "服务"
+msgstr ""
 
 #: templates/structures/partials/structure_summary.html:12
 msgid "Citadels"
@@ -2387,32 +2152,25 @@ msgstr ""
 msgid ""
 "You can only use your main or alt characters to add corporations. However, "
 "character %s is neither. "
-msgstr "你只能用你的大号或小号注册公司，但是%s不属于以上两种。"
+msgstr ""
 
 #: views.py:440
-#, fuzzy, python-format
-#| msgid ""
-#| "%(corporation)s has been added with %(character)s as sync character. We "
-#| "have started fetching structures for this corporation. You will receive a "
-#| "report once the process is finished."
+#, python-format
 msgid ""
 "%(corporation)s has been added with %(character)s as sync character. We have "
 "started fetching structures and notifications for this corporation and you "
 "will receive a report once the process is finished."
 msgstr ""
-"%(corporation)s已将%(character)s添加为同步人物。我们正在获取这个公司的建筑"
-"物。你将在这个过程结束后收到一份报告"
 
 #: views.py:456
 #, python-format
 msgid "%(corporation)s was added as new structure owner by %(user)s."
-msgstr "%(corporation)s已被%(user)s添加为新建筑持有者"
+msgstr ""
 
 #: views.py:460
-#, fuzzy, python-format
-#| msgid "Add Structure Owner"
+#, python-format
 msgid "%s: Structure owner added: %s"
-msgstr "添加建筑持有人"
+msgstr ""
 
 #: views.py:467
 #, python-format
@@ -2435,11 +2193,11 @@ msgstr ""
 
 #: views.py:509
 msgid "service is up"
-msgstr "服务已上线"
+msgstr ""
 
 #: views.py:511
 msgid "service is down"
-msgstr "服务已离线"
+msgstr ""
 
 #: webhooks/models.py:13
 msgid "here"
@@ -2467,51 +2225,4 @@ msgstr ""
 
 #: webhooks/models.py:29
 msgid "Discord Webhook"
-msgstr "Discord Webhook"
-
-#, fuzzy
-#~| msgid "Moon mining extraction started"
-#~ msgid "Moonmining extraction started"
-#~ msgstr "月矿采集开始"
-
-#~ msgid "Moon"
-#~ msgstr "月亮"
-
-#, python-format
-#~ msgid ""
-#~ "This is a test notification from %s.\n"
-#~ "The webhook appears to be correctly configured."
-#~ msgstr ""
-#~ "这是从%s发送的测试提示\n"
-#~ "看起来Webhook已正确调试"
-
-#~ msgid "has less then 24hrs fuel left."
-#~ msgstr "只剩不到24小时的燃料"
-
-#, python-format
-#~ msgid "Error: %s"
-#~ msgstr "错误: %s"
-
-#~ msgid "has failed"
-#~ msgstr "失败了"
-
-#~ msgid "FAILED"
-#~ msgstr "失败"
-
-#~ msgid "Low Power?"
-#~ msgstr "低能量？"
-
-#~ msgid "y"
-#~ msgstr "年"
-
-#~ msgid "mt"
-#~ msgstr "月"
-
-#~ msgid "h"
-#~ msgstr "小时"
-
-#~ msgid "m"
-#~ msgstr "分"
-
-#~ msgid "s"
-#~ msgstr "秒"
+msgstr ""

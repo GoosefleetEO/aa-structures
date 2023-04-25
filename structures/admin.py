@@ -70,8 +70,8 @@ if settings.DEBUG:
 
     @admin.register(FuelAlert)
     class StructureFuelAlertAdmin(BaseFuelAlertAdmin):
-        list_display = BaseFuelAlertAdmin.list_display + ("hours",)
-        ordering = BaseFuelAlertAdmin.ordering + ("-hours",)
+        list_display = tuple(BaseFuelAlertAdmin.list_display) + ("hours",)
+        ordering = tuple(BaseFuelAlertAdmin.ordering) + ("-hours",)
 
     @admin.register(JumpFuelAlert)
     class JumpFuelAlertAdmin(BaseFuelAlertAdmin):
@@ -128,10 +128,10 @@ class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
         "start",
         "end",
         "repeat",
-    ) + BaseFuelAlertConfigAdmin.list_display
+    ) + tuple(BaseFuelAlertConfigAdmin.list_display)
     fieldsets = (
         (
-            "Timeing",
+            "Timing",
             {
                 "description": _(
                     "Timing configuration for sending fuel notifications. "
@@ -142,7 +142,7 @@ class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
                 "fields": ("start", "end", "repeat"),
             },
         ),
-    ) + BaseFuelAlertConfigAdmin.fieldsets
+    ) + tuple(BaseFuelAlertConfigAdmin.fieldsets)
 
 
 @admin.register(JumpFuelAlertConfig)
@@ -150,7 +150,7 @@ class JumpFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
     list_display = (
         "_id",
         "_threshold",
-    ) + BaseFuelAlertConfigAdmin.list_display
+    ) + tuple(BaseFuelAlertConfigAdmin.list_display)
     fieldsets = (
         (
             "Fuel levels",
@@ -159,7 +159,7 @@ class JumpFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
                 "fields": ("threshold",),
             },
         ),
-    ) + BaseFuelAlertConfigAdmin.fieldsets
+    ) + tuple(BaseFuelAlertConfigAdmin.fieldsets)
 
     @admin.display(ordering="threshold")
     def _threshold(self, obj) -> str:
@@ -473,7 +473,7 @@ class OwnerAdmin(admin.ModelAdmin):
     @admin.display(description=_("Update all from EVE server for selected owners"))
     def update_all(self, request, queryset):
         for obj in queryset:
-            tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)  # type: ignore
             text = _(
                 "Started updating structures and notifications for %s. "
                 "You will receive a notification once it is completed." % obj
@@ -485,7 +485,7 @@ class OwnerAdmin(admin.ModelAdmin):
     )
     def update_structures(self, request, queryset):
         for obj in queryset:
-            tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            tasks.update_structures_for_owner.delay(obj.pk, user_pk=request.user.pk)  # type: ignore
             text = (
                 f"Started updating structures for {obj}. "
                 "You will receive a notification once it is completed."
@@ -497,7 +497,7 @@ class OwnerAdmin(admin.ModelAdmin):
     )
     def fetch_notifications(self, request, queryset):
         for obj in queryset:
-            tasks.process_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)
+            tasks.process_notifications_for_owner.delay(obj.pk, user_pk=request.user.pk)  # type: ignore
             text = (
                 f"Started fetching notifications for {obj}. "
                 "You will receive a notification once it is completed."
@@ -509,7 +509,7 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
-            return self.readonly_fields + (
+            return tuple(self.readonly_fields) + (
                 "assets_last_update_at",
                 "corporation",
                 "forwarding_last_update_at",
@@ -1048,7 +1048,7 @@ class WebhookAdmin(admin.ModelAdmin):
         for obj in queryset:
             tasks.send_test_notifications_to_webhook.delay(
                 obj.pk, user_pk=request.user.pk
-            )
+            )  # type: ignore
             self.message_user(
                 request,
                 'Initiated sending test notification to webhook "{}". '
@@ -1086,7 +1086,7 @@ class WebhookAdmin(admin.ModelAdmin):
     def send_messages(self, request, queryset):
         items_count = 0
         for webhook in queryset:
-            tasks.send_messages_for_webhook.delay(webhook.pk)
+            tasks.send_messages_for_webhook.delay(webhook.pk)  # type: ignore
             items_count += 1
 
         self.message_user(

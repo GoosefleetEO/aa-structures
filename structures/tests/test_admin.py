@@ -11,21 +11,29 @@ from eveuniverse.models import EveEntity
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from ..admin import (
+from structures.admin import (
     NotificationAdmin,
     OwnerAdmin,
     OwnerAllianceFilter,
     OwnerCorporationsFilter,
     StructureAdmin,
+    StructureFuelAlertConfigAdmin,
     WebhookAdmin,
 )
-from ..models import (
+from structures.models import (
     FuelAlertConfig,
     Notification,
     Owner,
     Structure,
     StructureTag,
     Webhook,
+)
+
+from .testdata.factories_2 import (
+    FuelAlertConfigFactory,
+    NotificationFactory,
+    OwnerFactory,
+    StructureFactory,
 )
 from .testdata.helpers import (
     create_structures,
@@ -44,7 +52,7 @@ class MockRequest(object):
         self.user = user
 
 
-class TestFuelNotificationConfigAdmin(TestCase):
+class TestFuelNotificationConfigAdminView(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -55,7 +63,6 @@ class TestFuelNotificationConfigAdmin(TestCase):
         }
         cls.user = User.objects.create_superuser("Clark Kent")
         load_eveuniverse()
-        create_structures()
 
     def test_should_create_new_config(self):
         # given
@@ -74,7 +81,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
     def test_should_update_existing_config(self):
         # given
         self.client.force_login(self.user)
-        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        config = FuelAlertConfigFactory(start=48, end=24, repeat=12)
         # when
         response = self.client.post(
             reverse("admin:structures_fuelalertconfig_change", args=[config.pk]),
@@ -89,8 +96,8 @@ class TestFuelNotificationConfigAdmin(TestCase):
     def test_should_remove_existing_fuel_notifications_when_timing_changed(self):
         # given
         self.client.force_login(self.user)
-        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
-        structure = Structure.objects.get(id=1000000000001)
+        config = FuelAlertConfigFactory(start=48, end=24, repeat=12)
+        structure = StructureFactory()
         structure.structure_fuel_alerts.create(
             config=config, structure=structure, hours=5
         )
@@ -108,8 +115,8 @@ class TestFuelNotificationConfigAdmin(TestCase):
     def test_should_not_remove_existing_fuel_notifications_on_other_changes(self):
         # given
         self.client.force_login(self.user)
-        config = FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
-        structure = Structure.objects.get(id=1000000000001)
+        config = FuelAlertConfigFactory(start=48, end=24, repeat=12)
+        structure = StructureFactory()
         structure.structure_fuel_alerts.create(
             config=config, structure=structure, hours=5
         )
@@ -156,7 +163,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
     def test_should_not_allow_creating_overlapping(self):
         # given
         self.client.force_login(self.user)
-        FuelAlertConfig.objects.create(start=48, end=24, repeat=12)
+        FuelAlertConfigFactory(start=48, end=24, repeat=12)
         # when
         response = self.client.post(
             reverse("admin:structures_fuelalertconfig_add"),
@@ -205,6 +212,29 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "errornote")
         self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
+
+class TestStructureFuelAlertAdmin(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.modeladmin = StructureFuelAlertConfigAdmin(
+            model=FuelAlertConfig, admin_site=AdminSite()
+        )
+        load_eveuniverse()
+
+    @patch(MODULE_PATH + ".StructureFuelAlertConfigAdmin.message_user", spec=True)
+    @patch(MODULE_PATH + ".tasks", spec=True)
+    def test_should_send_fuel_notifications(self, mock_tasks, mock_message_user):
+        # given
+        config = FuelAlertConfigFactory()
+        request = MockRequest()
+        queryset = FuelAlertConfig.objects.filter(pk=config.pk)
+        # when
+        self.modeladmin.send_fuel_notifications(request, queryset)
+        # then
+        self.assertTrue(mock_tasks.send_queued_messages_for_webhooks.called)
+        self.assertTrue(mock_message_user.called)
 
 
 class TestNotificationAdmin(TestCase):
@@ -337,10 +367,10 @@ class TestOwnerAdmin(TestCase):
     )
     def test_should_return_correct_turnaround_times(self):
         # given
-        my_owner = Owner.objects.get(corporation__corporation_id=2001)
+        my_owner = OwnerFactory()
         my_sender = EveEntity.objects.get(id=1001)
         my_now = now()
-        Notification.objects.create(
+        NotificationFactory(
             owner=my_owner,
             notification_id=1,
             sender=my_sender,
@@ -350,7 +380,7 @@ class TestOwnerAdmin(TestCase):
         )
         for i in range(50):
             timestamp = my_now + dt.timedelta(minutes=i)
-            Notification.objects.create(
+            NotificationFactory(
                 owner=my_owner,
                 notification_id=2 + i,
                 sender=my_sender,
@@ -422,12 +452,10 @@ class TestStructureAdmin(TestCase):
             list_filter = (OwnerCorporationsFilter,)
 
         Owner.objects.all().delete()
-        owner_2001 = Owner.objects.create(
+        owner_2001 = OwnerFactory(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
-        Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2002)
-        )
+        OwnerFactory(corporation=EveCorporationInfo.objects.get(corporation_id=2002))
         my_modeladmin = StructureAdminTest(Structure, AdminSite())
 
         # Make sure the lookups are correct
@@ -451,15 +479,13 @@ class TestStructureAdmin(TestCase):
             list_filter = (OwnerAllianceFilter,)
 
         Owner.objects.all().delete()
-        owner_2001 = Owner.objects.create(
+        owner_2001 = OwnerFactory(
             corporation=EveCorporationInfo.objects.get(corporation_id=2001)
         )
-        owner_2002 = Owner.objects.create(
+        owner_2002 = OwnerFactory(
             corporation=EveCorporationInfo.objects.get(corporation_id=2002)
         )
-        Owner.objects.create(
-            corporation=EveCorporationInfo.objects.get(corporation_id=2102)
-        )
+        OwnerFactory(corporation=EveCorporationInfo.objects.get(corporation_id=2102))
         modeladmin = StructureAdminTest(Structure, AdminSite())
 
         # Make sure the lookups are correct

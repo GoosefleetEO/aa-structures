@@ -1,6 +1,7 @@
 import functools
 from collections import defaultdict
 from enum import IntEnum
+from typing import Dict
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -354,7 +355,7 @@ def starbase_detail(request, structure_id):
     assets = defaultdict(int)
     for item in structure.items.select_related("eve_type"):
         assets[item.eve_type_id] += item.quantity
-    eve_types = EveType.objects.in_bulk(id_list=assets.keys())
+    eve_types: Dict[int, EveType] = EveType.objects.in_bulk(id_list=assets.keys())
     modules = sorted(
         [
             {"eve_type": eve_types.get(eve_type_id), "quantity": quantity}
@@ -432,7 +433,7 @@ def add_structure_owner(request, token):
             owner.save()
 
     if owner.characters.count() == 1:
-        tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)
+        tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)  # type: ignore
         messages_plus.info(
             request,
             format_html(

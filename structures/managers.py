@@ -1,6 +1,6 @@
 import datetime as dt
 import itertools
-from typing import Optional, Set, Tuple
+from typing import Optional, Set, Tuple, TypeVar
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
@@ -20,6 +20,8 @@ from .providers import esi
 from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+
+ModelType = TypeVar("ModelType", bound=models.Model)
 
 
 class EveSovereigntyMapManager(models.Manager):
@@ -53,7 +55,7 @@ class EveSovereigntyMapManager(models.Manager):
                 self.bulk_create(obj_list, batch_size=1000)
 
     def corporation_has_sov(
-        self, eve_solar_system: models.Model, corporation: EveCorporationInfo
+        self, eve_solar_system, corporation: EveCorporationInfo
     ) -> bool:
         """returns true if given corporation has sov in this solar system
         else False
@@ -68,9 +70,7 @@ class EveSovereigntyMapManager(models.Manager):
                 self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
             )
 
-    def solar_system_sov_alliance_id(
-        self, eve_solar_system: models.Model
-    ) -> Optional[int]:
+    def solar_system_sov_alliance_id(self, eve_solar_system) -> Optional[int]:
         """returns ID of sov owning alliance for this system or None"""
         if not eve_solar_system.is_null_sec:
             return None
@@ -133,7 +133,7 @@ class GeneratedNotificationQuerySet(NotificationBaseQuerySet):
 class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
     def get_or_create_from_structure(
         self, structure: models.Model, notif_type: models.TextChoices
-    ) -> Tuple[models.Model, bool]:
+    ) -> Tuple[ModelType, bool]:
         """Get or create an object from given structure."""
         from .models import NotificationType
 
@@ -142,9 +142,7 @@ class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
 
         return self._get_or_create_tower_reinforced(structure)
 
-    def _get_or_create_tower_reinforced(
-        self, structure: models.Model
-    ) -> Tuple[models.Model, bool]:
+    def _get_or_create_tower_reinforced(self, structure) -> Tuple[ModelType, bool]:
         from .models import NotificationType
 
         if not structure.is_starbase:
@@ -233,7 +231,9 @@ class StructureQuerySet(models.QuerySet):
         )
 
     # TODO: Add specific tests
-    def visible_for_user(self, user: User, tags: list = None) -> models.QuerySet:
+    def visible_for_user(
+        self, user: User, tags: Optional[list] = None
+    ) -> models.QuerySet:
         if user.has_perm("structures.view_all_structures"):
             structures_query = self.select_related_defaults()
             if tags:
@@ -247,7 +247,7 @@ class StructureQuerySet(models.QuerySet):
             ):
                 corporation_ids = {
                     character_ownership.character.corporation_id
-                    for character_ownership in user.character_ownerships.all()
+                    for character_ownership in user.character_ownerships.all()  # type: ignore
                 }
                 corporations = list(
                     EveCorporationInfo.objects.select_related("alliance").filter(
@@ -462,7 +462,7 @@ class StructureTagManager(models.Manager):
                 return self.update_or_create_for_space_type(solar_system)
         return None, None
 
-    def update_or_create_for_space_type(self, solar_system: object) -> tuple:
+    def update_or_create_for_space_type(self, solar_system) -> tuple:
         from .models import EveSpaceType
 
         space_type = EveSpaceType.from_solar_system(solar_system)

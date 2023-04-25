@@ -8,12 +8,29 @@ from eveuniverse.models import EveEntity
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...core import notification_embeds as ne
-from ...models.notifications import Notification, NotificationType, Structure, Webhook
+from structures.core import notification_embeds as ne
+from structures.core.notification_embeds import (
+    NotificationBaseEmbed,
+    NotificationTowerReinforcedExtra,
+)
+from structures.models.notifications import (
+    Notification,
+    NotificationType,
+    Structure,
+    Webhook,
+)
+
 from ..testdata.factories import (
     create_notification,
     create_owner_from_user,
     create_starbase,
+)
+from ..testdata.factories_2 import (
+    EveEntityAllianceFactory,
+    GeneratedNotificationFactory,
+    NotificationFactory,
+    OwnerFactory,
+    WebhookFactory,
 )
 from ..testdata.helpers import (
     create_structures,
@@ -27,6 +44,16 @@ from ..testdata.load_eveuniverse import load_eveuniverse
 MODULE_PATH = "structures.core.notification_embeds"
 
 
+class TestBilType(TestCase):
+    def test_should_create_from_valid_id(self):
+        self.assertEqual(ne.BillType.to_enum(7), ne.BillType.INFRASTRUCTURE_HUB)
+
+    def test_should_create_from_invalid_id(self):
+        for bill_id in range(7):
+            with self.subTest(bill_id=bill_id):
+                self.assertEqual(ne.BillType.to_enum(bill_id), ne.BillType.UNKNOWN)
+
+
 class TestNotificationEmbeds(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -35,10 +62,6 @@ class TestNotificationEmbeds(TestCase):
         create_structures()
         _, cls.owner = set_owner_character(character_id=1001)
         load_notification_entities(cls.owner)
-        cls.webhook = Webhook.objects.create(
-            name="Test", url="http://www.example.com/dummy/"
-        )
-        cls.owner.webhooks.add(cls.webhook)
 
     def test_should_create_obj_from_notification(self):
         # given
@@ -58,6 +81,40 @@ class TestNotificationEmbeds(TestCase):
             "notification_id=1000000403, owner='Wayne Technologies', "
             "notif_type='MoonminingExtractionFinished'))",
         )
+
+    def test_should_raise_exception_for_unsupported_notif_types(self):
+        # given
+        notification = Notification.objects.create(
+            notification_id=666,
+            owner=self.owner,
+            sender=EveEntity.objects.get(id=2001),
+            timestamp=now(),
+            notif_type="XXXUnsupportedNotificationTypeXXX",
+            last_updated=now(),
+        )
+        # when / then
+        with self.assertRaises(NotImplementedError):
+            ne.NotificationBaseEmbed.create(notification)
+
+    def test_should_require_notification_for_init(self):
+        with self.assertRaises(TypeError):
+            ne.NotificationBaseEmbed(notification="dummy")
+
+    def test_should_require_notification_for_factory(self):
+        with self.assertRaises(TypeError):
+            ne.NotificationBaseEmbed.create(notification="dummy")
+
+
+class TestNotificationEmbedsGenerate(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+        create_structures()
+        _, cls.owner = set_owner_character(character_id=1001)
+        load_notification_entities(cls.owner)
+        cls.webhook = WebhookFactory()
+        cls.owner.webhooks.add(cls.webhook)
 
     def test_should_generate_embed_from_notification(self):
         # given
@@ -115,36 +172,6 @@ class TestNotificationEmbeds(TestCase):
                 self.assertIsInstance(discord_embed, dhooks_lite.Embed)
                 types_tested.add(notification.notif_type)
         self.assertSetEqual(NotificationType.esi_notifications, types_tested)
-
-    def test_should_raise_exception_for_unsupported_notif_types(self):
-        # given
-        notification = Notification.objects.create(
-            notification_id=666,
-            owner=self.owner,
-            sender=EveEntity.objects.get(id=2001),
-            timestamp=now(),
-            notif_type="XXXUnsupportedNotificationTypeXXX",
-            last_updated=now(),
-        )
-        # when / then
-        with self.assertRaises(NotImplementedError):
-            ne.NotificationBaseEmbed.create(notification)
-
-    def test_should_require_notification_for_init(self):
-        with self.assertRaises(TypeError):
-            ne.NotificationBaseEmbed(notification="dummy")
-
-    def test_should_require_notification_for_factory(self):
-        with self.assertRaises(TypeError):
-            ne.NotificationBaseEmbed.create(notification="dummy")
-
-    def test_should_not_allow_generating_embed_for_base_class(self):
-        # given
-        notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationBaseEmbed(notification=notification)
-        # when
-        with self.assertRaises(ValueError):
-            notification_embed.generate_embed()
 
     def test_should_set_ping_everyone_for_color_danger(self):
         # given
@@ -269,3 +296,65 @@ class TestNotificationEmbedsClasses(NoSocketsTestCase):
         # then
         description = markdown_to_plain(discord_embed.description)
         self.assertIn("is running out of fuel in 2 hours", description)
+
+
+class TestGeneratedNotification(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+
+    def test_should_create_tower_reinforced_embed(self):
+        # given
+        notif = GeneratedNotificationFactory()
+        # when
+        obj = NotificationBaseEmbed.create(notif)
+        # then
+        self.assertIsInstance(obj, NotificationTowerReinforcedExtra)
+
+    def test_should_generate_embed(self):
+        # given
+        notif = GeneratedNotificationFactory()
+        embed = NotificationBaseEmbed.create(notif)
+        # when
+        obj = embed.generate_embed()
+        # then
+        self.assertIsInstance(obj, dhooks_lite.Embed)
+        starbase = notif.structures.first()
+        self.assertIn(starbase.name, obj.description)
+
+
+class TestEveNotificationEmbeds(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        load_eveuniverse()
+        cls.owner = OwnerFactory()
+
+    def test_should_create_sov_embed(self):
+        # given
+        notif = NotificationFactory(
+            owner=self.owner,
+            sender=EveEntityAllianceFactory(),
+            notif_type=NotificationType.SOV_ENTOSIS_CAPTURE_STARTED,
+            text_from_dict={"solarSystemID": 30000474, "structureTypeID": 32226},
+        )
+        embed = NotificationBaseEmbed.create(notif)
+        # when
+        obj = embed.generate_embed()
+        # then
+        self.assertIsInstance(obj, dhooks_lite.Embed)
+
+    def test_should_create_sov_embed_without_sender(self):
+        # given
+        notif = NotificationFactory(
+            owner=self.owner,
+            sender=None,
+            notif_type=NotificationType.SOV_ENTOSIS_CAPTURE_STARTED,
+            text_from_dict={"solarSystemID": 30000474, "structureTypeID": 32226},
+        )
+        embed = NotificationBaseEmbed.create(notif)
+        # when
+        obj = embed.generate_embed()
+        # then
+        self.assertIsInstance(obj, dhooks_lite.Embed)

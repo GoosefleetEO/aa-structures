@@ -1,5 +1,6 @@
 import datetime as dt
 from collections import namedtuple
+from typing import Optional
 
 import dhooks_lite
 
@@ -19,10 +20,10 @@ from app_utils.datetime import (
 )
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
-from .. import __title__
-from ..app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
-from ..constants import EveTypeId
-from ..models.notifications import (
+from structures import __title__
+from structures.app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+from structures.constants import EveTypeId
+from structures.models.notifications import (
     EveEntity,
     GeneratedNotification,
     Notification,
@@ -30,7 +31,8 @@ from ..models.notifications import (
     NotificationType,
     Webhook,
 )
-from ..models.structures import Structure
+from structures.models.structures import Structure
+
 from . import sovereignty, starbases
 
 
@@ -46,7 +48,7 @@ class BillType(models.IntegerChoices):
             return cls.UNKNOWN
 
 
-def timeuntil(to_date: dt.datetime, from_date: dt.datetime = None) -> str:
+def timeuntil(to_date: dt.datetime, from_date: Optional[dt.datetime] = None) -> str:
     """Render timeuntil template tag for given datetime to string."""
     if not from_date:
         from_date = now()
@@ -77,7 +79,7 @@ class NotificationBaseEmbed:
             raise TypeError("notification must be of type Notification")
         self._notification = notification
         self._parsed_text = notification.parsed_text()
-        self._title = None
+        self._title = ""
         self._description = ""
         self._color = None
         self._thumbnail = None
@@ -94,7 +96,7 @@ class NotificationBaseEmbed:
         return self._notification
 
     @property
-    def ping_type(self) -> Webhook.PingType:
+    def ping_type(self) -> Optional[Webhook.PingType]:
         return self._ping_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
@@ -107,10 +109,6 @@ class NotificationBaseEmbed:
             property "ping_type_override" defined
 
         """
-        if self._title is None:
-            raise ValueError(f"title not defined for {type(self)}")
-        if self._description is None:
-            raise ValueError(f"description not defined for {type(self)}")
         corporation = self.notification.owner.corporation
         if self.notification.is_alliance_level and corporation.alliance:
             author_name = corporation.alliance.alliance_name
@@ -158,7 +156,7 @@ class NotificationBaseEmbed:
         )
 
     @staticmethod
-    def create(notification: Notification) -> "NotificationBaseEmbed":
+    def create(notification: "NotificationBase") -> "NotificationBaseEmbed":
         """Creates a new instance of the respective subclass for given Notification."""
         if not isinstance(notification, NotificationBase):
             raise TypeError("notification must be of type NotificationBase")
@@ -321,26 +319,27 @@ class NotificationBaseEmbed:
         return Webhook.create_link(alliance_name, dotlan.alliance_url(alliance_name))
 
     @staticmethod
-    def _gen_eveentity_external_url(eve_entity: EveEntity) -> str:
+    def _gen_eve_entity_external_url(eve_entity: EveEntity) -> str:
         if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
             return dotlan.alliance_url(eve_entity.name)
         elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
             return dotlan.corporation_url(eve_entity.name)
         elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
             return evewho.character_url(eve_entity.id)
+        return ""
 
     @classmethod
-    def _gen_eveentity_link(cls, eve_entity: EveEntity) -> str:
+    def _gen_eve_entity_link(cls, eve_entity: EveEntity) -> str:
         return Webhook.create_link(
-            eve_entity.name, cls._gen_eveentity_external_url(eve_entity)
+            eve_entity.name, cls._gen_eve_entity_external_url(eve_entity)
         )
 
     @classmethod
-    def _gen_eveentity_link_from_id(cls, id: int) -> str:
+    def _gen_eve_entity_link_from_id(cls, id: int) -> str:
         if not id:
             return ""
         entity, _ = EveEntity.objects.get_or_create_esi(id=id)
-        return cls._gen_eveentity_link(entity)
+        return cls._gen_eve_entity_link(entity)
 
     @staticmethod
     def _gen_corporation_link(corporation_name: str) -> str:
@@ -732,7 +731,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "belonging to %(owner_link)s. "
             "Extraction was started by %(character)s.\n"
             "The chunk will be ready on location at %(ready_time)s, "
-            "and will autofracture on %(auto_time)s.\n"
+            "and will fracture automatically on %(auto_time)s.\n"
             "%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
@@ -781,7 +780,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
         super().__init__(notification)
         self._title = gettext("Automatic Fracture")
         self._description = gettext(
-            "The moondrill fitted to %(structure_name)s at %(moon)s"
+            "The moon drill fitted to %(structure_name)s at %(moon)s"
             " in %(solar_system)s belonging to %(owner_link)s "
             "has automatically been fired "
             "and the moon products are ready to be harvested.\n"
@@ -828,9 +827,9 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
         fired_by, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["firedBy"]
         )
-        self._title = gettext("Moondrill fired")
+        self._title = gettext("Moon drill fired")
         self._description = gettext(
-            "The moondrill fitted to %(structure_name)s at %(moon)s "
+            "The moon drill fitted to %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been fired by %(character)s "
             "and the moon products are ready to be harvested.\n"
@@ -1169,7 +1168,7 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text.get("corpID")
         )
-        corp_link = self._gen_eveentity_link(corporation)
+        corp_link = self._gen_eve_entity_link(corporation)
         alliance_id = self._parsed_text.get("allianceID")
         if alliance_id:
             alliance, _ = EveEntity.objects.get_or_create_esi(id=alliance_id)
@@ -1216,7 +1215,7 @@ class NotificationCorpCharEmbed(NotificationBaseEmbed):
         self._corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["corpID"]
         )
-        self._character_link = self._gen_eveentity_link(self._character)
+        self._character_link = self._gen_eve_entity_link(self._character)
         self._corporation_link = self._gen_corporation_link(self._corporation.name)
         self._application_text = self._parsed_text.get("applicationText", "")
         self._thumbnail = dhooks_lite.Thumbnail(
@@ -1248,7 +1247,7 @@ class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
         self._title = "%(character_name)s has been invited" % {
             "character_name": self._character.name
         }
-        inviting_character = self._gen_eveentity_link_from_id(
+        inviting_character = self._gen_eve_entity_link_from_id(
             self._parsed_text.get("invokingCharID")
         )
         self._description = (
@@ -1356,9 +1355,9 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
             "%(ally)s has joined %(defender)s in a war against %(aggressor)s. "
             "Their participation in the war will start at %(start_time)s."
         ) % {
-            "aggressor": self._gen_eveentity_link(aggressor),
-            "ally": self._gen_eveentity_link(ally),
-            "defender": self._gen_eveentity_link(defender),
+            "aggressor": self._gen_eve_entity_link(aggressor),
+            "ally": self._gen_eve_entity_link(ally),
+            "defender": self._gen_eve_entity_link(defender),
             "start_time": target_datetime_formatted(start_time),
         }
         self._thumbnail = dhooks_lite.Thumbnail(
@@ -1390,8 +1389,8 @@ class NotificationCorpWarSurrenderMsg(NotificationWarEmbed):
             "as one party has surrendered. "
             "The war will be declared as being over after approximately 24 hours."
         ) % {
-            "declared_by": self._gen_eveentity_link(self._declared_by),
-            "against": self._gen_eveentity_link(self._against),
+            "declared_by": self._gen_eve_entity_link(self._declared_by),
+            "against": self._gen_eve_entity_link(self._against),
         }
         self._color = Webhook.Color.WARNING
 
@@ -1412,9 +1411,9 @@ class NotificationWarAdopted(NotificationWarEmbed):
             "%(against)s is no longer a member of %(alliance)s, "
             "and therefore a new war between %(declared_by)s and %(against)s has begun."
         ) % {
-            "declared_by": self._gen_eveentity_link(self._declared_by),
-            "against": self._gen_eveentity_link(self._against),
-            "alliance": self._gen_eveentity_link(alliance),
+            "declared_by": self._gen_eve_entity_link(self._declared_by),
+            "against": self._gen_eve_entity_link(self._against),
+            "alliance": self._gen_eve_entity_link(alliance),
         }
         self._color = Webhook.Color.WARNING
 
@@ -1432,8 +1431,8 @@ class NotificationWarDeclared(NotificationWarEmbed):
             "Within %(delay_hours)s hours fighting can legally occur "
             "between those involved."
         ) % {
-            "declared_by": self._gen_eveentity_link(self._declared_by),
-            "against": self._gen_eveentity_link(self._against),
+            "declared_by": self._gen_eve_entity_link(self._declared_by),
+            "against": self._gen_eve_entity_link(self._against),
             "war_hq": Webhook.text_bold(strip_tags(self._parsed_text["warHQ"])),
             "delay_hours": Webhook.text_bold(self._parsed_text["delayHours"]),
         }
@@ -1461,10 +1460,10 @@ class NotificationWarInherited(NotificationWarEmbed):
             "%(against)s from newly joined %(quitter)s. "
             "Within **24** hours fighting can legally occur with %(alliance)s."
         ) % {
-            "declared_by": self._gen_eveentity_link(self._declared_by),
-            "against": self._gen_eveentity_link(self._against),
-            "alliance": self._gen_eveentity_link(alliance),
-            "quitter": self._gen_eveentity_link(quitter),
+            "declared_by": self._gen_eve_entity_link(self._declared_by),
+            "against": self._gen_eve_entity_link(self._against),
+            "alliance": self._gen_eve_entity_link(alliance),
+            "quitter": self._gen_eve_entity_link(quitter),
         }
         self._color = Webhook.Color.DANGER
 
@@ -1480,8 +1479,8 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
             "After %(end_date)s CONCORD will again respond to any hostilities "
             "between those involved with full force."
         ) % {
-            "declared_by": self._gen_eveentity_link(self._declared_by),
-            "against": self._gen_eveentity_link(self._against),
+            "declared_by": self._gen_eve_entity_link(self._declared_by),
+            "against": self._gen_eve_entity_link(self._against),
             "end_date": target_datetime_formatted(war_ends),
         }
         self._color = Webhook.Color.WARNING
@@ -1526,14 +1525,14 @@ class NotificationWarSurrenderOfferMsg(NotificationBaseEmbed):
         owner_1, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text.get("ownerID1")
         )
-        owner_1_link = self._gen_eveentity_link(owner_1)
-        owner_2_link = self._gen_eveentity_link_from_id(
+        owner_1_link = self._gen_eve_entity_link(owner_1)
+        owner_2_link = self._gen_eve_entity_link_from_id(
             self._parsed_text.get("ownerID2")
         )
         self._title = gettext("%s has offered a surrender") % (owner_1,)
         self._description = gettext(
             "%s has offered to end the war with %s in the exchange for %s ISK. "
-            "If accepted, the war will end in 24 hours and your organizations will"
+            "If accepted, the war will end in 24 hours and your organizations will "
             "be unable to declare new wars against each other for the next 2 weeks."
         ) % (owner_1_link, owner_2_link, f"{isk_value:,.2f}")
         self._color = Webhook.Color.INFO
@@ -1547,9 +1546,10 @@ class NotificationBillingBillOutOfMoneyMsg(NotificationBaseEmbed):
         due_date = ldap_time_2_datetime(self._parsed_text["dueDate"])
         self._title = gettext("Insufficient Funds for Bill")
         self._description = gettext(
-            "The selected corporation wallet division for autopayments does not have "
-            "enough current funds available to pay the %(bill_type)s "
-            "due to be paid by %(due_date)s. Transfer additional funds to the selected wallet "
+            "The selected corporation wallet division for automatic payments "
+            "does not have enough current funds available to pay the %(bill_type)s "
+            "due to be paid by %(due_date)s. "
+            "Transfer additional funds to the selected wallet "
             "division in order to meet your pending automatic bills."
         ) % {
             "bill_type": bill_type_str,
