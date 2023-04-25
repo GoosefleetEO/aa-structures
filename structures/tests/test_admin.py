@@ -17,6 +17,7 @@ from structures.admin import (
     OwnerAllianceFilter,
     OwnerCorporationsFilter,
     StructureAdmin,
+    StructureFuelAlertConfigAdmin,
     WebhookAdmin,
 )
 from structures.models import (
@@ -32,6 +33,7 @@ from .testdata.factories_2 import (
     FuelAlertConfigFactory,
     NotificationFactory,
     OwnerFactory,
+    StructureFactory,
 )
 from .testdata.helpers import (
     create_structures,
@@ -50,7 +52,7 @@ class MockRequest(object):
         self.user = user
 
 
-class TestFuelNotificationConfigAdmin(TestCase):
+class TestFuelNotificationConfigAdminView(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -61,7 +63,6 @@ class TestFuelNotificationConfigAdmin(TestCase):
         }
         cls.user = User.objects.create_superuser("Clark Kent")
         load_eveuniverse()
-        create_structures()
 
     def test_should_create_new_config(self):
         # given
@@ -96,7 +97,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
         # given
         self.client.force_login(self.user)
         config = FuelAlertConfigFactory(start=48, end=24, repeat=12)
-        structure = Structure.objects.get(id=1000000000001)
+        structure = StructureFactory()
         structure.structure_fuel_alerts.create(
             config=config, structure=structure, hours=5
         )
@@ -115,7 +116,7 @@ class TestFuelNotificationConfigAdmin(TestCase):
         # given
         self.client.force_login(self.user)
         config = FuelAlertConfigFactory(start=48, end=24, repeat=12)
-        structure = Structure.objects.get(id=1000000000001)
+        structure = StructureFactory()
         structure.structure_fuel_alerts.create(
             config=config, structure=structure, hours=5
         )
@@ -211,6 +212,29 @@ class TestFuelNotificationConfigAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "errornote")
         self.assertEqual(FuelAlertConfig.objects.count(), 0)
+
+
+class TestStructureFuelAlertAdmin(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.modeladmin = StructureFuelAlertConfigAdmin(
+            model=FuelAlertConfig, admin_site=AdminSite()
+        )
+        load_eveuniverse()
+
+    @patch(MODULE_PATH + ".StructureFuelAlertConfigAdmin.message_user", spec=True)
+    @patch(MODULE_PATH + ".tasks", spec=True)
+    def test_should_send_fuel_notifications(self, mock_tasks, mock_message_user):
+        # given
+        config = FuelAlertConfigFactory()
+        request = MockRequest()
+        queryset = FuelAlertConfig.objects.filter(pk=config.pk)
+        # when
+        self.modeladmin.send_fuel_notifications(request, queryset)
+        # then
+        self.assertTrue(mock_tasks.send_queued_messages_for_webhooks.called)
+        self.assertTrue(mock_message_user.called)
 
 
 class TestNotificationAdmin(TestCase):
