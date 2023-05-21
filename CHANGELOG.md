@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.3.1b1] - 2023-04-25
+
+### Fixed
+
+- AllAnchoringMessage can only be activated for one corporation in the alliance, but this notification is not broadcasted to all corporations
+
 ## [2.3.0] - 2023-04-25
 
 ### Added
