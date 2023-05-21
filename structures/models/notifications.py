@@ -239,7 +239,7 @@ class NotificationType(models.TextChoices):
             cls.SOV_STRUCTURE_REINFORCED,
             cls.SOV_STRUCTURE_DESTROYED,
             cls.SOV_ALL_CLAIM_LOST_MSG,
-            cls.SOV_ALL_ANCHORING_MSG,
+            # cls.SOV_ALL_ANCHORING_MSG, # This notif is not broadcasted to all corporations
             # wars
             cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
             cls.WAR_ALLY_JOINED_WAR_AllY_MSG,

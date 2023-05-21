@@ -16,9 +16,11 @@ from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from .. import tasks
 from ..models import NotificationType, Structure
 from .testdata.factories_2 import (
+    EveEntityAllianceFactory,
     EveEntityCorporationFactory,
     NotificationFactory,
     OwnerFactory,
+    RawNotificationFactory,
     StarbaseFactory,
     StructureFactory,
     WebhookFactory,
@@ -431,6 +433,91 @@ class TestTasks(TestCase):
         if AuthTimer:
             self.assertTrue(AuthTimer.objects.exists())
 
+    def test_should_fetch_and_send_notification_when_enabled_for_webhook(
+        self, mock_esi_2, mock_esi, mock_execute
+    ):
+        # given
+        webhook = WebhookFactory(
+            notification_types=[NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE]
+        )
+        owner = OwnerFactory(webhooks=[webhook], is_alliance_main=True)
+        eve_character = owner.characters.first().character_ownership.character
+        # corporation_id = owner.corporation.corporation_id
+        notif = RawNotificationFactory()
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data={
+                    str(eve_character.character_id): [notif],
+                },
+            ),
+        ]
+        mock_esi.client = mock_esi_2.client = EsiClientStub.create_from_endpoints(
+            endpoints
+        )
+        # when
+        tasks.fetch_all_notifications.delay()
+        # then
+        self.assertTrue(mock_execute.called)
+        embed = mock_execute.call_args[1]["embeds"][0]
+        self.assertIn("now eligible", embed.description)
+
+    def test_should_fetch_and_send_notification_when_enabled_for_webhook_all_anchoring(
+        self, mock_esi_2, mock_esi, mock_execute
+    ):
+        # given
+        webhook = WebhookFactory(
+            notification_types=[NotificationType.SOV_ALL_ANCHORING_MSG]
+        )
+        owner = OwnerFactory(webhooks=[webhook], is_alliance_main=False)
+        eve_character = owner.characters.first().character_ownership.character
+        alliance = EveEntityAllianceFactory(
+            id=owner.corporation.alliance_id,
+            name=owner.corporation.alliance.alliance_name,
+        )
+        corporation = EveEntityCorporationFactory(
+            id=owner.corporation.corporation_id, name=owner.corporation.corporation_name
+        )
+        starbase = StarbaseFactory(owner=owner)
+        notif = RawNotificationFactory(
+            type="AllAnchoringMsg",
+            sender=corporation,
+            data={
+                "allianceID": alliance.id,
+                "corpID": corporation.id,
+                "corpsPresent": [{"allianceID": alliance.id, "corpID": corporation.id}],
+                "moonID": starbase.eve_moon.id,
+                "solarSystemID": starbase.eve_solar_system.id,
+                "towers": [
+                    {"moonID": starbase.eve_moon.id, "typeID": starbase.eve_type.id}
+                ],
+                "typeID": starbase.eve_type.id,
+            },
+        )
+        endpoints = [
+            EsiEndpoint(
+                "Character",
+                "get_characters_character_id_notifications",
+                "character_id",
+                needs_token=True,
+                data={
+                    str(eve_character.character_id): [notif],
+                },
+            ),
+        ]
+        mock_esi.client = mock_esi_2.client = EsiClientStub.create_from_endpoints(
+            endpoints
+        )
+        # when
+        tasks.fetch_all_notifications.delay()
+        # then
+        self.assertTrue(mock_execute.called)
+        embed = mock_execute.call_args[1]["embeds"][0]
+        self.assertIn("has anchored in", embed.description)
+
     @patch(NOTIFICATIONS_PATH + ".STRUCTURES_ADD_TIMERS", True)
     def test_should_fetch_new_notification_from_esi_and_send_to_webhook_and_create_timers(
         self, mock_esi_2, mock_esi, mock_execute
@@ -508,7 +595,7 @@ class TestTasks(TestCase):
                 NotificationType.SOV_ALL_CLAIM_LOST_MSG,
             ]
         )
-        owner = OwnerFactory(webhooks=[webhook])
+        owner = OwnerFactory(webhooks=[webhook], is_alliance_main=True)
         NotificationFactory(
             owner=owner, notif_type=NotificationType.STRUCTURE_DESTROYED
         )

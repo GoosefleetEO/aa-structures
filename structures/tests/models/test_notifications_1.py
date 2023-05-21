@@ -121,47 +121,73 @@ class TestNotificationFilterForAllianceLevel(NoSocketsTestCase):
         # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        notif = self.owner.notification_set.get(notification_id=1000000509)
+        notifs = self.owner.notification_set.exclude(
+            notif_type__in=NotificationType.relevant_for_alliance_level
+        )
         # when/then
-        self.assertFalse(notif.filter_for_alliance_level())
+        for notif in notifs:
+            with self.subTest(notif=str(notif)):
+                self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_non_alliance_notifications_2(self):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        notif = self.owner.notification_set.get(notification_id=1000000509)
+        notifs = self.owner.notification_set.exclude(
+            notif_type__in=NotificationType.relevant_for_alliance_level
+        )
         # when/then
-        self.assertFalse(notif.filter_for_alliance_level())
+        for notif in notifs:
+            with self.subTest(notif=str(notif)):
+                self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_filter_alliance_notifications(self):
         # given
         self.owner.is_alliance_main = False
         self.owner.save()
-        notif = self.owner.notification_set.get(notification_id=1000000803)
+        notifs = self.owner.notification_set.filter(
+            notif_type__in=NotificationType.relevant_for_alliance_level
+        )
         # when/then
-        self.assertTrue(notif.filter_for_alliance_level())
+        for notif in notifs:
+            with self.subTest(notif=str(notif)):
+                self.assertTrue(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_1(self):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
+        notifs = self.owner.notification_set.filter(
+            notif_type__in=NotificationType.relevant_for_alliance_level
+        )
         # when/then
-        notif = self.owner.notification_set.get(notification_id=1000000803)
-        self.assertFalse(notif.filter_for_alliance_level())
+        for notif in notifs:
+            with self.subTest(notif=str(notif)):
+                self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_2(self):
         # given
         self.owner.is_alliance_main = True
         self.owner.save()
-        notif = self.owner.notification_set.get(notification_id=1000000803)
-        self.assertFalse(notif.filter_for_alliance_level())
+        notifs = self.owner.notification_set.filter(
+            notif_type__in=NotificationType.relevant_for_alliance_level
+        )
+        # when/then
+        for notif in notifs:
+            with self.subTest(notif=str(notif)):
+                self.assertFalse(notif.filter_for_alliance_level())
 
     def test_should_not_filter_alliance_notifications_3(self):
         # given
         _, owner = set_owner_character(character_id=1102)  # corp with no alliance
         load_notification_entities(owner)
-        notif = owner.notification_set.get(notification_id=1000000803)
-        self.assertFalse(notif.filter_for_alliance_level())
+        notifs = self.owner.notification_set.filter(
+            notif_type__in=NotificationType.relevant_for_alliance_level
+        )
+        # when/then
+        for notif in notifs:
+            with self.subTest(notif=str(notif)):
+                self.assertFalse(notif.filter_for_alliance_level())
 
 
 class TestNotificationCreateFromStructure(NoSocketsTestCase):
