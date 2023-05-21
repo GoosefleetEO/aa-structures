@@ -330,3 +330,36 @@ class GeneratedNotificationFactory(factory.django.DjangoModelFactory):
             state_timer_end=reinforced_until,
         )
         obj.structures.add(starbase)
+
+
+class RawNotificationFactory(factory.DictFactory):
+    """Create a raw notification as received from ESI."""
+
+    class Meta:
+        exclude = ("data", "timestamp_dt", "sender")
+
+    # excluded
+    data = None
+    timestamp_dt = None
+    sender = factory.SubFactory(EveEntityCorporationFactory, id=2902, name="CONCORD")
+
+    # included
+    notification_id = factory.Sequence(lambda o: 1999000000 + o)
+    type = "CorpBecameWarEligible"
+    sender_id = factory.LazyAttribute(lambda o: o.sender.id)
+    sender_type = factory.LazyAttribute(lambda o: o.sender.category)
+    is_read = True
+
+    @factory.lazy_attribute
+    def timestamp(self):
+        if not self.timestamp_dt:
+            timestamp_dt = now()
+        else:
+            timestamp_dt = self.timestamp_dt
+        return datetime_to_esi(timestamp_dt)
+
+    @factory.lazy_attribute
+    def text(self):
+        if not self.data:
+            return ""
+        return yaml.dump(self.data)
