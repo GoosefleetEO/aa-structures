@@ -440,7 +440,7 @@ class TestTasks(TestCase):
         webhook = WebhookFactory(
             notification_types=[NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE]
         )
-        owner = OwnerFactory(webhooks=[webhook])
+        owner = OwnerFactory(webhooks=[webhook], is_alliance_main=True)
         eve_character = owner.characters.first().character_ownership.character
         # corporation_id = owner.corporation.corporation_id
         notif = RawNotificationFactory()
@@ -595,7 +595,7 @@ class TestTasks(TestCase):
                 NotificationType.SOV_ALL_CLAIM_LOST_MSG,
             ]
         )
-        owner = OwnerFactory(webhooks=[webhook])
+        owner = OwnerFactory(webhooks=[webhook], is_alliance_main=True)
         NotificationFactory(
             owner=owner, notif_type=NotificationType.STRUCTURE_DESTROYED
         )

@@ -142,7 +142,7 @@ class OwnerFactory(factory.django.DjangoModelFactory):
     assets_last_update_at = factory.LazyFunction(now)
     character_ownership = None  # no longer used
     forwarding_last_update_at = factory.LazyFunction(now)
-    is_alliance_main = True
+    is_alliance_main = False
     is_up = True
     notifications_last_update_at = factory.LazyFunction(now)
     structures_last_update_at = factory.LazyFunction(now)
