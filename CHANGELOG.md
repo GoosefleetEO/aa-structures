@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.3.2] - 2023-06-28
+
+### Changed
+
+- Now downloads swagger spec from ESI on-demand instead of relying on local copy
+
+### Fixed
+
+- Notification updates break after new notification types were added to the ESI notifications endpoint
+
 ## [2.3.1] - 2023-05-22
 
 ### Fixed
