@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Now downloads swagger spec from ESI on-demand instead of relying on local copy
+- Changed build process to flit
 
 ### Fixed
 
