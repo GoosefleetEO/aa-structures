@@ -44,6 +44,13 @@ test-310-django40:
   - tox -e py310-django40
   - bash <(curl -s https://codecov.io/bash)
 
+test-311-django40:
+  extends: .test
+  image: python:3.11-bullseye
+  script:
+  - tox -e py311-django40
+  - bash <(curl -s https://codecov.io/bash)
+
 test-core:
   extends: .test
   image: python:3.10-bullseye

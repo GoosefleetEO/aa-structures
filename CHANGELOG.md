@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Now downloads swagger spec from ESI on-demand instead of relying on local copy
 - Changed build process to flit
+- Added support for Python 3.11
 
 ### Fixed
 
