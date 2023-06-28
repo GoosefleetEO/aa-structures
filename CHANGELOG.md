@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.4.0] - 2023-06-28
+
+### Changed
+
+- Now downloads swagger spec from ESI on-demand instead of relying on local copy
+- Changed build process to flit
+- Added support for Python 3.11
+- Updated dependencies
+
+### Fixed
+
+- Notification updates break after new notification types were added to the ESI notifications endpoint
+
 ## [2.3.1] - 2023-05-22
 
 ### Fixed
