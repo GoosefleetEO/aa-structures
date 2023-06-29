@@ -345,7 +345,7 @@ class StructureManagerBase(models.Manager):
         obj, created = self.update_or_create_from_dict(structure=structure, owner=owner)
         return obj, created
 
-    def update_or_create_from_dict(self, structure: dict, owner: object) -> tuple:
+    def update_or_create_from_dict(self, structure: dict, owner) -> tuple:
         """update or create structure from given dict"""
 
         from .models import StructureService
@@ -354,88 +354,69 @@ class StructureManagerBase(models.Manager):
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=structure["system_id"]
         )
-        fuel_expires_at = (
-            structure["fuel_expires"] if "fuel_expires" in structure else None
-        )
-        next_reinforce_hour = (
-            structure["next_reinforce_hour"]
-            if "next_reinforce_hour" in structure
-            else None
-        )
-        next_reinforce_apply = (
-            structure["next_reinforce_apply"]
-            if "next_reinforce_apply" in structure
-            else None
-        )
-        reinforce_hour = (
-            structure["reinforce_hour"] if "reinforce_hour" in structure else None
-        )
-        state = (
-            self.model.State.from_esi_name(structure["state"])
-            if "state" in structure
-            else self.model.State.UNKNOWN
-        )
-        state_timer_start = (
-            structure["state_timer_start"] if "state_timer_start" in structure else None
-        )
-        state_timer_end = (
-            structure["state_timer_end"] if "state_timer_end" in structure else None
-        )
-        unanchors_at = (
-            structure["unanchors_at"] if "unanchors_at" in structure else None
-        )
-        position_x = structure["position"]["x"] if "position" in structure else None
-        position_y = structure["position"]["y"] if "position" in structure else None
-        position_z = structure["position"]["z"] if "position" in structure else None
-        if "planet_id" in structure:
-            eve_planet, _ = EvePlanet.objects.get_or_create_esi(
-                id=structure["planet_id"]
-            )
+        if position := structure.get("position"):
+            position_x = position.get("x")
+            position_y = position.get("y")
+            position_z = position.get("z")
+        else:
+            position_x = position_y = position_z = None
+        if planet_id := structure.get("planet_id"):
+            eve_planet, _ = EvePlanet.objects.get_or_create_esi(id=planet_id)
         else:
             eve_planet = None
-        if "moon_id" in structure:
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=structure["moon_id"])
+        if moon_id := structure.get("moon_id"):
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
         else:
             eve_moon = None
+
+        structure_id = structure["structure_id"]
         try:
-            old_obj = self.get(id=structure["structure_id"])
+            old_obj = self.get(id=structure_id)
         except self.model.DoesNotExist:
             old_obj = None
+
         obj, created = self.update_or_create(
-            id=structure["structure_id"],
+            id=structure_id,
             defaults={
                 "owner": owner,
                 "eve_type": eve_type,
-                "name": structure["name"],
+                "name": structure.get("name", ""),
                 "eve_solar_system": eve_solar_system,
                 "eve_planet": eve_planet,
                 "eve_moon": eve_moon,
                 "position_x": position_x,
                 "position_y": position_y,
                 "position_z": position_z,
-                "fuel_expires_at": fuel_expires_at,
-                "next_reinforce_hour": next_reinforce_hour,
-                "next_reinforce_apply": next_reinforce_apply,
-                "reinforce_hour": reinforce_hour,
-                "state": state,
-                "state_timer_start": state_timer_start,
-                "state_timer_end": state_timer_end,
-                "unanchors_at": unanchors_at,
+                "fuel_expires_at": structure.get("fuel_expires"),
+                "next_reinforce_hour": structure.get("next_reinforce_hour"),
+                "next_reinforce_apply": structure.get("next_reinforce_apply"),
+                "reinforce_hour": structure.get("reinforce_hour"),
+                "state": self.model.State.from_esi_name(structure.get("state", "")),
+                "state_timer_start": structure.get("state_timer_start"),
+                "state_timer_end": structure.get("state_timer_end"),
+                "unanchors_at": structure.get("unanchors_at"),
                 "last_updated_at": now(),
             },
         )
+
         if old_obj:
             obj.handle_fuel_notifications(old_obj)
+
         # Make sure we have dogmas loaded for this type for fittings
         EveType.objects.get_or_create_esi(
             id=structure["type_id"], enabled_sections=[EveType.Section.DOGMAS]
         )
+
         # save related structure services
         StructureService.objects.filter(structure=obj).delete()
         if "services" in structure and structure["services"]:
             for service in structure["services"]:
-                state = StructureService.State.from_esi_name(service["state"])
-                args = {"structure": obj, "name": service["name"], "state": state}
+                service_state = StructureService.State.from_esi_name(service["state"])
+                args = {
+                    "structure": obj,
+                    "name": service["name"],
+                    "state": service_state,
+                }
                 StructureService.objects.create(**args)
 
         if obj.services.filter(state=StructureService.State.ONLINE).exists():
