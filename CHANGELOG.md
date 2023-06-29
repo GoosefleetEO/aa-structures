@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.4.1] - 2023-06-29
+
+### Fixed
+
+- Starbase without a moon breaks update (Thanks to @r0kym for the fix)
+
 ## [2.4.0] - 2023-06-28
 
 ### Changed
