@@ -8,7 +8,7 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ..models import (
+from structures.models import (
     EveSovereigntyMap,
     NotificationType,
     Owner,
@@ -17,11 +17,13 @@ from ..models import (
     StructureTag,
     Webhook,
 )
+
 from .testdata.factories import (
     create_eve_sovereignty_map,
     create_owner_from_user,
     create_upwell_structure,
 )
+from .testdata.factories_2 import OwnerFactory
 from .testdata.helpers import create_structures, load_entities
 from .testdata.load_eveuniverse import load_eveuniverse
 
@@ -502,6 +504,33 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         # check structure
         self.assertFalse(created)
         self.assertIsNone(structure.last_online_at)
+
+    def test_can_create_starbase_without_moon(self):
+        owner = OwnerFactory()
+        structure = {
+            "structure_id": 1300000000099,
+            "name": "Hidden place",
+            "state": "online",
+            "system_id": 30002537,
+            "type_id": 16213,
+            "moon_id": None,
+            "position": {"x": 55028384780.0, "y": 7310316270.0, "z": -163686684205.0},
+        }
+        structure, created = Structure.objects.update_or_create_from_dict(
+            structure, owner
+        )
+
+        # check structure
+        structure: Structure
+        self.assertTrue(created)
+        self.assertEqual(structure.id, 1300000000099)
+        self.assertEqual(structure.eve_type_id, 16213)
+        self.assertEqual(structure.eve_solar_system_id, 30002537)
+        self.assertEqual(structure.owner, owner)
+        self.assertEqual(structure.position_x, 55028384780.0)
+        self.assertEqual(structure.position_y, 7310316270.0)
+        self.assertEqual(structure.position_z, -163686684205.0)
+        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
 
 
 class TestStructureTagManager(NoSocketsTestCase):

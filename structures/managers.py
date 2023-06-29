@@ -393,8 +393,8 @@ class StructureManagerBase(models.Manager):
             )
         else:
             eve_planet = None
-        if "moon_id" in structure:
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=structure["moon_id"])
+        if moon_id := structure.get("moon_id"):
+            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
         else:
             eve_moon = None
         try:
