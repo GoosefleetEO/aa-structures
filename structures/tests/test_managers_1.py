@@ -510,7 +510,6 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         structure = {
             "structure_id": 1300000000099,
             "name": "Hidden place",
-            "state": "online",
             "system_id": 30002537,
             "type_id": 16213,
             "moon_id": None,
@@ -530,7 +529,7 @@ class TestStructureManagerCreateFromDict(NoSocketsTestCase):
         self.assertEqual(structure.position_x, 55028384780.0)
         self.assertEqual(structure.position_y, 7310316270.0)
         self.assertEqual(structure.position_z, -163686684205.0)
-        self.assertEqual(structure.state, Structure.State.POS_ONLINE)
+        self.assertEqual(structure.state, Structure.State.UNKNOWN)
 
 
 class TestStructureTagManager(NoSocketsTestCase):
