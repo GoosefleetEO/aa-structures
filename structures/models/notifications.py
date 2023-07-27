@@ -588,9 +588,9 @@ class NotificationBase(models.Model):
         return Structure.objects.none()
 
     def send_to_webhook(self, webhook: Webhook) -> bool:
-        """Sends this notification to the configured webhook.
+        """Send this notification to a webhook.
 
-        returns True if successful, else False
+        Return True if successful, else False.
         """
         logger.info("%s: Trying to sent to webhook: %s", self, webhook)
         try:
@@ -599,16 +599,7 @@ class NotificationBase(models.Model):
             logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
             return False
 
-        if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
-            if ping_type == Webhook.PingType.EVERYONE:
-                content = "@everyone"
-            elif ping_type == Webhook.PingType.HERE:
-                content = "@here"
-            else:
-                content = ""
-        else:
-            content = ""
-
+        content = self._create_content_with_pings(webhook, ping_type)
         content += self._add_discord_group_pings(webhook)
 
         username, avatar_url = self._gen_avatar()
@@ -620,6 +611,16 @@ class NotificationBase(models.Model):
             self.is_sent = True
             self.save()
         return success
+
+    def _create_content_with_pings(self, webhook, ping_type):
+        if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
+            if ping_type == Webhook.PingType.EVERYONE:
+                return "@everyone"
+
+            if ping_type == Webhook.PingType.HERE:
+                return "@here"
+
+        return ""
 
     def _add_discord_group_pings(self, webhook) -> str:
         if not webhook.ping_groups.exists() and not self.owner.ping_groups.exists():
