@@ -274,16 +274,14 @@ class NotificationBaseAdmin(admin.ModelAdmin):
     @admin.display(description=_("Mark selected notifications as sent"))
     def mark_as_sent(self, request, queryset):
         queryset.update(is_sent=True)
-        self.message_user(
-            request, "{} notifications marked as sent".format(queryset.count())
-        )
+        notif_count = queryset.count()
+        self.message_user(request, f"{notif_count} notifications marked as sent")
 
     @admin.display(description=_("Mark selected notifications as unsent"))
     def mark_as_unsent(self, request, queryset):
         queryset.update(is_sent=False)
-        self.message_user(
-            request, "{} notifications marked as unsent".format(queryset.count())
-        )
+        notif_count = queryset.count()
+        self.message_user(request, f"{notif_count} notifications marked as unsent")
 
     @admin.display(description=_("Send selected notifications to configured webhooks"))
     def send_to_configured_webhooks(self, request, queryset):
@@ -475,9 +473,12 @@ class OwnerAdmin(admin.ModelAdmin):
     def update_all(self, request, queryset):
         for obj in queryset:
             tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)  # type: ignore
-            text = _(
-                "Started updating structures and notifications for %s. "
-                "You will receive a notification once it is completed." % obj
+            text = (
+                _(
+                    "Started updating structures and notifications for %s. "
+                    "You will receive a notification once it is completed."
+                )
+                % obj
             )
             self.message_user(request, text)
 
@@ -903,11 +904,10 @@ class StructureAdmin(admin.ModelAdmin):
             for tag in tags:
                 structure.tags.add(tag)
             structure_count += 1
+        tags_count = tags.count()
         self.message_user(
             request,
-            "Added {:,} default tags to {:,} structures".format(
-                tags.count(), structure_count
-            ),
+            f"Added {tags_count:,} default tags to {structure_count:,} structures",
         )
 
     @admin.display(description=_("Remove user tags for selected structures"))
@@ -919,7 +919,7 @@ class StructureAdmin(admin.ModelAdmin):
             structure_count += 1
         self.message_user(
             request,
-            "Removed all user tags from {:,} structures".format(structure_count),
+            f"Removed all user tags from {structure_count:,} structures",
         )
 
     @admin.display(description=_("Update generated tags for selected structures"))
@@ -930,7 +930,7 @@ class StructureAdmin(admin.ModelAdmin):
             structure_count += 1
         self.message_user(
             request,
-            "Updated all generated tags for {:,} structures".format(structure_count),
+            f"Updated all generated tags for {structure_count:,} structures",
         )
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -1051,8 +1051,11 @@ class WebhookAdmin(admin.ModelAdmin):
             )  # type: ignore
             self.message_user(
                 request,
-                'Initiated sending test notification to webhook "{}". '
-                "You will receive a report on completion.".format(obj),
+                _(
+                    "Initiated sending test notification to webhook %s. "
+                    "You will receive a report on completion."
+                )
+                % obj,
             )
 
     @admin.display(description=_("Activate selected webhook"))
@@ -1060,14 +1063,14 @@ class WebhookAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.is_active = True
             obj.save()
-            self.message_user(request, f'You have activated webhook "{obj}"')
+            self.message_user(request, _("You have activated webhook %s") % obj)
 
     @admin.display(description=_("Deactivate selected webhook"))
     def deactivate(self, request, queryset):
         for obj in queryset:
             obj.is_active = False
             obj.save()
-            self.message_user(request, f'You have de-activated webhook "{obj}"')
+            self.message_user(request, _("You have de-activated webhook %s") % obj)
 
     @admin.display(description=_("Purge queued messages from selected webhooks"))
     def purge_messages(self, request, queryset):
@@ -1078,8 +1081,11 @@ class WebhookAdmin(admin.ModelAdmin):
             actions_count += 1
         self.message_user(
             request,
-            f"Purged queued messages for {actions_count} webhooks, "
-            f"deleting a total of {killmails_deleted} messages.",
+            _(
+                "Purged queued messages for %(actions_count)s webhooks, "
+                "deleting a total of %(killmails_deleted)s messages."
+            )
+            % {"actions_count": actions_count, "killmails_deleted": killmails_deleted},
         )
 
     @admin.display(description=_("Send queued messages from selected webhooks"))
@@ -1090,5 +1096,5 @@ class WebhookAdmin(admin.ModelAdmin):
             items_count += 1
 
         self.message_user(
-            request, f"Started sending queued messages for {items_count} webhooks."
+            request, _("Started sending queued messages for %d webhooks.") % items_count
         )

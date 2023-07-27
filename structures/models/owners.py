@@ -225,8 +225,8 @@ class Owner(models.Model):
         return str(self.corporation.corporation_name)
 
     def __repr__(self):
-        return "{}(pk={}, corporation='{}')".format(
-            self.__class__.__name__, self.pk, self.corporation
+        return (
+            f"{self.__class__.__name__}(pk={self.pk}, corporation='{self.corporation}')"
         )
 
     def save(self, *args, **kwargs) -> None:
@@ -1015,24 +1015,22 @@ class Owner(models.Model):
         return notifications
 
     def _store_raw_notifications(self, notifications):
-        # store notifications to disk in continuous file per corp
+        """Store notifications to disk in continuous file per corp."""
         folder_name = "structures_notifications_archive"
         os.makedirs(folder_name, exist_ok=True)
-        filename = "{}/notifications_{}_{}.txt".format(
-            folder_name, self.corporation.corporation_id, now().date().isoformat()
-        )
+        corporation_id = self.corporation.corporation_id
+        now_str = now().date().isoformat()
+        filename = f"{folder_name}/notifications_{corporation_id}_{now_str}.txt"
         logger.info(
             "%s: Storing notifications into archive file: %s", self, format(filename)
         )
-        with open(file=filename, mode="a", encoding="utf-8") as f:
-            f.write(
-                "[{}] {}:\n".format(
-                    now().strftime(DATETIME_FORMAT),
-                    self.corporation.corporation_ticker,
-                )
+        with open(file=filename, mode="a", encoding="utf-8") as file:
+            now_str_2 = now().strftime(DATETIME_FORMAT)
+            file.write(f"[{now_str_2}] {self.corporation.corporation_ticker}:\n")
+            json.dump(
+                notifications, file, cls=DjangoJSONEncoder, sort_keys=True, indent=4
             )
-            json.dump(notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
-            f.write("\n")
+            file.write("\n")
 
     def _store_notifications(self, notifications: List[dict]) -> int:
         """Store new notifications in database.
@@ -1274,6 +1272,7 @@ class Owner(models.Model):
 
     @staticmethod
     def get_esi_scopes() -> List[str]:
+        """Return all required ESI scopes."""
         scopes = [
             "esi-corporations.read_structures.v1",
             "esi-universe.read_structures.v1",

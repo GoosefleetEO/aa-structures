@@ -135,7 +135,7 @@ class NotificationType(models.TextChoices):
     WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG = "AllyJoinedWarAggressorMsg", _(
         "War ally joined aggressor"
     )
-    WAR_ALLY_JOINED_WAR_AllY_MSG = "AllyJoinedWarAllyMsg", _("War ally joined ally")
+    WAR_ALLY_JOINED_WAR_ALLY_MSG = "AllyJoinedWarAllyMsg", _("War ally joined ally")
     WAR_ALLY_JOINED_WAR_DEFENDER_MSG = "AllyJoinedWarDefenderMsg", _(
         "War ally joined defender"
     )
@@ -178,10 +178,12 @@ class NotificationType(models.TextChoices):
 
     @classproperty
     def esi_notifications(cls) -> Set["NotificationType"]:
+        """Return all ESI notification types."""
         return set(cls.values) - cls.generated_notifications  # type: ignore
 
     @classproperty
     def generated_notifications(cls) -> Set["NotificationType"]:
+        """Return all generated notification types."""
         return {
             cls.STRUCTURE_JUMP_FUEL_ALERT,
             cls.STRUCTURE_REFUELED_EXTRA,
@@ -242,7 +244,7 @@ class NotificationType(models.TextChoices):
             # cls.SOV_ALL_ANCHORING_MSG, # This notif is not broadcasted to all corporations
             # wars
             cls.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
-            cls.WAR_ALLY_JOINED_WAR_AllY_MSG,
+            cls.WAR_ALLY_JOINED_WAR_ALLY_MSG,
             cls.WAR_ALLY_JOINED_WAR_DEFENDER_MSG,
             cls.WAR_CORP_WAR_SURRENDER_MSG,
             cls.WAR_CORPORATION_BECAME_ELIGIBLE,
@@ -427,11 +429,12 @@ class NotificationBase(models.Model):
         return f"{self.notification_id}:{self.notif_type}"
 
     def __repr__(self) -> str:
-        return "%s(notification_id=%d, owner='%s', notif_type='%s')" % (
-            self.__class__.__name__,
-            self.notification_id,
-            self.owner,
-            self.notif_type,
+        return (
+            f"{self.__class__.__name__}("
+            f"notification_id={self.notification_id}, "
+            f"owner='{self.owner}', "
+            f"notif_type='{self.notif_type}'"
+            ")"
         )
 
     @property
@@ -455,13 +458,21 @@ class NotificationBase(models.Model):
         return self.notif_type in NotificationType.structure_related
 
     @property
+    def is_generated(self) -> bool:
+        """Return True if this notification is generated, else False."""
+        raise NotImplementedError()
+
+    @property
     def is_temporary(self) -> bool:
+        """Return True if this is a temporary notification, else False."""
         raise NotImplementedError()
 
     def is_npc_attacking(self) -> bool:
+        """Return True if this notification is about NPC attacking, else False."""
         raise NotImplementedError()
 
     def parsed_text(self) -> dict:
+        """Return parsed text of this notification."""
         raise NotImplementedError()
 
     def send_to_configured_webhooks(
@@ -753,7 +764,6 @@ class Notification(NotificationBase):
 
     @property
     def is_temporary(self) -> bool:
-        """True when this notification is temporary."""
         return self.notification_id == self.TEMPORARY_NOTIFICATION_ID
 
     @property
@@ -863,6 +873,7 @@ class GeneratedNotification(NotificationBase):
 
     @property
     def notification_id(self) -> int:
+        """Return the notification ID."""
         return self.pk
 
     @property
@@ -1074,10 +1085,13 @@ class JumpFuelAlertConfig(BaseFuelAlertConfig):
 
 
 class BaseFuelAlert(models.Model):
+    """Base class for fuel alerts."""
+
     class Meta:
         abstract = True
 
     def send_generated_notification(self):
+        """Send a generated notification."""
         raise NotImplementedError()
 
 

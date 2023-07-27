@@ -212,7 +212,7 @@ class NotificationBaseEmbed:
             NT.SOV_ALL_ANCHORING_MSG: NotificationSovAllAnchoringMsg,
             # War
             NT.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG: NotificationAllyJoinedWarMsg,
-            NT.WAR_ALLY_JOINED_WAR_AllY_MSG: NotificationAllyJoinedWarMsg,
+            NT.WAR_ALLY_JOINED_WAR_ALLY_MSG: NotificationAllyJoinedWarMsg,
             NT.WAR_ALLY_JOINED_WAR_DEFENDER_MSG: NotificationAllyJoinedWarMsg,
             NT.WAR_CORP_WAR_SURRENDER_MSG: NotificationCorpWarSurrenderMsg,
             NT.WAR_WAR_ADOPTED: NotificationWarAdopted,

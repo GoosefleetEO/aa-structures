@@ -48,12 +48,12 @@ class EveSovereigntyMap(models.Model):
         return str(self.solar_system_id)
 
     def __repr__(self):
-        return "{}(solar_system_id='{}')".format(
-            self.__class__.__name__, self.solar_system_id
-        )
+        return f"{self.__class__.__name__}(solar_system_id='{self.solar_system_id}')"
 
 
 class EveSpaceType(str, Enum):
+    """A space type in Eve Online."""
+
     UNKNOWN = "unknown"
     HIGHSEC = "highsec"
     LOWSEC = "lowsec"

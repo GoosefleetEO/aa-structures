@@ -42,6 +42,8 @@ class StructureTag(models.Model):
     NAME_W_SPACE_TAG = gettext_noop("w_space")
 
     class Style(models.TextChoices):
+        """A boostrap like style."""
+
         GREY = "default", _("grey")
         DARK_BLUE = "primary", _("dark blue")
         GREEN = "success", _("green")
@@ -114,7 +116,7 @@ class StructureTag(models.Model):
         return self.name
 
     def __repr__(self):
-        return "{}(name='{}')".format(self.__class__.__name__, self.name)
+        return f"{self.__class__.__name__}(name='{self.name}')"
 
     @property
     def html(self) -> str:
@@ -138,7 +140,7 @@ class Structure(models.Model):
     FUEL_DATES_EQUAL_THRESHOLD_STARBASE = 7200  # high fluctuation due to estimating
 
     class State(models.IntegerChoices):
-        """State of a structure"""
+        """A state of a structure."""
 
         # states Upwell structures
         ANCHOR_VULNERABLE = 1, _("anchor vulnerable")
@@ -192,6 +194,8 @@ class Structure(models.Model):
             )
 
     class PowerMode(models.TextChoices):
+        """A power mode of a structure."""
+
         FULL_POWER = "FU", _("Full Power")
         LOW_POWER = "LO", _("Low Power")
         ABANDONED = "AB", _("Abandoned")

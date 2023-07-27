@@ -21,6 +21,7 @@ class WebhookBase(DiscordWebhookMixin, models.Model):
 
         @property
         def css_color(self) -> str:
+            """Return color as CSS value."""
             return f"#{self.value:X}"
 
     TYPE_DISCORD = 1

@@ -174,6 +174,7 @@ def update_existing_notifications(owner_pk: int) -> int:
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def generate_new_timers_for_owner(owner_pk: int):
+    """Generate new timers for given owner."""
     owner = Owner.objects.get(pk=owner_pk)
     owner.add_or_remove_timers_from_notifications()
 
@@ -188,12 +189,14 @@ def send_new_notifications_for_owner(owner_pk: int):
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_structure_fuel_notifications_for_config(config_pk: int):
+    """Send structure fuel notifications for a config."""
     FuelAlertConfig.objects.get(pk=config_pk).send_new_notifications()
     send_queued_messages_for_webhooks(FuelAlertConfig.relevant_webhooks())
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def send_jump_fuel_notifications_for_config(config_pk: int):
+    """Send jump fuel notifications for a config."""
     JumpFuelAlertConfig.objects.get(pk=config_pk).send_new_notifications()
     send_queued_messages_for_webhooks(JumpFuelAlertConfig.relevant_webhooks())
 
@@ -222,18 +225,20 @@ def send_test_notifications_to_webhook(
     user = _get_user(user_pk)
     send_report, send_success = webhook.send_test_message(user)
     if user:
-        message = 'Test notification to webhook "{}" {}.\n'.format(
-            webhook, "completed successfully" if send_success else "has failed"
-        )
-        if not send_success:
-            message += "Error: {}".format(send_report)
+        result_text = "completed successfully" if send_success else "has failed"
+        message = f"Test notification to webhook {webhook} {result_text}.\n"
+        if send_success:
+            user_text = "OK"
+            level = "success"
+        else:
+            user_text = "FAILED"
+            level = "danger"
+            message += f"Error: {send_report}"
         notify(
             user=user,
-            title='{}: Test notification to "{}": {}'.format(
-                __title__, webhook, "OK" if send_success else "FAILED"
-            ),
+            title=f"{__title__}: Test notification to {webhook}: {user_text}",
             message=message,
-            level="success" if send_success else "danger",
+            level=level,
         )
 
 

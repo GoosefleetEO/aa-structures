@@ -1,3 +1,5 @@
+"""Core logic for webhooks."""
+
 import json
 from time import sleep
 from typing import List, Optional, Tuple
@@ -42,9 +44,7 @@ class DiscordWebhookMixin:
         return self.name
 
     def __repr__(self) -> str:
-        return "{}(pk={}, name='{}')".format(
-            self.__class__.__name__, self.pk, self.name
-        )
+        return f"{self.__class__.__name__}(pk={self.pk}, name='{self.name}')"
 
     def queue_size(self) -> int:
         """returns current size of the queue"""
@@ -54,8 +54,8 @@ class DiscordWebhookMixin:
         """deletes all messages from the queue. Returns number of cleared messages."""
         counter = 0
         while True:
-            y = self._main_queue.dequeue()
-            if y is None:
+            message = self._main_queue.dequeue()
+            if message is None:
                 break
             counter += 1
 
