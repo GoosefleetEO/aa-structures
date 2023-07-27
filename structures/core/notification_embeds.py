@@ -160,175 +160,75 @@ class NotificationBaseEmbed:
         """Creates a new instance of the respective subclass for given Notification."""
         if not isinstance(notification, NotificationBase):
             raise TypeError("notification must be of type NotificationBase")
-        notif_type = notification.notif_type
 
-        # character
-        if notif_type == NotificationType.CORP_APP_NEW_MSG:
-            return NotificationCorpAppNewMsg(notification)
-
-        if notif_type == NotificationType.CORP_APP_INVITED_MSG:
-            return NotificationCorpAppInvitedMsg(notification)
-
-        if notif_type == NotificationType.CORP_APP_REJECT_CUSTOM_MSG:
-            return NotificationCorpAppRejectCustomMsg(notification)
-
-        if notif_type == NotificationType.CHAR_APP_WITHDRAW_MSG:
-            return NotificationCharAppWithdrawMsg(notification)
-
-        if notif_type == NotificationType.CHAR_APP_ACCEPT_MSG:
-            return NotificationCharAppAcceptMsg(notification)
-
-        if notif_type == NotificationType.CHAR_LEFT_CORP_MSG:
-            return NotificationCharLeftCorpMsg(notification)
-
-        # moonmining
-        elif notif_type == NotificationType.MOONMINING_EXTRACTION_STARTED:
-            return NotificationMoonminningExtractionStarted(notification)
-
-        if notif_type == NotificationType.MOONMINING_EXTRACTION_FINISHED:
-            return NotificationMoonminningExtractionFinished(notification)
-
-        if notif_type == NotificationType.MOONMINING_AUTOMATIC_FRACTURE:
-            return NotificationMoonminningAutomaticFracture(notification)
-
-        if notif_type == NotificationType.MOONMINING_EXTRACTION_CANCELLED:
-            return NotificationMoonminningExtractionCanceled(notification)
-
-        if notif_type == NotificationType.MOONMINING_LASER_FIRED:
-            return NotificationMoonminningLaserFired(notification)
-
-        # upwell structures
-        if notif_type == NotificationType.STRUCTURE_ONLINE:
-            return NotificationStructureOnline(notification)
-
-        if notif_type == NotificationType.STRUCTURE_FUEL_ALERT:
-            return NotificationStructureFuelAlert(notification)
-
-        if notif_type == NotificationType.STRUCTURE_JUMP_FUEL_ALERT:
-            return NotificationStructureJumpFuelAlert(notification)
-
-        if notif_type == NotificationType.STRUCTURE_REFUELED_EXTRA:
-            return NotificationStructureRefueledExtra(notification)
-
-        if notif_type == NotificationType.STRUCTURE_SERVICES_OFFLINE:
-            return NotificationStructureServicesOffline(notification)
-
-        if notif_type == NotificationType.STRUCTURE_WENT_LOW_POWER:
-            return NotificationStructureWentLowPower(notification)
-
-        if notif_type == NotificationType.STRUCTURE_WENT_HIGH_POWER:
-            return NotificationStructureWentHighPower(notification)
-
-        if notif_type == NotificationType.STRUCTURE_UNANCHORING:
-            return NotificationStructureUnanchoring(notification)
-
-        if notif_type == NotificationType.STRUCTURE_UNDER_ATTACK:
-            return NotificationStructureUnderAttack(notification)
-
-        if notif_type == NotificationType.STRUCTURE_LOST_SHIELD:
-            return NotificationStructureLostShield(notification)
-
-        if notif_type == NotificationType.STRUCTURE_LOST_ARMOR:
-            return NotificationStructureLostArmor(notification)
-
-        if notif_type == NotificationType.STRUCTURE_DESTROYED:
-            return NotificationStructureDestroyed(notification)
-
-        if notif_type == NotificationType.OWNERSHIP_TRANSFERRED:
-            return NotificationStructureOwnershipTransferred(notification)
-
-        if notif_type == NotificationType.STRUCTURE_ANCHORING:
-            return NotificationStructureAnchoring(notification)
-
-        if notif_type == NotificationType.STRUCTURE_REINFORCE_CHANGED:
-            return NotificationStructureReinforceChange(notification)
-
-        # Orbitals
-        if notif_type == NotificationType.ORBITAL_ATTACKED:
-            return NotificationOrbitalAttacked(notification)
-
-        if notif_type == NotificationType.ORBITAL_REINFORCED:
-            return NotificationOrbitalReinforced(notification)
-
-        # Towers
-        if notif_type == NotificationType.TOWER_ALERT_MSG:
-            return NotificationTowerAlertMsg(notification)
-
-        if notif_type == NotificationType.TOWER_RESOURCE_ALERT_MSG:
-            return NotificationTowerResourceAlertMsg(notification)
-
-        if notif_type == NotificationType.TOWER_REFUELED_EXTRA:
-            return NotificationTowerRefueledExtra(notification)
-
-        if notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
-            return NotificationTowerReinforcedExtra(notification)
-
-        # Sov
-        if notif_type == NotificationType.SOV_ENTOSIS_CAPTURE_STARTED:
-            return NotificationSovEntosisCaptureStarted(notification)
-
-        if notif_type == NotificationType.SOV_COMMAND_NODE_EVENT_STARTED:
-            return NotificationSovCommandNodeEventStarted(notification)
-
-        if notif_type == NotificationType.SOV_ALL_CLAIM_ACQUIRED_MSG:
-            return NotificationSovAllClaimAcquiredMsg(notification)
-
-        if notif_type == NotificationType.SOV_ALL_CLAIM_LOST_MSG:
-            return NotificationSovAllClaimLostMsg(notification)
-
-        if notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
-            return NotificationSovStructureReinforced(notification)
-
-        if notif_type == NotificationType.SOV_STRUCTURE_DESTROYED:
-            return NotificationSovStructureDestroyed(notification)
-
-        if notif_type == NotificationType.SOV_ALL_ANCHORING_MSG:
-            return NotificationSovAllAnchoringMsg(notification)
-
-        # War
-        if notif_type in [
-            NotificationType.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG,
-            NotificationType.WAR_ALLY_JOINED_WAR_AllY_MSG,
-            NotificationType.WAR_ALLY_JOINED_WAR_DEFENDER_MSG,
-        ]:
-            return NotificationAllyJoinedWarMsg(notification)
-
-        if notif_type == NotificationType.WAR_CORP_WAR_SURRENDER_MSG:
-            return NotificationCorpWarSurrenderMsg(notification)
-
-        if notif_type == NotificationType.WAR_WAR_ADOPTED:
-            return NotificationWarAdopted(notification)
-
-        if notif_type == NotificationType.WAR_WAR_DECLARED:
-            return NotificationWarDeclared(notification)
-
-        if notif_type == NotificationType.WAR_WAR_INHERITED:
-            return NotificationWarInherited(notification)
-
-        if notif_type == NotificationType.WAR_WAR_RETRACTED_BY_CONCORD:
-            return NotificationWarRetractedByConcord(notification)
-
-        if notif_type == NotificationType.WAR_CORPORATION_BECAME_ELIGIBLE:
-            return NotificationWarCorporationBecameEligible(notification)
-
-        if notif_type == NotificationType.WAR_CORPORATION_NO_LONGER_ELIGIBLE:
-            return NotificationWarCorporationNoLongerEligible(notification)
-
-        if notif_type == NotificationType.WAR_WAR_SURRENDER_OFFER_MSG:
-            return NotificationWarSurrenderOfferMsg(notification)
-
-        # Billing
-        if notif_type == NotificationType.BILLING_BILL_OUT_OF_MONEY_MSG:
-            return NotificationBillingBillOutOfMoneyMsg(notification)
-
-        if notif_type == NotificationType.BILLING_I_HUB_BILL_ABOUT_TO_EXPIRE:
-            return NotificationBillingIHubBillAboutToExpire(notification)
-
-        if notif_type == NotificationType.BILLING_I_HUB_DESTROYED_BY_BILL_FAILURE:
-            return NotificationBillingIHubDestroyedByBillFailure(notification)
-
-        # NOT IMPLEMENTED
-        raise NotImplementedError(repr(notif_type))
+        NT = NotificationType
+        notif_type_2_class = {
+            # character
+            NT.CORP_APP_NEW_MSG: NotificationCorpAppNewMsg,
+            NT.CORP_APP_INVITED_MSG: NotificationCorpAppInvitedMsg,
+            NT.CORP_APP_REJECT_CUSTOM_MSG: NotificationCorpAppRejectCustomMsg,
+            NT.CHAR_APP_WITHDRAW_MSG: NotificationCharAppWithdrawMsg,
+            NT.CHAR_APP_ACCEPT_MSG: NotificationCharAppAcceptMsg,
+            NT.CHAR_LEFT_CORP_MSG: NotificationCharLeftCorpMsg,
+            # moonmining
+            NT.MOONMINING_EXTRACTION_STARTED: NotificationMoonminningExtractionStarted,
+            NT.MOONMINING_EXTRACTION_FINISHED: NotificationMoonminningExtractionFinished,
+            NT.MOONMINING_AUTOMATIC_FRACTURE: NotificationMoonminningAutomaticFracture,
+            NT.MOONMINING_EXTRACTION_CANCELLED: NotificationMoonminningExtractionCanceled,
+            NT.MOONMINING_LASER_FIRED: NotificationMoonminningLaserFired,
+            # upwell structures
+            NT.STRUCTURE_ONLINE: NotificationStructureOnline,
+            NT.STRUCTURE_FUEL_ALERT: NotificationStructureFuelAlert,
+            NT.STRUCTURE_JUMP_FUEL_ALERT: NotificationStructureJumpFuelAlert,
+            NT.STRUCTURE_REFUELED_EXTRA: NotificationStructureRefueledExtra,
+            NT.STRUCTURE_SERVICES_OFFLINE: NotificationStructureServicesOffline,
+            NT.STRUCTURE_WENT_LOW_POWER: NotificationStructureWentLowPower,
+            NT.STRUCTURE_WENT_HIGH_POWER: NotificationStructureWentHighPower,
+            NT.STRUCTURE_UNANCHORING: NotificationStructureUnanchoring,
+            NT.STRUCTURE_UNDER_ATTACK: NotificationStructureUnderAttack,
+            NT.STRUCTURE_LOST_SHIELD: NotificationStructureLostShield,
+            NT.STRUCTURE_LOST_ARMOR: NotificationStructureLostArmor,
+            NT.STRUCTURE_DESTROYED: NotificationStructureDestroyed,
+            NT.OWNERSHIP_TRANSFERRED: NotificationStructureOwnershipTransferred,
+            NT.STRUCTURE_ANCHORING: NotificationStructureAnchoring,
+            NT.STRUCTURE_REINFORCE_CHANGED: NotificationStructureReinforceChange,
+            # Orbitals
+            NT.ORBITAL_ATTACKED: NotificationOrbitalAttacked,
+            NT.ORBITAL_REINFORCED: NotificationOrbitalReinforced,
+            # Towers
+            NT.TOWER_ALERT_MSG: NotificationTowerAlertMsg,
+            NT.TOWER_RESOURCE_ALERT_MSG: NotificationTowerResourceAlertMsg,
+            NT.TOWER_REFUELED_EXTRA: NotificationTowerRefueledExtra,
+            NT.TOWER_REINFORCED_EXTRA: NotificationTowerReinforcedExtra,
+            # Sov
+            NT.SOV_ENTOSIS_CAPTURE_STARTED: NotificationSovEntosisCaptureStarted,
+            NT.SOV_COMMAND_NODE_EVENT_STARTED: NotificationSovCommandNodeEventStarted,
+            NT.SOV_ALL_CLAIM_ACQUIRED_MSG: NotificationSovAllClaimAcquiredMsg,
+            NT.SOV_ALL_CLAIM_LOST_MSG: NotificationSovAllClaimLostMsg,
+            NT.SOV_STRUCTURE_REINFORCED: NotificationSovStructureReinforced,
+            NT.SOV_STRUCTURE_DESTROYED: NotificationSovStructureDestroyed,
+            NT.SOV_ALL_ANCHORING_MSG: NotificationSovAllAnchoringMsg,
+            # War
+            NT.WAR_ALLY_JOINED_WAR_AGGRESSOR_MSG: NotificationAllyJoinedWarMsg,
+            NT.WAR_ALLY_JOINED_WAR_AllY_MSG: NotificationAllyJoinedWarMsg,
+            NT.WAR_ALLY_JOINED_WAR_DEFENDER_MSG: NotificationAllyJoinedWarMsg,
+            NT.WAR_CORP_WAR_SURRENDER_MSG: NotificationCorpWarSurrenderMsg,
+            NT.WAR_WAR_ADOPTED: NotificationWarAdopted,
+            NT.WAR_WAR_DECLARED: NotificationWarDeclared,
+            NT.WAR_WAR_INHERITED: NotificationWarInherited,
+            NT.WAR_WAR_RETRACTED_BY_CONCORD: NotificationWarRetractedByConcord,
+            NT.WAR_CORPORATION_BECAME_ELIGIBLE: NotificationWarCorporationBecameEligible,
+            NT.WAR_CORPORATION_NO_LONGER_ELIGIBLE: NotificationWarCorporationNoLongerEligible,
+            NT.WAR_WAR_SURRENDER_OFFER_MSG: NotificationWarSurrenderOfferMsg,
+            # Billing
+            NT.BILLING_BILL_OUT_OF_MONEY_MSG: NotificationBillingBillOutOfMoneyMsg,
+            NT.BILLING_I_HUB_BILL_ABOUT_TO_EXPIRE: NotificationBillingIHubBillAboutToExpire,
+            NT.BILLING_I_HUB_DESTROYED_BY_BILL_FAILURE: NotificationBillingIHubDestroyedByBillFailure,
+        }
+        try:
+            return notif_type_2_class[notification.notif_type](notification)
+        except KeyError:
+            raise NotImplementedError(repr(notification.notif_type)) from None
 
     def _compile_damage_text(self, field_postfix: str, factor: int = 1) -> str:
         """Compile damage text for Structures and POSes"""
@@ -365,10 +265,13 @@ class NotificationBaseEmbed:
     def _gen_eve_entity_external_url(eve_entity: EveEntity) -> str:
         if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
             return dotlan.alliance_url(eve_entity.name)
-        elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
+
+        if eve_entity.category == EveEntity.CATEGORY_CORPORATION:
             return dotlan.corporation_url(eve_entity.name)
-        elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
+
+        if eve_entity.category == EveEntity.CATEGORY_CHARACTER:
             return evewho.character_url(eve_entity.id)
+
         return ""
 
     @classmethod
@@ -555,8 +458,10 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         """Returns the attacker link from a parsed_text for Upwell structures only."""
         if self._parsed_text.get("allianceName"):
             return self._gen_alliance_link(self._parsed_text["allianceName"])
-        elif self._parsed_text.get("corpName"):
+
+        if self._parsed_text.get("corpName"):
             return self._gen_corporation_link(self._parsed_text["corpName"])
+
         return "(unknown)"
 
 
