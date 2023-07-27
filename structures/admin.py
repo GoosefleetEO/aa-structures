@@ -632,10 +632,10 @@ class StructureTagAdmin(admin.ModelAdmin):
     readonly_fields = ("is_user_managed",)
 
     def has_delete_permission(self, request, obj: Optional[StructureTag] = None):
-        return False if obj and not obj.is_user_managed else True
+        return not (obj and not obj.is_user_managed)
 
     def has_change_permission(self, request, obj: Optional[StructureTag] = None):
-        return False if obj and not obj.is_user_managed else True
+        return not (obj and not obj.is_user_managed)
 
 
 class StructureServiceAdminInline(admin.TabularInline):
