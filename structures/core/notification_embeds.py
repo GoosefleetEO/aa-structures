@@ -1,3 +1,5 @@
+"""Generating notification embeds for Structures."""
+
 import datetime as dt
 from collections import namedtuple
 from typing import Optional

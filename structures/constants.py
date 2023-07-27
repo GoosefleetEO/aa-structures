@@ -1,3 +1,5 @@
+"""Constants for Structures."""
+
 from enum import IntEnum
 
 

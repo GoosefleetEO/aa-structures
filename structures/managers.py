@@ -1,3 +1,5 @@
+"""Managers for Structures."""
+
 import datetime as dt
 import itertools
 from typing import Any, Optional, Set, Tuple, TypeVar

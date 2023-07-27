@@ -1,3 +1,5 @@
+"""Views for Structures."""
+
 import functools
 from collections import defaultdict
 from enum import IntEnum

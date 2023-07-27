@@ -1,4 +1,4 @@
-"""Notification related models."""
+"""Notification related models for Structures."""
 
 import math
 from typing import List, Optional, Set, Tuple, Union

@@ -1,3 +1,6 @@
+"""Forms for Structures."""
+
+
 from django import forms
 
 from .models import StructureTag

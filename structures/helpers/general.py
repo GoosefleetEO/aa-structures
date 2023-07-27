@@ -1,3 +1,5 @@
+"""Helpers for Structures."""
+
 import datetime as dt
 from typing import Optional
 

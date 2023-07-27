@@ -1,3 +1,5 @@
+"""Tasks for Structures."""
+
 from typing import Iterable, Optional
 
 from celery import chain, shared_task

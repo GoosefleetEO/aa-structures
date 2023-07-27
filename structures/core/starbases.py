@@ -1,10 +1,12 @@
+"""Core logic for starbases in Structures."""
+
 import math
 from enum import IntEnum, auto
 from typing import Optional
 
 from eveuniverse.models import EveType
 
-from ..constants import EveGroupId
+from structures.constants import EveGroupId
 
 
 class StarbaseSize(IntEnum):

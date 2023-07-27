@@ -1,4 +1,4 @@
-"""Owner related models."""
+"""Owner related models for Structures."""
 
 import datetime as dt
 import json

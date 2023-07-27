@@ -1,4 +1,4 @@
-"""Eve Universe models"""
+"""Eve Universe models for Structures."""
 
 from enum import Enum
 

@@ -1,3 +1,5 @@
+"""JSON serializers for Structures."""
+
 import re
 from abc import ABC, abstractmethod
 

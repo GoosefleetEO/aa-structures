@@ -1,4 +1,4 @@
-"""Structure related models."""
+"""Structure related models for Structures."""
 
 import datetime as dt
 import math

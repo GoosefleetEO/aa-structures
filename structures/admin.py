@@ -1,3 +1,5 @@
+"""Admin site for Structures."""
+
 import statistics
 from typing import Optional
 
