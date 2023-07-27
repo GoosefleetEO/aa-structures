@@ -1,3 +1,5 @@
+"""Models for webhooks."""
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -9,11 +11,15 @@ class WebhookBase(DiscordWebhookMixin, models.Model):
     """Base model for a Webhook"""
 
     class PingType(models.TextChoices):
+        """A ping type for webhooks."""
+
         NONE = "NO", _("none")
         HERE = "HE", _("here")
         EVERYONE = "EV", _("everyone")
 
     class Color(models.IntegerChoices):
+        """A color for embeds."""
+
         DANGER = 0xD9534F, _("danger")
         INFO = 0x5BC0DE, _("info")
         SUCCESS = 0x5CB85C, _("success")

@@ -16,10 +16,12 @@ _MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME = {
 
 
 def type_id_from_event_type(event_type: int) -> Optional[int]:
+    """Convert an event type to a type ID."""
     return _MAP_CAMPAIGN_EVENT_2_TYPE_ID.get(event_type)
 
 
 def structure_type_name_from_event_type(event_type: int) -> str:
+    """Convert an event type to a structure type name."""
     return _MAP_TYPE_ID_2_TIMER_STRUCTURE_NAME.get(
         type_id_from_event_type(event_type), "Other"
     )

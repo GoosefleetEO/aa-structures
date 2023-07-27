@@ -120,6 +120,7 @@ class StructureTag(models.Model):
 
     @property
     def html(self) -> str:
+        """Return HTML for this tag."""
         if self.is_user_managed:
             name = escape(self.name)
         else:
@@ -168,7 +169,7 @@ class Structure(models.Model):
         @classmethod
         def from_esi_name(cls, esi_state_name: str) -> "Structure.State":
             """returns matching state for esi state name of Upwell structures"""
-            STATES_ESI_MAP = {
+            states_esi_map = {
                 "anchor_vulnerable": cls.ANCHOR_VULNERABLE,
                 "anchoring": cls.ANCHORING,
                 "armor_reinforce": cls.ARMOR_REINFORCE,
@@ -188,8 +189,8 @@ class Structure(models.Model):
                 "unanchoring ": cls.POS_UNANCHORING,
             }
             return (
-                STATES_ESI_MAP[esi_state_name]
-                if esi_state_name in STATES_ESI_MAP
+                states_esi_map[esi_state_name]
+                if esi_state_name in states_esi_map
                 else cls.UNKNOWN
             )
 
@@ -448,34 +449,39 @@ class Structure(models.Model):
 
     @property
     def is_jump_gate(self) -> bool:
+        """Return True if this structure is a jump gate, else False."""
         return self.eve_type_id == EveTypeId.JUMP_GATE
 
     @property
     def is_poco(self) -> bool:
+        """Return True if this structure is a customs office, else False."""
         return self.eve_type_id == EveTypeId.CUSTOMS_OFFICE
 
     @cached_property
     def is_starbase(self) -> bool:
+        """Return True if this structure is a starbase, else False."""
         return starbases.is_starbase(self.eve_type)
 
     @cached_property
     def is_upwell_structure(self) -> bool:
+        """Return True if this structure is an upwell structure, else False."""
         return self.eve_type.eve_group.eve_category_id == EveCategoryId.STRUCTURE
 
     @property
     def is_full_power(self) -> Optional[bool]:
-        """return True if structure is full power, False if not.
+        """Return True if structure is full power, False if not.
 
         Returns None if state can not be determined
         """
         power_mode = self.power_mode
         if not power_mode:
             return None
+
         return power_mode == self.PowerMode.FULL_POWER
 
     @property
     def is_low_power(self) -> Optional[bool]:
-        """return True if structure is low power, False if not.
+        """Return True if structure is low power, False if not.
 
         Returns None if state can not be determined
         """
@@ -529,6 +535,7 @@ class Structure(models.Model):
 
     @property
     def is_reinforced(self) -> bool:
+        """Return True if this structure is reinforced, else False."""
         return self.state in [
             self.State.ARMOR_REINFORCE,
             self.State.HULL_REINFORCE,
@@ -561,6 +568,9 @@ class Structure(models.Model):
 
     @cached_property
     def owner_has_sov(self) -> bool:
+        """Return True if the owner of this structure has sov in this solar system,
+        else False.
+        """
         return self.owner.has_sov(self.eve_solar_system)
 
     @cached_property
@@ -654,7 +664,7 @@ class Structure(models.Model):
         and sent refueled notifications if structure has been refueled.
         """
         if self.fuel_expires_at and old_instance and self.pk == old_instance.pk:
-            logger_tag = "%s: Fuel notifications" % self
+            logger_tag = f"{self}: Fuel notifications"
             if self.fuel_expires_at != old_instance.fuel_expires_at:
                 logger.info(
                     "%s: Fuel expiry dates changed: old|current|delta: %s|%s|%s",
@@ -714,6 +724,9 @@ class Structure(models.Model):
             ).delete()
 
     def get_power_mode_display(self) -> str:
+        """Return this structure's power mode as label for display.
+        Or return an empty string for structures that have no power mode.
+        """
         return self.PowerMode(self.power_mode).label if self.power_mode else ""
 
     def update_generated_tags(self, recreate_tags=False):
@@ -809,8 +822,10 @@ class StructureItem(models.Model):
         return str(self.eve_type.name)
 
     def __repr__(self):
-        return "{}(pk={}, structure=<{}>, eve_type=<{}>)".format(
-            self.__class__.__name__, self.pk, self.structure, self.eve_type
+        return (
+            f"{self.__class__.__name__}("
+            f"pk={self.pk}, structure=<{self.structure}>, eve_type=<{self.eve_type}>"
+            ")"
         )
 
     @classmethod
@@ -831,16 +846,18 @@ class StructureService(models.Model):
     """Service of a Structure."""
 
     class State(models.IntegerChoices):
+        """A state of a structure service."""
+
         OFFLINE = 1, _("offline")
         ONLINE = 2, _("online")
 
         @classmethod
         def from_esi_name(cls, esi_state_name: str) -> "StructureService.State":
-            """returns matching state for given ESI state name"""
-            STATES_ESI_MAP = {"offline": cls.OFFLINE, "online": cls.ONLINE}
+            """Return matching state for given ESI state name."""
+            states_esi_map = {"offline": cls.OFFLINE, "online": cls.ONLINE}
             return (
-                STATES_ESI_MAP[esi_state_name]
-                if esi_state_name in STATES_ESI_MAP
+                states_esi_map[esi_state_name]
+                if esi_state_name in states_esi_map
                 else cls.OFFLINE
             )
 
@@ -867,11 +884,12 @@ class StructureService(models.Model):
         unique_together = (("structure", "name"),)
 
     def __str__(self):
-        return "{} - {}".format(str(self.structure), self.name)
+        return f"{self.structure} - {self.name}"
 
     def __repr__(self):
-        return "{}(structure_id={}, name='{}')".format(
-            self.__class__.__name__, self.structure.id, self.name
+        return (
+            f"{self.__class__.__name__}("
+            f"structure_id={self.structure.id}, name='{self.name}')"
         )
 
 
@@ -879,6 +897,8 @@ class PocoDetails(models.Model):
     """Additional information about a POCO."""
 
     class StandingLevel(models.IntegerChoices):
+        """A standing level in Eve Online."""
+
         NONE = -99, _("none")
         TERRIBLE = -10, _("terrible")
         BAD = -5, _("bad")
@@ -924,10 +944,12 @@ class PocoDetails(models.Model):
 
     @property
     def reinforce_exit_end_str(self) -> str:
+        """Return reinforce exit end as string."""
         return f"{self.reinforce_exit_end}:00"
 
     @property
     def reinforce_exit_start_str(self) -> str:
+        """Return reinforce exit start as string."""
         return f"{self.reinforce_exit_start}:00"
 
     def tax_for_character(self, character: EveCharacter) -> Optional[float]:
@@ -986,7 +1008,8 @@ class StarbaseDetail(models.Model):
         STARBASE_FUEL_TECHNICIAN_ROLE = "FT", _("starbase fuel technician role")
 
         @classmethod
-        def from_esi(cls, name) -> "StarbaseDetail.Role":
+        def from_esi(cls, name: str) -> "StarbaseDetail.Role":
+            """Create role from ESI name."""
             my_map = {
                 "alliance_member": cls.ALLIANCE_MEMBER,
                 "config_starbase_equipment_role": cls.CONFIG_STARBASE_EQUIPMENT_ROLE,

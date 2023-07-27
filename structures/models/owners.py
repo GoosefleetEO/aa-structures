@@ -1176,10 +1176,11 @@ class Owner(models.Model):
         """store raw data for debug purposes"""
         with open(
             f"{name}_raw_{self.corporation.corporation_id}.json", "w", encoding="utf-8"
-        ) as f:
-            json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
+        ) as file:
+            json.dump(data, file, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
     def update_asset_esi(self, user: Optional[User] = None):
+        """Update assets from ESI."""
         token = self.fetch_token()
         assets_data = self._fetch_structure_assets_from_esi(token)
         self._store_items_for_upwell_structures(assets_data)

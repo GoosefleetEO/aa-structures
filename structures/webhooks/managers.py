@@ -1,3 +1,5 @@
+"""Managers for webhooks."""
+
 from django.db import models
 
 from allianceauth.services.hooks import get_extension_logger

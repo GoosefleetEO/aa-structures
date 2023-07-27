@@ -10,17 +10,20 @@ from structures.constants import EveGroupId
 
 
 class StarbaseSize(IntEnum):
+    """A starbase size."""
+
     SMALL = auto()
     MEDIUM = auto()
     LARGE = auto()
 
 
 def is_starbase(eve_type: EveType) -> bool:
+    """Return True if this type is a starbase, else False."""
     return eve_type.eve_group_id == EveGroupId.CONTROL_TOWER
 
 
 def starbase_size(eve_type: EveType) -> StarbaseSize:
-    """return the size of a starbase or None if this type is not a starbase"""
+    """Return the size of a starbase or None if this type is not a starbase."""
     if not is_starbase(eve_type):
         return None
 
@@ -36,7 +39,7 @@ def starbase_size(eve_type: EveType) -> StarbaseSize:
 def fuel_per_hour(eve_type: EveType) -> Optional[int]:
     """Calculate the number of fuel blocks consumed per hour.
 
-    Returns None if not a starbase.
+    Return None if not a starbase.
     """
     size = starbase_size(eve_type)
     if size is StarbaseSize.LARGE:

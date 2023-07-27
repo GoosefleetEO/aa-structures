@@ -660,7 +660,7 @@ class NotificationBase(models.Model):
         """Generates a Discord embed for this notification."""
         from ..core.notification_embeds import NotificationBaseEmbed
 
-        logger.info("Creating embed with language = %s" % language_code)
+        logger.info("Creating embed with language = %s", language_code)
         with translation.override(language_code):
             notification_embed = NotificationBaseEmbed.create(self)
             embed = notification_embed.generate_embed()
