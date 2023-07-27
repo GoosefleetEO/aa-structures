@@ -57,8 +57,7 @@ class DiscordWebhookMixin:
             y = self._main_queue.dequeue()
             if y is None:
                 break
-            else:
-                counter += 1
+            counter += 1
 
         return counter
 
@@ -83,7 +82,7 @@ class DiscordWebhookMixin:
         else:
             embeds_list = None
 
-        message = dict()
+        message = {}
         if content:
             message["content"] = content
         if embeds_list:
@@ -104,8 +103,7 @@ class DiscordWebhookMixin:
             parts = urlparse(avatar_url)
         except ValueError:
             return False
-        else:
-            return bool(parts.scheme)
+        return bool(parts.scheme)
 
     def send_queued_messages(self) -> int:
         """sends all messages in the queue to this webhook
@@ -187,6 +185,7 @@ class DiscordWebhookMixin:
         }
         try:
             success = self._send_message_to_webhook(message)
+
         except OSError as ex:
             logger.warning(
                 "Failed to send test notification to webhook %s: %s",
@@ -195,8 +194,8 @@ class DiscordWebhookMixin:
                 exc_info=True,
             )
             return type(ex).__name__, False
-        else:
-            return "(no info)", success
+
+        return "(no info)", success
 
     @staticmethod
     def default_username() -> str:

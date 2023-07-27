@@ -97,7 +97,7 @@ class Owner(models.Model):
             """Name of last used at property."""
             if self is self.STRUCTURES:
                 return "structures_last_used_at"
-            elif self is self.NOTIFICATIONS:
+            if self is self.NOTIFICATIONS:
                 return "notifications_last_used_at"
             raise NotImplementedError(f"Not defined for: {self}")
 
@@ -106,7 +106,7 @@ class Owner(models.Model):
             """ESI cache duration in seconds."""
             if self is self.STRUCTURES:
                 return 3600
-            elif self is self.NOTIFICATIONS:
+            if self is self.NOTIFICATIONS:
                 return 600
             raise NotImplementedError(f"Not defined for: {self}")
 
@@ -463,7 +463,8 @@ class Owner(models.Model):
                     error="Character does no longer belong to the owner's corporation.",
                 )
                 continue
-            elif not character.character_ownership.user.has_perm(
+
+            if not character.character_ownership.user.has_perm(
                 "structures.add_structure_owner"
             ):
                 self.delete_character(
@@ -471,6 +472,7 @@ class Owner(models.Model):
                     error="Character does not have sufficient permission to sync.",
                 )
                 continue
+
             token = character.valid_token()
             if not token:
                 self.delete_character(
@@ -480,11 +482,13 @@ class Owner(models.Model):
                 continue
             found_character = character
             break  # leave the for loop if we have found a valid token
+
         else:
             raise TokenError(
                 f"{self}: No valid character found for sync. "
                 "Service down for this owner."
             )
+
         if rotate_characters:
             self._rotate_character(
                 character=found_character,
@@ -537,7 +541,7 @@ class Owner(models.Model):
         logger.info(
             "%s: Fetching locations for %d assets from ESI", self, len(item_ids)
         )
-        locations_data = list()
+        locations_data = []
         for item_ids_chunk in chunks(item_ids, 999):
             try:
                 locations_data_chunk = (
@@ -631,7 +635,7 @@ class Owner(models.Model):
 
         Return True when successful, else False.
         """
-        structures = dict()
+        structures = {}
         try:
             pocos = esi.client.Planetary_Interaction.get_corporations_corporation_id_customs_offices(
                 corporation_id=self.corporation.corporation_id,
@@ -759,7 +763,7 @@ class Owner(models.Model):
             self,
             len(item_ids),
         )
-        names_data = list()
+        names_data = []
         for item_ids_chunk in chunks(item_ids, 999):
             try:
                 names_data_chunk = (
@@ -788,7 +792,7 @@ class Owner(models.Model):
 
         Return True when successful, else False.
         """
-        structures = list()
+        structures = []
         try:
             starbases_data = (
                 esi.client.Corporation.get_corporations_corporation_id_starbases(
@@ -888,7 +892,7 @@ class Owner(models.Model):
     def _fetch_starbases_names(self, item_ids: Iterable, token: Token) -> dict:
         item_ids = list(item_ids)
         logger.info("%s: Fetching names for %d starbases from ESI", self, len(item_ids))
-        names_data = list()
+        names_data = []
         for item_ids_chunk in chunks(item_ids, 999):
             try:
                 names_data_chunk = (
@@ -1081,7 +1085,7 @@ class Owner(models.Model):
                 .select_related("owner", "sender")
                 .order_by("timestamp")
             )
-            structure_id_2_moon_id = dict()
+            structure_id_2_moon_id = {}
             for notification in notifications:
                 parsed_text = notification.parsed_text()
                 moon_id = parsed_text["moonID"]
@@ -1194,7 +1198,7 @@ class Owner(models.Model):
         structure_ids = set(
             self.structures.filter_upwell_structures().values_list("id", flat=True)
         )
-        assets_in_structures = {id: dict() for id in structure_ids}
+        assets_in_structures = {id: {} for id in structure_ids}
         for item_id, item in assets_data.items():
             location_id = item["location_id"]
             if location_id in structure_ids and item["location_flag"] not in [
@@ -1205,7 +1209,7 @@ class Owner(models.Model):
             ]:
                 assets_in_structures[location_id][item_id] = item
         for structure in self.structures.all():
-            structure_items = list()
+            structure_items = []
             if structure.id in assets_in_structures.keys():
                 structure_assets = assets_in_structures[structure.id]
                 has_fitting = [
@@ -1239,7 +1243,7 @@ class Owner(models.Model):
         for structure in self.structures.filter_starbases().filter(
             position_x__isnull=False, position_y__isnull=False, position_z__isnull=False
         ):
-            structure_items = list()
+            structure_items = []
             for item_id, item in assets_raw.items():
                 if (
                     item["location_id"] == structure.eve_solar_system_id

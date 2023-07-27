@@ -509,15 +509,18 @@ class Structure(models.Model):
         """
         if not self.is_upwell_structure:
             return None
+
         if self.fuel_expires_at and self.fuel_expires_at > now():
             return self.PowerMode.FULL_POWER
-        elif self.last_online_at:
+
+        if self.last_online_at:
             if self.last_online_at >= now() - dt.timedelta(days=7):
                 return self.PowerMode.LOW_POWER
-            else:
-                return self.PowerMode.ABANDONED
-        elif self.state in {self.State.ANCHORING, self.State.ANCHOR_VULNERABLE}:
+            return self.PowerMode.ABANDONED
+
+        if self.state in {self.State.ANCHORING, self.State.ANCHOR_VULNERABLE}:
             return self.PowerMode.LOW_POWER
+
         return self.PowerMode.LOW_ABANDONED
 
     @property
@@ -928,26 +931,28 @@ class PocoDetails(models.Model):
         owner_corporation = self.structure.owner.corporation
         if character.corporation_id == owner_corporation.corporation_id:
             return self.corporation_tax_rate
+
         if (
             owner_corporation.alliance
             and owner_corporation.alliance.alliance_id == character.alliance_id
         ):
             return self.alliance_tax_rate
-        else:
-            return None
+
+        return None
 
     def has_character_access(self, character: EveCharacter) -> Optional[bool]:
         """Return Tru if this has access else False."""
         owner_corporation = self.structure.owner.corporation
         if character.corporation_id == owner_corporation.corporation_id:
             return True
+
         if (
             owner_corporation.alliance
             and owner_corporation.alliance.alliance_id == character.alliance_id
         ):
             return self.allow_alliance_access
-        else:
-            return None
+
+        return None
 
     def standing_level_access_map(self) -> dict:
         """Return map of access per standing level with standing level names as key."""

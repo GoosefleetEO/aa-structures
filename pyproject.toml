@@ -71,4 +71,11 @@ good-names = ["i", "j", "k", "ex"]
 max-line-length = 120
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = ["R0902", "R0903"]
+disable = [
+    "too-many-instance-attributes",
+    "too-few-public-methods",
+    "imported-auth-user",
+    "cyclic-import",
+    "fixme",
+    "C",
+]

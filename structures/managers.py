@@ -29,7 +29,7 @@ class EveSovereigntyMapManager(models.Manager):
         sov_map = esi.client.Sovereignty.get_sovereignty_map().results()
         logger.info("Retrieved sovereignty map from ESI")
         last_updated = now()
-        obj_list = list()
+        obj_list = []
         for solar_system in sov_map:
             obj_def = {
                 "solar_system_id": solar_system["system_id"],
@@ -62,13 +62,13 @@ class EveSovereigntyMapManager(models.Manager):
         """
         if not eve_solar_system.is_null_sec:
             return False
-        else:
-            alliance_id = (
-                int(corporation.alliance.alliance_id) if corporation.alliance else None
-            )
-            return bool(alliance_id) and (
-                self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
-            )
+
+        alliance_id = (
+            int(corporation.alliance.alliance_id) if corporation.alliance else None
+        )
+        return bool(alliance_id) and (
+            self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
+        )
 
     def solar_system_sov_alliance_id(self, eve_solar_system) -> Optional[int]:
         """returns ID of sov owning alliance for this system or None"""

@@ -73,7 +73,7 @@ def index(request):
 @permission_required("structures.basic_access")
 def main(request):
     """Main view"""
-    active_tags = list()
+    active_tags = []
     if request.method == "POST":
         form = TagsFilterForm(data=request.POST)
         if form.is_valid():
@@ -508,8 +508,7 @@ def service_status(request):
 
     if status_ok:
         return HttpResponse(_("service is up"))
-    else:
-        return HttpResponseServerError(_("service is down"))
+    return HttpResponseServerError(_("service is down"))
 
 
 def poco_list_data(request) -> JsonResponse:
@@ -557,7 +556,7 @@ def structure_summary_data(request) -> JsonResponse:
             )
         )
     )
-    data = list()
+    data = []
     for row in summary_qs:
         other_count = (
             row["upwell_count"]

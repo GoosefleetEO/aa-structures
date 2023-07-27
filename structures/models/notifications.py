@@ -562,13 +562,13 @@ class NotificationBase(models.Model):
         }:
             structure_id = parsed_text.get("structureID")
             return Structure.objects.filter(id=structure_id)
-        elif self.notif_type == NotificationType.STRUCTURE_REINFORCE_CHANGED:
+        if self.notif_type == NotificationType.STRUCTURE_REINFORCE_CHANGED:
             structure_ids = [
                 structure_info[0] for structure_info in parsed_text["allStructureInfo"]
             ]
             return Structure.objects.filter(id__in=structure_ids)
 
-        elif self.notif_type in {
+        if self.notif_type in {
             NotificationType.ORBITAL_ATTACKED,
             NotificationType.ORBITAL_REINFORCED,
         }:
@@ -576,7 +576,7 @@ class NotificationBase(models.Model):
                 eve_planet_id=parsed_text["planetID"], eve_type_id=parsed_text["typeID"]
             )
 
-        elif self.notif_type in {
+        if self.notif_type in {
             NotificationType.TOWER_ALERT_MSG,
             NotificationType.TOWER_RESOURCE_ALERT_MSG,
             NotificationType.TOWER_REFUELED_EXTRA,
@@ -584,6 +584,7 @@ class NotificationBase(models.Model):
             return Structure.objects.filter(
                 eve_moon_id=parsed_text["moonID"], eve_type_id=parsed_text["typeID"]
             )
+
         return Structure.objects.none()
 
     def send_to_webhook(self, webhook: Webhook) -> bool:
@@ -790,8 +791,7 @@ class Notification(NotificationBase):
         structures_qs = self.calc_related_structures()
         self.structures.clear()
         if structures_qs.exists():
-            objs = [obj for obj in structures_qs.all()]
-            self.structures.add(*objs)
+            self.structures.add(*structures_qs)
             return True
         return False
 

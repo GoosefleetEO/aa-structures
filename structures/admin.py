@@ -180,10 +180,9 @@ class RenderableNotificationFilter(admin.SimpleListFilter):
         """Return the filtered queryset"""
         if self.value() == "yes":
             return queryset.annotate_can_be_rendered().filter(can_be_rendered_2=True)
-        elif self.value() == "no":
+        if self.value() == "no":
             return queryset.annotate_can_be_rendered().filter(can_be_rendered_2=False)
-        else:
-            return queryset
+        return queryset
 
 
 class NotificationBaseAdmin(admin.ModelAdmin):
@@ -678,13 +677,13 @@ class OwnerCorporationsFilter(admin.SimpleListFilter):
             .distinct()
             .order_by(Lower("corporation_name"))
         )
-        return tuple([(x["corporation_id"], x["corporation_name"]) for x in qs])
+        return tuple(((obj["corporation_id"], obj["corporation_name"]) for obj in qs))
 
     def queryset(self, request, queryset):
         if self.value() is None:
             return queryset.all()
-        else:
-            return queryset.filter(owner__corporation__corporation_id=self.value())
+
+        return queryset.filter(owner__corporation__corporation_id=self.value())
 
 
 class OwnerAllianceFilter(admin.SimpleListFilter):
@@ -702,15 +701,13 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
             .distinct()
             .order_by(Lower("alliance_name"))
         )
-        return tuple([(x["alliance_id"], x["alliance_name"]) for x in qs])
+        return tuple(((obj["alliance_id"], obj["alliance_name"]) for obj in qs))
 
     def queryset(self, request, queryset):
         if self.value() is None:
             return queryset.all()
-        else:
-            return queryset.filter(
-                owner__corporation__alliance__alliance_id=self.value()
-            )
+
+        return queryset.filter(owner__corporation__alliance__alliance_id=self.value())
 
 
 class HasWebhooksListFilter(admin.SimpleListFilter):
@@ -728,6 +725,7 @@ class HasWebhooksListFilter(admin.SimpleListFilter):
             return queryset.filter(webhooks__isnull=False)
         if self.value() == "n":
             return queryset.filter(webhooks__isnull=True)
+        return None
 
 
 @admin.register(Structure)
@@ -777,11 +775,11 @@ class StructureAdmin(admin.ModelAdmin):
     )
     actions = ("add_default_tags", "remove_user_tags", "update_generated_tags")
     readonly_fields = tuple(
-        [
+        (
             x.name
             for x in Structure._meta.get_fields()
             if isinstance(x, models.fields.Field) and x.name not in ["tags", "webhooks"]
-        ]
+        )
     )
     fieldsets = (
         (

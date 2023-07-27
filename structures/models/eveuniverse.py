@@ -65,10 +65,14 @@ class EveSpaceType(str, Enum):
         """returns the space type"""
         if eve_solar_system.is_null_sec:
             return cls.NULLSEC
-        elif eve_solar_system.is_low_sec:
+
+        if eve_solar_system.is_low_sec:
             return cls.LOWSEC
-        elif eve_solar_system.is_high_sec:
+
+        if eve_solar_system.is_high_sec:
             return cls.HIGHSEC
-        elif eve_solar_system.is_w_space:
+
+        if eve_solar_system.is_w_space:
             return cls.W_SPACE
+
         return cls.UNKNOWN

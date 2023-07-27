@@ -64,7 +64,7 @@ def add_or_remove_timer(notif: Notification) -> bool:
         else:
             timer_processed = _gen_timer_moon_extraction(notif, parsed_text)
     elif notif.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
-        timer_processed = _gen_timer_tower_reinforcements(notif, parsed_text)
+        timer_processed = _gen_timer_tower_reinforcements(notif)
     else:
         raise NotImplementedError(
             f"Unsupported notification type for timers: {notif.notif_type}"
@@ -362,7 +362,7 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
     return timer_processed
 
 
-def _gen_timer_tower_reinforcements(notif: Notification, parsed_text: str) -> bool:
+def _gen_timer_tower_reinforcements(notif: Notification) -> bool:
     """Generate timer for tower reinforcements."""
     structure = notif.structures.first()
     eve_time = dt.datetime.fromisoformat(notif.details["reinforced_until"])

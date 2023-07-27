@@ -140,7 +140,7 @@ class _AbstractStructureListSerializer(ABC):
         if row["is_poco"] or row["is_starbase"]:
             row["services"] = "-"
             return
-        services = list()
+        services = []
         for service in structure.services.all():
             service_name_html = no_wrap_html(
                 format_html("<small>{}</small>", service.name)

@@ -21,10 +21,13 @@ def starbase_size(eve_type: EveType) -> StarbaseSize:
     """return the size of a starbase or None if this type is not a starbase"""
     if not is_starbase(eve_type):
         return None
-    elif "medium" in eve_type.name.lower():
+
+    if "medium" in eve_type.name.lower():
         return StarbaseSize.MEDIUM
-    elif "small" in eve_type.name.lower():
+
+    if "small" in eve_type.name.lower():
         return StarbaseSize.SMALL
+
     return StarbaseSize.LARGE
 
 
@@ -36,10 +39,13 @@ def fuel_per_hour(eve_type: EveType) -> Optional[int]:
     size = starbase_size(eve_type)
     if size is StarbaseSize.LARGE:
         return 40
-    elif size is StarbaseSize.MEDIUM:
+
+    if size is StarbaseSize.MEDIUM:
         return 20
-    elif size is StarbaseSize.SMALL:
+
+    if size is StarbaseSize.SMALL:
         return 10
+
     return None
 
 
