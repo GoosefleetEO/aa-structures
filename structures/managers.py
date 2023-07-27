@@ -1,6 +1,6 @@
 import datetime as dt
 import itertools
-from typing import Optional, Set, Tuple, TypeVar
+from typing import Any, Optional, Set, Tuple, TypeVar
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
@@ -345,38 +345,24 @@ class StructureManagerBase(models.Manager):
         obj, created = self.update_or_create_from_dict(structure=structure, owner=owner)
         return obj, created
 
-    def update_or_create_from_dict(self, structure: dict, owner) -> tuple:
+    def update_or_create_from_dict(self, structure: dict, owner) -> Tuple[Any, bool]:
         """update or create structure from given dict"""
-
-        from .models import StructureService
 
         eve_type, _ = EveType.objects.get_or_create_esi(id=structure["type_id"])
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=structure["system_id"]
         )
-        if position := structure.get("position"):
-            position_x = position.get("x")
-            position_y = position.get("y")
-            position_z = position.get("z")
-        else:
-            position_x = position_y = position_z = None
-        if planet_id := structure.get("planet_id"):
-            eve_planet, _ = EvePlanet.objects.get_or_create_esi(id=planet_id)
-        else:
-            eve_planet = None
-        if moon_id := structure.get("moon_id"):
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
-        else:
-            eve_moon = None
+        position_x, position_y, position_z = self._extract_position(structure)
+        eve_planet = self._extract_eve_planet(structure)
+        eve_moon = self._extract_eve_moon(structure)
 
-        structure_id = structure["structure_id"]
         try:
-            old_obj = self.get(id=structure_id)
+            old_obj = self.get(id=structure["structure_id"])
         except self.model.DoesNotExist:
             old_obj = None
 
         obj, created = self.update_or_create(
-            id=structure_id,
+            id=structure["structure_id"],
             defaults={
                 "owner": owner,
                 "eve_type": eve_type,
@@ -407,7 +393,29 @@ class StructureManagerBase(models.Manager):
             id=structure["type_id"], enabled_sections=[EveType.Section.DOGMAS]
         )
 
-        # save related structure services
+        self._save_related_structure_services(structure, obj)
+
+        return obj, created
+
+    def _extract_eve_moon(self, structure):
+        if moon_id := structure.get("moon_id"):
+            return EveMoon.objects.get_or_create_esi(id=moon_id)[0]
+        return None
+
+    def _extract_eve_planet(self, structure):
+        if planet_id := structure.get("planet_id"):
+            return EvePlanet.objects.get_or_create_esi(id=planet_id)[0]
+        return None
+
+    def _extract_position(self, structure):
+        if position := structure.get("position"):
+            return position.get("x"), position.get("y"), position.get("z")
+        return None, None, None
+
+    @staticmethod
+    def _save_related_structure_services(structure, obj):
+        from .models import StructureService
+
         StructureService.objects.filter(structure=obj).delete()
         if "services" in structure and structure["services"]:
             for service in structure["services"]:
@@ -422,8 +430,6 @@ class StructureManagerBase(models.Manager):
         if obj.services.filter(state=StructureService.State.ONLINE).exists():
             obj.last_online_at = now()
             obj.save()
-
-        return obj, created
 
 
 StructureManager = StructureManagerBase.from_queryset(StructureQuerySet)
