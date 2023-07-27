@@ -5,16 +5,22 @@ from enum import IntEnum
 
 # Eve enums
 class EveAttributeId(IntEnum):
+    """An EVE attribute ID."""
+
     SQUADRON_SIZE = 2215
 
 
 class EveCategoryId(IntEnum):
+    """An EVE category ID."""
+
     ORBITAL = 46
     STARBASE = 23
     STRUCTURE = 65
 
 
 class EveGroupId(IntEnum):
+    """An EVE group ID."""
+
     CITADEL = 1657
     CONTROL_TOWER = 365
     ENGINEERING_COMPLEX = 1404
@@ -28,6 +34,8 @@ class EveGroupId(IntEnum):
 
 
 class EveTypeId(IntEnum):
+    """An EVE type ID."""
+
     CALDARI_CONTROL_TOWER = 16213
     CUSTOMS_OFFICE = 2233
     IHUB = 32458
@@ -39,4 +47,6 @@ class EveTypeId(IntEnum):
 
 
 class EveCorporationId(IntEnum):
+    """An EVE corporation ID."""
+
     DED = 1000137

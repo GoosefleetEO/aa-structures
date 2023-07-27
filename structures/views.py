@@ -67,7 +67,8 @@ def index(request):
                 [x.name for x in StructureTag.objects.filter(is_default=True)]
             )
         }
-        url += "?{}".format(urlencode(params))
+        params_encoded = urlencode(params)
+        url += f"?{params_encoded}"
     return redirect(url)
 
 
@@ -86,7 +87,8 @@ def main(request):
             url = reverse("structures:main")
             if active_tags:
                 params = {QUERY_PARAM_TAGS: ",".join([x.name for x in active_tags])}
-                url += "?{}".format(urlencode(params))
+                params_encoded = urlencode(params)
+                url += f"?{params_encoded}"
             return redirect(url)
     else:
         tags_raw = request.GET.get(QUERY_PARAM_TAGS)
@@ -121,93 +123,61 @@ def structure_list_data(request) -> JsonResponse:
     return JsonResponse({"data": serializer.to_list()})
 
 
+class FakeEveType:
+    """A faked eve type."""
+
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+        self.profile_url = ""
+
+    def icon_url(self, size=64) -> str:
+        return eveimageserver.type_icon_url(self.id, size)
+
+
+class FakeAsset:
+    """Fake asset object for showing additional information in the asset list."""
+
+    def __init__(self, name, quantity, eve_type_id):
+        self.name = name
+        self.quantity = quantity
+        self.eve_type_id = eve_type_id
+        self.eve_type = FakeEveType(eve_type_id, name)
+        self.is_singleton = False
+
+
+class Slot(IntEnum):
+    """A slot type in a fitting."""
+
+    HIGH = 14
+    MEDIUM = 13
+    LOW = 12
+    RIG = 1137
+    SERVICE = 2056
+
+    def image_url(self, type_attributes: dict) -> str:
+        """Return url to image file for this slot variant"""
+        id_map = {
+            self.HIGH: "h",
+            self.MEDIUM: "m",
+            self.LOW: "l",
+            self.RIG: "r",
+            self.SERVICE: "s",
+        }
+        try:
+            slot_num = type_attributes[self.value]
+            my_id = id_map[Slot(self.value)]
+            return staticfiles_storage.url(
+                f"structures/img/panel/{slot_num}{my_id}.png"
+            )
+        except KeyError:
+            return ""
+
+
 @login_required
 @permission_required("structures.view_structure_fit")
 def structure_details(request, structure_id):
     """Main view of the structure fit"""
-
-    class Slot(IntEnum):
-        HIGH = 14
-        MEDIUM = 13
-        LOW = 12
-        RIG = 1137
-        SERVICE = 2056
-
-        def image_url(self) -> str:
-            """Return url to image file for this slot variant"""
-            id_map = {
-                self.HIGH: "h",
-                self.MEDIUM: "m",
-                self.LOW: "l",
-                self.RIG: "r",
-                self.SERVICE: "s",
-            }
-            try:
-                slot_num = type_attributes[self.value]
-                my_id = id_map[Slot(self.value)]
-                return staticfiles_storage.url(
-                    f"structures/img/panel/{slot_num}{my_id}.png"
-                )
-            except KeyError:
-                return ""
-
-    class FakeEveType:
-        def __init__(self, id, name):
-            self.id = id
-            self.name = name
-            self.profile_url = ""
-
-        def icon_url(self, size=64) -> str:
-            return eveimageserver.type_icon_url(self.id, size)
-
-    class FakeAsset:
-        """Fake asset object for showing additional information in the asset list."""
-
-        def __init__(self, name, quantity, eve_type_id):
-            self.name = name
-            self.quantity = quantity
-            self.eve_type_id = eve_type_id
-            self.eve_type = FakeEveType(eve_type_id, name)
-            self.is_singleton = False
-
-    def extract_slot_assets(fittings: list, slot_name: str) -> list:
-        """Return assets for slot sorted by slot number"""
-        return [
-            asset[0]
-            for asset in sorted(
-                [
-                    (asset, asset.location_flag[-1])
-                    for asset in fittings
-                    if asset.location_flag.startswith(slot_name)
-                ],
-                key=lambda x: x[1],
-            )
-        ]
-
-    def patch_fighter_tube_quantities(fighter_tubes):
-        eve_type_ids = {item.eve_type_id for item in fighter_tubes}
-        eve_types = [
-            EveType.objects.get_or_create_esi(
-                id=eve_type_id, enabled_sections=[EveType.Section.DOGMAS]
-            )[0]
-            for eve_type_id in eve_type_ids
-        ]
-        squadron_sizes = {
-            eve_type.id: int(
-                eve_type.dogma_attributes.get(
-                    eve_dogma_attribute=EveAttributeId.SQUADRON_SIZE.value
-                ).value
-            )
-            for eve_type in eve_types
-        }
-        for item in fighter_tubes:
-            try:
-                squadron_size = squadron_sizes[item.eve_type_id]
-            except KeyError:
-                pass
-            else:
-                item.quantity = squadron_size
-                item.is_singleton = False
 
     structure = get_object_or_404(
         Structure.objects.select_related(
@@ -222,37 +192,17 @@ def structure_details(request, structure_id):
         ),
         id=structure_id,
     )
-    type_attributes = {
-        obj["eve_dogma_attribute_id"]: int(obj["value"])
-        for obj in EveTypeDogmaAttribute.objects.filter(
-            eve_type_id=structure.eve_type_id
-        ).values("eve_dogma_attribute_id", "value")
-    }
-    slot_image_urls = {
-        "high": Slot.HIGH.image_url(),
-        "med": Slot.MEDIUM.image_url(),
-        "low": Slot.LOW.image_url(),
-        "rig": Slot.RIG.image_url(),
-        "service": Slot.SERVICE.image_url(),
-    }
     assets = structure.items.select_related("eve_type")
-    high_slots = extract_slot_assets(assets, "HiSlot")
-    med_slots = extract_slot_assets(assets, "MedSlot")
-    low_slots = extract_slot_assets(assets, "LoSlot")
-    rig_slots = extract_slot_assets(assets, "RigSlot")
-    service_slots = extract_slot_assets(assets, "ServiceSlot")
-    fighter_tubes = extract_slot_assets(assets, "FighterTube")
-    patch_fighter_tube_quantities(fighter_tubes)
-    assets_grouped = {"ammo_hold": [], "fighter_bay": [], "fuel_bay": []}
-    for asset in assets:
-        if asset.location_flag == StructureItem.LocationFlag.CARGO:
-            assets_grouped["ammo_hold"].append(asset)
-        elif asset.location_flag == StructureItem.LocationFlag.FIGHTER_BAY:
-            assets_grouped["fighter_bay"].append(asset)
-        elif asset.location_flag == StructureItem.LocationFlag.STRUCTURE_FUEL:
-            assets_grouped["fuel_bay"].append(asset)
-        else:
-            assets_grouped[asset.location_flag] = asset
+    high_slots = _extract_slot_assets(assets, "HiSlot")
+    med_slots = _extract_slot_assets(assets, "MedSlot")
+    low_slots = _extract_slot_assets(assets, "LoSlot")
+    rig_slots = _extract_slot_assets(assets, "RigSlot")
+    service_slots = _extract_slot_assets(assets, "ServiceSlot")
+    fighter_tubes = _extract_slot_assets(assets, "FighterTube")
+    _patch_fighter_tube_quantities(fighter_tubes)
+
+    assets_grouped = _init_assets_grouped(assets)
+
     if structure.is_upwell_structure:
         assets_grouped["fuel_usage"] = [
             FakeAsset(
@@ -261,7 +211,7 @@ def structure_details(request, structure_id):
                 eve_type_id=24756,
             )
         ]
-    modules_count = len(high_slots + med_slots + low_slots + rig_slots + service_slots)
+
     fuel_blocks_total = (
         functools.reduce(
             lambda x, y: x + y, [obj.quantity for obj in assets_grouped["fuel_bay"]]
@@ -276,17 +226,9 @@ def structure_details(request, structure_id):
         if assets_grouped["ammo_hold"]
         else 0
     )
-    fighters_consolidated = assets_grouped["fighter_bay"] + fighter_tubes
-    fighters_total = (
-        functools.reduce(
-            lambda x, y: x + y, [obj.quantity for obj in fighters_consolidated]
-        )
-        if fighters_consolidated
-        else 0
-    )
     context = {
         "fitting": assets,
-        "slots": slot_image_urls,
+        "slots": _generate_slot_image_urls(structure),
         "slot_assets": {
             "high_slots": high_slots,
             "med_slots": med_slots,
@@ -297,13 +239,101 @@ def structure_details(request, structure_id):
         },
         "assets_grouped": assets_grouped,
         "structure": structure,
-        "modules_count": modules_count,
+        "modules_count": len(
+            high_slots + med_slots + low_slots + rig_slots + service_slots
+        ),
         "fuel_blocks_total": fuel_blocks_total,
-        "fighters_total": fighters_total,
+        "fighters_total": _calc_fighters_total(fighter_tubes, assets_grouped),
         "ammo_total": ammo_total,
         "last_updated": structure.owner.assets_last_update_at,
     }
     return render(request, "structures/modals/structure_details.html", context)
+
+
+def _init_assets_grouped(assets):
+    assets_grouped = {"ammo_hold": [], "fighter_bay": [], "fuel_bay": []}
+    for asset in assets:
+        if asset.location_flag == StructureItem.LocationFlag.CARGO:
+            assets_grouped["ammo_hold"].append(asset)
+        elif asset.location_flag == StructureItem.LocationFlag.FIGHTER_BAY:
+            assets_grouped["fighter_bay"].append(asset)
+        elif asset.location_flag == StructureItem.LocationFlag.STRUCTURE_FUEL:
+            assets_grouped["fuel_bay"].append(asset)
+        else:
+            assets_grouped[asset.location_flag] = asset
+    return assets_grouped
+
+
+def _calc_fighters_total(fighter_tubes, assets_grouped):
+    fighters_consolidated = assets_grouped["fighter_bay"] + fighter_tubes
+    fighters_total = (
+        functools.reduce(
+            lambda x, y: x + y, [obj.quantity for obj in fighters_consolidated]
+        )
+        if fighters_consolidated
+        else 0
+    )
+
+    return fighters_total
+
+
+def _generate_slot_image_urls(structure):
+    type_attributes = {
+        obj["eve_dogma_attribute_id"]: int(obj["value"])
+        for obj in EveTypeDogmaAttribute.objects.filter(
+            eve_type_id=structure.eve_type_id
+        ).values("eve_dogma_attribute_id", "value")
+    }
+    slot_image_urls = {
+        "high": Slot.HIGH.image_url(type_attributes),
+        "med": Slot.MEDIUM.image_url(type_attributes),
+        "low": Slot.LOW.image_url(type_attributes),
+        "rig": Slot.RIG.image_url(type_attributes),
+        "service": Slot.SERVICE.image_url(type_attributes),
+    }
+
+    return slot_image_urls
+
+
+def _extract_slot_assets(fittings: list, slot_name: str) -> list:
+    """Return assets for slot sorted by slot number"""
+    return [
+        asset[0]
+        for asset in sorted(
+            [
+                (asset, asset.location_flag[-1])
+                for asset in fittings
+                if asset.location_flag.startswith(slot_name)
+            ],
+            key=lambda x: x[1],
+        )
+    ]
+
+
+def _patch_fighter_tube_quantities(fighter_tubes):
+    eve_type_ids = {item.eve_type_id for item in fighter_tubes}
+    eve_types = [
+        EveType.objects.get_or_create_esi(
+            id=eve_type_id, enabled_sections=[EveType.Section.DOGMAS]
+        )[0]
+        for eve_type_id in eve_type_ids
+    ]
+    squadron_sizes = {
+        eve_type.id: int(
+            eve_type.dogma_attributes.get(
+                eve_dogma_attribute=EveAttributeId.SQUADRON_SIZE.value
+            ).value
+        )
+        for eve_type in eve_types
+    }
+    for item in fighter_tubes:
+        try:
+            squadron_size = squadron_sizes[item.eve_type_id]
+        except KeyError:
+            pass
+        else:
+            item.quantity = squadron_size
+            item.is_singleton = False
 
 
 @login_required

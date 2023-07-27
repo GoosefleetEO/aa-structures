@@ -65,7 +65,7 @@ ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py"]
 ignore-paths = ["^.*/tests/.*$", "^.*/migrations/.*$"]
 
 [tool.pylint.'BASIC']
-good-names = ["i", "j", "k", "ex"]
+good-names = ["i", "j", "k", "ex", "id"]
 
 [tool.pylint.'FORMAT']
 max-line-length = 120
@@ -77,5 +77,6 @@ disable = [
     "imported-auth-user",
     "cyclic-import",
     "fixme",
-    "C",
+    "import-outside-toplevel",
+    "redefined-builtin",
 ]

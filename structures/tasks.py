@@ -44,7 +44,7 @@ def update_all_structures():
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)
 def update_sov_map():
     """Update sovereignty map from ESI."""
-    EveSovereigntyMap.objects.update_from_esi()
+    EveSovereigntyMap.objects.update_or_create_all_from_esi()
 
 
 @shared_task(time_limit=STRUCTURES_TASKS_TIME_LIMIT)

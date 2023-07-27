@@ -73,7 +73,7 @@ class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
         # given
         mock_esi.client = self.esi_client_stub
         # when
-        EveSovereigntyMap.objects.update_from_esi()
+        EveSovereigntyMap.objects.update_or_create_all_from_esi()
         # then
         solar_system_ids = EveSovereigntyMap.objects.values_list(
             "solar_system_id", flat=True
@@ -86,7 +86,7 @@ class TestEveSovereigntyMapManagerUpdateFromEsi(NoSocketsTestCase):
         mock_esi.client = self.esi_client_stub
         create_eve_sovereignty_map(solar_system_id=30000726, alliance_id=3001)
         # when
-        EveSovereigntyMap.objects.update_from_esi()
+        EveSovereigntyMap.objects.update_or_create_all_from_esi()
         # then
         solar_system_ids = EveSovereigntyMap.objects.values_list(
             "solar_system_id", flat=True

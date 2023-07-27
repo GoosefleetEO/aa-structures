@@ -1,8 +1,10 @@
 """Managers for Structures."""
 
+# pylint: disable=missing-class-docstring
+
 import datetime as dt
 import itertools
-from typing import Any, Optional, Set, Tuple, TypeVar
+from typing import Any, Optional, Set, Tuple
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
@@ -23,11 +25,10 @@ from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
-ModelType = TypeVar("ModelType", bound=models.Model)
-
 
 class EveSovereigntyMapManager(models.Manager):
-    def update_from_esi(self):
+    def update_or_create_all_from_esi(self):
+        """Update or create complete sovereignty map from ESI."""
         sov_map = esi.client.Sovereignty.get_sovereignty_map().results()
         logger.info("Retrieved sovereignty map from ESI")
         last_updated = now()
@@ -135,7 +136,7 @@ class GeneratedNotificationQuerySet(NotificationBaseQuerySet):
 class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
     def get_or_create_from_structure(
         self, structure: models.Model, notif_type: models.TextChoices
-    ) -> Tuple[ModelType, bool]:
+    ) -> Tuple[Any, bool]:
         """Get or create an object from given structure."""
         from .models import NotificationType
 
@@ -144,7 +145,7 @@ class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
 
         return self._get_or_create_tower_reinforced(structure)
 
-    def _get_or_create_tower_reinforced(self, structure) -> Tuple[ModelType, bool]:
+    def _get_or_create_tower_reinforced(self, structure) -> Tuple[Any, bool]:
         from .models import NotificationType
 
         if not structure.is_starbase:

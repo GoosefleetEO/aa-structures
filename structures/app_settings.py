@@ -159,4 +159,6 @@ STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS = clean_setting(
 STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES = clean_setting(
     "STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES", 3
 )
-"""Max retries before a character is deleted when ESI claims the character is not a director (Since this sometimes is reported wrongly by ESI)."""
+"""Max retries before a character is deleted when ESI claims the character
+is not a director (Since this sometimes is reported wrongly by ESI).
+"""

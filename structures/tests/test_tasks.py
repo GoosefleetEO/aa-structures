@@ -342,7 +342,10 @@ class TestUpdateExistingNotifications(NoSocketsTestCase):
 
 
 class TestOtherTasks(NoSocketsTestCase):
-    @patch(MODULE_PATH + ".EveSovereigntyMap.objects.update_from_esi", spec=True)
+    @patch(
+        MODULE_PATH + ".EveSovereigntyMap.objects.update_or_create_all_from_esi",
+        spec=True,
+    )
     def test_should_call_update_sov_map_from_esi(self, mock_update_from_esi):
         # when
         tasks.update_sov_map()
