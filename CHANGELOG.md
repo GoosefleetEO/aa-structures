@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.4.2] - 2023-07-27
+
+### Changed
+
+- Update dependencies for redis-mq and dhooks-lite
+
+### Fixed
+
+- Migration checks for minimal version where not working as intended and have been removed
+
 ## [2.4.1] - 2023-06-29
 
 ### Fixed
