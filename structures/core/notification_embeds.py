@@ -1,5 +1,7 @@
 """Generating notification embeds for Structures."""
 
+# pylint: disable=missing-class-docstring
+
 import datetime as dt
 from collections import namedtuple
 from typing import Optional
@@ -11,7 +13,8 @@ from django.db import models
 from django.template import Context, Template
 from django.utils.html import strip_tags
 from django.utils.timezone import now
-from django.utils.translation import gettext, gettext_lazy
+from django.utils.translation import gettext as __
+from django.utils.translation import gettext_lazy
 from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
@@ -39,11 +42,14 @@ from . import sovereignty, starbases
 
 
 class BillType(models.IntegerChoices):
+    """A bill type for infrastructure hub bills."""
+
     UNKNOWN = 0, gettext_lazy("Unknown Bill")
     INFRASTRUCTURE_HUB = 7, gettext_lazy("Infrastructure Hub Bill")
 
     @classmethod
     def to_enum(cls, bill_id: int):
+        """Create a new enum from a bill type ID."""
         try:
             return cls(bill_id)
         except ValueError:
@@ -91,14 +97,16 @@ class NotificationBaseEmbed:
         return str(self.notification)
 
     def __repr__(self) -> str:
-        return "%s(notification=%r)" % (self.__class__.__name__, self.notification)
+        return f"{self.__class__.__name__}(notification={self.notification})"
 
     @property
     def notification(self) -> Notification:
+        """Return notification object this embed is created from."""
         return self._notification
 
     @property
     def ping_type(self) -> Optional[Webhook.PingType]:
+        """Return Ping Type of the related notification."""
         return self._ping_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
@@ -141,11 +149,12 @@ class NotificationBaseEmbed:
                 "structures/img/eve_symbol_128.png"
             )
         if settings.DEBUG:
-            footer_text += " #{}".format(
+            my_text = (
                 self.notification.notification_id
                 if not self.notification.is_generated
                 else "GENERATED"
             )
+            footer_text += f" #{my_text}"
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,
@@ -235,9 +244,9 @@ class NotificationBaseEmbed:
     def _compile_damage_text(self, field_postfix: str, factor: int = 1) -> str:
         """Compile damage text for Structures and POSes"""
         damage_labels = [
-            ("shield", gettext("shield")),
-            ("armor", gettext("armor")),
-            ("hull", gettext("hull")),
+            ("shield", __("shield")),
+            ("armor", __("armor")),
+            ("hull", __("hull")),
         ]
         damage_parts = []
         for prop in damage_labels:
@@ -251,12 +260,11 @@ class NotificationBaseEmbed:
 
     @staticmethod
     def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
-        text = "{} ({})".format(
-            Webhook.create_link(
-                solar_system.name, dotlan.solar_system_url(solar_system.name)
-            ),
-            solar_system.eve_constellation.eve_region.name,
+        solar_system_link = Webhook.create_link(
+            solar_system.name, dotlan.solar_system_url(solar_system.name)
         )
+        region_name = solar_system.eve_constellation.eve_region.name
+        text = f"{solar_system_link} ({region_name})"
         return text
 
     @staticmethod
@@ -320,7 +328,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             )
         except Structure.DoesNotExist:
             structure = None
-            structure_name = gettext("(unknown)")
+            structure_name = __("(unknown)")
             structure_type, _ = EveType.objects.get_or_create_esi(
                 id=self._parsed_text["structureTypeID"]
             )
@@ -337,7 +345,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             location = f" at {structure.eve_moon} " if structure.eve_moon else ""
 
         self._structure = structure
-        self._description = gettext(
+        self._description = __(
             "The %(structure_type)s %(structure_name)s%(location)s in %(solar_system)s "
             "belonging to %(owner_link)s "
         ) % {
@@ -355,8 +363,8 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
 class NotificationStructureOnline(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure online")
-        self._description += gettext("is now online.")
+        self._title = __("Structure online")
+        self._description += __("is now online.")
         self._color = Webhook.Color.SUCCESS
 
 
@@ -367,20 +375,21 @@ class NotificationStructureFuelAlert(NotificationStructureEmbed):
             hours_left = timeuntil(self._structure.fuel_expires_at)
         else:
             hours_left = "?"
-        self._title = gettext("Structure fuel alert")
-        self._description += gettext(
-            "is running out of fuel in %s." % Webhook.text_bold(hours_left)
+        self._title = __("Structure fuel alert")
+        self._description += __("is running out of fuel in %s.") % Webhook.text_bold(
+            hours_left
         )
+
         self._color = Webhook.Color.WARNING
 
 
 class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Jump gate low on Liquid Ozone")
+        self._title = __("Jump gate low on Liquid Ozone")
         threshold_str = f"{self._parsed_text['threshold']:,}"
         quantity_str = f"{self._structure.jump_fuel_quantity():,}"
-        self._description += gettext(
+        self._description += __(
             "is below %(threshold)s units on Liquid Ozone.\n"
             "Remaining units: %(remaining)s."
             % {
@@ -398,49 +407,50 @@ class NotificationStructureRefueledExtra(NotificationStructureEmbed):
             target_date = target_datetime_formatted(self._structure.fuel_expires_at)
         else:
             target_date = "?"
-        self._title = gettext("Structure refueled")
-        self._description += gettext(
-            "has been refueled. Fuel will last until %s." % target_date
+        self._title = __("Structure refueled")
+        self._description += (
+            __("has been refueled. Fuel will last until %s.") % target_date
         )
+
         self._color = Webhook.Color.INFO
 
 
 class NotificationStructureServicesOffline(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure services off-line")
-        self._description += gettext("has all services off-lined.")
+        self._title = __("Structure services off-line")
+        self._description += __("has all services off-lined.")
         if self._structure and self._structure.services.count() > 0:
             qs = self._structure.services.all().order_by("name")
             services_list = "\n".join([x.name for x in qs])
-            self._description += "\n*{}*".format(services_list)
+            self._description += f"\n*{services_list}*"
         self._color = Webhook.Color.DANGER
 
 
 class NotificationStructureWentLowPower(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure low power")
-        self._description += gettext("went to low power mode.")
+        self._title = __("Structure low power")
+        self._description += __("went to low power mode.")
         self._color = Webhook.Color.WARNING
 
 
 class NotificationStructureWentHighPower(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure full power")
-        self._description += gettext("went to full power mode.")
+        self._title = __("Structure full power")
+        self._description += __("went to full power mode.")
         self._color = Webhook.Color.SUCCESS
 
 
 class NotificationStructureUnanchoring(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure un-anchoring")
+        self._title = __("Structure un-anchoring")
         unanchored_at = notification.timestamp + ldap_timedelta_2_timedelta(
             self._parsed_text["timeLeft"]
         )
-        self._description += gettext(
+        self._description += __(
             "has started un-anchoring. It will be fully un-anchored at: %s"
         ) % target_datetime_formatted(unanchored_at)
         self._color = Webhook.Color.INFO
@@ -449,8 +459,8 @@ class NotificationStructureUnanchoring(NotificationStructureEmbed):
 class NotificationStructureUnderAttack(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure under attack")
-        self._description += gettext("is under attack by %s.\n%s") % (
+        self._title = __("Structure under attack")
+        self._description += __("is under attack by %s.\n%s") % (
             self._get_attacker_link(),
             self._compile_damage_text("Percentage"),
         )
@@ -470,11 +480,11 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
 class NotificationStructureLostShield(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure lost shield")
+        self._title = __("Structure lost shield")
         timer_ends_at = notification.timestamp + ldap_timedelta_2_timedelta(
             self._parsed_text["timeLeft"]
         )
-        self._description += gettext(
+        self._description += __(
             "has lost its shields. Armor timer end at: %s"
         ) % target_datetime_formatted(timer_ends_at)
         self._color = Webhook.Color.DANGER
@@ -483,11 +493,11 @@ class NotificationStructureLostShield(NotificationStructureEmbed):
 class NotificationStructureLostArmor(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure lost armor")
+        self._title = __("Structure lost armor")
         timer_ends_at = notification.timestamp + ldap_timedelta_2_timedelta(
             self._parsed_text["timeLeft"]
         )
-        self._description += gettext(
+        self._description += __(
             "has lost its armor. Hull timer end at: %s"
         ) % target_datetime_formatted(timer_ends_at)
         self._color = Webhook.Color.DANGER
@@ -496,8 +506,8 @@ class NotificationStructureLostArmor(NotificationStructureEmbed):
 class NotificationStructureDestroyed(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Structure destroyed")
-        self._description += gettext("has been destroyed.")
+        self._title = __("Structure destroyed")
+        self._description += __("has been destroyed.")
         self._color = Webhook.Color.DANGER
 
 
@@ -510,7 +520,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
-        self._description = gettext(
+        self._description = __(
             "The %(structure_type)s %(structure_name)s in %(solar_system)s "
         ) % {
             "structure_type": structure_type.name,
@@ -526,7 +536,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
         character, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["charID"]
         )
-        self._description += gettext(
+        self._description += __(
             "has been transferred from %(from_corporation)s "
             "to %(to_corporation)s by %(character)s."
         ) % {
@@ -534,7 +544,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             "to_corporation": self._gen_corporation_link(to_corporation.name),
             "character": character.name,
         }
-        self._title = gettext("Ownership transferred")
+        self._title = __("Ownership transferred")
         self._color = Webhook.Color.INFO
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -553,7 +563,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
         owner_link = self._gen_corporation_link(
             self._parsed_text.get("ownerCorpName", "(unknown)")
         )
-        self._description = gettext(
+        self._description = __(
             "A %(structure_type)s belonging to %(owner_link)s "
             "has started anchoring in %(solar_system)s. "
         ) % {
@@ -561,7 +571,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
             "owner_link": owner_link,
             "solar_system": self._gen_solar_system_text(solar_system),
         }
-        self._title = gettext("Structure anchoring")
+        self._title = __("Structure anchoring")
         self._color = Webhook.Color.INFO
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -602,14 +612,14 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
                     )
                 )
 
-        self._title = gettext("Structure reinforcement time changed")
+        self._title = __("Structure reinforcement time changed")
         change_effective = ldap_time_2_datetime(self._parsed_text["timestamp"])
-        self._description = gettext(
+        self._description = __(
             "Reinforcement hour has been changed to %s "
             "for the following structures:\n"
         ) % Webhook.text_bold(self._parsed_text["hour"])
         for structure_info in all_structure_info:
-            self._description += gettext(
+            self._description += __(
                 "- %(structure_type)s %(structure_name)s in %(solar_system)s "
                 "belonging to %(owner_link)s"
             ) % {
@@ -621,7 +631,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
                 "owner_link": structure_info.owner_link,
             }
 
-        self._description += gettext(
+        self._description += __(
             "\n\nChange becomes effective at %s."
         ) % target_datetime_formatted(change_effective)
         self._color = Webhook.Color.INFO
@@ -646,6 +656,11 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
         )
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
+        )
+        self.ore_text = (
+            __("\nEstimated ore composition: %s") % self._ore_composition_text()
+            if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+            else ""
         )
 
     def _ore_composition_text(self) -> str:
@@ -674,8 +689,8 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
         )
         ready_time = ldap_time_2_datetime(self._parsed_text["readyTime"])
         auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
-        self._title = gettext("Moon mining extraction started")
-        self._description = gettext(
+        self._title = __("Moon mining extraction started")
+        self._description = __(
             "A moon mining extraction has been started "
             "for %(structure_name)s at %(moon)s in %(solar_system)s "
             "belonging to %(owner_link)s. "
@@ -691,11 +706,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "character": started_by,
             "ready_time": target_datetime_formatted(ready_time),
             "auto_time": target_datetime_formatted(auto_time),
-            "ore_text": gettext(
-                "\nEstimated ore composition: %s" % self._ore_composition_text()
-            )
-            if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
-            else "",
+            "ore_text": self.ore_text,
         }
         self._color = Webhook.Color.INFO
 
@@ -704,8 +715,8 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
-        self._title = gettext("Extraction finished")
-        self._description = gettext(
+        self._title = __("Extraction finished")
+        self._description = __(
             "The extraction for %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "is finished and the chunk is ready "
@@ -718,9 +729,7 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "auto_time": target_datetime_formatted(auto_time),
-            "ore_text": gettext("\nOre composition: %s" % self._ore_composition_text())
-            if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
-            else "",
+            "ore_text": self.ore_text,
         }
         self._color = Webhook.Color.INFO
 
@@ -728,8 +737,8 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
 class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Automatic Fracture")
-        self._description = gettext(
+        self._title = __("Automatic Fracture")
+        self._description = __(
             "The moon drill fitted to %(structure_name)s at %(moon)s"
             " in %(solar_system)s belonging to %(owner_link)s "
             "has automatically been fired "
@@ -740,9 +749,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
             "moon": self._moon.name,
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
-            "ore_text": gettext("\nOre composition: %s" % self._ore_composition_text())
-            if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
-            else "",
+            "ore_text": self.ore_text,
         }
         self._color = Webhook.Color.SUCCESS
 
@@ -755,9 +762,9 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
                 id=self._parsed_text["cancelledBy"]
             )
         else:
-            cancelled_by = gettext("(unknown)")
-        self._title = gettext("Extraction cancelled")
-        self._description = gettext(
+            cancelled_by = __("(unknown)")
+        self._title = __("Extraction cancelled")
+        self._description = __(
             "An ongoing extraction for %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been cancelled by %(character)s."
@@ -777,8 +784,8 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
         fired_by, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["firedBy"]
         )
-        self._title = gettext("Moon drill fired")
-        self._description = gettext(
+        self._title = __("Moon drill fired")
+        self._description = __(
             "The moon drill fitted to %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been fired by %(character)s "
@@ -790,9 +797,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
             "solar_system": self._solar_system_link,
             "owner_link": self._owner_link,
             "character": fired_by,
-            "ore_text": gettext("\nOre composition: %s" % self._ore_composition_text())
-            if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
-            else "",
+            "ore_text": self.ore_text,
         }
         self._color = Webhook.Color.SUCCESS
 
@@ -822,8 +827,8 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
 class NotificationOrbitalAttacked(NotificationOrbitalEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext("Orbital under attack")
-        self._description = gettext(
+        self._title = __("Orbital under attack")
+        self._description = __(
             "The %(structure_type)s at %(planet)s in %(solar_system)s "
             "belonging to %(owner_link)s "
             "is under attack by %(aggressor)s."
@@ -843,8 +848,8 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
         reinforce_exit_time = ldap_time_2_datetime(
             self._parsed_text["reinforceExitTime"]
         )
-        self._title = gettext("Orbital reinforced")
-        self._description = gettext(
+        self._title = __("Orbital reinforced")
+        self._description = __(
             "The %(structure_type)s at %(planet)s in %(solar_system)s "
             "belonging to %(owner_link)s "
             "has been reinforced by %(aggressor)s "
@@ -880,7 +885,7 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
-        self._description = gettext(
+        self._description = __(
             "The starbase %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
         ) % {
@@ -898,8 +903,8 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
         super().__init__(notification)
         aggressor_link = self._get_aggressor_link()
         damage_text = self._compile_damage_text("Value", 100)
-        self._title = gettext("Starbase under attack")
-        self._description += gettext(
+        self._title = __("Starbase under attack")
+        self._description += __(
             "is under attack by %(aggressor)s.\n%(damage_text)s"
         ) % {"aggressor": aggressor_link, "damage_text": damage_text}
         self._color = Webhook.Color.WARNING
@@ -928,10 +933,10 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
             hours_left = timeuntil(self._structure.fuel_expires_at)
         else:
             hours_left = "?"
-        self._title = gettext("Starbase fuel alert")
-        self._description += gettext(
-            "is running out of fuel in %s."
-        ) % Webhook.text_bold(hours_left)
+        self._title = __("Starbase fuel alert")
+        self._description += __("is running out of fuel in %s.") % Webhook.text_bold(
+            hours_left
+        )
         self._color = Webhook.Color.WARNING
 
 
@@ -942,9 +947,9 @@ class NotificationTowerRefueledExtra(NotificationTowerEmbed):
             target_date = target_datetime_formatted(self._structure.fuel_expires_at)
         else:
             target_date = "?"
-        self._title = gettext("Starbase refueled")
-        self._description += gettext(
-            "has been refueled. Fuel will last until %s." % target_date
+        self._title = __("Starbase refueled")
+        self._description += (
+            __("has been refueled. Fuel will last until %s.") % target_date
         )
         self._color = Webhook.Color.INFO
 
@@ -980,13 +985,11 @@ class NotificationSovEmbed(NotificationBaseEmbed):
 class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext(
-            "%(structure_type)s in %(solar_system)s is being captured"
-        ) % {
+        self._title = __("%(structure_type)s in %(solar_system)s is being captured") % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = gettext(
+        self._description = __(
             "A capsuleer has started to influence the %(type)s "
             "in %(solar_system)s belonging to %(owner)s "
             "with an Entosis Link."
@@ -1001,14 +1004,14 @@ class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
 class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext(
+        self._title = __(
             "Command nodes for %(structure_type)s in %(solar_system)s "
             "have begun to decloak"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = gettext(
+        self._description = __(
             "Command nodes for %(structure_type)s in %(solar_system)s "
             "belonging to %(owner)s can now be found throughout "
             "the %(constellation)s constellation"
@@ -1031,10 +1034,9 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
             id=self._parsed_text["corpID"]
         )
         self._title = (
-            gettext("DED Sovereignty claim acknowledgment: %s")
-            % self._solar_system.name
+            __("DED Sovereignty claim acknowledgment: %s") % self._solar_system.name
         )
-        self._description = gettext(
+        self._description = __(
             "DED now officially acknowledges that your "
             "member corporation %(corporation)s has claimed "
             "sovereignty on behalf of %(alliance)s in %(solar_system)s."
@@ -1055,8 +1057,8 @@ class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
         corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["corpID"]
         )
-        self._title = gettext("Lost sovereignty in: %s") % self._solar_system.name
-        self._description = gettext(
+        self._title = __("Lost sovereignty in: %s") % self._solar_system.name
+        self._description = __(
             "DED acknowledges that member corporation %(corporation)s has lost its "
             "claim to sovereignty on behalf of %(alliance)s in %(solar_system)s."
         ) % {
@@ -1071,13 +1073,13 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         timer_starts = ldap_time_2_datetime(self._parsed_text["decloakTime"])
-        self._title = gettext(
+        self._title = __(
             "%(structure_type)s in %(solar_system)s has entered reinforced mode"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = gettext(
+        self._description = __(
             "The %(structure_type)s in %(solar_system)s belonging "
             "to %(owner)s has been reinforced by "
             "hostile forces and command nodes "
@@ -1094,13 +1096,13 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
 class NotificationSovStructureDestroyed(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = gettext(
+        self._title = __(
             "%(structure_type)s in %(solar_system)s has been destroyed"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = gettext(
+        self._description = __(
             "The command nodes for %(structure_type)s "
             "in %(solar_system)s belonging to %(owner)s have been "
             "destroyed by hostile forces."
@@ -1134,14 +1136,14 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         moon_id = self._parsed_text.get("moonID")
         if moon_id:
             eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
-            location_text = gettext(" near **%s**") % eve_moon.name
+            location_text = __(" near **%s**") % eve_moon.name
         else:
             location_text = ""
-        self._title = gettext("%(structure_type)s anchored in %(solar_system)s") % {
+        self._title = __("%(structure_type)s anchored in %(solar_system)s") % {
             "structure_type": structure_type.eve_group.name,
             "solar_system": eve_solar_system.name,
         }
-        self._description = gettext(
+        self._description = __(
             "A %(structure_type)s from %(structure_owner)s has anchored "
             "in %(solar_system)s%(location_text)s."
         ) % {
@@ -1176,10 +1178,10 @@ class NotificationCorpCharEmbed(NotificationBaseEmbed):
 class NotificationCorpAppNewMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "New application from %(character_name)s" % {
+        self._title = __("New application from %(character_name)s") % {
             "character_name": self._character.name,
         }
-        self._description = (
+        self._description = __(
             "New application from %(character_name)s to join %(corporation_name)s:\n"
             "> %(application_text)s"
             % {
@@ -1194,105 +1196,103 @@ class NotificationCorpAppNewMsg(NotificationCorpCharEmbed):
 class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "%(character_name)s has been invited" % {
+        self._title = __("%(character_name)s has been invited") % {
             "character_name": self._character.name
         }
         inviting_character = self._gen_eve_entity_link_from_id(
             self._parsed_text.get("invokingCharID")
         )
-        self._description = (
+        self._description = __(
             "%(character_name)s has been invited to join %(corporation_name)s "
             "by %(inviting_character)s.\n"
             "Application:\n"
             "> %(application_text)s"
-            % {
-                "character_name": self._character_link,
-                "corporation_name": self._corporation_link,
-                "inviting_character": inviting_character,
-                "application_text": self._application_text,
-            }
-        )
+        ) % {
+            "character_name": self._character_link,
+            "corporation_name": self._corporation_link,
+            "inviting_character": inviting_character,
+            "application_text": self._application_text,
+        }
+
         self._color = Webhook.Color.INFO
 
 
 class NotificationCorpAppRejectCustomMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "Rejected application from %(character_name)s" % {
+        self._title = __("Rejected application from %(character_name)s") % {
             "character_name": self._character.name
         }
-        self._description = (
+        self._description = __(
             "Application from %(character_name)s to join %(corporation_name)s:\n"
             "> %(application_text)s\n"
             "Has been rejected:\n"
             "> %(customMessage)s"
-            % {
-                "character_name": self._character_link,
-                "corporation_name": self._corporation_link,
-                "application_text": self._application_text,
-                "customMessage": self._parsed_text.get("customMessage", ""),
-            }
-        )
+        ) % {
+            "character_name": self._character_link,
+            "corporation_name": self._corporation_link,
+            "application_text": self._application_text,
+            "customMessage": self._parsed_text.get("customMessage", ""),
+        }
+
         self._color = Webhook.Color.INFO
 
 
 class NotificationCharAppWithdrawMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "%(character_name)s withdrew his/her application" % {
+        self._title = __("%(character_name)s withdrew his/her application") % {
             "character_name": self._character.name,
         }
-        self._description = (
+        self._description = __(
             "%(character_name)s withdrew his/her application to join "
             "%(corporation_name)s:\n"
             "> %(application_text)s"
-            % {
-                "character_name": self._character_link,
-                "corporation_name": self._corporation_link,
-                "application_text": self._application_text,
-            }
-        )
+        ) % {
+            "character_name": self._character_link,
+            "corporation_name": self._corporation_link,
+            "application_text": self._application_text,
+        }
+
         self._color = Webhook.Color.INFO
 
 
 class NotificationCharAppAcceptMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "%(character_name)s joins %(corporation_name)s" % {
+        self._title = __("%(character_name)s joins %(corporation_name)s") % {
             "character_name": self._character.name,
             "corporation_name": self._corporation.name,
         }
-        self._description = (
+        self._description = __(
             "%(character_name)s is now a member of %(corporation_name)s."
-            % {
-                "character_name": self._character_link,
-                "corporation_name": self._corporation_link,
-            }
-        )
+        ) % {
+            "character_name": self._character_link,
+            "corporation_name": self._corporation_link,
+        }
         self._color = Webhook.Color.SUCCESS
 
 
 class NotificationCharLeftCorpMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "%(character_name)s has left %(corporation_name)s" % {
+        self._title = __("%(character_name)s has left %(corporation_name)s") % {
             "character_name": self._character.name,
             "corporation_name": self._corporation.name,
         }
-        self._description = (
+        self._description = __(
             "%(character_name)s is no longer a member of %(corporation_name)s."
-            % {
-                "character_name": self._character_link,
-                "corporation_name": self._corporation_link,
-            }
-        )
+        ) % {
+            "character_name": self._character_link,
+            "corporation_name": self._corporation_link,
+        }
         self._color = Webhook.Color.INFO
 
 
 class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "Ally Has Joined a War"
+        self._title = __("Ally Has Joined a War")
         aggressor, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["aggressorID"]
         )
@@ -1301,7 +1301,7 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
             id=self._parsed_text["defenderID"]
         )
         start_time = ldap_time_2_datetime(self._parsed_text["startTime"])
-        self._description = (
+        self._description = __(
             "%(ally)s has joined %(defender)s in a war against %(aggressor)s. "
             "Their participation in the war will start at %(start_time)s."
         ) % {
@@ -1333,8 +1333,8 @@ class NotificationWarEmbed(NotificationBaseEmbed):
 class NotificationCorpWarSurrenderMsg(NotificationWarEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "One party has surrendered"
-        self._description = (
+        self._title = __("One party has surrendered")
+        self._description = __(
             "The war between %(against)s and %(declared_by)s is coming to an end "
             "as one party has surrendered. "
             "The war will be declared as being over after approximately 24 hours."
@@ -1351,11 +1351,11 @@ class NotificationWarAdopted(NotificationWarEmbed):
         alliance, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["allianceID"]
         )
-        self._title = "War update: %(against)s has left %(alliance)s" % {
+        self._title = __("War update: %(against)s has left %(alliance)s") % {
             "against": self._against.name,
             "alliance": alliance.name,
         }
-        self._description = (
+        self._description = __(
             "There has been a development in the war between %(declared_by)s "
             "and %(alliance)s.\n"
             "%(against)s is no longer a member of %(alliance)s, "
@@ -1371,11 +1371,11 @@ class NotificationWarAdopted(NotificationWarEmbed):
 class NotificationWarDeclared(NotificationWarEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "%(declared_by)s Declares War Against %(against)s" % {
+        self._title = __("%(declared_by)s Declares War Against %(against)s") % {
             "declared_by": self._declared_by.name,
             "against": self._against.name,
         }
-        self._description = (
+        self._description = __(
             "%(declared_by)s has declared war on %(against)s with %(war_hq)s "
             "as the designated war headquarters.\n"
             "Within %(delay_hours)s hours fighting can legally occur "
@@ -1401,11 +1401,11 @@ class NotificationWarInherited(NotificationWarEmbed):
         quitter, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["quitterID"]
         )
-        self._title = "%(alliance)s inherits war against %(opponent)s" % {
+        self._title = __("%(alliance)s inherits war against %(opponent)s") % {
             "alliance": alliance.name,
             "opponent": opponent.name,
         }
-        self._description = (
+        self._description = __(
             "%(alliance)s has inherited the war between %(declared_by)s and "
             "%(against)s from newly joined %(quitter)s. "
             "Within **24** hours fighting can legally occur with %(alliance)s."
@@ -1421,9 +1421,9 @@ class NotificationWarInherited(NotificationWarEmbed):
 class NotificationWarRetractedByConcord(NotificationWarEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = "CONCORD invalidates war"
+        self._title = __("CONCORD invalidates war")
         war_ends = ldap_time_2_datetime(self._parsed_text["endDate"])
-        self._description = (
+        self._description = __(
             "The war between %(declared_by)s and %(against)s "
             "has been retracted by CONCORD.\n"
             "After %(end_date)s CONCORD will again respond to any hostilities "
@@ -1439,10 +1439,10 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
 class NotificationWarCorporationBecameEligible(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = (
+        self._title = __(
             "Corporation or alliance is now eligible for formal war declarations"
         )
-        self._description = (
+        self._description = __(
             "Your corporation or alliance is **now eligible** to participate in "
             "formal war declarations. This could be because your corporation "
             "and/or one of the corporations in your alliance owns a structure "
@@ -1454,10 +1454,10 @@ class NotificationWarCorporationBecameEligible(NotificationBaseEmbed):
 class NotificationWarCorporationNoLongerEligible(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = (
+        self._title = __(
             "Corporation or alliance is no longer eligible for formal war declarations"
         )
-        self._description = (
+        self._description = __(
             "Your corporation or alliance is **no longer eligible** to participate "
             "in formal war declarations.\n"
             "Neither your corporation nor any of the corporations "
@@ -1479,8 +1479,8 @@ class NotificationWarSurrenderOfferMsg(NotificationBaseEmbed):
         owner_2_link = self._gen_eve_entity_link_from_id(
             self._parsed_text.get("ownerID2")
         )
-        self._title = gettext("%s has offered a surrender") % (owner_1,)
-        self._description = gettext(
+        self._title = __("%s has offered a surrender") % (owner_1,)
+        self._description = __(
             "%s has offered to end the war with %s in the exchange for %s ISK. "
             "If accepted, the war will end in 24 hours and your organizations will "
             "be unable to declare new wars against each other for the next 2 weeks."
@@ -1494,8 +1494,8 @@ class NotificationBillingBillOutOfMoneyMsg(NotificationBaseEmbed):
         bill_type_id = self._parsed_text["billTypeID"]
         bill_type_str = BillType.to_enum(bill_type_id).label
         due_date = ldap_time_2_datetime(self._parsed_text["dueDate"])
-        self._title = gettext("Insufficient Funds for Bill")
-        self._description = gettext(
+        self._title = __("Insufficient Funds for Bill")
+        self._description = __(
             "The selected corporation wallet division for automatic payments "
             "does not have enough current funds available to pay the %(bill_type)s "
             "due to be paid by %(due_date)s. "
@@ -1516,8 +1516,8 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
-        self._title = gettext("IHub Bill About to Expire")
-        self._description = gettext(
+        self._title = __("IHub Bill About to Expire")
+        self._description = __(
             "Maintenance bill for Infrastructure Hub in %(solar_system)s "
             "expires at %(due_date)s, "
             "if not paid in time this Infrastructure Hub will self-destruct."
@@ -1543,10 +1543,10 @@ class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
         )
         solar_system_link = self._gen_solar_system_text(solar_system)
         self._title = (
-            gettext("%s has self-destructed due to unpaid maintenance bills")
+            __("%s has self-destructed due to unpaid maintenance bills")
             % structure_type.name
         )
-        self._description = gettext(
+        self._description = __(
             "%(structure_type)s in %(solar_system)s has self-destructed, "
             "as the standard maintenance bills where not paid."
         ) % {"structure_type": structure_type.name, "solar_system": solar_system_link}
@@ -1576,7 +1576,7 @@ class GeneratedNotificationTowerEmbed(GeneratedNotificationBaseEmbed):
 
     def __init__(self, notification: GeneratedNotification) -> None:
         super().__init__(notification)
-        self._description = gettext(
+        self._description = __(
             "The starbase %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
         ) % {
@@ -1592,14 +1592,15 @@ class GeneratedNotificationTowerEmbed(GeneratedNotificationBaseEmbed):
 class NotificationTowerReinforcedExtra(GeneratedNotificationTowerEmbed):
     def __init__(self, notification: GeneratedNotification) -> None:
         super().__init__(notification)
-        self._title = gettext("Starbase reinforced")
+        self._title = __("Starbase reinforced")
         try:
             reinforced_until = target_datetime_formatted(
                 dt.datetime.fromisoformat(notification.details["reinforced_until"])
             )
         except (KeyError, ValueError):
             reinforced_until = "(unknown)"
-        self._description += gettext(
-            "has been reinforced and will come out at: %s." % reinforced_until
+        self._description += (
+            __("has been reinforced and will come out at: %s.") % reinforced_until
         )
+
         self._color = Webhook.Color.DANGER
