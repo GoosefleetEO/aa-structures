@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Update dependencies for redis-mq and dhooks-lite
+- Added optional pylint check to tox
 
 ### Fixed
 
