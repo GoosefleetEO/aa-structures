@@ -181,6 +181,7 @@ GeneratedNotificationManager = GeneratedNotificationManagerBase.from_queryset(
 
 class OwnerQuerySet(models.QuerySet):
     def annotate_characters_count(self) -> models.QuerySet:
+        """Add character count annotation."""
         return self.annotate(
             x_characters_count=Count(
                 "characters",
@@ -206,12 +207,15 @@ OwnerManager = OwnerManagerBase.from_queryset(OwnerQuerySet)
 
 class StructureQuerySet(models.QuerySet):
     def filter_upwell_structures(self) -> models.QuerySet:
+        """Filter for upwell structures."""
         return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STRUCTURE)
 
     def filter_customs_offices(self) -> models.QuerySet:
+        """Filter for custom offices."""
         return self.filter(eve_type=EveTypeId.CUSTOMS_OFFICE)
 
     def filter_starbases(self) -> models.QuerySet:
+        """Filter for starbases."""
         return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STARBASE)
 
     def ids(self) -> Set[int]:
@@ -237,6 +241,7 @@ class StructureQuerySet(models.QuerySet):
     def visible_for_user(
         self, user: User, tags: Optional[list] = None
     ) -> models.QuerySet:
+        """Return structures which the given user have permission to view."""
         if user.has_perm("structures.view_all_structures"):
             structures_query = self.select_related_defaults()
             if tags:
@@ -277,6 +282,7 @@ class StructureQuerySet(models.QuerySet):
         return structures_query
 
     def annotate_has_poco_details(self) -> models.QuerySet:
+        """Add annotation wether the structure has poco details."""
         from .models import PocoDetails
 
         return self.annotate(
@@ -286,6 +292,7 @@ class StructureQuerySet(models.QuerySet):
         )
 
     def annotate_has_starbase_detail(self) -> models.QuerySet:
+        """Add annotation wether the structure has starbase details."""
         from .models import StarbaseDetail
 
         return self.annotate(

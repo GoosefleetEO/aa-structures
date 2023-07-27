@@ -1,5 +1,7 @@
 """Managers for webhooks."""
 
+# pylint: disable=missing-class-docstring
+
 from django.db import models
 
 from allianceauth.services.hooks import get_extension_logger

@@ -97,7 +97,7 @@ class NotificationBaseEmbed:
         return str(self.notification)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(notification={self.notification})"
+        return f"{self.__class__.__name__}(notification={self.notification!r})"
 
     @property
     def notification(self) -> Notification:

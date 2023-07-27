@@ -1,3 +1,5 @@
+"""Templatetags for Structures."""
+
 from django import template
 from eveuniverse.models import EveType
 

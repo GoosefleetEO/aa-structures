@@ -1002,6 +1002,8 @@ class StarbaseDetail(models.Model):
     """Additional information about a starbase."""
 
     class Role(models.TextChoices):
+        """A role for a starbase."""
+
         ALLIANCE_MEMBER = "AL", _("alliance member")
         CONFIG_STARBASE_EQUIPMENT_ROLE = "CE", _("config starbase equipment role")
         CORPORATION_MEMBER = "CO", _("corporation member")

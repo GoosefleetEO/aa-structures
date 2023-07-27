@@ -1,5 +1,7 @@
 """JSON serializers for Structures."""
 
+# pylint: disable=missing-class-docstring
+
 import re
 from abc import ABC, abstractmethod
 
@@ -42,9 +44,11 @@ class _AbstractStructureListSerializer(ABC):
         self._request = request
 
     def has_data(self) -> bool:
+        """Return True if this query returns any data, else False."""
         return self.queryset.exists()
 
     def count(self) -> bool:
+        """Return number of objects in this query."""
         return self.queryset.count()
 
     def to_list(self) -> list:
@@ -165,7 +169,7 @@ class _AbstractStructureListSerializer(ABC):
             row["reinforcement"] = "-"
         else:
             if structure.reinforce_hour is not None:
-                row["reinforcement"] = "{:02d}:00".format(structure.reinforce_hour)
+                row["reinforcement"] = f"{structure.reinforce_hour:02d}:00"
             else:
                 row["reinforcement"] = ""
 
@@ -269,8 +273,8 @@ class _AbstractStructureListSerializer(ABC):
         }
 
     def _add_state(self, structure, row, request):
-        def cap_first(s: str) -> str:
-            return s[0].upper() + s[1::]
+        def cap_first(text: str) -> str:
+            return text[0].upper() + text[1::]
 
         row["state_str"] = (
             cap_first(structure.get_state_display()) if not structure.is_poco else "-"
