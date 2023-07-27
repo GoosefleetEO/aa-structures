@@ -598,6 +598,7 @@ class NotificationBase(models.Model):
         except (OSError, NotImplementedError) as ex:
             logger.warning("%s: Failed to generate embed: %s", self, ex, exc_info=True)
             return False
+
         if webhook.has_default_pings_enabled and self.owner.has_default_pings_enabled:
             if ping_type == Webhook.PingType.EVERYONE:
                 content = "@everyone"
@@ -607,21 +608,8 @@ class NotificationBase(models.Model):
                 content = ""
         else:
             content = ""
-        if webhook.ping_groups.count() > 0 or self.owner.ping_groups.count() > 0:
-            if "discord" in app_labels():
-                DiscordUser = self._import_discord()
 
-                groups = set(self.owner.ping_groups.all()) | set(
-                    webhook.ping_groups.all()
-                )
-                for group in groups:
-                    try:
-                        role = DiscordUser.objects.group_to_role(group)
-                    except HTTPError:
-                        logger.warning("Failed to get Discord roles", exc_info=True)
-                    else:
-                        if role:
-                            content += f" <@&{role['id']}>"
+        content += self._add_discord_group_pings(webhook)
 
         username, avatar_url = self._gen_avatar()
         new_queue_size = webhook.send_message(
@@ -632,6 +620,27 @@ class NotificationBase(models.Model):
             self.is_sent = True
             self.save()
         return success
+
+    def _add_discord_group_pings(self, webhook) -> str:
+        if not webhook.ping_groups.exists() and not self.owner.ping_groups.exists():
+            return ""
+
+        if "discord" not in app_labels():
+            return ""
+
+        DiscordUser = self._import_discord()
+        groups = set(self.owner.ping_groups.all()) | set(webhook.ping_groups.all())
+        content = ""
+        for group in groups:
+            try:
+                role = DiscordUser.objects.group_to_role(group)
+            except HTTPError:
+                logger.warning("Failed to get Discord roles", exc_info=True)
+            else:
+                if role:
+                    content += f" <@&{role['id']}>"
+
+        return content
 
     def _generate_embed(
         self, language_code: Optional[str]

@@ -79,6 +79,7 @@ if "discord" in app_labels():
             self.assertIn(f"<@&{self.group_2.pk}>", kwargs["content"])
 
         def test_can_ping_both(self, mock_send_message, mock_import_discord):
+            # given
             mock_send_message.return_value = 1
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role
