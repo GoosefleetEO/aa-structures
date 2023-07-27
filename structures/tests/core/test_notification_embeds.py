@@ -8,8 +8,8 @@ from eveuniverse.models import EveEntity
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from structures.core import notification_embeds as ne
-from structures.core.notification_embeds import (
+from structures.core.notification_embeds import main as ne
+from structures.core.notification_embeds.main import (
     NotificationBaseEmbed,
     NotificationTowerReinforcedExtra,
 )

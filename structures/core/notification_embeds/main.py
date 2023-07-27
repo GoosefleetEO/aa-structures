@@ -28,6 +28,7 @@ from app_utils.urls import reverse_absolute, static_file_absolute_url
 from structures import __title__
 from structures.app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from structures.constants import EveTypeId
+from structures.core import sovereignty, starbases
 from structures.models.notifications import (
     EveEntity,
     GeneratedNotification,
@@ -37,8 +38,6 @@ from structures.models.notifications import (
     Webhook,
 )
 from structures.models.structures import Structure
-
-from . import sovereignty, starbases
 
 
 class BillType(models.IntegerChoices):
