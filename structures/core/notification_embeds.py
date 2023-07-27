@@ -961,7 +961,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         if "structureTypeID" in self._parsed_text:
             structure_type_id = self._parsed_text["structureTypeID"]
         elif "campaignEventType" in self._parsed_text:
-            structure_type_id = sovereignty.type_id_from_event_type(
+            structure_type_id = sovereignty.event_type_to_type_id(
                 self._parsed_text["campaignEventType"]
             )
         else:

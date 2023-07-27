@@ -138,7 +138,7 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
     solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
         id=parsed_text["solarSystemID"]
     )
-    structure_type_name = sovereignty.structure_type_name_from_event_type(
+    structure_type_name = sovereignty.event_type_to_structure_type_name(
         parsed_text["campaignEventType"]
     )
     eve_time = ldap_time_2_datetime(parsed_text["decloakTime"])
@@ -161,7 +161,7 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
             id=parsed_text["solarSystemID"]
         )
         structure_type, _ = EveType.objects.get_or_create_esi(
-            id=sovereignty.type_id_from_event_type(parsed_text["campaignEventType"])
+            id=sovereignty.event_type_to_type_id(parsed_text["campaignEventType"])
         )
         visibility = (
             Timer.Visibility.CORPORATION
