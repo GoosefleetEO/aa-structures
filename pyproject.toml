@@ -6,11 +6,9 @@ build-backend = "flit_core.buildapi"
 name = "aa-structures"
 dynamic = ["version", "description"]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 requires-python = ">=3.8"
-authors = [
-    { name = "Erik Kalkoken", email = "kalkoken87@gmail.com" },
-]
+authors = [{ name = "Erik Kalkoken", email = "kalkoken87@gmail.com" }]
 classifiers = [
     "Environment :: Web Environment",
     "Framework :: Django",
@@ -28,13 +26,13 @@ classifiers = [
 ]
 dependencies = [
     "allianceauth-app-utils>=1.18.1",
-    "allianceauth>=3.0.0",
-    "dhooks-lite>=0.6.1",
+    "allianceauth>=3.0",
+    "dhooks-lite>=1.0",
     "django-eveuniverse>=1.0",
     "django-multiselectfield",
     "django-navhelper",
     "pytz!=2022.2",
-    "redis-simple-mq>=0.5",
+    "redis-simple-mq>=1.0",
 ]
 
 [project.urls]
@@ -57,19 +55,20 @@ sections = [
     "DJANGO",
     "ALLIANCEAUTH",
     "FIRSTPARTY",
-    "LOCALFOLDER"
+    "LOCALFOLDER",
 ]
 known_allianceauth = ["allianceauth", "app_utils"]
 known_django = ["django", "django_webtest", "esi", "eveuniverse"]
 
 [tool.pylint.'MASTER']
-ignore-patterns = ["test_.*.py,__init__.py", "generate_.*.py"]
+ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py"]
+ignore-paths = ["^.*/tests/.*$", "^.*/migrations/.*$"]
 
 [tool.pylint.'BASIC']
-good-names = ["i", "j", "k", "x", "f", "ex"]
+good-names = ["i", "j", "k", "ex"]
 
 [tool.pylint.'FORMAT']
-max-line-length = 100
+max-line-length = 120
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = ["R", "C"]
+disable = ["R0902", "R0903"]
