@@ -156,6 +156,7 @@ class NotificationBase(models.Model):
         super().__init__(*args, **kwargs)
         self._ping_type_override = None
         self._color_override = None
+        self._parsed_text = {}
 
     def __str__(self) -> str:
         return f"{self.notification_id}:{self.notif_type}"
@@ -215,13 +216,13 @@ class NotificationBase(models.Model):
 
     def parsed_text(self) -> dict:
         """Return parsed text of this notification."""
-        raise NotImplementedError()
+        return self._parsed_text
 
     def eve_moon(self, key: str = "moonID") -> EveMoon:
         """Return it's moon extracted from the notification text.
         Will raise KeyError if not found.
         """
-        eve_moon_id = self.parsed_text()[key]
+        eve_moon_id = self._parsed_text[key]
         eve_moon, _ = EveMoon.objects.get_or_create_esi(id=eve_moon_id)
         return eve_moon
 
@@ -229,7 +230,7 @@ class NotificationBase(models.Model):
         """Return solar system extracted from the notification text.
         Will raise KeyError if not found.
         """
-        eve_solar_system_id = self.parsed_text()[key]
+        eve_solar_system_id = self._parsed_text[key]
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=eve_solar_system_id
         )
@@ -239,7 +240,7 @@ class NotificationBase(models.Model):
         """Return structure type extracted from the notification text.
         Will raise KeyError if not found.
         """
-        eve_type_id = self.parsed_text()[key]
+        eve_type_id = self._parsed_text[key]
         structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
         return structure_type
 
@@ -315,9 +316,9 @@ class NotificationBase(models.Model):
         Returns:
         - structures if any found or empty list if there are no related structures
         """
-        parsed_text = self.parsed_text()
-        if not parsed_text:
+        if not self._parsed_text:
             return Structure.objects.none()
+
         if self.notif_type in {
             NotificationType.STRUCTURE_ONLINE,
             NotificationType.STRUCTURE_FUEL_ALERT,
@@ -339,11 +340,13 @@ class NotificationBase(models.Model):
             NotificationType.MOONMINING_EXTRACTION_CANCELLED,
             NotificationType.MOONMINING_LASER_FIRED,
         }:
-            structure_id = parsed_text.get("structureID")
+            structure_id = self._parsed_text["structureID"]
             return Structure.objects.filter(id=structure_id)
+
         if self.notif_type == NotificationType.STRUCTURE_REINFORCE_CHANGED:
             structure_ids = [
-                structure_info[0] for structure_info in parsed_text["allStructureInfo"]
+                structure_info[0]
+                for structure_info in self._parsed_text["allStructureInfo"]
             ]
             return Structure.objects.filter(id__in=structure_ids)
 
@@ -352,7 +355,8 @@ class NotificationBase(models.Model):
             NotificationType.ORBITAL_REINFORCED,
         }:
             return Structure.objects.filter(
-                eve_planet_id=parsed_text["planetID"], eve_type_id=parsed_text["typeID"]
+                eve_planet_id=self._parsed_text["planetID"],
+                eve_type_id=self._parsed_text["typeID"],
             )
 
         if self.notif_type in {
@@ -361,7 +365,8 @@ class NotificationBase(models.Model):
             NotificationType.TOWER_REFUELED_EXTRA,
         }:
             return Structure.objects.filter(
-                eve_moon_id=parsed_text["moonID"], eve_type_id=parsed_text["typeID"]
+                eve_moon_id=self._parsed_text["moonID"],
+                eve_type_id=self._parsed_text["typeID"],
             )
 
         return Structure.objects.none()
@@ -525,6 +530,10 @@ class Notification(NotificationBase):
         verbose_name_plural = _("eve notifications")
         unique_together = (("notification_id", "owner"),)
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._parsed_text = yaml.safe_load(self.text) if self.text else {}
+
     def save(self, *args, **kwargs) -> None:
         if self.is_temporary:
             raise ValueError("Temporary notifications can not be saved")
@@ -545,7 +554,7 @@ class Notification(NotificationBase):
 
     def parsed_text(self) -> dict:
         """Returns the notifications's text as dict."""
-        return yaml.safe_load(self.text) if self.text else {}
+        return self._parsed_text
 
     def is_npc_attacking(self) -> bool:
         """Whether this notification is about a NPC attacking."""
@@ -639,6 +648,10 @@ class GeneratedNotification(NotificationBase):
         verbose_name = _("generated notification")
         verbose_name_plural = _("generated  notifications")
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._parsed_text = self.details
+
     @property
     def notification_id(self) -> int:
         """Return the notification ID."""
@@ -654,10 +667,6 @@ class GeneratedNotification(NotificationBase):
 
     def is_npc_attacking(self) -> bool:
         return False
-
-    def parsed_text(self) -> dict:
-        """Adopting to Notification API."""
-        return self.details
 
 
 class BaseFuelAlertConfig(models.Model):

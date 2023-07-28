@@ -336,22 +336,22 @@ class TestNotificationRelevantWebhooks(NoSocketsTestCase):
     def test_should_return_owner_webhooks_when_notif_has_multiple_structures(self):
         # given
         webhook_owner = create_webhook(
-            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+            notification_types=[NotificationType.STRUCTURE_REINFORCE_CHANGED]
         )
         self.owner.webhooks.add(webhook_owner)
         structure_1 = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
-            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+            notification_types=[NotificationType.STRUCTURE_REINFORCE_CHANGED]
         )
         structure_1.webhooks.add(webhook_structure)
         structure_2 = create_upwell_structure(owner=self.owner)
         webhook_structure = create_webhook(
-            notification_types=[NotificationType.STRUCTURE_UNDER_ATTACK]
+            notification_types=[NotificationType.STRUCTURE_REINFORCE_CHANGED]
         )
         structure_2.webhooks.add(webhook_structure)
         notif = create_notification(
             owner=self.owner,
-            notif_type=NotificationType.STRUCTURE_UNDER_ATTACK,
+            notif_type=NotificationType.STRUCTURE_REINFORCE_CHANGED,
             text=f"allStructureInfo:\n- - {structure_1.id}\n  - {structure_1}\n  - 35825\n- - {structure_2.id}\n  - {structure_2}\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 255\n",
         )
         # when
