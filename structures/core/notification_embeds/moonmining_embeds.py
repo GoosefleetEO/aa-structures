@@ -6,7 +6,7 @@
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveMoon, EveType
 
 from app_utils.datetime import ldap_time_2_datetime
 
@@ -29,10 +29,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
         self._moon, _ = EveMoon.objects.get_or_create_esi(
             id=self._parsed_text["moonID"]
         )
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarSystemID"]
-        )
-        self._solar_system_link = gen_solar_system_text(solar_system)
+        self._solar_system_link = gen_solar_system_text(self.solar_system())
         self._structure_name = self._parsed_text["structureName"]
         self._owner_link = gen_corporation_link(str(notification.owner))
         structure_type = self.structure_type()

@@ -7,7 +7,7 @@ import dhooks_lite
 
 from django.db import models
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveSolarSystem, EveType
+from eveuniverse.models import EveType
 
 from app_utils.datetime import ldap_time_2_datetime
 
@@ -56,10 +56,7 @@ class NotificationBillingBillOutOfMoneyMsg(NotificationBaseEmbed):
 class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarSystemID"]
-        )
-        solar_system_link = gen_solar_system_text(solar_system)
+        solar_system_link = gen_solar_system_text(self.solar_system())
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
         self._title = __("IHub Bill About to Expire")
         self._description = __(
@@ -80,10 +77,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
 class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarSystemID"]
-        )
-        solar_system_link = gen_solar_system_text(solar_system)
+        solar_system_link = gen_solar_system_text(self.solar_system())
         structure_type = self.structure_type()
         self._title = (
             __("%s has self-destructed due to unpaid maintenance bills")

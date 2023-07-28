@@ -7,7 +7,7 @@ from typing import Optional
 import dhooks_lite
 
 from django.conf import settings
-from eveuniverse.models import EveType
+from eveuniverse.models import EveSolarSystem, EveType
 
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
@@ -57,10 +57,22 @@ class NotificationBaseEmbed:
         return self._ping_type
 
     def structure_type(self) -> EveType:
-        """Return structure type of the notification. Will raise error if not found."""
+        """Return structure type extracted from the notification text.
+        Will raise error if not found.
+        """
         eve_type_id = self._parsed_text["structureTypeID"]
         structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
         return structure_type
+
+    def solar_system(self) -> EveSolarSystem:
+        """Return solar system extracted from the notification text.
+        Will raise error if not found.
+        """
+        eve_solar_system_id = self._parsed_text["solarSystemID"]
+        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+            id=eve_solar_system_id
+        )
+        return solar_system
 
     def generate_embed(self) -> dhooks_lite.Embed:
         """Returns generated Discord embed for this object.

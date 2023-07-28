@@ -5,7 +5,7 @@
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveMoon, EveType
 
 from app_utils.datetime import ldap_time_2_datetime
 
@@ -28,9 +28,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarSystemID"]
-        )
+        self._solar_system = self.solar_system()
         self._solar_system_link = gen_solar_system_text(self._solar_system)
         if "structureTypeID" in self._parsed_text:
             structure_type_id = self._parsed_text["structureTypeID"]
@@ -196,9 +194,7 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
             structure_owner = f"{corp_link} ({alliance.name})"
         else:
             structure_owner = corp_link
-        eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarSystemID"]
-        )
+        eve_solar_system = self.solar_system()
         structure_type, _ = EveType.objects.get_or_create_esi(
             id=self._parsed_text["typeID"]
         )

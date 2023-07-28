@@ -5,7 +5,7 @@
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EvePlanet, EveSolarSystem, EveType
+from eveuniverse.models import EvePlanet, EveType
 
 from app_utils.datetime import ldap_time_2_datetime
 
@@ -32,10 +32,7 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
         self._structure_type, _ = EveType.objects.get_or_create_esi(
             id=EveTypeId.CUSTOMS_OFFICE
         )
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarSystemID"]
-        )
-        self._solar_system_link = gen_solar_system_text(solar_system)
+        self._solar_system_link = gen_solar_system_text(self.solar_system())
         self._owner_link = gen_corporation_link(str(notification.owner))
         self._aggressor_link = get_aggressor_link(self._parsed_text)
         self._thumbnail = dhooks_lite.Thumbnail(

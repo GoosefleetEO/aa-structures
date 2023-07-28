@@ -7,7 +7,7 @@ import datetime as dt
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveMoon, EveSolarSystem, EveType
+from eveuniverse.models import EveMoon, EveType
 
 from structures.core import starbases
 from structures.models import GeneratedNotification, Notification, Structure, Webhook
@@ -77,13 +77,10 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
             starbase_type, _ = EveType.objects.get_or_create_esi(
                 id=self._parsed_text["typeID"]
             )
-            solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=self._parsed_text["solarSystemID"]
-            )
             seconds = starbases.fuel_duration(
                 starbase_type=starbase_type,
                 fuel_quantity=fuel_quantity,
-                has_sov=notification.owner.has_sov(solar_system),
+                has_sov=notification.owner.has_sov(self.solar_system()),
             )
             from_date = self.notification.timestamp
             to_date = from_date + dt.timedelta(seconds=seconds)
