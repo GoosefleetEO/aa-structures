@@ -148,7 +148,7 @@ class TestProcessTimers(NoSocketsTestCase):
         mock_add_or_remove_timer.return_value = True
         unsupported_notif_types = {
             obj for obj in NotificationType
-        } - NotificationType.relevant_for_timerboard
+        } - NotificationType.relevant_for_timerboard()
         for notif_type in unsupported_notif_types:
             with self.subTest(notif_type=notif_type):
                 notif = NotificationFactory(owner=self.owner, notif_type=notif_type)

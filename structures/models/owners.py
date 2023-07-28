@@ -1086,7 +1086,7 @@ class Owner(models.Model):
             )
             notifications = (
                 self.notification_set.filter(
-                    notif_type__in=NotificationType.relevant_for_moonmining
+                    notif_type__in=NotificationType.relevant_for_moonmining()
                 )
                 .select_related("owner", "sender")
                 .order_by("timestamp")
@@ -1115,7 +1115,7 @@ class Owner(models.Model):
         my_filter = {
             "notif_type__in": (
                 Webhook.objects.enabled_notification_types()
-                & NotificationType.relevant_for_forwarding
+                & NotificationType.relevant_for_forwarding()
             ),
             "is_sent": False,
             "timestamp__gte": cutoff_dt_for_stale,

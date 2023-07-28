@@ -13,7 +13,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import translation
-from django.utils.functional import classproperty  # type: ignore
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.models import EveEntity
@@ -176,12 +175,12 @@ class NotificationType(models.TextChoices):
         _("I_HUB destroyed by bill failure"),
     )
 
-    @classproperty
+    @classmethod
     def esi_notifications(cls) -> Set["NotificationType"]:
         """Return all ESI notification types."""
-        return set(cls.values) - cls.generated_notifications  # type: ignore
+        return set(cls.values) - cls.generated_notifications()
 
-    @classproperty
+    @classmethod
     def generated_notifications(cls) -> Set["NotificationType"]:
         """Return all generated notification types."""
         return {
@@ -191,7 +190,7 @@ class NotificationType(models.TextChoices):
             cls.TOWER_REINFORCED_EXTRA,
         }
 
-    @classproperty
+    @classmethod
     def webhook_defaults(cls) -> List["NotificationType"]:
         """List of default notifications for new webhooks."""
         return [
@@ -213,7 +212,7 @@ class NotificationType(models.TextChoices):
             cls.SOV_STRUCTURE_DESTROYED,
         ]
 
-    @classproperty
+    @classmethod
     def relevant_for_timerboard(cls) -> Set["NotificationType"]:
         """Notification types that can create timers."""
         return {
@@ -226,7 +225,7 @@ class NotificationType(models.TextChoices):
             cls.TOWER_REINFORCED_EXTRA,
         }
 
-    @classproperty
+    @classmethod
     def relevant_for_alliance_level(cls) -> Set["NotificationType"]:
         """Notification types that require the alliance level flag."""
         return {
@@ -256,7 +255,7 @@ class NotificationType(models.TextChoices):
             cls.WAR_WAR_SURRENDER_OFFER_MSG,
         }
 
-    @classproperty
+    @classmethod
     def relevant_for_moonmining(cls) -> Set["NotificationType"]:
         """Notification types about moon mining."""
         return {
@@ -267,7 +266,7 @@ class NotificationType(models.TextChoices):
             cls.MOONMINING_AUTOMATIC_FRACTURE,
         }
 
-    @classproperty
+    @classmethod
     def structure_related(cls) -> Set["NotificationType"]:
         """Notification types that are related to a structure."""
         return {
@@ -299,16 +298,16 @@ class NotificationType(models.TextChoices):
             cls.TOWER_REINFORCED_EXTRA,
         }
 
-    @classproperty
+    @classmethod
     def relevant_for_forwarding(cls) -> Set["NotificationType"]:
         """Notification types that are forwarded to Discord."""
-        my_set = set(cls.values_enabled)  # type: ignore
+        my_set = cls.values_enabled()
         # if STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS:
         #     my_set.discard(cls.STRUCTURE_FUEL_ALERT)
         #     my_set.discard(cls.TOWER_RESOURCE_ALERT_MSG)
         return my_set
 
-    @classproperty
+    @classmethod
     def values_enabled(cls) -> Set["NotificationType"]:
         """Values of enabled notif types only."""
         my_set = set(cls.values)  # type: ignore
@@ -317,10 +316,10 @@ class NotificationType(models.TextChoices):
             my_set.discard(cls.TOWER_REFUELED_EXTRA)
         return my_set
 
-    @classproperty
-    def choices_enabled(cls) -> list:
+    @classmethod
+    def choices_enabled(cls) -> List[tuple]:
         """Choices list containing enabled notif types only."""
-        return [choice for choice in cls.choices if choice[0] in cls.values_enabled]
+        return [choice for choice in cls.choices if choice[0] in cls.values_enabled()]
 
 
 def get_default_notification_types():
@@ -334,7 +333,7 @@ class Webhook(WebhookBase):
 
     notification_types = MultiSelectField(
         choices=NotificationType.choices,
-        default=NotificationType.webhook_defaults,
+        default=NotificationType.webhook_defaults(),
         verbose_name=_("notification types"),
         help_text=_(
             "Select which type of notifications should be forwarded to this webhook"
@@ -440,7 +439,7 @@ class NotificationBase(models.Model):
     @property
     def is_alliance_level(self) -> bool:
         """Whether this is an alliance level notification."""
-        return self.notif_type in NotificationType.relevant_for_alliance_level
+        return self.notif_type in NotificationType.relevant_for_alliance_level()
 
     @property
     def can_be_rendered(self) -> bool:
@@ -450,12 +449,12 @@ class NotificationBase(models.Model):
     @property
     def can_have_timer(self) -> bool:
         """Whether this notification can have a timer."""
-        return self.notif_type in NotificationType.relevant_for_timerboard
+        return self.notif_type in NotificationType.relevant_for_timerboard()
 
     @property
     def is_structure_related(self) -> bool:
         """Weather this notification related to a structure."""
-        return self.notif_type in NotificationType.structure_related
+        return self.notif_type in NotificationType.structure_related()
 
     @property
     def is_generated(self) -> bool:
@@ -688,7 +687,7 @@ class NotificationBase(models.Model):
         """
         if (
             not STRUCTURES_ADD_TIMERS
-            or self.notif_type not in NotificationType.relevant_for_timerboard
+            or self.notif_type not in NotificationType.relevant_for_timerboard()
         ):
             return False
 

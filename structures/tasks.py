@@ -155,7 +155,7 @@ def update_existing_notifications(owner_pk: int) -> int:
     """
     owner = Owner.objects.get(pk=owner_pk)
     notif_need_update_qs = owner.notification_set.filter(
-        notif_type__in=NotificationType.structure_related, structures__isnull=True
+        notif_type__in=NotificationType.structure_related(), structures__isnull=True
     )
     notif_need_update_count = notif_need_update_qs.count()
     updated_count = 0

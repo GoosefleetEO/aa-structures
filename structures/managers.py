@@ -107,7 +107,7 @@ class NotificationBaseManagerBase(models.Manager):
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
         notifications = (
-            self.filter(notif_type__in=NotificationType.relevant_for_timerboard)
+            self.filter(notif_type__in=NotificationType.relevant_for_timerboard())
             .exclude(is_timer_added=True)
             .filter(timestamp__gte=cutoff_dt_for_stale)
             .select_related("owner")

@@ -243,7 +243,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
 #         self.assertTrue(mock_fetch_notifications_esi.called)
 #         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
 #         for notif in self.owner.notifications.filter(
-#             notif_type__in=[NotificationType.structure_related]
+#             notif_type__in=[NotificationType.structure_related()]
 #         ):
 #             structure_ids = notif.structures.values_list("id", flat=True)
 #             self.assertTrue(

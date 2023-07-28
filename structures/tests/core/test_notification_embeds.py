@@ -174,7 +174,7 @@ class TestNotificationEmbedsGenerate(TestCase):
                 # then
                 self.assertIsInstance(discord_embed, dhooks_lite.Embed)
                 types_tested.add(notification.notif_type)
-        self.assertSetEqual(NotificationType.esi_notifications, types_tested)
+        self.assertSetEqual(NotificationType.esi_notifications(), types_tested)
 
     def test_should_set_ping_everyone_for_color_danger(self):
         # given
