@@ -116,6 +116,7 @@ class Webhook(WebhookBase):
         return f"**{text}**" if text else ""
 
 
+# pylint: disable = too-many-public-methods
 class NotificationBase(models.Model):
     """Base model for a notification."""
 
@@ -267,15 +268,18 @@ class NotificationBase(models.Model):
         if self.filter_for_npc_attacks():
             logger.debug("%s: Will not send NPC attacks", self)
             return None
+
         if self.filter_for_alliance_level():
             logger.debug(
                 "%s: Alliance level notifications are not enabled for this owner", self
             )
             return None
+
         webhooks_qs = self.relevant_webhooks()
         if not webhooks_qs.exists():
             logger.debug("%s: No relevant webhook found", self)
             return None
+
         if ping_type_override:
             self._ping_type_override = Webhook.PingType(ping_type_override)
         if use_color_override:

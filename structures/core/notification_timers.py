@@ -49,16 +49,15 @@ def add_or_remove_timer(notif: Notification) -> bool:
 
     Returns True when timers where added or removed, else False
     """
-    parsed_text = notif.parsed_text()
     if notif.notif_type in [
         NotificationType.STRUCTURE_LOST_ARMOR,
         NotificationType.STRUCTURE_LOST_SHIELD,
     ]:
-        timer_processed = _gen_timer_structure_reinforcement(notif, parsed_text)
+        timer_processed = _gen_timer_structure_reinforcement(notif)
     elif notif.notif_type == NotificationType.SOV_STRUCTURE_REINFORCED:
-        timer_processed = _gen_timer_sov_reinforcements(notif, parsed_text)
+        timer_processed = _gen_timer_sov_reinforcements(notif)
     elif notif.notif_type == NotificationType.ORBITAL_REINFORCED:
-        timer_processed = _gen_timer_orbital_reinforcements(notif, parsed_text)
+        timer_processed = _gen_timer_orbital_reinforcements(notif)
     elif notif.notif_type in [
         NotificationType.MOONMINING_EXTRACTION_STARTED,
         NotificationType.MOONMINING_EXTRACTION_CANCELLED,
@@ -66,7 +65,7 @@ def add_or_remove_timer(notif: Notification) -> bool:
         if not STRUCTURES_MOON_EXTRACTION_TIMERS_ENABLED:
             timer_processed = None
         else:
-            timer_processed = _gen_timer_moon_extraction(notif, parsed_text)
+            timer_processed = _gen_timer_moon_extraction(notif)
     elif notif.notif_type == NotificationType.TOWER_REINFORCED_EXTRA:
         timer_processed = _gen_timer_tower_reinforcements(notif)
     else:
@@ -80,9 +79,10 @@ def add_or_remove_timer(notif: Notification) -> bool:
     return timer_processed
 
 
-def _gen_timer_structure_reinforcement(notif: Notification, parsed_text: str) -> bool:
+def _gen_timer_structure_reinforcement(notif: Notification) -> bool:
     """Generate timer for structure reinforcements"""
     token = notif.owner.fetch_token()
+    parsed_text = notif.parsed_text()
     structure_obj, _ = Structure.objects.get_or_create_esi(
         id=parsed_text["structureID"], token=token
     )
@@ -133,11 +133,12 @@ def _gen_timer_structure_reinforcement(notif: Notification, parsed_text: str) ->
     return timer_processed
 
 
-def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool:
+def _gen_timer_sov_reinforcements(notif: Notification) -> bool:
     """Generate timer for sov reinforcements."""
     if not notif.owner.is_alliance_main:
         return False
 
+    parsed_text = notif.parsed_text()
     solar_system = notif.eve_solar_system()
     structure_type_name = sovereignty.event_type_to_structure_type_name(
         parsed_text["campaignEventType"]
@@ -184,11 +185,12 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
     return timer_processed
 
 
-def _gen_timer_orbital_reinforcements(notif: Notification, parsed_text: str) -> bool:
+def _gen_timer_orbital_reinforcements(notif: Notification) -> bool:
     """Generate timer for orbital reinforcements."""
 
     solar_system = notif.eve_solar_system()
     planet = notif.eve_planet()
+    parsed_text = notif.parsed_text()
     eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
     timer_processed = False
 
@@ -233,38 +235,24 @@ def _gen_timer_orbital_reinforcements(notif: Notification, parsed_text: str) -> 
     return timer_processed
 
 
-def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
+def _gen_timer_moon_extraction(notif: Notification) -> bool:
     """Generate timer for moon mining extractions."""
     solar_system = notif.eve_solar_system()
     moon = notif.eve_moon()
-    if "readyTime" in parsed_text:
-        eve_time = ldap_time_2_datetime(parsed_text["readyTime"])
-    else:
-        eve_time = None
+    parsed_text = notif.parsed_text()
+    eve_time = _extract_eve_time(parsed_text)
 
-    details = gettext("Extraction ready")
-    solar_system_name = solar_system.name
-    planet_moon = moon.name
     structure_type_name = "Moon Mining Cycle"
     objective = "Friendly"
     timer_processed = False
     structure_type = notif.eve_structure_type()
 
-    if HAS_STRUCTURE_TIMERS:
-        visibility = (
-            Timer.Visibility.CORPORATION
-            if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-            else Timer.Visibility.UNRESTRICTED
-        )
-    else:
-        visibility = None
-
     if notif.notif_type == NotificationType.MOONMINING_EXTRACTION_STARTED:
         if HAS_AUTH_TIMERS:
             AuthTimer.objects.create(
-                details=details,
-                system=solar_system_name,
-                planet_moon=planet_moon,
+                details=gettext("Extraction ready"),
+                system=solar_system.name,
+                planet_moon=moon.name,
                 structure=structure_type_name,
                 objective=objective,
                 eve_time=eve_time,
@@ -283,7 +271,7 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
                 location_details=moon.name,
                 eve_corporation=notif.owner.corporation,
                 eve_alliance=notif.owner.corporation.alliance,
-                visibility=visibility,
+                visibility=_calc_visibility(),
                 structure_name=parsed_text["structureName"],
                 owner_name=notif.owner.corporation.corporation_name,
                 details_notes=_timer_details_notes(notif),
@@ -292,29 +280,32 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
 
     elif notif.notif_type == NotificationType.MOONMINING_EXTRACTION_CANCELLED:
         timer_processed = True
-        notifications_qs = Notification.objects.filter(
+
+        for notification in Notification.objects.filter(
             notif_type=NotificationType.MOONMINING_EXTRACTION_STARTED,
             owner=notif.owner,
             is_timer_added=True,
             timestamp__lte=notif.timestamp,
-        ).order_by("-timestamp")
-        for notification in notifications_qs:
+        ).order_by("-timestamp"):
+            notification: Notification
             parsed_text_2 = notification.parsed_text()
             my_structure_type_id = parsed_text_2["structureTypeID"]
             if my_structure_type_id == parsed_text["structureTypeID"]:
-                eve_time = ldap_time_2_datetime(parsed_text_2["readyTime"])
+                eve_time_2 = _extract_eve_time(parsed_text_2)
+
                 if HAS_AUTH_TIMERS:
                     timer_query = AuthTimer.objects.filter(
-                        system=solar_system_name,
-                        planet_moon=planet_moon,
+                        system=solar_system.name,
+                        planet_moon=moon.name,
                         structure=structure_type_name,
                         objective=objective,
-                        eve_time=eve_time,
+                        eve_time=eve_time_2,
                     )
                     deleted_count, _ = timer_query.delete()
                     logger.info(
-                        f"{notif.notification_id}: removed {deleted_count} "
-                        "obsolete Auth timers related to notification"
+                        "%s: removed %d obsolete Auth timers related to notification",
+                        notif.notification_id,
+                        deleted_count,
                     )
 
                 if HAS_STRUCTURE_TIMERS:
@@ -323,21 +314,39 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
                         structure_type=structure_type,
                         timer_type=Timer.Type.MOONMINING,
                         location_details=moon.name,
-                        date=eve_time,
+                        date=eve_time_2,
                         objective=Timer.Objective.FRIENDLY,
                         eve_corporation=notif.owner.corporation,
                         eve_alliance=notif.owner.corporation.alliance,
-                        visibility=visibility,
+                        visibility=_calc_visibility(),
                         structure_name=parsed_text["structureName"],
                         owner_name=notif.owner.corporation.corporation_name,
                     )
                     deleted_count, _ = timer_query.delete()
                     logger.info(
-                        f"{notif.notification_id}: removed {deleted_count} "
-                        "obsolete structure timers related to notification"
+                        "%s: removed %d obsolete structure timers "
+                        "related to notification",
+                        notif.notification_id,
+                        deleted_count,
                     )
 
     return timer_processed
+
+
+def _calc_visibility():
+    if HAS_STRUCTURE_TIMERS:
+        return (
+            Timer.Visibility.CORPORATION
+            if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
+            else Timer.Visibility.UNRESTRICTED
+        )
+    return None
+
+
+def _extract_eve_time(parsed_text):
+    if "readyTime" in parsed_text:
+        return ldap_time_2_datetime(parsed_text["readyTime"])
+    return None
 
 
 def _gen_timer_tower_reinforcements(notif: Notification) -> bool:
