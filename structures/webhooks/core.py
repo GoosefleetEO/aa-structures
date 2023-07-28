@@ -15,7 +15,7 @@ from app_utils.allianceauth import get_redis_client
 from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__
+from structures import __title__
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 

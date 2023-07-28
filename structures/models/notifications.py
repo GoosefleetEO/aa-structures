@@ -400,7 +400,7 @@ class NotificationBase(models.Model):
         self, language_code: Optional[str]
     ) -> Tuple[dhooks_lite.Embed, Optional[Webhook.PingType]]:
         """Generates a Discord embed for this notification."""
-        from ..core.notification_embeds import NotificationBaseEmbed
+        from structures.core.notification_embeds import NotificationBaseEmbed
 
         logger.info("Creating embed with language = %s", language_code)
         with translation.override(language_code):
@@ -434,7 +434,7 @@ class NotificationBase(models.Model):
         ):
             return False
 
-        from ..core import notification_timers
+        from structures.core import notification_timers
 
         try:
             with translation.override(STRUCTURES_DEFAULT_LANGUAGE):

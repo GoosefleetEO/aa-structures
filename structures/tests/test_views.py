@@ -16,9 +16,10 @@ from allianceauth.eveonline.models import (
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.testing import create_user_from_evecharacter, json_response_to_python
 
-from .. import views
-from ..constants import EveTypeId
-from ..models import Owner, PocoDetails, Structure, StructureItem, Webhook
+from structures import views
+from structures.constants import EveTypeId
+from structures.models import Owner, PocoDetails, Structure, StructureItem, Webhook
+
 from .testdata.factories import create_owner_from_user, create_poco, create_starbase
 from .testdata.helpers import (
     create_structures,

@@ -3,8 +3,7 @@ from eveuniverse.models import EveSolarSystem
 from app_utils.testing import NoSocketsTestCase
 
 from structures.models import EveSovereigntyMap, EveSpaceType
-
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.eveuniverse"
 

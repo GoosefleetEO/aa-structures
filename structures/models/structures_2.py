@@ -11,9 +11,10 @@ from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__
-from ..constants import EveGroupId
-from ..core import starbases
+from structures import __title__
+from structures.constants import EveGroupId
+from structures.core import starbases
+
 from .structures_1 import Structure
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)

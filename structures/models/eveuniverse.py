@@ -5,7 +5,7 @@ from enum import Enum
 from django.db import models
 from eveuniverse.models import EveSolarSystem
 
-from ..managers import EveSovereigntyMapManager
+from structures.managers import EveSovereigntyMapManager
 
 
 class EveSovereigntyMap(models.Model):

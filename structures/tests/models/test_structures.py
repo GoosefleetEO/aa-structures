@@ -22,13 +22,12 @@ from structures.models import (
     StructureService,
     StructureTag,
 )
-
-from ..testdata.factories import (
+from structures.tests.testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_upwell_structure,
 )
-from ..testdata.factories_2 import (
+from structures.tests.testdata.factories_2 import (
     JumpGateFactory,
     OwnerFactory,
     PocoFactory,
@@ -36,8 +35,12 @@ from ..testdata.factories_2 import (
     StructureFactory,
     StructureTagFactory,
 )
-from ..testdata.helpers import create_structures, load_entities, set_owner_character
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.helpers import (
+    create_structures,
+    load_entities,
+    set_owner_character,
+)
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 STRUCTURES_PATH = "structures.models.structures_1"
 NOTIFICATIONS_PATH = "structures.models.notifications"

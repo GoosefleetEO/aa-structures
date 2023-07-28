@@ -7,15 +7,14 @@ from app_utils.testing import NoSocketsTestCase
 
 from structures.core.notification_types import NotificationType
 from structures.models import GeneratedNotification, Structure
-
-from ..testdata.factories_2 import (
+from structures.tests.testdata.factories_2 import (
     GeneratedNotificationFactory,
     NotificationFactory,
     OwnerFactory,
     StarbaseFactory,
     StructureFactory,
 )
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.notifications"
 

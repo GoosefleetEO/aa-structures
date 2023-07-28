@@ -18,17 +18,16 @@ from structures.models import (
     StructureTag,
     Webhook,
 )
-
-from .. import to_json
-from ..testdata.factories import (
+from structures.tests import to_json
+from structures.tests.testdata.factories import (
     create_owner_from_user,
     create_poco,
     create_starbase,
     create_structure_service,
     create_upwell_structure,
 )
-from ..testdata.helpers import load_entities
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.helpers import load_entities
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.owners"
 

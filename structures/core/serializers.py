@@ -28,9 +28,9 @@ from app_utils.views import (
     yesnonone_str,
 )
 
-from ..app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
-from ..constants import EveTypeId
-from ..models import EveSpaceType, Structure, StructureItem, StructureService
+from structures.app_settings import STRUCTURES_SHOW_FUEL_EXPIRES_RELATIVE
+from structures.constants import EveTypeId
+from structures.models import EveSpaceType, Structure, StructureItem, StructureService
 
 
 class _AbstractStructureListSerializer(ABC):

@@ -26,26 +26,25 @@ from structures.models import (
     StructureItem,
     Webhook,
 )
-
-from ..testdata.factories import (
+from structures.tests.testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_structure_item,
     create_upwell_structure,
     create_webhook,
 )
-from ..testdata.factories_2 import (
+from structures.tests.testdata.factories_2 import (
     EveEntityCorporationFactory,
     OwnerFactory,
     datetime_to_esi,
 )
-from ..testdata.helpers import (
+from structures.tests.testdata.helpers import (
     create_structures,
     load_entities,
     load_notification_entities,
     set_owner_character,
 )
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 OWNERS_PATH = "structures.models.owners"
 NOTIFICATIONS_PATH = "structures.models.notifications"

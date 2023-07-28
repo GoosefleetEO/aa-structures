@@ -2,7 +2,8 @@ from django.test import TestCase
 from eveuniverse.models import EveType
 from eveuniverse.tools.testdata import ModelSpec, create_testdata
 
-from ...constants import EveCategoryId, EveGroupId, EveTypeId
+from structures.constants import EveCategoryId, EveGroupId, EveTypeId
+
 from .helpers import test_data_filename
 
 
