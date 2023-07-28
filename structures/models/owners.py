@@ -1,6 +1,6 @@
 """Owner related models for Structures."""
 
-# pylint: disable = duplicate-code
+# pylint: disable = duplicate-code,too-many-lines
 
 import datetime as dt
 import json

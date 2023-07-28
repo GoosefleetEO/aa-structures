@@ -3,7 +3,7 @@ stages:
 - test
 - deploy
 
-pre-commit-check:
+pre-commit:
   stage: checks
   image: python:3.10-bullseye
   variables:
@@ -14,6 +14,14 @@ pre-commit-check:
   script:
     - pip install pre-commit
     - pre-commit run --all-files
+
+pylint:
+  stage: checks
+  image: python:3.10-bullseye
+  before_script:
+    - pip install tox
+  script:
+  - tox -e pylint
 
 .test:
   before_script:
