@@ -8,9 +8,12 @@ from eveuniverse.models import EveEntity
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from structures.core.notification_embeds import main as ne
-from structures.core.notification_embeds.main import (
-    NotificationBaseEmbed,
+from structures.core.notification_embeds import NotificationBaseEmbed
+from structures.core.notification_embeds.billing_embeds import BillType
+from structures.core.notification_embeds.moonmining_embeds import (
+    NotificationMoonminningExtractionFinished,
+)
+from structures.core.notification_embeds.tower_embeds import (
     NotificationTowerReinforcedExtra,
 )
 from structures.models.notifications import (
@@ -46,12 +49,12 @@ MODULE_PATH = "structures.core.notification_embeds"
 
 class TestBilType(TestCase):
     def test_should_create_from_valid_id(self):
-        self.assertEqual(ne.BillType.to_enum(7), ne.BillType.INFRASTRUCTURE_HUB)
+        self.assertEqual(BillType.to_enum(7), BillType.INFRASTRUCTURE_HUB)
 
     def test_should_create_from_invalid_id(self):
         for bill_id in range(7):
             with self.subTest(bill_id=bill_id):
-                self.assertEqual(ne.BillType.to_enum(bill_id), ne.BillType.UNKNOWN)
+                self.assertEqual(BillType.to_enum(bill_id), BillType.UNKNOWN)
 
 
 class TestNotificationEmbeds(TestCase):
@@ -67,10 +70,10 @@ class TestNotificationEmbeds(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
         # when
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # then
         self.assertIsInstance(
-            notification_embed, ne.NotificationMoonminningExtractionFinished
+            notification_embed, NotificationMoonminningExtractionFinished
         )
         self.assertEqual(
             str(notification_embed), "1000000403:MoonminingExtractionFinished"
@@ -94,15 +97,15 @@ class TestNotificationEmbeds(TestCase):
         )
         # when / then
         with self.assertRaises(NotImplementedError):
-            ne.NotificationBaseEmbed.create(notification)
+            NotificationBaseEmbed.create(notification)
 
     def test_should_require_notification_for_init(self):
         with self.assertRaises(TypeError):
-            ne.NotificationBaseEmbed(notification="dummy")
+            NotificationBaseEmbed(notification="dummy")
 
     def test_should_require_notification_for_factory(self):
         with self.assertRaises(TypeError):
-            ne.NotificationBaseEmbed.create(notification="dummy")
+            NotificationBaseEmbed.create(notification="dummy")
 
 
 class TestNotificationEmbedsGenerate(TestCase):
@@ -119,7 +122,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_generate_embed_from_notification(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -131,7 +134,7 @@ class TestNotificationEmbedsGenerate(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
         notification._color_override = Webhook.Color.SUCCESS
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -141,7 +144,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_generate_embed_from_notification_without_custom_color(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -152,7 +155,7 @@ class TestNotificationEmbedsGenerate(TestCase):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
         notification._ping_type_override = Webhook.PingType.EVERYONE
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         notification_embed.generate_embed()
         # then
@@ -165,7 +168,7 @@ class TestNotificationEmbedsGenerate(TestCase):
         ).all():
             if notification.notif_type in NotificationType.values:
                 # given
-                notification_embed = ne.NotificationBaseEmbed.create(notification)
+                notification_embed = NotificationBaseEmbed.create(notification)
                 # when
                 discord_embed = notification_embed.generate_embed()
                 # then
@@ -176,7 +179,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_set_ping_everyone_for_color_danger(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         notification_embed._color = Webhook.Color.DANGER
         # when
         notification_embed.generate_embed()
@@ -186,7 +189,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_set_ping_everyone_for_color_warning(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         notification_embed._color = Webhook.Color.WARNING
         # when
         notification_embed.generate_embed()
@@ -196,7 +199,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_not_set_ping_everyone_for_color_info(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         notification_embed._color = Webhook.Color.INFO
         # when
         notification_embed.generate_embed()
@@ -206,7 +209,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_not_set_ping_everyone_for_color_success(self):
         # given
         notification = Notification.objects.get(notification_id=1000000513)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         notification_embed._color = Webhook.Color.SUCCESS
         # when
         notification_embed.generate_embed()
@@ -217,7 +220,7 @@ class TestNotificationEmbedsGenerate(TestCase):
     def test_should_set_footer_in_developer_mode(self):
         # given
         notification = Notification.objects.get(notification_id=1000000403)
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -229,7 +232,7 @@ class TestNotificationEmbedsGenerate(TestCase):
         notification = Notification.create_from_structure(
             structure, notif_type=NotificationType.STRUCTURE_FUEL_ALERT
         )
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -271,7 +274,7 @@ class TestNotificationEmbedsClasses(NoSocketsTestCase):
             notif_type=NotificationType.TOWER_RESOURCE_ALERT_MSG,
             data=data,
         )
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
@@ -290,7 +293,7 @@ class TestNotificationEmbedsClasses(NoSocketsTestCase):
         notification = Notification.create_from_structure(
             structure=structure, notif_type=NotificationType.TOWER_RESOURCE_ALERT_MSG
         )
-        notification_embed = ne.NotificationBaseEmbed.create(notification)
+        notification_embed = NotificationBaseEmbed.create(notification)
         # when
         discord_embed = notification_embed.generate_embed()
         # then
