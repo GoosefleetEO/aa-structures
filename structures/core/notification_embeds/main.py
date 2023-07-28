@@ -56,15 +56,15 @@ class NotificationBaseEmbed:
         """Return Ping Type of the related notification."""
         return self._ping_type
 
-    def structure_type(self) -> EveType:
+    def structure_type(self, key: str = "structureTypeID") -> EveType:
         """Return structure type extracted from the notification text.
         Will raise error if not found.
         """
-        eve_type_id = self._parsed_text["structureTypeID"]
+        eve_type_id = self._parsed_text[key]
         structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
         return structure_type
 
-    def solar_system(self, key="solarSystemID") -> EveSolarSystem:
+    def solar_system(self, key: str = "solarSystemID") -> EveSolarSystem:
         """Return solar system extracted from the notification text.
         Will raise error if not found.
         """

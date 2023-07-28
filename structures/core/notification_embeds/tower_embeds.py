@@ -7,7 +7,7 @@ import datetime as dt
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveMoon, EveType
+from eveuniverse.models import EveMoon
 
 from structures.core import starbases
 from structures.models import GeneratedNotification, Notification, Structure, Webhook
@@ -32,9 +32,7 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         self.eve_moon, _ = EveMoon.objects.get_or_create_esi(
             id=self._parsed_text["moonID"]
         )
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=self._parsed_text["typeID"]
-        )
+        structure_type = self.structure_type("typeID")
         self._structure = Structure.objects.filter(eve_moon=self.eve_moon).first()
         if self._structure:
             structure_name = self._structure.name
@@ -74,9 +72,7 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
         super().__init__(notification)
         if "wants" in self._parsed_text and self._parsed_text["wants"]:
             fuel_quantity = self._parsed_text["wants"][0]["quantity"]
-            starbase_type, _ = EveType.objects.get_or_create_esi(
-                id=self._parsed_text["typeID"]
-            )
+            starbase_type = self.structure_type("typeID")
             seconds = starbases.fuel_duration(
                 starbase_type=starbase_type,
                 fuel_quantity=fuel_quantity,
