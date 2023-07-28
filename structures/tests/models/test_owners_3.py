@@ -18,14 +18,15 @@ from app_utils.testing import (
     queryset_pks,
 )
 
-from ...models import (
+from structures.core.notification_types import NotificationType
+from structures.models import (
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Owner,
     StructureItem,
     Webhook,
 )
+
 from ..testdata.factories import (
     create_owner_from_user,
     create_starbase,

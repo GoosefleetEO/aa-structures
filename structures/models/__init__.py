@@ -6,7 +6,6 @@ from .notifications import (
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Webhook,
     get_default_notification_types,
 )
@@ -37,7 +36,6 @@ __all__ = [
     "JumpFuelAlert",
     "JumpFuelAlertConfig",
     "Notification",
-    "NotificationType",
     "Webhook",
     "get_default_notification_types",
 ]

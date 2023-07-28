@@ -7,9 +7,9 @@ from eveuniverse.models import EvePlanet
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...models import (
+from structures.core.notification_types import NotificationType
+from structures.models import (
     FuelAlertConfig,
-    NotificationType,
     Owner,
     PocoDetails,
     StarbaseDetail,
@@ -18,6 +18,7 @@ from ...models import (
     StructureTag,
     Webhook,
 )
+
 from .. import to_json
 from ..testdata.factories import (
     create_owner_from_user,

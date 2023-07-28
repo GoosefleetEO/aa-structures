@@ -11,8 +11,10 @@ from app_utils.testing import (
     generate_invalid_pk,
 )
 
-from .. import tasks
-from ..models import FuelAlertConfig, NotificationType, Owner, Webhook
+from structures import tasks
+from structures.core.notification_types import NotificationType
+from structures.models import FuelAlertConfig, Owner, Webhook
+
 from .testdata.factories import create_notification, create_owner_from_user
 from .testdata.factories_2 import (
     FuelAlertConfigFactory,

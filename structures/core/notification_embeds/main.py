@@ -13,12 +13,8 @@ from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
 from structures import __title__
-from structures.models.notifications import (
-    Notification,
-    NotificationBase,
-    NotificationType,
-    Webhook,
-)
+from structures.core.notification_types import NotificationType
+from structures.models.notifications import Notification, NotificationBase, Webhook
 
 from .helpers import target_datetime_formatted
 

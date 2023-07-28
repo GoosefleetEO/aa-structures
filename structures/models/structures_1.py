@@ -19,12 +19,13 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import bootstrap_label_html
 
-from .. import __title__
-from ..app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS
-from ..constants import EveCategoryId, EveGroupId, EveTypeId
-from ..core import starbases
-from ..helpers.general import datetime_almost_equal, hours_until_deadline
-from ..managers import StructureManager, StructureTagManager
+from structures import __title__
+from structures.app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS
+from structures.constants import EveCategoryId, EveGroupId, EveTypeId
+from structures.core import starbases
+from structures.helpers.general import datetime_almost_equal, hours_until_deadline
+from structures.managers import StructureManager, StructureTagManager
+
 from .eveuniverse import EveSpaceType
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)

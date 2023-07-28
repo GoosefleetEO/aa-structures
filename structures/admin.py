@@ -17,6 +17,7 @@ from app_utils.django import admin_boolean_icon_html
 from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
+from .core.notification_types import NotificationType
 from .models import (
     FuelAlert,
     FuelAlertConfig,
@@ -24,7 +25,6 @@ from .models import (
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Owner,
     OwnerCharacter,
     Structure,

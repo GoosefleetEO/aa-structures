@@ -5,18 +5,19 @@ from django.utils.timezone import now
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...constants import EveTypeId
-from ...models import (
+from structures.constants import EveTypeId
+from structures.core.notification_types import NotificationType
+from structures.models import (
     FuelAlert,
     FuelAlertConfig,
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Structure,
     StructureItem,
     Webhook,
 )
+
 from ..testdata.factories import (
     create_jump_gate,
     create_notification,

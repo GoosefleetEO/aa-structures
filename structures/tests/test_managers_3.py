@@ -2,7 +2,9 @@ from unittest.mock import patch
 
 from app_utils.testing import NoSocketsTestCase
 
-from ..models import GeneratedNotification, Notification, NotificationType
+from structures.core.notification_types import NotificationType
+from structures.models import GeneratedNotification, Notification
+
 from .testdata.factories_2 import (
     GeneratedNotificationFactory,
     NotificationFactory,

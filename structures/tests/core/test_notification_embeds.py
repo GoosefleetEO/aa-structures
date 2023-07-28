@@ -16,12 +16,8 @@ from structures.core.notification_embeds.moonmining_embeds import (
 from structures.core.notification_embeds.tower_embeds import (
     NotificationTowerReinforcedExtra,
 )
-from structures.models.notifications import (
-    Notification,
-    NotificationType,
-    Structure,
-    Webhook,
-)
+from structures.core.notification_types import NotificationType
+from structures.models.notifications import Notification, Structure, Webhook
 
 from ..testdata.factories import (
     create_notification,

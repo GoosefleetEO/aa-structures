@@ -10,7 +10,8 @@ if "discord" in app_labels():
 
     from app_utils.testing import NoSocketsTestCase
 
-    from ...models import Notification
+    from structures.models import Notification
+
     from ..testdata.factories import create_webhook
     from ..testdata.helpers import (
         create_structures,

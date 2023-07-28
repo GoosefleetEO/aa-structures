@@ -22,9 +22,10 @@ from structures.app_settings import (
     STRUCTURES_TIMERS_ARE_CORP_RESTRICTED,
 )
 from structures.constants import EveTypeId
-from structures.models import Notification, NotificationType, Structure
+from structures.models import Notification, Structure
 
 from . import sovereignty, starbases
+from .notification_types import NotificationType
 
 if "timerboard" in app_labels():
     from allianceauth.timerboard.models import Timer as AuthTimer

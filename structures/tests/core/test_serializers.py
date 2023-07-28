@@ -4,8 +4,9 @@ from django.test import RequestFactory
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...core.serializers import PocoListSerializer, StructureListSerializer
-from ...models import Structure
+from structures.core.serializers import PocoListSerializer, StructureListSerializer
+from structures.models import Structure
+
 from ..testdata.factories import (
     create_owner_from_user,
     create_poco,

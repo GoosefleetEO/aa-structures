@@ -20,6 +20,7 @@ from app_utils.logging import LoggerAddTag
 from . import __title__
 from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from .constants import EveCategoryId, EveTypeId
+from .core.notification_types import NotificationType
 from .providers import esi
 from .webhooks.managers import WebhookBaseManager
 
@@ -87,7 +88,6 @@ class EveSovereigntyMapManager(models.Manager):
 class NotificationBaseQuerySet(models.QuerySet):
     def annotate_can_be_rendered(self) -> models.QuerySet:
         """annotates field indicating if a notification can be rendered"""
-        from .models import NotificationType
 
         return self.annotate(
             can_be_rendered_2=Case(
@@ -101,7 +101,6 @@ class NotificationBaseQuerySet(models.QuerySet):
 class NotificationBaseManagerBase(models.Manager):
     def add_or_remove_timers(self):
         """Add or remove timers from notifications."""
-        from .models import NotificationType
 
         cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
@@ -138,7 +137,6 @@ class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
         self, structure: models.Model, notif_type: models.TextChoices
     ) -> Tuple[Any, bool]:
         """Get or create an object from given structure."""
-        from .models import NotificationType
 
         if notif_type not in {NotificationType.TOWER_REINFORCED_EXTRA}:
             raise ValueError(f"Unsupported notification type: {notif_type}")
@@ -146,8 +144,6 @@ class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
         return self._get_or_create_tower_reinforced(structure)
 
     def _get_or_create_tower_reinforced(self, structure) -> Tuple[Any, bool]:
-        from .models import NotificationType
-
         if not structure.is_starbase:
             raise ValueError(f"Structure is not a starbase: {structure}")
         if not structure.is_reinforced:

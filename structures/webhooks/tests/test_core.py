@@ -9,7 +9,7 @@ from django.test import TestCase
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.json import JSONDateTimeDecoder
 
-from .. import core
+from structures.webhooks import core
 
 MODULE_PATH = core.__package__ + ".core"
 

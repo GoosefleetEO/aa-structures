@@ -11,11 +11,11 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from structures.constants import EveTypeId
+from structures.core.notification_types import NotificationType
 from structures.models import (
     EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
-    NotificationType,
     PocoDetails,
     Structure,
     StructureItem,

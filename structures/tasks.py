@@ -14,11 +14,11 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__
 from .app_settings import STRUCTURES_TASKS_TIME_LIMIT
+from .core.notification_types import NotificationType
 from .models import (
     EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
-    NotificationType,
     Owner,
     Webhook,
 )

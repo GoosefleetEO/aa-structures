@@ -5,7 +5,8 @@ from django.utils.timezone import now
 
 from app_utils.testing import NoSocketsTestCase
 
-from structures.models import GeneratedNotification, NotificationType, Structure
+from structures.core.notification_types import NotificationType
+from structures.models import GeneratedNotification, Structure
 
 from ..testdata.factories_2 import (
     GeneratedNotificationFactory,
