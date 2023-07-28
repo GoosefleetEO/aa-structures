@@ -466,6 +466,16 @@ class NotificationBase(models.Model):
         """Return True if this is a temporary notification, else False."""
         raise NotImplementedError()
 
+    @property
+    def color_override(self) -> Optional[int]:
+        """Return overridden color if set, else None."""
+        return self._color_override
+
+    @property
+    def ping_type_override(self) -> Optional[Webhook.PingType]:
+        """Return overridden ping type if set, else None."""
+        return self._ping_type_override
+
     def is_npc_attacking(self) -> bool:
         """Return True if this notification is about NPC attacking, else False."""
         raise NotImplementedError()

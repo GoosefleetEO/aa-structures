@@ -74,10 +74,10 @@ class NotificationBaseEmbed:
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
-        if self.notification._color_override:
-            self._color = self.notification._color_override
-        if self.notification._ping_type_override:
-            self._ping_type = self.notification._ping_type_override
+        if self.notification.color_override:
+            self._color = self.notification.color_override
+        if self.notification.ping_type_override:
+            self._ping_type = self.notification.ping_type_override
         elif self._color == Webhook.Color.DANGER:
             self._ping_type = Webhook.PingType.EVERYONE
         elif self._color == Webhook.Color.WARNING:

@@ -61,6 +61,7 @@ class DiscordWebhookMixin:
 
         return counter
 
+    # pylint: disable = too-many-arguments
     def send_message(
         self,
         content: Optional[str] = None,
@@ -68,7 +69,7 @@ class DiscordWebhookMixin:
         tts: Optional[bool] = None,
         username: Optional[str] = None,
         avatar_url: Optional[str] = None,
-    ) -> int:  # pylint: disable = too-many-arguments
+    ) -> int:
         """Adds Discord message to queue for later sending
 
         Returns updated size of queue
