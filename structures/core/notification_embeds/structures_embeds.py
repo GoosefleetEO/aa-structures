@@ -7,7 +7,7 @@ from collections import namedtuple
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveEntity, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveType
 
 from app_utils.datetime import ldap_time_2_datetime, ldap_timedelta_2_timedelta
 
@@ -38,12 +38,8 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
         except Structure.DoesNotExist:
             structure = None
             structure_name = __("(unknown)")
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                id=self._parsed_text["structureTypeID"]
-            )
-            structure_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=self._parsed_text["solarsystemID"]
-            )
+            structure_type = self.structure_type()
+            structure_solar_system = self.solar_system("solarsystemID")
             owner_link = "(unknown)"
             location = ""
         else:
@@ -255,9 +251,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         structure_type = self.structure_type()
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=self._parsed_text["solarsystemID"]
-        )
+        solar_system = self.solar_system("solarsystemID")
         owner_link = gen_corporation_link(
             self._parsed_text.get("ownerCorpName", "(unknown)")
         )

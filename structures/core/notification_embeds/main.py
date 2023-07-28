@@ -64,11 +64,11 @@ class NotificationBaseEmbed:
         structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
         return structure_type
 
-    def solar_system(self) -> EveSolarSystem:
+    def solar_system(self, key="solarSystemID") -> EveSolarSystem:
         """Return solar system extracted from the notification text.
         Will raise error if not found.
         """
-        eve_solar_system_id = self._parsed_text["solarSystemID"]
+        eve_solar_system_id = self._parsed_text[key]
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=eve_solar_system_id
         )
