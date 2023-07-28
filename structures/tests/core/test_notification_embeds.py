@@ -162,19 +162,19 @@ class TestNotificationEmbedsGenerate(TestCase):
         self.assertEqual(notification_embed.ping_type, Webhook.PingType.EVERYONE)
 
     def test_should_generate_embed_for_all_supported_esi_notification_types(self):
-        types_tested = set()
-        for notification in Notification.objects.select_related(
-            "owner", "sender"
-        ).all():
-            if notification.notif_type in NotificationType.values:
+        for notif_type in NotificationType.esi_notifications():
+            with self.subTest(notif_type=notif_type):
                 # given
+                notification = (
+                    Notification.objects.select_related("owner", "sender")
+                    .filter(notif_type=notif_type)
+                    .first()
+                )
                 notification_embed = NotificationBaseEmbed.create(notification)
                 # when
                 discord_embed = notification_embed.generate_embed()
                 # then
                 self.assertIsInstance(discord_embed, dhooks_lite.Embed)
-                types_tested.add(notification.notif_type)
-        self.assertSetEqual(NotificationType.esi_notifications(), types_tested)
 
     def test_should_set_ping_everyone_for_color_danger(self):
         # given

@@ -80,13 +80,11 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
 class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=self._parsed_text["structureTypeID"]
-        )
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
         solar_system_link = gen_solar_system_text(solar_system)
+        structure_type = self.structure_type()
         self._title = (
             __("%s has self-destructed due to unpaid maintenance bills")
             % structure_type.name

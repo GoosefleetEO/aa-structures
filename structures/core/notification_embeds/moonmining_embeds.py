@@ -35,9 +35,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
         self._solar_system_link = gen_solar_system_text(solar_system)
         self._structure_name = self._parsed_text["structureName"]
         self._owner_link = gen_corporation_link(str(notification.owner))
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=self._parsed_text["structureTypeID"]
-        )
+        structure_type = self.structure_type()
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )

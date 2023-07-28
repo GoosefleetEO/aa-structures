@@ -7,6 +7,7 @@ from typing import Optional
 import dhooks_lite
 
 from django.conf import settings
+from eveuniverse.models import EveType
 
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
@@ -54,6 +55,12 @@ class NotificationBaseEmbed:
     def ping_type(self) -> Optional[Webhook.PingType]:
         """Return Ping Type of the related notification."""
         return self._ping_type
+
+    def structure_type(self) -> EveType:
+        """Return structure type of the notification. Will raise error if not found."""
+        eve_type_id = self._parsed_text["structureTypeID"]
+        structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
+        return structure_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
         """Returns generated Discord embed for this object.

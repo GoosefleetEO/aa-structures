@@ -219,9 +219,7 @@ class NotificationStructureDestroyed(NotificationStructureEmbed):
 class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=self._parsed_text["structureTypeID"]
-        )
+        structure_type = self.structure_type()
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
@@ -259,9 +257,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
 class NotificationStructureAnchoring(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=self._parsed_text["structureTypeID"]
-        )
+        structure_type = self.structure_type()
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarsystemID"]
         )
