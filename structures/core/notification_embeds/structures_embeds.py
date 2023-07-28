@@ -10,7 +10,13 @@ from app_utils.datetime import ldap_time_2_datetime, ldap_timedelta_2_timedelta
 from structures.models import Notification, Webhook
 from structures.models.structures import Structure
 
-from .helpers import target_datetime_formatted, timeuntil
+from .helpers import (
+    gen_alliance_link,
+    gen_corporation_link,
+    gen_solar_system_text,
+    target_datetime_formatted,
+    timeuntil,
+)
 from .main import NotificationBaseEmbed
 
 
@@ -38,7 +44,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             structure_name = structure.name
             structure_type = structure.eve_type
             structure_solar_system = structure.eve_solar_system
-            owner_link = self._gen_corporation_link(str(structure.owner))
+            owner_link = gen_corporation_link(str(structure.owner))
             location = f" at {structure.eve_moon} " if structure.eve_moon else ""
 
         self._structure = structure
@@ -49,7 +55,7 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             "structure_type": structure_type.name,
             "structure_name": Webhook.text_bold(structure_name),
             "location": location,
-            "solar_system": self._gen_solar_system_text(structure_solar_system),
+            "solar_system": gen_solar_system_text(structure_solar_system),
             "owner_link": owner_link,
         }
         self._thumbnail = dhooks_lite.Thumbnail(
@@ -166,10 +172,10 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
     def _get_attacker_link(self) -> str:
         """Returns the attacker link from a parsed_text for Upwell structures only."""
         if self._parsed_text.get("allianceName"):
-            return self._gen_alliance_link(self._parsed_text["allianceName"])
+            return gen_alliance_link(self._parsed_text["allianceName"])
 
         if self._parsed_text.get("corpName"):
-            return self._gen_corporation_link(self._parsed_text["corpName"])
+            return gen_corporation_link(self._parsed_text["corpName"])
 
         return "(unknown)"
 
@@ -222,7 +228,7 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
         ) % {
             "structure_type": structure_type.name,
             "structure_name": Webhook.text_bold(self._parsed_text["structureName"]),
-            "solar_system": self._gen_solar_system_text(solar_system),
+            "solar_system": gen_solar_system_text(solar_system),
         }
         from_corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["oldOwnerCorpID"]
@@ -237,8 +243,8 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
             "has been transferred from %(from_corporation)s "
             "to %(to_corporation)s by %(character)s."
         ) % {
-            "from_corporation": self._gen_corporation_link(from_corporation.name),
-            "to_corporation": self._gen_corporation_link(to_corporation.name),
+            "from_corporation": gen_corporation_link(from_corporation.name),
+            "to_corporation": gen_corporation_link(to_corporation.name),
             "character": character.name,
         }
         self._title = __("Ownership transferred")
@@ -257,7 +263,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarsystemID"]
         )
-        owner_link = self._gen_corporation_link(
+        owner_link = gen_corporation_link(
             self._parsed_text.get("ownerCorpName", "(unknown)")
         )
         self._description = __(
@@ -266,7 +272,7 @@ class NotificationStructureAnchoring(NotificationBaseEmbed):
         ) % {
             "structure_type": structure_type.name,
             "owner_link": owner_link,
-            "solar_system": self._gen_solar_system_text(solar_system),
+            "solar_system": gen_solar_system_text(solar_system),
         }
         self._title = __("Structure anchoring")
         self._color = Webhook.Color.INFO
@@ -305,7 +311,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
                         name=structure.name,
                         eve_type=structure.eve_type,
                         eve_solar_system=structure.eve_solar_system,
-                        owner_link=self._gen_corporation_link(str(structure.owner)),
+                        owner_link=gen_corporation_link(str(structure.owner)),
                     )
                 )
 
@@ -322,9 +328,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
             ) % {
                 "structure_type": structure_info.eve_type.name,
                 "structure_name": Webhook.text_bold(structure_info.name),
-                "solar_system": self._gen_solar_system_text(
-                    structure_info.eve_solar_system
-                ),
+                "solar_system": gen_solar_system_text(structure_info.eve_solar_system),
                 "owner_link": structure_info.owner_link,
             }
 

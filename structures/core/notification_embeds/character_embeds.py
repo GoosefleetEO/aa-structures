@@ -5,6 +5,11 @@ from eveuniverse.models import EveEntity
 
 from structures.models import Notification, Webhook
 
+from .helpers import (
+    gen_corporation_link,
+    gen_eve_entity_link,
+    gen_eve_entity_link_from_id,
+)
 from .main import NotificationBaseEmbed
 
 
@@ -17,8 +22,8 @@ class NotificationCorpCharEmbed(NotificationBaseEmbed):
         self._corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["corpID"]
         )
-        self._character_link = self._gen_eve_entity_link(self._character)
-        self._corporation_link = self._gen_corporation_link(self._corporation.name)
+        self._character_link = gen_eve_entity_link(self._character)
+        self._corporation_link = gen_corporation_link(self._corporation.name)
         self._application_text = self._parsed_text.get("applicationText", "")
         self._thumbnail = dhooks_lite.Thumbnail(
             self._character.icon_url(size=self.ICON_DEFAULT_SIZE)
@@ -49,7 +54,7 @@ class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
         self._title = __("%(character_name)s has been invited") % {
             "character_name": self._character.name
         }
-        inviting_character = self._gen_eve_entity_link_from_id(
+        inviting_character = gen_eve_entity_link_from_id(
             self._parsed_text.get("invokingCharID")
         )
         self._description = __(

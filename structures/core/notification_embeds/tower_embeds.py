@@ -8,7 +8,12 @@ from eveuniverse.models import EveMoon, EveSolarSystem, EveType
 from structures.core import starbases
 from structures.models import GeneratedNotification, Notification, Structure, Webhook
 
-from .helpers import target_datetime_formatted, timeuntil
+from .helpers import (
+    gen_corporation_link,
+    gen_solar_system_text,
+    target_datetime_formatted,
+    timeuntil,
+)
 from .main import NotificationBaseEmbed
 
 
@@ -38,10 +43,10 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         ) % {
             "structure_name": Webhook.text_bold(structure_name),
             "moon": self.eve_moon.name,
-            "solar_system": self._gen_solar_system_text(
+            "solar_system": gen_solar_system_text(
                 self.eve_moon.eve_planet.eve_solar_system
             ),
-            "owner_link": self._gen_corporation_link(str(notification.owner)),
+            "owner_link": gen_corporation_link(str(notification.owner)),
         }
 
 
@@ -127,10 +132,8 @@ class GeneratedNotificationTowerEmbed(GeneratedNotificationBaseEmbed):
         ) % {
             "structure_name": Webhook.text_bold(self._structure.name),
             "moon": self._structure.eve_moon.name,
-            "solar_system": self._gen_solar_system_text(
-                self._structure.eve_solar_system
-            ),
-            "owner_link": self._gen_corporation_link(str(notification.owner)),
+            "solar_system": gen_solar_system_text(self._structure.eve_solar_system),
+            "owner_link": gen_corporation_link(str(notification.owner)),
         }
 
 

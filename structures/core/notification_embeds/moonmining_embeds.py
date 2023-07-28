@@ -8,7 +8,11 @@ from app_utils.datetime import ldap_time_2_datetime
 from structures.app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
 from structures.models import Notification, Webhook
 
-from .helpers import target_datetime_formatted
+from .helpers import (
+    gen_corporation_link,
+    gen_solar_system_text,
+    target_datetime_formatted,
+)
 from .main import NotificationBaseEmbed
 
 
@@ -23,9 +27,9 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
-        self._solar_system_link = self._gen_solar_system_text(solar_system)
+        self._solar_system_link = gen_solar_system_text(solar_system)
         self._structure_name = self._parsed_text["structureName"]
-        self._owner_link = self._gen_corporation_link(str(notification.owner))
+        self._owner_link = gen_corporation_link(str(notification.owner))
         structure_type, _ = EveType.objects.get_or_create_esi(
             id=self._parsed_text["structureTypeID"]
         )

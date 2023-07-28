@@ -9,7 +9,13 @@ from structures.constants import EveTypeId
 from structures.core import sovereignty
 from structures.models import Notification, Webhook
 
-from .helpers import target_datetime_formatted
+from .helpers import (
+    gen_alliance_link,
+    gen_corporation_link,
+    gen_eve_entity_link,
+    gen_solar_system_text,
+    target_datetime_formatted,
+)
 from .main import NotificationBaseEmbed
 
 
@@ -21,7 +27,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         self._solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
-        self._solar_system_link = self._gen_solar_system_text(self._solar_system)
+        self._solar_system_link = gen_solar_system_text(self._solar_system)
         if "structureTypeID" in self._parsed_text:
             structure_type_id = self._parsed_text["structureTypeID"]
         elif "campaignEventType" in self._parsed_text:
@@ -33,7 +39,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
         structure_type, _ = EveType.objects.get_or_create_esi(id=structure_type_id)
         self._structure_type_name = structure_type.name
         try:
-            self._sov_owner_link = self._gen_alliance_link(notification.sender.name)
+            self._sov_owner_link = gen_alliance_link(notification.sender.name)
         except AttributeError:
             self._sov_owner_link = "(unknown)"
         self._thumbnail = dhooks_lite.Thumbnail(
@@ -100,8 +106,8 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
             "member corporation %(corporation)s has claimed "
             "sovereignty on behalf of %(alliance)s in %(solar_system)s."
         ) % {
-            "corporation": self._gen_corporation_link(corporation.name),
-            "alliance": self._gen_alliance_link(alliance.name),
+            "corporation": gen_corporation_link(corporation.name),
+            "alliance": gen_alliance_link(alliance.name),
             "solar_system": self._solar_system_link,
         }
         self._color = Webhook.Color.SUCCESS
@@ -121,8 +127,8 @@ class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
             "DED acknowledges that member corporation %(corporation)s has lost its "
             "claim to sovereignty on behalf of %(alliance)s in %(solar_system)s."
         ) % {
-            "corporation": self._gen_corporation_link(corporation.name),
-            "alliance": self._gen_alliance_link(alliance.name),
+            "corporation": gen_corporation_link(corporation.name),
+            "alliance": gen_alliance_link(alliance.name),
             "solar_system": self._solar_system_link,
         }
         self._color = Webhook.Color.SUCCESS
@@ -179,7 +185,7 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text.get("corpID")
         )
-        corp_link = self._gen_eve_entity_link(corporation)
+        corp_link = gen_eve_entity_link(corporation)
         alliance_id = self._parsed_text.get("allianceID")
         if alliance_id:
             alliance, _ = EveEntity.objects.get_or_create_esi(id=alliance_id)
@@ -208,7 +214,7 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         ) % {
             "structure_type": Webhook.text_bold(structure_type.name),
             "structure_owner": structure_owner,
-            "solar_system": self._gen_solar_system_text(eve_solar_system),
+            "solar_system": gen_solar_system_text(eve_solar_system),
             "location_text": location_text,
         }
         self._color = Webhook.Color.WARNING

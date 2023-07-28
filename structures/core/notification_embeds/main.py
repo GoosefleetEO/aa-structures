@@ -8,14 +8,12 @@ import dhooks_lite
 
 from django.conf import settings
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveSolarSystem
+from eveuniverse.models import EveEntity
 
-from allianceauth.eveonline.evelinks import dotlan, evewho
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
 from structures import __title__
 from structures.models.notifications import (
-    EveEntity,
     Notification,
     NotificationBase,
     NotificationType,
@@ -275,51 +273,6 @@ class NotificationBaseEmbed:
                 damage_parts.append(f"{label}: {value:.1f}%")
         damage_text = " | ".join(damage_parts)
         return damage_text
-
-    @staticmethod
-    def _gen_solar_system_text(solar_system: EveSolarSystem) -> str:
-        solar_system_link = Webhook.create_link(
-            solar_system.name, dotlan.solar_system_url(solar_system.name)
-        )
-        region_name = solar_system.eve_constellation.eve_region.name
-        text = f"{solar_system_link} ({region_name})"
-        return text
-
-    @staticmethod
-    def _gen_alliance_link(alliance_name: str) -> str:
-        return Webhook.create_link(alliance_name, dotlan.alliance_url(alliance_name))
-
-    @staticmethod
-    def _gen_eve_entity_external_url(eve_entity: EveEntity) -> str:
-        if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
-            return dotlan.alliance_url(eve_entity.name)
-
-        if eve_entity.category == EveEntity.CATEGORY_CORPORATION:
-            return dotlan.corporation_url(eve_entity.name)
-
-        if eve_entity.category == EveEntity.CATEGORY_CHARACTER:
-            return evewho.character_url(eve_entity.id)
-
-        return ""
-
-    @classmethod
-    def _gen_eve_entity_link(cls, eve_entity: EveEntity) -> str:
-        return Webhook.create_link(
-            eve_entity.name, cls._gen_eve_entity_external_url(eve_entity)
-        )
-
-    @classmethod
-    def _gen_eve_entity_link_from_id(cls, id: int) -> str:
-        if not id:
-            return ""
-        entity, _ = EveEntity.objects.get_or_create_esi(id=id)
-        return cls._gen_eve_entity_link(entity)
-
-    @staticmethod
-    def _gen_corporation_link(corporation_name: str) -> str:
-        return Webhook.create_link(
-            corporation_name, dotlan.corporation_url(corporation_name)
-        )
 
     def _get_aggressor_link(self) -> str:
         """Returns the aggressor link from a parsed_text for POS and POCOs only."""

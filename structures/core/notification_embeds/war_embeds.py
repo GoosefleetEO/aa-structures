@@ -8,7 +8,11 @@ from app_utils.datetime import ldap_time_2_datetime
 
 from structures.models import Notification, Webhook
 
-from .helpers import target_datetime_formatted
+from .helpers import (
+    gen_eve_entity_link,
+    gen_eve_entity_link_from_id,
+    target_datetime_formatted,
+)
 from .main import NotificationBaseEmbed
 
 
@@ -35,8 +39,8 @@ class NotificationCorpWarSurrenderMsg(NotificationWarEmbed):
             "as one party has surrendered. "
             "The war will be declared as being over after approximately 24 hours."
         ) % {
-            "declared_by": self._gen_eve_entity_link(self._declared_by),
-            "against": self._gen_eve_entity_link(self._against),
+            "declared_by": gen_eve_entity_link(self._declared_by),
+            "against": gen_eve_entity_link(self._against),
         }
         self._color = Webhook.Color.WARNING
 
@@ -57,9 +61,9 @@ class NotificationWarAdopted(NotificationWarEmbed):
             "%(against)s is no longer a member of %(alliance)s, "
             "and therefore a new war between %(declared_by)s and %(against)s has begun."
         ) % {
-            "declared_by": self._gen_eve_entity_link(self._declared_by),
-            "against": self._gen_eve_entity_link(self._against),
-            "alliance": self._gen_eve_entity_link(alliance),
+            "declared_by": gen_eve_entity_link(self._declared_by),
+            "against": gen_eve_entity_link(self._against),
+            "alliance": gen_eve_entity_link(alliance),
         }
         self._color = Webhook.Color.WARNING
 
@@ -77,8 +81,8 @@ class NotificationWarDeclared(NotificationWarEmbed):
             "Within %(delay_hours)s hours fighting can legally occur "
             "between those involved."
         ) % {
-            "declared_by": self._gen_eve_entity_link(self._declared_by),
-            "against": self._gen_eve_entity_link(self._against),
+            "declared_by": gen_eve_entity_link(self._declared_by),
+            "against": gen_eve_entity_link(self._against),
             "war_hq": Webhook.text_bold(strip_tags(self._parsed_text["warHQ"])),
             "delay_hours": Webhook.text_bold(self._parsed_text["delayHours"]),
         }
@@ -106,10 +110,10 @@ class NotificationWarInherited(NotificationWarEmbed):
             "%(against)s from newly joined %(quitter)s. "
             "Within **24** hours fighting can legally occur with %(alliance)s."
         ) % {
-            "declared_by": self._gen_eve_entity_link(self._declared_by),
-            "against": self._gen_eve_entity_link(self._against),
-            "alliance": self._gen_eve_entity_link(alliance),
-            "quitter": self._gen_eve_entity_link(quitter),
+            "declared_by": gen_eve_entity_link(self._declared_by),
+            "against": gen_eve_entity_link(self._against),
+            "alliance": gen_eve_entity_link(alliance),
+            "quitter": gen_eve_entity_link(quitter),
         }
         self._color = Webhook.Color.DANGER
 
@@ -125,8 +129,8 @@ class NotificationWarRetractedByConcord(NotificationWarEmbed):
             "After %(end_date)s CONCORD will again respond to any hostilities "
             "between those involved with full force."
         ) % {
-            "declared_by": self._gen_eve_entity_link(self._declared_by),
-            "against": self._gen_eve_entity_link(self._against),
+            "declared_by": gen_eve_entity_link(self._declared_by),
+            "against": gen_eve_entity_link(self._against),
             "end_date": target_datetime_formatted(war_ends),
         }
         self._color = Webhook.Color.WARNING
@@ -171,10 +175,8 @@ class NotificationWarSurrenderOfferMsg(NotificationBaseEmbed):
         owner_1, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text.get("ownerID1")
         )
-        owner_1_link = self._gen_eve_entity_link(owner_1)
-        owner_2_link = self._gen_eve_entity_link_from_id(
-            self._parsed_text.get("ownerID2")
-        )
+        owner_1_link = gen_eve_entity_link(owner_1)
+        owner_2_link = gen_eve_entity_link_from_id(self._parsed_text.get("ownerID2"))
         self._title = __("%s has offered a surrender") % (owner_1,)
         self._description = __(
             "%s has offered to end the war with %s in the exchange for %s ISK. "
@@ -200,9 +202,9 @@ class NotificationAllyJoinedWarMsg(NotificationBaseEmbed):
             "%(ally)s has joined %(defender)s in a war against %(aggressor)s. "
             "Their participation in the war will start at %(start_time)s."
         ) % {
-            "aggressor": self._gen_eve_entity_link(aggressor),
-            "ally": self._gen_eve_entity_link(ally),
-            "defender": self._gen_eve_entity_link(defender),
+            "aggressor": gen_eve_entity_link(aggressor),
+            "ally": gen_eve_entity_link(ally),
+            "defender": gen_eve_entity_link(defender),
             "start_time": target_datetime_formatted(start_time),
         }
         self._thumbnail = dhooks_lite.Thumbnail(

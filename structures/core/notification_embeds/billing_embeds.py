@@ -9,7 +9,7 @@ from app_utils.datetime import ldap_time_2_datetime
 from structures.constants import EveTypeId
 from structures.models import Notification, Webhook
 
-from .helpers import target_datetime_formatted
+from .helpers import gen_solar_system_text, target_datetime_formatted
 from .main import NotificationBaseEmbed
 
 
@@ -54,7 +54,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
-        solar_system_link = self._gen_solar_system_text(solar_system)
+        solar_system_link = gen_solar_system_text(solar_system)
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
         self._title = __("IHub Bill About to Expire")
         self._description = __(
@@ -81,7 +81,7 @@ class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
         solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=self._parsed_text["solarSystemID"]
         )
-        solar_system_link = self._gen_solar_system_text(solar_system)
+        solar_system_link = gen_solar_system_text(solar_system)
         self._title = (
             __("%s has self-destructed due to unpaid maintenance bills")
             % structure_type.name
