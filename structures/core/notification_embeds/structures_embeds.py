@@ -15,8 +15,6 @@ from structures.models import Notification, Webhook
 from structures.models.structures import Structure
 
 from .helpers import (
-    compile_damage_text,
-    fuel_expires_target_date,
     gen_alliance_link,
     gen_corporation_link,
     gen_solar_system_text,
@@ -108,7 +106,7 @@ class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
 class NotificationStructureRefueledExtra(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        target_date = fuel_expires_target_date(self._structure)
+        target_date = self.fuel_expires_target_date()
         self._title = __("Structure refueled")
         self._description += (
             __("has been refueled. Fuel will last until %s.") % target_date
@@ -163,7 +161,7 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         self._title = __("Structure under attack")
         self._description += __("is under attack by %s.\n%s") % (
             self._get_attacker_link(),
-            compile_damage_text(self._parsed_text, "Percentage"),
+            self.compile_damage_text("Percentage"),
         )
         self._color = Webhook.Color.DANGER
 

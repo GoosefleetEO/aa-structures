@@ -7,7 +7,8 @@ from typing import Optional
 import dhooks_lite
 
 from django.conf import settings
-from eveuniverse.models import EveMoon, EveSolarSystem, EveType
+from django.utils.translation import gettext as __
+from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
 
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
@@ -18,6 +19,8 @@ from structures.models.notifications import (
     NotificationType,
     Webhook,
 )
+
+from .helpers import target_datetime_formatted
 
 
 class NotificationBaseEmbed:
@@ -55,6 +58,42 @@ class NotificationBaseEmbed:
     def ping_type(self) -> Optional[Webhook.PingType]:
         """Return Ping Type of the related notification."""
         return self._ping_type
+
+    def compile_damage_text(self, field_postfix: str, factor: int = 1) -> str:
+        """Compile damage text for Structures and POSes"""
+        damage_labels = [
+            ("shield", __("shield")),
+            ("armor", __("armor")),
+            ("hull", __("hull")),
+        ]
+        damage_parts = []
+        for prop in damage_labels:
+            field_name = f"{prop[0]}{field_postfix}"
+            if field_name in self._parsed_text:
+                label = prop[1]
+                value = self._parsed_text[field_name] * factor
+                damage_parts.append(f"{label}: {value:.1f}%")
+        damage_text = " | ".join(damage_parts)
+        return damage_text
+
+    def get_aggressor_link(self) -> str:
+        """Returns the aggressor link from a parsed_text for POS and POCOs only."""
+        if self._parsed_text.get("aggressorAllianceID"):
+            key = "aggressorAllianceID"
+        elif self._parsed_text.get("aggressorCorpID"):
+            key = "aggressorCorpID"
+        elif self._parsed_text.get("aggressorID"):
+            key = "aggressorID"
+        else:
+            return "(Unknown aggressor)"
+        entity, _ = EveEntity.objects.get_or_create_esi(id=self._parsed_text[key])
+        return Webhook.create_link(entity.name, entity.profile_url)
+
+    def fuel_expires_target_date(self) -> str:
+        """Return calculated target date when fuel expires. Returns '?' when no data."""
+        if self._structure and self._structure.fuel_expires_at:
+            return target_datetime_formatted(self._structure.fuel_expires_at)
+        return "?"
 
     def moon(self, key: str = "moonID") -> EveMoon:
         """Return it's moon extracted from the notification text.

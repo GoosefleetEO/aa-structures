@@ -15,7 +15,6 @@ from structures.models import Notification, Webhook
 from .helpers import (
     gen_corporation_link,
     gen_solar_system_text,
-    get_aggressor_link,
     target_datetime_formatted,
 )
 from .main import NotificationBaseEmbed
@@ -34,7 +33,7 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
         )
         self._solar_system_link = gen_solar_system_text(self.solar_system())
         self._owner_link = gen_corporation_link(str(notification.owner))
-        self._aggressor_link = get_aggressor_link(self._parsed_text)
+        self._aggressor_link = self.get_aggressor_link()
         self._thumbnail = dhooks_lite.Thumbnail(
             self._structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )

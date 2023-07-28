@@ -195,9 +195,7 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         else:
             structure_owner = corp_link
         eve_solar_system = self.solar_system()
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=self._parsed_text["typeID"]
-        )
+        structure_type = self.structure_type("typeID")
         moon_id = self._parsed_text.get("moonID")
         if moon_id:
             eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
