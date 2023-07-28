@@ -1,3 +1,7 @@
+"""Upwell structures embeds."""
+
+# pylint: disable=missing-class-docstring
+
 from collections import namedtuple
 
 import dhooks_lite

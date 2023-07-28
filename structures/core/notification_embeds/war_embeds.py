@@ -1,3 +1,8 @@
+"""War embeds."""
+
+# pylint: disable=missing-class-docstring
+
+
 import dhooks_lite
 
 from django.utils.html import strip_tags

@@ -1,4 +1,4 @@
-"""Main logic for generating notification embeds."""
+"""Billing embeds."""
 
 # pylint: disable=missing-class-docstring
 
@@ -112,6 +112,7 @@ class NotificationBaseEmbed:
             thumbnail=self._thumbnail,
         )
 
+    # pylint: disable = too-many-locals
     @staticmethod
     def create(notification: "NotificationBase") -> "NotificationBaseEmbed":
         """Creates a new instance of the respective subclass for given Notification."""

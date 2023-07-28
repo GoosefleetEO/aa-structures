@@ -1,3 +1,7 @@
+"""Starbase embeds."""
+
+# pylint: disable=missing-class-docstring
+
 import datetime as dt
 
 import dhooks_lite

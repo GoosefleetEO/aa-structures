@@ -1,3 +1,7 @@
+"""Sovereignty embeds."""
+
+# pylint: disable=missing-class-docstring
+
 import dhooks_lite
 
 from django.utils.translation import gettext as __

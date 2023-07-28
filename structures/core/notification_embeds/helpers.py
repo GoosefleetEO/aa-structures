@@ -32,6 +32,7 @@ def target_datetime_formatted(target_datetime: dt.datetime) -> str:
 
 
 def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
+    """Return generated text for a solar system."""
     solar_system_link = Webhook.create_link(
         solar_system.name, dotlan.solar_system_url(solar_system.name)
     )
@@ -41,27 +42,32 @@ def gen_solar_system_text(solar_system: EveSolarSystem) -> str:
 
 
 def gen_alliance_link(alliance_name: str) -> str:
+    """Return generated text for an alliance link."""
     return Webhook.create_link(alliance_name, dotlan.alliance_url(alliance_name))
 
 
-def gen_eve_entity_external_url(eve_entity: EveEntity) -> str:
-    if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
-        return dotlan.alliance_url(eve_entity.name)
-
-    if eve_entity.category == EveEntity.CATEGORY_CORPORATION:
-        return dotlan.corporation_url(eve_entity.name)
-
-    if eve_entity.category == EveEntity.CATEGORY_CHARACTER:
-        return evewho.character_url(eve_entity.id)
-
-    return ""
-
-
 def gen_eve_entity_link(eve_entity: EveEntity) -> str:
-    return Webhook.create_link(eve_entity.name, gen_eve_entity_external_url(eve_entity))
+    """Return a link for an alliance, corporation or character from an eve entity.
+
+    Or return an empty string for any other category.
+    """
+    if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
+        url = dotlan.alliance_url(eve_entity.name)
+
+    elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
+        url = dotlan.corporation_url(eve_entity.name)
+
+    elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
+        url = evewho.character_url(eve_entity.id)
+
+    else:
+        url = ""
+
+    return Webhook.create_link(eve_entity.name, url)
 
 
 def gen_eve_entity_link_from_id(id: int) -> str:
+    """Return a link for an alliance, corporation or character from an ID."""
     if not id:
         return ""
     entity, _ = EveEntity.objects.get_or_create_esi(id=id)
@@ -69,6 +75,7 @@ def gen_eve_entity_link_from_id(id: int) -> str:
 
 
 def gen_corporation_link(corporation_name: str) -> str:
+    """Return a link for a corporation."""
     return Webhook.create_link(
         corporation_name, dotlan.corporation_url(corporation_name)
     )

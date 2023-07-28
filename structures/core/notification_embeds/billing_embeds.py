@@ -1,3 +1,8 @@
+"""Main logic for generating notification embeds."""
+
+# pylint: disable=missing-class-docstring
+
+
 import dhooks_lite
 
 from django.db import models
