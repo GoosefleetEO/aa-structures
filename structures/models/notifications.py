@@ -17,7 +17,7 @@ from django.db.models import Q
 from django.utils import translation
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.models import EveEntity
+from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
 
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.django import app_labels
@@ -216,6 +216,32 @@ class NotificationBase(models.Model):
     def parsed_text(self) -> dict:
         """Return parsed text of this notification."""
         raise NotImplementedError()
+
+    def eve_moon(self, key: str = "moonID") -> EveMoon:
+        """Return it's moon extracted from the notification text.
+        Will raise KeyError if not found.
+        """
+        eve_moon_id = self.parsed_text()[key]
+        eve_moon, _ = EveMoon.objects.get_or_create_esi(id=eve_moon_id)
+        return eve_moon
+
+    def eve_solar_system(self, key: str = "solarSystemID") -> EveSolarSystem:
+        """Return solar system extracted from the notification text.
+        Will raise KeyError if not found.
+        """
+        eve_solar_system_id = self.parsed_text()[key]
+        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
+            id=eve_solar_system_id
+        )
+        return solar_system
+
+    def eve_structure_type(self, key: str = "structureTypeID") -> EveType:
+        """Return structure type extracted from the notification text.
+        Will raise KeyError if not found.
+        """
+        eve_type_id = self.parsed_text()[key]
+        structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
+        return structure_type
 
     def send_to_configured_webhooks(
         self,

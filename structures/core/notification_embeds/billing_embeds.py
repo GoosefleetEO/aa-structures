@@ -56,7 +56,7 @@ class NotificationBillingBillOutOfMoneyMsg(NotificationBaseEmbed):
 class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        solar_system_link = gen_solar_system_text(self.eve_solar_system())
+        solar_system_link = gen_solar_system_text(self._notification.eve_solar_system())
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
         self._title = __("IHub Bill About to Expire")
         self._description = __(
@@ -77,8 +77,8 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
 class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        solar_system_link = gen_solar_system_text(self.eve_solar_system())
-        structure_type = self.eve_structure_type()
+        solar_system_link = gen_solar_system_text(self._notification.eve_solar_system())
+        structure_type = self._notification.eve_structure_type()
         self._title = (
             __("%s has self-destructed due to unpaid maintenance bills")
             % structure_type.name
