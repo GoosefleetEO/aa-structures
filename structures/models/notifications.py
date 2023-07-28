@@ -17,7 +17,7 @@ from django.db.models import Q
 from django.utils import translation
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.models import EveEntity, EveMoon, EveSolarSystem, EveType
+from eveuniverse.models import EveEntity, EveMoon, EvePlanet, EveSolarSystem, EveType
 
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.django import app_labels
@@ -222,27 +222,33 @@ class NotificationBase(models.Model):
         """Return it's moon extracted from the notification text.
         Will raise KeyError if not found.
         """
-        eve_moon_id = self._parsed_text[key]
-        eve_moon, _ = EveMoon.objects.get_or_create_esi(id=eve_moon_id)
-        return eve_moon
+        obj_id = self._parsed_text[key]
+        obj, _ = EveMoon.objects.get_or_create_esi(id=obj_id)
+        return obj
+
+    def eve_planet(self, key: str = "planetID") -> EvePlanet:
+        """Return it's moon extracted from the notification text.
+        Will raise KeyError if not found.
+        """
+        obj_id = self._parsed_text[key]
+        obj, _ = EvePlanet.objects.get_or_create_esi(id=obj_id)
+        return obj
 
     def eve_solar_system(self, key: str = "solarSystemID") -> EveSolarSystem:
         """Return solar system extracted from the notification text.
         Will raise KeyError if not found.
         """
-        eve_solar_system_id = self._parsed_text[key]
-        solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=eve_solar_system_id
-        )
-        return solar_system
+        obj_id = self._parsed_text[key]
+        obj, _ = EveSolarSystem.objects.get_or_create_esi(id=obj_id)
+        return obj
 
     def eve_structure_type(self, key: str = "structureTypeID") -> EveType:
         """Return structure type extracted from the notification text.
         Will raise KeyError if not found.
         """
-        eve_type_id = self._parsed_text[key]
-        structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
-        return structure_type
+        obj_id = self._parsed_text[key]
+        obj, _ = EveType.objects.get_or_create_esi(id=obj_id)
+        return obj
 
     def send_to_configured_webhooks(
         self,

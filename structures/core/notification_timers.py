@@ -5,7 +5,7 @@
 import datetime as dt
 
 from django.utils.translation import gettext
-from eveuniverse.models import EveMoon, EvePlanet, EveSolarSystem, EveType
+from eveuniverse.models import EveType
 
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.datetime import (
@@ -138,14 +138,13 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
     if not notif.owner.is_alliance_main:
         return False
 
-    solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-        id=parsed_text["solarSystemID"]
-    )
+    solar_system = notif.eve_solar_system()
     structure_type_name = sovereignty.event_type_to_structure_type_name(
         parsed_text["campaignEventType"]
     )
     eve_time = ldap_time_2_datetime(parsed_text["decloakTime"])
     timer_processed = False
+
     if HAS_AUTH_TIMERS:
         AuthTimer.objects.create(
             details=gettext("Sov timer"),
@@ -160,9 +159,6 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
         timer_processed = True
 
     if HAS_STRUCTURE_TIMERS:
-        eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=parsed_text["solarSystemID"]
-        )
         structure_type, _ = EveType.objects.get_or_create_esi(
             id=sovereignty.event_type_to_type_id(parsed_text["campaignEventType"])
         )
@@ -172,7 +168,7 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
             else Timer.Visibility.UNRESTRICTED
         )
         Timer.objects.create(
-            eve_solar_system=eve_solar_system,
+            eve_solar_system=solar_system,
             structure_type=structure_type,
             timer_type=Timer.Type.FINAL,
             objective=Timer.Objective.FRIENDLY,
@@ -190,12 +186,12 @@ def _gen_timer_sov_reinforcements(notif: Notification, parsed_text: str) -> bool
 
 def _gen_timer_orbital_reinforcements(notif: Notification, parsed_text: str) -> bool:
     """Generate timer for orbital reinforcements."""
-    solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-        id=parsed_text["solarSystemID"]
-    )
-    planet, _ = EvePlanet.objects.get_or_create_esi(id=parsed_text["planetID"])
+
+    solar_system = notif.eve_solar_system()
+    planet = notif.eve_planet()
     eve_time = ldap_time_2_datetime(parsed_text["reinforceExitTime"])
     timer_processed = False
+
     if HAS_AUTH_TIMERS:
         AuthTimer.objects.create(
             details=gettext("Final timer"),
@@ -210,9 +206,6 @@ def _gen_timer_orbital_reinforcements(notif: Notification, parsed_text: str) -> 
         timer_processed = True
 
     if HAS_STRUCTURE_TIMERS:
-        eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=parsed_text["solarSystemID"]
-        )
         structure_type, _ = EveType.objects.get_or_create_esi(
             id=EveTypeId.CUSTOMS_OFFICE
         )
@@ -222,7 +215,7 @@ def _gen_timer_orbital_reinforcements(notif: Notification, parsed_text: str) -> 
             else Timer.Visibility.UNRESTRICTED
         )
         Timer.objects.create(
-            eve_solar_system=eve_solar_system,
+            eve_solar_system=solar_system,
             structure_type=structure_type,
             timer_type=Timer.Type.FINAL,
             objective=Timer.Objective.FRIENDLY,
@@ -242,43 +235,35 @@ def _gen_timer_orbital_reinforcements(notif: Notification, parsed_text: str) -> 
 
 def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
     """Generate timer for moon mining extractions."""
-    solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-        id=parsed_text["solarSystemID"]
-    )
-    moon, _ = EveMoon.objects.get_or_create_esi(id=parsed_text["moonID"])
+    solar_system = notif.eve_solar_system()
+    moon = notif.eve_moon()
     if "readyTime" in parsed_text:
         eve_time = ldap_time_2_datetime(parsed_text["readyTime"])
     else:
         eve_time = None
+
     details = gettext("Extraction ready")
-    system = solar_system.name
+    solar_system_name = solar_system.name
     planet_moon = moon.name
     structure_type_name = "Moon Mining Cycle"
     objective = "Friendly"
     timer_processed = False
+    structure_type = notif.eve_structure_type()
 
     if HAS_STRUCTURE_TIMERS:
-        eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=parsed_text["solarSystemID"]
-        )
-        structure_type, _ = EveType.objects.get_or_create_esi(
-            id=parsed_text["structureTypeID"]
-        )
         visibility = (
             Timer.Visibility.CORPORATION
             if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
             else Timer.Visibility.UNRESTRICTED
         )
     else:
-        eve_solar_system = None
-        structure_type = None
         visibility = None
 
     if notif.notif_type == NotificationType.MOONMINING_EXTRACTION_STARTED:
         if HAS_AUTH_TIMERS:
             AuthTimer.objects.create(
                 details=details,
-                system=system,
+                system=solar_system_name,
                 planet_moon=planet_moon,
                 structure=structure_type_name,
                 objective=objective,
@@ -289,19 +274,8 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
             timer_processed = True
 
         if HAS_STRUCTURE_TIMERS:
-            eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-                id=parsed_text["solarSystemID"]
-            )
-            structure_type, _ = EveType.objects.get_or_create_esi(
-                id=parsed_text["structureTypeID"]
-            )
-            visibility = (
-                Timer.Visibility.CORPORATION
-                if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
-                else Timer.Visibility.UNRESTRICTED
-            )
             Timer.objects.create(
-                eve_solar_system=eve_solar_system,
+                eve_solar_system=solar_system,
                 structure_type=structure_type,
                 timer_type=Timer.Type.MOONMINING,
                 objective=Timer.Objective.FRIENDLY,
@@ -331,7 +305,7 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
                 eve_time = ldap_time_2_datetime(parsed_text_2["readyTime"])
                 if HAS_AUTH_TIMERS:
                     timer_query = AuthTimer.objects.filter(
-                        system=system,
+                        system=solar_system_name,
                         planet_moon=planet_moon,
                         structure=structure_type_name,
                         objective=objective,
@@ -345,7 +319,7 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
 
                 if HAS_STRUCTURE_TIMERS:
                     timer_query = Timer.objects.filter(
-                        eve_solar_system=eve_solar_system,
+                        eve_solar_system=solar_system,
                         structure_type=structure_type,
                         timer_type=Timer.Type.MOONMINING,
                         location_details=moon.name,
@@ -368,9 +342,12 @@ def _gen_timer_moon_extraction(notif: Notification, parsed_text: str) -> bool:
 
 def _gen_timer_tower_reinforcements(notif: Notification) -> bool:
     """Generate timer for tower reinforcements."""
-    structure = notif.structures.first()
+    structure = notif.structures.select_related(
+        "eve_solar_system", "eve_type", "eve_moon"
+    ).first()
     eve_time = dt.datetime.fromisoformat(notif.details["reinforced_until"])
     timer_processed = False
+
     if HAS_AUTH_TIMERS:
         structure_type_map = {
             starbases.StarbaseSize.SMALL: "POS[S]",
@@ -393,18 +370,14 @@ def _gen_timer_tower_reinforcements(notif: Notification) -> bool:
         timer_processed = True
 
     if HAS_STRUCTURE_TIMERS:
-        eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
-            id=structure.eve_solar_system.id
-        )
-        structure_type, _ = EveType.objects.get_or_create_esi(id=structure.eve_type.id)
         visibility = (
             Timer.Visibility.CORPORATION
             if STRUCTURES_TIMERS_ARE_CORP_RESTRICTED
             else Timer.Visibility.UNRESTRICTED
         )
         Timer.objects.create(
-            eve_solar_system=eve_solar_system,
-            structure_type=structure_type,
+            eve_solar_system=structure.eve_solar_system,
+            structure_type=structure.eve_type,
             timer_type=Timer.Type.FINAL,
             objective=Timer.Objective.FRIENDLY,
             date=eve_time,

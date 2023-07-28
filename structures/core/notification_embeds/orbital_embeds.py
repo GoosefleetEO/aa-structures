@@ -5,7 +5,7 @@
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EvePlanet, EveType
+from eveuniverse.models import EveType
 
 from app_utils.datetime import ldap_time_2_datetime
 
@@ -25,9 +25,7 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._planet, _ = EvePlanet.objects.get_or_create_esi(
-            id=self._parsed_text["planetID"]
-        )
+        self._planet = self._notification.eve_planet()
         self._structure_type, _ = EveType.objects.get_or_create_esi(
             id=EveTypeId.CUSTOMS_OFFICE
         )
