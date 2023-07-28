@@ -1247,18 +1247,21 @@ class Owner(models.Model):
         self.save(update_fields=["assets_last_update_at"])
 
     def _store_items_for_starbases(self, assets_raw: dict):
+        relevant_assets = {
+            item_id: item
+            for item_id, item in assets_raw.items()
+            if item["location_type"] == "solar_system"
+            and item["location_flag"] == "AutoFit"
+            and item["position"]
+        }
         for structure in self.structures.filter_starbases().filter(
             position_x__isnull=False, position_y__isnull=False, position_z__isnull=False
         ):
             structure_items = []
-            for item_id, item in assets_raw.items():
+            for item_id, item in relevant_assets.items():
                 if (
                     item["location_id"] == structure.eve_solar_system_id
-                    and item["location_type"] == "solar_system"
-                    and item["location_flag"] == "AutoFit"
                     and item_id != structure.id
-                    and item["position"]
-                    and structure.has_position
                     and structure.distance_to_object(
                         item["position"]["x"],
                         item["position"]["y"],

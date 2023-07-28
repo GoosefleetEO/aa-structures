@@ -133,12 +133,14 @@ class StructureTag(models.Model):
         return sorted(tags, key=lambda x: x.name.lower(), reverse=reverse)
 
 
-class Structure(models.Model):
+class Structure(models.Model):  # pylint: disable = too-many-public-methods
     """A structure in Eve Online."""
 
-    # Threshold in seconds when two fuel expiry dates will be judged as different
     FUEL_DATES_EQUAL_THRESHOLD_UPWELL = 1800
-    FUEL_DATES_EQUAL_THRESHOLD_STARBASE = 7200  # high fluctuation due to estimating
+    """Threshold in seconds when two fuel expiry dates will be judged as different."""
+
+    FUEL_DATES_EQUAL_THRESHOLD_STARBASE = 7200
+    """high fluctuation due to estimating."""
 
     class State(models.IntegerChoices):
         """A state of a structure."""

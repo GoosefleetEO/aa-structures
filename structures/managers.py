@@ -303,7 +303,7 @@ class StructureQuerySet(models.QuerySet):
 
 
 class StructureManagerBase(models.Manager):
-    def get_or_create_esi(self, *, id: int, token: Token) -> tuple:
+    def get_or_create_esi(self, *, id: int, token: Token) -> Tuple[Any, bool]:
         """get or create a structure with data from ESI if needed.
 
         Args:
@@ -321,7 +321,7 @@ class StructureManagerBase(models.Manager):
         except self.model.DoesNotExist:
             return self.update_or_create_esi(id=id, token=token)
 
-    def update_or_create_esi(self, *, id: int, token: Token) -> tuple:
+    def update_or_create_esi(self, *, id: int, token: Token) -> Tuple[Any, bool]:
         """update or create a structure from ESI for given structure ID
         This will only fetch basic info about a structure
 
@@ -446,7 +446,10 @@ StructureManager = StructureManagerBase.from_queryset(StructureQuerySet)
 
 
 class StructureTagManager(models.Manager):
-    def get_or_create_for_space_type(self, solar_system) -> tuple:
+    def get_or_create_for_space_type(
+        self, solar_system: EveSolarSystem
+    ) -> Tuple[Any, bool]:
+        """Get or create tag for a space type."""
         from .models import EveSpaceType
 
         space_type = EveSpaceType.from_solar_system(solar_system)
@@ -459,7 +462,10 @@ class StructureTagManager(models.Manager):
                 return self.update_or_create_for_space_type(solar_system)
         return None, None
 
-    def update_or_create_for_space_type(self, solar_system) -> tuple:
+    def update_or_create_for_space_type(
+        self, solar_system: EveSolarSystem
+    ) -> Tuple[Any, bool]:
+        """Update or create tag for a space type."""
         from .models import EveSpaceType
 
         space_type = EveSpaceType.from_solar_system(solar_system)
@@ -479,14 +485,16 @@ class StructureTagManager(models.Manager):
             )
         return None, None
 
-    def get_or_create_for_sov(self) -> tuple:
+    def get_or_create_for_sov(self) -> Tuple[Any, bool]:
+        """Get or create sovereignty tag."""
         try:
             obj = self.get(name=self.model.NAME_SOV_TAG)
             return obj, False
         except self.model.DoesNotExist:
             return self.update_or_create_for_sov()
 
-    def update_or_create_for_sov(self) -> tuple:
+    def update_or_create_for_sov(self) -> Tuple[Any, bool]:
+        """Update or create sovereignty tag."""
         return self.update_or_create(
             name=self.model.NAME_SOV_TAG,
             defaults={

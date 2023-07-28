@@ -68,7 +68,7 @@ class DiscordWebhookMixin:
         tts: Optional[bool] = None,
         username: Optional[str] = None,
         avatar_url: Optional[str] = None,
-    ) -> int:
+    ) -> int:  # pylint: disable = too-many-arguments
         """Adds Discord message to queue for later sending
 
         Returns updated size of queue

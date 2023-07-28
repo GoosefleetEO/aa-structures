@@ -60,6 +60,7 @@ def default_if_none(value, default=None):
 @login_required
 @permission_required("structures.basic_access")
 def index(request):
+    """Redirect from index view to main."""
     url = reverse("structures:main")
     if STRUCTURES_DEFAULT_TAGS_FILTER_ENABLED:
         params = {
@@ -115,7 +116,7 @@ def main(request):
 @login_required
 @permission_required("structures.basic_access")
 def structure_list_data(request) -> JsonResponse:
-    """returns structure list in JSON for AJAX call in structure_list view"""
+    """Return structure list in JSON for AJAX call in structure_list view."""
     tags_raw = request.GET.get(QUERY_PARAM_TAGS)
     tags = tags_raw.split(",") if tags_raw else None
     structures = Structure.objects.visible_for_user(request.user, tags)
@@ -132,6 +133,7 @@ class FakeEveType:
         self.profile_url = ""
 
     def icon_url(self, size=64) -> str:
+        """Return icon url for an EveType."""
         return eveimageserver.type_icon_url(self.id, size)
 
 
@@ -426,6 +428,7 @@ def starbase_detail(request, structure_id):
 @permission_required("structures.add_structure_owner")
 @token_required(scopes=Owner.get_esi_scopes())  # type: ignore
 def add_structure_owner(request, token):
+    """View for adding or replacing a structure owner."""
     token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     try:
         character_ownership = CharacterOwnership.objects.get(
@@ -556,6 +559,7 @@ def poco_list_data(request) -> JsonResponse:
 @login_required
 @permission_required("structures.basic_access")
 def structure_summary_data(request) -> JsonResponse:
+    """View returning data for structure summary page."""
     summary_qs = (
         Structure.objects.values(
             "owner__corporation__corporation_id",

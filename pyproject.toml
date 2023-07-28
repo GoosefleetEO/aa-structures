@@ -79,4 +79,5 @@ disable = [
     "fixme",
     "import-outside-toplevel",
     "redefined-builtin",
+    "no-member",
 ]

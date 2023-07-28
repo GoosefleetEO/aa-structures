@@ -1,5 +1,7 @@
 """Creating or removing timers from notifications."""
 
+# pylint: disable = ungrouped-imports
+
 import datetime as dt
 
 from django.utils.translation import gettext
