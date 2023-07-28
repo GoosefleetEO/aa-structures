@@ -7,8 +7,6 @@ from typing import Optional
 import dhooks_lite
 
 from django.conf import settings
-from django.utils.translation import gettext as __
-from eveuniverse.models import EveEntity
 
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
@@ -117,6 +115,7 @@ class NotificationBaseEmbed:
     @staticmethod
     def create(notification: "NotificationBase") -> "NotificationBaseEmbed":
         """Creates a new instance of the respective subclass for given Notification."""
+
         from .billing_embeds import (
             NotificationBillingBillOutOfMoneyMsg,
             NotificationBillingIHubBillAboutToExpire,
@@ -256,33 +255,3 @@ class NotificationBaseEmbed:
             return notif_type_2_class[notification.notif_type](notification)
         except KeyError:
             raise NotImplementedError(repr(notification.notif_type)) from None
-
-    def _compile_damage_text(self, field_postfix: str, factor: int = 1) -> str:
-        """Compile damage text for Structures and POSes"""
-        damage_labels = [
-            ("shield", __("shield")),
-            ("armor", __("armor")),
-            ("hull", __("hull")),
-        ]
-        damage_parts = []
-        for prop in damage_labels:
-            field_name = f"{prop[0]}{field_postfix}"
-            if field_name in self._parsed_text:
-                label = prop[1]
-                value = self._parsed_text[field_name] * factor
-                damage_parts.append(f"{label}: {value:.1f}%")
-        damage_text = " | ".join(damage_parts)
-        return damage_text
-
-    def _get_aggressor_link(self) -> str:
-        """Returns the aggressor link from a parsed_text for POS and POCOs only."""
-        if self._parsed_text.get("aggressorAllianceID"):
-            key = "aggressorAllianceID"
-        elif self._parsed_text.get("aggressorCorpID"):
-            key = "aggressorCorpID"
-        elif self._parsed_text.get("aggressorID"):
-            key = "aggressorID"
-        else:
-            return "(Unknown aggressor)"
-        entity, _ = EveEntity.objects.get_or_create_esi(id=self._parsed_text[key])
-        return Webhook.create_link(entity.name, entity.profile_url)

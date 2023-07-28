@@ -5,6 +5,7 @@ from typing import Optional
 
 from django.template import Context, Template
 from django.utils.timezone import now
+from django.utils.translation import gettext as __
 from eveuniverse.models import EveEntity, EveSolarSystem
 
 from allianceauth.eveonline.evelinks import dotlan, evewho
@@ -71,3 +72,35 @@ def gen_corporation_link(corporation_name: str) -> str:
     return Webhook.create_link(
         corporation_name, dotlan.corporation_url(corporation_name)
     )
+
+
+def compile_damage_text(parsed_text: dict, field_postfix: str, factor: int = 1) -> str:
+    """Compile damage text for Structures and POSes"""
+    damage_labels = [
+        ("shield", __("shield")),
+        ("armor", __("armor")),
+        ("hull", __("hull")),
+    ]
+    damage_parts = []
+    for prop in damage_labels:
+        field_name = f"{prop[0]}{field_postfix}"
+        if field_name in parsed_text:
+            label = prop[1]
+            value = parsed_text[field_name] * factor
+            damage_parts.append(f"{label}: {value:.1f}%")
+    damage_text = " | ".join(damage_parts)
+    return damage_text
+
+
+def get_aggressor_link(parsed_text: dict) -> str:
+    """Returns the aggressor link from a parsed_text for POS and POCOs only."""
+    if parsed_text.get("aggressorAllianceID"):
+        key = "aggressorAllianceID"
+    elif parsed_text.get("aggressorCorpID"):
+        key = "aggressorCorpID"
+    elif parsed_text.get("aggressorID"):
+        key = "aggressorID"
+    else:
+        return "(Unknown aggressor)"
+    entity, _ = EveEntity.objects.get_or_create_esi(id=parsed_text[key])
+    return Webhook.create_link(entity.name, entity.profile_url)

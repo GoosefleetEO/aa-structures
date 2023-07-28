@@ -9,8 +9,10 @@ from structures.core import starbases
 from structures.models import GeneratedNotification, Notification, Structure, Webhook
 
 from .helpers import (
+    compile_damage_text,
     gen_corporation_link,
     gen_solar_system_text,
+    get_aggressor_link,
     target_datetime_formatted,
     timeuntil,
 )
@@ -53,8 +55,8 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
 class NotificationTowerAlertMsg(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        aggressor_link = self._get_aggressor_link()
-        damage_text = self._compile_damage_text("Value", 100)
+        aggressor_link = get_aggressor_link(self._parsed_text)
+        damage_text = compile_damage_text(self._parsed_text, "Value", 100)
         self._title = __("Starbase under attack")
         self._description += __(
             "is under attack by %(aggressor)s.\n%(damage_text)s"

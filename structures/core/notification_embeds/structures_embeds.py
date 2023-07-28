@@ -11,6 +11,7 @@ from structures.models import Notification, Webhook
 from structures.models.structures import Structure
 
 from .helpers import (
+    compile_damage_text,
     gen_alliance_link,
     gen_corporation_link,
     gen_solar_system_text,
@@ -165,7 +166,7 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         self._title = __("Structure under attack")
         self._description += __("is under attack by %s.\n%s") % (
             self._get_attacker_link(),
-            self._compile_damage_text("Percentage"),
+            compile_damage_text(self._parsed_text, "Percentage"),
         )
         self._color = Webhook.Color.DANGER
 
