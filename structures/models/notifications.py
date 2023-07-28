@@ -24,18 +24,23 @@ from app_utils.django import app_labels
 from app_utils.logging import LoggerAddTag
 from app_utils.urls import static_file_absolute_url
 
-from .. import __title__
-from ..app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
+from structures import __title__
+from structures.app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUEL_ALERTS,
     STRUCTURES_ADD_TIMERS,
     STRUCTURES_DEFAULT_LANGUAGE,
     STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS,
     STRUCTURES_NOTIFICATION_SET_AVATAR,
     STRUCTURES_REPORT_NPC_ATTACKS,
 )
-from ..constants import EveCategoryId, EveCorporationId, EveTypeId
-from ..managers import GeneratedNotificationManager, NotificationManager, WebhookManager
-from ..webhooks.models import WebhookBase
-from .structures import Structure
+from structures.constants import EveCategoryId, EveCorporationId, EveTypeId
+from structures.managers import (
+    GeneratedNotificationManager,
+    NotificationManager,
+    WebhookManager,
+)
+from structures.webhooks.models import WebhookBase
+
+from .structures_1 import Structure
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 

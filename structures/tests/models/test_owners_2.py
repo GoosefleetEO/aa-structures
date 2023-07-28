@@ -1178,7 +1178,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(
-        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True
+        "structures.models.structures_1.STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True
     )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_send_refueled_notification_when_fuel_level_increased(
@@ -1200,7 +1200,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         structure.fuel_expires_at = dt.datetime(2020, 3, 3, 0, 0, tzinfo=utc)
         structure.save()
         # when
-        with patch("structures.models.structures.now") as now:
+        with patch("structures.models.structures_1.now") as now:
             now.return_value = dt.datetime(2020, 3, 2, 0, 0, tzinfo=utc)
             owner.update_structures_esi()
         # then
@@ -1209,7 +1209,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_STARBASES", False)
     @patch(MODULE_PATH + ".STRUCTURES_FEATURE_CUSTOMS_OFFICES", False)
     @patch(
-        "structures.models.structures.STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True
+        "structures.models.structures_1.STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS", True
     )
     @patch("structures.models.notifications.Webhook.send_message")
     def test_should_not_send_refueled_notification_when_fuel_level_unchanged(
@@ -1226,7 +1226,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         )
         owner = create_owner_from_user(self.user)
         owner.webhooks.add(webhook)
-        with patch("structures.models.structures.now") as now:
+        with patch("structures.models.structures_1.now") as now:
             now.return_value = dt.datetime(2020, 3, 2, 0, 0, tzinfo=utc)
             owner.update_structures_esi()
             # when
@@ -1258,7 +1258,7 @@ class TestUpdateStructuresEsi(NoSocketsTestCase):
         config = FuelAlertConfig.objects.create(start=48, end=0, repeat=12)
         structure.structure_fuel_alerts.create(config=config, hours=12)
         # when
-        with patch("structures.models.structures.now") as now:
+        with patch("structures.models.structures_1.now") as now:
             now.return_value = dt.datetime(2020, 3, 2, 0, 0, tzinfo=utc)
             owner.update_structures_esi()
         # then

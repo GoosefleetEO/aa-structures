@@ -11,8 +11,7 @@ from eveuniverse.models import EveEntity, EveType
 
 from app_utils.datetime import ldap_time_2_datetime, ldap_timedelta_2_timedelta
 
-from structures.models import Notification, Webhook
-from structures.models.structures import Structure
+from structures.models import Notification, Structure, Webhook
 
 from .helpers import (
     gen_alliance_link,

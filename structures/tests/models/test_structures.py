@@ -39,7 +39,7 @@ from ..testdata.factories_2 import (
 from ..testdata.helpers import create_structures, load_entities, set_owner_character
 from ..testdata.load_eveuniverse import load_eveuniverse
 
-STRUCTURES_PATH = "structures.models.structures"
+STRUCTURES_PATH = "structures.models.structures_1"
 NOTIFICATIONS_PATH = "structures.models.notifications"
 
 EVE_ID_HELIUM_FUEL_BLOCK = 4247

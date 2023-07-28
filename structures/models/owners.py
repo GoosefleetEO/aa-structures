@@ -31,8 +31,8 @@ from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__
-from ..app_settings import (
+from structures import __title__
+from structures.app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES,
@@ -43,9 +43,10 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
-from ..constants import EveGroupId, EveTypeId
-from ..managers import OwnerManager
-from ..providers import esi
+from structures.constants import EveGroupId, EveTypeId
+from structures.managers import OwnerManager
+from structures.providers import esi
+
 from .eveuniverse import EveSovereigntyMap
 from .notifications import (
     EveEntity,
@@ -54,13 +55,8 @@ from .notifications import (
     NotificationType,
     Webhook,
 )
-from .structures import (
-    PocoDetails,
-    StarbaseDetail,
-    StarbaseDetailFuel,
-    Structure,
-    StructureItem,
-)
+from .structures_1 import Structure, StructureItem
+from .structures_2 import PocoDetails, StarbaseDetail, StarbaseDetailFuel
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
