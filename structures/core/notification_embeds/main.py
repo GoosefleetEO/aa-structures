@@ -7,7 +7,7 @@ from typing import Optional
 import dhooks_lite
 
 from django.conf import settings
-from eveuniverse.models import EveSolarSystem, EveType
+from eveuniverse.models import EveMoon, EveSolarSystem, EveType
 
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
@@ -56,13 +56,13 @@ class NotificationBaseEmbed:
         """Return Ping Type of the related notification."""
         return self._ping_type
 
-    def structure_type(self, key: str = "structureTypeID") -> EveType:
-        """Return structure type extracted from the notification text.
+    def moon(self, key: str = "moonID") -> EveMoon:
+        """Return it's moon extracted from the notification text.
         Will raise error if not found.
         """
-        eve_type_id = self._parsed_text[key]
-        structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
-        return structure_type
+        eve_moon_id = self._parsed_text[key]
+        eve_moon, _ = EveMoon.objects.get_or_create_esi(id=eve_moon_id)
+        return eve_moon
 
     def solar_system(self, key: str = "solarSystemID") -> EveSolarSystem:
         """Return solar system extracted from the notification text.
@@ -73,6 +73,14 @@ class NotificationBaseEmbed:
             id=eve_solar_system_id
         )
         return solar_system
+
+    def structure_type(self, key: str = "structureTypeID") -> EveType:
+        """Return structure type extracted from the notification text.
+        Will raise error if not found.
+        """
+        eve_type_id = self._parsed_text[key]
+        structure_type, _ = EveType.objects.get_or_create_esi(id=eve_type_id)
+        return structure_type
 
     def generate_embed(self) -> dhooks_lite.Embed:
         """Returns generated Discord embed for this object.

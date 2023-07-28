@@ -7,7 +7,6 @@ import datetime as dt
 import dhooks_lite
 
 from django.utils.translation import gettext as __
-from eveuniverse.models import EveMoon
 
 from structures.core import starbases
 from structures.models import GeneratedNotification, Notification, Structure, Webhook
@@ -29,11 +28,9 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self.eve_moon, _ = EveMoon.objects.get_or_create_esi(
-            id=self._parsed_text["moonID"]
-        )
+        eve_moon = self.moon()
         structure_type = self.structure_type("typeID")
-        self._structure = Structure.objects.filter(eve_moon=self.eve_moon).first()
+        self._structure = Structure.objects.filter(eve_moon=eve_moon).first()
         if self._structure:
             structure_name = self._structure.name
         else:
@@ -47,10 +44,8 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
             "in %(solar_system)s belonging to %(owner_link)s "
         ) % {
             "structure_name": Webhook.text_bold(structure_name),
-            "moon": self.eve_moon.name,
-            "solar_system": gen_solar_system_text(
-                self.eve_moon.eve_planet.eve_solar_system
-            ),
+            "moon": eve_moon.name,
+            "solar_system": gen_solar_system_text(eve_moon.eve_planet.eve_solar_system),
             "owner_link": gen_corporation_link(str(notification.owner)),
         }
 
