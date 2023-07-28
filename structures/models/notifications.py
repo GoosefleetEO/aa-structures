@@ -1,5 +1,7 @@
 """Notification related models for Structures."""
 
+# pylint: disable = duplicate-code
+
 import math
 from typing import List, Optional, Set, Tuple, Union
 

@@ -14,6 +14,7 @@ from structures.models import GeneratedNotification, Notification, Structure, We
 
 from .helpers import (
     compile_damage_text,
+    fuel_expires_target_date,
     gen_corporation_link,
     gen_solar_system_text,
     get_aggressor_link,
@@ -101,10 +102,7 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
 class NotificationTowerRefueledExtra(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        if self._structure and self._structure.fuel_expires_at:
-            target_date = target_datetime_formatted(self._structure.fuel_expires_at)
-        else:
-            target_date = "?"
+        target_date = fuel_expires_target_date(self._structure)
         self._title = __("Starbase refueled")
         self._description += (
             __("has been refueled. Fuel will last until %s.") % target_date

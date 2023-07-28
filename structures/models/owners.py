@@ -1,5 +1,7 @@
 """Owner related models for Structures."""
 
+# pylint: disable = duplicate-code
+
 import datetime as dt
 import json
 import os

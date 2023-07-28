@@ -11,7 +11,7 @@ from eveuniverse.models import EveEntity, EveSolarSystem
 from allianceauth.eveonline.evelinks import dotlan, evewho
 from app_utils.datetime import DATETIME_FORMAT
 
-from structures.models import Webhook
+from structures.models import Structure, Webhook
 
 
 def timeuntil(to_date: dt.datetime, from_date: Optional[dt.datetime] = None) -> str:
@@ -111,3 +111,10 @@ def get_aggressor_link(parsed_text: dict) -> str:
         return "(Unknown aggressor)"
     entity, _ = EveEntity.objects.get_or_create_esi(id=parsed_text[key])
     return Webhook.create_link(entity.name, entity.profile_url)
+
+
+def fuel_expires_target_date(structure: Optional[Structure]) -> str:
+    """Return calculated target date when fuel expires."""
+    if structure and structure.fuel_expires_at:
+        return target_datetime_formatted(structure.fuel_expires_at)
+    return "?"

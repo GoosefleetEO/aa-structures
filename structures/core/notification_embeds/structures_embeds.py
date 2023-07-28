@@ -16,6 +16,7 @@ from structures.models.structures import Structure
 
 from .helpers import (
     compile_damage_text,
+    fuel_expires_target_date,
     gen_alliance_link,
     gen_corporation_link,
     gen_solar_system_text,
@@ -111,15 +112,11 @@ class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
 class NotificationStructureRefueledExtra(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        if self._structure and self._structure.fuel_expires_at:
-            target_date = target_datetime_formatted(self._structure.fuel_expires_at)
-        else:
-            target_date = "?"
+        target_date = fuel_expires_target_date(self._structure)
         self._title = __("Structure refueled")
         self._description += (
             __("has been refueled. Fuel will last until %s.") % target_date
         )
-
         self._color = Webhook.Color.INFO
 
 
