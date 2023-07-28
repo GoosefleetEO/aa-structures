@@ -25,8 +25,8 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        eve_moon = self.moon()
-        structure_type = self.structure_type("typeID")
+        eve_moon = self.eve_moon()
+        structure_type = self.eve_structure_type("typeID")
         self._structure = Structure.objects.filter(eve_moon=eve_moon).first()
         if self._structure:
             structure_name = self._structure.name
@@ -64,11 +64,11 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
         super().__init__(notification)
         if "wants" in self._parsed_text and self._parsed_text["wants"]:
             fuel_quantity = self._parsed_text["wants"][0]["quantity"]
-            starbase_type = self.structure_type("typeID")
+            starbase_type = self.eve_structure_type("typeID")
             seconds = starbases.fuel_duration(
                 starbase_type=starbase_type,
                 fuel_quantity=fuel_quantity,
-                has_sov=notification.owner.has_sov(self.solar_system()),
+                has_sov=notification.owner.has_sov(self.eve_solar_system()),
             )
             from_date = self.notification.timestamp
             to_date = from_date + dt.timedelta(seconds=seconds)

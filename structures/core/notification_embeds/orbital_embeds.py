@@ -31,7 +31,7 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
         self._structure_type, _ = EveType.objects.get_or_create_esi(
             id=EveTypeId.CUSTOMS_OFFICE
         )
-        self._solar_system_link = gen_solar_system_text(self.solar_system())
+        self._solar_system_link = gen_solar_system_text(self.eve_solar_system())
         self._owner_link = gen_corporation_link(str(notification.owner))
         self._aggressor_link = self.get_aggressor_link()
         self._thumbnail = dhooks_lite.Thumbnail(

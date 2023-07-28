@@ -91,7 +91,7 @@ class NotificationBaseEmbed:
             return target_datetime_formatted(self._structure.fuel_expires_at)
         return "?"
 
-    def moon(self, key: str = "moonID") -> EveMoon:
+    def eve_moon(self, key: str = "moonID") -> EveMoon:
         """Return it's moon extracted from the notification text.
         Will raise error if not found.
         """
@@ -99,7 +99,7 @@ class NotificationBaseEmbed:
         eve_moon, _ = EveMoon.objects.get_or_create_esi(id=eve_moon_id)
         return eve_moon
 
-    def solar_system(self, key: str = "solarSystemID") -> EveSolarSystem:
+    def eve_solar_system(self, key: str = "solarSystemID") -> EveSolarSystem:
         """Return solar system extracted from the notification text.
         Will raise error if not found.
         """
@@ -109,7 +109,7 @@ class NotificationBaseEmbed:
         )
         return solar_system
 
-    def structure_type(self, key: str = "structureTypeID") -> EveType:
+    def eve_structure_type(self, key: str = "structureTypeID") -> EveType:
         """Return structure type extracted from the notification text.
         Will raise error if not found.
         """

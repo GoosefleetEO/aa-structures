@@ -28,7 +28,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
 
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._solar_system = self.solar_system()
+        self._solar_system = self.eve_solar_system()
         self._solar_system_link = gen_solar_system_text(self._solar_system)
         if "structureTypeID" in self._parsed_text:
             structure_type_id = self._parsed_text["structureTypeID"]
@@ -194,8 +194,8 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
             structure_owner = f"{corp_link} ({alliance.name})"
         else:
             structure_owner = corp_link
-        eve_solar_system = self.solar_system()
-        structure_type = self.structure_type("typeID")
+        eve_solar_system = self.eve_solar_system()
+        structure_type = self.eve_structure_type("typeID")
         moon_id = self._parsed_text.get("moonID")
         if moon_id:
             eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)

@@ -35,8 +35,8 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
         except Structure.DoesNotExist:
             structure = None
             structure_name = __("(unknown)")
-            structure_type = self.structure_type()
-            structure_solar_system = self.solar_system("solarsystemID")
+            structure_type = self.eve_structure_type()
+            structure_solar_system = self.eve_solar_system("solarsystemID")
             owner_link = "(unknown)"
             location = ""
         else:
@@ -212,13 +212,13 @@ class NotificationStructureDestroyed(NotificationStructureEmbed):
 class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        structure_type = self.structure_type()
+        structure_type = self.eve_structure_type()
         self._description = __(
             "The %(structure_type)s %(structure_name)s in %(solar_system)s "
         ) % {
             "structure_type": structure_type.name,
             "structure_name": Webhook.text_bold(self._parsed_text["structureName"]),
-            "solar_system": gen_solar_system_text(self.solar_system()),
+            "solar_system": gen_solar_system_text(self.eve_solar_system()),
         }
         from_corporation, _ = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["oldOwnerCorpID"]
@@ -247,8 +247,8 @@ class NotificationStructureOwnershipTransferred(NotificationBaseEmbed):
 class NotificationStructureAnchoring(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        structure_type = self.structure_type()
-        solar_system = self.solar_system("solarsystemID")
+        structure_type = self.eve_structure_type()
+        solar_system = self.eve_solar_system("solarsystemID")
         owner_link = gen_corporation_link(
             self._parsed_text.get("ownerCorpName", "(unknown)")
         )
