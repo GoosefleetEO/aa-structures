@@ -9,12 +9,12 @@ class TestSovereignty(NoSocketsTestCase):
         my_map = [(1, EveTypeId.TCU), (2, EveTypeId.IHUB), (3, None), (0, None)]
         for input, expected in my_map:
             with self.subTest(input=input):
-                self.assertEqual(sovereignty.type_id_from_event_type(input), expected)
+                self.assertEqual(sovereignty.event_type_to_type_id(input), expected)
 
     def test_should_return_structure_type_names(self):
         my_map = [(1, "TCU"), (2, "I-HUB"), (3, "Other"), (0, "Other")]
         for input, expected in my_map:
             with self.subTest(input=input):
                 self.assertEqual(
-                    sovereignty.structure_type_name_from_event_type(input), expected
+                    sovereignty.event_type_to_structure_type_name(input), expected
                 )

@@ -13,8 +13,10 @@ from app_utils.django import app_labels
 from app_utils.esi import EsiStatus
 from app_utils.esi_testing import EsiClientStub, EsiEndpoint
 
-from .. import tasks
-from ..models import NotificationType, Structure
+from structures import tasks
+from structures.core.notification_types import NotificationType
+from structures.models import Structure
+
 from .testdata.factories_2 import (
     EveEntityAllianceFactory,
     EveEntityCorporationFactory,

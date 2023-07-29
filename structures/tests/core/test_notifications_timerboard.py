@@ -8,15 +8,14 @@ if "timerboard" in app_labels():
 
     from structures.core import notification_timers
     from structures.models import Notification
-
-    from ..testdata.factories import create_webhook
-    from ..testdata.factories_2 import GeneratedNotificationFactory
-    from ..testdata.helpers import (
+    from structures.tests.testdata.factories import create_webhook
+    from structures.tests.testdata.factories_2 import GeneratedNotificationFactory
+    from structures.tests.testdata.helpers import (
         create_structures,
         load_notification_entities,
         set_owner_character,
     )
-    from ..testdata.load_eveuniverse import load_eveuniverse
+    from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
     MODULE_PATH = "structures.core.notification_timers"
 

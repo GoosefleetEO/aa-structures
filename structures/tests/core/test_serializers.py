@@ -4,16 +4,16 @@ from django.test import RequestFactory
 
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
-from ...core.serializers import PocoListSerializer, StructureListSerializer
-from ...models import Structure
-from ..testdata.factories import (
+from structures.core.serializers import PocoListSerializer, StructureListSerializer
+from structures.models import Structure
+from structures.tests.testdata.factories import (
     create_owner_from_user,
     create_poco,
     create_starbase,
     create_upwell_structure,
 )
-from ..testdata.helpers import load_entities
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.helpers import load_entities
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 
 def to_dict(lst: List[dict], key="id"):

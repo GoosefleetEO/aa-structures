@@ -10,8 +10,8 @@ from django.utils.timezone import now
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
-from ...constants import EveTypeId
-from ...models import (
+from structures.constants import EveTypeId
+from structures.models import (
     EveSovereigntyMap,
     Notification,
     Owner,

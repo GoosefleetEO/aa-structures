@@ -1,3 +1,5 @@
+"""ESI client provider for Structures."""
+
 import logging
 
 from esi.clients import EsiClientProvider

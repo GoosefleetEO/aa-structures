@@ -11,24 +11,23 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from app_utils.testing import NoSocketsTestCase, create_user_from_evecharacter
 
 from structures.constants import EveTypeId
+from structures.core.notification_types import NotificationType
 from structures.models import (
     EveSovereigntyMap,
     FuelAlertConfig,
     JumpFuelAlertConfig,
-    NotificationType,
     PocoDetails,
     Structure,
     StructureItem,
     StructureService,
     StructureTag,
 )
-
-from ..testdata.factories import (
+from structures.tests.testdata.factories import (
     create_owner_from_user,
     create_starbase,
     create_upwell_structure,
 )
-from ..testdata.factories_2 import (
+from structures.tests.testdata.factories_2 import (
     JumpGateFactory,
     OwnerFactory,
     PocoFactory,
@@ -36,10 +35,14 @@ from ..testdata.factories_2 import (
     StructureFactory,
     StructureTagFactory,
 )
-from ..testdata.helpers import create_structures, load_entities, set_owner_character
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.helpers import (
+    create_structures,
+    load_entities,
+    set_owner_character,
+)
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
-STRUCTURES_PATH = "structures.models.structures"
+STRUCTURES_PATH = "structures.models.structures_1"
 NOTIFICATIONS_PATH = "structures.models.notifications"
 
 EVE_ID_HELIUM_FUEL_BLOCK = 4247

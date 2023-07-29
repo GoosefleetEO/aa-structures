@@ -61,14 +61,23 @@ known_allianceauth = ["allianceauth", "app_utils"]
 known_django = ["django", "django_webtest", "esi", "eveuniverse"]
 
 [tool.pylint.'MASTER']
-ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py"]
+ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py", "admin.py"]
 ignore-paths = ["^.*/tests/.*$", "^.*/migrations/.*$"]
 
 [tool.pylint.'BASIC']
-good-names = ["i", "j", "k", "ex"]
+good-names = ["i", "j", "k", "x", "y", "z", "ex", "id"]
 
 [tool.pylint.'FORMAT']
 max-line-length = 120
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = ["R0902", "R0903"]
+disable = [
+    "too-many-instance-attributes",
+    "too-few-public-methods",
+    "imported-auth-user",
+    "cyclic-import",
+    "fixme",
+    "import-outside-toplevel",
+    "redefined-builtin",
+    "no-member",
+]

@@ -18,12 +18,12 @@ from app_utils.testdata_factories import (
     UserMainFactory,
 )
 
-from ...models import (
+from structures.core.notification_types import NotificationType
+from structures.models import (
     FuelAlertConfig,
     GeneratedNotification,
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Owner,
     OwnerCharacter,
     Structure,

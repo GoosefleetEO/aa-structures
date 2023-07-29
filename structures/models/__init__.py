@@ -1,5 +1,3 @@
-# flake8: noqa
-
 from .eveuniverse import EveSovereigntyMap, EveSpaceType
 from .notifications import (
     FuelAlert,
@@ -8,17 +6,36 @@ from .notifications import (
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Webhook,
     get_default_notification_types,
 )
 from .owners import Owner, OwnerCharacter
-from .structures import (
+from .structures_1 import Structure, StructureItem, StructureTag
+from .structures_2 import (
     PocoDetails,
     StarbaseDetail,
     StarbaseDetailFuel,
-    Structure,
-    StructureItem,
     StructureService,
-    StructureTag,
 )
+
+__all__ = [
+    "Owner",
+    "OwnerCharacter",
+    "EveSovereigntyMap",
+    "EveSpaceType",
+    "PocoDetails",
+    "StarbaseDetail",
+    "StarbaseDetailFuel",
+    "Structure",
+    "StructureItem",
+    "StructureService",
+    "StructureTag",
+    "FuelAlert",
+    "FuelAlertConfig",
+    "GeneratedNotification",
+    "JumpFuelAlert",
+    "JumpFuelAlertConfig",
+    "Notification",
+    "Webhook",
+    "get_default_notification_types",
+]

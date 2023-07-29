@@ -2,8 +2,8 @@ from eveuniverse.models import EveType
 
 from app_utils.testing import NoSocketsTestCase
 
-from ...core import starbases
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.core import starbases
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 
 class TestStarbases(NoSocketsTestCase):

@@ -1,6 +1,10 @@
+"""Managers for Structures."""
+
+# pylint: disable=missing-class-docstring
+
 import datetime as dt
 import itertools
-from typing import Optional, Set, Tuple, TypeVar
+from typing import Any, Optional, Set, Tuple
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
@@ -16,20 +20,20 @@ from app_utils.logging import LoggerAddTag
 from . import __title__
 from .app_settings import STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
 from .constants import EveCategoryId, EveTypeId
+from .core.notification_types import NotificationType
 from .providers import esi
 from .webhooks.managers import WebhookBaseManager
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
-ModelType = TypeVar("ModelType", bound=models.Model)
-
 
 class EveSovereigntyMapManager(models.Manager):
-    def update_from_esi(self):
+    def update_or_create_all_from_esi(self):
+        """Update or create complete sovereignty map from ESI."""
         sov_map = esi.client.Sovereignty.get_sovereignty_map().results()
         logger.info("Retrieved sovereignty map from ESI")
         last_updated = now()
-        obj_list = list()
+        obj_list = []
         for solar_system in sov_map:
             obj_def = {
                 "solar_system_id": solar_system["system_id"],
@@ -62,13 +66,13 @@ class EveSovereigntyMapManager(models.Manager):
         """
         if not eve_solar_system.is_null_sec:
             return False
-        else:
-            alliance_id = (
-                int(corporation.alliance.alliance_id) if corporation.alliance else None
-            )
-            return bool(alliance_id) and (
-                self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
-            )
+
+        alliance_id = (
+            int(corporation.alliance.alliance_id) if corporation.alliance else None
+        )
+        return bool(alliance_id) and (
+            self.solar_system_sov_alliance_id(eve_solar_system) == alliance_id
+        )
 
     def solar_system_sov_alliance_id(self, eve_solar_system) -> Optional[int]:
         """returns ID of sov owning alliance for this system or None"""
@@ -84,7 +88,6 @@ class EveSovereigntyMapManager(models.Manager):
 class NotificationBaseQuerySet(models.QuerySet):
     def annotate_can_be_rendered(self) -> models.QuerySet:
         """annotates field indicating if a notification can be rendered"""
-        from .models import NotificationType
 
         return self.annotate(
             can_be_rendered_2=Case(
@@ -98,13 +101,12 @@ class NotificationBaseQuerySet(models.QuerySet):
 class NotificationBaseManagerBase(models.Manager):
     def add_or_remove_timers(self):
         """Add or remove timers from notifications."""
-        from .models import NotificationType
 
         cutoff_dt_for_stale = now() - dt.timedelta(
             hours=STRUCTURES_HOURS_UNTIL_STALE_NOTIFICATION
         )
         notifications = (
-            self.filter(notif_type__in=NotificationType.relevant_for_timerboard)
+            self.filter(notif_type__in=NotificationType.relevant_for_timerboard())
             .exclude(is_timer_added=True)
             .filter(timestamp__gte=cutoff_dt_for_stale)
             .select_related("owner")
@@ -133,18 +135,15 @@ class GeneratedNotificationQuerySet(NotificationBaseQuerySet):
 class GeneratedNotificationManagerBase(NotificationBaseManagerBase):
     def get_or_create_from_structure(
         self, structure: models.Model, notif_type: models.TextChoices
-    ) -> Tuple[ModelType, bool]:
+    ) -> Tuple[Any, bool]:
         """Get or create an object from given structure."""
-        from .models import NotificationType
 
         if notif_type not in {NotificationType.TOWER_REINFORCED_EXTRA}:
             raise ValueError(f"Unsupported notification type: {notif_type}")
 
         return self._get_or_create_tower_reinforced(structure)
 
-    def _get_or_create_tower_reinforced(self, structure) -> Tuple[ModelType, bool]:
-        from .models import NotificationType
-
+    def _get_or_create_tower_reinforced(self, structure) -> Tuple[Any, bool]:
         if not structure.is_starbase:
             raise ValueError(f"Structure is not a starbase: {structure}")
         if not structure.is_reinforced:
@@ -178,6 +177,7 @@ GeneratedNotificationManager = GeneratedNotificationManagerBase.from_queryset(
 
 class OwnerQuerySet(models.QuerySet):
     def annotate_characters_count(self) -> models.QuerySet:
+        """Add character count annotation."""
         return self.annotate(
             x_characters_count=Count(
                 "characters",
@@ -203,12 +203,15 @@ OwnerManager = OwnerManagerBase.from_queryset(OwnerQuerySet)
 
 class StructureQuerySet(models.QuerySet):
     def filter_upwell_structures(self) -> models.QuerySet:
+        """Filter for upwell structures."""
         return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STRUCTURE)
 
     def filter_customs_offices(self) -> models.QuerySet:
+        """Filter for custom offices."""
         return self.filter(eve_type=EveTypeId.CUSTOMS_OFFICE)
 
     def filter_starbases(self) -> models.QuerySet:
+        """Filter for starbases."""
         return self.filter(eve_type__eve_group__eve_category=EveCategoryId.STARBASE)
 
     def ids(self) -> Set[int]:
@@ -234,6 +237,7 @@ class StructureQuerySet(models.QuerySet):
     def visible_for_user(
         self, user: User, tags: Optional[list] = None
     ) -> models.QuerySet:
+        """Return structures which the given user have permission to view."""
         if user.has_perm("structures.view_all_structures"):
             structures_query = self.select_related_defaults()
             if tags:
@@ -274,6 +278,7 @@ class StructureQuerySet(models.QuerySet):
         return structures_query
 
     def annotate_has_poco_details(self) -> models.QuerySet:
+        """Add annotation wether the structure has poco details."""
         from .models import PocoDetails
 
         return self.annotate(
@@ -283,6 +288,7 @@ class StructureQuerySet(models.QuerySet):
         )
 
     def annotate_has_starbase_detail(self) -> models.QuerySet:
+        """Add annotation wether the structure has starbase details."""
         from .models import StarbaseDetail
 
         return self.annotate(
@@ -293,7 +299,7 @@ class StructureQuerySet(models.QuerySet):
 
 
 class StructureManagerBase(models.Manager):
-    def get_or_create_esi(self, *, id: int, token: Token) -> tuple:
+    def get_or_create_esi(self, *, id: int, token: Token) -> Tuple[Any, bool]:
         """get or create a structure with data from ESI if needed.
 
         Args:
@@ -311,7 +317,7 @@ class StructureManagerBase(models.Manager):
         except self.model.DoesNotExist:
             return self.update_or_create_esi(id=id, token=token)
 
-    def update_or_create_esi(self, *, id: int, token: Token) -> tuple:
+    def update_or_create_esi(self, *, id: int, token: Token) -> Tuple[Any, bool]:
         """update or create a structure from ESI for given structure ID
         This will only fetch basic info about a structure
 
@@ -345,38 +351,24 @@ class StructureManagerBase(models.Manager):
         obj, created = self.update_or_create_from_dict(structure=structure, owner=owner)
         return obj, created
 
-    def update_or_create_from_dict(self, structure: dict, owner) -> tuple:
+    def update_or_create_from_dict(self, structure: dict, owner) -> Tuple[Any, bool]:
         """update or create structure from given dict"""
-
-        from .models import StructureService
 
         eve_type, _ = EveType.objects.get_or_create_esi(id=structure["type_id"])
         eve_solar_system, _ = EveSolarSystem.objects.get_or_create_esi(
             id=structure["system_id"]
         )
-        if position := structure.get("position"):
-            position_x = position.get("x")
-            position_y = position.get("y")
-            position_z = position.get("z")
-        else:
-            position_x = position_y = position_z = None
-        if planet_id := structure.get("planet_id"):
-            eve_planet, _ = EvePlanet.objects.get_or_create_esi(id=planet_id)
-        else:
-            eve_planet = None
-        if moon_id := structure.get("moon_id"):
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
-        else:
-            eve_moon = None
+        position_x, position_y, position_z = self._extract_position(structure)
+        eve_planet = self._extract_eve_planet(structure)
+        eve_moon = self._extract_eve_moon(structure)
 
-        structure_id = structure["structure_id"]
         try:
-            old_obj = self.get(id=structure_id)
+            old_obj = self.get(id=structure["structure_id"])
         except self.model.DoesNotExist:
             old_obj = None
 
         obj, created = self.update_or_create(
-            id=structure_id,
+            id=structure["structure_id"],
             defaults={
                 "owner": owner,
                 "eve_type": eve_type,
@@ -407,7 +399,29 @@ class StructureManagerBase(models.Manager):
             id=structure["type_id"], enabled_sections=[EveType.Section.DOGMAS]
         )
 
-        # save related structure services
+        self._save_related_structure_services(structure, obj)
+
+        return obj, created
+
+    def _extract_eve_moon(self, structure):
+        if moon_id := structure.get("moon_id"):
+            return EveMoon.objects.get_or_create_esi(id=moon_id)[0]
+        return None
+
+    def _extract_eve_planet(self, structure):
+        if planet_id := structure.get("planet_id"):
+            return EvePlanet.objects.get_or_create_esi(id=planet_id)[0]
+        return None
+
+    def _extract_position(self, structure):
+        if position := structure.get("position"):
+            return position.get("x"), position.get("y"), position.get("z")
+        return None, None, None
+
+    @staticmethod
+    def _save_related_structure_services(structure, obj):
+        from .models import StructureService
+
         StructureService.objects.filter(structure=obj).delete()
         if "services" in structure and structure["services"]:
             for service in structure["services"]:
@@ -423,14 +437,15 @@ class StructureManagerBase(models.Manager):
             obj.last_online_at = now()
             obj.save()
 
-        return obj, created
-
 
 StructureManager = StructureManagerBase.from_queryset(StructureQuerySet)
 
 
 class StructureTagManager(models.Manager):
-    def get_or_create_for_space_type(self, solar_system) -> tuple:
+    def get_or_create_for_space_type(
+        self, solar_system: EveSolarSystem
+    ) -> Tuple[Any, bool]:
+        """Get or create tag for a space type."""
         from .models import EveSpaceType
 
         space_type = EveSpaceType.from_solar_system(solar_system)
@@ -443,7 +458,10 @@ class StructureTagManager(models.Manager):
                 return self.update_or_create_for_space_type(solar_system)
         return None, None
 
-    def update_or_create_for_space_type(self, solar_system) -> tuple:
+    def update_or_create_for_space_type(
+        self, solar_system: EveSolarSystem
+    ) -> Tuple[Any, bool]:
+        """Update or create tag for a space type."""
         from .models import EveSpaceType
 
         space_type = EveSpaceType.from_solar_system(solar_system)
@@ -463,14 +481,16 @@ class StructureTagManager(models.Manager):
             )
         return None, None
 
-    def get_or_create_for_sov(self) -> tuple:
+    def get_or_create_for_sov(self) -> Tuple[Any, bool]:
+        """Get or create sovereignty tag."""
         try:
             obj = self.get(name=self.model.NAME_SOV_TAG)
             return obj, False
         except self.model.DoesNotExist:
             return self.update_or_create_for_sov()
 
-    def update_or_create_for_sov(self) -> tuple:
+    def update_or_create_for_sov(self) -> Tuple[Any, bool]:
+        """Update or create sovereignty tag."""
         return self.update_or_create(
             name=self.model.NAME_SOV_TAG,
             defaults={

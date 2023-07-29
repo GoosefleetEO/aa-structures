@@ -1,11 +1,11 @@
-"""Eve Universe models"""
+"""Eve Universe models for Structures."""
 
 from enum import Enum
 
 from django.db import models
 from eveuniverse.models import EveSolarSystem
 
-from ..managers import EveSovereigntyMapManager
+from structures.managers import EveSovereigntyMapManager
 
 
 class EveSovereigntyMap(models.Model):
@@ -48,12 +48,12 @@ class EveSovereigntyMap(models.Model):
         return str(self.solar_system_id)
 
     def __repr__(self):
-        return "{}(solar_system_id='{}')".format(
-            self.__class__.__name__, self.solar_system_id
-        )
+        return f"{self.__class__.__name__}(solar_system_id='{self.solar_system_id}')"
 
 
 class EveSpaceType(str, Enum):
+    """A space type in Eve Online."""
+
     UNKNOWN = "unknown"
     HIGHSEC = "highsec"
     LOWSEC = "lowsec"
@@ -65,10 +65,14 @@ class EveSpaceType(str, Enum):
         """returns the space type"""
         if eve_solar_system.is_null_sec:
             return cls.NULLSEC
-        elif eve_solar_system.is_low_sec:
+
+        if eve_solar_system.is_low_sec:
             return cls.LOWSEC
-        elif eve_solar_system.is_high_sec:
+
+        if eve_solar_system.is_high_sec:
             return cls.HIGHSEC
-        elif eve_solar_system.is_w_space:
+
+        if eve_solar_system.is_w_space:
             return cls.W_SPACE
+
         return cls.UNKNOWN

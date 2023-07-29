@@ -1,3 +1,5 @@
+"""Admin site for Structures."""
+
 import statistics
 from typing import Optional
 
@@ -15,6 +17,7 @@ from app_utils.django import admin_boolean_icon_html
 from app_utils.logging import LoggerAddTag
 
 from . import __title__, app_settings, tasks
+from .core.notification_types import NotificationType
 from .models import (
     FuelAlert,
     FuelAlertConfig,
@@ -22,7 +25,6 @@ from .models import (
     JumpFuelAlert,
     JumpFuelAlertConfig,
     Notification,
-    NotificationType,
     Owner,
     OwnerCharacter,
     Structure,
@@ -180,10 +182,9 @@ class RenderableNotificationFilter(admin.SimpleListFilter):
         """Return the filtered queryset"""
         if self.value() == "yes":
             return queryset.annotate_can_be_rendered().filter(can_be_rendered_2=True)
-        elif self.value() == "no":
+        if self.value() == "no":
             return queryset.annotate_can_be_rendered().filter(can_be_rendered_2=False)
-        else:
-            return queryset
+        return queryset
 
 
 class NotificationBaseAdmin(admin.ModelAdmin):
@@ -273,16 +274,14 @@ class NotificationBaseAdmin(admin.ModelAdmin):
     @admin.display(description=_("Mark selected notifications as sent"))
     def mark_as_sent(self, request, queryset):
         queryset.update(is_sent=True)
-        self.message_user(
-            request, "{} notifications marked as sent".format(queryset.count())
-        )
+        notif_count = queryset.count()
+        self.message_user(request, f"{notif_count} notifications marked as sent")
 
     @admin.display(description=_("Mark selected notifications as unsent"))
     def mark_as_unsent(self, request, queryset):
         queryset.update(is_sent=False)
-        self.message_user(
-            request, "{} notifications marked as unsent".format(queryset.count())
-        )
+        notif_count = queryset.count()
+        self.message_user(request, f"{notif_count} notifications marked as unsent")
 
     @admin.display(description=_("Send selected notifications to configured webhooks"))
     def send_to_configured_webhooks(self, request, queryset):
@@ -474,9 +473,12 @@ class OwnerAdmin(admin.ModelAdmin):
     def update_all(self, request, queryset):
         for obj in queryset:
             tasks.update_all_for_owner.delay(obj.pk, user_pk=request.user.pk)  # type: ignore
-            text = _(
-                "Started updating structures and notifications for %s. "
-                "You will receive a notification once it is completed." % obj
+            text = (
+                _(
+                    "Started updating structures and notifications for %s. "
+                    "You will receive a notification once it is completed."
+                )
+                % obj
             )
             self.message_user(request, text)
 
@@ -633,10 +635,10 @@ class StructureTagAdmin(admin.ModelAdmin):
     readonly_fields = ("is_user_managed",)
 
     def has_delete_permission(self, request, obj: Optional[StructureTag] = None):
-        return False if obj and not obj.is_user_managed else True
+        return not (obj and not obj.is_user_managed)
 
     def has_change_permission(self, request, obj: Optional[StructureTag] = None):
-        return False if obj and not obj.is_user_managed else True
+        return not (obj and not obj.is_user_managed)
 
 
 class StructureServiceAdminInline(admin.TabularInline):
@@ -678,13 +680,13 @@ class OwnerCorporationsFilter(admin.SimpleListFilter):
             .distinct()
             .order_by(Lower("corporation_name"))
         )
-        return tuple([(x["corporation_id"], x["corporation_name"]) for x in qs])
+        return tuple(((obj["corporation_id"], obj["corporation_name"]) for obj in qs))
 
     def queryset(self, request, queryset):
         if self.value() is None:
             return queryset.all()
-        else:
-            return queryset.filter(owner__corporation__corporation_id=self.value())
+
+        return queryset.filter(owner__corporation__corporation_id=self.value())
 
 
 class OwnerAllianceFilter(admin.SimpleListFilter):
@@ -702,15 +704,13 @@ class OwnerAllianceFilter(admin.SimpleListFilter):
             .distinct()
             .order_by(Lower("alliance_name"))
         )
-        return tuple([(x["alliance_id"], x["alliance_name"]) for x in qs])
+        return tuple(((obj["alliance_id"], obj["alliance_name"]) for obj in qs))
 
     def queryset(self, request, queryset):
         if self.value() is None:
             return queryset.all()
-        else:
-            return queryset.filter(
-                owner__corporation__alliance__alliance_id=self.value()
-            )
+
+        return queryset.filter(owner__corporation__alliance__alliance_id=self.value())
 
 
 class HasWebhooksListFilter(admin.SimpleListFilter):
@@ -728,6 +728,7 @@ class HasWebhooksListFilter(admin.SimpleListFilter):
             return queryset.filter(webhooks__isnull=False)
         if self.value() == "n":
             return queryset.filter(webhooks__isnull=True)
+        return None
 
 
 @admin.register(Structure)
@@ -777,11 +778,11 @@ class StructureAdmin(admin.ModelAdmin):
     )
     actions = ("add_default_tags", "remove_user_tags", "update_generated_tags")
     readonly_fields = tuple(
-        [
+        (
             x.name
             for x in Structure._meta.get_fields()
             if isinstance(x, models.fields.Field) and x.name not in ["tags", "webhooks"]
-        ]
+        )
     )
     fieldsets = (
         (
@@ -903,11 +904,10 @@ class StructureAdmin(admin.ModelAdmin):
             for tag in tags:
                 structure.tags.add(tag)
             structure_count += 1
+        tags_count = tags.count()
         self.message_user(
             request,
-            "Added {:,} default tags to {:,} structures".format(
-                tags.count(), structure_count
-            ),
+            f"Added {tags_count:,} default tags to {structure_count:,} structures",
         )
 
     @admin.display(description=_("Remove user tags for selected structures"))
@@ -919,7 +919,7 @@ class StructureAdmin(admin.ModelAdmin):
             structure_count += 1
         self.message_user(
             request,
-            "Removed all user tags from {:,} structures".format(structure_count),
+            f"Removed all user tags from {structure_count:,} structures",
         )
 
     @admin.display(description=_("Update generated tags for selected structures"))
@@ -930,7 +930,7 @@ class StructureAdmin(admin.ModelAdmin):
             structure_count += 1
         self.message_user(
             request,
-            "Updated all generated tags for {:,} structures".format(structure_count),
+            f"Updated all generated tags for {structure_count:,} structures",
         )
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -994,7 +994,7 @@ class WebhookAdmin(admin.ModelAdmin):
         form = super().get_form(*args, **kwargs)
         form.base_fields[
             "notification_types"
-        ].choices = NotificationType.choices_enabled
+        ].choices = NotificationType.choices_enabled()
         return form
 
     def get_queryset(self, request):
@@ -1051,8 +1051,11 @@ class WebhookAdmin(admin.ModelAdmin):
             )  # type: ignore
             self.message_user(
                 request,
-                'Initiated sending test notification to webhook "{}". '
-                "You will receive a report on completion.".format(obj),
+                _(
+                    "Initiated sending test notification to webhook %s. "
+                    "You will receive a report on completion."
+                )
+                % obj,
             )
 
     @admin.display(description=_("Activate selected webhook"))
@@ -1060,14 +1063,14 @@ class WebhookAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.is_active = True
             obj.save()
-            self.message_user(request, f'You have activated webhook "{obj}"')
+            self.message_user(request, _("You have activated webhook %s") % obj)
 
     @admin.display(description=_("Deactivate selected webhook"))
     def deactivate(self, request, queryset):
         for obj in queryset:
             obj.is_active = False
             obj.save()
-            self.message_user(request, f'You have de-activated webhook "{obj}"')
+            self.message_user(request, _("You have de-activated webhook %s") % obj)
 
     @admin.display(description=_("Purge queued messages from selected webhooks"))
     def purge_messages(self, request, queryset):
@@ -1078,8 +1081,11 @@ class WebhookAdmin(admin.ModelAdmin):
             actions_count += 1
         self.message_user(
             request,
-            f"Purged queued messages for {actions_count} webhooks, "
-            f"deleting a total of {killmails_deleted} messages.",
+            _(
+                "Purged queued messages for %(actions_count)s webhooks, "
+                "deleting a total of %(killmails_deleted)s messages."
+            )
+            % {"actions_count": actions_count, "killmails_deleted": killmails_deleted},
         )
 
     @admin.display(description=_("Send queued messages from selected webhooks"))
@@ -1090,5 +1096,5 @@ class WebhookAdmin(admin.ModelAdmin):
             items_count += 1
 
         self.message_user(
-            request, f"Started sending queued messages for {items_count} webhooks."
+            request, _("Started sending queued messages for %d webhooks.") % items_count
         )

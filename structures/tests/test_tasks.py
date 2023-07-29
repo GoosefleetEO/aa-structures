@@ -11,8 +11,10 @@ from app_utils.testing import (
     generate_invalid_pk,
 )
 
-from .. import tasks
-from ..models import FuelAlertConfig, NotificationType, Owner, Webhook
+from structures import tasks
+from structures.core.notification_types import NotificationType
+from structures.models import FuelAlertConfig, Owner, Webhook
+
 from .testdata.factories import create_notification, create_owner_from_user
 from .testdata.factories_2 import (
     FuelAlertConfigFactory,
@@ -243,7 +245,7 @@ class TestFetchAllNotifications(NoSocketsTestCase):
 #         self.assertTrue(mock_fetch_notifications_esi.called)
 #         self.assertEqual(mock_send_messages_for_webhook.apply_async.call_count, 1)
 #         for notif in self.owner.notifications.filter(
-#             notif_type__in=[NotificationType.structure_related]
+#             notif_type__in=[NotificationType.structure_related()]
 #         ):
 #             structure_ids = notif.structures.values_list("id", flat=True)
 #             self.assertTrue(
@@ -342,7 +344,10 @@ class TestUpdateExistingNotifications(NoSocketsTestCase):
 
 
 class TestOtherTasks(NoSocketsTestCase):
-    @patch(MODULE_PATH + ".EveSovereigntyMap.objects.update_from_esi", spec=True)
+    @patch(
+        MODULE_PATH + ".EveSovereigntyMap.objects.update_or_create_all_from_esi",
+        spec=True,
+    )
     def test_should_call_update_sov_map_from_esi(self, mock_update_from_esi):
         # when
         tasks.update_sov_map()

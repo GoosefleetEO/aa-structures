@@ -10,15 +10,15 @@ if "discord" in app_labels():
 
     from app_utils.testing import NoSocketsTestCase
 
-    from ...models import Notification
-    from ..testdata.factories import create_webhook
-    from ..testdata.helpers import (
+    from structures.models import Notification
+    from structures.tests.testdata.factories import create_webhook
+    from structures.tests.testdata.helpers import (
         create_structures,
         load_entities,
         load_notification_entities,
         set_owner_character,
     )
-    from ..testdata.load_eveuniverse import load_eveuniverse
+    from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
     MODULE_PATH = "structures.models.notifications"
 
@@ -79,6 +79,7 @@ if "discord" in app_labels():
             self.assertIn(f"<@&{self.group_2.pk}>", kwargs["content"])
 
         def test_can_ping_both(self, mock_send_message, mock_import_discord):
+            # given
             mock_send_message.return_value = 1
             mock_import_discord.return_value.objects.group_to_role.side_effect = (
                 self._my_group_to_role

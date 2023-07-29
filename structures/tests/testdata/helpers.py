@@ -27,16 +27,17 @@ from allianceauth.eveonline.models import (
 from app_utils.esi_testing import BravadoOperationStub, BravadoResponseStub
 from app_utils.testing import create_user_from_evecharacter
 
-from ...models import (
+from structures.core.notification_types import NotificationType
+from structures.models import (
     EveSovereigntyMap,
     Notification,
-    NotificationType,
     Owner,
     Structure,
     StructureService,
     StructureTag,
     Webhook,
 )
+
 from .factories import create_notification
 
 ESI_CORP_STRUCTURES_PAGE_SIZE = 2

@@ -1,3 +1,5 @@
+"""Core logic for webhooks."""
+
 import json
 from time import sleep
 from typing import List, Optional, Tuple
@@ -13,7 +15,7 @@ from app_utils.allianceauth import get_redis_client
 from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__
+from structures import __title__
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -42,9 +44,7 @@ class DiscordWebhookMixin:
         return self.name
 
     def __repr__(self) -> str:
-        return "{}(pk={}, name='{}')".format(
-            self.__class__.__name__, self.pk, self.name
-        )
+        return f"{self.__class__.__name__}(pk={self.pk}, name='{self.name}')"
 
     def queue_size(self) -> int:
         """returns current size of the queue"""
@@ -54,14 +54,14 @@ class DiscordWebhookMixin:
         """deletes all messages from the queue. Returns number of cleared messages."""
         counter = 0
         while True:
-            y = self._main_queue.dequeue()
-            if y is None:
+            message = self._main_queue.dequeue()
+            if message is None:
                 break
-            else:
-                counter += 1
+            counter += 1
 
         return counter
 
+    # pylint: disable = too-many-arguments
     def send_message(
         self,
         content: Optional[str] = None,
@@ -83,7 +83,7 @@ class DiscordWebhookMixin:
         else:
             embeds_list = None
 
-        message = dict()
+        message = {}
         if content:
             message["content"] = content
         if embeds_list:
@@ -104,8 +104,7 @@ class DiscordWebhookMixin:
             parts = urlparse(avatar_url)
         except ValueError:
             return False
-        else:
-            return bool(parts.scheme)
+        return bool(parts.scheme)
 
     def send_queued_messages(self) -> int:
         """sends all messages in the queue to this webhook
@@ -187,6 +186,7 @@ class DiscordWebhookMixin:
         }
         try:
             success = self._send_message_to_webhook(message)
+
         except OSError as ex:
             logger.warning(
                 "Failed to send test notification to webhook %s: %s",
@@ -195,8 +195,8 @@ class DiscordWebhookMixin:
                 exc_info=True,
             )
             return type(ex).__name__, False
-        else:
-            return "(no info)", success
+
+        return "(no info)", success
 
     @staticmethod
     def default_username() -> str:

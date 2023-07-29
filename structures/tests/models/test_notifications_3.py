@@ -5,16 +5,16 @@ from django.utils.timezone import now
 
 from app_utils.testing import NoSocketsTestCase
 
-from structures.models import GeneratedNotification, NotificationType, Structure
-
-from ..testdata.factories_2 import (
+from structures.core.notification_types import NotificationType
+from structures.models import GeneratedNotification, Structure
+from structures.tests.testdata.factories_2 import (
     GeneratedNotificationFactory,
     NotificationFactory,
     OwnerFactory,
     StarbaseFactory,
     StructureFactory,
 )
-from ..testdata.load_eveuniverse import load_eveuniverse
+from structures.tests.testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structures.models.notifications"
 
@@ -148,7 +148,7 @@ class TestProcessTimers(NoSocketsTestCase):
         mock_add_or_remove_timer.return_value = True
         unsupported_notif_types = {
             obj for obj in NotificationType
-        } - NotificationType.relevant_for_timerboard
+        } - NotificationType.relevant_for_timerboard()
         for notif_type in unsupported_notif_types:
             with self.subTest(notif_type=notif_type):
                 notif = NotificationFactory(owner=self.owner, notif_type=notif_type)

@@ -1,4 +1,6 @@
-"""Owner related models."""
+"""Owner related models for Structures."""
+
+# pylint: disable = duplicate-code,too-many-lines
 
 import datetime as dt
 import json
@@ -29,8 +31,8 @@ from app_utils.datetime import DATETIME_FORMAT
 from app_utils.helpers import chunks
 from app_utils.logging import LoggerAddTag
 
-from .. import __title__
-from ..app_settings import (
+from structures import __title__
+from structures.app_settings import (
     STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED,
     STRUCTURES_DEVELOPER_MODE,
     STRUCTURES_ESI_DIRECTOR_ERROR_MAX_RETRIES,
@@ -41,9 +43,10 @@ from ..app_settings import (
     STRUCTURES_NOTIFICATIONS_ARCHIVING_ENABLED,
     STRUCTURES_STRUCTURE_SYNC_GRACE_MINUTES,
 )
-from ..constants import EveGroupId, EveTypeId
-from ..managers import OwnerManager
-from ..providers import esi
+from structures.constants import EveGroupId, EveTypeId
+from structures.managers import OwnerManager
+from structures.providers import esi
+
 from .eveuniverse import EveSovereigntyMap
 from .notifications import (
     EveEntity,
@@ -52,13 +55,8 @@ from .notifications import (
     NotificationType,
     Webhook,
 )
-from .structures import (
-    PocoDetails,
-    StarbaseDetail,
-    StarbaseDetailFuel,
-    Structure,
-    StructureItem,
-)
+from .structures_1 import Structure, StructureItem
+from .structures_2 import PocoDetails, StarbaseDetail, StarbaseDetailFuel
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -97,7 +95,7 @@ class Owner(models.Model):
             """Name of last used at property."""
             if self is self.STRUCTURES:
                 return "structures_last_used_at"
-            elif self is self.NOTIFICATIONS:
+            if self is self.NOTIFICATIONS:
                 return "notifications_last_used_at"
             raise NotImplementedError(f"Not defined for: {self}")
 
@@ -106,7 +104,7 @@ class Owner(models.Model):
             """ESI cache duration in seconds."""
             if self is self.STRUCTURES:
                 return 3600
-            elif self is self.NOTIFICATIONS:
+            if self is self.NOTIFICATIONS:
                 return 600
             raise NotImplementedError(f"Not defined for: {self}")
 
@@ -225,8 +223,8 @@ class Owner(models.Model):
         return str(self.corporation.corporation_name)
 
     def __repr__(self):
-        return "{}(pk={}, corporation='{}')".format(
-            self.__class__.__name__, self.pk, self.corporation
+        return (
+            f"{self.__class__.__name__}(pk={self.pk}, corporation='{self.corporation}')"
         )
 
     def save(self, *args, **kwargs) -> None:
@@ -463,7 +461,8 @@ class Owner(models.Model):
                     error="Character does no longer belong to the owner's corporation.",
                 )
                 continue
-            elif not character.character_ownership.user.has_perm(
+
+            if not character.character_ownership.user.has_perm(
                 "structures.add_structure_owner"
             ):
                 self.delete_character(
@@ -471,6 +470,7 @@ class Owner(models.Model):
                     error="Character does not have sufficient permission to sync.",
                 )
                 continue
+
             token = character.valid_token()
             if not token:
                 self.delete_character(
@@ -480,11 +480,13 @@ class Owner(models.Model):
                 continue
             found_character = character
             break  # leave the for loop if we have found a valid token
+
         else:
             raise TokenError(
                 f"{self}: No valid character found for sync. "
                 "Service down for this owner."
             )
+
         if rotate_characters:
             self._rotate_character(
                 character=found_character,
@@ -537,7 +539,7 @@ class Owner(models.Model):
         logger.info(
             "%s: Fetching locations for %d assets from ESI", self, len(item_ids)
         )
-        locations_data = list()
+        locations_data = []
         for item_ids_chunk in chunks(item_ids, 999):
             try:
                 locations_data_chunk = (
@@ -631,14 +633,16 @@ class Owner(models.Model):
 
         Return True when successful, else False.
         """
-        structures = dict()
+        structures = {}
         try:
             pocos = esi.client.Planetary_Interaction.get_corporations_corporation_id_customs_offices(
                 corporation_id=self.corporation.corporation_id,
                 token=token.valid_access_token(),
             ).results()
+
             if not pocos:
                 logger.info("%s: No custom offices retrieved from ESI", self)
+
             else:
                 pocos_2 = {row["office_id"]: row for row in pocos}
                 office_ids = list(pocos_2.keys())
@@ -650,95 +654,11 @@ class Owner(models.Model):
                 for solar_system_id in {int(x["system_id"]) for x in pocos}:
                     EveSolarSystem.objects.get_or_create_esi(id=solar_system_id)
 
-                # compile pocos into structures list
-                for office_id, poco in pocos_2.items():
-                    planet_name = names.get(office_id, "")
-                    if planet_name:
-                        try:
-                            eve_planet = EvePlanet.objects.get(name=planet_name)
-                        except EvePlanet.DoesNotExist:
-                            name = ""
-                            planet_id = None
-                        else:
-                            planet_id = eve_planet.id
-                            name = eve_planet.eve_type.name
-                    else:
-                        name = None
-                        planet_id = None
-
-                    reinforce_exit_start = dt.datetime(
-                        year=2000, month=1, day=1, hour=poco["reinforce_exit_start"]
-                    )
-                    reinforce_hour = reinforce_exit_start + dt.timedelta(hours=1)
-                    structure = {
-                        "structure_id": office_id,
-                        "type_id": EveTypeId.CUSTOMS_OFFICE,
-                        "corporation_id": self.corporation.corporation_id,
-                        "name": name if name else "",
-                        "system_id": poco["system_id"],
-                        "reinforce_hour": reinforce_hour.hour,
-                        "state": Structure.State.UNKNOWN,
-                    }
-                    if planet_id:
-                        structure["planet_id"] = planet_id
-
-                    if office_id in positions:
-                        structure["position"] = positions[office_id]
-
-                    structures[office_id] = structure
-
-                logger.info(
-                    "%s: Storing updates for %d customs offices", self, len(structures)
+                structures.update(
+                    self._compile_pocos_for_structures(pocos_2, positions, names)
                 )
-                for office_id, structure in structures.items():
-                    structure_obj, _ = Structure.objects.update_or_create_from_dict(
-                        structure, self
-                    )
-                    try:
-                        poco = pocos_2[office_id]
-                    except KeyError:
-                        logger.warning(
-                            "%s: No details found for this POCO: %d", self, office_id
-                        )
-                    else:
-                        standing_level = PocoDetails.StandingLevel.from_esi(
-                            poco.get("standing_level")
-                        )
-                        PocoDetails.objects.update_or_create(
-                            structure=structure_obj,
-                            defaults={
-                                "alliance_tax_rate": poco.get("alliance_tax_rate"),
-                                "allow_access_with_standings": poco.get(
-                                    "allow_access_with_standings"
-                                ),
-                                "allow_alliance_access": poco.get(
-                                    "allow_alliance_access"
-                                ),
-                                "bad_standing_tax_rate": poco.get(
-                                    "bad_standing_tax_rate"
-                                ),
-                                "corporation_tax_rate": poco.get(
-                                    "corporation_tax_rate"
-                                ),
-                                "excellent_standing_tax_rate": poco.get(
-                                    "excellent_standing_tax_rate"
-                                ),
-                                "good_standing_tax_rate": poco.get(
-                                    "good_standing_tax_rate"
-                                ),
-                                "neutral_standing_tax_rate": poco.get(
-                                    "neutral_standing_tax_rate"
-                                ),
-                                "reinforce_exit_end": poco.get("reinforce_exit_end"),
-                                "reinforce_exit_start": poco.get(
-                                    "reinforce_exit_start"
-                                ),
-                                "standing_level": standing_level,
-                                "terrible_standing_tax_rate": poco.get(
-                                    "terrible_standing_tax_rate"
-                                ),
-                            },
-                        )
+
+                self._store_poco_details(structures, pocos_2)
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("customs_offices", structures)
@@ -753,13 +673,94 @@ class Owner(models.Model):
         )
         return True
 
+    def _store_poco_details(self, structures: dict, pocos_2: dict):
+        logger.info("%s: Storing updates for %d customs offices", self, len(structures))
+        for office_id, structure in structures.items():
+            try:
+                poco = pocos_2[office_id]
+            except KeyError:
+                logger.warning(
+                    "%s: No details found for this POCO: %d", self, office_id
+                )
+                continue
+
+            standing_level = PocoDetails.StandingLevel.from_esi(
+                poco.get("standing_level")
+            )
+            structure_obj, _ = Structure.objects.update_or_create_from_dict(
+                structure, self
+            )
+            PocoDetails.objects.update_or_create(
+                structure=structure_obj,
+                defaults={
+                    "alliance_tax_rate": poco.get("alliance_tax_rate"),
+                    "allow_access_with_standings": poco.get(
+                        "allow_access_with_standings"
+                    ),
+                    "allow_alliance_access": poco.get("allow_alliance_access"),
+                    "bad_standing_tax_rate": poco.get("bad_standing_tax_rate"),
+                    "corporation_tax_rate": poco.get("corporation_tax_rate"),
+                    "excellent_standing_tax_rate": poco.get(
+                        "excellent_standing_tax_rate"
+                    ),
+                    "good_standing_tax_rate": poco.get("good_standing_tax_rate"),
+                    "neutral_standing_tax_rate": poco.get("neutral_standing_tax_rate"),
+                    "reinforce_exit_end": poco.get("reinforce_exit_end"),
+                    "reinforce_exit_start": poco.get("reinforce_exit_start"),
+                    "standing_level": standing_level,
+                    "terrible_standing_tax_rate": poco.get(
+                        "terrible_standing_tax_rate"
+                    ),
+                },
+            )
+
+    def _compile_pocos_for_structures(self, pocos_2, positions, names) -> dict:
+        structures = {}
+        for office_id, poco in pocos_2.items():
+            planet_name = names.get(office_id, "")
+            if planet_name:
+                try:
+                    eve_planet = EvePlanet.objects.get(name=planet_name)
+                except EvePlanet.DoesNotExist:
+                    name = ""
+                    planet_id = None
+                else:
+                    planet_id = eve_planet.id
+                    name = eve_planet.eve_type.name
+            else:
+                name = None
+                planet_id = None
+
+            reinforce_exit_start = dt.datetime(
+                year=2000, month=1, day=1, hour=poco["reinforce_exit_start"]
+            )
+            reinforce_hour = reinforce_exit_start + dt.timedelta(hours=1)
+            structure = {
+                "structure_id": office_id,
+                "type_id": EveTypeId.CUSTOMS_OFFICE,
+                "corporation_id": self.corporation.corporation_id,
+                "name": name if name else "",
+                "system_id": poco["system_id"],
+                "reinforce_hour": reinforce_hour.hour,
+                "state": Structure.State.UNKNOWN,
+            }
+            if planet_id:
+                structure["planet_id"] = planet_id
+
+            if office_id in positions:
+                structure["position"] = positions[office_id]
+
+            structures[office_id] = structure
+
+        return structures
+
     def _fetch_names_for_pocos(self, item_ids: list, token: Token) -> dict:
         logger.info(
             "%s: Fetching names for %d custom office names from ESI",
             self,
             len(item_ids),
         )
-        names_data = list()
+        names_data = []
         for item_ids_chunk in chunks(item_ids, 999):
             try:
                 names_data_chunk = (
@@ -788,7 +789,7 @@ class Owner(models.Model):
 
         Return True when successful, else False.
         """
-        structures = list()
+        structures = []
         try:
             starbases_data = (
                 esi.client.Corporation.get_corporations_corporation_id_starbases(
@@ -798,61 +799,18 @@ class Owner(models.Model):
             ).results()
             if not starbases_data:
                 logger.info("%s: This corporation has no starbases.", self)
+
             else:
                 starbases_data = {obj["starbase_id"]: obj for obj in starbases_data}
                 names = self._fetch_starbases_names(starbases_data.keys(), token)
                 locations = self._fetch_locations_for_assets(
                     starbases_data.keys(), token
                 )
-                # convert starbases to structures
-                for structure_id, starbase in starbases_data.items():
-                    try:
-                        name = names[structure_id]
-                    except KeyError:
-                        name = "Starbase"
-                    structure = {
-                        "structure_id": structure_id,
-                        "type_id": starbase["type_id"],
-                        "corporation_id": self.corporation.corporation_id,
-                        "name": name,
-                        "system_id": starbase["system_id"],
-                    }
-                    if structure_id in locations:
-                        structure["position"] = locations[structure_id]
-                    if "state" in starbase:
-                        structure["state"] = starbase["state"]
-                    if "moon_id" in starbase:
-                        structure["moon_id"] = starbase["moon_id"]
-                    if "fuel_expires" in starbase:
-                        structure["fuel_expires"] = starbase["fuel_expires"]
-                    if "reinforced_until" in starbase:
-                        structure["state_timer_end"] = starbase["reinforced_until"]
-                    if "unanchors_at" in starbase:
-                        structure["unanchors_at"] = starbase["unanchors_at"]
-                    structures.append(structure)
-
-                logger.info(
-                    "%s: Storing updates for %d starbases", self, len(structures)
+                structures += self._convert_starbases_to_structures(
+                    starbases_data, names, locations
                 )
-                for structure in structures:
-                    structure_obj, _ = Structure.objects.update_or_create_from_dict(
-                        structure, self
-                    )
-                    detail = self._update_starbase_detail(
-                        structure=structure_obj, token=token
-                    )
-                    fuel_expires_at = detail.calc_fuel_expires()
-                    if fuel_expires_at:
-                        structure_obj.fuel_expires_at = fuel_expires_at
-                        structure_obj.save()
-                    if (
-                        structure_obj.state == Structure.State.POS_REINFORCED
-                        and structure_obj.state_timer_end
-                    ):
-                        GeneratedNotification.objects.get_or_create_from_structure(
-                            structure=structure_obj,
-                            notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
-                        )
+
+                self._store_updates_for_starbases(token, structures)
 
             if STRUCTURES_DEVELOPER_MODE:
                 self._store_raw_data("starbases", structures)
@@ -885,10 +843,62 @@ class Owner(models.Model):
         )
         return True
 
+    def _store_updates_for_starbases(self, token, structures):
+        logger.info("%s: Storing updates for %d starbases", self, len(structures))
+        for structure in structures:
+            structure_obj, _ = Structure.objects.update_or_create_from_dict(
+                structure, self
+            )
+            detail = self._update_starbase_detail(structure=structure_obj, token=token)
+            fuel_expires_at = detail.calc_fuel_expires()
+            if fuel_expires_at:
+                structure_obj.fuel_expires_at = fuel_expires_at
+                structure_obj.save()
+            if (
+                structure_obj.state == Structure.State.POS_REINFORCED
+                and structure_obj.state_timer_end
+            ):
+                GeneratedNotification.objects.get_or_create_from_structure(
+                    structure=structure_obj,
+                    notif_type=NotificationType.TOWER_REINFORCED_EXTRA,
+                )
+
+    def _convert_starbases_to_structures(
+        self, starbases_data, names, locations
+    ) -> List[dict]:
+        structures = []
+        for structure_id, starbase in starbases_data.items():
+            try:
+                name = names[structure_id]
+            except KeyError:
+                name = "Starbase"
+            structure = {
+                "structure_id": structure_id,
+                "type_id": starbase["type_id"],
+                "corporation_id": self.corporation.corporation_id,
+                "name": name,
+                "system_id": starbase["system_id"],
+            }
+            if structure_id in locations:
+                structure["position"] = locations[structure_id]
+            if "state" in starbase:
+                structure["state"] = starbase["state"]
+            if "moon_id" in starbase:
+                structure["moon_id"] = starbase["moon_id"]
+            if "fuel_expires" in starbase:
+                structure["fuel_expires"] = starbase["fuel_expires"]
+            if "reinforced_until" in starbase:
+                structure["state_timer_end"] = starbase["reinforced_until"]
+            if "unanchors_at" in starbase:
+                structure["unanchors_at"] = starbase["unanchors_at"]
+            structures.append(structure)
+
+        return structures
+
     def _fetch_starbases_names(self, item_ids: Iterable, token: Token) -> dict:
         item_ids = list(item_ids)
         logger.info("%s: Fetching names for %d starbases from ESI", self, len(item_ids))
-        names_data = list()
+        names_data = []
         for item_ids_chunk in chunks(item_ids, 999):
             try:
                 names_data_chunk = (
@@ -1003,24 +1013,22 @@ class Owner(models.Model):
         return notifications
 
     def _store_raw_notifications(self, notifications):
-        # store notifications to disk in continuous file per corp
+        """Store notifications to disk in continuous file per corp."""
         folder_name = "structures_notifications_archive"
         os.makedirs(folder_name, exist_ok=True)
-        filename = "{}/notifications_{}_{}.txt".format(
-            folder_name, self.corporation.corporation_id, now().date().isoformat()
-        )
+        corporation_id = self.corporation.corporation_id
+        now_str = now().date().isoformat()
+        filename = f"{folder_name}/notifications_{corporation_id}_{now_str}.txt"
         logger.info(
             "%s: Storing notifications into archive file: %s", self, format(filename)
         )
-        with open(file=filename, mode="a", encoding="utf-8") as f:
-            f.write(
-                "[{}] {}:\n".format(
-                    now().strftime(DATETIME_FORMAT),
-                    self.corporation.corporation_ticker,
-                )
+        with open(file=filename, mode="a", encoding="utf-8") as file:
+            now_str_2 = now().strftime(DATETIME_FORMAT)
+            file.write(f"[{now_str_2}] {self.corporation.corporation_ticker}:\n")
+            json.dump(
+                notifications, file, cls=DjangoJSONEncoder, sort_keys=True, indent=4
             )
-            json.dump(notifications, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
-            f.write("\n")
+            file.write("\n")
 
     def _store_notifications(self, notifications: List[dict]) -> int:
         """Store new notifications in database.
@@ -1076,12 +1084,12 @@ class Owner(models.Model):
             )
             notifications = (
                 self.notification_set.filter(
-                    notif_type__in=NotificationType.relevant_for_moonmining
+                    notif_type__in=NotificationType.relevant_for_moonmining()
                 )
                 .select_related("owner", "sender")
                 .order_by("timestamp")
             )
-            structure_id_2_moon_id = dict()
+            structure_id_2_moon_id = {}
             for notification in notifications:
                 parsed_text = notification.parsed_text()
                 moon_id = parsed_text["moonID"]
@@ -1105,7 +1113,7 @@ class Owner(models.Model):
         my_filter = {
             "notif_type__in": (
                 Webhook.objects.enabled_notification_types()
-                & NotificationType.relevant_for_forwarding
+                & NotificationType.relevant_for_forwarding()
             ),
             "is_sent": False,
             "timestamp__gte": cutoff_dt_for_stale,
@@ -1166,10 +1174,11 @@ class Owner(models.Model):
         """store raw data for debug purposes"""
         with open(
             f"{name}_raw_{self.corporation.corporation_id}.json", "w", encoding="utf-8"
-        ) as f:
-            json.dump(data, f, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
+        ) as file:
+            json.dump(data, file, cls=DjangoJSONEncoder, sort_keys=True, indent=4)
 
     def update_asset_esi(self, user: Optional[User] = None):
+        """Update assets from ESI."""
         token = self.fetch_token()
         assets_data = self._fetch_structure_assets_from_esi(token)
         self._store_items_for_upwell_structures(assets_data)
@@ -1194,7 +1203,7 @@ class Owner(models.Model):
         structure_ids = set(
             self.structures.filter_upwell_structures().values_list("id", flat=True)
         )
-        assets_in_structures = {id: dict() for id in structure_ids}
+        assets_in_structures = {id: {} for id in structure_ids}
         for item_id, item in assets_data.items():
             location_id = item["location_id"]
             if location_id in structure_ids and item["location_flag"] not in [
@@ -1205,7 +1214,7 @@ class Owner(models.Model):
             ]:
                 assets_in_structures[location_id][item_id] = item
         for structure in self.structures.all():
-            structure_items = list()
+            structure_items = []
             if structure.id in assets_in_structures.keys():
                 structure_assets = assets_in_structures[structure.id]
                 has_fitting = [
@@ -1236,18 +1245,21 @@ class Owner(models.Model):
         self.save(update_fields=["assets_last_update_at"])
 
     def _store_items_for_starbases(self, assets_raw: dict):
+        relevant_assets = {
+            item_id: item
+            for item_id, item in assets_raw.items()
+            if item["location_type"] == "solar_system"
+            and item["location_flag"] == "AutoFit"
+            and item["position"]
+        }
         for structure in self.structures.filter_starbases().filter(
             position_x__isnull=False, position_y__isnull=False, position_z__isnull=False
         ):
-            structure_items = list()
-            for item_id, item in assets_raw.items():
+            structure_items = []
+            for item_id, item in relevant_assets.items():
                 if (
                     item["location_id"] == structure.eve_solar_system_id
-                    and item["location_type"] == "solar_system"
-                    and item["location_flag"] == "AutoFit"
                     and item_id != structure.id
-                    and item["position"]
-                    and structure.has_position
                     and structure.distance_to_object(
                         item["position"]["x"],
                         item["position"]["y"],
@@ -1262,6 +1274,7 @@ class Owner(models.Model):
 
     @staticmethod
     def get_esi_scopes() -> List[str]:
+        """Return all required ESI scopes."""
         scopes = [
             "esi-corporations.read_structures.v1",
             "esi-universe.read_structures.v1",
