@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.5.0] - 2023-07-29
+
 ### Changed
 
 - Major refactoring
-- Made pylint checks mandatory
+- Pylint checks are now mandatory
 
 ## [2.4.2] - 2023-07-27
 

@@ -164,12 +164,13 @@ class DiscordWebhookMixin:
         logger.debug("content: %s", response.content)
         if response.status_ok:
             return True
+
         msg = (
-            f"Webhook {self} failed to send message to Discord.\n"
-            f"HTTP status code: {response.status_code}\n"
+            f"Webhook {self} failed to send message to Discord. "
+            f"HTTP status code: {response.status_code}. "
             f"API response: {response.content}"
         )
-        logger.warning(msg, exc_info=True)
+        logger.warning(msg)
         return False
 
     @classmethod

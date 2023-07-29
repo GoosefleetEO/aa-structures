@@ -33,6 +33,7 @@ dependencies = [
     "django-navhelper",
     "pytz!=2022.2",
     "redis-simple-mq>=1.0",
+    "humanize>=4.7",
 ]
 
 [project.urls]
