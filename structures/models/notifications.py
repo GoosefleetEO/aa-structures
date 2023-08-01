@@ -353,46 +353,50 @@ class NotificationBase(models.Model):
             try:
                 structure_id = self._parsed_text["structureID"]
             except KeyError:
-                return Structure.objects.none()
-            return Structure.objects.filter(id=structure_id)
+                qs = Structure.objects.none()
+            else:
+                qs = Structure.objects.filter(id=structure_id)
 
-        if self.notif_type == NotificationType.STRUCTURE_REINFORCEMENT_CHANGED:
+        elif self.notif_type == NotificationType.STRUCTURE_REINFORCEMENT_CHANGED:
             try:
                 structure_ids = [
                     structure_info[0]
                     for structure_info in self._parsed_text["allStructureInfo"]
                 ]
             except KeyError:
-                return Structure.objects.none()
+                qs = Structure.objects.none()
+            else:
+                qs = Structure.objects.filter(id__in=structure_ids)
 
-            return Structure.objects.filter(id__in=structure_ids)
-
-        if self.notif_type in {
+        elif self.notif_type in {
             NotificationType.ORBITAL_ATTACKED,
             NotificationType.ORBITAL_REINFORCED,
         }:
             try:
-                return Structure.objects.filter(
+                qs = Structure.objects.filter(
                     eve_planet_id=self._parsed_text["planetID"],
                     eve_type_id=self._parsed_text["typeID"],
                 )
             except KeyError:
-                return Structure.objects.none()
+                qs = Structure.objects.none()
 
-        if self.notif_type in {
+        elif self.notif_type in {
             NotificationType.TOWER_ALERT_MSG,
             NotificationType.TOWER_RESOURCE_ALERT_MSG,
             NotificationType.TOWER_REFUELED_EXTRA,
         }:
             try:
-                return Structure.objects.filter(
+                qs = Structure.objects.filter(
                     eve_moon_id=self._parsed_text["moonID"],
                     eve_type_id=self._parsed_text["typeID"],
                 )
             except KeyError:
-                return Structure.objects.none()
+                qs = Structure.objects.none()
 
-        return Structure.objects.none()
+        else:
+            qs = Structure.objects.none()
+
+        return qs
 
     def send_to_webhook(self, webhook: Webhook) -> bool:
         """Send this notification to a webhook.
