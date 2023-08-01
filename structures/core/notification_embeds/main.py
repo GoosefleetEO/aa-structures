@@ -254,7 +254,7 @@ class NotificationBaseEmbed:
             NT.STRUCTURE_DESTROYED: NotificationStructureDestroyed,
             NT.OWNERSHIP_TRANSFERRED: NotificationStructureOwnershipTransferred,
             NT.STRUCTURE_ANCHORING: NotificationStructureAnchoring,
-            NT.STRUCTURE_REINFORCE_CHANGED: NotificationStructureReinforceChange,
+            NT.STRUCTURE_REINFORCEMENT_CHANGED: NotificationStructureReinforceChange,
             # Orbitals
             NT.ORBITAL_ATTACKED: NotificationOrbitalAttacked,
             NT.ORBITAL_REINFORCED: NotificationOrbitalReinforced,

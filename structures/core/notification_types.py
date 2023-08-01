@@ -36,7 +36,7 @@ class NotificationType(models.TextChoices):
     STRUCTURE_LOST_ARMOR = "StructureLostArmor", _("Upwell structure lost armor")
     STRUCTURE_DESTROYED = "StructureDestroyed", _("Upwell structure destroyed")
 
-    STRUCTURE_REINFORCE_CHANGED = "StructuresReinforcementChanged", _(
+    STRUCTURE_REINFORCEMENT_CHANGED = "StructuresReinforcementChanged", _(
         "Upwell structure reinforcement time changed"
     )
     OWNERSHIP_TRANSFERRED = "OwnershipTransferred", _(
@@ -138,7 +138,7 @@ class NotificationType(models.TextChoices):
     @classmethod
     def esi_notifications(cls) -> Set["NotificationType"]:
         """Return all ESI notification types."""
-        return set(cls.values) - cls.generated_notifications()
+        return set(cls) - cls.generated_notifications()
 
     @classmethod
     def generated_notifications(cls) -> Set["NotificationType"]:
@@ -249,7 +249,7 @@ class NotificationType(models.TextChoices):
             cls.MOONMINING_AUTOMATIC_FRACTURE,
             cls.MOONMINING_EXTRACTION_CANCELLED,
             cls.MOONMINING_LASER_FIRED,
-            cls.STRUCTURE_REINFORCE_CHANGED,
+            cls.STRUCTURE_REINFORCEMENT_CHANGED,
             cls.ORBITAL_ATTACKED,
             cls.ORBITAL_REINFORCED,
             cls.TOWER_ALERT_MSG,
