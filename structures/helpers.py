@@ -30,6 +30,6 @@ def datetime_almost_equal(
     return dif <= abs(threshold)
 
 
-def is_absolute(url: str) -> bool:
+def is_absolute_url(url: str) -> bool:
     """Return True if URL is absolute else False."""
     return bool(urlparse(url).netloc)

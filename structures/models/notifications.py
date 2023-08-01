@@ -33,6 +33,7 @@ from structures.app_settings import (  # STRUCTURES_NOTIFICATION_DISABLE_ESI_FUE
 )
 from structures.constants import EveCategoryId, EveCorporationId, EveTypeId
 from structures.core.notification_types import NotificationType
+from structures.helpers import is_absolute_url
 from structures.managers import (
     GeneratedNotificationManager,
     NotificationManager,
@@ -479,6 +480,7 @@ class NotificationBase(models.Model):
         else:
             username = None
             avatar_url = None
+        avatar_url = avatar_url if is_absolute_url(avatar_url) else None
         return username, avatar_url
 
     def add_or_remove_timer(self) -> bool:
