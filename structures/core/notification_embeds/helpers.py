@@ -3,7 +3,8 @@
 import datetime as dt
 from typing import Optional
 
-from django.template import Context, Template
+import humanize
+
 from django.utils.timezone import now
 from eveuniverse.models import EveEntity, EveSolarSystem
 
@@ -13,13 +14,20 @@ from app_utils.datetime import DATETIME_FORMAT
 from structures.models import Webhook
 
 
+def convert_to_naive_datetime(value: dt.datetime) -> dt.datetime:
+    """Convert aware datetime to naive datetime and passthrough any other type."""
+    if value.tzinfo is not None:
+        value = dt.datetime.fromtimestamp(value.timestamp())
+    return value
+
+
 def timeuntil(to_date: dt.datetime, from_date: Optional[dt.datetime] = None) -> str:
     """Render timeuntil template tag for given datetime to string."""
     if not from_date:
         from_date = now()
-    template = Template("{{ to_date|timeuntil:from_date }}")
-    context = Context({"to_date": to_date, "from_date": from_date})
-    return template.render(context)
+    to_date_naive = convert_to_naive_datetime(to_date)
+    from_date_naive = convert_to_naive_datetime(from_date)
+    return humanize.naturaltime(to_date_naive, when=from_date_naive)
 
 
 def target_datetime_formatted(target_datetime: dt.datetime) -> str:
@@ -50,17 +58,22 @@ def gen_eve_entity_link(eve_entity: EveEntity) -> str:
 
     Or return an empty string for any other category.
     """
-    if eve_entity.category == EveEntity.CATEGORY_ALLIANCE:
+    try:
+        category = eve_entity.category
+    except AttributeError:
+        return ""
+
+    if category == EveEntity.CATEGORY_ALLIANCE:
         url = dotlan.alliance_url(eve_entity.name)
 
-    elif eve_entity.category == EveEntity.CATEGORY_CORPORATION:
+    elif category == EveEntity.CATEGORY_CORPORATION:
         url = dotlan.corporation_url(eve_entity.name)
 
-    elif eve_entity.category == EveEntity.CATEGORY_CHARACTER:
+    elif category == EveEntity.CATEGORY_CHARACTER:
         url = evewho.character_url(eve_entity.id)
 
     else:
-        url = ""
+        return ""
 
     return Webhook.create_link(eve_entity.name, url)
 

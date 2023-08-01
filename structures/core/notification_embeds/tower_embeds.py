@@ -138,6 +138,7 @@ class NotificationTowerReinforcedExtra(GeneratedNotificationTowerEmbed):
             )
         except (KeyError, ValueError):
             reinforced_until = "(unknown)"
+
         self._description += (
             __("has been reinforced and will come out at: %s.") % reinforced_until
         )

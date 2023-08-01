@@ -266,7 +266,7 @@ class NotificationBase(models.Model):
         Returns False, if sending to any webhooks failed
         """
         if self.filter_for_npc_attacks():
-            logger.debug("%s: Will not send NPC attacks", self)
+            logger.info("%s: Ignoring NPC attacks as configured", self)
             return None
 
         if self.filter_for_alliance_level():
@@ -277,7 +277,7 @@ class NotificationBase(models.Model):
 
         webhooks_qs = self.relevant_webhooks()
         if not webhooks_qs.exists():
-            logger.debug("%s: No relevant webhook found", self)
+            logger.warning("%s: No relevant webhook found", self)
             return None
 
         if ping_type_override:
