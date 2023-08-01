@@ -23,7 +23,7 @@ from structures import __title__
 from structures.app_settings import STRUCTURES_FEATURE_REFUELED_NOTIFICATIONS
 from structures.constants import EveCategoryId, EveGroupId, EveTypeId
 from structures.core import starbases
-from structures.helpers.general import datetime_almost_equal, hours_until_deadline
+from structures.helpers import datetime_almost_equal, hours_until_deadline
 from structures.managers import StructureManager, StructureTagManager
 
 from .eveuniverse import EveSpaceType

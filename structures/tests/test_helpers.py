@@ -3,7 +3,7 @@ import datetime as dt
 from django.test import TestCase
 from django.utils.timezone import now
 
-from structures.helpers.general import datetime_almost_equal, hours_until_deadline
+from structures.helpers import datetime_almost_equal, hours_until_deadline
 
 
 class TestDatetimeAlmostEqual(TestCase):
