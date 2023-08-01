@@ -3,7 +3,11 @@ import datetime as dt
 from django.test import TestCase
 from django.utils.timezone import now
 
-from structures.helpers.general import datetime_almost_equal, hours_until_deadline
+from structures.helpers import (
+    datetime_almost_equal,
+    hours_until_deadline,
+    is_absolute_url,
+)
 
 
 class TestDatetimeAlmostEqual(TestCase):
@@ -50,3 +54,18 @@ class TestHoursUntilDeadline(TestCase):
     def test_should_raise_error_when_deadline_is_not_a_datetime(self):
         with self.assertRaises(TypeError):
             hours_until_deadline(None)
+
+
+class TestIsAbsoluteUrl(TestCase):
+    def test_should_detect_absolute_urls(self):
+        cases = [
+            ("https://www.google.com", True),
+            ("http://www.google.com", True),
+            ("www.google.com", False),
+            ("", False),
+            ("/abc/x", False),
+            (None, False),
+        ]
+        for url, expected_result in cases:
+            with self.subTest(url=url):
+                self.assertIs(is_absolute_url(url), expected_result)

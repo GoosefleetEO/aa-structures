@@ -14,6 +14,7 @@ from app_utils.urls import reverse_absolute, static_file_absolute_url
 
 from structures import __title__
 from structures.core.notification_types import NotificationType
+from structures.helpers import is_absolute_url
 from structures.models.notifications import Notification, NotificationBase, Webhook
 
 from .helpers import target_datetime_formatted
@@ -109,6 +110,7 @@ class NotificationBaseEmbed:
             author_name = corporation.corporation_name
             author_url = corporation.logo_url(size=self.ICON_DEFAULT_SIZE)
         app_url = reverse_absolute("structures:index")
+        app_url = app_url if is_absolute_url(app_url) else None
         author = dhooks_lite.Author(name=author_name, icon_url=author_url, url=app_url)
         if self.notification.color_override:
             self._color = self.notification.color_override
@@ -137,6 +139,7 @@ class NotificationBaseEmbed:
                 else "GENERATED"
             )
             footer_text += f" #{my_text}"
+        footer_icon_url = footer_icon_url if is_absolute_url(footer_icon_url) else None
         footer = dhooks_lite.Footer(text=footer_text, icon_url=footer_icon_url)
         return dhooks_lite.Embed(
             author=author,

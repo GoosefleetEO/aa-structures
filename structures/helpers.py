@@ -2,6 +2,7 @@
 
 import datetime as dt
 from typing import Optional
+from urllib.parse import urlparse
 
 from django.utils.timezone import now
 
@@ -27,3 +28,8 @@ def datetime_almost_equal(
         return False
     dif = abs((first - second).total_seconds())
     return dif <= abs(threshold)
+
+
+def is_absolute_url(url: str) -> bool:
+    """Return True if URL is absolute else False."""
+    return bool(urlparse(url).netloc)
