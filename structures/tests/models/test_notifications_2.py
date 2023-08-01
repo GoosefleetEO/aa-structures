@@ -27,6 +27,10 @@ from structures.tests.testdata.factories import (
     create_upwell_structure,
     create_webhook,
 )
+from structures.tests.testdata.factories_2 import (
+    EveEntityCorporationFactory,
+    NotificationFactory,
+)
 from structures.tests.testdata.helpers import (
     create_structures,
     load_entities,
@@ -804,3 +808,125 @@ class TestNotificationRelatedStructures(NoSocketsTestCase):
             result = notif.update_related_structures()
         # then
         self.assertFalse(result)
+
+    def test_should_return_empty_qs_when_structure_id_is_missing(self):
+        # given
+        sender = EveEntityCorporationFactory()
+        notif = NotificationFactory(
+            sender=sender,
+            notif_type=NotificationType.OWNERSHIP_TRANSFERRED.value,
+            text_from_dict={
+                "charID": 1001,
+                "newOwnerCorpID": 2002,
+                "oldOwnerCorpID": 2001,
+                "solarSystemID": 30002537,
+                "structureName": "Test Structure Alpha",
+                "structureTypeID": 35832,
+            },
+        )
+        # when
+        result_qs = notif.calc_related_structures()
+        # then
+        self.assertEqual(list(result_qs), [])
+
+    def test_should_return_empty_qs_when_all_structure_info_is_missing(self):
+        # given
+        sender = EveEntityCorporationFactory()
+        notif = NotificationFactory(
+            sender=sender,
+            notif_type=NotificationType.STRUCTURE_REINFORCEMENT_CHANGED.value,
+            text_from_dict={
+                "hour": 19,
+                "numStructures": 1,
+                "timestamp": 132141703753688216,
+                "weekday": 255,
+            },
+        )
+        # when
+        result_qs = notif.calc_related_structures()
+        # then
+        self.assertEqual(list(result_qs), [])
+
+    def test_should_return_empty_qs_when_planet_id_is_missing(self):
+        # given
+        sender = EveEntityCorporationFactory()
+        notif = NotificationFactory(
+            sender=sender,
+            notif_type=NotificationType.ORBITAL_ATTACKED.value,
+            text_from_dict={
+                "aggressorCorpID": 2011,
+                "aggressorID": 1011,
+                "planetTypeID": 2016,
+                "shieldLevel": 0.9821850015653375,
+                "solarSystemID": 30002537,
+                "typeID": 2233,
+            },
+        )
+        # when
+        result_qs = notif.calc_related_structures()
+        # then
+        self.assertEqual(list(result_qs), [])
+
+    def test_should_return_empty_qs_when_type_id_is_missing(self):
+        # given
+        sender = EveEntityCorporationFactory()
+        notif = NotificationFactory(
+            sender=sender,
+            notif_type=NotificationType.ORBITAL_ATTACKED.value,
+            text_from_dict={
+                "aggressorCorpID": 2011,
+                "aggressorID": 1011,
+                "planetID": 40161469,
+                "planetTypeID": 2016,
+                "shieldLevel": 0.9821850015653375,
+                "solarSystemID": 30002537,
+            },
+        )
+        # when
+        result_qs = notif.calc_related_structures()
+        # then
+        self.assertEqual(list(result_qs), [])
+
+    def test_should_return_empty_qs_when_moon_id_is_missing(self):
+        # given
+        sender = EveEntityCorporationFactory()
+        notif = NotificationFactory(
+            sender=sender,
+            notif_type=NotificationType.TOWER_ALERT_MSG.value,
+            text_from_dict={
+                "aggressorAllianceID": 3011,
+                "aggressorCorpID": 2011,
+                "aggressorID": 1011,
+                "armorValue": 0.6950949076033535,
+                "hullValue": 1.0,
+                "shieldValue": 0.3950949076033535,
+                "solarSystemID": 30002537,
+                "typeID": 16213,
+            },
+        )
+        # when
+        result_qs = notif.calc_related_structures()
+        # then
+        self.assertEqual(list(result_qs), [])
+
+    def test_should_return_empty_qs_when_moon_type_id_is_missing(self):
+        # given
+        sender = EveEntityCorporationFactory()
+        notif = NotificationFactory(
+            sender=sender,
+            notif_type=NotificationType.TOWER_ALERT_MSG.value,
+            text_from_dict={
+                "aggressorAllianceID": 3011,
+                "aggressorCorpID": 2011,
+                "aggressorID": 1011,
+                "armorValue": 0.6950949076033535,
+                "hullValue": 1.0,
+                "moonID": 40161465,
+                "shieldValue": 0.3950949076033535,
+                "solarSystemID": 30002537,
+            },
+        )
+        # when
+        result_qs = notif.calc_related_structures()
+        # then
+        self.assertEqual(list(result_qs), [])
