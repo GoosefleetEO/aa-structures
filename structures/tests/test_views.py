@@ -557,7 +557,7 @@ class TestAddStructureOwner(TestCase):
     @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", True)
     @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
     @patch(VIEWS_PATH + ".notify_admins")
-    @patch(VIEWS_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".messages")
     def test_should_add_new_structure_owner_and_notify_admins(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -579,7 +579,7 @@ class TestAddStructureOwner(TestCase):
     @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
     @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
     @patch(VIEWS_PATH + ".notify_admins")
-    @patch(VIEWS_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".messages")
     def test_should_add_character_to_existing_structure_owner_and_reactive(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -616,7 +616,7 @@ class TestAddStructureOwner(TestCase):
     @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
     @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
     @patch(VIEWS_PATH + ".notify_admins")
-    @patch(VIEWS_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".messages")
     def test_should_add_new_structure_owner_and_not_notify_admins(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -637,7 +637,7 @@ class TestAddStructureOwner(TestCase):
     @patch(VIEWS_PATH + ".STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED", False)
     @patch(VIEWS_PATH + ".tasks.update_all_for_owner")
     @patch(VIEWS_PATH + ".notify_admins")
-    @patch(VIEWS_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".messages")
     def test_should_add_structure_owner_with_no_default_webhook(
         self, mock_messages, mock_notify_admins, mock_update_all_for_owner
     ):
@@ -659,7 +659,7 @@ class TestAddStructureOwner(TestCase):
         # webhook.is_default = True
         # webhook.save()
 
-    @patch(VIEWS_PATH + ".messages_plus")
+    @patch(VIEWS_PATH + ".messages")
     def test_should_report_error_when_token_does_not_belong_to_user(
         self, mock_messages
     ):

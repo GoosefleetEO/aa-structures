@@ -6,6 +6,7 @@ from enum import IntEnum
 from typing import Dict
 from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.db.models import Count, Q
@@ -24,7 +25,6 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.allianceauth import notify_admins
 from app_utils.logging import LoggerAddTag
-from app_utils.messages import messages_plus
 from app_utils.views import image_html
 
 from . import __title__, tasks
@@ -436,7 +436,7 @@ def add_structure_owner(request, token):
         )
     except CharacterOwnership.DoesNotExist:
         character_ownership = None
-        messages_plus.error(
+        messages.error(
             request,
             format_html(
                 _(
@@ -444,7 +444,7 @@ def add_structure_owner(request, token):
                     "to add corporations. "
                     "However, character %s is neither. "
                 )
-                % format_html("<strong>{}</strong>", token_char.character_name)
+                % token_char.character_name
             ),
         )
         return redirect("structures:index")
@@ -469,7 +469,7 @@ def add_structure_owner(request, token):
 
     if owner.characters.count() == 1:
         tasks.update_all_for_owner.delay(owner_pk=owner.pk, user_pk=request.user.pk)  # type: ignore
-        messages_plus.info(
+        messages.info(
             request,
             format_html(
                 _(
@@ -479,10 +479,7 @@ def add_structure_owner(request, token):
                     "for this corporation and you will receive a report once "
                     "the process is finished."
                 )
-                % {
-                    "corporation": format_html("<strong>{}</strong>", owner),
-                    "character": format_html("<strong>{}</strong>", token_char),
-                }
+                % {"corporation": owner, "character": token_char}
             ),
         )
         if STRUCTURES_ADMIN_NOTIFICATIONS_ENABLED:
@@ -496,7 +493,7 @@ def add_structure_owner(request, token):
                     title=_("%s: Structure owner added: %s") % (__title__, owner),
                 )
     else:
-        messages_plus.info(
+        messages.info(
             request,
             format_html(
                 _(
@@ -505,8 +502,8 @@ def add_structure_owner(request, token):
                     "You now have %(characters_count)d sync character(s) configured."
                 )
                 % {
-                    "corporation": format_html("<strong>{}</strong>", owner),
-                    "character": format_html("<strong>{}</strong>", token_char),
+                    "corporation": owner,
+                    "character": token_char,
                     "characters_count": owner.characters_count(),
                 }
             ),

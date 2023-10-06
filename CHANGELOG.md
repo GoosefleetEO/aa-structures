@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.5.1] - 2023-10-06
+
+### Update notes
+
+If you are missing planets for your POCOs you can run the following command to re-load them from ESI:
+
+```sh
+python manage.py structures_update_poco_planets
+```
+
+### Added
+
+- Management command to fix missing planets for POCOs
+
+### Fixed
+
+- Planets for POCOs are sometimes missing
+
 ## [2.5.0] - 2023-08-03
 
 ### Changed

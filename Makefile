@@ -41,7 +41,7 @@ compilemessages:
 		-l zh_Hans
 
 coverage:
-	coverage run ../myauth/manage.py test --keepdb && coverage html && coverage report -m
+	coverage run ../myauth/manage.py test --keepdb --failfast && coverage html && coverage report -m
 
 test:
 	# runs a full test incl. re-creating of the test DB

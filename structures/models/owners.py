@@ -651,8 +651,14 @@ class Owner(models.Model):
 
                 # making sure we have all solar systems loaded
                 # incl. their planets for later name matching
-                for solar_system_id in {int(x["system_id"]) for x in pocos}:
-                    EveSolarSystem.objects.get_or_create_esi(id=solar_system_id)
+                solar_system_ids = {int(obj["system_id"]) for obj in pocos}
+                for solar_system_id in solar_system_ids:
+                    EveSolarSystem.objects.get_or_create_esi(
+                        id=solar_system_id,
+                        include_children=True,
+                        wait_for_children=True,
+                        enabled_sections=[EveSolarSystem.Section.PLANETS],
+                    )
 
                 structures.update(
                     self._compile_pocos_for_structures(pocos_2, positions, names)
