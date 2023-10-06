@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.5.1] - 2023-10-06
+
+### Fixed
+
+- Planets for POCOs are sometimes missing
+
 ## [2.5.0] - 2023-08-03
 
 ### Changed
