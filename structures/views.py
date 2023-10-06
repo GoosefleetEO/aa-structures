@@ -444,7 +444,7 @@ def add_structure_owner(request, token):
                     "to add corporations. "
                     "However, character %s is neither. "
                 )
-                % format_html("<strong>{}</strong>", token_char.character_name)
+                % token_char.character_name
             ),
         )
         return redirect("structures:index")
@@ -502,8 +502,8 @@ def add_structure_owner(request, token):
                     "You now have %(characters_count)d sync character(s) configured."
                 )
                 % {
-                    "corporation": format_html("<strong>{}</strong>", owner),
-                    "character": format_html("<strong>{}</strong>", token_char),
+                    "corporation": owner,
+                    "character": token_char,
                     "characters_count": owner.characters_count(),
                 }
             ),
