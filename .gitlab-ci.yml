@@ -30,7 +30,6 @@ pylint:
   script:
   - tox -e pylint
 
-
 test-38-django40:
   extends: .tox_setup
   image: python:3.8-bullseye
