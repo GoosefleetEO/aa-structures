@@ -3,6 +3,10 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
+# Translators:
+# Николай Постников, 2023
+# - -, 2023
+#
 #, fuzzy
 msgid ""
 msgstr ""
@@ -10,68 +14,71 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-29 17:51+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
-"Language-Team: Russian (Russia) (https://www.transifex.com/kalkoken-apps/"
-"teams/107978/ru_RU/)\n"
-"Language: ru_RU\n"
+"Last-Translator: - -, 2023\n"
+"Language-Team: Russian (https://app.transifex.com/kalkoken-apps/teams/107978/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
-"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: admin.py:113
 msgid "Sent fuel notifications for selected configuration"
-msgstr ""
+msgstr "Отправить уведомление о топливе по выбранной конфигурации"
 
 #: admin.py:139
 msgid ""
 "Timing configuration for sending fuel notifications. Note that the first "
-"notification will be sent at the exact start hour, and the last notification "
-"will be sent one repeat before the end hour."
+"notification will be sent at the exact start hour, and the last notification"
+" will be sent one repeat before the end hour."
 msgstr ""
+"Конфигурация времени для отправки уведомлений о топливе. Обратите внимание, "
+"что первое уведомление будет отправлено точно в час начала, а последнее "
+"уведомление будет отправлено за один раз до часа окончания."
 
 #: admin.py:241 models/structures_1.py:168
 msgid "N/A"
-msgstr ""
+msgstr "N/A"
 
 #: admin.py:256
 msgid "Not configured"
-msgstr ""
+msgstr "Не настроено"
 
 #: admin.py:274
 msgid "Mark selected notifications as sent"
-msgstr ""
+msgstr "Пометить как отправленное"
 
 #: admin.py:280
 msgid "Mark selected notifications as unsent"
-msgstr ""
+msgstr "Пометить как неотправленное"
 
 #: admin.py:286
 msgid "Send selected notifications to configured webhooks"
-msgstr ""
+msgstr "Отправить выбранное по настроенным вебхукам"
 
 #: admin.py:301
 msgid "Process selected notifications for timerboard"
-msgstr ""
+msgstr "Преобразовать выбранное в таймер"
 
 #: admin.py:442
 msgid ""
 "Notifications can not be sent, because there is no webhook configured for "
 "this owner."
 msgstr ""
+"Оповещение не может быть отправлено из-за того, что вебхук не настроен для "
+"этого владельца."
 
 #: admin.py:462
 msgid "Activate selected owners"
-msgstr ""
+msgstr "Активировать выбранных владельцев"
 
 #: admin.py:467
 msgid "Deactivate selected owner"
-msgstr ""
+msgstr "Выключить выбранных владельцев"
 
 #: admin.py:472
 msgid "Update all from EVE server for selected owners"
-msgstr ""
+msgstr "Обновить всё с серверов EVE для выбранных владельцев"
 
 #: admin.py:478
 #, python-format
@@ -79,59 +86,64 @@ msgid ""
 "Started updating structures and notifications for %s. You will receive a "
 "notification once it is completed."
 msgstr ""
+"Начато обновление структур и оповещений - %s. Вы получите сообщение как "
+"только оно закончится."
 
 #: admin.py:486
 msgid "Update structures from EVE server for selected owners"
-msgstr ""
+msgstr "Обновить структуры с сервера EVE для выбранных владельцев"
 
 #: admin.py:498
 msgid "Fetch notifications from EVE server for selected owners"
-msgstr ""
+msgstr "Получить оповещения с сервера Eve для выбранных владельцев"
 
 #: admin.py:913
 msgid "Remove user tags for selected structures"
-msgstr ""
+msgstr "Удалить пользовательские теги у выбранных структур"
 
 #: admin.py:925
 msgid "Update generated tags for selected structures"
-msgstr ""
+msgstr "Обновить автоматические теги у выбранных структур"
 
 #: admin.py:1035
 msgid "Please add this webhook to an owner or structure to enable it."
 msgstr ""
+"Пожалуйста добавьте этот вебхук владельцу или структуре чтобы включить его."
 
 #: admin.py:1046
 msgid "Send test notification to selected webhook"
-msgstr ""
+msgstr "Отправить пробное сообщение по выбранному вебхуку"
 
 #: admin.py:1055
 #, python-format
 msgid ""
-"Initiated sending test notification to webhook %s. You will receive a report "
-"on completion."
+"Initiated sending test notification to webhook %s. You will receive a report"
+" on completion."
 msgstr ""
+"Инициировано отправление тестового оповещения по вебхуку %s. Вы получите "
+"отчет при выполнении."
 
 #: admin.py:1061
 msgid "Activate selected webhook"
-msgstr ""
+msgstr "Включить выбранных вебхук"
 
 #: admin.py:1066
 #, python-format
 msgid "You have activated webhook %s"
-msgstr ""
+msgstr "Вы активировали вебхук %s"
 
 #: admin.py:1068
 msgid "Deactivate selected webhook"
-msgstr ""
+msgstr "Выключить выбранных вебхук"
 
 #: admin.py:1073
 #, python-format
 msgid "You have de-activated webhook %s"
-msgstr ""
+msgstr "Вы деактивировали вебхук %s"
 
 #: admin.py:1075
 msgid "Purge queued messages from selected webhooks"
-msgstr ""
+msgstr "Удалить сообщения в очереди выбранных вебхуков"
 
 #: admin.py:1085
 #, python-format
@@ -139,643 +151,656 @@ msgid ""
 "Purged queued messages for %(actions_count)s webhooks, deleting a total of "
 "%(killmails_deleted)s messages."
 msgstr ""
+"Удалены сообщения в очереди для %(actions_count)s вебхуков, удаление "
+"%(killmails_deleted)s сообщений. "
 
 #: admin.py:1091
 msgid "Send queued messages from selected webhooks"
-msgstr ""
+msgstr "Отправить сообщения в очереди выбранных вебхуков"
 
 #: admin.py:1099
 #, python-format
 msgid "Started sending queued messages for %d webhooks."
-msgstr ""
+msgstr "Началось отправление сообщений в очереди для %d вебхуков."
 
 #: core/notification_timers.py:93
 msgid "Armor timer"
-msgstr ""
+msgstr "Таймер брони"
 
 #: core/notification_timers.py:94 core/notification_timers.py:199
 #: core/notification_timers.py:370
 msgid "Final timer"
-msgstr ""
+msgstr "Финальный таймер"
 
 #: core/notification_timers.py:151
 msgid "Sov timer"
-msgstr ""
+msgstr "Таймер сувернитета"
 
 #: core/notification_timers.py:253
 msgid "Extraction ready"
-msgstr ""
+msgstr "Извлечение завершено"
 
 #: core/notification_types.py:15
 msgid "Upwell structure anchoring"
-msgstr ""
+msgstr "Постановка на якорь стуктуры Апвелл"
 
 #: core/notification_types.py:16
 msgid "Upwell structure went online"
-msgstr ""
+msgstr "Структура Апвелл онлайн"
 
 #: core/notification_types.py:18
 msgid "Upwell structure services went offline"
-msgstr ""
+msgstr "Служебные модули структуры Апвелл офлайн"
 
 #: core/notification_types.py:21
 msgid "Upwell structure went high power"
-msgstr ""
+msgstr "Структура Апвелл на полной мощности"
 
 #: core/notification_types.py:24
 msgid "Upwell structure went low power"
-msgstr ""
+msgstr "Структура Апвелл на малой мощности"
 
 #: core/notification_types.py:26
 msgid "Upwell structure unanchoring"
-msgstr ""
+msgstr "Структура Апвелл снимается с якоря"
 
 #: core/notification_types.py:27
 msgid "Upwell structure fuel alert"
-msgstr ""
+msgstr "Оповещение о топливе структур Апвелл"
 
 #: core/notification_types.py:28
 msgid "Upwell structure refueled"
-msgstr ""
+msgstr "Структура Апвелл заправлена"
 
 #: core/notification_types.py:30
 msgid "Upwell structure jump fuel alert"
-msgstr ""
+msgstr "Оповещение о топливе навигационных структур Апвелл"
 
 #: core/notification_types.py:33
 msgid "Upwell structure is under attack"
-msgstr ""
+msgstr "Структура Апвелл под атакой"
 
 #: core/notification_types.py:35
 msgid "Upwell structure lost shields"
-msgstr ""
+msgstr "Структура Апвелл потеряла щиты"
 
 #: core/notification_types.py:36
 msgid "Upwell structure lost armor"
-msgstr ""
+msgstr "Структура Апвелл потеряла броню"
 
 #: core/notification_types.py:37
 msgid "Upwell structure destroyed"
-msgstr ""
+msgstr "Структура Апвелл уничтожена"
 
 #: core/notification_types.py:40
 msgid "Upwell structure reinforcement time changed"
-msgstr ""
+msgstr "Время укрепления структуры Апвелл изменено"
 
 #: core/notification_types.py:43
 msgid "Upwell structure ownership transferred"
-msgstr ""
+msgstr "Правовладение структурой Апвелл передано"
 
 #: core/notification_types.py:47
 msgid "Customs office attacked"
-msgstr ""
+msgstr "Таможня атакована"
 
 #: core/notification_types.py:48
 msgid "Customs office reinforced"
-msgstr ""
+msgstr "Таможня укреплена"
 
 #: core/notification_types.py:51
 msgid "Starbase attacked"
-msgstr ""
+msgstr "Орбитальная станция атакована"
 
 #: core/notification_types.py:52
 msgid "Starbase fuel alert"
-msgstr ""
+msgstr "Оповещение о топливе орбитальной станции"
 
 #: core/notification_types.py:53
 msgid "Starbase refueled (BETA)"
-msgstr ""
+msgstr "Орбитальная станция заправлена (БЕТА)"
 
 #: core/notification_types.py:54
 msgid "Starbase reinforced (BETA)"
-msgstr ""
+msgstr "Орбитальная станция укреплена (БЕТА)"
 
 #: core/notification_types.py:58
 msgid "Moon mining extraction started"
-msgstr ""
+msgstr "Добыча лунной руды началась"
 
 #: core/notification_types.py:60
 msgid "Moonmining laser fired"
-msgstr ""
+msgstr "Лунодобывающий лазер выстрелил"
 
 #: core/notification_types.py:62
 msgid "Moon mining extraction cancelled"
-msgstr ""
+msgstr "Извлечение лунной руды отменено"
 
 #: core/notification_types.py:65
 msgid "Moon mining extraction finished"
-msgstr ""
+msgstr "Извлечение лунной руды завершено"
 
 #: core/notification_types.py:68
 msgid "Moon mining automatic fracture triggered"
-msgstr ""
+msgstr "Лунная руда автоматически раздробилась"
 
 #: core/notification_types.py:73
 msgid "Sovereignty structure reinforced"
-msgstr ""
+msgstr "Структура сувернитета укреплена"
 
 #: core/notification_types.py:76
 msgid "Sovereignty structure destroyed"
-msgstr ""
+msgstr "Структура сувернитета уничтожена"
 
 #: core/notification_types.py:79
 msgid "Sovereignty entosis capture started"
-msgstr ""
+msgstr "Энтоз-захват сувернитетета начался"
 
 #: core/notification_types.py:82
 msgid "Sovereignty command node event started"
-msgstr ""
+msgstr "Ивент командных узлов сувернитета начался"
 
 #: core/notification_types.py:85
 msgid "Sovereignty claim acknowledgment"
-msgstr ""
+msgstr "Сувернитет получил признание"
 
 #: core/notification_types.py:87
 msgid "Sovereignty lost"
-msgstr ""
+msgstr "Потеря сувернитета"
 
 #: core/notification_types.py:89
 msgid "Structure anchoring in alliance space"
-msgstr ""
+msgstr "Структура ставится на якорь на территории альянса"
 
 #: core/notification_types.py:93
 msgid "War declared"
-msgstr ""
+msgstr "Война объявлена"
 
 #: core/notification_types.py:95
 msgid "War ally joined aggressor"
-msgstr ""
+msgstr "Военный союзник присоединился к агрессору"
 
 #: core/notification_types.py:97
 msgid "War ally joined ally"
-msgstr ""
+msgstr "Военный союзник присоединился к союзникам"
 
 #: core/notification_types.py:99
 msgid "War ally joined defender"
-msgstr ""
+msgstr "Военный союзник присоединился к стороне защиты"
 
 #: core/notification_types.py:101
 msgid "War adopted"
-msgstr ""
+msgstr "Война принята"
 
 #: core/notification_types.py:102
 msgid "War inherited"
-msgstr ""
+msgstr "Война передана"
 
 #: core/notification_types.py:103
 msgid "War party surrendered"
-msgstr ""
+msgstr "Военная компания капитулировала"
 
 #: core/notification_types.py:105
 msgid "War retracted by Concord"
-msgstr ""
+msgstr "Война отменена Конкордом"
 
 #: core/notification_types.py:108
 msgid "War corporation became eligible"
-msgstr ""
+msgstr "Корпорация получила право на войну"
 
 #: core/notification_types.py:111
 msgid "War corporation no longer eligible"
-msgstr ""
+msgstr "Корпорация больше не имеет прав на войну"
 
 #: core/notification_types.py:113
 msgid "War surrender offered"
-msgstr ""
+msgstr "Предлагается капитуляция в войне"
 
 #: core/notification_types.py:116
 msgid "Character submitted application"
-msgstr ""
+msgstr "Поданная заявка персонажа"
 
 #: core/notification_types.py:118
 msgid "Character invited to join corporation"
-msgstr ""
+msgstr "Персонажу предложено вступить в корпорацию"
 
 #: core/notification_types.py:121
 msgid "Corp application rejected"
-msgstr ""
+msgstr "Заявка в корпорацию отклонена"
 
 #: core/notification_types.py:123
 msgid "Character withdrew application"
-msgstr ""
+msgstr "Персонаж отозвал заявку"
 
 #: core/notification_types.py:124
 msgid "Character joins corporation"
-msgstr ""
+msgstr "Персонаж вступает в корпорацию"
 
 #: core/notification_types.py:125
 msgid "Character leaves corporation"
-msgstr ""
+msgstr "Персонаж покидает корпорацию"
 
 #: core/notification_types.py:128
 msgid "Bill out of money"
-msgstr ""
+msgstr "Закончились деньги"
 
 #: core/notification_types.py:131
 msgid "I-HUB bill about to expire"
-msgstr ""
+msgstr "Срок счёта центра инфраструктуры подходит к концу"
 
 #: core/notification_types.py:135
 msgid "I_HUB destroyed by bill failure"
-msgstr ""
+msgstr "Центр инфраструктуры уничтожен ввиду неуплаты"
 
 #: core/serializers.py:497
 msgid "yes"
-msgstr ""
+msgstr "да"
 
 #: core/serializers.py:502
 msgid "no"
-msgstr ""
+msgstr "нет"
 
 #: models/notifications.py:50
 msgid "English"
-msgstr ""
+msgstr "Английский"
 
 #: models/notifications.py:51
 msgid "German"
-msgstr ""
+msgstr "Немецкий"
 
 #: models/notifications.py:52
 msgid "Spanish"
-msgstr ""
+msgstr "Испанский"
 
 #: models/notifications.py:53
 msgid "Chinese Simplified"
-msgstr ""
+msgstr "Китайский (упрощенный)"
 
 #: models/notifications.py:54
 msgid "Russian"
-msgstr ""
+msgstr "Русский"
 
 #: models/notifications.py:55
 msgid "Korean"
-msgstr ""
+msgstr "Корейский"
 
 #: models/notifications.py:71
 msgid "notification types"
-msgstr ""
+msgstr "типы оповещений"
 
 #: models/notifications.py:73
 msgid "Select which type of notifications should be forwarded to this webhook"
-msgstr ""
+msgstr "Выберите какой тип оповещений будет отсылаться по этому вебхуку"
 
 #: models/notifications.py:82
 msgid "language"
-msgstr ""
+msgstr "язык"
 
 #: models/notifications.py:83
 msgid "language of notifications send to this webhook"
-msgstr ""
+msgstr "язык отправляемых оповещений по этому вебхуку"
 
 #: models/notifications.py:87 models/structures_1.py:94
 msgid "is default"
-msgstr ""
+msgstr "по умолчанию"
 
 #: models/notifications.py:89
 msgid "Whether owners have this webhook automatically pre-set when created"
-msgstr ""
+msgstr "Получают ли при создании владельцы этот вебхук автоматически"
 
 #: models/notifications.py:94 models/owners.py:151
 msgid "has default pings enabled"
-msgstr ""
+msgstr "включены базовые пинги"
 
 #: models/notifications.py:105 models/owners.py:197
 msgid "ping groups"
-msgstr ""
+msgstr "пинг групп"
 
 #: models/notifications.py:106
 msgid "Groups to be pinged for each notification - "
-msgstr ""
+msgstr "Группы будет пропингованы по каждому оповещению - "
 
 #: models/notifications.py:111
 msgid "webhook"
-msgstr ""
+msgstr "вебхук"
 
 #: models/notifications.py:112 models/owners.py:212 models/structures_1.py:397
 msgid "webhooks"
-msgstr ""
+msgstr "вебхуки"
 
 #: models/notifications.py:126
 msgid "is sent"
-msgstr ""
+msgstr "отправлено"
 
 #: models/notifications.py:127
 msgid "True when this notification has been forwarded to Discord"
-msgstr ""
+msgstr "Галочка, если это оповещение было отправлено в Дискорд"
 
 #: models/notifications.py:132
 msgid "is timer added"
-msgstr ""
+msgstr "таймер добавлен"
 
 #: models/notifications.py:133
 msgid "True when a timer has been added for this notification"
-msgstr ""
+msgstr "Галочка, если был добавлен таймер по этому оповещению"
 
 #: models/notifications.py:139 models/structures_1.py:250
 #: models/structures_1.py:809
 msgid "type"
-msgstr ""
+msgstr "тип"
 
 #: models/notifications.py:140
 msgid "type of this notification"
-msgstr ""
+msgstr "тип оповещения"
 
 #: models/notifications.py:145 models/owners.py:219 models/owners.py:1304
 #: models/structures_1.py:320
 msgid "owner"
-msgstr ""
+msgstr "Владелец"
 
 #: models/notifications.py:146
 msgid "Corporation that owns this notification"
-msgstr ""
+msgstr "Корпорация, которой принадлежит это уведомление"
 
 #: models/notifications.py:150 models/structures_1.py:410
 msgid "structures"
-msgstr ""
+msgstr "структуры"
 
 #: models/notifications.py:151
 msgid "Structures this notification is about (if any)"
-msgstr ""
+msgstr "Структуры, о которых идёт речь (если есть)"
 
 #: models/notifications.py:521 models/structures_1.py:210
 #: models/structures_1.py:795
 msgid "id"
-msgstr ""
+msgstr "id"
 
 #: models/notifications.py:525
 msgid "created"
-msgstr ""
+msgstr "создано"
 
 #: models/notifications.py:526
 msgid "Date when this notification was first received from ESI"
-msgstr ""
+msgstr "Дата, когда это оповещение было получено от ESI в первый раз"
 
 #: models/notifications.py:531
 msgid "is read"
-msgstr ""
+msgstr "прочитано"
 
 #: models/notifications.py:532
 msgid "True when this notification has read in the eve client"
-msgstr ""
+msgstr "Галочка, если это оповещение было прочтено в клиенте Eve"
 
 #: models/notifications.py:535
 msgid "last updated"
-msgstr ""
+msgstr "последний раз обновлено"
 
 #: models/notifications.py:536
 msgid "Date when this notification has last been updated from ESI"
-msgstr ""
+msgstr "Дата, когда это оповещение было обновлено ESI в последний раз "
 
 #: models/notifications.py:543
 msgid "sender"
-msgstr ""
+msgstr "отправитель"
 
 #: models/notifications.py:550
 msgid "text"
-msgstr ""
+msgstr "текст"
 
 #: models/notifications.py:551
 msgid "Notification details in YAML"
-msgstr ""
+msgstr "Детали оповещения в YAML"
 
 #: models/notifications.py:553 models/notifications.py:672
 msgid "timestamp"
-msgstr ""
+msgstr "временная метка"
 
 #: models/notifications.py:558
 msgid "eve notification"
-msgstr ""
+msgstr "оповещение eve"
 
 #: models/notifications.py:559
 msgid "eve notifications"
-msgstr ""
+msgstr "оповещения eve"
 
 #: models/notifications.py:670
 msgid "details"
-msgstr ""
+msgstr "детали"
 
 #: models/notifications.py:671
 msgid "last_updated"
-msgstr ""
+msgstr "последнее_обновление"
 
 #: models/notifications.py:677
 msgid "generated notification"
-msgstr ""
+msgstr "созданное оповещение"
 
 #: models/notifications.py:678
 msgid "generated  notifications"
-msgstr ""
+msgstr "созданные оповещения"
 
 #: models/notifications.py:708
 msgid "channel pings"
-msgstr ""
+msgstr "канал пингов"
 
 #: models/notifications.py:710
 msgid ""
-"Option to ping every member of the channel. This setting can be overruled by "
-"the respective owner or webhook configuration"
+"Option to ping every member of the channel. This setting can be overruled by"
+" the respective owner or webhook configuration"
 msgstr ""
+"Возможность пинговать каждого участника канала. Этот параметр может быть "
+"отменен соответствующим владельцем или конфигурацией вебхука"
 
 #: models/notifications.py:720
 msgid "color"
-msgstr ""
+msgstr "цвет"
 
 #: models/notifications.py:721
 msgid "Context color of these notification on Discord"
-msgstr ""
+msgstr "Цвет контекста уведомлений в Дискорде"
 
 #: models/notifications.py:725
 msgid "is_enabled"
-msgstr ""
+msgstr "включено"
 
 #: models/notifications.py:726
 msgid "Disabled configurations will not create any new alerts."
-msgstr ""
+msgstr "Выключеные конфигурации не будут создавать новые уведомления."
 
 #: models/notifications.py:749
 msgid "end"
-msgstr ""
+msgstr "конец"
 
 #: models/notifications.py:749
 msgid "End of alerts in hours before fuel expires"
-msgstr ""
+msgstr "Конец оповещений перед окончание топлива, в часах"
 
 #: models/notifications.py:752
 msgid "repeat"
-msgstr ""
+msgstr "повтор"
 
 #: models/notifications.py:754
 msgid "Notifications will be repeated every x hours. Set to 0 for no repeats"
 msgstr ""
+"Оповещения будут повторяться каждые x часов. Установите 0 чтобы не было "
+"повторов"
 
 #: models/notifications.py:758
 msgid "start"
-msgstr ""
+msgstr "начало"
 
 #: models/notifications.py:759
 msgid "Start of alerts in hours before fuel expires"
-msgstr ""
+msgstr "Начало оповещений перед окончанием топлива, в часах"
 
 #: models/notifications.py:763
 msgid "structure fuel alert config"
-msgstr ""
+msgstr "конфиг оповещений о топливе структуры"
 
 #: models/notifications.py:764
 msgid "structure fuel alert configs"
-msgstr ""
+msgstr "конфиги оповещений о топливе структуры"
 
 #: models/notifications.py:771
 msgid "Start must be before end, i.e. have a larger value."
-msgstr ""
+msgstr "Начало должно быть до конца, то есть должно иметь выше значение."
 
 #: models/notifications.py:775
 msgid "Repeat can not be larger that the interval size."
-msgstr ""
+msgstr "Число повторов не может быть больше интервала."
 
 #: models/notifications.py:784
 msgid "This configuration may not overlap with an existing configuration."
-msgstr ""
+msgstr "Эта конфигурация не может пересекаться с существующей конфигурацией."
 
 #: models/notifications.py:851
 msgid "threshold"
-msgstr ""
+msgstr "порог"
 
 #: models/notifications.py:853
 msgid ""
 "Notifications will be sent once fuel level in units reaches this threshold"
-msgstr ""
+msgstr "Оповещение будет отправлено, когда количество топлива пересечёт порог"
 
 #: models/notifications.py:858
 msgid "jump fuel alert config"
-msgstr ""
+msgstr "конфиг оповещений о топливе навигационных структур"
 
 #: models/notifications.py:859
 msgid "jump fuel alert configs"
-msgstr ""
+msgstr "конфиги оповещений о топливе навигационных структур"
 
 #: models/notifications.py:911 models/notifications.py:961
 #: models/structures_1.py:409 models/structures_1.py:801
 #: models/structures_2.py:46
 msgid "structure"
-msgstr ""
+msgstr "структура"
 
 #: models/notifications.py:917 models/notifications.py:967
 msgid "configuration"
-msgstr ""
+msgstr "конфигурация"
 
 #: models/notifications.py:921
 msgid "hours"
-msgstr ""
+msgstr "часы"
 
 #: models/notifications.py:922
 msgid "number of hours before fuel expiration this alert was sent"
 msgstr ""
+"за количество часов до истечения топлива было отправлено это оповещение"
 
 #: models/notifications.py:926
 msgid "structure fuel alert"
-msgstr ""
+msgstr "оповещение о топливе структуры"
 
 #: models/notifications.py:927
 msgid "structure fuel alerts"
-msgstr ""
+msgstr "оповещения о топливе структуры"
 
 #: models/notifications.py:971
 msgid "jump fuel alert"
-msgstr ""
+msgstr "оповещение о топливе навигационной структуры"
 
 #: models/notifications.py:972
 msgid "jump fuel alerts"
-msgstr ""
+msgstr "оповещения о топливе навигационной структуры"
 
 #: models/owners.py:117
 msgid "corporation"
-msgstr ""
+msgstr "корпорация"
 
 #: models/owners.py:118
 msgid "Corporation owning structures"
-msgstr ""
+msgstr "Корпорация, владеющая структурами"
 
 #: models/owners.py:123
 msgid "are pocos public"
-msgstr ""
+msgstr "ПОСы публичны"
 
 #: models/owners.py:124
 msgid "whether pocos of this owner are shown on public POCO page"
-msgstr ""
+msgstr "отображаются ли ПОСы этого владельца на общедоступной странице ПОСов"
 
 #: models/owners.py:130
 msgid "assets last update at"
-msgstr ""
+msgstr "последнее обновления имущества в"
 
 #: models/owners.py:131 models/owners.py:147 models/owners.py:190
 #: models/owners.py:205
 msgid "when the last successful update happened"
-msgstr ""
+msgstr "когда последнее успешное обновление произошло"
 
 #: models/owners.py:146
 msgid "forwarding last update at"
-msgstr ""
+msgstr "пересылка последнего обновления на"
 
 #: models/owners.py:153
 msgid ""
 "to enable or disable pinging of notifications for this owner e.g. with "
 "@everyone and @here"
 msgstr ""
+"для включения или отключения пингов оповещений для этого владельца например,"
+" @everyone и @here"
 
 #: models/owners.py:159
 msgid "is active"
-msgstr ""
+msgstr "включено"
 
 #: models/owners.py:160
 msgid "whether this owner is currently included in the sync process"
-msgstr ""
+msgstr "включен ли этот владелец в данный момент в процесс синхронизации"
 
 #: models/owners.py:164
 msgid "is alliance main"
-msgstr ""
+msgstr "альянсовый"
 
 #: models/owners.py:166
 msgid ""
 "whether alliance wide notifications are forwarded for this owner (e.g. sov "
 "notifications)"
 msgstr ""
+"пересылаются ли этому владельцу уведомления всего альянса (например, "
+"уведомления сувернитета)"
 
 #: models/owners.py:172
 msgid "is included in service status"
-msgstr ""
+msgstr "включает в себя состояние служебных модулей"
 
 #: models/owners.py:174
 msgid ""
 "whether the sync status of this owner is included in the overall status of "
 "this services"
 msgstr ""
+"включен ли статус синхронизации этого владельца в общий статус этих "
+"служебных модулей"
 
 #: models/owners.py:182
 msgid "is up"
-msgstr ""
+msgstr "включен"
 
 #: models/owners.py:183
 msgid "whether all services for this owner are currently up"
-msgstr ""
+msgstr "все ли модули для этого владельца в настоящее время доступны"
 
 #: models/owners.py:189
 msgid "notifications last update at"
-msgstr ""
+msgstr "последнее обновление оповещений в"
 
 #: models/owners.py:198
 msgid "Groups to be pinged for each notification. "
-msgstr ""
+msgstr "Группы получат пинг о каждом оповещении."
 
 #: models/owners.py:204
 msgid "structures last update at"
-msgstr ""
+msgstr "последнее обновление структур в"
 
 #: models/owners.py:213
 msgid "Notifications are sent to these webhooks."
-msgstr ""
+msgstr "Оповещение, отправленные по этому вебхуку."
 
 #: models/owners.py:220
 msgid "owners"
-msgstr ""
+msgstr "Владельцы"
 
 #: models/owners.py:1159
 #, python-format
@@ -783,940 +808,958 @@ msgid ""
 "Syncing of %(topic)s for %(owner)s %(result)s.\n"
 " %(message_details)s"
 msgstr ""
+"Синхронизация %(topic)s %(owner)s %(result)s.\n"
+"%(message_details)s"
 
 #: models/owners.py:1163
 msgid "completed successfully"
-msgstr ""
+msgstr "успешно завершено"
 
 #: models/owners.py:1168
 #, python-format
 msgid "%(title)s: %(topic)s updated for %(owner)s: %(result)s"
-msgstr ""
+msgstr "%(title)s: %(topic)s обновлено для %(owner)s: %(result)s "
 
 #: models/owners.py:1173
 msgid "OK"
-msgstr ""
+msgstr "ОК"
 
 #: models/owners.py:1310
 msgid "character_ownership"
-msgstr ""
+msgstr "правовладение_персонажем"
 
 #: models/owners.py:1318
 msgid "structures last used at"
-msgstr ""
+msgstr "структурой последний раз пользовались в"
 
 #: models/owners.py:1326
 msgid "notifications last used at"
-msgstr ""
+msgstr "оповещением последний раз пользовались в"
 
 #: models/owners.py:1332
 msgid "error count"
-msgstr ""
+msgstr "количество ошибок"
 
 #: models/owners.py:1338
 msgid "owner character"
-msgstr ""
+msgstr "владелец персонажа"
 
 #: models/owners.py:1339
 msgid "owner characters"
-msgstr ""
+msgstr "владелец персонажей"
 
 #: models/structures_1.py:38
 msgid "sov"
-msgstr ""
+msgstr "сувернитет"
 
 #: models/structures_1.py:39
 msgid "highsec"
-msgstr ""
+msgstr "хай-сек"
 
 #: models/structures_1.py:40
 msgid "lowsec"
-msgstr ""
+msgstr "лоу-сек"
 
 #: models/structures_1.py:41
 msgid "nullsec"
-msgstr ""
+msgstr "нуль-сек"
 
 #: models/structures_1.py:42
 msgid "w_space"
-msgstr ""
+msgstr "w_пространство"
 
 #: models/structures_1.py:47
 msgid "grey"
-msgstr ""
+msgstr "серый"
 
 #: models/structures_1.py:48
 msgid "dark blue"
-msgstr ""
+msgstr "тёмно-синий"
 
 #: models/structures_1.py:49
 msgid "green"
-msgstr ""
+msgstr "зелёный"
 
 #: models/structures_1.py:50
 msgid "light blue"
-msgstr ""
+msgstr "светло-синий"
 
 #: models/structures_1.py:51
 msgid "orange"
-msgstr ""
+msgstr "оранжевый"
 
 #: models/structures_1.py:52
 msgid "red"
-msgstr ""
+msgstr "красный"
 
 #: models/structures_1.py:64 models/structures_1.py:292
 #: models/structures_2.py:50
 msgid "name"
-msgstr ""
+msgstr "имя"
 
 #: models/structures_1.py:65
 msgid "name of the tag - must be unique"
-msgstr ""
+msgstr "имя или тег должны быть уникальными"
 
 #: models/structures_1.py:71
 msgid "description"
-msgstr ""
+msgstr "описание"
 
 #: models/structures_1.py:72
 msgid "description for this tag"
-msgstr ""
+msgstr "описание для этого тега"
 
 #: models/structures_1.py:79
 msgid "style"
-msgstr ""
+msgstr "стиль"
 
 #: models/structures_1.py:80
 msgid "color style of tag"
-msgstr ""
+msgstr "цветовой стиль тега"
 
 #: models/structures_1.py:86
 msgid "order"
-msgstr ""
+msgstr "ордер"
 
 #: models/structures_1.py:88
 msgid ""
 "number defining the order tags are shown. custom tags can not have an order "
 "below 100"
 msgstr ""
+"номера, определяющие теги ордера, отображаются. пользовательские теги не "
+"могут иметь ордер ниже 100"
 
 #: models/structures_1.py:96
 msgid "if true this custom tag will automatically be added to new structures"
 msgstr ""
+"если включено, этот пользовательский тег будет автоматически добавлен в "
+"новые структуры"
 
 #: models/structures_1.py:101
 msgid "is user managed"
-msgstr ""
+msgstr "управляется пользователем"
 
 #: models/structures_1.py:103
 msgid ""
 "if False this tag is created and managed by the system and can not be "
 "modified by users"
 msgstr ""
+"если выключено, этот тег создается и управляется системой и не может быть "
+"изменен пользователями"
 
 #: models/structures_1.py:111
 msgid "structure tag"
-msgstr ""
+msgstr "тег структуры"
 
 #: models/structures_1.py:112
 msgid "structure tags"
-msgstr ""
+msgstr "теги структуры"
 
 #: models/structures_1.py:149
 msgid "anchor vulnerable"
-msgstr ""
+msgstr "якорь уязвим"
 
 #: models/structures_1.py:150
 msgid "anchoring"
-msgstr ""
+msgstr "постановка на якорь"
 
 #: models/structures_1.py:151
 msgid "armor reinforce"
-msgstr ""
+msgstr "броня укреплена"
 
 #: models/structures_1.py:152
 msgid "armor vulnerable"
-msgstr ""
+msgstr "броня уязвима"
 
 #: models/structures_1.py:153
 msgid "deploy vulnerable"
-msgstr ""
+msgstr "развёртывается уязвимо"
 
 #: models/structures_1.py:154
 msgid "fitting invulnerable"
-msgstr ""
+msgstr "неуязвимый"
 
 #: models/structures_1.py:155
 msgid "hull reinforce"
-msgstr ""
+msgstr "корпус укреплён"
 
 #: models/structures_1.py:156
 msgid "hull vulnerable"
-msgstr ""
+msgstr "корпус уязвим"
 
 #: models/structures_1.py:157
 msgid "online deprecated"
-msgstr ""
+msgstr "онлайн устарел"
 
 #: models/structures_1.py:158
 msgid "onlining vulnerable"
-msgstr ""
+msgstr "включается уязвимо"
 
 #: models/structures_1.py:159
 msgid "shield vulnerable"
-msgstr ""
+msgstr "щит уязвим"
 
 #: models/structures_1.py:160
 msgid "unanchored"
-msgstr ""
+msgstr "снято с якоря"
 
 #: models/structures_1.py:162 models/structures_2.py:29
 msgid "offline"
-msgstr ""
+msgstr "выключено"
 
 #: models/structures_1.py:163 models/structures_2.py:30
 msgid "online"
-msgstr ""
+msgstr "включено"
 
 #: models/structures_1.py:164
 msgid "onlining"
-msgstr ""
+msgstr "включается"
 
 #: models/structures_1.py:165
 msgid "reinforced"
-msgstr ""
+msgstr "укреплено"
 
 #: models/structures_1.py:166
 msgid "unanchoring "
-msgstr ""
+msgstr "снимается с якоря"
 
 #: models/structures_1.py:169
 msgid "unknown"
-msgstr ""
+msgstr "неизвестно"
 
 #: models/structures_1.py:202
 msgid "Full Power"
-msgstr ""
+msgstr "Полная Мощность"
 
 #: models/structures_1.py:203
 msgid "Low Power"
-msgstr ""
+msgstr "Малая Мощность"
 
 #: models/structures_1.py:204
 msgid "Abandoned"
-msgstr ""
+msgstr "Заброшенный"
 
 #: models/structures_1.py:205
 msgid "Abandoned?"
-msgstr ""
+msgstr "Заброшенный?"
 
 #: models/structures_1.py:206
 msgid "Unknown"
-msgstr ""
+msgstr "Неизвестный"
 
 #: models/structures_1.py:211
 msgid "The Item ID of the structure"
-msgstr ""
+msgstr "Item ID структуры"
 
 #: models/structures_1.py:216
 msgid "created at"
-msgstr ""
+msgstr "создано в"
 
 #: models/structures_1.py:217
 msgid "date this structure was received from ESI for the first time"
-msgstr ""
+msgstr "дата этой структуры была получена от ESI в первый раз"
 
 #: models/structures_1.py:226
 msgid "moon"
-msgstr ""
+msgstr "луна"
 
 #: models/structures_1.py:227
 msgid "Moon next to this structure - if any"
-msgstr ""
+msgstr "Луна рядом с этим сооружением – если есть"
 
 #: models/structures_1.py:236
 msgid "planet"
-msgstr ""
+msgstr "планета"
 
 #: models/structures_1.py:237
 msgid "Planet next to this structure - if any"
-msgstr ""
+msgstr "Планета рядом с этим сооружением – если есть"
 
 #: models/structures_1.py:243
 msgid "solar system"
-msgstr ""
+msgstr "солнечная система"
 
 #: models/structures_1.py:244
 msgid "Solar System the structure is located"
-msgstr ""
+msgstr "Солнечная Система в которой находится структура"
 
 #: models/structures_1.py:251
 msgid "Type of the structure"
-msgstr ""
+msgstr "Тип структуры"
 
 #: models/structures_1.py:257
 msgid "fuel expires at"
-msgstr ""
+msgstr "топливо кончается в"
 
 #: models/structures_1.py:258
 msgid "Date on which the structure will run out of fuel"
-msgstr ""
+msgstr "Дата, когда у структуры кончается топливо"
 
 #: models/structures_1.py:265
 msgid "has fitting"
-msgstr ""
+msgstr "имеет фит"
 
 #: models/structures_1.py:266
 msgid "bool indicating if the structure has a fitting"
-msgstr ""
+msgstr "логическое значение, указывающее, есть ли у структуры фит"
 
 #: models/structures_1.py:273
 msgid "has core"
-msgstr ""
+msgstr "имеет ядро"
 
 #: models/structures_1.py:274
 msgid "bool indicating if the structure has a quantum core"
-msgstr ""
+msgstr "логическое значение, указывающее, есть ли у структуры ядро"
 
 #: models/structures_1.py:280
 msgid "last online at"
-msgstr ""
+msgstr "последний раз был онлайн в"
 
 #: models/structures_1.py:281
 msgid "date this structure had any of it's services online"
-msgstr ""
+msgstr "дата, когда эта структура имела включенный служебный модуль"
 
 #: models/structures_1.py:287 models/structures_1.py:814
 msgid "last updated at"
-msgstr ""
+msgstr "последний раз обновлено в"
 
 #: models/structures_1.py:288
 msgid "date this structure was last updated from the EVE server"
-msgstr ""
+msgstr "дата, когда данные этой структуры были обновлены с сервера EVE"
 
 #: models/structures_1.py:293
 msgid "The full name of the structure"
-msgstr ""
+msgstr "Полное имя структуры"
 
 #: models/structures_1.py:300
 msgid "next reinforce hour"
-msgstr ""
+msgstr "следующее время укрепления"
 
 #: models/structures_1.py:302 models/structures_1.py:312
 msgid ""
 "The requested change to reinforce_hour that will take effect at the time "
 "shown by next_reinforce_apply"
 msgstr ""
+"Запрошенное изменение reinforce_hour, которое вступит в силу во время, "
+"указанное в параметре next_reinforce_apply"
 
 #: models/structures_1.py:310
 msgid "next reinforce apply"
-msgstr ""
+msgstr "применить следующее укрепление"
 
 #: models/structures_1.py:321
 msgid "Corporation that owns the structure"
-msgstr ""
+msgstr "Корпорация, что владеет структурой"
 
 #: models/structures_1.py:328
 msgid "reinforce hour"
-msgstr ""
+msgstr "время укрепления"
 
 #: models/structures_1.py:330
 msgid ""
 "The average hour of day that determines the time +/- some hours when the "
-"structure will randomly exit its reinforcement periods and become vulnerable "
-"to attack against its armor and/or hull. "
+"structure will randomly exit its reinforcement periods and become vulnerable"
+" to attack against its armor and/or hull. "
 msgstr ""
+"Средний час дня, который определяет время +/- несколько часов, когда "
+"структура случайным образом выйдет из периодов усиления и станет уязвимой "
+"для атак по ее броне и/или корпусу."
 
 #: models/structures_1.py:339
 msgid "position x"
-msgstr ""
+msgstr "позиция по x"
 
 #: models/structures_1.py:340
 msgid "x position in the solar system"
-msgstr ""
+msgstr "позиция по x в солнечной системе"
 
 #: models/structures_1.py:346
 msgid "position y"
-msgstr ""
+msgstr "позиция по y"
 
 #: models/structures_1.py:347
 msgid "y position in the solar system"
-msgstr ""
+msgstr "позиция по y в солнечной системе"
 
 #: models/structures_1.py:353
 msgid "position z"
-msgstr ""
+msgstr "позиция по z в солнечной системе"
 
 #: models/structures_1.py:354
 msgid "z position in the solar system"
-msgstr ""
+msgstr "позиция по z в солнечной системе"
 
 #: models/structures_1.py:360 models/structures_2.py:55
 msgid "state"
-msgstr ""
+msgstr "состояние"
 
 #: models/structures_1.py:361
 msgid "Current state of the structure"
-msgstr ""
+msgstr "Текущее состояние структуры"
 
 #: models/structures_1.py:367
 msgid "state timer end"
-msgstr ""
+msgstr "таймер окончания состояния"
 
 #: models/structures_1.py:368
 msgid "Date at which the structure entered it's current state"
-msgstr ""
+msgstr "Дата, когда структура попала в текущее состояние"
 
 #: models/structures_1.py:374
 msgid "state timer start"
-msgstr ""
+msgstr "таймер начала состояния"
 
 #: models/structures_1.py:375
 msgid "Date at which the structure will move to it's next state"
-msgstr ""
+msgstr "Дата, когда структура перейдет в следующее состояние"
 
 #: models/structures_1.py:382
 msgid "tags"
-msgstr ""
+msgstr "теги"
 
 #: models/structures_1.py:383
 msgid "List of tags for this structure. "
-msgstr ""
+msgstr "Список тегов этой структуры"
 
 #: models/structures_1.py:389
 msgid "unanchors at"
-msgstr ""
+msgstr "снимется с якоря в"
 
 #: models/structures_1.py:390
 msgid "Date at which the structure will unanchor"
-msgstr ""
+msgstr "Дата, когда структура снимется с якоря"
 
 #: models/structures_1.py:399
 msgid ""
-"Webhooks for sending notifications to. If any webhook is enabled, these will "
-"be used instead of the webhooks defined for the respective owner. If no "
+"Webhooks for sending notifications to. If any webhook is enabled, these will"
+" be used instead of the webhooks defined for the respective owner. If no "
 "webhook is enabled the owner's setting will be used. "
 msgstr ""
+"Вебхуки для отправки уведомлений. Если какой-либо вебхук включен, он будет "
+"использоваться вместо вебхуков, определенных для соответствующего владельца."
+" Если вебхук не включен, будут использоваться настройки владельца."
 
 #: models/structures_1.py:795
 msgid "The Eve item ID"
-msgstr ""
+msgstr "Айди предмета Eve"
 
 #: models/structures_1.py:802
 msgid "Structure this item is located in"
-msgstr ""
+msgstr "Структура, в которой находится этот элемент"
 
 #: models/structures_1.py:810
 msgid "type of the item"
-msgstr ""
+msgstr "тип предмета"
 
 #: models/structures_1.py:812
 msgid "is singleton"
-msgstr ""
+msgstr "единичный"
 
 #: models/structures_1.py:816
 msgid "location flag"
-msgstr ""
+msgstr "местонахождение"
 
 #: models/structures_1.py:817
 msgid "quantity"
-msgstr ""
+msgstr "количество"
 
 #: models/structures_1.py:820
 msgid "structure item"
-msgstr ""
+msgstr "элемент структуры"
 
 #: models/structures_1.py:821
 msgid "structure items"
-msgstr ""
+msgstr "элементы структуры"
 
 #: models/structures_2.py:47
 msgid "Structure this service is installed to"
-msgstr ""
+msgstr "Структура, в которой установлен этот служебный модуль"
 
 #: models/structures_2.py:50
 msgid "Name of the service"
-msgstr ""
+msgstr "Имя служебного модуля"
 
 #: models/structures_2.py:56
 msgid "Current state of this service"
-msgstr ""
+msgstr "Текущее состояние служебного модуля"
 
 #: models/structures_2.py:60
 msgid "structure service"
-msgstr ""
+msgstr "служебный модуль структуры"
 
 #: models/structures_2.py:61
 msgid "structure services"
-msgstr ""
+msgstr "служебные модули структуры"
 
 #: models/structures_2.py:80 webhooks/models.py:16
 msgid "none"
-msgstr ""
+msgstr "нет"
 
 #: models/structures_2.py:81
 msgid "terrible"
-msgstr ""
+msgstr "ужасно"
 
 #: models/structures_2.py:82
 msgid "bad"
-msgstr ""
+msgstr "плохо"
 
 #: models/structures_2.py:83
 msgid "neutral"
-msgstr ""
+msgstr "нейтрально"
 
 #: models/structures_2.py:84
 msgid "good"
-msgstr ""
+msgstr "хорошо"
 
 #: models/structures_2.py:85
 msgid "excellent"
-msgstr ""
+msgstr "превосходно"
 
 #: models/structures_2.py:185
 msgid "alliance member"
-msgstr ""
+msgstr "член альянса"
 
 #: models/structures_2.py:186
 msgid "config starbase equipment role"
-msgstr ""
+msgstr "конфиг роли оборудования орбитальной станции"
 
 #: models/structures_2.py:187
 msgid "corporation member"
-msgstr ""
+msgstr "член корпорации"
 
 #: models/structures_2.py:188
 msgid "starbase fuel technician role"
-msgstr ""
+msgstr "роль специалиста по топливу орбитальной станции"
 
 #: templates/structures/base.html:4
 msgid "Structures"
-msgstr ""
+msgstr "Структуры"
 
 #: templates/structures/main.html:11
 msgid ""
 "Add new structure owner or add new sync character to an existing structure "
 "owner"
 msgstr ""
+"Добавить нового владельца структуры или нового персонажа для синхронизации "
+"существующего владельца структуры"
 
 #: templates/structures/main.html:12
 msgid "Add Owner / Sync Character"
-msgstr ""
+msgstr "Добавить владельца / Синхронизировать персонажа"
 
 #: templates/structures/main.html:20
 msgid "All Structures"
-msgstr ""
+msgstr "Все Структуры"
 
 #: templates/structures/main.html:22
 msgid "Jump Gates"
-msgstr ""
+msgstr "Прыжковые врата"
 
 #: templates/structures/main.html:24
 msgid "Summary"
-msgstr ""
+msgstr "Сводка"
 
 #: templates/structures/main.html:33
 #: templates/structures/partials/structure_summary.html:16
 msgid "Customs Offices"
-msgstr ""
+msgstr "Таможня"
 
 #: templates/structures/main.html:49
 msgid "All dates are EVE time"
-msgstr ""
+msgstr "Все даты указаны во времени EVE"
 
 #: templates/structures/main.html:50
 msgid "Data can be outdated by up to 1 hour due to API caching."
-msgstr ""
+msgstr "Данные актуализируются в течение часа из-за кэширования API"
 
 #: templates/structures/main.html:51
 msgid "Last updated"
-msgstr ""
+msgstr "Последнее обновление"
 
 #: templates/structures/main.html:153 templates/structures/main.html:462
 #: templates/structures/modals/tab_general_detail.html:10
 #: templates/structures/partials/structure_summary.html:11
 msgid "Alliance"
-msgstr ""
+msgstr "Альянс"
 
 #: templates/structures/main.html:158 templates/structures/main.html:467
 #: templates/structures/modals/tab_general_detail.html:8
 #: templates/structures/partials/structure_summary.html:10
 msgid "Corporation"
-msgstr ""
+msgstr "Корпорация"
 
 #: templates/structures/main.html:163 templates/structures/main.html:472
 #: templates/structures/modals/tab_general_detail.html:15
 #: templates/structures/partials/poco_list.html:10
 msgid "Region"
-msgstr ""
+msgstr "Регион"
 
 #: templates/structures/main.html:168 templates/structures/main.html:325
 #: templates/structures/main.html:477
 #: templates/structures/partials/poco_list.html:11
 msgid "Solar System"
-msgstr ""
+msgstr "Система"
 
 #: templates/structures/main.html:173
 msgid "Category"
-msgstr ""
+msgstr "Категория"
 
 #: templates/structures/main.html:178
 msgid "Group"
-msgstr ""
+msgstr "Группа"
 
 #: templates/structures/main.html:183 templates/structures/main.html:482
 msgid "Reinforced?"
-msgstr ""
+msgstr "Укреплено?"
 
 #: templates/structures/main.html:188
 #: templates/structures/modals/tab_general_detail.html:18
 #: templates/structures/partials/structure_list.html:74
 msgid "State"
-msgstr ""
+msgstr "Состояние"
 
 #: templates/structures/main.html:193 templates/structures/main.html:487
 msgid "Power Mode"
-msgstr ""
+msgstr "Режим мощности"
 
 #: templates/structures/main.html:198
 msgid "Core?"
-msgstr ""
+msgstr "Ядро?"
 
 #: templates/structures/main.html:318
 msgid "Space Type"
-msgstr ""
+msgstr "Классификация космоса"
 
 #: templates/structures/main.html:332
 #: templates/structures/partials/poco_list.html:16
 msgid "Access?"
-msgstr ""
+msgstr "Доступ?"
 
 #: templates/structures/modals/fitting_assets.html:9
 #: templates/structures/modals/starbase_detail.html:55
 #: templates/structures/modals/starbase_detail.html:65
 msgid "empty"
-msgstr ""
+msgstr "пусто"
 
 #: templates/structures/modals/poco_details.html:19
 #: templates/structures/modals/starbase_detail.html:19
 #: templates/structures/modals/structure_details.html:19
 msgid "General"
-msgstr ""
+msgstr "Главное"
 
 #: templates/structures/modals/poco_details.html:24
 msgid "Reinforcement Time"
-msgstr ""
+msgstr "Время укрепления"
 
 #: templates/structures/modals/poco_details.html:29
 msgid "Tax Rates & Access"
-msgstr ""
+msgstr "Ставки налога & Доступ"
 
 #: templates/structures/modals/poco_details.html:42
 msgid "Earliest"
-msgstr ""
+msgstr "Ранний"
 
 #: templates/structures/modals/poco_details.html:43
 msgid "Latest"
-msgstr ""
+msgstr "Последний"
 
 #: templates/structures/modals/poco_details.html:49
 msgid "Corporation members"
-msgstr ""
+msgstr "Члены корпорации"
 
 #: templates/structures/modals/poco_details.html:50
 msgid "Alliance members"
-msgstr ""
+msgstr "Члены альянса"
 
 #: templates/structures/modals/poco_details.html:51
 msgid "Terrible standing"
-msgstr ""
+msgstr "Ужасные отношения"
 
 #: templates/structures/modals/poco_details.html:52
 msgid "Bad standing"
-msgstr ""
+msgstr "Плохие отношения"
 
 #: templates/structures/modals/poco_details.html:53
 msgid "Neutral standing"
-msgstr ""
+msgstr "Нейтральные отношения"
 
 #: templates/structures/modals/poco_details.html:54
 msgid "Good standing"
-msgstr ""
+msgstr "Хорошие отношения"
 
 #: templates/structures/modals/poco_details.html:55
 msgid "Excellent standing"
-msgstr ""
+msgstr "Превосходные отношения"
 
 #: templates/structures/modals/starbase_detail.html:24
 #: templates/structures/modals/structure_details.html:24
 msgid "Fuel"
-msgstr ""
+msgstr "Топливо"
 
 #: templates/structures/modals/starbase_detail.html:29
 #: templates/structures/modals/structure_details.html:39
 msgid "Modules"
-msgstr ""
+msgstr "Модули"
 
 #: templates/structures/modals/starbase_detail.html:34
 msgid "Settings"
-msgstr ""
+msgstr "Настройки"
 
 #: templates/structures/modals/starbase_detail.html:39
 msgid "Access"
-msgstr ""
+msgstr "Доступ"
 
 #: templates/structures/modals/starbase_detail.html:72
 msgid "Allow alliance member usage"
-msgstr ""
+msgstr "Разрешить использование членам альянса"
 
 #: templates/structures/modals/starbase_detail.html:73
 msgid "Allow corporation member usage"
-msgstr ""
+msgstr "Разрешить использование членам корпорации"
 
 #: templates/structures/modals/starbase_detail.html:74
 msgid "Attack if standing lower than"
-msgstr ""
+msgstr "Атаковать, если отношения ниже чем"
 
 #: templates/structures/modals/starbase_detail.html:75
 msgid "Attack if security status lower than"
-msgstr ""
+msgstr "Атаковать, если статус безопасности ниже чем"
 
 #: templates/structures/modals/starbase_detail.html:76
 msgid "Attack if other security status is dropping"
-msgstr ""
+msgstr "Атаковать, если другой статус безопасности падает"
 
 #: templates/structures/modals/starbase_detail.html:77
 msgid "Attack if at war"
-msgstr ""
+msgstr "Атаковать, если воюете"
 
 #: templates/structures/modals/starbase_detail.html:78
 msgid "Use alliance standings"
-msgstr ""
+msgstr "Использовать отношения альянса"
 
 #: templates/structures/modals/starbase_detail.html:84
 msgid "Anchor role"
-msgstr ""
+msgstr "Anchor role"
 
 #: templates/structures/modals/starbase_detail.html:85
 msgid "Unanchor role"
-msgstr ""
+msgstr "Unanchor role"
 
 #: templates/structures/modals/starbase_detail.html:86
 msgid "Online role"
-msgstr ""
+msgstr "Online role"
 
 #: templates/structures/modals/starbase_detail.html:87
 msgid "Offline role"
-msgstr ""
+msgstr "Offline role"
 
 #: templates/structures/modals/starbase_detail.html:88
 msgid "Fuel bay view role"
-msgstr ""
+msgstr "Fuel bay view role"
 
 #: templates/structures/modals/starbase_detail.html:89
 msgid "Fuel bay take role"
-msgstr ""
+msgstr "Fuel bay take role"
 
 #: templates/structures/modals/structure_details.html:29
 msgid "Ammo"
-msgstr ""
+msgstr "Боеприпасы"
 
 #: templates/structures/modals/structure_details.html:34
 msgid "Fighters"
-msgstr ""
+msgstr "Истребители"
 
 #: templates/structures/modals/structure_details.html:52
 msgid "Fuel Bay"
-msgstr ""
+msgstr "Отсек топлива"
 
 #: templates/structures/modals/structure_details.html:53
 msgid "Fuel Usage"
-msgstr ""
+msgstr "Использование топлива"
 
 #: templates/structures/modals/structure_details.html:59
 msgid "Ammo Hold"
-msgstr ""
+msgstr "Боеприпасы в хранении"
 
 #: templates/structures/modals/structure_details.html:65
 msgid "Fighter Bay"
-msgstr ""
+msgstr "Отсек истребителей"
 
 #: templates/structures/modals/structure_details.html:66
 msgid "Fighter Tubes"
-msgstr ""
+msgstr "Истребительные полосы"
 
 #: templates/structures/modals/structure_details.html:73
 msgid "High Slots"
-msgstr ""
+msgstr "Верхние слоты"
 
 #: templates/structures/modals/structure_details.html:74
 msgid "Medium Slots"
-msgstr ""
+msgstr "Средние слоты"
 
 #: templates/structures/modals/structure_details.html:75
 msgid "Low Slots"
-msgstr ""
+msgstr "Нижние слоты"
 
 #: templates/structures/modals/structure_details.html:76
 msgid "Rig Slots"
-msgstr ""
+msgstr "Слот для модификаторов"
 
 #: templates/structures/modals/structure_details.html:77
 msgid "Service Slots"
-msgstr ""
+msgstr "Слоты для служебных модулей"
 
 #: templates/structures/modals/tab_general_detail.html:6
 #: templates/structures/partials/jump_gates_list.html:14
 msgid "Name"
-msgstr ""
+msgstr "Имя"
 
 #: templates/structures/modals/tab_general_detail.html:7
 #: templates/structures/partials/structure_list.html:68
 msgid "Type"
-msgstr ""
+msgstr "Тип"
 
 #: templates/structures/modals/tab_general_detail.html:12
 #: templates/structures/partials/jump_gates_list.html:13
 #: templates/structures/partials/structure_list.html:66
 msgid "Location"
-msgstr ""
+msgstr "Расположение"
 
 #: templates/structures/modals/tab_general_detail.html:13
 msgid "Constellation"
-msgstr ""
+msgstr "Созвездие"
 
 #: templates/structures/partials/jump_gates_list.html:12
 #: templates/structures/partials/structure_list.html:65
 msgid "Owner"
-msgstr ""
+msgstr "Владелец"
 
 #: templates/structures/partials/jump_gates_list.html:15
 #: templates/structures/partials/structure_list.html:71
 msgid "Last Online"
-msgstr ""
+msgstr "Последний раз онлайн"
 
 #: templates/structures/partials/jump_gates_list.html:16
 #: templates/structures/partials/structure_list.html:72
 msgid "Fuel Expires"
-msgstr ""
+msgstr "Топливо заканчивается"
 
 #: templates/structures/partials/jump_gates_list.html:17
 msgid "Liquid Ozone (units)"
-msgstr ""
+msgstr "Жидкий Озон (единиц)"
 
 #: templates/structures/partials/jump_gates_list.html:22
 #: templates/structures/partials/structure_list.html:91
 msgid "Reinforced structures (except POCOs) are highlighted in red"
-msgstr ""
+msgstr "Укреплённые структуры (включая ПОСы) выделены красным цветом"
 
 #: templates/structures/partials/jump_gates_list.html:28
 #: templates/structures/partials/structure_list.html:97
 msgid "modalUpwellDetails "
-msgstr ""
+msgstr "modalUpwellDetails "
 
 #: templates/structures/partials/poco_list.html:12
 msgid "Planet"
-msgstr ""
+msgstr "Планета"
 
 #: templates/structures/partials/poco_list.html:14
 msgid "Planet Type"
-msgstr ""
+msgstr "Тип планеты"
 
 #: templates/structures/partials/poco_list.html:19
 msgid "Tax"
-msgstr ""
+msgstr "Налог"
 
 #: templates/structures/partials/structure_list.html:13
 msgid "Tags Filter (Active)"
-msgstr ""
+msgstr "Фильтр тегов (Активен)"
 
 #: templates/structures/partials/structure_list.html:17
 #: templates/structures/partials/structure_list.html:22
 #: templates/structures/partials/structure_list.html:36
 msgid "Tags Filter"
-msgstr ""
+msgstr "Фильтр тегов"
 
 #: templates/structures/partials/structure_list.html:44
 msgid "Reset Filter"
-msgstr ""
+msgstr "Сбросить фильтр"
 
 #: templates/structures/partials/structure_list.html:47
 msgid "Clear Filter"
-msgstr ""
+msgstr "Очистить фильтр"
 
 #: templates/structures/partials/structure_list.html:50
 msgid "Cancel"
-msgstr ""
+msgstr "Отменить"
 
 #: templates/structures/partials/structure_list.html:53
 msgid "Apply Filter"
-msgstr ""
+msgstr "Применить фильтр"
 
 #: templates/structures/partials/structure_list.html:69
 msgid "Name & Tags"
-msgstr ""
+msgstr "Имена и теги"
 
 #: templates/structures/partials/structure_list.html:70
 msgid "Services"
-msgstr ""
+msgstr "Модули"
 
 #: templates/structures/partials/structure_list.html:73
 msgid "R-Hour"
-msgstr ""
+msgstr "R-Hour"
 
 #: templates/structures/partials/structure_list.html:75
 msgid "Core"
-msgstr ""
+msgstr "Ядро"
 
 #: templates/structures/partials/structure_list.html:83
 msgid "Active Tags Filter"
-msgstr ""
+msgstr "Активный фильтр тегов"
 
 #: templates/structures/partials/structure_list.html:90
 msgid "Offlined services are shown as"
-msgstr ""
+msgstr "Отключенные служебные модулмы показаны как"
 
 #: templates/structures/partials/structure_list.html:90
 msgid "service"
-msgstr ""
+msgstr "модуль"
 
 #: templates/structures/partials/structure_summary.html:12
 msgid "Citadels"
-msgstr ""
+msgstr "Цитадели"
 
 #: templates/structures/partials/structure_summary.html:13
 msgid "Engineering Complexes"
-msgstr ""
+msgstr "Промышленные комплексы"
 
 #: templates/structures/partials/structure_summary.html:14
 msgid "Refineries"
-msgstr ""
+msgstr "Перерабатывающие комплексы"
 
 #: templates/structures/partials/structure_summary.html:15
 msgid "Other Upwell"
-msgstr ""
+msgstr "Прочее Апвелл"
 
 #: templates/structures/partials/structure_summary.html:17
 msgid "Starbases"
-msgstr ""
+msgstr "Орбитальные станции"
 
 #: templates/structures/partials/structure_summary.html:18
 #: templates/structures/partials/structure_summary.html:24
 msgid "Total"
-msgstr ""
+msgstr "Всего"
 
 #: templates/structures/templatetags/list_tax_item.html:9
 msgid "No Access"
-msgstr ""
+msgstr "Нет доступа"
 
 #: templates/structures/templatetags/list_tax_item.html:11
 msgid "Has Access"
-msgstr ""
+msgstr "Есть доступ"
 
 #: views.py:211
 msgid "Fuel blocks per day (est.)"
-msgstr ""
+msgstr "Топливных блоков в день (примерно)"
 
 #: views.py:443
 #, python-format
@@ -1724,24 +1767,29 @@ msgid ""
 "You can only use your main or alt characters to add corporations. However, "
 "character %s is neither. "
 msgstr ""
+"Вы можете использовать только основной или альт. персонажа чтобы добавить "
+"корпорации. Однако, персонаж %s ни один."
 
 #: views.py:476
 #, python-format
 msgid ""
-"%(corporation)s has been added with %(character)s as sync character. We have "
-"started fetching structures and notifications for this corporation and you "
+"%(corporation)s has been added with %(character)s as sync character. We have"
+" started fetching structures and notifications for this corporation and you "
 "will receive a report once the process is finished."
 msgstr ""
+"%(corporation)s добавлена синхронизирующим персонажем %(character)s. Мы "
+"начали получать данные о структурах и оповещениях данной корпорации и вы "
+"получите отчёт как только процесс завершится."
 
 #: views.py:489
 #, python-format
 msgid "%(corporation)s was added as new structure owner by %(user)s."
-msgstr ""
+msgstr "%(user)s добавил(а) нового владельца структур %(corporation)s."
 
 #: views.py:493
 #, python-format
 msgid "%s: Structure owner added: %s"
-msgstr ""
+msgstr "%s: Владелец структур добавлен: %s"
 
 #: views.py:500
 #, python-format
@@ -1749,6 +1797,8 @@ msgid ""
 "%(character)s has been added to %(corporation)s as sync character. You now "
 "have %(characters_count)d sync character(s) configured."
 msgstr ""
+"%(character)s был добавлен в %(corporation)s как синхронизирующий персонаж. "
+"На данный момент добавлено %(characters_count)d синхронизирующих персонажей."
 
 #: views.py:515
 #, python-format
@@ -1756,44 +1806,46 @@ msgid ""
 "%(character)s was added as sync character to %(corporation)s by %(user)s.\n"
 "We now have %(characters_count)d sync character(s) configured."
 msgstr ""
+"%(user)s добавил %(character)s как синхронизирующий персонаж %(corporation)s.\n"
+"На данный момент добавлено %(characters_count)d синхронизирующих персонажей."
 
 #: views.py:525
 #, python-format
 msgid "%s: Character added to: %s"
-msgstr ""
+msgstr "%s: Персонаж добавлен: %s"
 
 #: views.py:542
 msgid "service is up"
-msgstr ""
+msgstr "модуль включен"
 
 #: views.py:543
 msgid "service is down"
-msgstr ""
+msgstr "модуль выключен"
 
 #: webhooks/models.py:17
 msgid "here"
-msgstr ""
+msgstr "тут"
 
 #: webhooks/models.py:18
 msgid "everyone"
-msgstr ""
+msgstr "все"
 
 #: webhooks/models.py:23
 msgid "danger"
-msgstr ""
+msgstr "опасно"
 
 #: webhooks/models.py:24
 msgid "info"
-msgstr ""
+msgstr "информация"
 
 #: webhooks/models.py:25
 msgid "success"
-msgstr ""
+msgstr "успешно"
 
 #: webhooks/models.py:26
 msgid "warning"
-msgstr ""
+msgstr "предостережение"
 
 #: webhooks/models.py:36
 msgid "Discord Webhook"
-msgstr ""
+msgstr "Discord Webhook"
