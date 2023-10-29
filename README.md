@@ -54,7 +54,7 @@ Structures adds the following main features to Alliance Auth:
 - Ability to increase notification response time and sync resilence with multiple sync characters per structure owner
 - Automatically sends alerts to users and admin when token become invalid or sync from ESI fails
 - Interface for 3rd party monitoring of the services status
-- Chinese :cn:, English :us: and German :de: localization
+- Chinese :cn:, English :us:, German :de: and Russian :ru: localization
 
 Please also check out [Discord Notify](https://gitlab.com/ErikKalkoken/aa-discordnotify) that will automatically forward auth notifications to the respective users on Discord.
 
