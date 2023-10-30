@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from eveuniverse.models import EvePlanet
 
 from allianceauth.eveonline.evelinks import dotlan
