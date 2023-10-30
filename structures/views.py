@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import translation
 from django.utils.html import format_html
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from esi.decorators import token_required
 from eveuniverse.core import eveimageserver
 from eveuniverse.models import EveType, EveTypeDogmaAttribute

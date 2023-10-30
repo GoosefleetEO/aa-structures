@@ -5,7 +5,7 @@
 
 import dhooks_lite
 
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 from eveuniverse.models import EveEntity, EveType
 
 from app_utils.datetime import ldap_time_2_datetime
@@ -37,7 +37,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
         self.ore_text = (
-            __("\nEstimated ore composition: %s") % self._ore_composition_text()
+            _("\nEstimated ore composition: %s") % self._ore_composition_text()
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else ""
         )
@@ -48,7 +48,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
 
         ore_list = []
         for ore_type_id, volume in self._parsed_text["oreVolumeByType"].items():
-            ore_type, _ = EveType.objects.get_or_create_esi(id=ore_type_id)
+            ore_type = EveType.objects.get_or_create_esi(id=ore_type_id)[0]
             if ore_type:
                 ore_list.append(
                     {"id": ore_type_id, "name": ore_type.name, "volume": volume}
@@ -63,13 +63,13 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
 class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        started_by, _ = EveEntity.objects.get_or_create_esi(
+        started_by = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["startedBy"]
-        )
+        )[0]
         ready_time = ldap_time_2_datetime(self._parsed_text["readyTime"])
         auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
-        self._title = __("Moon mining extraction started")
-        self._description = __(
+        self._title = _("Moon mining extraction started")
+        self._description = _(
             "A moon mining extraction has been started "
             "for %(structure_name)s at %(moon)s in %(solar_system)s "
             "belonging to %(owner_link)s. "
@@ -94,8 +94,8 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
-        self._title = __("Extraction finished")
-        self._description = __(
+        self._title = _("Extraction finished")
+        self._description = _(
             "The extraction for %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "is finished and the chunk is ready "
@@ -116,8 +116,8 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
 class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("Automatic Fracture")
-        self._description = __(
+        self._title = _("Automatic Fracture")
+        self._description = _(
             "The moon drill fitted to %(structure_name)s at %(moon)s"
             " in %(solar_system)s belonging to %(owner_link)s "
             "has automatically been fired "
@@ -137,13 +137,13 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         if self._parsed_text["cancelledBy"]:
-            cancelled_by, _ = EveEntity.objects.get_or_create_esi(
+            cancelled_by = EveEntity.objects.get_or_create_esi(
                 id=self._parsed_text["cancelledBy"]
-            )
+            )[0]
         else:
-            cancelled_by = __("(unknown)")
-        self._title = __("Extraction cancelled")
-        self._description = __(
+            cancelled_by = _("(unknown)")
+        self._title = _("Extraction cancelled")
+        self._description = _(
             "An ongoing extraction for %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been cancelled by %(character)s."
@@ -160,11 +160,11 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
 class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        fired_by, _ = EveEntity.objects.get_or_create_esi(
-            id=self._parsed_text["firedBy"]
-        )
-        self._title = __("Moon drill fired")
-        self._description = __(
+        fired_by = EveEntity.objects.get_or_create_esi(id=self._parsed_text["firedBy"])[
+            0
+        ]
+        self._title = _("Moon drill fired")
+        self._description = _(
             "The moon drill fitted to %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been fired by %(character)s "

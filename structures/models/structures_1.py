@@ -62,14 +62,14 @@ class StructureTag(models.Model):
         max_length=255,
         unique=True,
         verbose_name=_("name"),
-        help_text=_("name of the tag - must be unique"),
+        help_text=_("Name of the tag, which must be unique"),
     )
     description = models.TextField(
         null=True,
         default=None,
         blank=True,
         verbose_name=_("description"),
-        help_text=_("description for this tag"),
+        help_text=_("Description for this tag"),
     )
     style = models.CharField(
         max_length=16,
@@ -77,7 +77,7 @@ class StructureTag(models.Model):
         default="default",
         blank=True,
         verbose_name=_("style"),
-        help_text=_("color style of tag"),
+        help_text=_("Color style of tag"),
     )
     order = models.PositiveIntegerField(
         default=100,
@@ -85,7 +85,7 @@ class StructureTag(models.Model):
         validators=[MinValueValidator(100)],
         verbose_name=_("order"),
         help_text=_(
-            "number defining the order tags are shown. "
+            "Number defining the order tags are shown. "
             "custom tags can not have an order below 100"
         ),
     )
@@ -93,14 +93,14 @@ class StructureTag(models.Model):
         default=False,
         verbose_name=_("is default"),
         help_text=_(
-            "if true this custom tag will automatically be added to new structures"
-        ),  # TODO: with next migration change to: "When enabled..."
+            "When enabled this custom tag will automatically be added to new structures"
+        ),
     )
     is_user_managed = models.BooleanField(
         default=True,
         verbose_name=_("is user managed"),
         help_text=_(
-            "if False this tag is created and managed by the system "
+            "When disabled this tag is created and managed by the system "
             "and can not be modified by users"
         ),
     )
@@ -214,7 +214,7 @@ class Structure(models.Model):  # pylint: disable = too-many-public-methods
     created_at = models.DateTimeField(
         default=now,
         verbose_name=_("created at"),
-        help_text=_("date this structure was received from ESI for the first time"),
+        help_text=_("Date this structure was received from ESI for the first time"),
     )
     eve_moon = models.ForeignKey(
         EveMoon,
@@ -263,7 +263,7 @@ class Structure(models.Model):  # pylint: disable = too-many-public-methods
         blank=True,
         db_index=True,
         verbose_name=_("has fitting"),
-        help_text=_("bool indicating if the structure has a fitting"),
+        help_text="Whether the structure has a fitting",
     )
     has_core = models.BooleanField(
         null=True,
@@ -271,21 +271,21 @@ class Structure(models.Model):  # pylint: disable = too-many-public-methods
         blank=True,
         db_index=True,
         verbose_name=_("has core"),
-        help_text=_("bool indicating if the structure has a quantum core"),
+        help_text="Whether the structure has a quantum core",
     )
     last_online_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
         verbose_name=_("last online at"),
-        help_text=_("date this structure had any of it's services online"),
+        help_text=_("Date this structure had any of it's services online"),
     )
     last_updated_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
         verbose_name=_("last updated at"),
-        help_text=_("date this structure was last updated from the EVE server"),
+        help_text=_("Date this structure was last updated from the EVE server"),
     )
     name = models.CharField(
         max_length=255,
@@ -337,21 +337,21 @@ class Structure(models.Model):  # pylint: disable = too-many-public-methods
         default=None,
         blank=True,
         verbose_name=_("position x"),
-        help_text=_("x position in the solar system"),
+        help_text=_("X coordinate of position in the solar system"),
     )
     position_y = models.FloatField(
         null=True,
         default=None,
         blank=True,
         verbose_name=_("position y"),
-        help_text=_("y position in the solar system"),
+        help_text=_("Y coordinate of position in the solar system"),
     )
     position_z = models.FloatField(
         null=True,
         default=None,
         blank=True,
         verbose_name=_("position z"),
-        help_text=_("z position in the solar system"),
+        help_text=_("Z coordinate of position in the solar system"),
     )
     state = models.IntegerField(
         choices=State.choices,
@@ -807,7 +807,7 @@ class StructureItem(models.Model):
         on_delete=models.CASCADE,
         related_name="+",
         verbose_name=_("type"),
-        help_text=_("type of the item"),
+        help_text="Type of the item",
     )
     is_singleton = models.BooleanField(verbose_name=_("is singleton"))
     last_updated_at = models.DateTimeField(

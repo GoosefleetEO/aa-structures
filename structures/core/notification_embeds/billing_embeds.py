@@ -6,7 +6,7 @@
 import dhooks_lite
 
 from django.db import models
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 from eveuniverse.models import EveType
 
 from app_utils.datetime import ldap_time_2_datetime
@@ -21,8 +21,8 @@ from .main import NotificationBaseEmbed
 class BillType(models.IntegerChoices):
     """A bill type for infrastructure hub bills."""
 
-    UNKNOWN = 0, __("Unknown Bill")
-    INFRASTRUCTURE_HUB = 7, __("Infrastructure Hub Bill")
+    UNKNOWN = 0, _("Unknown Bill")
+    INFRASTRUCTURE_HUB = 7, _("Infrastructure Hub Bill")
 
     @classmethod
     def to_enum(cls, bill_id: int):
@@ -39,8 +39,8 @@ class NotificationBillingBillOutOfMoneyMsg(NotificationBaseEmbed):
         bill_type_id = self._parsed_text["billTypeID"]
         bill_type_str = BillType.to_enum(bill_type_id).label
         due_date = ldap_time_2_datetime(self._parsed_text["dueDate"])
-        self._title = __("Insufficient Funds for Bill")
-        self._description = __(
+        self._title = _("Insufficient Funds for Bill")
+        self._description = _(
             "The selected corporation wallet division for automatic payments "
             "does not have enough current funds available to pay the %(bill_type)s "
             "due to be paid by %(due_date)s. "
@@ -58,8 +58,8 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
         super().__init__(notification)
         solar_system_link = gen_solar_system_text(self._notification.eve_solar_system())
         due_date = ldap_time_2_datetime(self._parsed_text.get("dueDate"))
-        self._title = __("IHub Bill About to Expire")
-        self._description = __(
+        self._title = _("IHub Bill About to Expire")
+        self._description = _(
             "Maintenance bill for Infrastructure Hub in %(solar_system)s "
             "expires at %(due_date)s, "
             "if not paid in time this Infrastructure Hub will self-destruct."
@@ -68,7 +68,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
             "due_date": target_datetime_formatted(due_date),
         }
         self._color = Webhook.Color.DANGER
-        structure_type, _ = EveType.objects.get_or_create_esi(id=EveTypeId.IHUB)
+        structure_type = EveType.objects.get_or_create_esi(id=EveTypeId.IHUB)[0]
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
@@ -80,10 +80,10 @@ class NotificationBillingIHubDestroyedByBillFailure(NotificationBaseEmbed):
         solar_system_link = gen_solar_system_text(self._notification.eve_solar_system())
         structure_type = self._notification.eve_structure_type()
         self._title = (
-            __("%s has self-destructed due to unpaid maintenance bills")
+            _("%s has self-destructed due to unpaid maintenance bills")
             % structure_type.name
         )
-        self._description = __(
+        self._description = _(
             "%(structure_type)s in %(solar_system)s has self-destructed, "
             "as the standard maintenance bills where not paid."
         ) % {"structure_type": structure_type.name, "solar_system": solar_system_link}

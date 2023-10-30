@@ -6,7 +6,7 @@ import datetime as dt
 
 import dhooks_lite
 
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 
 from structures.core import starbases
 from structures.models import GeneratedNotification, Notification, Structure, Webhook
@@ -36,7 +36,7 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
-        self._description = __(
+        self._description = _(
             "The starbase %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
         ) % {
@@ -52,10 +52,11 @@ class NotificationTowerAlertMsg(NotificationTowerEmbed):
         super().__init__(notification)
         aggressor_link = self.get_aggressor_link()
         damage_text = self.compile_damage_text("Value", 100)
-        self._title = __("Starbase under attack")
-        self._description += __(
-            "is under attack by %(aggressor)s.\n%(damage_text)s"
-        ) % {"aggressor": aggressor_link, "damage_text": damage_text}
+        self._title = _("Starbase under attack")
+        self._description += _("is under attack by %(aggressor)s.\n%(damage_text)s") % {
+            "aggressor": aggressor_link,
+            "damage_text": damage_text,
+        }
         self._color = Webhook.Color.WARNING
 
 
@@ -79,8 +80,8 @@ class NotificationTowerResourceAlertMsg(NotificationTowerEmbed):
             hours_left = timeuntil(self._structure.fuel_expires_at)
         else:
             hours_left = "?"
-        self._title = __("Starbase fuel alert")
-        self._description += __("is running out of fuel in %s.") % Webhook.text_bold(
+        self._title = _("Starbase fuel alert")
+        self._description += _("is running out of fuel in %s.") % Webhook.text_bold(
             hours_left
         )
         self._color = Webhook.Color.WARNING
@@ -90,9 +91,9 @@ class NotificationTowerRefueledExtra(NotificationTowerEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         target_date = self.fuel_expires_target_date()
-        self._title = __("Starbase refueled")
+        self._title = _("Starbase refueled")
         self._description += (
-            __("has been refueled. Fuel will last until %s.") % target_date
+            _("has been refueled. Fuel will last until %s.") % target_date
         )
         self._color = Webhook.Color.INFO
 
@@ -117,7 +118,7 @@ class GeneratedNotificationTowerEmbed(GeneratedNotificationBaseEmbed):
 
     def __init__(self, notification: GeneratedNotification) -> None:
         super().__init__(notification)
-        self._description = __(
+        self._description = _(
             "The starbase %(structure_name)s at %(moon)s "
             "in %(solar_system)s belonging to %(owner_link)s "
         ) % {
@@ -131,7 +132,7 @@ class GeneratedNotificationTowerEmbed(GeneratedNotificationBaseEmbed):
 class NotificationTowerReinforcedExtra(GeneratedNotificationTowerEmbed):
     def __init__(self, notification: GeneratedNotification) -> None:
         super().__init__(notification)
-        self._title = __("Starbase reinforced")
+        self._title = _("Starbase reinforced")
         try:
             reinforced_until = target_datetime_formatted(
                 dt.datetime.fromisoformat(notification.details["reinforced_until"])
@@ -140,7 +141,7 @@ class NotificationTowerReinforcedExtra(GeneratedNotificationTowerEmbed):
             reinforced_until = "(unknown)"
 
         self._description += (
-            __("has been reinforced and will come out at: %s.") % reinforced_until
+            _("has been reinforced and will come out at: %s.") % reinforced_until
         )
 
         self._color = Webhook.Color.DANGER

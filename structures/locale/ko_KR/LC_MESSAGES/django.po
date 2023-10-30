@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-29 17:51+0100\n"
+"POT-Creation-Date: 2023-10-30 18:27+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Language-Team: Korean (Korea) (https://app.transifex.com/kalkoken-apps/teams/107978/ko_KR/)\n"
 "MIME-Version: 1.0\n"
@@ -17,149 +17,594 @@ msgstr ""
 "Language: ko_KR\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: admin.py:113
+#: admin.py:62 admin.py:877 models/notifications.py:145 models/owners.py:219
+#: models/owners.py:1304 models/structures_1.py:320
+msgid "owner"
+msgstr ""
+
+#: admin.py:95
+msgid "Discord"
+msgstr ""
+
+#: admin.py:96 templates/structures/modals/poco_details.html:19
+#: templates/structures/modals/starbase_detail.html:19
+#: templates/structures/modals/structure_details.html:19
+msgid "General"
+msgstr ""
+
+#: admin.py:99 models/notifications.py:521 models/structures_1.py:210
+#: models/structures_1.py:795
+msgid "id"
+msgstr ""
+
+#: admin.py:103 models/notifications.py:720
+msgid "color"
+msgstr ""
+
+#: admin.py:112
 msgid "Sent fuel notifications for selected configuration"
 msgstr ""
 
-#: admin.py:139
+#: admin.py:121
+#, python-format
+msgid "Started sending fuel notifications for %d configurations"
+msgstr ""
+
+#: admin.py:135
+msgid "Timing"
+msgstr ""
+
+#: admin.py:138
 msgid ""
 "Timing configuration for sending fuel notifications. Note that the first "
 "notification will be sent at the exact start hour, and the last notification"
 " will be sent one repeat before the end hour."
 msgstr ""
 
-#: admin.py:241 models/structures_1.py:168
+#: admin.py:159 models/notifications.py:851
+msgid "threshold"
+msgstr ""
+
+#: admin.py:165
+msgid "can be send"
+msgstr ""
+
+#: admin.py:170 admin.py:734 core/serializers.py:497
+msgid "yes"
+msgstr ""
+
+#: admin.py:171 admin.py:735 core/serializers.py:502
+msgid "no"
+msgstr ""
+
+#: admin.py:229
+msgid "notification ID"
+msgstr ""
+
+#: admin.py:233 admin.py:512 admin.py:907 models/notifications.py:112
+#: models/owners.py:212 models/structures_1.py:397
+msgid "webhooks"
+msgstr ""
+
+#: admin.py:236 models/structures_1.py:168
 msgid "N/A"
 msgstr ""
 
-#: admin.py:256
+#: admin.py:251
 msgid "Not configured"
 msgstr ""
 
-#: admin.py:274
+#: admin.py:255 models/notifications.py:150 models/structures_1.py:410
+msgid "structures"
+msgstr ""
+
+#: admin.py:262 models/notifications.py:126
+msgid "is sent"
+msgstr ""
+
+#: admin.py:267 models/notifications.py:132
+msgid "is timer added"
+msgstr ""
+
+#: admin.py:272
 msgid "Mark selected notifications as sent"
 msgstr ""
 
-#: admin.py:280
+#: admin.py:276
+#, python-format
+msgid "%d notifications marked as sent"
+msgstr ""
+
+#: admin.py:278
 msgid "Mark selected notifications as unsent"
 msgstr ""
 
-#: admin.py:286
+#: admin.py:282
+#, python-format
+msgid "%d notifications marked as unsent"
+msgstr ""
+
+#: admin.py:284
 msgid "Send selected notifications to configured webhooks"
 msgstr ""
 
-#: admin.py:301
+#: admin.py:299
+#, python-format
+msgid "Sent %(sent_count)d/%(selected_count)d generated messages."
+msgstr ""
+
+#: admin.py:303
 msgid "Process selected notifications for timerboard"
 msgstr ""
 
-#: admin.py:442
+#: admin.py:314
+#, python-format
+msgid "Added timers from %d notifications to timerboard."
+msgstr ""
+
+#: admin.py:317
+#, python-format
+msgid "Ignored %d notification(s), which has no relation to timers."
+msgstr ""
+
+#: admin.py:397
+msgid "Sync Status"
+msgstr ""
+
+#: admin.py:485
+msgid "characters"
+msgstr ""
+
+#: admin.py:489
+msgid "default pings"
+msgstr ""
+
+#: admin.py:493 admin.py:1023 models/notifications.py:105 models/owners.py:197
+msgid "ping groups"
+msgstr ""
+
+#: admin.py:499 models/owners.py:117
+msgid "corporation"
+msgstr ""
+
+#: admin.py:505
+msgid "alliance"
+msgstr ""
+
+#: admin.py:521
 msgid ""
 "Notifications can not be sent, because there is no webhook configured for "
 "this owner."
 msgstr ""
 
-#: admin.py:462
+#: admin.py:526
+msgid "active"
+msgstr ""
+
+#: admin.py:530
+msgid "alliance main"
+msgstr ""
+
+#: admin.py:535
+msgid "services up"
+msgstr ""
+
+#: admin.py:539
 msgid "Activate selected owners"
 msgstr ""
 
-#: admin.py:467
+#: admin.py:542
+#, python-format
+msgid "Activated %d owners"
+msgstr ""
+
+#: admin.py:544
 msgid "Deactivate selected owner"
 msgstr ""
 
-#: admin.py:472
+#: admin.py:547
+#, python-format
+msgid "Deactivated %d owners"
+msgstr ""
+
+#: admin.py:549
 msgid "Update all from EVE server for selected owners"
 msgstr ""
 
-#: admin.py:478
+#: admin.py:556
 #, python-format
-msgid ""
-"Started updating structures and notifications for %s. You will receive a "
-"notification once it is completed."
+msgid "Started updating structures and notifications for %s."
 msgstr ""
 
-#: admin.py:486
+#: admin.py:557 admin.py:570 admin.py:583 admin.py:1059
+msgid "You will receive a notification once it is completed."
+msgstr ""
+
+#: admin.py:562
 msgid "Update structures from EVE server for selected owners"
 msgstr ""
 
-#: admin.py:498
+#: admin.py:569
+#, python-format
+msgid "Started updating structures for %s."
+msgstr ""
+
+#: admin.py:575
 msgid "Fetch notifications from EVE server for selected owners"
 msgstr ""
 
-#: admin.py:913
+#: admin.py:582
+#, python-format
+msgid "Started fetching notifications for %s."
+msgstr ""
+
+#: admin.py:587
+msgid "all syncs OK"
+msgstr ""
+
+#: admin.py:591
+msgid "avg. turnaround time"
+msgstr ""
+
+#: admin.py:615
+msgid "structures update fresh"
+msgstr ""
+
+#: admin.py:619
+msgid "notifications update fresh"
+msgstr ""
+
+#: admin.py:623
+msgid "forwarding update fresh"
+msgstr ""
+
+#: admin.py:627
+msgid "assets update fresh"
+msgstr ""
+
+#: admin.py:631
+msgid "structures Count"
+msgstr ""
+
+#: admin.py:685
+msgid "owner corporation"
+msgstr ""
+
+#: admin.py:707
+msgid "owner alliance"
+msgstr ""
+
+#: admin.py:729
+msgid "has webhooks"
+msgstr ""
+
+#: admin.py:815
+msgid "Status"
+msgstr ""
+
+#: admin.py:833
+msgid "Reinforcement"
+msgstr ""
+
+#: admin.py:843
+msgid "Position"
+msgstr ""
+
+#: admin.py:870 models/structures_1.py:64 models/structures_1.py:292
+#: models/structures_2.py:50 webhooks/models.py:40
+msgid "name"
+msgstr ""
+
+#: admin.py:887
+msgid "location"
+msgstr ""
+
+#: admin.py:895 models/notifications.py:139 models/structures_1.py:250
+#: models/structures_1.py:809
+msgid "type"
+msgstr ""
+
+#: admin.py:899
+msgid "power mode"
+msgstr ""
+
+#: admin.py:903 models/structures_1.py:382
+msgid "tags"
+msgstr ""
+
+#: admin.py:912
+msgid "Add default tags to selected structures"
+msgstr ""
+
+#: admin.py:923
+#, python-format
+msgid "Added %(tags_count)d default tags to %(structure_count)d structures"
+msgstr ""
+
+#: admin.py:927
 msgid "Remove user tags for selected structures"
 msgstr ""
 
-#: admin.py:925
+#: admin.py:935
+#, python-format
+msgid "Removed all user tags from %d structures"
+msgstr ""
+
+#: admin.py:938
 msgid "Update generated tags for selected structures"
 msgstr ""
 
-#: admin.py:1035
+#: admin.py:945
+#, python-format
+msgid "Updated all generated tags for %d structures"
+msgstr ""
+
+#: admin.py:986
+msgid "Advanced Options"
+msgstr ""
+
+#: admin.py:1028
+msgid "enabled for owners or structures"
+msgstr ""
+
+#: admin.py:1037
 msgid "Please add this webhook to an owner or structure to enable it."
 msgstr ""
 
+#: admin.py:1041 models/notifications.py:87 models/structures_1.py:94
+msgid "is default"
+msgstr ""
+
 #: admin.py:1046
+msgid "messages in queue"
+msgstr ""
+
+#: admin.py:1050
 msgid "Send test notification to selected webhook"
 msgstr ""
 
-#: admin.py:1055
+#: admin.py:1058
 #, python-format
-msgid ""
-"Initiated sending test notification to webhook %s. You will receive a report"
-" on completion."
+msgid "Initiated sending test notification to webhook %s."
 msgstr ""
 
-#: admin.py:1061
+#: admin.py:1063
 msgid "Activate selected webhook"
 msgstr ""
 
-#: admin.py:1066
+#: admin.py:1068
 #, python-format
 msgid "You have activated webhook %s"
 msgstr ""
 
-#: admin.py:1068
+#: admin.py:1070
 msgid "Deactivate selected webhook"
 msgstr ""
 
-#: admin.py:1073
+#: admin.py:1075
 #, python-format
 msgid "You have de-activated webhook %s"
 msgstr ""
 
-#: admin.py:1075
+#: admin.py:1077
 msgid "Purge queued messages from selected webhooks"
 msgstr ""
 
-#: admin.py:1085
+#: admin.py:1087
 #, python-format
 msgid ""
 "Purged queued messages for %(actions_count)s webhooks, deleting a total of "
 "%(killmails_deleted)s messages."
 msgstr ""
 
-#: admin.py:1091
+#: admin.py:1093
 msgid "Send queued messages from selected webhooks"
 msgstr ""
 
-#: admin.py:1099
+#: admin.py:1101
 #, python-format
 msgid "Started sending queued messages for %d webhooks."
 msgstr ""
 
-#: core/notification_timers.py:93
+#: core/notification_embeds/billing_embeds.py:24
+msgid "Unknown Bill"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:25
+msgid "Infrastructure Hub Bill"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:42
+msgid "Insufficient Funds for Bill"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:44
+#, python-format
+msgid ""
+"The selected corporation wallet division for automatic payments does not "
+"have enough current funds available to pay the %(bill_type)s due to be paid "
+"by %(due_date)s. Transfer additional funds to the selected wallet division "
+"in order to meet your pending automatic bills."
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:61
+msgid "IHub Bill About to Expire"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:63
+#, python-format
+msgid ""
+"Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
+"%(due_date)s, if not paid in time this Infrastructure Hub will self-"
+"destruct."
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:83
+#, python-format
+msgid "%s has self-destructed due to unpaid maintenance bills"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:87
+#, python-format
+msgid ""
+"%(structure_type)s in %(solar_system)s has self-destructed, as the standard "
+"maintenance bills where not paid."
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:40
+#, python-format
+msgid "New application from %(character_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:44
+#, python-format
+msgid ""
+"New application from %(character_name)s to join %(corporation_name)s:\n"
+"> %(application_text)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:58
+#, python-format
+msgid "%(character_name)s has been invited"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:65
+#, python-format
+msgid ""
+"%(character_name)s has been invited to join %(corporation_name)s by %(inviting_character)s.\n"
+"Application:\n"
+"> %(application_text)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:82
+#, python-format
+msgid "Rejected application from %(character_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:86
+#, python-format
+msgid ""
+"Application from %(character_name)s to join %(corporation_name)s:\n"
+"> %(application_text)s\n"
+"Has been rejected:\n"
+"> %(customMessage)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:103
+#, python-format
+msgid "%(character_name)s withdrew his/her application"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:107
+#, python-format
+msgid ""
+"%(character_name)s withdrew his/her application to join %(corporation_name)s:\n"
+"> %(application_text)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:122
+#, python-format
+msgid "%(character_name)s joins %(corporation_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:127
+#, python-format
+msgid "%(character_name)s is now a member of %(corporation_name)s."
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:138
+#, python-format
+msgid "%(character_name)s has left %(corporation_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:143
+#, python-format
+msgid "%(character_name)s is no longer a member of %(corporation_name)s."
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:40
+#, python-format
+msgid ""
+"\n"
+"Estimated ore composition: %s"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:71
+#: core/notification_types.py:58
+msgid "Moon mining extraction started"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:73
+#, python-format
+msgid ""
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will fracture automatically on %(auto_time)s.\n"
+"%(ore_text)s"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:97
+msgid "Extraction finished"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:99
+#, python-format
+msgid ""
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s is finished and the chunk is ready to be shot at.\n"
+"The chunk will automatically fracture on %(auto_time)s.\n"
+"%(ore_text)s"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:119
+msgid "Automatic Fracture"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:121
+#, python-format
+msgid ""
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has automatically been fired and the moon products are ready to be harvested.\n"
+"%(ore_text)s"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:144
+msgid "(unknown)"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:145
+msgid "Extraction cancelled"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:147
+#, python-format
+msgid ""
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s"
+" belonging to %(owner_link)s has been cancelled by %(character)s."
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:166
+msgid "Moon drill fired"
+msgstr ""
+
+#: core/notification_embeds/moonmining_embeds.py:168
+#, python-format
+msgid ""
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has been fired by %(character)s and the moon products are ready to be harvested.\n"
+"%(ore_text)s"
+msgstr ""
+
+#: core/notification_timers.py:89
 msgid "Armor timer"
 msgstr ""
 
-#: core/notification_timers.py:94 core/notification_timers.py:199
-#: core/notification_timers.py:370
+#: core/notification_timers.py:90 core/notification_timers.py:195
+#: core/notification_timers.py:366
 msgid "Final timer"
 msgstr ""
 
-#: core/notification_timers.py:151
+#: core/notification_timers.py:147
 msgid "Sov timer"
 msgstr ""
 
-#: core/notification_timers.py:253
+#: core/notification_timers.py:249
 msgid "Extraction ready"
 msgstr ""
 
@@ -245,10 +690,6 @@ msgstr ""
 
 #: core/notification_types.py:54
 msgid "Starbase reinforced (BETA)"
-msgstr ""
-
-#: core/notification_types.py:58
-msgid "Moon mining extraction started"
 msgstr ""
 
 #: core/notification_types.py:60
@@ -375,14 +816,6 @@ msgstr ""
 msgid "I_HUB destroyed by bill failure"
 msgstr ""
 
-#: core/serializers.py:497
-msgid "yes"
-msgstr ""
-
-#: core/serializers.py:502
-msgid "no"
-msgstr ""
-
 #: models/notifications.py:50
 msgid "English"
 msgstr ""
@@ -420,11 +853,7 @@ msgid "language"
 msgstr ""
 
 #: models/notifications.py:83
-msgid "language of notifications send to this webhook"
-msgstr ""
-
-#: models/notifications.py:87 models/structures_1.py:94
-msgid "is default"
+msgid "Language of notifications send to this webhook"
 msgstr ""
 
 #: models/notifications.py:89
@@ -435,10 +864,6 @@ msgstr ""
 msgid "has default pings enabled"
 msgstr ""
 
-#: models/notifications.py:105 models/owners.py:197
-msgid "ping groups"
-msgstr ""
-
 #: models/notifications.py:106
 msgid "Groups to be pinged for each notification - "
 msgstr ""
@@ -447,55 +872,24 @@ msgstr ""
 msgid "webhook"
 msgstr ""
 
-#: models/notifications.py:112 models/owners.py:212 models/structures_1.py:397
-msgid "webhooks"
-msgstr ""
-
-#: models/notifications.py:126
-msgid "is sent"
-msgstr ""
-
 #: models/notifications.py:127
 msgid "True when this notification has been forwarded to Discord"
-msgstr ""
-
-#: models/notifications.py:132
-msgid "is timer added"
 msgstr ""
 
 #: models/notifications.py:133
 msgid "True when a timer has been added for this notification"
 msgstr ""
 
-#: models/notifications.py:139 models/structures_1.py:250
-#: models/structures_1.py:809
-msgid "type"
-msgstr ""
-
 #: models/notifications.py:140
-msgid "type of this notification"
-msgstr ""
-
-#: models/notifications.py:145 models/owners.py:219 models/owners.py:1304
-#: models/structures_1.py:320
-msgid "owner"
+msgid "Type of this notification"
 msgstr ""
 
 #: models/notifications.py:146
 msgid "Corporation that owns this notification"
 msgstr ""
 
-#: models/notifications.py:150 models/structures_1.py:410
-msgid "structures"
-msgstr ""
-
 #: models/notifications.py:151
 msgid "Structures this notification is about (if any)"
-msgstr ""
-
-#: models/notifications.py:521 models/structures_1.py:210
-#: models/structures_1.py:795
-msgid "id"
 msgstr ""
 
 #: models/notifications.py:525
@@ -572,10 +966,6 @@ msgid ""
 " the respective owner or webhook configuration"
 msgstr ""
 
-#: models/notifications.py:720
-msgid "color"
-msgstr ""
-
 #: models/notifications.py:721
 msgid "Context color of these notification on Discord"
 msgstr ""
@@ -632,10 +1022,6 @@ msgstr ""
 msgid "This configuration may not overlap with an existing configuration."
 msgstr ""
 
-#: models/notifications.py:851
-msgid "threshold"
-msgstr ""
-
 #: models/notifications.py:853
 msgid ""
 "Notifications will be sent once fuel level in units reaches this threshold"
@@ -664,7 +1050,7 @@ msgid "hours"
 msgstr ""
 
 #: models/notifications.py:922
-msgid "number of hours before fuel expiration this alert was sent"
+msgid "Number of hours before fuel expiration this alert was sent"
 msgstr ""
 
 #: models/notifications.py:926
@@ -683,10 +1069,6 @@ msgstr ""
 msgid "jump fuel alerts"
 msgstr ""
 
-#: models/owners.py:117
-msgid "corporation"
-msgstr ""
-
 #: models/owners.py:118
 msgid "Corporation owning structures"
 msgstr ""
@@ -703,8 +1085,7 @@ msgstr ""
 msgid "assets last update at"
 msgstr ""
 
-#: models/owners.py:131 models/owners.py:147 models/owners.py:190
-#: models/owners.py:205
+#: models/owners.py:131
 msgid "when the last successful update happened"
 msgstr ""
 
@@ -712,9 +1093,13 @@ msgstr ""
 msgid "forwarding last update at"
 msgstr ""
 
+#: models/owners.py:147 models/owners.py:190 models/owners.py:205
+msgid "When the last successful update happened"
+msgstr ""
+
 #: models/owners.py:153
 msgid ""
-"to enable or disable pinging of notifications for this owner e.g. with "
+"To enable or disable pinging of notifications for this owner e.g. with "
 "@everyone and @here"
 msgstr ""
 
@@ -723,7 +1108,7 @@ msgid "is active"
 msgstr ""
 
 #: models/owners.py:160
-msgid "whether this owner is currently included in the sync process"
+msgid "Whether this owner is currently included in the sync process"
 msgstr ""
 
 #: models/owners.py:164
@@ -732,7 +1117,7 @@ msgstr ""
 
 #: models/owners.py:166
 msgid ""
-"whether alliance wide notifications are forwarded for this owner (e.g. sov "
+"Whether alliance wide notifications are forwarded for this owner (e.g. sov "
 "notifications)"
 msgstr ""
 
@@ -742,7 +1127,7 @@ msgstr ""
 
 #: models/owners.py:174
 msgid ""
-"whether the sync status of this owner is included in the overall status of "
+"Whether the sync status of this owner is included in the overall status of "
 "this services"
 msgstr ""
 
@@ -751,7 +1136,7 @@ msgid "is up"
 msgstr ""
 
 #: models/owners.py:183
-msgid "whether all services for this owner are currently up"
+msgid "Whether all services for this owner are currently up"
 msgstr ""
 
 #: models/owners.py:189
@@ -802,8 +1187,16 @@ msgstr ""
 msgid "structures last used at"
 msgstr ""
 
+#: models/owners.py:1319
+msgid "When this character was last used for syncing structures"
+msgstr ""
+
 #: models/owners.py:1326
 msgid "notifications last used at"
+msgstr ""
+
+#: models/owners.py:1327
+msgid "When this character was last used for syncing notifications"
 msgstr ""
 
 #: models/owners.py:1332
@@ -862,13 +1255,8 @@ msgstr ""
 msgid "red"
 msgstr ""
 
-#: models/structures_1.py:64 models/structures_1.py:292
-#: models/structures_2.py:50
-msgid "name"
-msgstr ""
-
 #: models/structures_1.py:65
-msgid "name of the tag - must be unique"
+msgid "Name of the tag, which must be unique"
 msgstr ""
 
 #: models/structures_1.py:71
@@ -876,7 +1264,7 @@ msgid "description"
 msgstr ""
 
 #: models/structures_1.py:72
-msgid "description for this tag"
+msgid "Description for this tag"
 msgstr ""
 
 #: models/structures_1.py:79
@@ -884,7 +1272,7 @@ msgid "style"
 msgstr ""
 
 #: models/structures_1.py:80
-msgid "color style of tag"
+msgid "Color style of tag"
 msgstr ""
 
 #: models/structures_1.py:86
@@ -893,12 +1281,13 @@ msgstr ""
 
 #: models/structures_1.py:88
 msgid ""
-"number defining the order tags are shown. custom tags can not have an order "
+"Number defining the order tags are shown. custom tags can not have an order "
 "below 100"
 msgstr ""
 
 #: models/structures_1.py:96
-msgid "if true this custom tag will automatically be added to new structures"
+msgid ""
+"When enabled this custom tag will automatically be added to new structures"
 msgstr ""
 
 #: models/structures_1.py:101
@@ -907,7 +1296,7 @@ msgstr ""
 
 #: models/structures_1.py:103
 msgid ""
-"if False this tag is created and managed by the system and can not be "
+"When disabled this tag is created and managed by the system and can not be "
 "modified by users"
 msgstr ""
 
@@ -1020,7 +1409,7 @@ msgid "created at"
 msgstr ""
 
 #: models/structures_1.py:217
-msgid "date this structure was received from ESI for the first time"
+msgid "Date this structure was received from ESI for the first time"
 msgstr ""
 
 #: models/structures_1.py:226
@@ -1063,16 +1452,8 @@ msgstr ""
 msgid "has fitting"
 msgstr ""
 
-#: models/structures_1.py:266
-msgid "bool indicating if the structure has a fitting"
-msgstr ""
-
 #: models/structures_1.py:273
 msgid "has core"
-msgstr ""
-
-#: models/structures_1.py:274
-msgid "bool indicating if the structure has a quantum core"
 msgstr ""
 
 #: models/structures_1.py:280
@@ -1080,7 +1461,7 @@ msgid "last online at"
 msgstr ""
 
 #: models/structures_1.py:281
-msgid "date this structure had any of it's services online"
+msgid "Date this structure had any of it's services online"
 msgstr ""
 
 #: models/structures_1.py:287 models/structures_1.py:814
@@ -1088,7 +1469,7 @@ msgid "last updated at"
 msgstr ""
 
 #: models/structures_1.py:288
-msgid "date this structure was last updated from the EVE server"
+msgid "Date this structure was last updated from the EVE server"
 msgstr ""
 
 #: models/structures_1.py:293
@@ -1129,7 +1510,7 @@ msgid "position x"
 msgstr ""
 
 #: models/structures_1.py:340
-msgid "x position in the solar system"
+msgid "X coordinate of position in the solar system"
 msgstr ""
 
 #: models/structures_1.py:346
@@ -1137,7 +1518,7 @@ msgid "position y"
 msgstr ""
 
 #: models/structures_1.py:347
-msgid "y position in the solar system"
+msgid "Y coordinate of position in the solar system"
 msgstr ""
 
 #: models/structures_1.py:353
@@ -1145,7 +1526,7 @@ msgid "position z"
 msgstr ""
 
 #: models/structures_1.py:354
-msgid "z position in the solar system"
+msgid "Z coordinate of position in the solar system"
 msgstr ""
 
 #: models/structures_1.py:360 models/structures_2.py:55
@@ -1170,10 +1551,6 @@ msgstr ""
 
 #: models/structures_1.py:375
 msgid "Date at which the structure will move to it's next state"
-msgstr ""
-
-#: models/structures_1.py:382
-msgid "tags"
 msgstr ""
 
 #: models/structures_1.py:383
@@ -1201,10 +1578,6 @@ msgstr ""
 
 #: models/structures_1.py:802
 msgid "Structure this item is located in"
-msgstr ""
-
-#: models/structures_1.py:810
-msgid "type of the item"
 msgstr ""
 
 #: models/structures_1.py:812
@@ -1393,12 +1766,6 @@ msgstr ""
 #: templates/structures/modals/starbase_detail.html:55
 #: templates/structures/modals/starbase_detail.html:65
 msgid "empty"
-msgstr ""
-
-#: templates/structures/modals/poco_details.html:19
-#: templates/structures/modals/starbase_detail.html:19
-#: templates/structures/modals/structure_details.html:19
-msgid "General"
 msgstr ""
 
 #: templates/structures/modals/poco_details.html:24
@@ -1793,4 +2160,41 @@ msgstr ""
 
 #: webhooks/models.py:36
 msgid "Discord Webhook"
+msgstr ""
+
+#: webhooks/models.py:43
+msgid "Short name to identify this webhook"
+msgstr ""
+
+#: webhooks/models.py:46
+msgid "url"
+msgstr ""
+
+#: webhooks/models.py:50
+msgid ""
+"URL of this webhook, e.g. https://discordapp.com/api/webhooks/123456/abcdef"
+msgstr ""
+
+#: webhooks/models.py:55
+msgid "notes"
+msgstr ""
+
+#: webhooks/models.py:59
+msgid "Notes regarding this webhook"
+msgstr ""
+
+#: webhooks/models.py:62
+msgid "webhook_type"
+msgstr ""
+
+#: webhooks/models.py:65
+msgid "Type of this webhook"
+msgstr ""
+
+#: webhooks/models.py:68
+msgid "is_active"
+msgstr ""
+
+#: webhooks/models.py:70
+msgid "Whether notifications are currently sent to this webhook"
 msgstr ""

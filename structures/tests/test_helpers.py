@@ -2,9 +2,12 @@ import datetime as dt
 
 from django.test import TestCase
 from django.utils.timezone import now
+from eveuniverse.models import EveType
+from eveuniverse.tests.testdata.factories_2 import EveTypeFactory
 
 from structures.helpers import (
     datetime_almost_equal,
+    get_or_create_esi_obj,
     hours_until_deadline,
     is_absolute_url,
 )
@@ -69,3 +72,13 @@ class TestIsAbsoluteUrl(TestCase):
         for url, expected_result in cases:
             with self.subTest(url=url):
                 self.assertIs(is_absolute_url(url), expected_result)
+
+
+class TestGetOrCreateEsiObj(TestCase):
+    def test_should_return_existing_obj(self):
+        # given
+        obj = EveTypeFactory()
+        # when
+        obj_2 = get_or_create_esi_obj(EveType, id=obj.id)
+        # then
+        self.assertEqual(obj, obj_2)

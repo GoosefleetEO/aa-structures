@@ -37,28 +37,37 @@ class WebhookBase(DiscordWebhookMixin, models.Model):
     ]
 
     name = models.CharField(
-        max_length=64, unique=True, help_text="short name to identify this webhook"
+        verbose_name=_("name"),
+        max_length=64,
+        unique=True,
+        help_text=_("Short name to identify this webhook"),
     )
     url = models.CharField(
+        verbose_name=_("url"),
         max_length=255,
         unique=True,
-        help_text=(
+        help_text=_(
             "URL of this webhook, e.g. "
             "https://discordapp.com/api/webhooks/123456/abcdef"
         ),
     )
     notes = models.TextField(
+        verbose_name=_("notes"),
         null=True,
         default=None,
         blank=True,
-        help_text="you can add notes about this webhook here if you want",
+        help_text=_("Notes regarding this webhook"),
     )
     webhook_type = models.IntegerField(
-        choices=TYPE_CHOICES, default=TYPE_DISCORD, help_text="type of this webhook"
+        verbose_name=_("webhook type"),
+        choices=TYPE_CHOICES,
+        default=TYPE_DISCORD,
+        help_text=_("Type of this webhook"),
     )
     is_active = models.BooleanField(
+        verbose_name=_("is active"),
         default=True,
-        help_text="whether notifications are currently sent to this webhook",
+        help_text=_("Whether notifications are currently sent to this webhook"),
     )
 
     objects = WebhookBaseManager()
