@@ -15,12 +15,11 @@ msgstr ""
 "POT-Creation-Date: 2023-10-30 18:27+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Last-Translator: Peter Pfeufer, 2020\n"
-"Language-Team: German (Germany) (https://app.transifex.com/kalkoken-apps/"
-"teams/107978/de_DE/)\n"
-"Language: de_DE\n"
+"Language-Team: German (Germany) (https://app.transifex.com/kalkoken-apps/teams/107978/de_DE/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: de_DE\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: admin.py:62 admin.py:877 models/notifications.py:145 models/owners.py:219
@@ -63,8 +62,8 @@ msgstr ""
 #: admin.py:138
 msgid ""
 "Timing configuration for sending fuel notifications. Note that the first "
-"notification will be sent at the exact start hour, and the last notification "
-"will be sent one repeat before the end hour."
+"notification will be sent at the exact start hour, and the last notification"
+" will be sent one repeat before the end hour."
 msgstr ""
 
 #: admin.py:159 models/notifications.py:851
@@ -441,7 +440,8 @@ msgstr ""
 #, python-format
 msgid ""
 "Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
-"%(due_date)s, if not paid in time this Infrastructure Hub will self-destruct."
+"%(due_date)s, if not paid in time this Infrastructure Hub will self-"
+"destruct."
 msgstr ""
 
 #: core/notification_embeds/billing_embeds.py:83
@@ -476,8 +476,7 @@ msgstr ""
 #: core/notification_embeds/character_embeds.py:65
 #, python-format
 msgid ""
-"%(character_name)s has been invited to join %(corporation_name)s by "
-"%(inviting_character)s.\n"
+"%(character_name)s has been invited to join %(corporation_name)s by %(inviting_character)s.\n"
 "Application:\n"
 "> %(application_text)s"
 msgstr ""
@@ -504,8 +503,7 @@ msgstr ""
 #: core/notification_embeds/character_embeds.py:107
 #, python-format
 msgid ""
-"%(character_name)s withdrew his/her application to join "
-"%(corporation_name)s:\n"
+"%(character_name)s withdrew his/her application to join %(corporation_name)s:\n"
 "> %(application_text)s"
 msgstr ""
 
@@ -544,11 +542,8 @@ msgstr "Mondmining Extraktion gestartet"
 #: core/notification_embeds/moonmining_embeds.py:73
 #, python-format
 msgid ""
-"A moon mining extraction has been started for %(structure_name)s at %(moon)s "
-"in %(solar_system)s belonging to %(owner_link)s. Extraction was started by "
-"%(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will fracture "
-"automatically on %(auto_time)s.\n"
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will fracture automatically on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
 
@@ -559,9 +554,7 @@ msgstr ""
 #: core/notification_embeds/moonmining_embeds.py:99
 #, python-format
 msgid ""
-"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s is finished and the chunk is ready to be shot "
-"at.\n"
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s is finished and the chunk is ready to be shot at.\n"
 "The chunk will automatically fracture on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
@@ -573,9 +566,7 @@ msgstr ""
 #: core/notification_embeds/moonmining_embeds.py:121
 #, python-format
 msgid ""
-"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has automatically been fired and the moon "
-"products are ready to be harvested.\n"
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has automatically been fired and the moon products are ready to be harvested.\n"
 "%(ore_text)s"
 msgstr ""
 
@@ -590,8 +581,8 @@ msgstr ""
 #: core/notification_embeds/moonmining_embeds.py:147
 #, python-format
 msgid ""
-"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has been cancelled by %(character)s."
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s"
+" belonging to %(owner_link)s has been cancelled by %(character)s."
 msgstr ""
 
 #: core/notification_embeds/moonmining_embeds.py:166
@@ -601,9 +592,7 @@ msgstr ""
 #: core/notification_embeds/moonmining_embeds.py:168
 #, python-format
 msgid ""
-"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has been fired by %(character)s and the moon "
-"products are ready to be harvested.\n"
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has been fired by %(character)s and the moon products are ready to be harvested.\n"
 "%(ore_text)s"
 msgstr ""
 
@@ -978,8 +967,8 @@ msgstr ""
 
 #: models/notifications.py:710
 msgid ""
-"Option to ping every member of the channel. This setting can be overruled by "
-"the respective owner or webhook configuration"
+"Option to ping every member of the channel. This setting can be overruled by"
+" the respective owner or webhook configuration"
 msgstr ""
 
 #: models/notifications.py:721
@@ -1517,8 +1506,8 @@ msgstr ""
 #: models/structures_1.py:330
 msgid ""
 "The average hour of day that determines the time +/- some hours when the "
-"structure will randomly exit its reinforcement periods and become vulnerable "
-"to attack against its armor and/or hull. "
+"structure will randomly exit its reinforcement periods and become vulnerable"
+" to attack against its armor and/or hull. "
 msgstr ""
 
 #: models/structures_1.py:339
@@ -1583,8 +1572,8 @@ msgstr ""
 
 #: models/structures_1.py:399
 msgid ""
-"Webhooks for sending notifications to. If any webhook is enabled, these will "
-"be used instead of the webhooks defined for the respective owner. If no "
+"Webhooks for sending notifications to. If any webhook is enabled, these will"
+" be used instead of the webhooks defined for the respective owner. If no "
 "webhook is enabled the owner's setting will be used. "
 msgstr ""
 
@@ -2110,8 +2099,8 @@ msgstr ""
 #: views.py:476
 #, python-format
 msgid ""
-"%(corporation)s has been added with %(character)s as sync character. We have "
-"started fetching structures and notifications for this corporation and you "
+"%(corporation)s has been added with %(character)s as sync character. We have"
+" started fetching structures and notifications for this corporation and you "
 "will receive a report once the process is finished."
 msgstr ""
 
@@ -2119,7 +2108,8 @@ msgstr ""
 #, python-format
 msgid "%(corporation)s was added as new structure owner by %(user)s."
 msgstr ""
-"%(corporation)s wurde als neuer Strukurenbesitzer hinzugefügt durch %(user)s."
+"%(corporation)s wurde als neuer Strukurenbesitzer hinzugefügt durch "
+"%(user)s."
 
 #: views.py:493
 #, python-format

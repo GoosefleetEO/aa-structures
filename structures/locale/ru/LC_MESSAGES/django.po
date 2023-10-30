@@ -15,15 +15,12 @@ msgstr ""
 "POT-Creation-Date: 2023-10-30 18:27+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Last-Translator: - -, 2023\n"
-"Language-Team: Russian (https://app.transifex.com/kalkoken-apps/teams/107978/"
-"ru/)\n"
-"Language: ru\n"
+"Language-Team: Russian (https://app.transifex.com/kalkoken-apps/teams/107978/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
-"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: admin.py:62 admin.py:877 models/notifications.py:145 models/owners.py:219
 #: models/owners.py:1304 models/structures_1.py:320
@@ -65,8 +62,8 @@ msgstr "Тайминг"
 #: admin.py:138
 msgid ""
 "Timing configuration for sending fuel notifications. Note that the first "
-"notification will be sent at the exact start hour, and the last notification "
-"will be sent one repeat before the end hour."
+"notification will be sent at the exact start hour, and the last notification"
+" will be sent one repeat before the end hour."
 msgstr ""
 "Конфигурация времени для отправки уведомлений о топливе. Обратите внимание, "
 "что первое уведомление будет отправлено точно в час начала, а последнее "
@@ -142,7 +139,8 @@ msgstr "Отправить выбранное по настроенным веб
 #: admin.py:299
 #, python-format
 msgid "Sent %(sent_count)d/%(selected_count)d generated messages."
-msgstr "Отправлено %(sent_count)d/%(selected_count)d автоматических сообщений."
+msgstr ""
+"Отправлено %(sent_count)d/%(selected_count)d автоматических сообщений."
 
 #: admin.py:303
 msgid "Process selected notifications for timerboard"
@@ -257,23 +255,23 @@ msgstr "синхронизация ОК"
 
 #: admin.py:591
 msgid "avg. turnaround time"
-msgstr ""
+msgstr "avg. turnaround time"
 
 #: admin.py:615
 msgid "structures update fresh"
-msgstr ""
+msgstr "structures update fresh"
 
 #: admin.py:619
 msgid "notifications update fresh"
-msgstr ""
+msgstr "notifications update fresh"
 
 #: admin.py:623
 msgid "forwarding update fresh"
-msgstr ""
+msgstr "forwarding update fresh"
 
 #: admin.py:627
 msgid "assets update fresh"
-msgstr ""
+msgstr "assets update fresh"
 
 #: admin.py:631
 msgid "structures Count"
@@ -443,8 +441,8 @@ msgid ""
 "in order to meet your pending automatic bills."
 msgstr ""
 "У корпоративного счёта для автоматической оплаты не хватает стредств для "
-"оплаты %(bill_type)s, который требуется оплатить до %(due_date)s. Переведите "
-"дополнительные стредства на корпоративный счёт для закрытия открытых "
+"оплаты %(bill_type)s, который требуется оплатить до %(due_date)s. Переведите"
+" дополнительные стредства на корпоративный счёт для закрытия открытых "
 "автоматических счетов."
 
 #: core/notification_embeds/billing_embeds.py:61
@@ -455,7 +453,8 @@ msgstr "У IHub счёт кончается срок действия"
 #, python-format
 msgid ""
 "Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
-"%(due_date)s, if not paid in time this Infrastructure Hub will self-destruct."
+"%(due_date)s, if not paid in time this Infrastructure Hub will self-"
+"destruct."
 msgstr ""
 "Срок действия счёта обслуживания центра инфраструктуры %(solar_system)s "
 "оканчивается %(due_date)s. Если вы не заплатите вовремя, центр "
@@ -497,20 +496,18 @@ msgstr "%(character_name)s был приглашен"
 #: core/notification_embeds/character_embeds.py:65
 #, python-format
 msgid ""
-"%(character_name)s has been invited to join %(corporation_name)s by "
-"%(inviting_character)s.\n"
+"%(character_name)s has been invited to join %(corporation_name)s by %(inviting_character)s.\n"
 "Application:\n"
 "> %(application_text)s"
 msgstr ""
-"%(character_name)s был приглашен%(inviting_character)s в "
-"%(corporation_name)s.\n"
+"%(character_name)s был приглашен%(inviting_character)s в %(corporation_name)s.\n"
 "Заявка:\n"
 "> %(application_text)s"
 
 #: core/notification_embeds/character_embeds.py:82
 #, python-format
 msgid "Rejected application from %(character_name)s"
-msgstr "%(character_name)s отозвал свою заявку"
+msgstr "Заявка %(character_name)s была отклонена"
 
 #: core/notification_embeds/character_embeds.py:86
 #, python-format
@@ -520,39 +517,44 @@ msgid ""
 "Has been rejected:\n"
 "> %(customMessage)s"
 msgstr ""
+"Заявка по вступлению в %(corporation_name)s от %(character_name)s:\n"
+"> %(application_text)s\n"
+"Была отклонена:\n"
+"> %(customMessage)s"
 
 #: core/notification_embeds/character_embeds.py:103
 #, python-format
 msgid "%(character_name)s withdrew his/her application"
-msgstr ""
+msgstr "%(character_name)s отозвал свою заявку"
 
 #: core/notification_embeds/character_embeds.py:107
 #, python-format
 msgid ""
-"%(character_name)s withdrew his/her application to join "
-"%(corporation_name)s:\n"
+"%(character_name)s withdrew his/her application to join %(corporation_name)s:\n"
 "> %(application_text)s"
 msgstr ""
+"%(character_name)s отозвал свою заявку по вступлению в %(corporation_name)s:\n"
+"> %(application_text)s"
 
 #: core/notification_embeds/character_embeds.py:122
 #, python-format
 msgid "%(character_name)s joins %(corporation_name)s"
-msgstr ""
+msgstr "%(character_name)s присоединяется в%(corporation_name)s"
 
 #: core/notification_embeds/character_embeds.py:127
 #, python-format
 msgid "%(character_name)s is now a member of %(corporation_name)s."
-msgstr ""
+msgstr "%(character_name)s новый член %(corporation_name)s."
 
 #: core/notification_embeds/character_embeds.py:138
 #, python-format
 msgid "%(character_name)s has left %(corporation_name)s"
-msgstr ""
+msgstr "%(character_name)s покинул %(corporation_name)s"
 
 #: core/notification_embeds/character_embeds.py:143
 #, python-format
 msgid "%(character_name)s is no longer a member of %(corporation_name)s."
-msgstr ""
+msgstr "%(character_name)s больше не член %(corporation_name)s."
 
 #: core/notification_embeds/moonmining_embeds.py:40
 #, python-format
@@ -571,18 +573,12 @@ msgstr "Добыча лунной руды началась"
 #: core/notification_embeds/moonmining_embeds.py:73
 #, python-format
 msgid ""
-"A moon mining extraction has been started for %(structure_name)s at %(moon)s "
-"in %(solar_system)s belonging to %(owner_link)s. Extraction was started by "
-"%(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will fracture "
-"automatically on %(auto_time)s.\n"
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will fracture automatically on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
-"Извлечение лунной руды начато %(structure_name)s, принадлежащая "
-"%(owner_link)s, на %(moon)s в %(solar_system)s. Извлечение начато "
-"%(character)s.\n"
-"Создание астероидного поля будет возможно %(ready_time)s, и автоматическое "
-"создание будет %(auto_time)s.\n"
+"Извлечение лунной руды начато %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в %(solar_system)s. Извлечение начато %(character)s.\n"
+"Создание астероидного поля будет возможно %(ready_time)s, и автоматическое создание будет %(auto_time)s.\n"
 "%(ore_text)s "
 
 #: core/notification_embeds/moonmining_embeds.py:97
@@ -592,14 +588,11 @@ msgstr "Извлечение завершено"
 #: core/notification_embeds/moonmining_embeds.py:99
 #, python-format
 msgid ""
-"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s is finished and the chunk is ready to be shot "
-"at.\n"
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s is finished and the chunk is ready to be shot at.\n"
 "The chunk will automatically fracture on %(auto_time)s.\n"
 "%(ore_text)s"
 msgstr ""
-"Извлечение %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в "
-"%(solar_system)s завершено и стало возможным создание астероидного поля.\n"
+"Извлечение %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в %(solar_system)s завершено и стало возможным создание астероидного поля.\n"
 "Астероидное поле будет автоматически создано %(auto_time)s.\n"
 "%(ore_text)s"
 
@@ -610,14 +603,10 @@ msgstr "Автоматическое раздробление"
 #: core/notification_embeds/moonmining_embeds.py:121
 #, python-format
 msgid ""
-"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has automatically been fired and the moon "
-"products are ready to be harvested.\n"
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has automatically been fired and the moon products are ready to be harvested.\n"
 "%(ore_text)s"
 msgstr ""
-"Лунный бур, установленный в %(structure_name)s, принадлежащий "
-"%(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил и лунная руда "
-"готова к сбору.\n"
+"Лунный бур, установленный в %(structure_name)s, принадлежащий %(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил и лунная руда готова к сбору.\n"
 "%(ore_text)s "
 
 #: core/notification_embeds/moonmining_embeds.py:144
@@ -631,8 +620,8 @@ msgstr "Извлечение завершено"
 #: core/notification_embeds/moonmining_embeds.py:147
 #, python-format
 msgid ""
-"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has been cancelled by %(character)s."
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s"
+" belonging to %(owner_link)s has been cancelled by %(character)s."
 msgstr ""
 "Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
 "на%(moon)s в %(solar_system)s было отменено %(character)s."
@@ -644,14 +633,10 @@ msgstr "Лунный бур выстрелил"
 #: core/notification_embeds/moonmining_embeds.py:168
 #, python-format
 msgid ""
-"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has been fired by %(character)s and the moon "
-"products are ready to be harvested.\n"
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has been fired by %(character)s and the moon products are ready to be harvested.\n"
 "%(ore_text)s"
 msgstr ""
-"Лунный бур, установленный в %(structure_name)s, принадлежащий "
-"%(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил по приказу "
-"%(character)s и лунная руда готова к сбору.\n"
+"Лунный бур, установленный в %(structure_name)s, принадлежащий %(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил по приказу %(character)s и лунная руда готова к сбору.\n"
 "%(ore_text)s"
 
 #: core/notification_timers.py:89
@@ -916,10 +901,8 @@ msgid "language"
 msgstr "язык"
 
 #: models/notifications.py:83
-#, fuzzy
-#| msgid "language of notifications send to this webhook"
 msgid "Language of notifications send to this webhook"
-msgstr "язык отправляемых оповещений по этому вебхуку"
+msgstr "Язык оповещения, отправляемого по этому вебхуку"
 
 #: models/notifications.py:89
 msgid "Whether owners have this webhook automatically pre-set when created"
@@ -946,10 +929,8 @@ msgid "True when a timer has been added for this notification"
 msgstr "Галочка, если был добавлен таймер по этому оповещению"
 
 #: models/notifications.py:140
-#, fuzzy
-#| msgid "type of this notification"
 msgid "Type of this notification"
-msgstr "тип оповещения"
+msgstr "Тип оповещения"
 
 #: models/notifications.py:146
 msgid "Corporation that owns this notification"
@@ -1013,7 +994,7 @@ msgstr "детали"
 
 #: models/notifications.py:671
 msgid "last_updated"
-msgstr "последнее_обновление"
+msgstr "last_updated"
 
 #: models/notifications.py:677
 msgid "generated notification"
@@ -1029,8 +1010,8 @@ msgstr "канал пингов"
 
 #: models/notifications.py:710
 msgid ""
-"Option to ping every member of the channel. This setting can be overruled by "
-"the respective owner or webhook configuration"
+"Option to ping every member of the channel. This setting can be overruled by"
+" the respective owner or webhook configuration"
 msgstr ""
 "Возможность пинговать каждого участника канала. Этот параметр может быть "
 "отменен соответствующим владельцем или конфигурацией вебхука"
@@ -1041,7 +1022,7 @@ msgstr "Цвет контекста уведомлений в Дискорде"
 
 #: models/notifications.py:725
 msgid "is_enabled"
-msgstr "включено"
+msgstr "is_enabled"
 
 #: models/notifications.py:726
 msgid "Disabled configurations will not create any new alerts."
@@ -1121,11 +1102,9 @@ msgid "hours"
 msgstr "часы"
 
 #: models/notifications.py:922
-#, fuzzy
-#| msgid "number of hours before fuel expiration this alert was sent"
 msgid "Number of hours before fuel expiration this alert was sent"
 msgstr ""
-"за количество часов до истечения топлива было отправлено это оповещение"
+"Будет отправлено, когда останется x часов до опустошения топливного отсека"
 
 #: models/notifications.py:926
 msgid "structure fuel alert"
@@ -1168,21 +1147,15 @@ msgid "forwarding last update at"
 msgstr "пересылка последнего обновления на"
 
 #: models/owners.py:147 models/owners.py:190 models/owners.py:205
-#, fuzzy
-#| msgid "when the last successful update happened"
 msgid "When the last successful update happened"
-msgstr "когда последнее успешное обновление произошло"
+msgstr "Когда последний раз было успешное обновление"
 
 #: models/owners.py:153
-#, fuzzy
-#| msgid ""
-#| "to enable or disable pinging of notifications for this owner e.g. with "
-#| "@everyone and @here"
 msgid ""
 "To enable or disable pinging of notifications for this owner e.g. with "
 "@everyone and @here"
 msgstr ""
-"для включения или отключения пингов оповещений для этого владельца например, "
+"Для влючения или выключение пингов оповещений для этого владельца, например "
 "@everyone и @here"
 
 #: models/owners.py:159
@@ -1190,52 +1163,39 @@ msgid "is active"
 msgstr "включено"
 
 #: models/owners.py:160
-#, fuzzy
-#| msgid "whether this owner is currently included in the sync process"
 msgid "Whether this owner is currently included in the sync process"
-msgstr "включен ли этот владелец в данный момент в процесс синхронизации"
+msgstr "Включен ли этот владелец в процесс синхронизации"
 
 #: models/owners.py:164
 msgid "is alliance main"
 msgstr "альянсовый"
 
 #: models/owners.py:166
-#, fuzzy
-#| msgid ""
-#| "whether alliance wide notifications are forwarded for this owner (e.g. "
-#| "sov notifications)"
 msgid ""
 "Whether alliance wide notifications are forwarded for this owner (e.g. sov "
 "notifications)"
 msgstr ""
-"пересылаются ли этому владельцу уведомления всего альянса (например, "
-"уведомления сувернитета)"
+"Получает ли владелец альянсовые уведомления (например оповещения "
+"сувернитета)"
 
 #: models/owners.py:172
 msgid "is included in service status"
 msgstr "включает в себя состояние служебных модулей"
 
 #: models/owners.py:174
-#, fuzzy
-#| msgid ""
-#| "whether the sync status of this owner is included in the overall status "
-#| "of this services"
 msgid ""
 "Whether the sync status of this owner is included in the overall status of "
 "this services"
 msgstr ""
-"включен ли статус синхронизации этого владельца в общий статус этих "
-"служебных модулей"
+"Включен ли статус синхронизации этого владельца в общий статус этих модулей"
 
 #: models/owners.py:182
 msgid "is up"
 msgstr "включен"
 
 #: models/owners.py:183
-#, fuzzy
-#| msgid "whether all services for this owner are currently up"
 msgid "Whether all services for this owner are currently up"
-msgstr "все ли модули для этого владельца в настоящее время доступны"
+msgstr "Работают ли в настоящее время все модули у этого владельца"
 
 #: models/owners.py:189
 msgid "notifications last update at"
@@ -1281,7 +1241,7 @@ msgstr "ОК"
 
 #: models/owners.py:1310
 msgid "character_ownership"
-msgstr "правовладение_персонажем"
+msgstr "character_ownership"
 
 #: models/owners.py:1318
 msgid "structures last used at"
@@ -1290,16 +1250,17 @@ msgstr "структурой последний раз пользовались 
 #: models/owners.py:1319
 msgid "When this character was last used for syncing structures"
 msgstr ""
+"Когда этот персонаж был использован последний раз для синхронизации структур"
 
 #: models/owners.py:1326
 msgid "notifications last used at"
 msgstr "оповещением последний раз пользовались в"
 
 #: models/owners.py:1327
-#, fuzzy
-#| msgid "True when a timer has been added for this notification"
 msgid "When this character was last used for syncing notifications"
-msgstr "Галочка, если был добавлен таймер по этому оповещению"
+msgstr ""
+"Когда этот персонаж был использован последний раз для синхронизации "
+"оповещений"
 
 #: models/owners.py:1332
 msgid "error count"
@@ -1358,72 +1319,53 @@ msgid "red"
 msgstr "красный"
 
 #: models/structures_1.py:65
-#, fuzzy
-#| msgid "name of the tag - must be unique"
 msgid "Name of the tag, which must be unique"
-msgstr "имя или тег должны быть уникальными"
+msgstr "Имя тега должно быть уникально"
 
 #: models/structures_1.py:71
 msgid "description"
 msgstr "описание"
 
 #: models/structures_1.py:72
-#, fuzzy
-#| msgid "description for this tag"
 msgid "Description for this tag"
-msgstr "описание для этого тега"
+msgstr "Описание тега"
 
 #: models/structures_1.py:79
 msgid "style"
 msgstr "стиль"
 
 #: models/structures_1.py:80
-#, fuzzy
-#| msgid "color style of tag"
 msgid "Color style of tag"
-msgstr "цветовой стиль тега"
+msgstr "Цветовой стиль тега"
 
 #: models/structures_1.py:86
 msgid "order"
 msgstr "ордер"
 
 #: models/structures_1.py:88
-#, fuzzy
-#| msgid ""
-#| "number defining the order tags are shown. custom tags can not have an "
-#| "order below 100"
 msgid ""
 "Number defining the order tags are shown. custom tags can not have an order "
 "below 100"
 msgstr ""
-"номера, определяющие теги ордера, отображаются. пользовательские теги не "
-"могут иметь ордер ниже 100"
+"Номера, определяющие порядок тега, показываются. Порядок пользовательского "
+"тега не может быть ниже 100"
 
 #: models/structures_1.py:96
-#, fuzzy
-#| msgid ""
-#| "if true this custom tag will automatically be added to new structures"
 msgid ""
 "When enabled this custom tag will automatically be added to new structures"
-msgstr ""
-"если включено, этот пользовательский тег будет автоматически добавлен в "
-"новые структуры"
+msgstr "Если включено, тег будет автоматически добавляться новым структурам"
 
 #: models/structures_1.py:101
 msgid "is user managed"
 msgstr "управляется пользователем"
 
 #: models/structures_1.py:103
-#, fuzzy
-#| msgid ""
-#| "if False this tag is created and managed by the system and can not be "
-#| "modified by users"
 msgid ""
 "When disabled this tag is created and managed by the system and can not be "
 "modified by users"
 msgstr ""
-"если выключено, этот тег создается и управляется системой и не может быть "
-"изменен пользователями"
+"Если выключено, тег создается и используется системой и не может быть "
+"изменён пользователем"
 
 #: models/structures_1.py:111
 msgid "structure tag"
@@ -1534,10 +1476,8 @@ msgid "created at"
 msgstr "создано в"
 
 #: models/structures_1.py:217
-#, fuzzy
-#| msgid "date this structure was received from ESI for the first time"
 msgid "Date this structure was received from ESI for the first time"
-msgstr "дата этой структуры была получена от ESI в первый раз"
+msgstr "Дата, когда структура была получена от ESI"
 
 #: models/structures_1.py:226
 msgid "moon"
@@ -1588,20 +1528,16 @@ msgid "last online at"
 msgstr "последний раз был онлайн в"
 
 #: models/structures_1.py:281
-#, fuzzy
-#| msgid "date this structure had any of it's services online"
 msgid "Date this structure had any of it's services online"
-msgstr "дата, когда эта структура имела включенный служебный модуль"
+msgstr "Дата, когда у структуры были активны служебные модули"
 
 #: models/structures_1.py:287 models/structures_1.py:814
 msgid "last updated at"
 msgstr "последний раз обновлено в"
 
 #: models/structures_1.py:288
-#, fuzzy
-#| msgid "date this structure was last updated from the EVE server"
 msgid "Date this structure was last updated from the EVE server"
-msgstr "дата, когда данные этой структуры были обновлены с сервера EVE"
+msgstr "Дата, когда структура была обновлена последний раз"
 
 #: models/structures_1.py:293
 msgid "The full name of the structure"
@@ -1634,8 +1570,8 @@ msgstr "время укрепления"
 #: models/structures_1.py:330
 msgid ""
 "The average hour of day that determines the time +/- some hours when the "
-"structure will randomly exit its reinforcement periods and become vulnerable "
-"to attack against its armor and/or hull. "
+"structure will randomly exit its reinforcement periods and become vulnerable"
+" to attack against its armor and/or hull. "
 msgstr ""
 "Средний час дня, который определяет время +/- несколько часов, когда "
 "структура случайным образом выйдет из периодов усиления и станет уязвимой "
@@ -1646,30 +1582,24 @@ msgid "position x"
 msgstr "позиция по x"
 
 #: models/structures_1.py:340
-#, fuzzy
-#| msgid "x position in the solar system"
 msgid "X coordinate of position in the solar system"
-msgstr "позиция по x в солнечной системе"
+msgstr "Координата X в солнечной системе"
 
 #: models/structures_1.py:346
 msgid "position y"
 msgstr "позиция по y"
 
 #: models/structures_1.py:347
-#, fuzzy
-#| msgid "x position in the solar system"
 msgid "Y coordinate of position in the solar system"
-msgstr "позиция по x в солнечной системе"
+msgstr "Координата Y в солнечной системе"
 
 #: models/structures_1.py:353
 msgid "position z"
 msgstr "позиция по z в солнечной системе"
 
 #: models/structures_1.py:354
-#, fuzzy
-#| msgid "x position in the solar system"
 msgid "Z coordinate of position in the solar system"
-msgstr "позиция по x в солнечной системе"
+msgstr "Координата Z в солнечной системе"
 
 #: models/structures_1.py:360 models/structures_2.py:55
 msgid "state"
@@ -1709,13 +1639,13 @@ msgstr "Дата, когда структура снимется с якоря"
 
 #: models/structures_1.py:399
 msgid ""
-"Webhooks for sending notifications to. If any webhook is enabled, these will "
-"be used instead of the webhooks defined for the respective owner. If no "
+"Webhooks for sending notifications to. If any webhook is enabled, these will"
+" be used instead of the webhooks defined for the respective owner. If no "
 "webhook is enabled the owner's setting will be used. "
 msgstr ""
 "Вебхуки для отправки уведомлений. Если какой-либо вебхук включен, он будет "
-"использоваться вместо вебхуков, определенных для соответствующего владельца. "
-"Если вебхук не включен, будут использоваться настройки владельца."
+"использоваться вместо вебхуков, определенных для соответствующего владельца."
+" Если вебхук не включен, будут использоваться настройки владельца."
 
 #: models/structures_1.py:795
 msgid "The Eve item ID"
@@ -2241,8 +2171,8 @@ msgstr ""
 #: views.py:476
 #, python-format
 msgid ""
-"%(corporation)s has been added with %(character)s as sync character. We have "
-"started fetching structures and notifications for this corporation and you "
+"%(corporation)s has been added with %(character)s as sync character. We have"
+" started fetching structures and notifications for this corporation and you "
 "will receive a report once the process is finished."
 msgstr ""
 "%(corporation)s добавлена синхронизирующим персонажем %(character)s. Мы "
@@ -2274,8 +2204,7 @@ msgid ""
 "%(character)s was added as sync character to %(corporation)s by %(user)s.\n"
 "We now have %(characters_count)d sync character(s) configured."
 msgstr ""
-"%(user)s добавил %(character)s как синхронизирующий персонаж "
-"%(corporation)s.\n"
+"%(user)s добавил %(character)s как синхронизирующий персонаж %(corporation)s.\n"
 "На данный момент добавлено %(characters_count)d синхронизирующих персонажей."
 
 #: views.py:525
@@ -2321,62 +2250,37 @@ msgstr "Discord Webhook"
 
 #: webhooks/models.py:43
 msgid "Short name to identify this webhook"
-msgstr ""
+msgstr "Короткое имя для определения вебхука"
 
 #: webhooks/models.py:46
-#, fuzzy
-#| msgid "neutral"
 msgid "url"
-msgstr "нейтрально"
+msgstr "url"
 
 #: webhooks/models.py:50
 msgid ""
 "URL of this webhook, e.g. https://discordapp.com/api/webhooks/123456/abcdef"
-msgstr ""
+msgstr "URL вебхука"
 
 #: webhooks/models.py:55
 msgid "notes"
-msgstr ""
+msgstr "заметки"
 
 #: webhooks/models.py:59
 msgid "Notes regarding this webhook"
-msgstr ""
+msgstr "Заметки для вебхука"
 
 #: webhooks/models.py:62
-#, fuzzy
-#| msgid "webhook"
 msgid "webhook_type"
-msgstr "вебхук"
+msgstr "webhook_type"
 
 #: webhooks/models.py:65
-#, fuzzy
-#| msgid "has webhooks"
 msgid "Type of this webhook"
-msgstr "есть вебхук"
+msgstr "Тип вебхука"
 
 #: webhooks/models.py:68
-#, fuzzy
-#| msgid "is active"
 msgid "is_active"
-msgstr "включено"
+msgstr "is_active"
 
 #: webhooks/models.py:70
-#, fuzzy
-#| msgid "Notifications are sent to these webhooks."
 msgid "Whether notifications are currently sent to this webhook"
-msgstr "Оповещение, отправленные по этому вебхуку."
-
-#~ msgid "bool indicating if the structure has a fitting"
-#~ msgstr "логическое значение, указывающее, есть ли у структуры фит"
-
-#~ msgid "bool indicating if the structure has a quantum core"
-#~ msgstr "логическое значение, указывающее, есть ли у структуры ядро"
-
-#~ msgid "y position in the solar system"
-#~ msgstr "позиция по y в солнечной системе"
-
-#~ msgid "z position in the solar system"
-#~ msgstr "позиция по z в солнечной системе"
-
-#~ msgid "type of the item"
-#~ msgstr "тип предмета"
+msgstr "Отправляются ли в данный момент уведомления на вебхук"
