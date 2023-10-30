@@ -59,6 +59,7 @@ class BaseFuelAlertAdmin(admin.ModelAdmin):
     )
     ordering = ("config", "structure")
 
+    @admin.display(description=_("owner"))
     def _owner(self, obj):
         return obj.structure.owner
 
@@ -91,18 +92,15 @@ class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
     list_filter = ("is_enabled",)
     actions = ("send_fuel_notifications",)
     fieldsets = (
-        (
-            "Discord",
-            {"fields": ("channel_ping_type", "color")},
-        ),
-        ("General", {"fields": ("is_enabled",)}),
+        (_("Discord"), {"fields": ("channel_ping_type", "color")}),
+        (_("General"), {"fields": ("is_enabled",)}),
     )
 
-    @admin.display(ordering="pk")
+    @admin.display(ordering="pk", description=_("id"))
     def _id(self, obj):
         return f"#{obj.pk}"
 
-    @admin.display(ordering="color")
+    @admin.display(ordering="color", description=_("color"))
     def _color(self, obj):
         color = Webhook.Color(obj.color)
         return format_html(
@@ -111,7 +109,7 @@ class BaseFuelAlertConfigAdmin(admin.ModelAdmin):
             color.label,
         )
 
-    @admin.display(description=_("Sent fuel notifications for selected configuration"))
+    @admin.action(description=_("Sent fuel notifications for selected configuration"))
     def send_fuel_notifications(self, request, queryset):
         item_count = 0
         for obj in queryset:
@@ -134,7 +132,7 @@ class StructureFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
     ) + tuple(BaseFuelAlertConfigAdmin.list_display)
     fieldsets = (
         (
-            "Timing",
+            _("Timing"),
             {
                 "description": _(
                     "Timing configuration for sending fuel notifications. "
@@ -158,7 +156,7 @@ class JumpFuelAlertConfigAdmin(BaseFuelAlertConfigAdmin):
         ("Fuel levels", {"description": ("tbd."), "fields": ("threshold",)}),
     ) + tuple(BaseFuelAlertConfigAdmin.fieldsets)
 
-    @admin.display(ordering="threshold")
+    @admin.display(ordering="threshold", description=_("threshold"))
     def _threshold(self, obj) -> str:
         return f"{obj.threshold:,}"
 
@@ -207,12 +205,6 @@ class NotificationBaseAdmin(admin.ModelAdmin):
         "add_or_remove_timer",
     )
 
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related(
@@ -227,6 +219,12 @@ class NotificationBaseAdmin(admin.ModelAdmin):
                 to_attr="structures_with_webhooks",
             ),
         ).select_related("owner", "owner__corporation")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
     @admin.display(description=_("notification ID"))
     def _notification_id(self, obj):
@@ -797,9 +795,10 @@ class StructureAdmin(admin.ModelAdmin):
     actions = ("add_default_tags", "remove_user_tags", "update_generated_tags")
     readonly_fields = tuple(
         (
-            x.name
-            for x in Structure._meta.get_fields()
-            if isinstance(x, models.fields.Field) and x.name not in ["tags", "webhooks"]
+            obj.name
+            for obj in Structure._meta.get_fields()
+            if isinstance(obj, models.fields.Field)
+            and obj.name not in ["tags", "webhooks"]
         )
     )
     fieldsets = (
@@ -817,7 +816,7 @@ class StructureAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Status",
+            _("Status"),
             {
                 "classes": ("collapse",),
                 "fields": (
@@ -835,20 +834,17 @@ class StructureAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Reinforcement",
+            _("Reinforcement"),
             {
                 "classes": ("collapse",),
                 "fields": (
                     ("reinforce_hour",),
-                    (
-                        "next_reinforce_hour",
-                        "next_reinforce_apply",
-                    ),
+                    ("next_reinforce_hour", "next_reinforce_apply"),
                 ),
             },
         ),
         (
-            "Position",
+            _("Position"),
             {
                 "classes": ("collapse",),
                 "fields": ("position_x", "position_y", "position_z"),
@@ -856,33 +852,34 @@ class StructureAdmin(admin.ModelAdmin):
         ),
         (
             None,
-            {
-                "fields": (
-                    (
-                        "id",
-                        "last_updated_at",
-                    )
-                )
-            },
+            {"fields": (("id", "last_updated_at"))},
         ),
     )
     filter_horizontal = ("tags", "webhooks")
     inlines = (StructureServiceAdminInline, StructureItemAdminInline)
 
-    def has_add_permission(self, request):
-        return False
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "tags":
+            kwargs["queryset"] = StructureTag.objects.filter(is_user_managed=True)
+
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related("tags", "webhooks")
 
-    @admin.display(ordering="name")
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(ordering="name", description=_("name"))
     def _name(self, structure) -> str:
         if structure.name:
             return structure.name
         return structure.location_name
 
-    @admin.display(ordering="owner__corporation__corporation_name")
+    @admin.display(
+        ordering="owner__corporation__corporation_name", description=_("owner")
+    )
     def _owner(self, structure) -> str:
         alliance = structure.owner.corporation.alliance
         return format_html(
@@ -891,7 +888,7 @@ class StructureAdmin(admin.ModelAdmin):
             alliance if alliance else "",
         )
 
-    @admin.display(ordering="eve_solar_system__name")
+    @admin.display(ordering="eve_solar_system__name", description=_("location"))
     def _location(self, structure) -> str:
         return format_html(
             "{}<br>{}",
@@ -899,22 +896,24 @@ class StructureAdmin(admin.ModelAdmin):
             structure.eve_solar_system.eve_constellation.eve_region,
         )
 
-    @admin.display(ordering="eve_type__name")
+    @admin.display(ordering="eve_type__name", description=_("type"))
     def _type(self, structure):
         return format_html("{}<br>{}", structure.eve_type, structure.eve_type.eve_group)
 
+    @admin.display(description=_("power mode"))
     def _power_mode(self, structure) -> str:
         return structure.get_power_mode_display()
 
-    @admin.display(description="Tags")
+    @admin.display(description=_("tags"))
     def _tags(self, structure) -> list:
         return sorted([tag.name for tag in structure.tags.all()])
 
+    @admin.display(description=_("webhooks"))
     def _webhooks(self, obj):
         names = [webhook.name for webhook in obj.webhooks.all()]
         return lines_sorted_html(names) if names else None
 
-    @admin.display(description="Add default tags to selected structures")
+    @admin.action(description=_("Add default tags to selected structures"))
     def add_default_tags(self, request, queryset):
         structure_count = 0
         tags = StructureTag.objects.filter(is_default=True)
@@ -925,10 +924,11 @@ class StructureAdmin(admin.ModelAdmin):
         tags_count = tags.count()
         self.message_user(
             request,
-            f"Added {tags_count:,} default tags to {structure_count:,} structures",
+            _("Added %(tags_count)d default tags to %(structure_count)d structures")
+            % {"tags_count": tags_count, "structure_count": structure_count},
         )
 
-    @admin.display(description=_("Remove user tags for selected structures"))
+    @admin.action(description=_("Remove user tags for selected structures"))
     def remove_user_tags(self, request, queryset):
         structure_count = 0
         for structure in queryset:
@@ -936,27 +936,18 @@ class StructureAdmin(admin.ModelAdmin):
                 structure.tags.remove(tag)
             structure_count += 1
         self.message_user(
-            request,
-            f"Removed all user tags from {structure_count:,} structures",
+            request, _("Removed all user tags from %d structures") % structure_count
         )
 
-    @admin.display(description=_("Update generated tags for selected structures"))
+    @admin.action(description=_("Update generated tags for selected structures"))
     def update_generated_tags(self, request, queryset):
         structure_count = 0
         for structure in queryset:
             structure.update_generated_tags(recreate_tags=True)
             structure_count += 1
         self.message_user(
-            request,
-            f"Updated all generated tags for {structure_count:,} structures",
+            request, _("Updated all generated tags for %d structures") % structure_count
         )
-
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        """only show custom tags in dropdown"""
-        if db_field.name == "tags":
-            kwargs["queryset"] = StructureTag.objects.filter(is_user_managed=True)
-
-        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 @admin.register(Webhook)
