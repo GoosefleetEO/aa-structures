@@ -544,7 +544,7 @@ class OwnerAdmin(admin.ModelAdmin):
     @admin.action(description=_("Deactivate selected owner"))
     def deactivate_owners(self, request, queryset):
         queryset.update(is_active=False)
-        self.message_user(request, _("Deactivated %d} owners") % queryset.count())
+        self.message_user(request, _("Deactivated %d owners") % queryset.count())
 
     @admin.action(description=_("Update all from EVE server for selected owners"))
     def update_all(self, request, queryset):

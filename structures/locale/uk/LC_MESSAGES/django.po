@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-30 17:13+0100\n"
+"POT-Creation-Date: 2023-10-30 17:43+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Language-Team: Ukrainian (https://app.transifex.com/kalkoken-apps/"
 "teams/107978/uk/)\n"
@@ -208,7 +208,7 @@ msgstr ""
 
 #: admin.py:547
 #, python-format
-msgid "Deactivated %d} owners"
+msgid "Deactivated %d owners"
 msgstr ""
 
 #: admin.py:549
@@ -408,6 +408,123 @@ msgstr ""
 #: admin.py:1101
 #, python-format
 msgid "Started sending queued messages for %d webhooks."
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:24
+msgid "Unknown Bill"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:25
+msgid "Infrastructure Hub Bill"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:42
+msgid "Insufficient Funds for Bill"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:44
+#, python-format
+msgid ""
+"The selected corporation wallet division for automatic payments does not "
+"have enough current funds available to pay the %(bill_type)s due to be paid "
+"by %(due_date)s. Transfer additional funds to the selected wallet division "
+"in order to meet your pending automatic bills."
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:61
+msgid "IHub Bill About to Expire"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:63
+#, python-format
+msgid ""
+"Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
+"%(due_date)s, if not paid in time this Infrastructure Hub will self-destruct."
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:83
+#, python-format
+msgid "%s has self-destructed due to unpaid maintenance bills"
+msgstr ""
+
+#: core/notification_embeds/billing_embeds.py:87
+#, python-format
+msgid ""
+"%(structure_type)s in %(solar_system)s has self-destructed, as the standard "
+"maintenance bills where not paid."
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:40
+#, python-format
+msgid "New application from %(character_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:44
+#, python-format
+msgid ""
+"New application from %(character_name)s to join %(corporation_name)s:\n"
+"> %(application_text)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:58
+#, python-format
+msgid "%(character_name)s has been invited"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:65
+#, python-format
+msgid ""
+"%(character_name)s has been invited to join %(corporation_name)s by "
+"%(inviting_character)s.\n"
+"Application:\n"
+"> %(application_text)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:82
+#, python-format
+msgid "Rejected application from %(character_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:86
+#, python-format
+msgid ""
+"Application from %(character_name)s to join %(corporation_name)s:\n"
+"> %(application_text)s\n"
+"Has been rejected:\n"
+"> %(customMessage)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:103
+#, python-format
+msgid "%(character_name)s withdrew his/her application"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:107
+#, python-format
+msgid ""
+"%(character_name)s withdrew his/her application to join "
+"%(corporation_name)s:\n"
+"> %(application_text)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:122
+#, python-format
+msgid "%(character_name)s joins %(corporation_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:127
+#, python-format
+msgid "%(character_name)s is now a member of %(corporation_name)s."
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:138
+#, python-format
+msgid "%(character_name)s has left %(corporation_name)s"
+msgstr ""
+
+#: core/notification_embeds/character_embeds.py:143
+#, python-format
+msgid "%(character_name)s is no longer a member of %(corporation_name)s."
 msgstr ""
 
 #: core/notification_embeds/moonmining_embeds.py:40

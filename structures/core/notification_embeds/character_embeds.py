@@ -4,7 +4,7 @@
 
 import dhooks_lite
 
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 from eveuniverse.models import EveEntity
 
 from structures.models import Notification, Webhook
@@ -20,12 +20,12 @@ from .main import NotificationBaseEmbed
 class NotificationCorpCharEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._character, _ = EveEntity.objects.get_or_create_esi(
+        self._character = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["charID"]
-        )
-        self._corporation, _ = EveEntity.objects.get_or_create_esi(
+        )[0]
+        self._corporation = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["corpID"]
-        )
+        )[0]
         self._character_link = gen_eve_entity_link(self._character)
         self._corporation_link = gen_corporation_link(self._corporation.name)
         self._application_text = self._parsed_text.get("applicationText", "")
@@ -37,10 +37,10 @@ class NotificationCorpCharEmbed(NotificationBaseEmbed):
 class NotificationCorpAppNewMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("New application from %(character_name)s") % {
+        self._title = _("New application from %(character_name)s") % {
             "character_name": self._character.name,
         }
-        self._description = __(
+        self._description = _(
             "New application from %(character_name)s to join %(corporation_name)s:\n"
             "> %(application_text)s"
             % {
@@ -55,13 +55,13 @@ class NotificationCorpAppNewMsg(NotificationCorpCharEmbed):
 class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("%(character_name)s has been invited") % {
+        self._title = _("%(character_name)s has been invited") % {
             "character_name": self._character.name
         }
         inviting_character = gen_eve_entity_link_from_id(
             self._parsed_text.get("invokingCharID")
         )
-        self._description = __(
+        self._description = _(
             "%(character_name)s has been invited to join %(corporation_name)s "
             "by %(inviting_character)s.\n"
             "Application:\n"
@@ -79,10 +79,10 @@ class NotificationCorpAppInvitedMsg(NotificationCorpCharEmbed):
 class NotificationCorpAppRejectCustomMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("Rejected application from %(character_name)s") % {
+        self._title = _("Rejected application from %(character_name)s") % {
             "character_name": self._character.name
         }
-        self._description = __(
+        self._description = _(
             "Application from %(character_name)s to join %(corporation_name)s:\n"
             "> %(application_text)s\n"
             "Has been rejected:\n"
@@ -100,10 +100,10 @@ class NotificationCorpAppRejectCustomMsg(NotificationCorpCharEmbed):
 class NotificationCharAppWithdrawMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("%(character_name)s withdrew his/her application") % {
+        self._title = _("%(character_name)s withdrew his/her application") % {
             "character_name": self._character.name,
         }
-        self._description = __(
+        self._description = _(
             "%(character_name)s withdrew his/her application to join "
             "%(corporation_name)s:\n"
             "> %(application_text)s"
@@ -119,11 +119,11 @@ class NotificationCharAppWithdrawMsg(NotificationCorpCharEmbed):
 class NotificationCharAppAcceptMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("%(character_name)s joins %(corporation_name)s") % {
+        self._title = _("%(character_name)s joins %(corporation_name)s") % {
             "character_name": self._character.name,
             "corporation_name": self._corporation.name,
         }
-        self._description = __(
+        self._description = _(
             "%(character_name)s is now a member of %(corporation_name)s."
         ) % {
             "character_name": self._character_link,
@@ -135,11 +135,11 @@ class NotificationCharAppAcceptMsg(NotificationCorpCharEmbed):
 class NotificationCharLeftCorpMsg(NotificationCorpCharEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("%(character_name)s has left %(corporation_name)s") % {
+        self._title = _("%(character_name)s has left %(corporation_name)s") % {
             "character_name": self._character.name,
             "corporation_name": self._corporation.name,
         }
-        self._description = __(
+        self._description = _(
             "%(character_name)s is no longer a member of %(corporation_name)s."
         ) % {
             "character_name": self._character_link,
