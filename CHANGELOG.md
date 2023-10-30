@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.6.1] - 2023-10-30
+
+### Fixed
+
+- Translations where not showing on most admin pages
+
 ## [2.6.0] - 2023-10-29
 
 ### Added
