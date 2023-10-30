@@ -643,11 +643,7 @@ class StructureTagAdmin(admin.ModelAdmin):
         "is_default",
         "is_user_managed",
     )
-    list_filter = (
-        "is_default",
-        "style",
-        "is_user_managed",
-    )
+    list_filter = ("is_default", "style", "is_user_managed")
     readonly_fields = ("is_user_managed",)
 
     def has_delete_permission(self, request, obj: Optional[StructureTag] = None):
@@ -952,7 +948,6 @@ class StructureAdmin(admin.ModelAdmin):
 
 @admin.register(Webhook)
 class WebhookAdmin(admin.ModelAdmin):
-    ordering = ["name"]
     list_display = (
         "name",
         "_ping_groups",
@@ -962,6 +957,7 @@ class WebhookAdmin(admin.ModelAdmin):
         "_messages_in_queue",
     )
     list_filter = ("is_active",)
+    ordering = ["name"]
     save_as = True
     actions = (
         "test_notification",
@@ -987,7 +983,7 @@ class WebhookAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Advanced Options",
+            _("Advanced Options"),
             {
                 "classes": ("collapse",),
                 "fields": (
@@ -1024,15 +1020,12 @@ class WebhookAdmin(admin.ModelAdmin):
             ),
         )
 
-    @admin.display(boolean=True)
-    def _default_pings(self, obj):
-        return obj.has_default_pings_enabled
-
+    @admin.display(description=_("ping groups"))
     def _ping_groups(self, obj):
         ping_groups = [ping_group.name for ping_group in obj.ping_groups.all()]
         return lines_sorted_html(ping_groups) if ping_groups else None
 
-    @admin.display(description="Enabled for Owners/Structures")
+    @admin.display(description=_("enabled for owners or structures"))
     def _owners(self, obj):
         configurations = [str(owner) for owner in obj.owners.all()]
         configurations += [
@@ -1045,43 +1038,43 @@ class WebhookAdmin(admin.ModelAdmin):
             )
         return lines_sorted_html(configurations)
 
+    @admin.display(description=_("is default"))
     def _is_default(self, obj):
         value = True if obj.is_default else None
         return admin_boolean_icon_html(value)
 
+    @admin.display(description=_("messages in queue"))
     def _messages_in_queue(self, obj):
         return obj.queue_size()
 
-    @admin.display(description=_("Send test notification to selected webhook"))
+    @admin.action(description=_("Send test notification to selected webhook"))
     def test_notification(self, request, queryset):
         for obj in queryset:
             tasks.send_test_notifications_to_webhook.delay(
                 obj.pk, user_pk=request.user.pk
             )  # type: ignore
-            self.message_user(
-                request,
-                _(
-                    "Initiated sending test notification to webhook %s. "
-                    "You will receive a report on completion."
-                )
-                % obj,
+            text = format_lazy(
+                "{first} {second}",
+                first=_("Initiated sending test notification to webhook %s.") % obj,
+                second=_("You will receive a notification once it is completed."),
             )
+            self.message_user(request, text)
 
-    @admin.display(description=_("Activate selected webhook"))
+    @admin.action(description=_("Activate selected webhook"))
     def activate(self, request, queryset):
         for obj in queryset:
             obj.is_active = True
             obj.save()
             self.message_user(request, _("You have activated webhook %s") % obj)
 
-    @admin.display(description=_("Deactivate selected webhook"))
+    @admin.action(description=_("Deactivate selected webhook"))
     def deactivate(self, request, queryset):
         for obj in queryset:
             obj.is_active = False
             obj.save()
             self.message_user(request, _("You have de-activated webhook %s") % obj)
 
-    @admin.display(description=_("Purge queued messages from selected webhooks"))
+    @admin.action(description=_("Purge queued messages from selected webhooks"))
     def purge_messages(self, request, queryset):
         actions_count = 0
         killmails_deleted = 0
@@ -1097,7 +1090,7 @@ class WebhookAdmin(admin.ModelAdmin):
             % {"actions_count": actions_count, "killmails_deleted": killmails_deleted},
         )
 
-    @admin.display(description=_("Send queued messages from selected webhooks"))
+    @admin.action(description=_("Send queued messages from selected webhooks"))
     def send_messages(self, request, queryset):
         items_count = 0
         for webhook in queryset:
