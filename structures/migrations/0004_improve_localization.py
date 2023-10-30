@@ -334,7 +334,7 @@ class Migration(migrations.Migration):
             field=models.BooleanField(
                 default=True,
                 help_text="Whether notifications are currently sent to this webhook",
-                verbose_name="is_active",
+                verbose_name="is active",
             ),
         ),
         migrations.AlterField(
@@ -395,7 +395,7 @@ class Migration(migrations.Migration):
                 choices=[(1, "Discord Webhook")],
                 default=1,
                 help_text="Type of this webhook",
-                verbose_name="webhook_type",
+                verbose_name="webhook type",
             ),
         ),
     ]

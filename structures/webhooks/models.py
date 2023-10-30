@@ -59,13 +59,13 @@ class WebhookBase(DiscordWebhookMixin, models.Model):
         help_text=_("Notes regarding this webhook"),
     )
     webhook_type = models.IntegerField(
-        verbose_name=_("webhook_type"),
+        verbose_name=_("webhook type"),
         choices=TYPE_CHOICES,
         default=TYPE_DISCORD,
         help_text=_("Type of this webhook"),
     )
     is_active = models.BooleanField(
-        verbose_name=_("is_active"),
+        verbose_name=_("is active"),
         default=True,
         help_text=_("Whether notifications are currently sent to this webhook"),
     )
