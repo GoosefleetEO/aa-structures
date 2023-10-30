@@ -47,19 +47,24 @@ class NotificationStructureEmbed(NotificationBaseEmbed):
             structure_type = structure.eve_type
             structure_solar_system = structure.eve_solar_system
             owner_link = gen_corporation_link(str(structure.owner))
-            location = f" at {structure.eve_moon} " if structure.eve_moon else ""
+            # Translators: Context is a location, e.g. a moon
+            location = _(" at %s ") % structure.eve_moon if structure.eve_moon else ""
 
         self._structure = structure
-        self._description = _(
-            "The %(structure_type)s %(structure_name)s%(location)s in %(solar_system)s "
-            "belonging to %(owner_link)s "
-        ) % {
-            "structure_type": structure_type.name,
-            "structure_name": Webhook.text_bold(structure_name),
-            "location": location,
-            "solar_system": gen_solar_system_text(structure_solar_system),
-            "owner_link": owner_link,
-        }
+        self._description = (
+            _(
+                "The %(structure_type)s %(structure_name)s%(location)s "
+                "in %(solar_system)s belonging to %(owner_link)s"
+            )
+            % {
+                "structure_type": structure_type.name,
+                "structure_name": Webhook.text_bold(structure_name),
+                "location": location,
+                "solar_system": gen_solar_system_text(structure_solar_system),
+                "owner_link": owner_link,
+            }
+            + " "
+        )
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
@@ -97,11 +102,10 @@ class NotificationStructureJumpFuelAlert(NotificationStructureEmbed):
         self._description += _(
             "is below %(threshold)s units on Liquid Ozone.\n"
             "Remaining units: %(remaining)s."
-            % {
-                "threshold": f"{Webhook.text_bold(threshold_str)}",
-                "remaining": f"{Webhook.text_bold(quantity_str)}",
-            }
-        )
+        ) % {
+            "threshold": f"{Webhook.text_bold(threshold_str)}",
+            "remaining": f"{Webhook.text_bold(quantity_str)}",
+        }
         self._color = Webhook.Color.WARNING
 
 
@@ -161,10 +165,10 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._title = _("Structure under attack")
-        self._description += _("is under attack by %s.\n%s") % (
-            self._get_attacker_link(),
-            self.compile_damage_text("Percentage"),
-        )
+        self._description += _("is under attack by %(attacker)s.\n%(damage_text)s") % {
+            "attacker": self._get_attacker_link(),
+            "damage_text": self.compile_damage_text("Percentage"),
+        }
         self._color = Webhook.Color.DANGER
 
     def _get_attacker_link(self) -> str:
@@ -175,7 +179,7 @@ class NotificationStructureUnderAttack(NotificationStructureEmbed):
         if self._parsed_text.get("corpName"):
             return gen_corporation_link(self._parsed_text["corpName"])
 
-        return "(unknown)"
+        return _("(unknown)")
 
 
 class NotificationStructureLostShield(NotificationStructureEmbed):
@@ -291,7 +295,7 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
                             id=structure_info[2]
                         ),
                         eve_solar_system=None,
-                        owner_link="(unknown)",
+                        owner_link=_("(unknown)"),
                     )
                 )
             else:
@@ -322,6 +326,6 @@ class NotificationStructureReinforceChange(NotificationBaseEmbed):
             }
 
         self._description += _(
-            "\n\nChange becomes effective at %s."
+            _("\n\nChange becomes effective at %s.")
         ) % target_datetime_formatted(change_effective)
         self._color = Webhook.Color.INFO
