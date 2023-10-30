@@ -80,7 +80,7 @@ class Webhook(WebhookBase):
         null=True,
         blank=True,
         verbose_name=_("language"),
-        help_text=_("language of notifications send to this webhook"),
+        help_text=_("Language of notifications send to this webhook"),
     )
     is_default = models.BooleanField(
         default=False,
@@ -137,7 +137,7 @@ class NotificationBase(models.Model):
         default="",
         db_index=True,
         verbose_name=_("type"),
-        help_text=_("type of this notification"),
+        help_text=_("Type of this notification"),
     )
     owner = models.ForeignKey(
         "Owner",
@@ -919,7 +919,7 @@ class FuelAlert(BaseFuelAlert):
     hours = models.PositiveIntegerField(
         db_index=True,
         verbose_name=_("hours"),
-        help_text=_("number of hours before fuel expiration this alert was sent"),
+        help_text=_("Number of hours before fuel expiration this alert was sent"),
     )
 
     class Meta:

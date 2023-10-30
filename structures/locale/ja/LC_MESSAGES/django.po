@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-30 17:43+0100\n"
+"POT-Creation-Date: 2023-10-30 18:27+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -292,7 +292,7 @@ msgid "Position"
 msgstr ""
 
 #: admin.py:870 models/structures_1.py:64 models/structures_1.py:292
-#: models/structures_2.py:50
+#: models/structures_2.py:50 webhooks/models.py:40
 msgid "name"
 msgstr ""
 
@@ -864,7 +864,7 @@ msgid "language"
 msgstr ""
 
 #: models/notifications.py:83
-msgid "language of notifications send to this webhook"
+msgid "Language of notifications send to this webhook"
 msgstr ""
 
 #: models/notifications.py:89
@@ -892,7 +892,7 @@ msgid "True when a timer has been added for this notification"
 msgstr ""
 
 #: models/notifications.py:140
-msgid "type of this notification"
+msgid "Type of this notification"
 msgstr ""
 
 #: models/notifications.py:146
@@ -1061,7 +1061,7 @@ msgid "hours"
 msgstr ""
 
 #: models/notifications.py:922
-msgid "number of hours before fuel expiration this alert was sent"
+msgid "Number of hours before fuel expiration this alert was sent"
 msgstr ""
 
 #: models/notifications.py:926
@@ -1096,8 +1096,7 @@ msgstr ""
 msgid "assets last update at"
 msgstr ""
 
-#: models/owners.py:131 models/owners.py:147 models/owners.py:190
-#: models/owners.py:205
+#: models/owners.py:131
 msgid "when the last successful update happened"
 msgstr ""
 
@@ -1105,9 +1104,13 @@ msgstr ""
 msgid "forwarding last update at"
 msgstr ""
 
+#: models/owners.py:147 models/owners.py:190 models/owners.py:205
+msgid "When the last successful update happened"
+msgstr ""
+
 #: models/owners.py:153
 msgid ""
-"to enable or disable pinging of notifications for this owner e.g. with "
+"To enable or disable pinging of notifications for this owner e.g. with "
 "@everyone and @here"
 msgstr ""
 
@@ -1116,7 +1119,7 @@ msgid "is active"
 msgstr ""
 
 #: models/owners.py:160
-msgid "whether this owner is currently included in the sync process"
+msgid "Whether this owner is currently included in the sync process"
 msgstr ""
 
 #: models/owners.py:164
@@ -1125,7 +1128,7 @@ msgstr ""
 
 #: models/owners.py:166
 msgid ""
-"whether alliance wide notifications are forwarded for this owner (e.g. sov "
+"Whether alliance wide notifications are forwarded for this owner (e.g. sov "
 "notifications)"
 msgstr ""
 
@@ -1135,7 +1138,7 @@ msgstr ""
 
 #: models/owners.py:174
 msgid ""
-"whether the sync status of this owner is included in the overall status of "
+"Whether the sync status of this owner is included in the overall status of "
 "this services"
 msgstr ""
 
@@ -1144,7 +1147,7 @@ msgid "is up"
 msgstr ""
 
 #: models/owners.py:183
-msgid "whether all services for this owner are currently up"
+msgid "Whether all services for this owner are currently up"
 msgstr ""
 
 #: models/owners.py:189
@@ -1195,8 +1198,16 @@ msgstr ""
 msgid "structures last used at"
 msgstr ""
 
+#: models/owners.py:1319
+msgid "When this character was last used for syncing structures"
+msgstr ""
+
 #: models/owners.py:1326
 msgid "notifications last used at"
+msgstr ""
+
+#: models/owners.py:1327
+msgid "When this character was last used for syncing notifications"
 msgstr ""
 
 #: models/owners.py:1332
@@ -1256,7 +1267,7 @@ msgid "red"
 msgstr ""
 
 #: models/structures_1.py:65
-msgid "name of the tag - must be unique"
+msgid "Name of the tag, which must be unique"
 msgstr ""
 
 #: models/structures_1.py:71
@@ -1264,7 +1275,7 @@ msgid "description"
 msgstr ""
 
 #: models/structures_1.py:72
-msgid "description for this tag"
+msgid "Description for this tag"
 msgstr ""
 
 #: models/structures_1.py:79
@@ -1272,7 +1283,7 @@ msgid "style"
 msgstr ""
 
 #: models/structures_1.py:80
-msgid "color style of tag"
+msgid "Color style of tag"
 msgstr ""
 
 #: models/structures_1.py:86
@@ -1281,12 +1292,13 @@ msgstr ""
 
 #: models/structures_1.py:88
 msgid ""
-"number defining the order tags are shown. custom tags can not have an order "
+"Number defining the order tags are shown. custom tags can not have an order "
 "below 100"
 msgstr ""
 
 #: models/structures_1.py:96
-msgid "if true this custom tag will automatically be added to new structures"
+msgid ""
+"When enabled this custom tag will automatically be added to new structures"
 msgstr ""
 
 #: models/structures_1.py:101
@@ -1295,7 +1307,7 @@ msgstr ""
 
 #: models/structures_1.py:103
 msgid ""
-"if False this tag is created and managed by the system and can not be "
+"When disabled this tag is created and managed by the system and can not be "
 "modified by users"
 msgstr ""
 
@@ -1408,7 +1420,7 @@ msgid "created at"
 msgstr ""
 
 #: models/structures_1.py:217
-msgid "date this structure was received from ESI for the first time"
+msgid "Date this structure was received from ESI for the first time"
 msgstr ""
 
 #: models/structures_1.py:226
@@ -1451,16 +1463,8 @@ msgstr ""
 msgid "has fitting"
 msgstr ""
 
-#: models/structures_1.py:266
-msgid "bool indicating if the structure has a fitting"
-msgstr ""
-
 #: models/structures_1.py:273
 msgid "has core"
-msgstr ""
-
-#: models/structures_1.py:274
-msgid "bool indicating if the structure has a quantum core"
 msgstr ""
 
 #: models/structures_1.py:280
@@ -1468,7 +1472,7 @@ msgid "last online at"
 msgstr ""
 
 #: models/structures_1.py:281
-msgid "date this structure had any of it's services online"
+msgid "Date this structure had any of it's services online"
 msgstr ""
 
 #: models/structures_1.py:287 models/structures_1.py:814
@@ -1476,7 +1480,7 @@ msgid "last updated at"
 msgstr ""
 
 #: models/structures_1.py:288
-msgid "date this structure was last updated from the EVE server"
+msgid "Date this structure was last updated from the EVE server"
 msgstr ""
 
 #: models/structures_1.py:293
@@ -1517,7 +1521,7 @@ msgid "position x"
 msgstr ""
 
 #: models/structures_1.py:340
-msgid "x position in the solar system"
+msgid "X coordinate of position in the solar system"
 msgstr ""
 
 #: models/structures_1.py:346
@@ -1525,7 +1529,7 @@ msgid "position y"
 msgstr ""
 
 #: models/structures_1.py:347
-msgid "y position in the solar system"
+msgid "Y coordinate of position in the solar system"
 msgstr ""
 
 #: models/structures_1.py:353
@@ -1533,7 +1537,7 @@ msgid "position z"
 msgstr ""
 
 #: models/structures_1.py:354
-msgid "z position in the solar system"
+msgid "Z coordinate of position in the solar system"
 msgstr ""
 
 #: models/structures_1.py:360 models/structures_2.py:55
@@ -1585,10 +1589,6 @@ msgstr ""
 
 #: models/structures_1.py:802
 msgid "Structure this item is located in"
-msgstr ""
-
-#: models/structures_1.py:810
-msgid "type of the item"
 msgstr ""
 
 #: models/structures_1.py:812
@@ -2171,4 +2171,41 @@ msgstr ""
 
 #: webhooks/models.py:36
 msgid "Discord Webhook"
+msgstr ""
+
+#: webhooks/models.py:43
+msgid "Short name to identify this webhook"
+msgstr ""
+
+#: webhooks/models.py:46
+msgid "url"
+msgstr ""
+
+#: webhooks/models.py:50
+msgid ""
+"URL of this webhook, e.g. https://discordapp.com/api/webhooks/123456/abcdef"
+msgstr ""
+
+#: webhooks/models.py:55
+msgid "notes"
+msgstr ""
+
+#: webhooks/models.py:59
+msgid "Notes regarding this webhook"
+msgstr ""
+
+#: webhooks/models.py:62
+msgid "webhook_type"
+msgstr ""
+
+#: webhooks/models.py:65
+msgid "Type of this webhook"
+msgstr ""
+
+#: webhooks/models.py:68
+msgid "is_active"
+msgstr ""
+
+#: webhooks/models.py:70
+msgid "Whether notifications are currently sent to this webhook"
 msgstr ""

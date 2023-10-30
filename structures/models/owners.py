@@ -144,26 +144,26 @@ class Owner(models.Model):
         default=None,
         blank=True,
         verbose_name=_("forwarding last update at"),
-        help_text=_("when the last successful update happened"),
+        help_text=_("When the last successful update happened"),
     )
     has_default_pings_enabled = models.BooleanField(
         default=True,
         verbose_name=_("has default pings enabled"),
         help_text=_(
-            "to enable or disable pinging of notifications for this owner "
+            "To enable or disable pinging of notifications for this owner "
             "e.g. with @everyone and @here"
         ),
     )
     is_active = models.BooleanField(
         default=True,
         verbose_name=_("is active"),
-        help_text=_("whether this owner is currently included in the sync process"),
+        help_text=_("Whether this owner is currently included in the sync process"),
     )
     is_alliance_main = models.BooleanField(
         default=False,
         verbose_name=_("is alliance main"),
         help_text=_(
-            "whether alliance wide notifications "
+            "Whether alliance wide notifications "
             "are forwarded for this owner (e.g. sov notifications)"
         ),
     )
@@ -171,7 +171,7 @@ class Owner(models.Model):
         default=True,
         verbose_name=_("is included in service status"),
         help_text=_(
-            "whether the sync status of this owner is included in "
+            "Whether the sync status of this owner is included in "
             "the overall status of this services"
         ),
     )
@@ -180,14 +180,14 @@ class Owner(models.Model):
         default=None,
         editable=False,
         verbose_name=_("is up"),
-        help_text=_("whether all services for this owner are currently up"),
+        help_text=_("Whether all services for this owner are currently up"),
     )
     notifications_last_update_at = models.DateTimeField(
         null=True,
         default=None,
         blank=True,
         verbose_name=_("notifications last update at"),
-        help_text=_("when the last successful update happened"),
+        help_text=_("When the last successful update happened"),
     )
     ping_groups = models.ManyToManyField(
         Group,
@@ -202,7 +202,7 @@ class Owner(models.Model):
         default=None,
         blank=True,
         verbose_name=_("structures last update at"),
-        help_text=_("when the last successful update happened"),
+        help_text=_("When the last successful update happened"),
     )
     webhooks = models.ManyToManyField(
         "Webhook",
@@ -1308,7 +1308,7 @@ class OwnerCharacter(models.Model):
         on_delete=models.CASCADE,
         related_name="+",
         verbose_name=_("character_ownership"),
-        help_text="character used for syncing",
+        help_text="Character used for syncing",
     )
     structures_last_used_at = models.DateTimeField(
         null=True,
@@ -1316,7 +1316,7 @@ class OwnerCharacter(models.Model):
         editable=False,
         db_index=True,
         verbose_name=_("structures last used at"),
-        help_text="when this character was last used for syncing structures",
+        help_text=_("When this character was last used for syncing structures"),
     )
     notifications_last_used_at = models.DateTimeField(
         null=True,
@@ -1324,7 +1324,7 @@ class OwnerCharacter(models.Model):
         editable=False,
         db_index=True,
         verbose_name=_("notifications last used at"),
-        help_text="when this character was last used for syncing notifications",
+        help_text=_("When this character was last used for syncing notifications"),
     )
     error_count = models.PositiveIntegerField(
         default=0,
