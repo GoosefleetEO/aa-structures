@@ -4,13 +4,14 @@
 
 import dhooks_lite
 
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 from eveuniverse.models import EveEntity, EveMoon, EveType
 
 from app_utils.datetime import ldap_time_2_datetime
 
 from structures.constants import EveTypeId
 from structures.core import sovereignty
+from structures.helpers import get_or_create_esi_obj
 from structures.models import Notification, Webhook
 
 from .helpers import (
@@ -38,7 +39,7 @@ class NotificationSovEmbed(NotificationBaseEmbed):
             )
         else:
             structure_type_id = EveTypeId.TCU
-        structure_type, _ = EveType.objects.get_or_create_esi(id=structure_type_id)
+        structure_type = get_or_create_esi_obj(EveType, id=structure_type_id)
         self._structure_type_name = structure_type.name
         try:
             self._sov_owner_link = gen_alliance_link(notification.sender.name)
@@ -52,11 +53,11 @@ class NotificationSovEmbed(NotificationBaseEmbed):
 class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("%(structure_type)s in %(solar_system)s is being captured") % {
+        self._title = _("%(structure_type)s in %(solar_system)s is being captured") % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = __(
+        self._description = _(
             "A capsuleer has started to influence the %(type)s "
             "in %(solar_system)s belonging to %(owner)s "
             "with an Entosis Link."
@@ -71,14 +72,14 @@ class NotificationSovEntosisCaptureStarted(NotificationSovEmbed):
 class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __(
+        self._title = _(
             "Command nodes for %(structure_type)s in %(solar_system)s "
             "have begun to decloak"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = __(
+        self._description = _(
             "Command nodes for %(structure_type)s in %(solar_system)s "
             "belonging to %(owner)s can now be found throughout "
             "the %(constellation)s constellation"
@@ -94,16 +95,16 @@ class NotificationSovCommandNodeEventStarted(NotificationSovEmbed):
 class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        alliance, _ = EveEntity.objects.get_or_create_esi(
+        alliance = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["allianceID"]
-        )
-        corporation, _ = EveEntity.objects.get_or_create_esi(
+        )[0]
+        corporation = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["corpID"]
-        )
+        )[0]
         self._title = (
-            __("DED Sovereignty claim acknowledgment: %s") % self._solar_system.name
+            _("DED Sovereignty claim acknowledgment: %s") % self._solar_system.name
         )
-        self._description = __(
+        self._description = _(
             "DED now officially acknowledges that your "
             "member corporation %(corporation)s has claimed "
             "sovereignty on behalf of %(alliance)s in %(solar_system)s."
@@ -118,14 +119,14 @@ class NotificationSovAllClaimAcquiredMsg(NotificationSovEmbed):
 class NotificationSovAllClaimLostMsg(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        alliance, _ = EveEntity.objects.get_or_create_esi(
+        alliance = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["allianceID"]
-        )
-        corporation, _ = EveEntity.objects.get_or_create_esi(
+        )[0]
+        corporation = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text["corpID"]
-        )
-        self._title = __("Lost sovereignty in: %s") % self._solar_system.name
-        self._description = __(
+        )[0]
+        self._title = _("Lost sovereignty in: %s") % self._solar_system.name
+        self._description = _(
             "DED acknowledges that member corporation %(corporation)s has lost its "
             "claim to sovereignty on behalf of %(alliance)s in %(solar_system)s."
         ) % {
@@ -140,13 +141,13 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         timer_starts = ldap_time_2_datetime(self._parsed_text["decloakTime"])
-        self._title = __(
+        self._title = _(
             "%(structure_type)s in %(solar_system)s has entered reinforced mode"
         ) % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = __(
+        self._description = _(
             "The %(structure_type)s in %(solar_system)s belonging "
             "to %(owner)s has been reinforced by "
             "hostile forces and command nodes "
@@ -163,13 +164,11 @@ class NotificationSovStructureReinforced(NotificationSovEmbed):
 class NotificationSovStructureDestroyed(NotificationSovEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __(
-            "%(structure_type)s in %(solar_system)s has been destroyed"
-        ) % {
+        self._title = _("%(structure_type)s in %(solar_system)s has been destroyed") % {
             "structure_type": Webhook.text_bold(self._structure_type_name),
             "solar_system": self._solar_system.name,
         }
-        self._description = __(
+        self._description = _(
             "The command nodes for %(structure_type)s "
             "in %(solar_system)s belonging to %(owner)s have been "
             "destroyed by hostile forces."
@@ -184,13 +183,13 @@ class NotificationSovStructureDestroyed(NotificationSovEmbed):
 class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        corporation, _ = EveEntity.objects.get_or_create_esi(
+        corporation = EveEntity.objects.get_or_create_esi(
             id=self._parsed_text.get("corpID")
-        )
+        )[0]
         corp_link = gen_eve_entity_link(corporation)
         alliance_id = self._parsed_text.get("allianceID")
         if alliance_id:
-            alliance, _ = EveEntity.objects.get_or_create_esi(id=alliance_id)
+            alliance = EveEntity.objects.get_or_create_esi(id=alliance_id)[0]
             structure_owner = f"{corp_link} ({alliance.name})"
         else:
             structure_owner = corp_link
@@ -198,15 +197,15 @@ class NotificationSovAllAnchoringMsg(NotificationBaseEmbed):
         structure_type = self._notification.eve_structure_type("typeID")
         moon_id = self._parsed_text.get("moonID")
         if moon_id:
-            eve_moon, _ = EveMoon.objects.get_or_create_esi(id=moon_id)
-            location_text = __(" near **%s**") % eve_moon.name
+            eve_moon = EveMoon.objects.get_or_create_esi(id=moon_id)[0]
+            location_text = _(" near **%s**") % eve_moon.name
         else:
             location_text = ""
-        self._title = __("%(structure_type)s anchored in %(solar_system)s") % {
+        self._title = _("%(structure_type)s anchored in %(solar_system)s") % {
             "structure_type": structure_type.eve_group.name,
             "solar_system": eve_solar_system.name,
         }
-        self._description = __(
+        self._description = _(
             "A %(structure_type)s from %(structure_owner)s has anchored "
             "in %(solar_system)s%(location_text)s."
         ) % {

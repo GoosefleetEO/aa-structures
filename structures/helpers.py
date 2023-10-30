@@ -1,7 +1,7 @@
 """Helpers for Structures."""
 
 import datetime as dt
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 from django.utils.timezone import now
@@ -33,3 +33,9 @@ def datetime_almost_equal(
 def is_absolute_url(url: str) -> bool:
     """Return True if URL is absolute else False."""
     return bool(urlparse(url).netloc)
+
+
+def get_or_create_esi_obj(model_class: type, *args, **kwargs) -> Any:
+    """Get or create an object from ESI and return it."""
+    obj, _ = model_class.objects.get_or_create_esi(*args, **kwargs)
+    return obj

@@ -7,7 +7,7 @@ from typing import Optional
 import dhooks_lite
 
 from django.conf import settings
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 from eveuniverse.models import EveEntity
 
 from app_utils.urls import reverse_absolute, static_file_absolute_url
@@ -59,9 +59,9 @@ class NotificationBaseEmbed:
     def compile_damage_text(self, field_postfix: str, factor: int = 1) -> str:
         """Compile damage text for Structures and POSes"""
         damage_labels = [
-            ("shield", __("shield")),
-            ("armor", __("armor")),
-            ("hull", __("hull")),
+            ("shield", _("shield")),
+            ("armor", _("armor")),
+            ("hull", _("hull")),
         ]
         damage_parts = []
         for prop in damage_labels:
@@ -83,7 +83,7 @@ class NotificationBaseEmbed:
             key = "aggressorID"
         else:
             return "(Unknown aggressor)"
-        entity, _ = EveEntity.objects.get_or_create_esi(id=self._parsed_text[key])
+        entity = EveEntity.objects.get_or_create_esi(id=self._parsed_text[key])[0]
         return Webhook.create_link(entity.name, entity.profile_url)
 
     def fuel_expires_target_date(self) -> str:

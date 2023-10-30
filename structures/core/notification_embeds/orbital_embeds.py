@@ -4,7 +4,7 @@
 
 import dhooks_lite
 
-from django.utils.translation import gettext as __
+from django.utils.translation import gettext as _
 from eveuniverse.models import EveType
 
 from app_utils.datetime import ldap_time_2_datetime
@@ -26,9 +26,9 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         self._planet = self._notification.eve_planet()
-        self._structure_type, _ = EveType.objects.get_or_create_esi(
+        self._structure_type = EveType.objects.get_or_create_esi(
             id=EveTypeId.CUSTOMS_OFFICE
-        )
+        )[0]
         self._solar_system_link = gen_solar_system_text(
             self._notification.eve_solar_system()
         )
@@ -42,8 +42,8 @@ class NotificationOrbitalEmbed(NotificationBaseEmbed):
 class NotificationOrbitalAttacked(NotificationOrbitalEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._title = __("Orbital under attack")
-        self._description = __(
+        self._title = _("Orbital under attack")
+        self._description = _(
             "The %(structure_type)s at %(planet)s in %(solar_system)s "
             "belonging to %(owner_link)s "
             "is under attack by %(aggressor)s."
@@ -63,8 +63,8 @@ class NotificationOrbitalReinforced(NotificationOrbitalEmbed):
         reinforce_exit_time = ldap_time_2_datetime(
             self._parsed_text["reinforceExitTime"]
         )
-        self._title = __("Orbital reinforced")
-        self._description = __(
+        self._title = _("Orbital reinforced")
+        self._description = _(
             "The %(structure_type)s at %(planet)s in %(solar_system)s "
             "belonging to %(owner_link)s "
             "has been reinforced by %(aggressor)s "
