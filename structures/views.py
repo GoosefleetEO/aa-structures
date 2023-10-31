@@ -101,7 +101,6 @@ def main(request):
         form = TagsFilterForm(initial={x.name: True for x in active_tags})
 
     context = {
-        "page_title": __title__,
         "active_tags": active_tags,
         "tags_filter_form": form,
         "tags_exist": StructureTag.objects.exists(),

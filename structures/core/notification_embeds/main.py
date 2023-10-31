@@ -14,7 +14,7 @@ from app_utils.urls import reverse_absolute, static_file_absolute_url
 
 from structures import __title__
 from structures.core.notification_types import NotificationType
-from structures.helpers import is_absolute_url
+from structures.helpers import get_or_create_esi_obj, is_absolute_url
 from structures.models.notifications import Notification, NotificationBase, Webhook
 
 from .helpers import target_datetime_formatted
@@ -83,7 +83,7 @@ class NotificationBaseEmbed:
             key = "aggressorID"
         else:
             return "(Unknown aggressor)"
-        entity = EveEntity.objects.get_or_create_esi(id=self._parsed_text[key])[0]
+        entity = get_or_create_esi_obj(EveEntity, id=self._parsed_text[key])
         return Webhook.create_link(entity.name, entity.profile_url)
 
     def fuel_expires_target_date(self) -> str:

@@ -12,6 +12,7 @@ from eveuniverse.models import EveType
 from app_utils.datetime import ldap_time_2_datetime
 
 from structures.constants import EveTypeId
+from structures.helpers import get_or_create_esi_obj
 from structures.models import Notification, Webhook
 
 from .helpers import gen_solar_system_text, target_datetime_formatted
@@ -68,7 +69,7 @@ class NotificationBillingIHubBillAboutToExpire(NotificationBaseEmbed):
             "due_date": target_datetime_formatted(due_date),
         }
         self._color = Webhook.Color.DANGER
-        structure_type = EveType.objects.get_or_create_esi(id=EveTypeId.IHUB)[0]
+        structure_type = get_or_create_esi_obj(EveType, id=EveTypeId.IHUB)
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )

@@ -11,6 +11,7 @@ from eveuniverse.models import EveEntity, EveType
 from app_utils.datetime import ldap_time_2_datetime
 
 from structures.app_settings import STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
+from structures.helpers import get_or_create_esi_obj
 from structures.models import Notification, Webhook
 
 from .helpers import (
@@ -37,7 +38,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
         self.ore_text = (
-            _("\nEstimated ore composition: %s") % self._ore_composition_text()
+            _("Estimated ore composition: %s") % self._ore_composition_text()
             if STRUCTURES_NOTIFICATION_SHOW_MOON_ORE
             else ""
         )
@@ -48,7 +49,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
 
         ore_list = []
         for ore_type_id, volume in self._parsed_text["oreVolumeByType"].items():
-            ore_type = EveType.objects.get_or_create_esi(id=ore_type_id)[0]
+            ore_type = get_or_create_esi_obj(EveType, id=ore_type_id)
             if ore_type:
                 ore_list.append(
                     {"id": ore_type_id, "name": ore_type.name, "volume": volume}
@@ -63,9 +64,7 @@ class NotificationMoonminingEmbed(NotificationBaseEmbed):
 class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        started_by = EveEntity.objects.get_or_create_esi(
-            id=self._parsed_text["startedBy"]
-        )[0]
+        started_by = get_or_create_esi_obj(EveEntity, id=self._parsed_text["startedBy"])
         ready_time = ldap_time_2_datetime(self._parsed_text["readyTime"])
         auto_time = ldap_time_2_datetime(self._parsed_text["autoTime"])
         self._title = _("Moon mining extraction started")
@@ -76,7 +75,7 @@ class NotificationMoonminningExtractionStarted(NotificationMoonminingEmbed):
             "Extraction was started by %(character)s.\n"
             "The chunk will be ready on location at %(ready_time)s, "
             "and will fracture automatically on %(auto_time)s.\n"
-            "%(ore_text)s"
+            "\n%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name,
@@ -101,7 +100,7 @@ class NotificationMoonminningExtractionFinished(NotificationMoonminingEmbed):
             "is finished and the chunk is ready "
             "to be shot at.\n"
             "The chunk will automatically fracture on %(auto_time)s.\n"
-            "%(ore_text)s"
+            "\n%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name,
@@ -122,7 +121,7 @@ class NotificationMoonminningAutomaticFracture(NotificationMoonminingEmbed):
             " in %(solar_system)s belonging to %(owner_link)s "
             "has automatically been fired "
             "and the moon products are ready to be harvested.\n"
-            "%(ore_text)s"
+            "\n%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name,
@@ -137,9 +136,9 @@ class NotificationMoonminningExtractionCanceled(NotificationMoonminingEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
         if self._parsed_text["cancelledBy"]:
-            cancelled_by = EveEntity.objects.get_or_create_esi(
-                id=self._parsed_text["cancelledBy"]
-            )[0]
+            cancelled_by = get_or_create_esi_obj(
+                EveEntity, id=self._parsed_text["cancelledBy"]
+            )
         else:
             cancelled_by = _("(unknown)")
         self._title = _("Extraction cancelled")
@@ -169,7 +168,7 @@ class NotificationMoonminningLaserFired(NotificationMoonminingEmbed):
             "in %(solar_system)s belonging to %(owner_link)s "
             "has been fired by %(character)s "
             "and the moon products are ready to be harvested.\n"
-            "%(ore_text)s"
+            "\n%(ore_text)s"
         ) % {
             "structure_name": Webhook.text_bold(self._structure_name),
             "moon": self._moon.name,

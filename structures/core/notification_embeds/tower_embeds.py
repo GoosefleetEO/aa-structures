@@ -36,15 +36,21 @@ class NotificationTowerEmbed(NotificationBaseEmbed):
         self._thumbnail = dhooks_lite.Thumbnail(
             structure_type.icon_url(size=self.ICON_DEFAULT_SIZE)
         )
-        self._description = _(
-            "The starbase %(structure_name)s at %(moon)s "
-            "in %(solar_system)s belonging to %(owner_link)s "
-        ) % {
-            "structure_name": Webhook.text_bold(structure_name),
-            "moon": eve_moon.name,
-            "solar_system": gen_solar_system_text(eve_moon.eve_planet.eve_solar_system),
-            "owner_link": gen_corporation_link(str(notification.owner)),
-        }
+        self._description = (
+            _(
+                "The starbase %(structure_name)s at %(moon)s "
+                "in %(solar_system)s belonging to %(owner_link)s"
+            )
+            % {
+                "structure_name": Webhook.text_bold(structure_name),
+                "moon": eve_moon.name,
+                "solar_system": gen_solar_system_text(
+                    eve_moon.eve_planet.eve_solar_system
+                ),
+                "owner_link": gen_corporation_link(str(notification.owner)),
+            }
+            + " "
+        )
 
 
 class NotificationTowerAlertMsg(NotificationTowerEmbed):
@@ -138,7 +144,7 @@ class NotificationTowerReinforcedExtra(GeneratedNotificationTowerEmbed):
                 dt.datetime.fromisoformat(notification.details["reinforced_until"])
             )
         except (KeyError, ValueError):
-            reinforced_until = "(unknown)"
+            reinforced_until = _("(unknown)")
 
         self._description += (
             _("has been reinforced and will come out at: %s.") % reinforced_until

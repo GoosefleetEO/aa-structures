@@ -7,6 +7,7 @@ import dhooks_lite
 from django.utils.translation import gettext as _
 from eveuniverse.models import EveEntity
 
+from structures.helpers import get_or_create_esi_obj
 from structures.models import Notification, Webhook
 
 from .helpers import (
@@ -20,12 +21,12 @@ from .main import NotificationBaseEmbed
 class NotificationCorpCharEmbed(NotificationBaseEmbed):
     def __init__(self, notification: Notification) -> None:
         super().__init__(notification)
-        self._character = EveEntity.objects.get_or_create_esi(
-            id=self._parsed_text["charID"]
-        )[0]
-        self._corporation = EveEntity.objects.get_or_create_esi(
-            id=self._parsed_text["corpID"]
-        )[0]
+        self._character = get_or_create_esi_obj(
+            EveEntity, id=self._parsed_text["charID"]
+        )
+        self._corporation = get_or_create_esi_obj(
+            EveEntity, id=self._parsed_text["corpID"]
+        )
         self._character_link = gen_eve_entity_link(self._character)
         self._corporation_link = gen_corporation_link(self._corporation.name)
         self._application_text = self._parsed_text.get("applicationText", "")
