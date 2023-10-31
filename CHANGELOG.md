@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [2.6.2] - 2023-10-31
+
+### Changed
+
+- Improved RU translations for notifications (by Maui)
+
 ## [2.6.1] - 2023-10-30
 
 ### Fixed
@@ -17,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Russian localization - Thanks to Maui
+- Russian localization (by Maui)
 
 ## [2.5.1] - 2023-10-06
 
