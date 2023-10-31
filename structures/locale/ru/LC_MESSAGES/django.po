@@ -15,15 +15,12 @@ msgstr ""
 "POT-Creation-Date: 2023-10-30 21:06+0100\n"
 "PO-Revision-Date: 2020-03-09 19:25+0000\n"
 "Last-Translator: - -, 2023\n"
-"Language-Team: Russian (https://app.transifex.com/kalkoken-apps/teams/107978/"
-"ru/)\n"
-"Language: ru\n"
+"Language-Team: Russian (https://app.transifex.com/kalkoken-apps/teams/107978/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
-"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: admin.py:62 admin.py:877 models/notifications.py:145 models/owners.py:219
 #: models/owners.py:1304 models/structures_1.py:320
@@ -65,8 +62,8 @@ msgstr "Тайминг"
 #: admin.py:138
 msgid ""
 "Timing configuration for sending fuel notifications. Note that the first "
-"notification will be sent at the exact start hour, and the last notification "
-"will be sent one repeat before the end hour."
+"notification will be sent at the exact start hour, and the last notification"
+" will be sent one repeat before the end hour."
 msgstr ""
 "Конфигурация времени для отправки уведомлений о топливе. Обратите внимание, "
 "что первое уведомление будет отправлено точно в час начала, а последнее "
@@ -142,7 +139,8 @@ msgstr "Отправить выбранное по настроенным веб
 #: admin.py:299
 #, python-format
 msgid "Sent %(sent_count)d/%(selected_count)d generated messages."
-msgstr "Отправлено %(sent_count)d/%(selected_count)d автоматических сообщений."
+msgstr ""
+"Отправлено %(sent_count)d/%(selected_count)d автоматических сообщений."
 
 #: admin.py:303
 msgid "Process selected notifications for timerboard"
@@ -443,8 +441,8 @@ msgid ""
 "in order to meet your pending automatic bills."
 msgstr ""
 "У корпоративного счёта для автоматической оплаты не хватает стредств для "
-"оплаты %(bill_type)s, который требуется оплатить до %(due_date)s. Переведите "
-"дополнительные стредства на корпоративный счёт для закрытия открытых "
+"оплаты %(bill_type)s, который требуется оплатить до %(due_date)s. Переведите"
+" дополнительные стредства на корпоративный счёт для закрытия открытых "
 "автоматических счетов."
 
 #: core/notification_embeds/billing_embeds.py:62
@@ -455,7 +453,8 @@ msgstr "У IHub счёт кончается срок действия"
 #, python-format
 msgid ""
 "Maintenance bill for Infrastructure Hub in %(solar_system)s expires at "
-"%(due_date)s, if not paid in time this Infrastructure Hub will self-destruct."
+"%(due_date)s, if not paid in time this Infrastructure Hub will self-"
+"destruct."
 msgstr ""
 "Срок действия счёта обслуживания центра инфраструктуры %(solar_system)s "
 "оканчивается %(due_date)s. Если вы не заплатите вовремя, центр "
@@ -497,13 +496,11 @@ msgstr "%(character_name)s был приглашен"
 #: core/notification_embeds/character_embeds.py:66
 #, python-format
 msgid ""
-"%(character_name)s has been invited to join %(corporation_name)s by "
-"%(inviting_character)s.\n"
+"%(character_name)s has been invited to join %(corporation_name)s by %(inviting_character)s.\n"
 "Application:\n"
 "> %(application_text)s"
 msgstr ""
-"%(character_name)s был приглашен%(inviting_character)s в "
-"%(corporation_name)s.\n"
+"%(character_name)s был приглашен%(inviting_character)s в %(corporation_name)s.\n"
 "Заявка:\n"
 "> %(application_text)s"
 
@@ -533,12 +530,10 @@ msgstr "%(character_name)s отозвал свою заявку"
 #: core/notification_embeds/character_embeds.py:108
 #, python-format
 msgid ""
-"%(character_name)s withdrew his/her application to join "
-"%(corporation_name)s:\n"
+"%(character_name)s withdrew his/her application to join %(corporation_name)s:\n"
 "> %(application_text)s"
 msgstr ""
-"%(character_name)s отозвал свою заявку по вступлению в "
-"%(corporation_name)s:\n"
+"%(character_name)s отозвал свою заявку по вступлению в %(corporation_name)s:\n"
 "> %(application_text)s"
 
 #: core/notification_embeds/character_embeds.py:123
@@ -563,25 +558,20 @@ msgstr "%(character_name)s больше не член %(corporation_name)s."
 
 #: core/notification_embeds/main.py:62
 msgid "shield"
-msgstr ""
+msgstr "щит"
 
 #: core/notification_embeds/main.py:63
 msgid "armor"
-msgstr ""
+msgstr "броня"
 
 #: core/notification_embeds/main.py:64
 msgid "hull"
-msgstr ""
+msgstr "корпус"
 
 #: core/notification_embeds/moonmining_embeds.py:41
-#, fuzzy, python-format
-#| msgid ""
-#| "\n"
-#| "Estimated ore composition: %s"
+#, python-format
 msgid "Estimated ore composition: %s"
-msgstr ""
-"\n"
-"Примерное кол-во руды: %s"
+msgstr "Ожидаемое количество руды: %s"
 
 #: core/notification_embeds/moonmining_embeds.py:70
 #: core/notification_types.py:58
@@ -589,28 +579,15 @@ msgid "Moon mining extraction started"
 msgstr "Добыча лунной руды началась"
 
 #: core/notification_embeds/moonmining_embeds.py:72
-#, fuzzy, python-format
-#| msgid ""
-#| "A moon mining extraction has been started for %(structure_name)s at "
-#| "%(moon)s in %(solar_system)s belonging to %(owner_link)s. Extraction was "
-#| "started by %(character)s.\n"
-#| "The chunk will be ready on location at %(ready_time)s, and will fracture "
-#| "automatically on %(auto_time)s.\n"
-#| "%(ore_text)s"
+#, python-format
 msgid ""
-"A moon mining extraction has been started for %(structure_name)s at %(moon)s "
-"in %(solar_system)s belonging to %(owner_link)s. Extraction was started by "
-"%(character)s.\n"
-"The chunk will be ready on location at %(ready_time)s, and will fracture "
-"automatically on %(auto_time)s.\n"
+"A moon mining extraction has been started for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s. Extraction was started by %(character)s.\n"
+"The chunk will be ready on location at %(ready_time)s, and will fracture automatically on %(auto_time)s.\n"
 "\n"
 "%(ore_text)s"
 msgstr ""
-"Извлечение лунной руды начато %(structure_name)s, принадлежащая "
-"%(owner_link)s, на %(moon)s в %(solar_system)s. Извлечение начато "
-"%(character)s.\n"
-"Создание астероидного поля будет возможно %(ready_time)s, и автоматическое "
-"создание будет %(auto_time)s.\n"
+"Извлечение лунной руды начато %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в %(solar_system)s. Извлечение начато %(character)s.\n"
+"Создание астероидного поля будет возможно %(ready_time)s, и автоматическое создание будет %(auto_time)s.\n"
 "%(ore_text)s "
 
 #: core/notification_embeds/moonmining_embeds.py:96
@@ -618,23 +595,14 @@ msgid "Extraction finished"
 msgstr "Извлечение завершено"
 
 #: core/notification_embeds/moonmining_embeds.py:98
-#, fuzzy, python-format
-#| msgid ""
-#| "The extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-#| "belonging to %(owner_link)s is finished and the chunk is ready to be shot "
-#| "at.\n"
-#| "The chunk will automatically fracture on %(auto_time)s.\n"
-#| "%(ore_text)s"
+#, python-format
 msgid ""
-"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s is finished and the chunk is ready to be shot "
-"at.\n"
+"The extraction for %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s is finished and the chunk is ready to be shot at.\n"
 "The chunk will automatically fracture on %(auto_time)s.\n"
 "\n"
 "%(ore_text)s"
 msgstr ""
-"Извлечение %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в "
-"%(solar_system)s завершено и стало возможным создание астероидного поля.\n"
+"Извлечение %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в %(solar_system)s завершено и стало возможным создание астероидного поля.\n"
 "Астероидное поле будет автоматически создано %(auto_time)s.\n"
 "%(ore_text)s"
 
@@ -643,23 +611,14 @@ msgid "Automatic Fracture"
 msgstr "Автоматическое раздробление"
 
 #: core/notification_embeds/moonmining_embeds.py:120
-#, fuzzy, python-format
-#| msgid ""
-#| "The moon drill fitted to %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has automatically been fired "
-#| "and the moon products are ready to be harvested.\n"
-#| "%(ore_text)s"
+#, python-format
 msgid ""
-"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has automatically been fired and the moon "
-"products are ready to be harvested.\n"
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has automatically been fired and the moon products are ready to be harvested.\n"
 "\n"
 "%(ore_text)s"
 msgstr ""
-"Лунный бур, установленный в %(structure_name)s, принадлежащий "
-"%(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил и лунная руда "
-"готова к сбору.\n"
-"%(ore_text)s "
+"Лунный бур, установленный в %(structure_name)s, принадлежащая %(owner_link)s, на %(moon)s в %(solar_system)s, автоматически выстрелил и лунная руда готова к сбору.\n"
+"%(ore_text)s"
 
 #: core/notification_embeds/moonmining_embeds.py:143
 #: core/notification_embeds/structures_embeds.py:38
@@ -676,8 +635,8 @@ msgstr "Извлечение завершено"
 #: core/notification_embeds/moonmining_embeds.py:146
 #, python-format
 msgid ""
-"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has been cancelled by %(character)s."
+"An ongoing extraction for %(structure_name)s at %(moon)s in %(solar_system)s"
+" belonging to %(owner_link)s has been cancelled by %(character)s."
 msgstr ""
 "Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
 "на%(moon)s в %(solar_system)s было отменено %(character)s."
@@ -687,68 +646,47 @@ msgid "Moon drill fired"
 msgstr "Лунный бур выстрелил"
 
 #: core/notification_embeds/moonmining_embeds.py:167
-#, fuzzy, python-format
-#| msgid ""
-#| "The moon drill fitted to %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been fired by "
-#| "%(character)s and the moon products are ready to be harvested.\n"
-#| "%(ore_text)s"
+#, python-format
 msgid ""
-"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s "
-"belonging to %(owner_link)s has been fired by %(character)s and the moon "
-"products are ready to be harvested.\n"
+"The moon drill fitted to %(structure_name)s at %(moon)s in %(solar_system)s belonging to %(owner_link)s has been fired by %(character)s and the moon products are ready to be harvested.\n"
 "\n"
 "%(ore_text)s"
 msgstr ""
-"Лунный бур, установленный в %(structure_name)s, принадлежащий "
-"%(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил по приказу "
-"%(character)s и лунная руда готова к сбору.\n"
+"Лунный бур, установленный в %(structure_name)s, принадлежащий %(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил по приказу %(character)s и лунная руда готова к сбору.\n"
 "%(ore_text)s"
 
 #: core/notification_embeds/orbital_embeds.py:46
 msgid "Orbital under attack"
-msgstr ""
+msgstr "Звездная база под атакой"
 
 #: core/notification_embeds/orbital_embeds.py:48
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been cancelled by "
-#| "%(character)s."
+#, python-format
 msgid ""
 "The %(structure_type)s at %(planet)s in %(solar_system)s belonging to "
 "%(owner_link)s is under attack by %(aggressor)s."
 msgstr ""
-"Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
-"на%(moon)s в %(solar_system)s было отменено %(character)s."
+"%(structure_type)s, принадлежащая %(owner_link)s, на %(planet)s в "
+"%(solar_system)s под атакой %(aggressor)s."
 
 #: core/notification_embeds/orbital_embeds.py:67
-#, fuzzy
-#| msgid "reinforced"
 msgid "Orbital reinforced"
-msgstr "укреплено"
+msgstr "Звездная база укреплена"
 
 #: core/notification_embeds/orbital_embeds.py:69
-#, fuzzy, python-format
-#| msgid ""
-#| "The moon drill fitted to %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been fired by "
-#| "%(character)s and the moon products are ready to be harvested.\n"
-#| "%(ore_text)s"
+#, python-format
 msgid ""
 "The %(structure_type)s at %(planet)s in %(solar_system)s belonging to "
 "%(owner_link)s has been reinforced by %(aggressor)s and will come out at: "
 "%(date)s."
 msgstr ""
-"Лунный бур, установленный в %(structure_name)s, принадлежащий "
-"%(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил по приказу "
-"%(character)s и лунная руда готова к сбору.\n"
-"%(ore_text)s"
+"%(structure_type)s, принадлежащая %(owner_link)s, на %(planet)s в "
+"%(solar_system)s была укреплена при нападении %(aggressor)s и выйдет из "
+"укрепления: %(date)s."
 
 #: core/notification_embeds/sov_embeds.py:56
 #, python-format
 msgid "%(structure_type)s in %(solar_system)s is being captured"
-msgstr ""
+msgstr "%(structure_type)s в %(solar_system)s захватывается"
 
 #: core/notification_embeds/sov_embeds.py:61
 #, python-format
@@ -756,6 +694,8 @@ msgid ""
 "A capsuleer has started to influence the %(type)s in %(solar_system)s "
 "belonging to %(owner)s with an Entosis Link."
 msgstr ""
+"Капсулёр начал оказывать влияние Энтозом на %(type)s, принадлежащая "
+"%(owner)s, в %(solar_system)s."
 
 #: core/notification_embeds/sov_embeds.py:76
 #, python-format
@@ -763,6 +703,8 @@ msgid ""
 "Command nodes for %(structure_type)s in %(solar_system)s have begun to "
 "decloak"
 msgstr ""
+"Командные узлы для %(structure_type)s в %(solar_system)s начали выходить из "
+"маскировки"
 
 #: core/notification_embeds/sov_embeds.py:83
 #, python-format
@@ -770,25 +712,27 @@ msgid ""
 "Command nodes for %(structure_type)s in %(solar_system)s belonging to "
 "%(owner)s can now be found throughout the %(constellation)s constellation"
 msgstr ""
+"Командные узлы для %(structure_type)s, принадлежащая %(owner)s, в "
+"%(solar_system)s могут быть найдены по всему созвездию %(constellation)s"
 
 #: core/notification_embeds/sov_embeds.py:101
-#, fuzzy, python-format
-#| msgid "Sovereignty claim acknowledgment"
+#, python-format
 msgid "DED Sovereignty claim acknowledgment: %s"
-msgstr "Сувернитет получил признание"
+msgstr "Подтверждение претензии на сувернитет DED: %s"
 
 #: core/notification_embeds/sov_embeds.py:104
 #, python-format
 msgid ""
-"DED now officially acknowledges that your member corporation %(corporation)s "
-"has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
+"DED now officially acknowledges that your member corporation %(corporation)s"
+" has claimed sovereignty on behalf of %(alliance)s in %(solar_system)s."
 msgstr ""
+"DED официально признают, что ваш член-корпорация %(corporation)s заявил о "
+"сувернитете в %(solar_system)s от имени %(alliance)s"
 
 #: core/notification_embeds/sov_embeds.py:120
-#, fuzzy, python-format
-#| msgid "Sovereignty lost"
+#, python-format
 msgid "Lost sovereignty in: %s"
-msgstr "Потеря сувернитета"
+msgstr "Потеря сувернитета: %s"
 
 #: core/notification_embeds/sov_embeds.py:122
 #, python-format
@@ -796,66 +740,47 @@ msgid ""
 "DED acknowledges that member corporation %(corporation)s has lost its claim "
 "to sovereignty on behalf of %(alliance)s in %(solar_system)s."
 msgstr ""
+"DED признает, что член-корпорация %(corporation)s потерял претензии на "
+"сувернитет в %(solar_system)s от имени %(alliance)s."
 
 #: core/notification_embeds/sov_embeds.py:137
-#, fuzzy, python-format
-#| msgid ""
-#| "%(structure_type)s in %(solar_system)s has self-destructed, as the "
-#| "standard maintenance bills where not paid."
+#, python-format
 msgid "%(structure_type)s in %(solar_system)s has entered reinforced mode"
-msgstr ""
-"%(structure_type)s в %(solar_system)s самоуничтожился ввиду неуплаты счетов "
-"обслуживания."
+msgstr "%(structure_type)s в %(solar_system)s перешло в укрепленный режим "
 
 #: core/notification_embeds/sov_embeds.py:143
-#, fuzzy, python-format
-#| msgid ""
-#| "The moon drill fitted to %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been fired by "
-#| "%(character)s and the moon products are ready to be harvested.\n"
-#| "%(ore_text)s"
+#, python-format
 msgid ""
 "The %(structure_type)s in %(solar_system)s belonging to %(owner)s has been "
 "reinforced by hostile forces and command nodes will begin decloaking at "
 "%(date)s"
 msgstr ""
-"Лунный бур, установленный в %(structure_name)s, принадлежащий "
-"%(owner_link)s, на %(moon)s в %(solar_system)s, выстрелил по приказу "
-"%(character)s и лунная руда готова к сбору.\n"
-"%(ore_text)s"
+"%(structure_type)s, принадлежащая %(owner)s, в %(solar_system)s укреплен(а) "
+"вражескими силами и командные центры выйдут из маскировки %(date)s."
 
 #: core/notification_embeds/sov_embeds.py:159
-#, fuzzy, python-format
-#| msgid ""
-#| "%(structure_type)s in %(solar_system)s has self-destructed, as the "
-#| "standard maintenance bills where not paid."
+#, python-format
 msgid "%(structure_type)s in %(solar_system)s has been destroyed"
-msgstr ""
-"%(structure_type)s в %(solar_system)s самоуничтожился ввиду неуплаты счетов "
-"обслуживания."
+msgstr "%(structure_type)s в %(solar_system)s был(а) уничтожена"
 
 #: core/notification_embeds/sov_embeds.py:164
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been cancelled by "
-#| "%(character)s."
+#, python-format
 msgid ""
 "The command nodes for %(structure_type)s in %(solar_system)s belonging to "
 "%(owner)s have been destroyed by hostile forces."
 msgstr ""
-"Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
-"на%(moon)s в %(solar_system)s было отменено %(character)s."
+"Командные узлы %(structure_type)s, принадлежащая %(owner)s, в "
+"%(solar_system)s были уничтожены вражескими силами."
 
 #: core/notification_embeds/sov_embeds.py:193
 #, python-format
 msgid " near **%s**"
-msgstr ""
+msgstr "около **%s**"
 
 #: core/notification_embeds/sov_embeds.py:196
 #, python-format
 msgid "%(structure_type)s anchored in %(solar_system)s"
-msgstr ""
+msgstr "%(structure_type)s встало на якорь в %(solar_system)s "
 
 #: core/notification_embeds/sov_embeds.py:201
 #, python-format
@@ -863,53 +788,45 @@ msgid ""
 "A %(structure_type)s from %(structure_owner)s has anchored in "
 "%(solar_system)s%(location_text)s."
 msgstr ""
+"%(structure_type)s %(structure_owner)s встало на якорь в "
+"%(solar_system)s%(location_text)s."
 
 #. Translators: Context is a location, e.g. a moon
 #: core/notification_embeds/structures_embeds.py:51
 #, python-format
 msgid " at %s "
-msgstr ""
+msgstr "на %s"
 
 #: core/notification_embeds/structures_embeds.py:56
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been cancelled by "
-#| "%(character)s."
+#, python-format
 msgid ""
 "The %(structure_type)s %(structure_name)s%(location)s in %(solar_system)s "
 "belonging to %(owner_link)s"
 msgstr ""
-"Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
-"на%(moon)s в %(solar_system)s было отменено %(character)s."
+"%(structure_type)s %(structure_name)s %(location)s в %(solar_system)s "
+"принадлежит %(owner_link)s"
 
 #: core/notification_embeds/structures_embeds.py:76
-#, fuzzy
-#| msgid "structure item"
 msgid "Structure online"
-msgstr "элемент структуры"
+msgstr "Структура онлайн"
 
 #: core/notification_embeds/structures_embeds.py:77
-#, fuzzy
-#| msgid "online"
 msgid "is now online."
-msgstr "включено"
+msgstr "онлайн."
 
 #: core/notification_embeds/structures_embeds.py:88
-#, fuzzy
-#| msgid "structure fuel alert"
 msgid "Structure fuel alert"
-msgstr "оповещение о топливе структуры"
+msgstr "Оповещение о топливе структуры"
 
 #: core/notification_embeds/structures_embeds.py:89
 #: core/notification_embeds/tower_embeds.py:90
 #, python-format
 msgid "is running out of fuel in %s."
-msgstr ""
+msgstr "кончается топливо через%s."
 
 #: core/notification_embeds/structures_embeds.py:99
 msgid "Jump gate low on Liquid Ozone"
-msgstr ""
+msgstr "В прыжковых воротах осталось мало Жидкого Озона"
 
 #: core/notification_embeds/structures_embeds.py:103
 #, python-format
@@ -917,67 +834,56 @@ msgid ""
 "is below %(threshold)s units on Liquid Ozone.\n"
 "Remaining units: %(remaining)s."
 msgstr ""
+"Жидкого Озона меньше %(threshold)s.\n"
+"Осталось: %(remaining)s."
 
 #: core/notification_embeds/structures_embeds.py:116
-#, fuzzy
-#| msgid "Upwell structure refueled"
 msgid "Structure refueled"
-msgstr "Структура Апвелл заправлена"
+msgstr "Структура заправлена"
 
 #: core/notification_embeds/structures_embeds.py:118
 #: core/notification_embeds/tower_embeds.py:102
 #, python-format
 msgid "has been refueled. Fuel will last until %s."
-msgstr ""
+msgstr "заправлен(а). Топлива осталось до %s."
 
 #: core/notification_embeds/structures_embeds.py:126
-#, fuzzy
-#| msgid "Upwell structure services went offline"
 msgid "Structure services off-line"
-msgstr "Служебные модули структуры Апвелл офлайн"
+msgstr "Служебные модули офлайн"
 
 #: core/notification_embeds/structures_embeds.py:127
 msgid "has all services off-lined."
-msgstr ""
+msgstr "все модули офлайн."
 
 #: core/notification_embeds/structures_embeds.py:138
-#, fuzzy
-#| msgid "Upwell structure went low power"
 msgid "Structure low power"
-msgstr "Структура Апвелл на малой мощности"
+msgstr "Структура на малой мощности"
 
 #: core/notification_embeds/structures_embeds.py:139
-#, fuzzy
-#| msgid "power mode"
 msgid "went to low power mode."
-msgstr "режим работы"
+msgstr "перешла в режим малой мощности."
 
 #: core/notification_embeds/structures_embeds.py:146
-#, fuzzy
-#| msgid "structure fuel alert"
 msgid "Structure full power"
-msgstr "оповещение о топливе структуры"
+msgstr "Структуро на полной мощности"
 
 #: core/notification_embeds/structures_embeds.py:147
 msgid "went to full power mode."
-msgstr ""
+msgstr "перешла в режим полной мощности."
 
 #: core/notification_embeds/structures_embeds.py:154
-#, fuzzy
-#| msgid "Upwell structure unanchoring"
 msgid "Structure un-anchoring"
-msgstr "Структура Апвелл снимается с якоря"
+msgstr "Структура снимается с якоря"
 
 #: core/notification_embeds/structures_embeds.py:159
 #, python-format
 msgid "has started un-anchoring. It will be fully un-anchored at: %s"
 msgstr ""
+"начал(а) сниматься с якоря. Структура полностью снимется с якоря в: %s"
 
 #: core/notification_embeds/structures_embeds.py:167
-#, fuzzy
-#| msgid "Upwell structure is under attack"
 msgid "Structure under attack"
-msgstr "Структура Апвелл под атакой"
+msgstr "Структура атакована"
 
 #: core/notification_embeds/structures_embeds.py:168
 #, python-format
@@ -985,43 +891,39 @@ msgid ""
 "is under attack by %(attacker)s.\n"
 "%(damage_text)s"
 msgstr ""
+"под атакой %(attacker)s.\n"
+"%(damage_text)s"
 
 #: core/notification_embeds/structures_embeds.py:188
-#, fuzzy
-#| msgid "Upwell structure lost shields"
 msgid "Structure lost shield"
-msgstr "Структура Апвелл потеряла щиты"
+msgstr "Структура потеряла щит"
 
 #: core/notification_embeds/structures_embeds.py:193
 #, python-format
 msgid "has lost its shields. Armor timer end at: %s"
-msgstr ""
+msgstr "потерял(а) щит. Таймер брони: %s"
 
 #: core/notification_embeds/structures_embeds.py:201
-#, fuzzy
-#| msgid "Upwell structure lost armor"
 msgid "Structure lost armor"
-msgstr "Структура Апвелл потеряла броню"
+msgstr "Структура потеряла броню"
 
 #: core/notification_embeds/structures_embeds.py:206
 #, python-format
 msgid "has lost its armor. Hull timer end at: %s"
-msgstr ""
+msgstr "потерял(а) броню. Таймер корпуса: %s"
 
 #: core/notification_embeds/structures_embeds.py:214
-#, fuzzy
-#| msgid "Upwell structure destroyed"
 msgid "Structure destroyed"
-msgstr "Структура Апвелл уничтожена"
+msgstr "Структура уничтожена"
 
 #: core/notification_embeds/structures_embeds.py:215
 msgid "has been destroyed."
-msgstr ""
+msgstr "уничтожен(а)."
 
 #: core/notification_embeds/structures_embeds.py:224
 #, python-format
 msgid "The %(structure_type)s %(structure_name)s in %(solar_system)s "
-msgstr ""
+msgstr "%(structure_type)s%(structure_name)s в %(solar_system)s"
 
 #: core/notification_embeds/structures_embeds.py:240
 #, python-format
@@ -1029,12 +931,12 @@ msgid ""
 "has been transferred from %(from_corporation)s to %(to_corporation)s by "
 "%(character)s."
 msgstr ""
+"была передана от %(from_corporation)s к %(to_corporation)s персонажем "
+"%(character)s."
 
 #: core/notification_embeds/structures_embeds.py:247
-#, fuzzy
-#| msgid "Upwell structure ownership transferred"
 msgid "Ownership transferred"
-msgstr "Правовладение структурой Апвелл передано"
+msgstr "Правовладение передано"
 
 #: core/notification_embeds/structures_embeds.py:263
 #, python-format
@@ -1042,37 +944,31 @@ msgid ""
 "A %(structure_type)s belonging to %(owner_link)s has started anchoring in "
 "%(solar_system)s. "
 msgstr ""
+"%(structure_type)s, принадлежащая %(owner_link)s, начала вставать на якорь в"
+" %(solar_system)s."
 
 #: core/notification_embeds/structures_embeds.py:270
-#, fuzzy
-#| msgid "Upwell structure anchoring"
 msgid "Structure anchoring"
-msgstr "Постановка на якорь стуктуры Апвелл"
+msgstr "Структура встаёт на якорь"
 
 #: core/notification_embeds/structures_embeds.py:311
-#, fuzzy
-#| msgid "Upwell structure reinforcement time changed"
 msgid "Structure reinforcement time changed"
-msgstr "Время укрепления структуры Апвелл изменено"
+msgstr "Время укрепления структуры изменено"
 
 #: core/notification_embeds/structures_embeds.py:314
 #, python-format
 msgid ""
 "Reinforcement hour has been changed to %s for the following structures:\n"
-msgstr ""
+msgstr "Для следующих структур было изменено время укрепление на%s:\n"
 
 #: core/notification_embeds/structures_embeds.py:319
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been cancelled by "
-#| "%(character)s."
+#, python-format
 msgid ""
 "- %(structure_type)s %(structure_name)s in %(solar_system)s belonging to "
 "%(owner_link)s"
 msgstr ""
-"Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
-"на%(moon)s в %(solar_system)s было отменено %(character)s."
+"- %(structure_type)s %(structure_name)s, принадлежащая %(owner_link)s, в "
+"%(solar_system)s"
 
 #: core/notification_embeds/structures_embeds.py:329
 #, python-format
@@ -1081,25 +977,22 @@ msgid ""
 "\n"
 "Change becomes effective at %s."
 msgstr ""
+"\n"
+"\n"
+"Изменение вступит в силу в %s."
 
 #: core/notification_embeds/tower_embeds.py:41
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been cancelled by "
-#| "%(character)s."
+#, python-format
 msgid ""
-"The starbase %(structure_name)s at %(moon)s in %(solar_system)s belonging to "
-"%(owner_link)s"
+"The starbase %(structure_name)s at %(moon)s in %(solar_system)s belonging to"
+" %(owner_link)s"
 msgstr ""
-"Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
-"на%(moon)s в %(solar_system)s было отменено %(character)s."
+"Орбитальная станция %(structure_name)s, принадлежащая %(owner_link)s, на "
+"%(moon)s в %(solar_system)s  "
 
 #: core/notification_embeds/tower_embeds.py:61
-#, fuzzy
-#| msgid "Starbase attacked"
 msgid "Starbase under attack"
-msgstr "Орбитальная станция атакована"
+msgstr "Орбитальная станция под атакой"
 
 #: core/notification_embeds/tower_embeds.py:62
 #, python-format
@@ -1107,46 +1000,38 @@ msgid ""
 "is under attack by %(aggressor)s.\n"
 "%(damage_text)s"
 msgstr ""
+"под атакой %(aggressor)s.\n"
+"%(damage_text)s"
 
 #: core/notification_embeds/tower_embeds.py:89 core/notification_types.py:52
 msgid "Starbase fuel alert"
 msgstr "Оповещение о топливе орбитальной станции"
 
 #: core/notification_embeds/tower_embeds.py:100
-#, fuzzy
-#| msgid "Starbase refueled (BETA)"
 msgid "Starbase refueled"
-msgstr "Орбитальная станция заправлена (БЕТА)"
+msgstr "Орбитальная станция заправлена"
 
 #: core/notification_embeds/tower_embeds.py:128
-#, fuzzy, python-format
-#| msgid ""
-#| "An ongoing extraction for %(structure_name)s at %(moon)s in "
-#| "%(solar_system)s belonging to %(owner_link)s has been cancelled by "
-#| "%(character)s."
+#, python-format
 msgid ""
-"The starbase %(structure_name)s at %(moon)s in %(solar_system)s belonging to "
-"%(owner_link)s "
+"The starbase %(structure_name)s at %(moon)s in %(solar_system)s belonging to"
+" %(owner_link)s "
 msgstr ""
-"Начатое извлечение %(structure_name)s, принадлежащее %(owner_link)s, "
-"на%(moon)s в %(solar_system)s было отменено %(character)s."
+"Орбитальная станция %(structure_name)s, принадлежащая %(owner_link)s, на "
+"%(moon)s в %(solar_system)s  "
 
 #: core/notification_embeds/tower_embeds.py:141
-#, fuzzy
-#| msgid "Starbase reinforced (BETA)"
 msgid "Starbase reinforced"
-msgstr "Орбитальная станция укреплена (БЕТА)"
+msgstr "Орбитальная станция укреплена"
 
 #: core/notification_embeds/tower_embeds.py:150
 #, python-format
 msgid "has been reinforced and will come out at: %s."
-msgstr ""
+msgstr "укреплен(а) и выйдет в: %s."
 
 #: core/notification_embeds/war_embeds.py:42
-#, fuzzy
-#| msgid "War party surrendered"
 msgid "One party has surrendered"
-msgstr "Военная компания капитулировала"
+msgstr "Сторона капитулировала"
 
 #: core/notification_embeds/war_embeds.py:44
 #, python-format
@@ -1155,39 +1040,42 @@ msgid ""
 "party has surrendered. The war will be declared as being over after "
 "approximately 24 hours."
 msgstr ""
+"Война между %(against)s и %(declared_by)s подходит к концу ввиду капитуляции"
+" одной из сторон. Война будет считаться оконченной приблизительно через 24 "
+"часа."
 
 #: core/notification_embeds/war_embeds.py:58
 #, python-format
 msgid "War update: %(against)s has left %(alliance)s"
-msgstr ""
+msgstr "Обновление войны: %(against)s покинул %(alliance)s"
 
 #: core/notification_embeds/war_embeds.py:63
 #, python-format
 msgid ""
-"There has been a development in the war between %(declared_by)s and "
-"%(alliance)s.\n"
-"%(against)s is no longer a member of %(alliance)s, and therefore a new war "
-"between %(declared_by)s and %(against)s has begun."
+"There has been a development in the war between %(declared_by)s and %(alliance)s.\n"
+"%(against)s is no longer a member of %(alliance)s, and therefore a new war between %(declared_by)s and %(against)s has begun."
 msgstr ""
+"В войне между %(declared_by)s и %(alliance)s произошло развитие событий.\n"
+"%(against)s более не член %(alliance)s и следовательно началась новая война между %(declared_by)s и %(against)s."
 
 #: core/notification_embeds/war_embeds.py:78
 #, python-format
 msgid "%(declared_by)s Declares War Against %(against)s"
-msgstr ""
+msgstr "%(declared_by)s объявляет войну против %(against)s"
 
 #: core/notification_embeds/war_embeds.py:83
 #, python-format
 msgid ""
-"%(declared_by)s has declared war on %(against)s with %(war_hq)s as the "
-"designated war headquarters.\n"
-"Within %(delay_hours)s hours fighting can legally occur between those "
-"involved."
+"%(declared_by)s has declared war on %(against)s with %(war_hq)s as the designated war headquarters.\n"
+"Within %(delay_hours)s hours fighting can legally occur between those involved."
 msgstr ""
+"%(declared_by)s объявил(а) войну против %(against)s, %(war_hq)s выбран(а) военной штаб-квартирой.\n"
+"В течении %(delay_hours)s часов военные действия между вовлеченными будут легальны."
 
 #: core/notification_embeds/war_embeds.py:102
 #, python-format
 msgid "%(alliance)s inherits war against %(opponent)s"
-msgstr ""
+msgstr "%(alliance)s вступает в войну против %(opponent)s"
 
 #: core/notification_embeds/war_embeds.py:107
 #, python-format
@@ -1196,23 +1084,26 @@ msgid ""
 "from newly joined %(quitter)s. Within **24** hours fighting can legally "
 "occur with %(alliance)s."
 msgstr ""
+"%(alliance)s вступает в войну между %(declared_by)s и %(against)s ввиду "
+"вступившей %(quitter)s. В пределах **24** часов станет возможна война с "
+"%(alliance)s."
 
 #: core/notification_embeds/war_embeds.py:122
 msgid "CONCORD invalidates war"
-msgstr ""
+msgstr "Конкорд аннулирует войну"
 
 #: core/notification_embeds/war_embeds.py:125
 #, python-format
 msgid ""
-"The war between %(declared_by)s and %(against)s has been retracted by "
-"CONCORD.\n"
-"After %(end_date)s CONCORD will again respond to any hostilities between "
-"those involved with full force."
+"The war between %(declared_by)s and %(against)s has been retracted by CONCORD.\n"
+"After %(end_date)s CONCORD will again respond to any hostilities between those involved with full force."
 msgstr ""
+"Война между %(declared_by)s и %(against)s была прекращена Конкордом.\n"
+"Спустя %(end_date)s Конкорд будет реагировать на любые враждебные действия между вовлеченными в полной мере."
 
 #: core/notification_embeds/war_embeds.py:141
 msgid "Corporation or alliance is now eligible for formal war declarations"
-msgstr ""
+msgstr "Корпорация или альянс теперь имеет право для объявление войны"
 
 #: core/notification_embeds/war_embeds.py:144
 msgid ""
@@ -1220,37 +1111,42 @@ msgid ""
 "war declarations. This could be because your corporation and/or one of the "
 "corporations in your alliance owns a structure deployed in space."
 msgstr ""
+"Ваша корпорация или альянс теперь **имеют право** участвовать в объявлении "
+"войны. Это могло произойти из-за того, что ваша корпораци и/или одна из "
+"корпораций вашего альянса имеет структуру в космосе."
 
 #: core/notification_embeds/war_embeds.py:156
 msgid ""
 "Corporation or alliance is no longer eligible for formal war declarations"
-msgstr ""
+msgstr "Корпорация или альянс более не имеет право для объявление войны"
 
 #: core/notification_embeds/war_embeds.py:159
 msgid ""
-"Your corporation or alliance is **no longer eligible** to participate in "
-"formal war declarations.\n"
-"Neither your corporation nor any of the corporations in your alliance own a "
-"structure deployed in space at this time. If your corporation or alliance is "
-"currently involved in a formal war, that war will end in 24 hours."
+"Your corporation or alliance is **no longer eligible** to participate in formal war declarations.\n"
+"Neither your corporation nor any of the corporations in your alliance own a structure deployed in space at this time. If your corporation or alliance is currently involved in a formal war, that war will end in 24 hours."
 msgstr ""
+"Ваша корпорация или альянс более **не имеет прав** на участие в объявлении войны.\n"
+"Ни ваша корпорация, ни одна из корпорация вашего альянса на данный момент не имеет структур в космосе. Если ваша корпорация или альянс вовлечены в война, она окончится в течении 24 часов "
 
 #: core/notification_embeds/war_embeds.py:176
 #, python-format
 msgid "%s has offered a surrender"
-msgstr ""
+msgstr "%s предложил(а) капитуляцию"
 
 #: core/notification_embeds/war_embeds.py:178
 #, python-format
 msgid ""
 "%s has offered to end the war with %s in the exchange for %s ISK. If "
-"accepted, the war will end in 24 hours and your organizations will be unable "
-"to declare new wars against each other for the next 2 weeks."
+"accepted, the war will end in 24 hours and your organizations will be unable"
+" to declare new wars against each other for the next 2 weeks."
 msgstr ""
+"%s предложили окончить войну с %s за %s ISK. Если предложение будет принято,"
+" война окончится в пределах 24 часов. В течении двух недель будет невозможно"
+" начать войну между сторонами."
 
 #: core/notification_embeds/war_embeds.py:188
 msgid "Ally Has Joined a War"
-msgstr ""
+msgstr "Союзник присоединился к войне"
 
 #: core/notification_embeds/war_embeds.py:196
 #, python-format
@@ -1258,6 +1154,8 @@ msgid ""
 "%(ally)s has joined %(defender)s in a war against %(aggressor)s. Their "
 "participation in the war will start at %(start_time)s."
 msgstr ""
+"%(ally)s присоединился к %(defender)s в войне против %(aggressor)s. Их "
+"участие в войне начнётся %(start_time)s."
 
 #: core/notification_timers.py:89
 msgid "Armor timer"
@@ -1626,8 +1524,8 @@ msgstr "канал пингов"
 
 #: models/notifications.py:710
 msgid ""
-"Option to ping every member of the channel. This setting can be overruled by "
-"the respective owner or webhook configuration"
+"Option to ping every member of the channel. This setting can be overruled by"
+" the respective owner or webhook configuration"
 msgstr ""
 "Возможность пинговать каждого участника канала. Этот параметр может быть "
 "отменен соответствующим владельцем или конфигурацией вебхука"
@@ -1791,7 +1689,8 @@ msgid ""
 "Whether alliance wide notifications are forwarded for this owner (e.g. sov "
 "notifications)"
 msgstr ""
-"Получает ли владелец альянсовые уведомления (например оповещения сувернитета)"
+"Получает ли владелец альянсовые уведомления (например оповещения "
+"сувернитета)"
 
 #: models/owners.py:172
 msgid "is included in service status"
@@ -2185,8 +2084,8 @@ msgstr "время укрепления"
 #: models/structures_1.py:330
 msgid ""
 "The average hour of day that determines the time +/- some hours when the "
-"structure will randomly exit its reinforcement periods and become vulnerable "
-"to attack against its armor and/or hull. "
+"structure will randomly exit its reinforcement periods and become vulnerable"
+" to attack against its armor and/or hull. "
 msgstr ""
 "Средний час дня, который определяет время +/- несколько часов, когда "
 "структура случайным образом выйдет из периодов усиления и станет уязвимой "
@@ -2254,13 +2153,13 @@ msgstr "Дата, когда структура снимется с якоря"
 
 #: models/structures_1.py:399
 msgid ""
-"Webhooks for sending notifications to. If any webhook is enabled, these will "
-"be used instead of the webhooks defined for the respective owner. If no "
+"Webhooks for sending notifications to. If any webhook is enabled, these will"
+" be used instead of the webhooks defined for the respective owner. If no "
 "webhook is enabled the owner's setting will be used. "
 msgstr ""
 "Вебхуки для отправки уведомлений. Если какой-либо вебхук включен, он будет "
-"использоваться вместо вебхуков, определенных для соответствующего владельца. "
-"Если вебхук не включен, будут использоваться настройки владельца."
+"использоваться вместо вебхуков, определенных для соответствующего владельца."
+" Если вебхук не включен, будут использоваться настройки владельца."
 
 #: models/structures_1.py:795
 msgid "The Eve item ID"
@@ -2786,8 +2685,8 @@ msgstr ""
 #: views.py:476
 #, python-format
 msgid ""
-"%(corporation)s has been added with %(character)s as sync character. We have "
-"started fetching structures and notifications for this corporation and you "
+"%(corporation)s has been added with %(character)s as sync character. We have"
+" started fetching structures and notifications for this corporation and you "
 "will receive a report once the process is finished."
 msgstr ""
 "%(corporation)s добавлена синхронизирующим персонажем %(character)s. Мы "
@@ -2819,8 +2718,7 @@ msgid ""
 "%(character)s was added as sync character to %(corporation)s by %(user)s.\n"
 "We now have %(characters_count)d sync character(s) configured."
 msgstr ""
-"%(user)s добавил %(character)s как синхронизирующий персонаж "
-"%(corporation)s.\n"
+"%(user)s добавил %(character)s как синхронизирующий персонаж %(corporation)s.\n"
 "На данный момент добавлено %(characters_count)d синхронизирующих персонажей."
 
 #: views.py:525
@@ -2886,10 +2784,8 @@ msgid "Notes regarding this webhook"
 msgstr "Заметки для вебхука"
 
 #: webhooks/models.py:62
-#, fuzzy
-#| msgid "webhook_type"
 msgid "webhook type"
-msgstr "webhook_type"
+msgstr "тип вебхука"
 
 #: webhooks/models.py:65
 msgid "Type of this webhook"
@@ -2898,6 +2794,3 @@ msgstr "Тип вебхука"
 #: webhooks/models.py:70
 msgid "Whether notifications are currently sent to this webhook"
 msgstr "Отправляются ли в данный момент уведомления на вебхук"
-
-#~ msgid "is_active"
-#~ msgstr "is_active"
